@@ -269,6 +269,16 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   @Override
   public long writeCommandOnPartition(
+      final int partitionId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey) {
+    return streamProcessingComposite.writeCommandOnPartition(
+        partitionId, intent, recordValue, userKey);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
   }

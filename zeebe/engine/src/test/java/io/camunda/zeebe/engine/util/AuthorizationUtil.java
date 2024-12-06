@@ -48,4 +48,17 @@ public class AuthorizationUtil {
     auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
     return auth;
   }
+
+  public static AuthInfo getAuthInfo(final long userKey) {
+    final String authorizationToken =
+        Authorization.jwtEncoder()
+            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+            .withClaim(Authorization.AUTHORIZED_USER_KEY, userKey)
+            .encode();
+    final var auth = new AuthInfo();
+    auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
+    return auth;
+  }
 }

@@ -417,6 +417,11 @@ public final class TestStreams {
       return this;
     }
 
+    public FluentLogWriter authorizations(final long userKey) {
+      metadata.authorization(AuthorizationUtil.getAuthInfo(userKey));
+      return this;
+    }
+
     public FluentLogWriter authorizationsWithUserKey(
         final long userKey, final String... tenantIds) {
       metadata.authorization(AuthorizationUtil.getAuthInfo(userKey, tenantIds));

@@ -278,6 +278,26 @@ public class StreamProcessingComposite implements CommandWriter {
 
   @Override
   public long writeCommandOnPartition(
+      final int partition,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final long userKey) {
+    final var requestId = new Random().nextLong();
+    final var requestStreamId = new Random().nextInt();
+    final var writer =
+        streams
+            .newRecord(getLogName(partition))
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .authorizations(userKey)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId)
+            .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     return writeCommandOnPartition(
         partition, key, intent, value, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
