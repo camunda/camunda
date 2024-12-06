@@ -15,6 +15,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
@@ -96,6 +97,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
+  @Autowired private SchemaManager schemaManager;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
@@ -111,6 +113,12 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+    }
+    if (operateProperties.getOpensearch().isCreateSchema()) {
+      schemaManager.createSchema();
+      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
+          .describedAs("Opensearch %s (min %d) indices are created", indexPrefix, 5)
+          .isTrue();
     }
   }
 
