@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Assertions;
@@ -324,7 +325,9 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
-              "denied": true
+              "denied": true,
+              "corrections": {},
+              "correctedAttributes": []
             }
           }
         """;
@@ -348,6 +351,124 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldCompleteJobWithResultWithCorrections() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false,
+              "corrections": {
+                "assignee": "Test",
+                "dueDate": "2025-05-23T01:02:03+01:00",
+                "followUpDate": "2025-05-25T01:02:03+01:00",
+                "candidateUsers": ["UserA", "UserB"],
+                "candidateGroups": ["GroupA", "GroupB"],
+                "priority": 20
+              },
+              "correctedAttributes": [
+                "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority"
+              ]
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertEquals(
+        "Test", jobResultArgumentCaptor.getValue().getCorrections().getAssignee());
+    Assertions.assertEquals(
+        "2025-05-23T01:02:03+01:00",
+        jobResultArgumentCaptor.getValue().getCorrections().getDueDate());
+    Assertions.assertEquals(
+        "2025-05-25T01:02:03+01:00",
+        jobResultArgumentCaptor.getValue().getCorrections().getFollowUpDate());
+    Assertions.assertEquals(
+        List.of("UserA", "UserB"),
+        jobResultArgumentCaptor.getValue().getCorrections().getCandidateUsers());
+    Assertions.assertEquals(
+        List.of("GroupA", "GroupB"),
+        jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
+    Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+    Assertions.assertEquals(
+        List.of(
+            "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority"),
+        jobResultArgumentCaptor.getValue().getCorrectedAttributes());
+  }
+
+  @Test
+  void shouldCompleteJobWithResultWithCorrectionsPartiallySet() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false,
+              "corrections": {
+                "assignee": "Test",
+                "candidateUsers": ["UserA", "UserB"],
+                "candidateGroups": ["GroupA", "GroupB"],
+                "priority": 20
+              },
+              "correctedAttributes": [
+                "assignee", "candidateUsers", "candidateGroups", "priority"
+              ]
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertEquals(
+        "Test", jobResultArgumentCaptor.getValue().getCorrections().getAssignee());
+    Assertions.assertEquals("", jobResultArgumentCaptor.getValue().getCorrections().getDueDate());
+    Assertions.assertEquals(
+        "", jobResultArgumentCaptor.getValue().getCorrections().getFollowUpDate());
+    Assertions.assertEquals(
+        List.of("UserA", "UserB"),
+        jobResultArgumentCaptor.getValue().getCorrections().getCandidateUsers());
+    Assertions.assertEquals(
+        List.of("GroupA", "GroupB"),
+        jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
+    Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+    Assertions.assertEquals(
+        List.of("assignee", "candidateUsers", "candidateGroups", "priority"),
+        jobResultArgumentCaptor.getValue().getCorrectedAttributes());
+  }
+
+  @Test
   void shouldCompleteJobWithResultDeniedFalse() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any()))
@@ -357,8 +478,10 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
-              "denied": false
-            }
+              "denied": false,
+              "corrections": {}
+            },
+            "correctedAttributes": []
           }
         """;
 
@@ -390,7 +513,8 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
-              "unknownField": true
+              "unknownField": true,
+              "corrections": {}
             }
           }
         """;
