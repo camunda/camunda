@@ -70,6 +70,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
         .withAuthorizedApplications(authorizedApplications)
+        .withCanLogout(true) // FIXME
         .build();
   }
 }
