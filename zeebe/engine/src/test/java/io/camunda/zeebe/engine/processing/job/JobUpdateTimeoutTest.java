@@ -240,7 +240,6 @@ public class JobUpdateTimeoutTest {
   @Test
   public void shouldUpdateJobTimeoutForCustomTenant() {
     // given
-    final String tenantId = "acme";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     final var batchRecord =
@@ -272,7 +271,6 @@ public class JobUpdateTimeoutTest {
   @Test
   public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
     // given
-    final String tenantId = "acme";
     final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
