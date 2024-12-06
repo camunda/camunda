@@ -7,6 +7,7 @@
  */
 package io.camunda.security.auth;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.APPLICATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
@@ -16,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.P
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
@@ -59,6 +61,10 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
       return resourceType(DECISION_REQUIREMENTS_DEFINITION);
     }
 
+    public Builder application() {
+      return resourceType(APPLICATION);
+    }
+
     public Builder mapping() {
       return resourceType(MAPPING_RULE);
     }
@@ -81,6 +87,10 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
 
     public Builder user() {
       return resourceType(USER);
+    }
+
+    public Builder access() {
+      return permissionType(ACCESS);
     }
 
     public Builder read() {
