@@ -13,6 +13,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -36,6 +37,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
+  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
     super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
@@ -57,6 +59,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     //noinspection resource
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
+
+    securityConfig = new CamundaSecurityProperties();
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 
   @Override
@@ -150,6 +155,16 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    */
   public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(config);
+    return this;
+  }
+
+  /**
+   * Modifies the security configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  public TestStandaloneBroker withSecurityConfig(
+      final Consumer<CamundaSecurityProperties> modifier) {
+    modifier.accept(securityConfig);
     return this;
   }
 

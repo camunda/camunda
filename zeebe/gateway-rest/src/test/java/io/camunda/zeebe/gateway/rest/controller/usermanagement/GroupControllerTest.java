@@ -15,9 +15,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,5 +93,115 @@ public class GroupControllerTest extends RestControllerTest {
 
     // then
     verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldUpdateGroupAndReturnNoContent() {
+    // given
+    final var groupKey = 111L;
+    final var groupName = "updatedName";
+    when(groupServices.updateGroup(groupKey, groupName))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new GroupRecord().setEntityKey(222L).setName(groupName)));
+
+    // when
+    webClient
+        .patch()
+        .uri("%s/%s".formatted(GROUP_BASE_URL, groupKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(groupName)))
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(groupServices, times(1)).updateGroup(groupKey, groupName);
+  }
+
+  @Test
+  void shouldFailOnUpdateGroupWithEmptyName() {
+    // given
+    final var groupKey = 111L;
+    final var emptyGroupName = "";
+    final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
+
+    // when / then
+    webClient
+        .patch()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(emptyGroupName)))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
+              "instance": "%s"
+            }"""
+                .formatted(uri));
+
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldReturnErrorOnNonExistingGroupUpdate() {
+    // given
+    final var groupKey = 111L;
+    final var groupName = "newName";
+    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
+    when(groupServices.updateGroup(groupKey, groupName))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.UPDATE,
+                        groupKey,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
+
+    // when / then
+    webClient
+        .patch()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(groupName)))
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    verify(groupServices, times(1)).updateGroup(groupKey, groupName);
+  }
+
+  @Test
+  void deleteGroupShouldReturnNoContent() {
+    // given
+    final long groupKey = 111L;
+
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey);
+
+    when(groupServices.deleteGroup(groupKey))
+        .thenReturn(CompletableFuture.completedFuture(groupRecord));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s".formatted(GROUP_BASE_URL, groupKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(groupServices, times(1)).deleteGroup(groupKey);
   }
 }

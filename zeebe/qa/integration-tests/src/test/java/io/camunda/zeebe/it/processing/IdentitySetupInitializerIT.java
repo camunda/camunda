@@ -72,6 +72,11 @@ final class IdentitySetupInitializerIT {
 
     final var createdRole = record.getDefaultRole();
     Assertions.assertThat(createdRole).hasName(IdentitySetupInitializer.DEFAULT_ROLE_NAME);
+
+    final var createdTenant = record.getDefaultTenant();
+    Assertions.assertThat(createdTenant)
+        .hasTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
+        .hasName(IdentitySetupInitializer.DEFAULT_TENANT_NAME);
   }
 
   @Test
@@ -184,12 +189,7 @@ final class IdentitySetupInitializerIT {
       final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
     broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg ->
-                    cfg.getExperimental()
-                        .getEngine()
-                        .getAuthorizations()
-                        .setEnableAuthorization(authorizationsEnabled))
+            .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
             .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(partitionCount))
             .withRecordingExporter(true);
 

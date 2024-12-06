@@ -23,8 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -96,7 +96,7 @@ public abstract class ElasticsearchUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
   public static SearchRequest createSearchRequest(final IndexTemplateDescriptor template) {
-    return createSearchRequest(template.getAlias());
+    return createSearchRequest(template, QueryType.ALL);
   }
 
   public static SearchHit getRawResponseWithTenantCheck(
@@ -105,20 +105,10 @@ public abstract class ElasticsearchUtil {
       final QueryType queryType,
       final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
-    return getRawResponseWithTenantCheck(
-        id, whereToSearch(descriptor, queryType), descriptor.getIndexName(), tenantAwareClient);
-  }
-
-  public static SearchHit getRawResponseWithTenantCheck(
-      final String id,
-      final String index,
-      final String entityName,
-      final TenantAwareElasticsearchClient tenantAwareClient)
-      throws IOException {
     final QueryBuilder query = idsQuery().addIds(id);
 
     final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(index)
+        ElasticsearchUtil.createSearchRequest(descriptor, queryType)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
@@ -126,9 +116,10 @@ public abstract class ElasticsearchUtil {
       return response.getHits().getHits()[0];
     } else if (response.getHits().getTotalHits().value > 1) {
       throw new NotFoundException(
-          String.format("Unique %s with id %s was not found", entityName, id));
+          String.format("Unique %s with id %s was not found", descriptor.getIndexName(), id));
     } else {
-      throw new NotFoundException(String.format("%s with id %s was not found", entityName, id));
+      throw new NotFoundException(
+          String.format("%s with id %s was not found", descriptor.getIndexName(), id));
     }
   }
 
@@ -184,11 +175,7 @@ public abstract class ElasticsearchUtil {
 
   public static SearchRequest createSearchRequest(
       final IndexDescriptor descriptor, final QueryType queryType) {
-    return createSearchRequest(whereToSearch(descriptor, queryType));
-  }
-
-  public static SearchRequest createSearchRequest(final String index) {
-    return new SearchRequest(index);
+    return new SearchRequest(whereToSearch(descriptor, queryType));
   }
 
   public static String whereToSearch(final IndexDescriptor descriptor, final QueryType queryType) {

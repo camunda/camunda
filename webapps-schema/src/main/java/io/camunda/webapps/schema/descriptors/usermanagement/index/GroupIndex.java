@@ -7,13 +7,14 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
-public class GroupIndex extends UserManagementIndexDescriptor {
+public class GroupIndex extends UserManagementIndexDescriptor implements Prio5Backup {
 
-  public static final String INDEX_NAME = "groups";
+  public static final String INDEX_NAME = "group";
   public static final String INDEX_VERSION = "8.7.0";
   public static final String KEY = "key";
   public static final String MEMBER_KEY = "memberKey";

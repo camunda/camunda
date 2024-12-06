@@ -2563,6 +2563,75 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /groups/{groupKey}:
+    patch:
+      tags:
+        - Group
+      operationId: updateGroup
+      summary: Update group
+      description: Update a group with the given key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The key of the group to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUpdateRequest"
+      responses:
+        "204":
+          description: The group was updated successfully.
+        "400":
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The group with the groupKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: deleteGroup
+      summary: Delete group
+      description: Deletes the group with the given key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The key of the group to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The group was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The group with the groupKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /mapping-rules:
     post:
       tags:
@@ -2599,6 +2668,34 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: The request to create a mapping rule was denied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /mapping-rules/{mappingKey}:
+    delete:
+      tags:
+        - Mapping rule
+      operationId: deleteMappingRule
+      summary: Delete a mapping rule
+      description: Deletes the mapping rule with the given key.
+      parameters:
+        - name: mappingKey
+          in: path
+          required: true
+          description: The key of the mapping rule to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The mapping rule was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingKey was not found.
           content:
             application/problem+json:
               schema:
@@ -4858,6 +4955,22 @@ components:
           description: The key of the created group.
           type: "integer"
           format: "int64"
+    GroupUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          description: The set of changed group attributes.
+          allOf:
+            - $ref: "#/components/schemas/GroupChangeset"
+      required:
+        - changeset
+    GroupChangeset:
+      description: A set of changed group attributes.
+      type: object
+      properties:
+        name:
+          type: string
+          description: The updated display name of the group.
 
     MappingRuleCreateRequest:
       type: object

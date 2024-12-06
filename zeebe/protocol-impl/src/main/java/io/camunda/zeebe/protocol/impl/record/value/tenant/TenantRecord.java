@@ -35,20 +35,9 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
         .declareProperty(entityTypeProp);
   }
 
-  public void wrap(final TenantRecord record) {
-    tenantKeyProp.setValue(record.getTenantKey());
-    tenantIdProp.setValue(record.getTenantIdBuffer());
-    nameProp.setValue(record.getNameBuffer());
-    entityKeyProp.setValue(record.getEntityKey());
-    entityTypeProp.setValue(record.getEntityType());
-  }
-
   public TenantRecord copy() {
     final TenantRecord copy = new TenantRecord();
-    copy.tenantKeyProp.setValue(getTenantKey());
-    copy.tenantIdProp.setValue(tenantIdProp.getValue());
-    copy.nameProp.setValue(nameProp.getValue());
-    copy.entityKeyProp.setValue(getEntityKey());
+    copy.copyFrom(this);
     return copy;
   }
 

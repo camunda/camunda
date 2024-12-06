@@ -287,19 +287,20 @@ final class CamundaExporterIT {
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
-            "custom-prefix-identity-authorizations-8.7.0_",
-            "custom-prefix-identity-groups-8.7.0_",
-            "custom-prefix-identity-mappings-8.7.0_",
-            "custom-prefix-identity-role-8.7.0_",
-            "custom-prefix-identity-tenants-8.7.0_",
-            "custom-prefix-identity-users-8.7.0_",
-            "custom-prefix-identity-web-session-8.7.0_",
+            "custom-prefix-camunda-authorization-8.7.0_",
+            "custom-prefix-camunda-group-8.7.0_",
+            "custom-prefix-camunda-mapping-8.7.0_",
+            "custom-prefix-camunda-role-8.7.0_",
+            "custom-prefix-camunda-tenant-8.7.0_",
+            "custom-prefix-camunda-user-8.7.0_",
+            "custom-prefix-camunda-web-session-8.7.0_",
             "custom-prefix-operate-batch-operation-1.0.0_",
             "custom-prefix-operate-decision-8.3.0_",
             "custom-prefix-operate-decision-instance-8.3.0_",
             "custom-prefix-operate-decision-requirements-8.3.0_",
             "custom-prefix-operate-event-8.3.0_",
             "custom-prefix-operate-flownode-instance-8.3.1_",
+            "custom-prefix-operate-import-position-8.3.0_",
             "custom-prefix-operate-incident-8.3.1_",
             "custom-prefix-operate-list-view-8.3.0_",
             "custom-prefix-operate-metric-8.3.0_",
@@ -308,12 +309,12 @@ final class CamundaExporterIT {
             "custom-prefix-operate-process-8.3.0_",
             "custom-prefix-operate-sequence-flow-8.3.0_",
             "custom-prefix-operate-variable-8.3.0_",
+            "custom-prefix-operate-job-8.6.0_",
             "custom-prefix-tasklist-draft-task-variable-8.3.0_",
             "custom-prefix-tasklist-form-8.4.0_",
             "custom-prefix-tasklist-metric-8.3.0_",
             "custom-prefix-tasklist-task-8.5.0_",
-            "custom-prefix-tasklist-task-variable-8.3.0_",
-            "custom-prefix-operate-import-position-8.3.0_");
+            "custom-prefix-tasklist-task-variable-8.3.0_");
   }
 
   @TestTemplate

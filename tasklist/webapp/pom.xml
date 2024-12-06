@@ -20,6 +20,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapps-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
     </dependency>
 

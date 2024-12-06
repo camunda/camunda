@@ -25,7 +25,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
@@ -65,7 +64,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new ImportPositionIndex("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateProcessIndex")
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex("", databaseInfo.isElasticsearchDb());
@@ -117,12 +116,6 @@ public class IndexTemplateDescriptorsConfigurator {
   public SequenceFlowTemplate getSequenceFlowTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new SequenceFlowTemplate("", databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean
-  public UserTaskTemplate getUserTaskTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new UserTaskTemplate("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
@@ -194,5 +187,11 @@ public class IndexTemplateDescriptorsConfigurator {
   public TasklistImportPositionIndex getTasklistImportPositionIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new TasklistImportPositionIndex("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistProcessIndex")
+  public ProcessIndex getTasklistProcessIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new ProcessIndex("", databaseInfo.isElasticsearchDb());
   }
 }

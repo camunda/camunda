@@ -9,8 +9,8 @@ package io.camunda.tasklist.webapp.graphql.entity;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.util.CollectionUtil;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 
 public class ProcessDTO {
 
@@ -43,7 +43,7 @@ public class ProcessDTO {
             .setName(processEntity.getName())
             .setProcessDefinitionId(processEntity.getBpmnProcessId())
             .setVersion(processEntity.getVersion())
-            .setStartedByForm(processEntity.isStartedByForm())
+            .setStartedByForm(processEntity.getIsPublic())
             .setFormKey(processEntity.getFormKey())
             .setFormId(processEntity.getFormId())
             .setFormEmbedded(processEntity.getIsFormEmbedded());

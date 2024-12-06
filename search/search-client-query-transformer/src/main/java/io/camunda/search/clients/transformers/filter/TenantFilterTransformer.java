@@ -33,6 +33,6 @@ public class TenantFilterTransformer implements FilterTransformer<TenantFilter> 
 
   @Override
   public List<String> toIndices(final TenantFilter filter) {
-    return List.of("identity-tenants-8.7.0_alias");
+    return List.of("camunda-tenant-8.7.0_alias");
   }
 }

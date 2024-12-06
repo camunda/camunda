@@ -9,9 +9,11 @@ package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 
 public class IdentitySetupRecord extends UnifiedRecordValue implements IdentitySetupRecordValue {
@@ -20,10 +22,14 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ObjectProperty<>("defaultRole", new RoleRecord());
   private final ObjectProperty<UserRecord> defaultUserProp =
       new ObjectProperty<>("defaultUser", new UserRecord());
+  private final ObjectProperty<TenantRecord> defaultTenantProp =
+      new ObjectProperty<>("defaultTenant", new TenantRecord());
 
   public IdentitySetupRecord() {
-    super(2);
-    declareProperty(defaultRoleProp).declareProperty(defaultUserProp);
+    super(3);
+    declareProperty(defaultRoleProp)
+        .declareProperty(defaultUserProp)
+        .declareProperty(defaultTenantProp);
   }
 
   @Override
@@ -32,7 +38,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   public IdentitySetupRecord setDefaultRole(final RoleRecord role) {
-    defaultRoleProp.getValue().wrap(role);
+    defaultRoleProp.getValue().copyFrom(role);
     return this;
   }
 
@@ -42,7 +48,17 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   public IdentitySetupRecord setDefaultUser(final UserRecord user) {
-    defaultUserProp.getValue().wrap(user);
+    defaultUserProp.getValue().copyFrom(user);
+    return this;
+  }
+
+  @Override
+  public TenantRecordValue getDefaultTenant() {
+    return defaultTenantProp.getValue();
+  }
+
+  public IdentitySetupRecord setDefaultTenant(final TenantRecord tenant) {
+    defaultTenantProp.getValue().copyFrom(tenant);
     return this;
   }
 }

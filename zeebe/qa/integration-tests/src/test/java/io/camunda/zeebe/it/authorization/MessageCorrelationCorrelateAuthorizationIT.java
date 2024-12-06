@@ -60,8 +60,7 @@ public class MessageCorrelationCorrelateAuthorizationIT {
   private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withBrokerConfig(
-              b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
   @BeforeEach
