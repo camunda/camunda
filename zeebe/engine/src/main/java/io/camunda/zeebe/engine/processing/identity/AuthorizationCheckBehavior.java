@@ -63,13 +63,14 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    Set<String> authorizedResourceIdentifiers = new HashSet<>();
-
+    final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
       authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
               userKey.get(), request.getResourceType(), request.getPermissionType());
+    } else {
+      authorizedResourceIdentifiers = Stream.empty();
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -87,13 +88,13 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
-    final var userKey = getUserKey(request);
-    if (userKey.isEmpty()) {
-      return new HashSet<>();
-    }
-
-    return getUserAuthorizedResourceIdentifiers(
-        userKey.get(), request.getResourceType(), request.getPermissionType());
+    return getUserKey(request)
+        .map(
+            userKey ->
+                getUserAuthorizedResourceIdentifiers(
+                    userKey, request.getResourceType(), request.getPermissionType()))
+        .orElseGet(Stream::empty)
+        .collect(Collectors.toSet());
   }
 
   public Set<String> getAuthorizedResourceIdentifiers(
@@ -102,22 +103,27 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     return switch (ownerType) {
-      case USER -> getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
+      case USER ->
+          getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType)
+              .collect(Collectors.toSet());
       case ROLE ->
-          getRoleAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType);
+          getAuthorizedResourceIdentifiersForOwners(List.of(ownerKey), resourceType, permissionType)
+              .collect(Collectors.toSet());
+      case GROUP ->
+          getAuthorizedResourceIdentifiersForOwners(List.of(ownerKey), resourceType, permissionType)
+              .collect(Collectors.toSet());
       // TODO add MAPPING
-      // TODO add GROUP
       default -> new HashSet<>();
     };
   }
 
-  private Set<String> getUserAuthorizedResourceIdentifiers(
+  private Stream<String> getUserAuthorizedResourceIdentifiers(
       final long userKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
-      return new HashSet<>();
+      return Stream.empty();
     }
 
     final var user = userOptional.get();
@@ -127,30 +133,33 @@ public final class AuthorizationCheckBehavior {
         authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
-        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), resourceType, permissionType);
-
+        getAuthorizedResourceIdentifiersForOwners(
+            user.getRoleKeysList(), resourceType, permissionType);
+    // Get resource identifiers for the user's groups
+    final var groupAuthorizedResourceIdentifiers =
+        getAuthorizedResourceIdentifiersForOwners(
+            user.getGroupKeysList(), resourceType, permissionType);
     return Stream.concat(
-            userAuthorizedResourceIdentifiers.stream(), roleAuthorizedResourceIdentifiers.stream())
-        .collect(Collectors.toSet());
+        userAuthorizedResourceIdentifiers.stream(),
+        Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
   }
 
-  private Set<String> getRoleAuthorizedResourceIdentifiers(
-      final List<Long> roleKeys,
+  private Stream<String> getAuthorizedResourceIdentifiersForOwners(
+      final List<Long> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return roleKeys.stream()
+    return ownerKeys.stream()
         .flatMap(
-            roleKey ->
+            ownerKey ->
                 authorizationState
-                    .getResourceIdentifiers(roleKey, resourceType, permissionType)
-                    .stream())
-        .collect(Collectors.toSet());
+                    .getResourceIdentifiers(ownerKey, resourceType, permissionType)
+                    .stream());
   }
 
   private boolean hasRequiredPermission(
       final Set<String> requiredResourceIdentifiers,
-      final Set<String> authorizedResourceIdentifiers) {
-    return authorizedResourceIdentifiers.stream().anyMatch(requiredResourceIdentifiers::contains);
+      final Stream<String> authorizedResourceIdentifiers) {
+    return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
   }
 
   public static final class AuthorizationRequest {
