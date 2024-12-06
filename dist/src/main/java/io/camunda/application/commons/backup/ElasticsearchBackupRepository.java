@@ -13,6 +13,7 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
+import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -29,7 +30,7 @@ public class ElasticsearchBackupRepository {
   private final ElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupRepositoryProps;
-  private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+  private final Executor threadPoolTaskExecutor;
 
   public ElasticsearchBackupRepository(
       @Qualifier("elasticsearchClient") final ElasticsearchClient esClient,

@@ -14,6 +14,7 @@ import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
+import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -38,7 +39,7 @@ public class ElasticsearchTasklistBackupRepository {
   private final ElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupRepositoryProps;
-  private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+  private final Executor threadPoolTaskExecutor;
 
   public ElasticsearchTasklistBackupRepository(
       @Qualifier("tasklistElasticsearchClient") final ElasticsearchClient esClient,
