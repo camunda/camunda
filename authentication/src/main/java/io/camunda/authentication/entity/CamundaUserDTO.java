@@ -17,6 +17,7 @@ public record CamundaUserDTO(
     Long userKey,
     String displayName,
     String username,
+    String email,
     List<String> authorizedApplications,
     List<TenantDTO> tenants,
     List<String> groups,
