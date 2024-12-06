@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ public class HistoryBackupComponent {
   private final List<Prio5Backup> prio5BackupIndices;
   private final BackupRepositoryProps backupRepositoryProps;
   private final BackupRepository backupRepository;
+  private final List<Prio6Backup> prio6BackupIndices;
 
   public HistoryBackupComponent(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
@@ -48,19 +50,22 @@ public class HistoryBackupComponent {
       final List<Prio3Backup> prio3BackupTemplates,
       final List<Prio4Backup> prio4BackupTemplates,
       final List<Prio5Backup> prio5BackupIndices,
+      final List<Prio6Backup> prio6BackupIndices,
       final BackupRepositoryProps backupRepositoryProps,
       final BackupRepository backupRepository) {
     LOG.debug("Prio1BackupIndices are {}", prio1BackupIndices);
     LOG.debug("Prio2BackupTemplates are {}", prio2BackupTemplates);
     LOG.debug("Prio3BackupTemplates are {}", prio3BackupTemplates);
     LOG.debug("Prio4BackupIndices are {}", prio4BackupTemplates);
-    LOG.debug("Prio4BackupIndices are {}", prio5BackupIndices);
+    LOG.debug("Prio5BackupIndices are {}", prio5BackupIndices);
+    LOG.debug("Prio6BackupIndices are {}", prio6BackupIndices);
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.prio1BackupIndices = prio1BackupIndices;
     this.prio2BackupTemplates = prio2BackupTemplates;
     this.prio3BackupTemplates = prio3BackupTemplates;
     this.prio4BackupTemplates = prio4BackupTemplates;
     this.prio5BackupIndices = prio5BackupIndices;
+    this.prio6BackupIndices = prio6BackupIndices;
     this.backupRepositoryProps = backupRepositoryProps;
     this.backupRepository = backupRepository;
   }
@@ -74,6 +79,7 @@ public class HistoryBackupComponent {
         prio3BackupTemplates,
         prio4BackupTemplates,
         prio5BackupIndices,
+        prio6BackupIndices,
         backupRepositoryProps,
         backupRepository);
   }
