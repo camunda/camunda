@@ -588,6 +588,47 @@ final class CamundaExporterIT {
           .isNotNull();
     }
 
+    @TestTemplate
+    void shouldFailIfWaitingForImportersAndCachedRecordsCountReachesBulkSize(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      assertThat(config.getBulk().getSize()).isEqualTo(1);
+
+      // if schemas are never created then import position indices do not exist and all checks about
+      // whether the importers are completed will return false.
+      config.setCreateSchema(false);
+      final var context = getContextFromConfig(config);
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      clientAdapter.index(
+          context.getPartitionId() + "-job",
+          importPositionIndexName,
+          new ImportPositionEntity().setCompleted(false).setPartitionId(context.getPartitionId()));
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.AUTHORIZATION,
+              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+
+      camundaExporter.export(record);
+
+      final var record2 =
+          factory.generateRecord(
+              ValueType.AUTHORIZATION,
+              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+
+      // then
+      assertThatThrownBy(() -> camundaExporter.export(record2))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining(
+              String.format(
+                  "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish",
+                  config.getBulk().getSize()));
+    }
+
     private void indexImportPositionEntity(
         final String aliasName, final boolean completed, final SearchClientAdapter client)
         throws IOException {

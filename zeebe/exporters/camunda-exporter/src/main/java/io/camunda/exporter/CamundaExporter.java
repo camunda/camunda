@@ -173,6 +173,8 @@ public class CamundaExporter implements Exporter {
     if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
       ensureCachedRecordsLessThanBulkSize(record);
 
+      writer.addRecord(record);
+
       LOG.info(
           "Waiting for importers to finish, cached record with key {} but did not flush",
           record.getKey());
@@ -183,6 +185,7 @@ public class CamundaExporter implements Exporter {
       metrics.startFlushLatencyMeasurement();
     }
 
+    // adding record is idempotent
     writer.addRecord(record);
 
     lastPosition = record.getPosition();
@@ -204,7 +207,7 @@ public class CamundaExporter implements Exporter {
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
     final var maxCachedRecords = configuration.getBulk().getSize();
 
-    if (writer.getBatchSize() > maxCachedRecords) {
+    if (writer.getBatchSize() >= maxCachedRecords) {
       final var warnMsg =
           String.format(
               "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish, retrying export for record at position [%s]",
