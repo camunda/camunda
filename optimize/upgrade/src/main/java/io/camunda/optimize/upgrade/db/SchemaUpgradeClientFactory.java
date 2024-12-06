@@ -38,7 +38,8 @@ public final class SchemaUpgradeClientFactory {
           (OptimizeElasticsearchClient) upgradeDependencies.databaseClient();
       final ElasticSearchMetadataService metadataService =
           (ElasticSearchMetadataService) upgradeDependencies.metadataService();
-      final MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+      final MappingMetadataUtilES mappingUtil =
+          new MappingMetadataUtilES(esClient.documentBasedSearchClient());
       return new SchemaUpgradeClientES(
           new ElasticSearchSchemaManager(
               metadataService,
@@ -57,7 +58,8 @@ public final class SchemaUpgradeClientFactory {
           (OptimizeOpenSearchClient) upgradeDependencies.databaseClient();
       final OpenSearchMetadataService metadataService =
           (OpenSearchMetadataService) upgradeDependencies.metadataService();
-      final MappingMetadataUtilOS mappingUtil = new MappingMetadataUtilOS(osClient);
+      final MappingMetadataUtilOS mappingUtil =
+          new MappingMetadataUtilOS(osClient.documentBasedSearchClient());
       return new SchemaUpgradeClientOS(
           new OpenSearchSchemaManager(
               metadataService,

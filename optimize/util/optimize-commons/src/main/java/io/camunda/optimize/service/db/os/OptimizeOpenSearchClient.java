@@ -33,7 +33,9 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.os.clients.OpensearchSearchClient;
 import jakarta.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -123,6 +125,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
 
   private ExtendedOpenSearchClient openSearchClient;
+  private DocumentBasedSearchClient documentBasedSearchClient;
   private OpenSearchAsyncClient openSearchAsyncClient;
   private RichOpenSearchClient richOpenSearchClient;
   private RestClient restClient;
@@ -143,6 +146,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final OptimizeIndexNameService indexNameService,
       final TransportOptionsProvider transportOptionsProvider) {
     this.openSearchClient = openSearchClient;
+    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
     this.indexNameService = indexNameService;
     this.transportOptionsProvider = transportOptionsProvider;
     this.openSearchAsyncClient = openSearchAsyncClient;
@@ -436,11 +440,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     getRichOpenSearchClient().index().refresh(indexPattern);
   }
 
-  public long count(final String[] indexNames, final Query query) throws IOException {
-    return count(
-        indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
-  }
-
   @Override
   public List<String> getAllIndexNames() throws IOException {
     return new ArrayList<>(getRichOpenSearchClient().index().getIndexNamesWithRetries("*"));
@@ -459,6 +458,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void setDefaultRequestOptions() {
     // Do nothing, CustomerHeaderSupplier not supported for OpenSearch (see #10086)
+  }
+
+  @Override
+  public DocumentBasedSearchClient documentBasedSearchClient() {
+    return documentBasedSearchClient;
   }
 
   @Override
@@ -573,6 +577,11 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     } catch (final IOException e) {
       LOG.warn("There was an error deleting all indexes.", e);
     }
+  }
+
+  public long count(final String[] indexNames, final Query query) throws IOException {
+    return count(
+        indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
 
   private boolean exists(final ExistsRequest existsRequest) throws IOException {
