@@ -2703,6 +2703,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /mapping-rules/search:
+    post:
+      tags:
+        - Mapping rule
+      operationId: findMappings
+      summary: Query mappings
+      description: |
+        Search for mapping rules based on given criteria.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: The mapping rule search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingSearchResponse"
+        "400":
+          description: >
+            The mapping rule search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /messages/publication:
     post:
       tags:
@@ -3483,6 +3519,33 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TenantItem"
+
+    MappingItem:
+      description: Mapping rule search response item.
+      type: object
+      properties:
+        mappingKey:
+          type: integer
+          description: The unique system-generated internal mapping ID.
+          format: int64
+        claimName:
+          type: string
+          description: The claim name to match against a token.
+        claimValue:
+          type: string
+          description: The value of the claim to match.
+
+    MappingSearchQueryResponse:
+      description: Mapping rule search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingItem"
 
     UserTaskSearchQueryRequest:
       allOf:
@@ -4755,6 +4818,15 @@ components:
           description: The user search filters.
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
+    MappingSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          description: The mapping search filters.
+          allOf:
+            - $ref: "#/components/schemas/MappingFilterRequest"
     UserFilterRequest:
       description: User search filter.
       type: object
@@ -4768,6 +4840,16 @@ components:
         email:
           description: The email of the user.
           type: "string"
+    MappingFilterRequest:
+      description: Mapping search filter.
+      type: object
+      properties:
+        claimName:
+          type: string
+          description: The claim name to match against a token.
+        claimValue:
+          type: string
+          description: The value of the claim to match.
     CamundaUser:
       type: "object"
       properties:
@@ -4981,6 +5063,29 @@ components:
         - claimValue
     MappingRuleCreateResponse:
       type: object
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+    MappingSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingResponse"
+    MappingResponse:
+      type: "object"
       properties:
         mappingKey:
           description: The key of the created mapping rule.
