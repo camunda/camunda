@@ -30,6 +30,7 @@ public record UserTaskFilter(
     List<Operation<String>> candidateGroupOperations,
     List<String> tenantIds,
     List<VariableValueFilter> processInstanceVariableFilter,
+    List<VariableValueFilter> localVariableFilters,
     List<Long> elementInstanceKeys,
     String type)
     implements FilterBase {
@@ -47,6 +48,7 @@ public record UserTaskFilter(
     private List<Operation<String>> candidateGroupOperations;
     private List<String> tenantIds;
     private List<VariableValueFilter> processInstanceVariableFilters;
+    private List<VariableValueFilter> localVariableFilters;
     private List<Long> elementInstanceKeys;
     private String type;
 
@@ -178,6 +180,11 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder localVariables(final List<VariableValueFilter> values) {
+      localVariableFilters = addValuesToList(localVariableFilters, values);
+      return this;
+    }
+
     public Builder elementInstanceKeys(final Long... values) {
       return elementInstanceKeys(collectValuesAsList(values));
     }
@@ -207,6 +214,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceVariableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(localVariableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
           type);
     }
