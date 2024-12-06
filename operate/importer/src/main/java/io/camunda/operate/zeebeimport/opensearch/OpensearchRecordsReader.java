@@ -135,7 +135,7 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   @PostConstruct
-  private void postConstruct() {
+  public void postConstruct() {
     batchSizeThrottle =
         new NumberThrottleable.DivideNumberThrottle(
             operateProperties.getZeebeOpensearch().getBatchSize());

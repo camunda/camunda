@@ -80,7 +80,7 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   }
 
   @PostConstruct
-  private void postConstruct() {
+  public void postConstruct() {
     errorStrategy =
         new BackoffIdleStrategy(tasklistProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
 

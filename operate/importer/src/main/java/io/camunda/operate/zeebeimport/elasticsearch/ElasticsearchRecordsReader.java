@@ -135,7 +135,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   @PostConstruct
-  private void postConstruct() {
+  public void postConstruct() {
     batchSizeThrottle =
         new NumberThrottleable.DivideNumberThrottle(
             operateProperties.getZeebeElasticsearch().getBatchSize());
