@@ -5305,7 +5305,6 @@ components:
           format: int32
           description: The priority of the task.
           minimum: 0
-          default: 50
           maximum: 100
           nullable: true
     JobUpdateRequest:
