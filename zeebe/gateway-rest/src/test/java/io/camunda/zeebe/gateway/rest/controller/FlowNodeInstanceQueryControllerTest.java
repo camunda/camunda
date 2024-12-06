@@ -27,7 +27,6 @@ import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItems;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -143,9 +142,8 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
     final var processCacheItem = mock(ProcessCacheItem.class);
     when(processCacheItem.getFlowNodeName(any())).thenReturn("flowNodeName");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
-    when(processDefinitionMap.get(any())).thenReturn(processCacheItem);
-    when(processCache.getFlowNodeNames(any()))
-        .thenReturn(new ProcessCacheItems(processDefinitionMap));
+    when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
+    when(processCache.getFlowNodeNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
