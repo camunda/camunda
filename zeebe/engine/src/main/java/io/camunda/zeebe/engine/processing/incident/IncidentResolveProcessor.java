@@ -158,7 +158,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
         .map(
             commandIntent -> {
               failedRecord.wrap(elementInstance.getValue());
-              return new IncidentRecordWrapper(elementInstanceKey, commandIntent, failedRecord);
+              return new IncidentRecordWrapper<ProcessInstanceRecord>(
+                  elementInstanceKey, commandIntent, failedRecord);
             });
   }
 
