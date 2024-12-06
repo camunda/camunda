@@ -36,7 +36,7 @@ services:
       - /var/tmp:/var/tmp
   optimize:
     container_name: optimize
-    image: registry.camunda.cloud/team-optimize/optimize:${OPTIMIZE_IMAGE_TAG:-latest}
+    image: registry.camunda.cloud/team-optimize/optimize:${OPTIMIZE_IMAGE_TAG:-8-latest}
     environment:
       - TZ=Europe/Berlin
       - OPTIMIZE_API_ACCESS_TOKEN=secret
