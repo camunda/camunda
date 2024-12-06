@@ -16,8 +16,11 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
+import io.camunda.tasklist.zeebe.ImportValueType;
+import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.tasklist.zeebeimport.os.RecordsReaderOpenSearch;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
@@ -33,12 +36,15 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import org.awaitility.Awaitility;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -50,6 +56,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   private static final OpensearchExporter EXPORTER = new OpensearchExporter();
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
+
   @Autowired protected ZeebeImporter zeebeImporter;
 
   @Autowired
@@ -300,6 +307,80 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
               assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+            });
+  }
+
+  @Test
+  public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    EXPORTER.export(record);
+    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+
+    zeebeImporter.performOneRoundOfImport();
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+
+    // when
+    // simulates restart of zeebe importer by restarting all the record readers
+    Arrays.stream(ImportValueType.values())
+        .forEach(
+            type -> {
+              final var reader =
+                  beanFactory.getBean(
+                      RecordsReaderOpenSearch.class,
+                      1,
+                      type,
+                      tasklistProperties.getImporter().getQueueSize());
+              reader.postConstruct();
+            });
+
+    // then
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderOpenSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest.Builder()
+                      .size(100)
+                      .index(importPositionIndex.getFullQualifiedName())
+                      .build();
+              final var documents =
+                  openSearchClient.search(searchRequest, ImportPositionEntity.class);
+
+              // all initial import position documents created for each record reader
+              return documents.hits().hits().size()
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
+  private void assertImportPositionMatchesRecord(
+      final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var req =
+                  new GetRequest.Builder()
+                      .index(importPositionIndex.getFullQualifiedName())
+                      .id(partitionId + "-" + type.getAliasTemplate())
+                      .build();
+              final var importPositionDoc = openSearchClient.get(req, ImportPositionEntity.class);
+
+              if (importPositionDoc.source() == null) {
+                return;
+              }
+
+              assertThat(importPositionDoc.source().getPosition()).isEqualTo(record.getPosition());
             });
   }
 
