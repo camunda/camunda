@@ -11,6 +11,8 @@ public class SecurityConfiguration {
 
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
 
+  private InitializationConfiguration initialization = new InitializationConfiguration();
+
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
 
   public AuthorizationsConfiguration getAuthorizations() {
@@ -19,6 +21,14 @@ public class SecurityConfiguration {
 
   public void setAuthorizations(final AuthorizationsConfiguration authorizations) {
     this.authorizations = authorizations;
+  }
+
+  public InitializationConfiguration getInitialization() {
+    return initialization;
+  }
+
+  public void setInitialization(final InitializationConfiguration initialization) {
+    this.initialization = initialization;
   }
 
   public MultiTenancyConfiguration getMultiTenancy() {
