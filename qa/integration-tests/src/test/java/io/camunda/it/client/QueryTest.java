@@ -58,6 +58,16 @@ public class QueryTest {
         .join();
   }
 
+  public static DeploymentEvent deployResourceForTenant(
+      final ZeebeClient zeebeClient, final String resourceName, final String tenantId) {
+    return zeebeClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath(resourceName)
+        .tenantId(tenantId)
+        .send()
+        .join();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final ZeebeClient zeebeClient, final String bpmnProcessId) {
     return startProcessInstance(zeebeClient, bpmnProcessId, null);

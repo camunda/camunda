@@ -362,4 +362,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public String getElasticSearchHostAddress() {
     return esContainer.getHttpHostAddress();
   }
+
+  public TestStandaloneCamunda withMultiTenancyEnabled() {
+    return withSecurityConfig(securityConfig -> securityConfig.getMultiTenancy().setEnabled(true));
+  }
 }

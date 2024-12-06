@@ -12,6 +12,8 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -85,6 +87,22 @@ public class AuthorizationsUtil {
     return userCreateResponse.getUserKey();
   }
 
+  public long createTenant(final String tenantId, final String tenantName, final long... userKeys) {
+    final long tenantKey =
+        client
+            .newCreateTenantCommand()
+            .tenantId(tenantId)
+            .name(tenantName)
+            .send()
+            .join()
+            .getTenantKey();
+    for (final long userKey : userKeys) {
+      client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
+    }
+    awaitTenantExistsInElasticsearch(tenantId);
+    return tenantKey;
+  }
+
   public ZeebeClient createClient(final String username, final String password) {
     return createClient(gateway, username, password);
   }
@@ -122,13 +140,9 @@ public class AuthorizationsUtil {
   }
 
   public void awaitUserExistsInElasticsearch(final String username) {
-    final HttpRequest request;
-    try {
-      request =
-          HttpRequest.newBuilder()
-              .POST(
-                  BodyPublishers.ofString(
-                      """
+    awaitEntityExistsInElasticsearch(
+        new UserIndex("", true),
+        """
                   {
                     "query": {
                       "match": {
@@ -136,12 +150,34 @@ public class AuthorizationsUtil {
                       }
                     }
                   }"""
-                          .formatted(username)))
+            .formatted(username));
+  }
+
+  public void awaitTenantExistsInElasticsearch(final String tenantId) {
+    awaitEntityExistsInElasticsearch(
+        new TenantIndex("", true),
+        """
+                  {
+                    "query": {
+                      "match": {
+                        "tenantId": "%s"
+                      }
+                    }
+                  }"""
+            .formatted(tenantId));
+  }
+
+  public void awaitEntityExistsInElasticsearch(
+      final IndexDescriptor indexDescriptor, final String query) {
+    final HttpRequest request;
+    try {
+      request =
+          HttpRequest.newBuilder()
+              .POST(BodyPublishers.ofString(query))
               .uri(
                   new URI(
                       "http://%s/%s/_count/"
-                          .formatted(
-                              elasticsearchUrl, new UserIndex("", true).getFullQualifiedName())))
+                          .formatted(elasticsearchUrl, indexDescriptor.getFullQualifiedName())))
               .header("Content-Type", "application/json")
               .build();
     } catch (final URISyntaxException e) {
@@ -153,9 +189,9 @@ public class AuthorizationsUtil {
         .until(
             () -> {
               final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
-              final var userExistsResponse =
-                  OBJECT_MAPPER.readValue(response.body(), UserExistsResponse.class);
-              return userExistsResponse.count > 0;
+              final var entityExistsResponse =
+                  OBJECT_MAPPER.readValue(response.body(), EntityExistsResponse.class);
+              return entityExistsResponse.count > 0;
             });
   }
 
@@ -167,5 +203,5 @@ public class AuthorizationsUtil {
       ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private record UserExistsResponse(int count) {}
+  private record EntityExistsResponse(int count) {}
 }
