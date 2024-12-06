@@ -154,6 +154,36 @@ public class FormDeploymentTest {
   }
 
   @Test
+  public void shouldSetInitialVersionIfContentDiffersForSameName() {
+    // given
+    final var formResource1 = readResource(TEST_FORM_1);
+    final var formResource2 = readResource(TEST_FORM_2);
+    final var deploymentEvent1 =
+        engine.deployment().withJsonResource(formResource1, "test-form.form").deploy();
+
+    // when
+    final var deploymentEvent2 =
+        engine.deployment().withJsonResource(formResource2, "test-form.form").deploy();
+
+    // then
+    assertThat(deploymentEvent1.getValue().getFormMetadata())
+        .extracting(FormMetadataValue::getVersion)
+        .describedAs("Expect that the Form version is 1")
+        .containsExactly(1);
+
+    assertThat(deploymentEvent2.getValue().getFormMetadata())
+        .extracting(FormMetadataValue::getVersion)
+        .describedAs("Expect that the Form version is 1")
+        .containsExactly(1);
+
+    assertThat(RecordingExporter.formRecords().limit(2))
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(FormMetadataValue::getFormId, FormMetadataValue::getVersion)
+        .contains(tuple(TEST_FORM_1_ID, 1), tuple(TEST_FORM_2_ID, 1));
+  }
+
+  @Test
   public void shouldIncreaseVersionIfResourceNameDiffers() {
     // given
     final var formResource = readResource(TEST_FORM_1);
