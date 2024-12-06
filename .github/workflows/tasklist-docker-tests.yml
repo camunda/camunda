@@ -54,7 +54,7 @@ jobs:
           dockerfile: tasklist.Dockerfile
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@33b70ff01a68d09421ade33939735ec78e015df2
+        uses: hashicorp/vault-action@c46b8b88227585d3999accc9441c5810fe186a84
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
