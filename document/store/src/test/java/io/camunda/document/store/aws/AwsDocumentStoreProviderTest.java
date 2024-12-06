@@ -30,7 +30,7 @@ public class AwsDocumentStoreProviderTest {
 
       // this mock is used to bypass the auto config of S3Client.create()
       mockedFactory
-          .when(() -> AwsDocumentStoreFactory.create(bucketName, bucketTtl))
+          .when(() -> AwsDocumentStoreFactory.create(bucketName, bucketTtl, ""))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -84,5 +84,27 @@ public class AwsDocumentStoreProviderTest {
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'aws': 'BUCKET_TTL must be a number'");
+  }
+
+  @Test
+  public void shouldThrowIfBucketPathIsInvalid() {
+    // given
+
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucketName");
+    configuration.properties().put("BUCKET_TTL", "30");
+    configuration.properties().put("BUCKET_PATH", "test\\path");
+
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThrows(
+            IllegalArgumentException.class, () -> provider.createDocumentStore(configuration));
+    assertThat(ex.getMessage())
+        .isEqualTo(
+            "Failed to configure document store with id 'aws': 'BUCKET_PATH is invalid. Must not contain \\ character'");
   }
 }
