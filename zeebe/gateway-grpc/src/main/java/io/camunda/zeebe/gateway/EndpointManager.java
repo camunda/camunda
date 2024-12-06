@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
@@ -88,13 +88,13 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final MultiTenancyCfg multiTenancy;
+  private final MultiTenancyConfiguration multiTenancy;
 
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final MultiTenancyCfg multiTenancy) {
+      final MultiTenancyConfiguration multiTenancy) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;

@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -84,7 +85,13 @@ class UnavailableBrokersTest {
     brokerClient.start().forEach(ActorFuture::join);
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
-    gateway = new Gateway(config, brokerClient, actorScheduler, jobStreamClient.streamer());
+    gateway =
+        new Gateway(
+            config,
+            new SecurityConfiguration(),
+            brokerClient,
+            actorScheduler,
+            jobStreamClient.streamer());
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());

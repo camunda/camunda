@@ -217,9 +217,9 @@ public class MultiTenancyOverIdentityIT {
     ZEEBE
         .withGatewayConfig(
             gateway -> {
-              gateway.getMultiTenancy().setEnabled(true);
               gateway.getSecurity().getAuthentication().setMode(AuthMode.IDENTITY);
             })
+        .withSecurityConfig(security -> security.getMultiTenancy().setEnabled(true))
         .withProperty(
             "camunda.identity.baseUrl",
             "http://%s:%d".formatted(IDENTITY.getHost(), IDENTITY.getMappedPort(8080)))

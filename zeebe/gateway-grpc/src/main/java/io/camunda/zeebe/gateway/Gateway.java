@@ -11,6 +11,8 @@ import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 
 import com.google.rpc.Code;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
@@ -18,7 +20,6 @@ import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -87,6 +88,7 @@ public final class Gateway implements CloseableSilently {
 
   private final GatewayCfg gatewayCfg;
   private final IdentityConfiguration identityCfg;
+  private final SecurityConfiguration securityConfiguration;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -99,6 +101,7 @@ public final class Gateway implements CloseableSilently {
   public Gateway(
       final GatewayCfg gatewayCfg,
       final IdentityConfiguration identityCfg,
+      final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
@@ -106,6 +109,7 @@ public final class Gateway implements CloseableSilently {
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
         identityCfg,
+        securityConfiguration,
         brokerClient,
         actorSchedulingService,
         jobStreamer);
@@ -113,22 +117,26 @@ public final class Gateway implements CloseableSilently {
 
   public Gateway(
       final GatewayCfg gatewayCfg,
+      final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
-    this(gatewayCfg, null, brokerClient, actorSchedulingService, jobStreamer);
+    this(
+        gatewayCfg, null, securityConfiguration, brokerClient, actorSchedulingService, jobStreamer);
   }
 
   public Gateway(
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
       final IdentityConfiguration identityCfg,
+      final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.identityCfg = identityCfg;
+    this.securityConfiguration = securityConfiguration;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
@@ -197,7 +205,7 @@ public final class Gateway implements CloseableSilently {
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler) {
     final NetworkCfg network = gatewayCfg.getNetwork();
-    final MultiTenancyCfg multiTenancy = gatewayCfg.getMultiTenancy();
+    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
 
     final var serverBuilder = applyNetworkConfig(network);
     applyExecutorConfiguration(serverBuilder);
@@ -387,13 +395,15 @@ public final class Gateway implements CloseableSilently {
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
       final var zeebeIdentityCfg = gatewayCfg.getSecurity().getAuthentication().getIdentity();
       if (isZeebeIdentityConfigurationNotNull(zeebeIdentityCfg)) {
-        interceptors.add(new IdentityInterceptor(zeebeIdentityCfg, gatewayCfg.getMultiTenancy()));
+        interceptors.add(
+            new IdentityInterceptor(zeebeIdentityCfg, securityConfiguration.getMultiTenancy()));
         LOG.warn(
             "These Zeebe configuration properties for Camunda Identity are deprecated! Please use the "
                 + "corresponding Camunda Identity properties or the environment variables defined here: "
                 + "https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/");
       } else {
-        interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg.getMultiTenancy()));
+        interceptors.add(
+            new IdentityInterceptor(identityCfg, securityConfiguration.getMultiTenancy()));
       }
       interceptors.add(new AuthenticationInterceptor());
     }
