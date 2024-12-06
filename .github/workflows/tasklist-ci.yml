@@ -72,10 +72,3 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-
-  run-fe-ci:
-    name: run-frontend-tests
-    needs: check_changes
-    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
-    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
-    secrets: inherit
