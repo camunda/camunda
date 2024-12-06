@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
-import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionIdentifier;
+import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionRequirementsIdentifier;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
@@ -208,33 +208,21 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return form.getTenantId().equals(tenantId) && formDeploymentKey == deploymentKey;
         });
 
-    decisionState.forEachDecision(
-        new DecisionIdentifier(tenantId, deploymentKey),
-        decision -> {
-          final var decisionDeploymentKey = decision.getDeploymentKey();
-          if (decisionDeploymentKey == deploymentKey) {
-            final var decisionRequirements =
-                decisionState
-                    .findDecisionRequirementsByTenantAndKey(
-                        decision.getTenantId(), decision.getDecisionRequirementsKey())
-                    .orElseThrow(
-                        () ->
-                            new IllegalStateException(
-                                String.format(
-                                    "Expected to find decision requirements with key %d, but none was found",
-                                    decision.getDecisionRequirementsKey())));
-
-            final var allDecisions =
-                decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
-                    decision.getTenantId(), decision.getDecisionRequirementsKey());
-
+    decisionState.forEachDecisionRequirements(
+        new DecisionRequirementsIdentifier(tenantId, deploymentKey),
+        decisionRequirements -> {
+          final var decisions =
+              decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+                  decisionRequirements.getTenantId(),
+                  decisionRequirements.getDecisionRequirementsKey());
+          if (decisions.stream()
+              .anyMatch(decision -> decision.getDeploymentKey() == deploymentKey)) {
             resources.add(
                 new DecisionRequirementsResource(
-                    deploymentKey,
-                    decisionRequirements.getPersistedDecisionRequirements(),
-                    allDecisions));
+                    deploymentKey, decisionRequirements.copy(), decisions));
+            return true;
           }
-          return decision.getTenantId().equals(tenantId) && decisionDeploymentKey == deploymentKey;
+          return decisionRequirements.getTenantId().equals(tenantId);
         });
 
     return resources;
