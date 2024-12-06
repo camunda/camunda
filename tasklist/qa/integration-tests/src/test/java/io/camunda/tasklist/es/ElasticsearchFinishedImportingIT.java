@@ -17,6 +17,7 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
 import io.camunda.tasklist.zeebe.ImportValueType;
+import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import io.camunda.tasklist.zeebeimport.es.RecordsReaderElasticSearch;
@@ -346,6 +347,28 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
 
               assertThat(importPositionDoc.getSourceAsMap().get("position"))
                   .isEqualTo(record.getPosition());
+            });
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderElasticSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = tasklistEsClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
             });
   }
 

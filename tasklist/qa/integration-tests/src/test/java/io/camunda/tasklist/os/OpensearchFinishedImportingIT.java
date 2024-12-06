@@ -17,6 +17,7 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
 import io.camunda.tasklist.zeebe.ImportValueType;
+import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import io.camunda.tasklist.zeebeimport.os.RecordsReaderOpenSearch;
@@ -43,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -335,6 +337,30 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
     // then
     assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderOpenSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest.Builder()
+                      .size(100)
+                      .index(importPositionIndex.getFullQualifiedName())
+                      .build();
+              final var documents =
+                  openSearchClient.search(searchRequest, ImportPositionEntity.class);
+
+              // all initial import position documents created for each record reader
+              return documents.hits().hits().size()
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
   }
 
   private void assertImportPositionMatchesRecord(

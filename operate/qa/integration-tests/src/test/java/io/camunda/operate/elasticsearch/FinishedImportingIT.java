@@ -333,6 +333,28 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
   }
 
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(ElasticsearchRecordsReader.class::cast)
+        .forEach(ElasticsearchRecordsReader::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     Awaitility.await()
