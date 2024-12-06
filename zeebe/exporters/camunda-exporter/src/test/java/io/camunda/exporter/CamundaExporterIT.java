@@ -33,7 +33,6 @@ import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -522,7 +521,7 @@ final class CamundaExporterIT {
       // when
 
       // adds a not complete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity(ImportValueType.DECISION, false, clientAdapter);
+      indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
 
       controller.runScheduledTasks(Duration.ofMinutes(1));
@@ -561,12 +560,6 @@ final class CamundaExporterIT {
       camundaExporter.configure(context);
       camundaExporter.open(controller);
 
-      // mark all import position documents as completed which signals all record readers as
-      // completed
-      for (final var type : ImportValueType.values()) {
-        indexImportPositionEntity(type, true, clientAdapter);
-      }
-
       controller.runScheduledTasks(Duration.ofMinutes(1));
 
       // when
@@ -596,12 +589,12 @@ final class CamundaExporterIT {
     }
 
     private void indexImportPositionEntity(
-        final ImportValueType type, final boolean completed, final SearchClientAdapter client)
+        final String aliasName, final boolean completed, final SearchClientAdapter client)
         throws IOException {
       final var entity =
           new ImportPositionEntity()
               .setPartitionId(partitionId)
-              .setAliasName(type.getAliasTemplate())
+              .setAliasName(aliasName)
               .setCompleted(completed);
 
       client.index(entity.getId(), importPositionIndexName, entity);

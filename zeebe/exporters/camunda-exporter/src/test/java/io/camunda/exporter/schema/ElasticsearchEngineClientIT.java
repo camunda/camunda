@@ -19,18 +19,17 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -347,9 +346,7 @@ public class ElasticsearchEngineClientIT {
       elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
 
       final var decisionEntity =
-          new ImportPositionEntity()
-              .setPartitionId(partitionId)
-              .setAliasName(ImportValueType.DECISION.getAliasTemplate());
+          new ImportPositionEntity().setPartitionId(partitionId).setAliasName("decision");
 
       final var updateRequest =
           new UpdateRequest.Builder<>()
@@ -377,13 +374,13 @@ public class ElasticsearchEngineClientIT {
     private BulkRequest createImportPositionDocuments(
         final int partitionId, final IndexDescriptor importPositionIndex) {
       final BulkRequest.Builder br = new BulkRequest.Builder();
-      Arrays.stream(ImportValueType.values())
+      Stream.of("process-instance", "decision", "job")
           .map(
               type ->
                   new ImportPositionEntity()
                       .setCompleted(true)
                       .setPartitionId(partitionId)
-                      .setAliasName(type.getAliasTemplate()))
+                      .setAliasName(type))
           .forEach(
               entity -> {
                 br.operations(
