@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContextInitializer;
@@ -28,6 +30,9 @@ import org.springframework.http.client.ReactorResourceFactory;
 
 public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     implements TestApplication<T> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
+
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
@@ -82,6 +87,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
       reactorResourceFactory.afterPropertiesSet();
 
       springContext = createSpringBuilder().run(commandLineArgs());
+
+      LOGGER.info("Started TestSpringApplication ...");
+      LOGGER.info("-> Server / Rest Port: {}", restPort());
+      LOGGER.info("-> Monitoring Port: {}", monitoringPort());
+      LOGGER.info("-> Additional Profiles: {}", additionalProfiles);
+      LOGGER.info("-> Secondary Database Type: {}", databaseType());
     }
 
     return self();
@@ -187,6 +198,10 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     if (!propertyOverrides.containsKey(key)) {
       propertyOverrides.put(key, value);
     }
+  }
+
+  private String databaseType() {
+    return property("camunda.database.type", String.class, "es");
   }
 
   private int monitoringPort() {
