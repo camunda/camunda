@@ -241,7 +241,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                   groupingBy(
                       si -> {
                         final Metadata metadata =
-                            Metadata.fromMetadataES(si.metadata(), esClient._jsonpMapper());
+                            MetadataMarshaller.fromMetadata(si.metadata(), esClient._jsonpMapper());
                         Long backupId = metadata.backupId();
                         // backward compatibility with v. 8.1
                         if (backupId == null) {
@@ -397,7 +397,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final var firstSnapshot = snapshots.getFirst();
     final Metadata metadata =
-        Metadata.fromMetadataES(firstSnapshot.metadata(), esClient._jsonpMapper());
+        MetadataMarshaller.fromMetadata(firstSnapshot.metadata(), esClient._jsonpMapper());
     final Integer expectedSnapshotsCount = metadata.partCount();
 
     if (snapshots.size() == expectedSnapshotsCount

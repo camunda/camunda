@@ -164,7 +164,8 @@ public class ElasticsearchBackupRepositoryTest {
     // Set up Snapshot client
     when(esClient.snapshot()).thenReturn(snapshotClient);
     // Set up Snapshot details
-    final Map<String, JsonData> metadata = new Metadata(1L, "1", 1, 1).asJsonES(null);
+    final Map<String, JsonData> metadata =
+        MetadataMarshaller.asJson(new Metadata(1L, "1", 1, 1), null);
     when(firstSnapshotInfo.metadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshot()).thenReturn("snapshot-name");
     //    when(firstSnapshotInfo.uuid()).thenReturn("uuid");
@@ -193,7 +194,8 @@ public class ElasticsearchBackupRepositoryTest {
     when(backupProps.incompleteCheckTimeoutInSeconds())
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up first Snapshot details
-    final Map<String, JsonData> metadata = new Metadata(1L, "1", 1, 3).asJsonES(null);
+    final Map<String, JsonData> metadata =
+        MetadataMarshaller.asJson(new Metadata(1L, "1", 1, 3), null);
     when(firstSnapshotInfo.metadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshot()).thenReturn("snapshot-name");
     //    when(firstSnapshotInfo.uuid()).thenReturn("uuid");
@@ -231,7 +233,8 @@ public class ElasticsearchBackupRepositoryTest {
     when(backupProps.incompleteCheckTimeoutInSeconds())
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up first Snapshot details
-    final Map<String, JsonData> metadata = new Metadata(1L, "1", 1, 3).asJsonES(null);
+    final Map<String, JsonData> metadata =
+        MetadataMarshaller.asJson(new Metadata(1L, "1", 1, 3), null);
     when(firstSnapshotInfo.metadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshot()).thenReturn("snapshot-name");
     //    when(firstSnapshotInfo.uuid()).thenReturn("uuid");
@@ -271,7 +274,8 @@ public class ElasticsearchBackupRepositoryTest {
     when(backupProps.incompleteCheckTimeoutInSeconds())
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up Snapshot details
-    final Map<String, JsonData> metadata = new Metadata(1L, "1", 1, 3).asJsonES(null);
+    final Map<String, JsonData> metadata =
+        MetadataMarshaller.asJson(new Metadata(1L, "1", 1, 3), null);
     when(firstSnapshotInfo.metadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshot()).thenReturn("snapshot-name");
     //    when(firstSnapshotInfo.uuid()).thenReturn("uuid-first");
