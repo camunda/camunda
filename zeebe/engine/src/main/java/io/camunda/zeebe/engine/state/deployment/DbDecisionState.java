@@ -347,26 +347,6 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
-  public void forEachDecision(
-      final DecisionIdentifier previousDecision, final PersistedDecisionVisitor visitor) {
-    if (previousDecision == null) {
-      decisionsByKey.whileTrue((key, value) -> visitor.visit(value));
-    } else {
-      tenantIdKey.wrapString(previousDecision.tenantId());
-      dbDecisionKey.wrapLong(previousDecision.decisionKey());
-      decisionsByKey.whileTrue(
-          tenantAwareDecisionKey,
-          (key, value) -> {
-            if (key.tenantKey().toString().equals(previousDecision.tenantId())
-                && key.wrappedKey().getValue() == previousDecision.decisionKey()) {
-              return true;
-            }
-            return visitor.visit(value);
-          });
-    }
-  }
-
-  @Override
   public void clearCache() {
     drgCache.invalidateAll();
   }
