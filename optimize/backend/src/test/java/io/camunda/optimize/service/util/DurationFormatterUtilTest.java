@@ -10,6 +10,9 @@ package io.camunda.optimize.service.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class DurationFormatterUtilTest {
 
@@ -26,23 +29,11 @@ public class DurationFormatterUtilTest {
     assertThat(result).isEqualTo("1mo 2wks 2d 7h 6min 40s");
   }
 
-  @Test
-  void shouldReturnDashForZeroOrNegativeDuration() {
-    // given
-    long durationInMs = 0;
-
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1000})
+  void shouldReturnDashForZeroOrNegativeDuration(final int durationInMs) {
     // when
     String result = DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
-
-    // then
-    assertThat(result).isEqualTo("-");
-
-    // given
-    durationInMs = -1000;
-
-    // when
-    result = DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
-
     // then
     assertThat(result).isEqualTo("-");
   }
@@ -80,25 +71,16 @@ public class DurationFormatterUtilTest {
     assertThat(result).isEqualTo("1yrs 1mo 1wks 1d");
   }
 
-  @Test
-  void shouldFormatDurationStringCorrectly() {
+  @ParameterizedTest
+  @CsvSource({"15,15min", "0,''"})
+  void shouldFormatDurationStringCorrectly(final int duration, final String expected) {
     // given
     final String unitString = "min";
-    long duration = 15;
 
     // when
     String result = DurationFormatterUtil.formatDuration(unitString, duration);
 
     // then
-    assertThat(result).isEqualTo("15min");
-
-    // given
-    duration = 0;
-
-    // when
-    result = DurationFormatterUtil.formatDuration(unitString, duration);
-
-    // then
-    assertThat(result).isEmpty();
+    assertThat(result).isEqualTo(expected);
   }
 }
