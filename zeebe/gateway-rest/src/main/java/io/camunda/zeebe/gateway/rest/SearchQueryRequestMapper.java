@@ -11,7 +11,6 @@ import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToO
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_ORDER;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -70,6 +69,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQuerySortRequest.OrderEnum;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -882,7 +882,6 @@ public final class SearchQueryRequestMapper {
       final var builder = builderSupplier.get();
       for (final SearchQuerySortRequest sort : sorting) {
         validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
-        validationErrors.addAll(applySortOrder(sort.getOrder(), builder));
       }
 
       return validationErrors.isEmpty()
@@ -917,15 +916,12 @@ public final class SearchQueryRequestMapper {
             queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());
   }
 
-  private static List<String> applySortOrder(
-      final String order, final SortOption.AbstractBuilder<?> builder) {
-    final List<String> validationErrors = new ArrayList<>();
-    switch (order.toLowerCase()) {
-      case "asc" -> builder.asc();
+  private static void applySortOrder(
+      final OrderEnum order, final SortOption.AbstractBuilder<?> builder) {
+    switch (order.getValue()) {
       case "desc" -> builder.desc();
-      default -> validationErrors.add(ERROR_UNKNOWN_SORT_ORDER.formatted(order));
+      default -> builder.asc();
     }
-    return validationErrors;
   }
 
   private static Object[] toArrayOrNull(final List<Object> values) {
