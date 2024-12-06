@@ -58,11 +58,13 @@ public class AwsDocumentStore implements DocumentStore {
   private final ExecutorService executor;
   private final S3Presigner preSigner;
   private final Long defaultTTL;
+  private final String bucketPath;
 
-  public AwsDocumentStore(final String bucketName, final Long defaultTTL) {
+  public AwsDocumentStore(final String bucketName, final Long defaultTTL, final String bucketPath) {
     this(
         bucketName,
         defaultTTL,
+        bucketPath,
         S3Client.create(),
         Executors.newSingleThreadExecutor(),
         S3Presigner.create());
@@ -71,11 +73,13 @@ public class AwsDocumentStore implements DocumentStore {
   public AwsDocumentStore(
       final String bucketName,
       final Long defaultTTL,
+      final String bucketPath,
       final S3Client client,
       final ExecutorService executor,
       final S3Presigner preSigner) {
     this.bucketName = bucketName;
     this.defaultTTL = defaultTTL;
+    this.bucketPath = bucketPath;
     this.client = client;
     this.executor = executor;
     this.preSigner = preSigner;
@@ -125,7 +129,7 @@ public class AwsDocumentStore implements DocumentStore {
   private Either<DocumentError, InputStream> getDocumentInternal(final String documentId) {
     try {
       final GetObjectRequest getObjectRequest =
-          GetObjectRequest.builder().key(documentId).bucket(bucketName).build();
+          GetObjectRequest.builder().key(resolveKey(documentId)).bucket(bucketName).build();
 
       final HeadObjectResponse documentInfo = getDocumentInfo(documentId);
       if (documentInfo != null && isDocumentExpired(documentInfo.metadata(), documentId)) {
@@ -143,7 +147,8 @@ public class AwsDocumentStore implements DocumentStore {
 
   private Either<DocumentError, Void> deleteDocumentInternal(final String documentId) {
     try {
-      client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(documentId).build());
+      client.deleteObject(
+          DeleteObjectRequest.builder().bucket(bucketName).key(resolveKey(documentId)).build());
 
       return Either.right(null);
     } catch (final Exception e) {
@@ -164,7 +169,7 @@ public class AwsDocumentStore implements DocumentStore {
       }
 
       final GetObjectRequest objectRequest =
-          GetObjectRequest.builder().bucket(bucketName).key(documentId).build();
+          GetObjectRequest.builder().bucket(bucketName).key(resolveKey(documentId)).build();
 
       final GetObjectPresignRequest preSignRequest =
           GetObjectPresignRequest.builder()
@@ -187,7 +192,7 @@ public class AwsDocumentStore implements DocumentStore {
   private HeadObjectResponse getDocumentInfo(final String documentId) {
     try {
       final HeadObjectRequest headObjectRequest =
-          HeadObjectRequest.builder().bucket(bucketName).key(documentId).build();
+          HeadObjectRequest.builder().bucket(bucketName).key(resolveKey(documentId)).build();
 
       return client.headObject(headObjectRequest);
     } catch (final S3Exception e) {
@@ -214,7 +219,7 @@ public class AwsDocumentStore implements DocumentStore {
       final DocumentCreationRequest request, final String documentId) {
     final PutObjectRequest putObjectRequest =
         PutObjectRequest.builder()
-            .key(documentId)
+            .key(resolveKey(documentId))
             .bucket(bucketName)
             .metadata(toS3MetaData(request.metadata()))
             .tagging(generateExpiryTag(request.metadata().expiresAt()))
@@ -275,5 +280,9 @@ public class AwsDocumentStore implements DocumentStore {
                 ? Collections.singletonList(NO_AUTO_DELETE_TAG)
                 : Collections.emptyList())
         .build();
+  }
+
+  private String resolveKey(final String documentId) {
+    return bucketPath + documentId;
   }
 }

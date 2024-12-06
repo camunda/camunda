@@ -8,7 +8,8 @@
 package io.camunda.document.store.aws;
 
 public class AwsDocumentStoreFactory {
-  public static AwsDocumentStore create(final String bucketName, final Long defaultTTL) {
-    return new AwsDocumentStore(bucketName, defaultTTL);
+  public static AwsDocumentStore create(
+      final String bucketName, final Long defaultTTL, final String bucketPath) {
+    return new AwsDocumentStore(bucketName, defaultTTL, bucketPath);
   }
 }
