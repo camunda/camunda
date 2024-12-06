@@ -105,11 +105,8 @@ public class PermissionsBehavior {
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
       final var currentResourceIdentifiers =
-          authCheckBehavior.getAllAuthorizedResourceIdentifiers(
-              record.getOwnerKey(),
-              record.getOwnerType(),
-              record.getResourceType(),
-              permission.getPermissionType());
+          authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+              record.getOwnerKey(), record.getResourceType(), permission.getPermissionType());
 
       final var removedResourceIds = permission.getResourceIds();
       if (!currentResourceIdentifiers.containsAll(removedResourceIds)) {
