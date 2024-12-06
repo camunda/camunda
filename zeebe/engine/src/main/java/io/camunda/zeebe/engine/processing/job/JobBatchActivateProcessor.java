@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
@@ -74,25 +75,48 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
-    if (isValid(record)) {
+    final var validationResult = isValid(record);
+    if (validationResult.isRight()) {
       activateJobs(record);
     } else {
-      rejectCommand(record);
+      rejectCommand(record, validationResult.getLeft());
     }
   }
 
-  private boolean isValid(final TypedRecord<JobBatchRecord> command) {
+  private Either<Rejection, Void> isValid(final TypedRecord<JobBatchRecord> command) {
     final var record = command.getValue();
-    // if all the provided tenantIds are not authorized, the command is rejected
     final var tenantIds = record.getTenantIds();
     final var authorizedTenantIds =
         new HashSet<>(authorizationCheckBehavior.getAuthorizedTenantIds(command));
+
     if (!authorizedTenantIds.containsAll(tenantIds)) {
-      return false;
+      return Either.left(
+          new Rejection(
+              RejectionType.UNAUTHORIZED,
+              "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
+                  .formatted(tenantIds, authorizedTenantIds)));
     }
-    return record.getMaxJobsToActivate() > 0
-        && record.getTimeout() > 0
-        && record.getTypeBuffer().capacity() > 0;
+    if (record.getMaxJobsToActivate() <= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to activate job batch with max jobs to activate to be greater than zero, but it was '%d'"
+                  .formatted(record.getMaxJobsToActivate())));
+    }
+    if (record.getTimeout() <= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to activate job batch with timeout to be greater than zero, but it was '%d'"
+                  .formatted(record.getTimeout())));
+    }
+    if (record.getTypeBuffer().capacity() <= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to activate job batch with type to be present, but it was blank"));
+    }
+    return Either.right(null);
   }
 
   private void activateJobs(final TypedRecord<JobBatchRecord> record) {
@@ -109,37 +133,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     activateJobBatch(record, value, jobBatchKey, activatedJobCountPerJobKind);
   }
 
-  private void rejectCommand(final TypedRecord<JobBatchRecord> record) {
-    final RejectionType rejectionType;
-    final String rejectionReason;
-    final JobBatchRecord value = record.getValue();
-    final var format = "Expected to activate job batch with %s to be %s, but it was %s";
-
-    if (value.getMaxJobsToActivate() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason =
-          String.format(
-              format,
-              "max jobs to activate",
-              "greater than zero",
-              String.format("'%d'", value.getMaxJobsToActivate()));
-    } else if (value.getTimeout() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason =
-          String.format(
-              format, "timeout", "greater than zero", String.format("'%d'", value.getTimeout()));
-    } else if (value.getTypeBuffer().capacity() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason = String.format(format, "type", "present", "blank");
-    } else {
-      rejectionType = RejectionType.UNAUTHORIZED;
-      rejectionReason =
-          "User is not authorized to activate jobs for tenants '%s'"
-              .formatted(value.getTenantIds());
-    }
-
-    rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
+  private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
+    rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
+    responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
   }
 
   private void activateJobBatch(
