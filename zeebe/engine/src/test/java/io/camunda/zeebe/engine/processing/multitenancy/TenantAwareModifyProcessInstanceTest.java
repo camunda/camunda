@@ -11,8 +11,10 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -23,7 +25,10 @@ import org.junit.rules.TestWatcher;
 
 public class TenantAwareModifyProcessInstanceTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -69,6 +74,64 @@ public class TenantAwareModifyProcessInstanceTest {
     assertThat(modified)
         .describedAs("Expect that modification was successful")
         .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+  }
+
+  @Test
+  public void shouldRejectModifyInstanceForUnauthorizedTenant() {
+    // given
+    final var userKey = ENGINE.user().newUser("username").create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE
+            .tenant()
+            .newTenant()
+            .withTenantId("another-tenant")
+            .create()
+            .getValue()
+            .getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("test"))
+                .endEvent()
+                .done())
+        .withTenantId("custom-tenant")
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
+
+    final var task =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("task")
+            .terminateElement(task.getKey())
+            .expectRejection()
+            .modify(userKey);
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to modify a process instance with key '%s', but no process instance was found"
+                .formatted(processInstanceKey));
   }
 
   @Test

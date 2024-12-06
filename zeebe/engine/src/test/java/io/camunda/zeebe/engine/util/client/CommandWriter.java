@@ -17,12 +17,25 @@ public interface CommandWriter {
   long writeCommand(
       final Intent intent, final UnifiedRecordValue recordValue, String... authorizedTenants);
 
+  long writeCommand(
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey,
+      String... authorizedTenants);
+
   long writeCommand(long key, Intent intent, UnifiedRecordValue recordValue);
 
   long writeCommand(
       final long key,
       final Intent intent,
       final UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
+
+  long writeCommand(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey,
       final String... authorizedTenants);
 
   long writeCommand(
@@ -42,5 +55,13 @@ public interface CommandWriter {
       long key,
       Intent intent,
       UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
+
+  long writeCommandOnPartition(
+      int partitionId,
+      long key,
+      Intent intent,
+      UnifiedRecordValue recordValue,
+      final long userKey,
       final String... authorizedTenants);
 }
