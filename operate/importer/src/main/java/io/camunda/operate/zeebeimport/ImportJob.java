@@ -150,15 +150,17 @@ public class ImportJob implements Callable<Boolean> {
   private boolean processOneIndexBatch(final ImportBatch subBatch) {
     try {
       final String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
-      final ImportBatchProcessor importBatchProcessor =
-          importBatchProcessorFactory.getImportBatchProcessor(version);
-      importBatchProcessor.performImport(subBatch);
 
       final var batchVersion = SemanticVersion.fromVersion(version);
 
-      if (batchVersion.getMajor() == 8 && batchVersion.getMinor() == 7) {
+      if (batchVersion.getMajor() == 8 && batchVersion.getMinor() >= 7) {
         recordsReaderHolder.addPartitionCompletedImporting(subBatch.getPartitionId());
+        return true;
       }
+
+      final ImportBatchProcessor importBatchProcessor =
+          importBatchProcessorFactory.getImportBatchProcessor(version);
+      importBatchProcessor.performImport(subBatch);
 
       return true;
     } catch (final Exception ex) {
