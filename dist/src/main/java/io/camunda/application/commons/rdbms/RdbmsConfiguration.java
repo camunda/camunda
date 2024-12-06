@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
@@ -22,6 +23,7 @@ import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
+import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
@@ -52,6 +54,11 @@ public class RdbmsConfiguration {
   @Bean
   public VariableReader variableRdbmsReader(final VariableMapper variableMapper) {
     return new VariableReader(variableMapper);
+  }
+
+  @Bean
+  public AuthorizationReader authorizationReader(final AuthorizationMapper authorizationMapper) {
+    return new AuthorizationReader(authorizationMapper);
   }
 
   @Bean
@@ -136,6 +143,7 @@ public class RdbmsConfiguration {
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableReader variableReader,
+      final AuthorizationReader authorizationReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -151,6 +159,7 @@ public class RdbmsConfiguration {
       final MappingReader mappingReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
+        authorizationReader,
         decisionDefinitionReader,
         decisionInstanceReader,
         decisionRequirementsReader,
