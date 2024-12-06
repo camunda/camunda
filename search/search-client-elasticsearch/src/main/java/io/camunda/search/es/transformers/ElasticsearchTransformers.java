@@ -13,6 +13,13 @@ import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
 import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.aggregation.SearchCardinalityAggregate;
 import io.camunda.search.clients.aggregation.SearchCardinalityAggregation;
+import io.camunda.search.clients.aggregation.SearchTermsAggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import io.camunda.search.clients.aggregation.SearchAggregation;
+import io.camunda.search.clients.aggregation.SearchCardinalityAggregate;
+import io.camunda.search.clients.aggregation.SearchCardinalityAggregation;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
@@ -103,15 +110,6 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchQueryRequest.class, new SearchRequestTransformer(mappers));
     mappers.put(SearchQueryResponse.class, new SearchResponseTransformer(mappers));
     mappers.put(SearchQueryHit.class, new SearchRequestTransformer(mappers));
-
-    // get request/response
-    mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
-    mappers.put(SearchGetResponse.class, new SearchGetResponseTransformer(mappers));
-
-    // write request/response
-    mappers.put(SearchIndexRequest.class, new SearchIndexRequestTransformer(mappers));
-    mappers.put(SearchDeleteRequest.class, new SearchDeleteRequestTransformer(mappers));
-    mappers.put(SearchWriteResponse.class, new SearchWriteResponseTransformer(mappers));
 
     // queries
     mappers.put(SearchQuery.class, new QueryTransformer(mappers));
