@@ -56,7 +56,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -106,7 +105,7 @@ public class TaskController extends ApiErrorController {
       })
   @PostMapping("search")
   public ResponseEntity<List<TaskSearchResponse>> searchTasks(
-      @RequestBody(required = false) TaskSearchRequest searchRequest) {
+      @RequestBody(required = false) final TaskSearchRequest searchRequest) {
 
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
@@ -163,7 +162,8 @@ public class TaskController extends ApiErrorController {
   }
 
   private void unsetBigVariableValuesIfNeeded(
-      VariableSearchResponse resp, Map<String, Boolean> variableNamesToReturnFullValue) {
+      final VariableSearchResponse resp,
+      final Map<String, Boolean> variableNamesToReturnFullValue) {
     final boolean returnFullValue =
         Optional.ofNullable(variableNamesToReturnFullValue.get(resp.getName())).orElse(false);
     if (resp.getIsValueTruncated() && !returnFullValue) {
@@ -202,7 +202,7 @@ public class TaskController extends ApiErrorController {
   @GetMapping("{taskId}")
   public ResponseEntity<TaskResponse> getTaskById(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
-          String taskId) {
+          final String taskId) {
     final var taskSupplier = getTaskSupplier(taskId);
     if (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier)) {
       return ResponseEntity.ok(taskMapper.toTaskResponse(taskSupplier.get()));
@@ -211,7 +211,7 @@ public class TaskController extends ApiErrorController {
     }
   }
 
-  private void checkTaskImplementation(LazySupplier<TaskDTO> taskSupplier) {
+  private void checkTaskImplementation(final LazySupplier<TaskDTO> taskSupplier) {
     if (taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER
         && userReader.getCurrentUser().isApiUser()) {
       final TaskDTO task = taskSupplier.get();
@@ -226,7 +226,7 @@ public class TaskController extends ApiErrorController {
     }
   }
 
-  private boolean hasAccessToTask(LazySupplier<TaskDTO> taskSupplier) {
+  private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
     final String userName = userReader.getCurrentUser().getUserId();
     final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
     final var task = taskSupplier.get();
@@ -286,11 +286,11 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/assign")
   public ResponseEntity<TaskResponse> assignTask(
-      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
-      @RequestBody(required = false) TaskAssignRequest assignRequest) {
+      @PathVariable @Parameter(description = "The ID of the task.", required = true)
+          final String taskId,
+      @RequestBody(required = false) final TaskAssignRequest assignRequest) {
     checkTaskImplementation(getTaskSupplier(taskId));
     final var safeAssignRequest = requireNonNullElse(assignRequest, new TaskAssignRequest());
     final var assignedTask =
@@ -324,11 +324,10 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/unassign")
   public ResponseEntity<TaskResponse> unassignTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
-          String taskId) {
+          final String taskId) {
     checkTaskImplementation(getTaskSupplier(taskId));
     final var unassignedTask = taskService.unassignTask(taskId);
     return ResponseEntity.ok(taskMapper.toTaskResponse(unassignedTask));
@@ -367,11 +366,11 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/complete")
   public ResponseEntity<TaskResponse> completeTask(
-      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
-      @RequestBody(required = false) TaskCompleteRequest taskCompleteRequest) {
+      @PathVariable @Parameter(description = "The ID of the task.", required = true)
+          final String taskId,
+      @RequestBody(required = false) final TaskCompleteRequest taskCompleteRequest) {
     final var variables =
         requireNonNullElse(taskCompleteRequest, new TaskCompleteRequest()).getVariables();
     final var taskSupplier = getTaskSupplier(taskId);
@@ -428,11 +427,11 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PostMapping("{taskId}/variables")
   public ResponseEntity<Void> saveDraftTaskVariables(
-      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
-      @RequestBody SaveVariablesRequest saveVariablesRequest) {
+      @PathVariable @Parameter(description = "The ID of the task.", required = true)
+          final String taskId,
+      @RequestBody final SaveVariablesRequest saveVariablesRequest) {
     if (!isUserRestrictionEnabled() || hasAccessToTask(getTaskSupplier(taskId))) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
     } else {
@@ -462,8 +461,9 @@ public class TaskController extends ApiErrorController {
       })
   @PostMapping("{taskId}/variables/search")
   public ResponseEntity<List<VariableSearchResponse>> searchTaskVariables(
-      @PathVariable @Parameter(description = "The ID of the task.", required = true) String taskId,
-      @RequestBody(required = false) VariablesSearchRequest variablesSearchRequest) {
+      @PathVariable @Parameter(description = "The ID of the task.", required = true)
+          final String taskId,
+      @RequestBody(required = false) final VariablesSearchRequest variablesSearchRequest) {
     final Map<String, Boolean> variableNamesToReturnFullValue;
     if (variablesSearchRequest != null) {
       if (CollectionUtils.isNotEmpty(variablesSearchRequest.getVariableNames())
@@ -495,7 +495,7 @@ public class TaskController extends ApiErrorController {
     return ResponseEntity.ok(variables);
   }
 
-  private LazySupplier<TaskDTO> getTaskSupplier(String taskId) {
+  private LazySupplier<TaskDTO> getTaskSupplier(final String taskId) {
     return LazySupplier.of(() -> taskService.getTask(taskId));
   }
 }

@@ -29,10 +29,6 @@ import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -52,9 +48,7 @@ public class TaskService {
 
   @Autowired private UserReader userReader;
 
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
+  @Autowired private TasklistServiceAdapter tasklistServiceAdapter;
 
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
@@ -173,16 +167,7 @@ public class TaskService {
     final String taskAssignee = determineTaskAssignee(assignee);
 
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        final AssignUserTaskResponse assigneeResponse =
-            zeebeClient
-                .newUserTaskAssignCommand(Long.parseLong(taskId))
-                .assignee(taskAssignee)
-                .send()
-                .join();
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+      tasklistServiceAdapter.assignUserTask(taskBefore, taskAssignee);
     }
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
@@ -210,24 +195,7 @@ public class TaskService {
 
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
-
-      try {
-        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-          // complete
-          CompleteJobCommandStep1 completeJobCommand =
-              zeebeClient.newCompleteCommand(Long.parseLong(taskId));
-          completeJobCommand = completeJobCommand.variables(variablesMap);
-          completeJobCommand.send().join();
-        } else {
-          zeebeClient
-              .newUserTaskCompleteCommand(Long.parseLong(taskId))
-              .variables(variablesMap)
-              .send()
-              .join();
-        }
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+      tasklistServiceAdapter.completeUserTask(task, variablesMap);
 
       // persist completion and variables
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
@@ -285,10 +253,10 @@ public class TaskService {
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
-        zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
-      } catch (final ClientException exception) {
+        tasklistServiceAdapter.unassignUserTask(taskEntity);
+      } catch (final Exception exception) {
         taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-        throw new TasklistRuntimeException(exception.getMessage());
+        throw exception;
       }
     }
     return TaskDTO.createFrom(taskEntity, objectMapper);

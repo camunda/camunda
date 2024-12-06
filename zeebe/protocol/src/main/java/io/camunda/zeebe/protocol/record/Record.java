@@ -103,6 +103,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    */
   Map<String, Object> getAuthorizations();
 
+  boolean isAnonymous();
+
   /**
    * A record version is an integer starting from 1. The version of a record is defined when it is
    * written. It allows different versions of the same record to be processed or applied
