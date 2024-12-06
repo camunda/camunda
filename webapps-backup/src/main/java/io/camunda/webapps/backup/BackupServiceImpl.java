@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,6 +43,8 @@ public class BackupServiceImpl implements BackupService {
 
   private final List<Prio5Backup> prio5BackupIndices;
 
+  private final List<Prio6Backup> prio6BackupIndices;
+
   private final BackupRepositoryProps backupProps;
 
   private final BackupRepository repository;
@@ -55,6 +58,7 @@ public class BackupServiceImpl implements BackupService {
       final List<Prio3Backup> prio3BackupTemplates,
       final List<Prio4Backup> prio4BackupTemplates,
       final List<Prio5Backup> prio5BackupIndices,
+      final List<Prio6Backup> prio6BackupIndices,
       final BackupRepositoryProps operateProperties,
       final BackupRepository repository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
@@ -63,6 +67,7 @@ public class BackupServiceImpl implements BackupService {
     this.prio3BackupTemplates = prio3BackupTemplates;
     this.prio4BackupTemplates = prio4BackupTemplates;
     this.prio5BackupIndices = prio5BackupIndices;
+    this.prio6BackupIndices = prio6BackupIndices;
     this.repository = repository;
     backupProps = operateProperties;
   }
@@ -151,7 +156,8 @@ public class BackupServiceImpl implements BackupService {
             fullQualifiedName(prio4BackupTemplates),
             // dated indices
             fullQualifiedNameWithMatcher(prio4BackupTemplates),
-            fullQualifiedName(prio5BackupIndices)
+            fullQualifiedName(prio5BackupIndices),
+            fullQualifiedName(prio6BackupIndices)
           };
     }
     return indexPatternsOrdered;
