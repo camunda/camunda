@@ -36,7 +36,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -86,10 +85,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private Either<Rejection, Void> isValid(final TypedRecord<JobBatchRecord> command) {
     final var record = command.getValue();
     final var tenantIds = record.getTenantIds();
-    final var authorizedTenantIds =
-        new HashSet<>(authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
-    if (!authorizedTenantIds.containsAll(tenantIds)) {
+    if (!authorizedTenantIds.isAuthorizedForTenants(tenantIds)) {
       return Either.left(
           new Rejection(
               RejectionType.UNAUTHORIZED,

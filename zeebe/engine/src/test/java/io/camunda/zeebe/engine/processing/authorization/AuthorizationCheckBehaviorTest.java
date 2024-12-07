@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.authorization;
 
+import static io.camunda.zeebe.auth.impl.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.impl.Authorization.AUTHORIZED_USER_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -257,7 +258,8 @@ public class AuthorizationCheckBehaviorTest {
     final var command = mockCommand(userKey);
 
     // when
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenantIds =
+        authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenants();
 
     // then
     assertThat(authorizedTenantIds).containsExactlyInAnyOrder(tenantId1, tenantId2);
@@ -269,7 +271,8 @@ public class AuthorizationCheckBehaviorTest {
     final var command = mock(TypedRecord.class);
 
     // when
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenantIds =
+        authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenants();
 
     // then
     assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -281,10 +284,30 @@ public class AuthorizationCheckBehaviorTest {
     final var command = mockCommand(1L);
 
     // when
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenantIds =
+        authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenants();
 
     // then
     assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldBeAuthorizedWhenAnonymousAuthenticationEnabled() {
+    // given
+    final var userKey = createUser();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(userKey, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithAnonymousUser(userKey);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
   }
 
   private long createUser() {
@@ -340,6 +363,13 @@ public class AuthorizationCheckBehaviorTest {
   private TypedRecord<?> mockCommand(final long userKey) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_USER_KEY, userKey));
+    when(command.hasRequestMetadata()).thenReturn(true);
+    return command;
+  }
+
+  private TypedRecord<?> mockCommandWithAnonymousUser(final long userKey) {
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_ANONYMOUS_USER, true));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }
