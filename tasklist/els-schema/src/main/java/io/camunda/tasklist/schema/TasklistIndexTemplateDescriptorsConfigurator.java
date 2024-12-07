@@ -48,7 +48,7 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
   }
 
-  @Bean
+  @Bean("tasklistSnapshotTaskVariableTemplate")
   public SnapshotTaskVariableTemplate snapshotTaskVariableTemplate() {
     return new SnapshotTaskVariableTemplate(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));

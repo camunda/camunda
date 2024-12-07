@@ -98,7 +98,9 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 

@@ -66,7 +66,7 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean
+  @Bean("tasklistSnapshotTaskVariableTemplate")
   public SnapshotTaskVariableTemplate snapshotTaskVariableTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
