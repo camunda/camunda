@@ -28,12 +28,12 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -61,7 +61,7 @@ class ProcessInternalControllerTest {
   @Mock private FormStore formStore;
   @Mock private ProcessService processService;
   @Mock private TasklistProperties tasklistProperties;
-  @Mock private IdentityAuthorizationService identityAuthorizationService;
+  @Mock private TasklistPermissionsService permissionsService;
   @Mock private TenantService tenantService;
 
   @InjectMocks private ProcessInternalController instance;
@@ -219,11 +219,11 @@ class ProcessInternalControllerTest {
               .setVersion(1)
               .setStartEventFormId("task")
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-      when(identityAuthorizationService.getProcessDefinitionsFromAuthorization())
+      when(permissionsService.getProcessDefinitionIdsWithCreateInstancePermission())
           .thenReturn(new ArrayList<>());
       when(processStore.getProcesses(
               query,
-              identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+              permissionsService.getProcessDefinitionIdsWithCreateInstancePermission(),
               null,
               null))
           .thenReturn(List.of(providedProcessEntity));

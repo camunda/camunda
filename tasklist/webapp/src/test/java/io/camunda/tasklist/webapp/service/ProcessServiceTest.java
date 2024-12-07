@@ -15,11 +15,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
@@ -29,7 +28,6 @@ import io.camunda.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.grpc.Status;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,8 +47,8 @@ public class ProcessServiceTest {
   @Mock private ZeebeClient zeebeClient;
 
   @Spy
-  private IdentityAuthorizationService identityAuthorizationService =
-      new IdentityAuthorizationServiceImpl();
+  private TasklistPermissionsService tasklistPermissionsService =
+      new TasklistPermissionsService(null, null, null);
 
   @InjectMocks private ProcessService instance;
 
@@ -66,7 +64,9 @@ public class ProcessServiceTest {
     final TenantService.AuthenticatedTenants authenticatedTenants =
         TenantService.AuthenticatedTenants.assignedTenants(tenantIds);
 
-    doReturn(true).when(identityAuthorizationService).isAllowedToStartProcess(processDefinitionKey);
+    doReturn(true)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
     when(tenantService.isMultiTenancyEnabled()).thenReturn(true);
     when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
 
@@ -85,7 +85,9 @@ public class ProcessServiceTest {
     tenantIds.add("TenantB");
     tenantIds.add("TenantC");
     when(tenantService.isMultiTenancyEnabled()).thenReturn(false);
-    doReturn(true).when(identityAuthorizationService).isAllowedToStartProcess(processDefinitionKey);
+    doReturn(true)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
 
     final ProcessInstanceEvent processInstanceEvent =
         mockZeebeCreateProcessInstance(processDefinitionKey);
@@ -134,9 +136,9 @@ public class ProcessServiceTest {
   void startProcessInstanceMissingResourceBasedAuth() {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
-    doReturn(List.of("otherProcessDefinitionKey"))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+    doReturn(false)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
 
     assertThatThrownBy(
             () -> instance.startProcessInstance(processDefinitionKey, variableInputDTOList, ""))
@@ -149,9 +151,9 @@ public class ProcessServiceTest {
     final String processDefinitionKey = "someKey";
 
     // When
-    doReturn(List.of(processDefinitionKey))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+    doReturn(true)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
 
     mockZeebeCreateProcessInstanceNotFound(processDefinitionKey);
 
@@ -165,9 +167,9 @@ public class ProcessServiceTest {
   void startProcessInstanceMissingResourceBasedAuthCaseHasNoPermissionOnAnyResource() {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
-    doReturn(Collections.emptyList())
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+    doReturn(false)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
 
     assertThatThrownBy(
             () -> instance.startProcessInstance(processDefinitionKey, variableInputDTOList, ""))
@@ -178,9 +180,9 @@ public class ProcessServiceTest {
   void startProcessInstanceWithResourceBasedAuth() {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
-    doReturn(List.of("processDefinitionKey"))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+    doReturn(true)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
 
     final ProcessInstanceEvent processInstanceEvent =
         mockZeebeCreateProcessInstance(processDefinitionKey);
@@ -195,9 +197,9 @@ public class ProcessServiceTest {
   void startProcessInstanceWithResourceBasedAuthCaseHasAllResourcesAccess() {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
-    doReturn(List.of("otherProcessDefinitionKey", "*"))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+    doReturn(true)
+        .when(tasklistPermissionsService)
+        .hasPermissionToCreateProcessInstance(processDefinitionKey);
 
     final ProcessInstanceEvent processInstanceEvent =
         mockZeebeCreateProcessInstance(processDefinitionKey);
