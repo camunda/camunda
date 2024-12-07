@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -17,6 +18,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -62,7 +64,11 @@ public class SearchClientDatabaseConfiguration {
   public SearchClients searchClients(
       final DocumentBasedSearchClient searchClient,
       final ConnectConfiguration connectConfiguration) {
-    return new SearchClients(searchClient, connectConfiguration.getIndexPrefix());
+    final IndexDescriptors indexDescriptors =
+        new IndexDescriptors(
+            connectConfiguration.getIndexPrefix(),
+            ConnectionTypes.isElasticSearch(connectConfiguration.getType()));
+    return new SearchClients(searchClient, indexDescriptors);
   }
 
   @ConfigurationProperties("camunda.database")

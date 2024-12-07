@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 public class TenantServices extends SearchQueryService<TenantServices, TenantQuery, TenantEntity> {
@@ -95,6 +96,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantKey(tenantKey)
             .setEntity(entityType, entityKey));
+  }
+
+  public Collection<TenantEntity> getTenantsByMemberKey(final long memberKey) {
+    return search(
+            TenantQuery.of(
+                queryBuilder ->
+                    queryBuilder.filter(filterBuilder -> filterBuilder.memberKey(memberKey))))
+        .items();
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}
