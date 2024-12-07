@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -43,7 +44,7 @@ public interface JobState {
 
   JobRecord getJob(long key);
 
-  JobRecord getJob(final long key, final List<String> authorizedTenantIds);
+  JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds);
 
   boolean jobDeadlineExists(final long jobKey, final long deadline);
 

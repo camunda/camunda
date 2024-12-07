@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class DbTenantState implements MutableTenantState {
 
@@ -157,5 +158,10 @@ public class DbTenantState implements MutableTenantState {
         });
 
     return entitiesMap;
+  }
+
+  @Override
+  public void forEachTenant(final Function<String, Boolean> function) {
+    tenantsColumnFamily.whileTrue((k, p) -> function.apply(p.getTenantId()));
   }
 }
