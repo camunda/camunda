@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +70,10 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
+    if (isAuthorizedAnonymousUser(request.getCommand())) {
+      return Either.right(null);
+    }
+
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
@@ -99,6 +102,13 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  private boolean isAuthorizedAnonymousUser(final TypedRecord<?> command) {
+    final var authorizationClaims = command.getAuthorizations();
+    final var authorizedAnonymousUserClaim =
+        authorizationClaims.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
+    return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
+  }
+
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
     return getUserKey(request.getCommand());
   }
@@ -115,6 +125,10 @@ public final class AuthorizationCheckBehavior {
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
+      return Set.of(WILDCARD_PERMISSION);
+    }
+
+    if (isAuthorizedAnonymousUser(request.getCommand())) {
       return Set.of(WILDCARD_PERMISSION);
     }
 
@@ -210,23 +224,29 @@ public final class AuthorizationCheckBehavior {
     return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
   }
 
-  public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
+  public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
+    if (isAuthorizedAnonymousUser(command)) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+
     // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
     // state
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
-      return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      final var authorizedTenants =
+          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      return new AuthenticatedAuthorizedTenants(authorizedTenants);
     }
-    final var userKey = getUserKey(command);
-    final List<String> authorizedTenantIds = new ArrayList<>();
-    authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return userKey
+
+    return getUserKey(command)
         .map(
             key ->
                 userState
                     .getUser(key)
                     .map(PersistedUser::getTenantIdsList)
-                    .orElse(authorizedTenantIds))
-        .orElse(authorizedTenantIds);
+                    .filter(t -> !t.isEmpty())
+                    .<AuthorizedTenants>map(AuthenticatedAuthorizedTenants::new)
+                    .orElse(AuthorizedTenants.DEFAULT_TENANTS))
+        .orElse(AuthorizedTenants.DEFAULT_TENANTS);
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {
