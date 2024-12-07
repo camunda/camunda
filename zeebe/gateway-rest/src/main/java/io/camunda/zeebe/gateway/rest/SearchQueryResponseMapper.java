@@ -20,6 +20,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -46,6 +47,8 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
+import io.camunda.zeebe.gateway.protocol.rest.GroupItem;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
@@ -110,6 +113,17 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+  }
+
+  public static GroupSearchQueryResponse toGroupSearchQueryResponse(
+      final SearchQueryResult<GroupEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroups)
+                .orElseGet(List::of));
   }
 
   public static TenantSearchQueryResponse toTenantSearchQueryResponse(
@@ -277,6 +291,14 @@ public final class SearchQueryResponseMapper {
 
   public static RoleItem toRole(final RoleEntity roleEntity) {
     return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
+  }
+
+  private static List<GroupItem> toGroups(final List<GroupEntity> groups) {
+    return groups.stream().map(SearchQueryResponseMapper::toGroup).toList();
+  }
+
+  public static GroupItem toGroup(final GroupEntity groupEntity) {
+    return new GroupItem().key(groupEntity.key()).name(groupEntity.name());
   }
 
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {

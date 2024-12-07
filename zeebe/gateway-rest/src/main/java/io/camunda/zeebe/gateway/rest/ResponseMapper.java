@@ -338,7 +338,7 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {
-    final var response = new GroupCreateResponse().roleKey(groupRecord.getGroupKey());
+    final var response = new GroupCreateResponse().groupKey(groupRecord.getGroupKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
