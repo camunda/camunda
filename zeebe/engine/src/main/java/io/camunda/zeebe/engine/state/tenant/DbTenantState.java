@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 public class DbTenantState implements MutableTenantState {
 
@@ -157,5 +159,20 @@ public class DbTenantState implements MutableTenantState {
         });
 
     return entitiesMap;
+  }
+
+  @Override
+  public boolean forEachTenantUntilDone(final Function<String, Boolean> callback) {
+    final var done = new AtomicBoolean(false);
+    tenantsColumnFamily.whileTrue(
+        (k, p) -> {
+          done.set(!visitTenant(p.getTenantId(), callback));
+          return !done.get();
+        });
+    return done.get();
+  }
+
+  boolean visitTenant(final String tenant, final Function<String, Boolean> function) {
+    return function.apply(tenant);
   }
 }
