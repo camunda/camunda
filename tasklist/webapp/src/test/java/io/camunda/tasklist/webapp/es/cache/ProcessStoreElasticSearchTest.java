@@ -31,7 +31,7 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
@@ -66,7 +66,7 @@ class ProcessStoreElasticSearchTest {
   @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
-  @InjectMocks private IdentityAuthorizationServiceImpl identityService;
+  @InjectMocks private TasklistPermissionsService tasklistPermissionsService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
@@ -180,7 +180,8 @@ class ProcessStoreElasticSearchTest {
     final var compositeAggregation = mock(CompositeAggregation.class);
     when(aggregations.get("bpmnProcessId_tenantId_buckets")).thenReturn(compositeAggregation);
     when(compositeAggregation.getBuckets()).thenReturn(Collections.emptyList());
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        tasklistPermissionsService.getProcessDefinitionIdsWithCreateInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -198,7 +199,8 @@ class ProcessStoreElasticSearchTest {
     // when
     mockAuthenticationOverIdentity(true);
     mockElasticSearchSuccessWithAggregatedResponse();
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        tasklistPermissionsService.getProcessDefinitionIdsWithCreateInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -218,7 +220,8 @@ class ProcessStoreElasticSearchTest {
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(false);
     mockElasticSearchSuccessWithAggregatedResponse();
 
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        tasklistPermissionsService.getProcessDefinitionIdsWithCreateInstancePermission();
 
     // given
     final List<ProcessEntity> processes =

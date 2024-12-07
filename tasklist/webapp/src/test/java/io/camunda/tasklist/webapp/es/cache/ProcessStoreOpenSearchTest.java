@@ -34,6 +34,7 @@ import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
@@ -69,6 +70,7 @@ class ProcessStoreOpenSearchTest {
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreOpenSearch processStore;
   @InjectMocks private IdentityAuthorizationServiceImpl identityService;
+  @InjectMocks private TasklistPermissionsService tasklistPermissionsService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
@@ -186,7 +188,8 @@ class ProcessStoreOpenSearchTest {
     final var topHits = mock(TopHitsAggregate.class, RETURNS_DEEP_STUBS);
     when(OpenSearchUtil.mapSearchHits(topHits.hits().hits(), objectMapper, ProcessEntity.class))
         .thenReturn(List.of(mock(ProcessEntity.class)));
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        tasklistPermissionsService.getProcessDefinitionIdsWithCreateInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -204,7 +207,8 @@ class ProcessStoreOpenSearchTest {
     // when
     mockAuthenticationOverIdentity(true);
     mockOpenSearchSuccessWithAggregatedResponse();
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        tasklistPermissionsService.getProcessDefinitionIdsWithCreateInstancePermission();
 
     // given
     final List<ProcessEntity> processes =
@@ -224,7 +228,8 @@ class ProcessStoreOpenSearchTest {
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(false);
     mockOpenSearchSuccessWithAggregatedResponse();
 
-    final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
+    final List<String> authorizations =
+        tasklistPermissionsService.getProcessDefinitionIdsWithCreateInstancePermission();
 
     // given
     final List<ProcessEntity> processes =

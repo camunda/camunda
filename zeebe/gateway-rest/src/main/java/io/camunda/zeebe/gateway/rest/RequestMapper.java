@@ -126,6 +126,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
 
+  private static final Authentication ANONYMOUS_AUTHENTICATION =
+      new Builder()
+          .token(
+              Authorization.jwtEncoder()
+                  .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+                  .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+                  .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+                  .withClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true)
+                  .build())
+          .build();
+
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
@@ -488,6 +499,10 @@ public class RequestMapper {
         .user(authenticatedUserKey)
         .tenants(authorizedTenants)
         .build();
+  }
+
+  public static Authentication getAnonymousAuthentication() {
+    return ANONYMOUS_AUTHENTICATION;
   }
 
   public static <T> Either<ProblemDetail, T> getResult(
