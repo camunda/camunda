@@ -36,4 +36,7 @@ public interface SearchEngineClient {
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings);
 
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
+
+  boolean importersCompleted(
+      final int partitionId, final List<IndexDescriptor> importPositionIndices);
 }
