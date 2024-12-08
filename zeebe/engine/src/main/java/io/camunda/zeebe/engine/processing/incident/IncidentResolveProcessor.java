@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -45,6 +46,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final ProcessInstanceRecord failedRecord = new ProcessInstanceRecord();
 
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
+  private final TypedRecordProcessor<UserTaskRecord> userTaskProcessor;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
@@ -58,10 +60,12 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   public IncidentResolveProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
+      final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
+    this.userTaskProcessor = userTaskProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
