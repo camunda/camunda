@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +17,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * Returns the list of not finished batch operations. We can use endDate field to distinguish
    * finished from running.
    */
-  List<BatchOperationEntity> getNotFinishedBatchOperations();
+  Collection<String> getNotFinishedBatchOperations();
 
   /**
    * Counts amount of single operations that are finished (COMPLETED or FAILED state) that are
