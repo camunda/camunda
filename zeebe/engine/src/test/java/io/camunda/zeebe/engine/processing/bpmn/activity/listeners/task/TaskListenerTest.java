@@ -1357,12 +1357,10 @@ public class TaskListenerTest {
       final Consumer<UserTaskRecordValue> assertion) {
 
     // given
-    final BpmnModelInstance modelInstance =
-        createUserTaskWithTaskListeners(
-            eventType, listenerType, "=" + variableName, listenerType + "_3");
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                eventType, listenerType, "=" + variableName, listenerType + "_3"));
 
     // when: perform the user task action
     userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
@@ -1371,12 +1369,12 @@ public class TaskListenerTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
 
     // then: expect an incident due to missing variable
-    final Record<IncidentRecordValue> incident =
+    final var incidentRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(incident.getValue())
+    Assertions.assertThat(incidentRecord.getValue())
         .hasProcessInstanceKey(processInstanceKey)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
@@ -1392,7 +1390,7 @@ public class TaskListenerTest {
         .ofScope(processInstanceKey)
         .withDocument(Map.of(variableName, variableValue))
         .update();
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // complete the retried task listener job and remaining task listeners
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
@@ -1408,6 +1406,69 @@ public class TaskListenerTest {
         listenerType + "_3");
 
     assertUserTaskRecordWithIntent(processInstanceKey, expectedIntent, assertion);
+  }
+
+  @Test
+  public void
+      shouldTriggerUserTaskAssignCommandAfterExtractValueErrorIncidentResolutionWhenUserTaskWasConfiguredWithAssignee() {
+    // given
+    final var assignee = "me";
+
+    // when: process instance is created with a UT having an `assignee` and `assignment` listeners
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.assignment().type(listenerType))
+                        .zeebeTaskListener(
+                            l -> l.assignment().typeExpression("assign_listener_var_name"))
+                        .zeebeTaskListener(l -> l.assignment().type(listenerType + "_3"))));
+
+    // complete the first task listener job
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
+
+    // then: expect an incident due to missing `assign_listener_var_name` variable
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+                Expected result of the expression 'assign_listener_var_name' to be 'STRING', but was 'NULL'. \
+                The evaluation reported the following warnings:
+                [NO_VARIABLE_FOUND] No variable found with name 'assign_listener_var_name'""");
+
+    // when: fix the missing variable and resolve the incident
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("assign_listener_var_name", "expression_assign_listener_2"))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // complete the retried task listener job and remaining task listeners
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeJobs(processInstanceKey, "expression_assign_listener_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNMENT,
+        listenerType,
+        listenerType, // re-created task listener job
+        "expression_assign_listener_2",
+        listenerType + "_3");
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNED,
+        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
   }
 
   private static void completeRecreatedJobWithType(
