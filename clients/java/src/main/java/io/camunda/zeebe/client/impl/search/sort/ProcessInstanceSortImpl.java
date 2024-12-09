@@ -62,11 +62,6 @@ public class ProcessInstanceSortImpl extends SearchQuerySortBase<ProcessInstance
   }
 
   @Override
-  public ProcessInstanceSort treePath() {
-    return field("treePath");
-  }
-
-  @Override
   public ProcessInstanceSort startDate() {
     return field("startDate");
   }
