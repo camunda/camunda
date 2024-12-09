@@ -89,7 +89,7 @@
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.elasticsearch7>7.17.25</version.elasticsearch7>
+    <version.elasticsearch7>7.17.26</version.elasticsearch7>
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
