@@ -5,16 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { EntityData } from "src/components/entityList/EntityList";
+import Cookies from "js-cookie";
 
-export type Permission = {
-  permissionType: string;
-  resourceIds: string[];
-};
+export const CSRF_REQUEST_PARAMETER = "_csrf";
+export const CSRF_REQUEST_HEADER = "X-CSRF-Token";
+const CSRF_TOKEN_COOKIE = "XSRF-TOKEN";
 
-export type Authorization = EntityData & {
-  ownerKey: number;
-  ownerType: string;
-  resourceType: string;
-  permissions: Permission[];
-};
+export function getCsrfToken(): string {
+  return Cookies.get(CSRF_TOKEN_COOKIE) ?? "";
+}
