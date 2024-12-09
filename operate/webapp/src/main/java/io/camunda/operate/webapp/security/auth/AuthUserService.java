@@ -11,6 +11,8 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
+import io.camunda.operate.webapp.security.tenant.OperateTenant;
+import io.camunda.service.TenantServices.TenantDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,12 +40,17 @@ public class AuthUserService extends AbstractUserService<UsernamePasswordAuthent
         .setCanLogout(true)
         .setPermissions(
             rolePermissionService.getPermissions(
-                user.getRoles().stream().map(Role::fromString).toList()));
+                user.getRoles().stream().map(Role::fromString).toList()))
+        .setTenants(user.getTenants().stream().map(this::toOperateTenant).toList());
   }
 
   @Override
   public String getUserToken(final UsernamePasswordAuthenticationToken authentication) {
     throw new UnsupportedOperationException(
         "Get token is not supported for Elasticsearch authentication");
+  }
+
+  private OperateTenant toOperateTenant(final TenantDTO tenant) {
+    return new OperateTenant(tenant.tenantId(), tenant.name());
   }
 }
