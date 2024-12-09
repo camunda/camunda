@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -71,8 +70,26 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("To be re-enabled in the scope of https://github.com/camunda/camunda/issues/25292")
-  public void shouldRetrieveTaskByTaskVariable() {
+  public void shouldRetrieveTaskByLocalVariable() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("task02").value("1");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(List.of(variableValueFilter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1")
+        .doesNotContain("P2");
+  }
+
+  @Test
+  public void shouldRetrieveTaskByProcessInstanceVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
 
@@ -82,7 +99,37 @@ class UserTaskQueryTest {
             .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+
+    // Validate the size of the items
+    assertThat(result.items()).hasSize(2);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1", "P2");
+  }
+
+  @Test
+  public void shouldRetrieveTaskByProcessInstanceAndLocalVariable() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("task02");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(
+                f ->
+                    f.processInstanceVariables(List.of(variableValueFilter))
+                        .localVariables(List.of(variableValueFilter)))
+            .send()
+            .join();
+
+    // Validate the size of the items
+    assertThat(result.items()).hasSize(2);
+
+    // Validate that names "P1" and "P2" exist in the result
+    // Also validate no duplicated itens once it is 2 elements.
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1", "P2");
   }
 
   @Test
@@ -106,7 +153,6 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("To be re-enabled in the scope of https://github.com/camunda/camunda/issues/25292")
   public void shouldRetrieveVariablesFromUserTask() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -114,7 +160,7 @@ class UserTaskQueryTest {
     final var resultUserTaskQuery =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+            .filter(f -> f.localVariables(List.of(variableValueFilter)))
             .send()
             .join();
 
@@ -124,20 +170,6 @@ class UserTaskQueryTest {
     final var resultVariableQuery =
         camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
     assertThat(resultVariableQuery.items().size()).isEqualTo(2);
-  }
-
-  @Test
-  public void shouldRetrieveTaskByProcessInstanceVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
-
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(2);
   }
 
   @Test
@@ -220,8 +252,7 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("To be re-enabled in the scope of https://github.com/camunda/camunda/issues/25292")
-  public void shouldRetrieveTaskByOrVariableCondition() {
+  public void shouldRetrieveTaskByOrLocalVariableCondition() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest().name("task02").value("1");
 
@@ -231,9 +262,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(
-                f ->
-                    f.processInstanceVariables(List.of(variableValueFilter1, variableValueFilter2)))
+            .filter(f -> f.localVariables(List.of(variableValueFilter1, variableValueFilter2)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
