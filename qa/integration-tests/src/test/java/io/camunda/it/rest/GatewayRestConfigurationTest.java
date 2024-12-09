@@ -19,7 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
     classes = {CommonsModuleConfiguration.class},
     properties = {
       "camunda.rest.process-cache.max-size=1000",
-      "camunda.rest.process-cache.expiration-millis=360000"
+      "camunda.rest.process-cache.expiration-idle-millis=360000"
     })
 public class GatewayRestConfigurationTest {
 
@@ -28,6 +28,6 @@ public class GatewayRestConfigurationTest {
   @Test
   public void shouldSetProcessCacheConfiguration() {
     assertThat(configuration.getProcessCache().getMaxSize()).isEqualTo(1000);
-    assertThat(configuration.getProcessCache().getExpirationMillis()).isEqualTo(360000);
+    assertThat(configuration.getProcessCache().getExpirationIdleMillis()).isEqualTo(360000);
   }
 }

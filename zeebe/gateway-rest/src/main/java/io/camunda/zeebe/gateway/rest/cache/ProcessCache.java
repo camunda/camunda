@@ -41,9 +41,9 @@ public class ProcessCache {
     this.xmlUtil = xmlUtil;
     final var cacheBuilder =
         Caffeine.newBuilder().maximumSize(configuration.getProcessCache().getMaxSize());
-    final var ttlMillis = configuration.getProcessCache().getExpirationMillis();
-    if (ttlMillis != null && ttlMillis > 0) {
-      cacheBuilder.expireAfterAccess(ttlMillis, TimeUnit.MILLISECONDS);
+    final var expirationIdle = configuration.getProcessCache().getExpirationIdleMillis();
+    if (expirationIdle != null && expirationIdle > 0) {
+      cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
     }
     cache = cacheBuilder.build(new ProcessCacheLoader());
   }

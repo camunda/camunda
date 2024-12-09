@@ -161,7 +161,7 @@ class ProcessCacheTest {
   @Test
   void shouldRemoveExpiredItem() throws InterruptedException {
     // given
-    configuration.getProcessCache().setExpirationMillis(10L);
+    configuration.getProcessCache().setExpirationIdleMillis(10L);
     processCache = new ProcessCache(configuration, xmlUtil);
     processCache.getCacheItem(1L);
     getCache().cleanUp();

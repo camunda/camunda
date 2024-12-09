@@ -346,7 +346,7 @@ public final class SearchQueryResponseMapper {
             instance -> {
               final var flowNodeName =
                   processCacheItems
-                      .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.empty())
+                      .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
                       .getFlowNodeName(instance.flowNodeId());
               return toFlowNodeInstance(instance, flowNodeName);
             })
@@ -401,7 +401,7 @@ public final class SearchQueryResponseMapper {
             (final UserTaskEntity t) -> {
               final var name =
                   processCacheItems
-                      .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.empty())
+                      .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
                       .getFlowNodeName(t.elementId());
               return toUserTask(t, name);
             })

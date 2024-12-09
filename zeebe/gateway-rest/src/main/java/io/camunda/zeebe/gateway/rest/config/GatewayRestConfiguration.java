@@ -9,14 +9,10 @@ package io.camunda.zeebe.gateway.rest.config;
 
 public class GatewayRestConfiguration {
 
-  private ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
+  private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
 
   public ProcessCacheConfiguration getProcessCache() {
     return processCache;
-  }
-
-  public void setProcessCache(final ProcessCacheConfiguration processCacheConfiguration) {
-    processCache = processCacheConfiguration;
   }
 
   public static class ProcessCacheConfiguration {
@@ -28,7 +24,7 @@ public class GatewayRestConfiguration {
     private int maxSize = DEFAULT_CACHE_SIZE;
 
     /** Process cache expiration milliseconds. Default value: {@code null}. */
-    private Long expirationMillis = null;
+    private Long expirationIdleMillis = null;
 
     public int getMaxSize() {
       return maxSize;
@@ -38,12 +34,12 @@ public class GatewayRestConfiguration {
       this.maxSize = maxSize;
     }
 
-    public Long getExpirationMillis() {
-      return expirationMillis;
+    public Long getExpirationIdleMillis() {
+      return expirationIdleMillis;
     }
 
-    public void setExpirationMillis(final Long expirationMillis) {
-      this.expirationMillis = expirationMillis;
+    public void setExpirationIdleMillis(final Long expirationIdleMillis) {
+      this.expirationIdleMillis = expirationIdleMillis;
     }
   }
 }
