@@ -26,6 +26,7 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -100,6 +101,7 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
     LOG.debug(
         "Deleting [{}] instant dashboard documents by id with bulk request.",
         searchResponse.hits().hits().size());
+    final List<BulkOperation> bulkOperations = new ArrayList<>();
     searchResponse
         .hits()
         .hits()
@@ -107,16 +109,21 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
             hit -> {
               assert hit.source() != null;
               dashboardIdsToBeDeleted.add(hit.source().getDashboardId());
-              bulkRequestBuilder.operations(
-                  o ->
-                      o.delete(
-                          OptimizeDeleteOperationBuilderOS.of(
-                              d ->
-                                  d.optimizeIndex(osClient, INSTANT_DASHBOARD_INDEX_NAME)
-                                      .id(hit.id()))));
+              bulkOperations.add(
+                  BulkOperation.of(
+                      o ->
+                          o.delete(
+                              OptimizeDeleteOperationBuilderOS.of(
+                                  d ->
+                                      d.optimizeIndex(osClient, INSTANT_DASHBOARD_INDEX_NAME)
+                                          .id(hit.id())))));
             });
-    osClient.bulk(
-        bulkRequestBuilder, "Some errors occurred while deleting outdated instant dashboards.");
+
+    if (!bulkOperations.isEmpty()) {
+      bulkRequestBuilder.operations(bulkOperations);
+      osClient.bulk(
+          bulkRequestBuilder, "Some errors occurred while deleting outdated instant dashboards.");
+    }
     return dashboardIdsToBeDeleted;
   }
 }

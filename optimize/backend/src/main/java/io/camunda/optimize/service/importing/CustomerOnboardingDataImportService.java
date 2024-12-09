@@ -104,7 +104,7 @@ public class CustomerOnboardingDataImportService {
         LOG.error("Process definition could not be loaded. Please validate your json file.");
       }
     } catch (final IOException e) {
-      LOG.error("Unable to add a process definition to database", e);
+      LOG.error("Unable to add a process definition to the database", e);
     }
     LOG.info("Customer onboarding data import complete");
   }
