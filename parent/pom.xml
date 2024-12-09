@@ -147,7 +147,7 @@
     <version.jna-platform>5.15.0</version.jna-platform>
 
     <version.commons-io>2.17.0</version.commons-io>
-    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
+    <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.2</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
     <version.springdoc>2.6.0</version.springdoc>
