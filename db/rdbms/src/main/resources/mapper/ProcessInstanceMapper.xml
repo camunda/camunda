@@ -18,7 +18,6 @@
            pi.START_DATE,
            pi.END_DATE,
            pi.TENANT_ID,
-           NULL           as TREE_PATH,
            NULL           as INCIDENT,
            pi.PARENT_PROCESS_INSTANCE_KEY,
            pi.PARENT_ELEMENT_INSTANCE_KEY,
@@ -50,7 +49,6 @@
     pi.START_DATE,
     pi.END_DATE,
     pi.TENANT_ID,
-    NULL as TREE_PATH,
     NULL as INCIDENT,
     pi.PARENT_PROCESS_INSTANCE_KEY,
     pi.PARENT_ELEMENT_INSTANCE_KEY,
@@ -146,7 +144,6 @@
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="START_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="END_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
