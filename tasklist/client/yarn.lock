@@ -291,10 +291,10 @@
     "@types/tough-cookie" "^4.0.5"
     tough-cookie "^4.1.4"
 
-"@camunda/camunda-composite-components@0.11.0":
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.11.0.tgz#ce1f81fd9afb828d92605d93ec7abf5411395231"
-  integrity sha512-o0H4LnzWrLJmA61tvTA3m5XwbVuH8QlVEO1C8bHXeT0T0ApR8pLqhJu2iTVaKHwD2NWULI1wYnnxr01XWZ+tFA==
+"@camunda/camunda-composite-components@0.13.0":
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.13.0.tgz#8eac70e044c7590ff8a8836229ef016e563c95bc"
+  integrity sha512-Izf9/QUhHh70jPsLW8yGY0g9NliyVAMeuaLhZFjJjkfaXX83oVSKlov8D1jg+8jbe4KEAWybvnWM0rzbL2lltA==
   dependencies:
     jwt-decode "4.0.0"
     react-error-boundary "4.0.13"
