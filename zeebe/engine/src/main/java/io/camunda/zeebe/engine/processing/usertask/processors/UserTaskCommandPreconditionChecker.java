@@ -69,8 +69,9 @@ public class UserTaskCommandPreconditionChecker {
   protected Either<Tuple<RejectionType, String>, UserTaskRecord> check(
       final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
+    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
     final UserTaskRecord persistedRecord =
-        userTaskState.getUserTask(userTaskKey, command.getAuthorizations());
+        userTaskState.getUserTask(userTaskKey, authorizedTenantIds);
 
     if (persistedRecord == null) {
       return Either.left(
@@ -85,7 +86,7 @@ public class UserTaskCommandPreconditionChecker {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_USER_TASK)
             .addResourceId(persistedRecord.getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
+    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       return Either.left(
           Tuple.of(
               RejectionType.UNAUTHORIZED,

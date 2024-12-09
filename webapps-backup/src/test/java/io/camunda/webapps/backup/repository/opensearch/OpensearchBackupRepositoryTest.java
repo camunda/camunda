@@ -419,7 +419,7 @@ class OpensearchBackupRepositoryTest {
         .indices(List.of())
         .snapshot("snapshot")
         .uuid("uuid")
-        .metadata(metadata.asJson(new JacksonJsonpMapper()));
+        .metadata(MetadataMarshaller.asJson(metadata, new JacksonJsonpMapper()));
   }
 
   private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {

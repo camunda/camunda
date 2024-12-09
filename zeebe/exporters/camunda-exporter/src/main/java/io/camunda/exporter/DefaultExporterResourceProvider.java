@@ -42,6 +42,7 @@ import io.camunda.exporter.handlers.MappingCreatedHandler;
 import io.camunda.exporter.handlers.MappingDeletedHandler;
 import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
@@ -85,6 +86,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -174,6 +176,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
             entry(
                 ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
+            entry(
+                TasklistImportPositionIndex.class,
+                new TasklistImportPositionIndex(globalPrefix, isElasticsearch)),
             entry(
                 PersistentWebSessionIndexDescriptor.class,
                 new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
@@ -298,7 +303,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new MetricFromDecisionEvaluationHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
             new JobHandler(
-                templateDescriptorsMap.get(JobTemplate.class).getFullQualifiedName(), false));
+                templateDescriptorsMap.get(JobTemplate.class).getFullQualifiedName(), false),
+            new MigratedVariableHandler(
+                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName()));
   }
 
   @Override

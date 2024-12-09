@@ -19,7 +19,6 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateMappingRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
@@ -232,11 +231,6 @@ public class RequestMapper {
         validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
-            .flatMap(
-                tenantId ->
                     validateMessageCorrelationRequest(correlationRequest)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
@@ -390,12 +384,7 @@ public class RequestMapper {
       final boolean multiTenancyEnabled) {
     try {
       final Either<ProblemDetail, String> validationResponse =
-          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources")
-              .flatMap(
-                  tenant ->
-                      validateAuthorization(tenant, multiTenancyEnabled, "Deploy Resources")
-                          .map(Either::<ProblemDetail, String>left)
-                          .orElseGet(() -> Either.right(tenant)));
+          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources");
       if (validationResponse.isLeft()) {
         return Either.left(validationResponse.getLeft());
       }
@@ -423,11 +412,6 @@ public class RequestMapper {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(
                 messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Publish Message")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateMessagePublicationRequest(messagePublicationRequest)
@@ -459,11 +443,6 @@ public class RequestMapper {
       final SignalBroadcastRequest request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Broadcast Signal")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateSignalBroadcastRequest(request)
@@ -586,11 +565,6 @@ public class RequestMapper {
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
             .flatMap(
                 tenant ->
-                    validateAuthorization(tenant, multiTenancyEnabled, "Create Process Instance")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)))
-            .flatMap(
-                tenant ->
                     validateCreateProcessInstanceRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenant)));
@@ -666,11 +640,6 @@ public class RequestMapper {
       final EvaluateDecisionRequest request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Evaluate Decision")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateEvaluateDecisionRequest(request)

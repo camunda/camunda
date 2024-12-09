@@ -94,7 +94,7 @@ final class JobBatchCollector {
             : value.getTenantIds();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
     final var authorizedProcessIds =
-        authCheckBehavior.getAuthorizedResourceIdentifiers(
+        authCheckBehavior.getAllAuthorizedResourceIdentifiers(
             new AuthorizationRequest(
                 record,
                 AuthorizationResourceType.PROCESS_DEFINITION,

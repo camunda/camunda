@@ -14,6 +14,10 @@ public interface MutableUserState extends UserState {
 
   void create(final UserRecord user);
 
+  void update(final UserRecord user);
+
+  void delete(final long userKey);
+
   void addRole(final long userKey, final long roleKey);
 
   void removeRole(final long userKey, final long roleKey);
