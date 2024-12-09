@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.response.UserTask;
@@ -26,10 +26,14 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@ExtendWith(BrokerWithCamundaExporterITInvocationProvider.class)
 public class UserTaskExporterIT {
+
+  // RDBMS doesn't support query for task variables up to now
+  @RegisterExtension
+  static final BrokerITInvocationProvider PROVIDER =
+      new BrokerITInvocationProvider().withoutRdbmsExporter();
 
   @TestTemplate
   void shouldExportUserTask(final TestStandaloneBroker testBroker) {
