@@ -2789,6 +2789,12 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The user with the given key is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
     delete:
@@ -2827,11 +2833,11 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group or user with the given key was not found.
+          description: The group or user with the given key was not found, or the user is not assigned to this group.
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ProblemDetail"
+                $ref: "#/components/schemas/ProblemDetail"                
         "500":
           $ref: "#/components/responses/InternalServerError"
   /groups/search:
