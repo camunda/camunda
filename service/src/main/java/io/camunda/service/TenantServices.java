@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
@@ -102,7 +103,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return search(
             TenantQuery.of(
                 queryBuilder ->
-                    queryBuilder.filter(filterBuilder -> filterBuilder.memberKey(memberKey))))
+                    queryBuilder
+                        .filter(filterBuilder -> filterBuilder.memberKey(memberKey))
+                        // FIXME: we don't have an easy way to fetch all results, so we use a large
+                        //        limit – 10k tenants ought to be enough for anybody …
+                        .page(SearchQueryPage.of(b -> b.size(10_000)))))
         .items();
   }
 
