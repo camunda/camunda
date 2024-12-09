@@ -34,7 +34,6 @@ public class IncidentImpl implements Incident {
   private final String creationTime;
   private final StateEnum state;
   private final Long jobKey;
-  private final String treePath;
   private final String tenantId;
 
   public IncidentImpl(final IncidentItem item) {
@@ -49,7 +48,6 @@ public class IncidentImpl implements Incident {
     creationTime = item.getCreationTime();
     state = item.getState();
     jobKey = item.getJobKey();
-    treePath = item.getTreePath();
     tenantId = item.getTenantId();
   }
 
@@ -104,11 +102,6 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getTreePath() {
-    return treePath;
-  }
-
-  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -132,7 +125,6 @@ public class IncidentImpl implements Incident {
         creationTime,
         state,
         jobKey,
-        treePath,
         tenantId);
   }
 
@@ -156,7 +148,6 @@ public class IncidentImpl implements Incident {
         && Objects.equals(creationTime, incident.creationTime)
         && state == incident.state
         && Objects.equals(jobKey, incident.jobKey)
-        && Objects.equals(treePath, incident.treePath)
         && Objects.equals(tenantId, incident.tenantId);
   }
 }

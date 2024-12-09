@@ -80,11 +80,6 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder treePath() {
-      currentOrdering = new FieldSorting("treePath", null);
-      return this;
-    }
-
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;

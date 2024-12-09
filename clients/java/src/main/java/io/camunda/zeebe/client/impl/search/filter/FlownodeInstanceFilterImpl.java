@@ -84,12 +84,6 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  public FlownodeInstanceFilter treePath(final String value) {
-    filter.setTreePath(value);
-    return this;
-  }
-
-  @Override
   public FlownodeInstanceFilter tenantId(final String value) {
     filter.setTenantId(value);
     return this;

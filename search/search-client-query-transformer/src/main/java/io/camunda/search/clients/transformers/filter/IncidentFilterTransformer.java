@@ -21,7 +21,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTem
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.TREE_PATH;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
@@ -54,7 +53,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     final var creationTimeQuery = getCreationTimeQuery(filter.creationTime());
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
-    final var treePathQuery = getTreePathQuery(filter.treePaths());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
 
     return and(
@@ -69,7 +67,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
         creationTimeQuery,
         stateQuery,
         jobKeyQuery,
-        treePathQuery,
         tenantIdQuery);
   }
 
@@ -129,9 +126,5 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
 
   private SearchQuery getKeyQuery(final List<Long> keys) {
     return longTerms(KEY, keys);
-  }
-
-  private SearchQuery getTreePathQuery(final List<String> treePaths) {
-    return stringTerms(TREE_PATH, treePaths);
   }
 }

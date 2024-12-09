@@ -20,7 +20,6 @@ public record ProcessInstanceEntity(
     Long processDefinitionKey,
     Long parentProcessInstanceKey,
     Long parentFlowNodeInstanceKey,
-    String treePath,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     ProcessInstanceState state,
