@@ -44,6 +44,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -60,6 +61,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.MappingSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
@@ -130,6 +132,20 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::roleSearchQuery);
+  }
+
+  public static Either<ProblemDetail, GroupQuery> toGroupQuery(
+      final GroupSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.groupSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::group,
+            SearchQueryRequestMapper::applyGroupSortField);
+    return buildSearchQuery(null, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
@@ -679,6 +695,21 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case "roleKey" -> builder.roleKey();
+        case "name" -> builder.name();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyGroupSortField(
+      final String field, final GroupSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "groupKey" -> builder.groupKey();
         case "name" -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

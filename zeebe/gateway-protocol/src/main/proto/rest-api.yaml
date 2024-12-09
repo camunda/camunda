@@ -2645,8 +2645,41 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
   /groups/{groupKey}:
+    get:
+      tags:
+        - Group
+      operationId: getGroup
+      summary: Get group
+      description: |
+        Get a group by its key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The group is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags:
         - Group
@@ -2714,6 +2747,45 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /groups/search:
+    post:
+      tags:
+        - Group
+      operationId: searchGroups
+      summary: Query groups
+      description: |
+        Search for groups based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupSearchQueryRequest"
+      responses:
+        "200":
+          description: The groups search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupSearchQueryResponse"
+        "400":
+          description: >
+            The group search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /mapping-rules:
     post:
@@ -5111,7 +5183,7 @@ components:
     GroupCreateResponse:
       type: "object"
       properties:
-        roleKey:
+        groupKey:
           description: The key of the created group.
           type: "integer"
           format: "int64"
@@ -5131,6 +5203,51 @@ components:
         name:
           type: string
           description: The updated display name of the group.
+    GroupItem:
+      description: Group search response item.
+      type: object
+      properties:
+        key:
+          type: integer
+          description: The group key.
+          format: int64
+        name:
+          type: string
+          description: The group name.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the group.
+          items:
+            type: integer
+            format: int64
+    GroupSearchQueryRequest:
+      description: Group search request.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          description: The group search filters.
+          allOf:
+            - $ref: "#/components/schemas/GroupFilterRequest"
+    GroupFilterRequest:
+      description: Group filter request
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the group.
+    GroupSearchQueryResponse:
+      description: Group search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching groups.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupItem"
 
     MappingRuleCreateRequest:
       type: object
