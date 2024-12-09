@@ -14,12 +14,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -89,7 +92,25 @@ public class TenantQueryControllerTest extends RestControllerTest {
               formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys()),
               TENANT_ENTITIES.size());
 
+  private static final String TENANT_USERS_SEARCH_URL = "/v2/tenants/{tenantKey}/users/search";
+
+  private static final TenantEntity TENANT_WITH_USERS =
+      new TenantEntity(100L, "tenant-id", "Tenant Name", Set.of(1L, 2L));
+
+  private static final SearchQueryResult<UserEntity> SEARCH_QUERY_RESULT =
+      new SearchQueryResult.Builder<UserEntity>()
+          .total(2L)
+          .items(
+              List.of(
+                  new UserEntity(1L, "user1", "John Doe", "john.doe@example.com", "password1"),
+                  new UserEntity(2L, "user2", "Jane Smith", "jane.smith@example.com", "password2")))
+          .build();
+
+  private static final SearchQueryResult<UserEntity> EMPTY_SEARCH_QUERY_RESULT =
+      new SearchQueryResult.Builder<UserEntity>().total(0L).items(List.of()).build();
+
   @MockBean private TenantServices tenantServices;
+  @MockBean private UserServices userServices;
 
   private static String formatSet(final Set<Long> set) {
     return set.isEmpty() ? "[]" : set.toString();
@@ -98,6 +119,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @Test
@@ -249,6 +271,108 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(tenantServices, never()).search(any(TenantQuery.class));
+  }
+
+  @Test
+  void shouldReturnUsersWhenSearchIsSuccessful() {
+    // given
+    when(tenantServices.getByKey(TENANT_WITH_USERS.key())).thenReturn(TENANT_WITH_USERS);
+    when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(
+            TENANT_USERS_SEARCH_URL.replace("{tenantKey}", String.valueOf(TENANT_WITH_USERS.key())))
+        .contentType(MediaType.APPLICATION_JSON)
+        .accept(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "items": [
+                { "key": 1, "username": "user1", "name": "John Doe", "email": "john.doe@example.com" },
+                { "key": 2, "username": "user2", "name": "Jane Smith", "email": "jane.smith@example.com" }
+              ],
+              "page": {
+                "totalItems": 2,
+                "firstSortValues": [],
+                "lastSortValues": []
+              }
+            }
+            """);
+
+    verify(tenantServices).getByKey(TENANT_WITH_USERS.key());
+    verify(userServices).search(any(UserQuery.class));
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenNoUsersAssignedToTenant() {
+    // given
+    final var tenantWithoutUsers = new TenantEntity(200L, "tenant-id-2", "Tenant 2", Set.of());
+    when(tenantServices.getByKey(tenantWithoutUsers.key())).thenReturn(tenantWithoutUsers);
+
+    // when / then
+    webClient
+        .post()
+        .uri(
+            TENANT_USERS_SEARCH_URL.replace(
+                "{tenantKey}", String.valueOf(tenantWithoutUsers.key())))
+        .contentType(MediaType.APPLICATION_JSON)
+        .accept(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NotFound",
+              "status": 404,
+              "detail": "No users assigned to tenant with key: 200"
+            }
+            """);
+
+    verify(tenantServices).getByKey(tenantWithoutUsers.key());
+    verify(userServices, never()).search(any(UserQuery.class));
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenAssignedUsersNotFound() {
+    // given
+    when(tenantServices.getByKey(TENANT_WITH_USERS.key())).thenReturn(TENANT_WITH_USERS);
+    when(userServices.search(any(UserQuery.class))).thenReturn(EMPTY_SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(
+            TENANT_USERS_SEARCH_URL.replace("{tenantKey}", String.valueOf(TENANT_WITH_USERS.key())))
+        .contentType(MediaType.APPLICATION_JSON)
+        .accept(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NotFound",
+              "status": 404,
+              "detail": "No users found for tenant with key: 100"
+            }
+            """);
+
+    verify(tenantServices).getByKey(TENANT_WITH_USERS.key());
+    verify(userServices).search(any(UserQuery.class));
   }
 
   public static Stream<Arguments> invalidTenantSearchQueries() {
