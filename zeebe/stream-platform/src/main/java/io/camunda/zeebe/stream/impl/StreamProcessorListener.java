@@ -31,4 +31,24 @@ public interface StreamProcessorListener {
    * @param skippedRecord the record that is skipped
    */
   default void onSkipped(final LoggedEvent skippedRecord) {}
+
+  /**
+   * Compose this {@link StreamProcessorListener} with another one. This listener is called first,
+   * then the other one.
+   */
+  default StreamProcessorListener andThen(final StreamProcessorListener other) {
+    return new StreamProcessorListener() {
+      @Override
+      public void onProcessed(final TypedRecord<?> processedCommand) {
+        StreamProcessorListener.this.onProcessed(processedCommand);
+        other.onProcessed(processedCommand);
+      }
+
+      @Override
+      public void onSkipped(final LoggedEvent skippedRecord) {
+        StreamProcessorListener.this.onSkipped(skippedRecord);
+        other.onSkipped(skippedRecord);
+      }
+    };
+  }
 }
