@@ -38,6 +38,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ZeebeIntegration
 final class IdentitySetupInitializerIT {
 
+  private static final String DEFAULT_USER_USERNAME = "demo";
+  private static final String DEFAULT_USER_NAME = "Demo";
+  private static final String DEFAULT_USER_PASSWORD = "demo";
+  private static final String DEFAULT_USER_EMAIL = "demo@demo.com";
+
   private static PasswordEncoder passwordEncoder;
   @AutoCloseResource private ZeebeClient client;
   @AutoCloseResource private TestStandaloneBroker broker;
@@ -61,13 +66,12 @@ final class IdentitySetupInitializerIT {
     final var createdUser = record.getDefaultUser();
     Assertions.assertThat(createdUser)
         .isNotNull()
-        .hasUsername(IdentitySetupInitializer.DEFAULT_USER_USERNAME)
-        .hasName(IdentitySetupInitializer.DEFAULT_USER_USERNAME)
-        .hasEmail(IdentitySetupInitializer.DEFAULT_USER_EMAIL)
+        .hasUsername(DEFAULT_USER_USERNAME)
+        .hasName(DEFAULT_USER_NAME)
+        .hasEmail(DEFAULT_USER_EMAIL)
         .hasUserType(UserType.DEFAULT);
     final var passwordMatches =
-        passwordEncoder.matches(
-            IdentitySetupInitializer.DEFAULT_USER_PASSWORD, createdUser.getPassword());
+        passwordEncoder.matches(DEFAULT_USER_PASSWORD, createdUser.getPassword());
     assertTrue(passwordMatches);
 
     final var createdRole = record.getDefaultRole();
