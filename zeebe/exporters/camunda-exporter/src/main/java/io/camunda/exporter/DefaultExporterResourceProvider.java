@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
+import io.camunda.exporter.handlers.JobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
@@ -301,6 +302,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
             new MetricFromDecisionEvaluationHandler(
                 indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
+            new JobHandler(
+                templateDescriptorsMap.get(JobTemplate.class).getFullQualifiedName(), false),
             new MigratedVariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName()));
   }
