@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -86,10 +87,12 @@ public class OpenSearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    if (prefix.isBlank()) {
+      indexPrefix = Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(prefix);
+      tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     }
-    tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
+
     if (tasklistProperties.getOpenSearch().isCreateSchema()) {
       schemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
