@@ -26,7 +26,12 @@ public class MetadataMarshaller {
   public static Metadata fromMetadata(
       final Map<String, JsonData> metadata, final JsonpMapper jsonpMapper) {
     try {
-      final var backupId = metadata.get("backupId").to(Long.class, jsonpMapper);
+      Long backupId = null;
+      try {
+        backupId = metadata.get("backupId").to(Long.class, jsonpMapper);
+      } catch (final NullPointerException ignored) {
+        // ignore and set as null
+      }
       final var version = metadata.get("version").to(String.class, jsonpMapper);
       final var partNo = metadata.get("partNo").to(Integer.class, jsonpMapper);
       final var partCount = metadata.get("partCount").to(Integer.class, jsonpMapper);
