@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 
 @ExcludeAuthorizationCheck
 public final class IdentitySetupInitializeProcessor
@@ -62,7 +63,10 @@ public final class IdentitySetupInitializeProcessor
   @Override
   public void processNewCommand(final TypedRecord<IdentitySetupRecord> command) {
     final var key = keyGenerator.nextKey();
-    initializeDefaultEntities(key, command);
+    final var setupRecord = command.getValue();
+    final var existingEntityKeys = findExistingDefaultEntityKeys(setupRecord);
+    setNewEntityKeys(existingEntityKeys, setupRecord);
+    initializeDefaultEntities(key, existingEntityKeys, setupRecord);
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY)
@@ -71,37 +75,56 @@ public final class IdentitySetupInitializeProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<IdentitySetupRecord> command) {
-    initializeDefaultEntities(command.getKey(), command);
+    final var existingEntities = findExistingDefaultEntityKeys(command.getValue());
+    initializeDefaultEntities(command.getKey(), existingEntities, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
+  private DefaultEntityKeys findExistingDefaultEntityKeys(final IdentitySetupRecord record) {
+    final var roleKey = roleState.getRoleKeyByName(record.getDefaultRole().getName());
+    final var userKey =
+        userState.getUser(record.getDefaultUser().getUsername()).map(PersistedUser::getUserKey);
+    final var tenantKey = tenantState.getTenantKeyById(record.getDefaultTenant().getTenantId());
+    return new DefaultEntityKeys(roleKey, userKey, tenantKey);
+  }
+
+  private void setNewEntityKeys(
+      final DefaultEntityKeys existingEntityKeys, final IdentitySetupRecord setup) {
+    if (existingEntityKeys.role().isEmpty()) {
+      setup.getDefaultRole().setRoleKey(keyGenerator.nextKey());
+    }
+    if (existingEntityKeys.user().isEmpty()) {
+      setup.getDefaultUser().setUserKey(keyGenerator.nextKey());
+    }
+    if (existingEntityKeys.tenant().isEmpty()) {
+      setup.getDefaultTenant().setTenantKey(keyGenerator.nextKey());
+    }
+  }
+
   private void initializeDefaultEntities(
-      final long commandKey, final TypedRecord<IdentitySetupRecord> command) {
-    final var roleRecord = command.getValue().getDefaultRole();
-    final var userRecord = command.getValue().getDefaultUser();
-    final var tenantRecord = command.getValue().getDefaultTenant();
+      final long commandKey,
+      final DefaultEntityKeys existingDefaultEntities,
+      final IdentitySetupRecord setup) {
+    final var roleRecord = setup.getDefaultRole();
+    final var userRecord = setup.getDefaultUser();
+    final var tenantRecord = setup.getDefaultTenant();
 
-    final var existingRoleKey = roleState.getRoleKeyByName(roleRecord.getName());
-    final var existingUser = userState.getUser(userRecord.getUsername());
-    final var existingTenantKey = tenantState.getTenantKeyById(tenantRecord.getTenantId());
-
-    if (existingRoleKey.isEmpty()) {
+    if (existingDefaultEntities.role().isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, RoleIntent.CREATED, roleRecord);
       addAllPermissions(roleRecord.getRoleKey());
     }
-    if (existingUser.isEmpty()) {
+    if (existingDefaultEntities.user().isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, UserIntent.CREATED, userRecord);
     }
-    if (existingTenantKey.isEmpty()) {
+    if (existingDefaultEntities.tenant().isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, TenantIntent.CREATED, tenantRecord);
     }
 
     assignUserToRole(
         commandKey,
-        existingRoleKey.orElse(roleRecord.getRoleKey()),
-        existingUser.map(PersistedUser::getUserKey).orElse(userRecord.getUserKey()));
-    stateWriter.appendFollowUpEvent(
-        commandKey, IdentitySetupIntent.INITIALIZED, command.getValue());
+        existingDefaultEntities.role().orElse(roleRecord.getRoleKey()),
+        existingDefaultEntities.user().orElse(userRecord.getUserKey()));
+    stateWriter.appendFollowUpEvent(commandKey, IdentitySetupIntent.INITIALIZED, setup);
   }
 
   private void assignUserToRole(final long commandKey, final long roleKey, final long userKey) {
@@ -131,4 +154,6 @@ public final class IdentitySetupInitializeProcessor
       stateWriter.appendFollowUpEvent(roleKey, AuthorizationIntent.PERMISSION_ADDED, record);
     }
   }
+
+  record DefaultEntityKeys(Optional<Long> role, Optional<Long> user, Optional<Long> tenant) {}
 }
