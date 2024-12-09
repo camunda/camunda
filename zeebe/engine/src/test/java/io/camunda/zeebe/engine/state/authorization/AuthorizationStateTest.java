@@ -214,8 +214,7 @@ public class AuthorizationStateTest {
         .isNotEmpty();
     assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId1)).isEmpty();
     assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId2))
-        .containsExactly(
-            new AuthorizationKey(ownerKey2, resourceType.toString(), permissionType.toString()));
+        .containsExactly(new AuthorizationKey(ownerKey2, resourceType.toString()));
   }
 
   @Test
@@ -238,8 +237,7 @@ public class AuthorizationStateTest {
         .containsOnly(resourceId2);
     assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId1)).isEmpty();
     assertThat(authorizationState.getAuthorizationKeysByResourceId(resourceId2))
-        .containsExactly(
-            new AuthorizationKey(ownerKey, resourceType.toString(), permissionType.toString()));
+        .containsExactly(new AuthorizationKey(ownerKey, resourceType.toString()));
   }
 
   @Test
