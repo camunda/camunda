@@ -55,7 +55,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "endDate":"2023-05-23T00:00:00.000Z",
                    "flowNodeId":"flowNodeId",
                    "flowNodeName":"flowNodeName",
-                   "treePath":"processInstanceKey/flowNodeId",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":false,
@@ -83,7 +82,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
                       "flowNodeId",
-                      "processInstanceKey/flowNodeId",
+                      null,
                       FlowNodeType.SERVICE_TASK,
                       FlowNodeState.ACTIVE,
                       false,
@@ -103,7 +102,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
                    "flowNodeId":"startEvent_1",
-                   "treePath":"5/23",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
@@ -120,7 +118,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2023-05-17T10:10:10Z"),
           OffsetDateTime.parse("2023-05-23T10:10:10Z"),
           "startEvent_1",
-          "5/23",
+          null,
           FlowNodeType.SERVICE_TASK,
           FlowNodeState.ACTIVE,
           true,
@@ -210,7 +208,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                 "type": "SERVICE_TASK",
                 "flowNodeId": "StartEvent_1",
                 "flowNodeName": "name",
-                "treePath": "2251799813685989/2251799813685996",
                 "hasIncident": true,
                 "incidentKey": 2251799813685320,
                 "tenantId": "default"
@@ -243,7 +240,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .states(FlowNodeState.ACTIVE)
                         .types(FlowNodeType.SERVICE_TASK)
                         .flowNodeIds("StartEvent_1")
-                        .treePaths("2251799813685989/2251799813685996")
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")

@@ -39,7 +39,5 @@ public interface Incident {
 
   Long getJobKey();
 
-  String getTreePath();
-
   String getTenantId();
 }

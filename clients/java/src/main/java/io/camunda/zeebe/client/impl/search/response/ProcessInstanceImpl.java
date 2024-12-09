@@ -29,7 +29,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Long processDefinitionKey;
   private final Long parentProcessInstanceKey;
   private final Long parentFlowNodeInstanceKey;
-  private final String treePath;
   private final String startDate;
   private final String endDate;
   private final String state;
@@ -45,7 +44,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionKey = item.getProcessDefinitionKey();
     parentProcessInstanceKey = item.getParentProcessInstanceKey();
     parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
-    treePath = item.getTreePath();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
@@ -91,11 +89,6 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public Long getParentFlowNodeInstanceKey() {
     return parentFlowNodeInstanceKey;
-  }
-
-  @Override
-  public String getTreePath() {
-    return treePath;
   }
 
   @Override

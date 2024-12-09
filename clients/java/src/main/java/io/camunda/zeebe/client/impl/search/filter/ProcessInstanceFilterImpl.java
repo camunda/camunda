@@ -158,20 +158,6 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter treePath(final String treePath) {
-    treePath(b -> b.eq(treePath));
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceFilter treePath(final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
-    fn.accept(property);
-    filter.setTreePath(property.build());
-    return this;
-  }
-
-  @Override
   public ProcessInstanceFilter startDate(final OffsetDateTime startDate) {
     startDate(b -> b.eq(startDate));
     return this;
