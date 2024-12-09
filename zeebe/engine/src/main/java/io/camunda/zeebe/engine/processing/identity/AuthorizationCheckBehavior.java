@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -71,6 +72,11 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
+    final var authorizationClaims = request.getCommand().getAuthorizations();
+    if (isAuthorizedAnonymousUser(authorizationClaims)) {
+      return Either.right(null);
+    }
+
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
@@ -97,6 +103,12 @@ public final class AuthorizationCheckBehavior {
     } else {
       return Either.left(RejectionType.UNAUTHORIZED);
     }
+  }
+
+  private boolean isAuthorizedAnonymousUser(final Map<String, Object> authorizationClaims) {
+    final var authorizedAnonymousUserClaim =
+        authorizationClaims.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
+    return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
   }
 
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
@@ -210,23 +222,27 @@ public final class AuthorizationCheckBehavior {
     return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
   }
 
-  public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
+  public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
     // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
     // state
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
-      return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      final var authorizedTenants =
+          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      return new AuthorizedTenants(authorizedTenants);
     }
     final var userKey = getUserKey(command);
     final List<String> authorizedTenantIds = new ArrayList<>();
     authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return userKey
-        .map(
-            key ->
-                userState
-                    .getUser(key)
-                    .map(PersistedUser::getTenantIdsList)
-                    .orElse(authorizedTenantIds))
-        .orElse(authorizedTenantIds);
+    final var collectedAuthorizedTenants =
+        userKey
+            .map(
+                key ->
+                    userState
+                        .getUser(key)
+                        .map(PersistedUser::getTenantIdsList)
+                        .orElse(authorizedTenantIds))
+            .orElse(authorizedTenantIds);
+    return new AuthorizedTenants(collectedAuthorizedTenants);
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {

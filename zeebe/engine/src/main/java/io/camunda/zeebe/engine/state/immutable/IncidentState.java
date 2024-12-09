@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import java.util.List;
 import java.util.function.ObjLongConsumer;
 
 public interface IncidentState {
@@ -17,7 +17,7 @@ public interface IncidentState {
 
   IncidentRecord getIncidentRecord(long incidentKey);
 
-  IncidentRecord getIncidentRecord(long incidentKey, final List<String> authorizations);
+  IncidentRecord getIncidentRecord(long incidentKey, final AuthorizedTenants authorizations);
 
   long getProcessInstanceIncidentKey(long processInstanceKey);
 

@@ -24,7 +24,7 @@ import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import java.util.List;
@@ -80,7 +80,8 @@ public class Queries {
     return getBean(ProcessStore.class)
         .getProcesses(
             search,
-            getBean(IdentityAuthorizationService.class).getProcessDefinitionsFromAuthorization(),
+            getBean(TasklistPermissionsService.class)
+                .getProcessDefinitionIdsWithCreateInstancePermission(),
             DEFAULT_TENANT_IDENTIFIER,
             null)
         .stream()

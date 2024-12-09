@@ -15,20 +15,16 @@ import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.grpc.Status;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
@@ -57,6 +53,9 @@ public class ProcessService {
 
   @Autowired private ProcessStore processStore;
 
+  @Autowired private TasklistServiceAdapter tasklistServiceAdapter;
+  @Autowired private TasklistPermissionsService tasklistPermissionsService;
+
   public ProcessEntity getProcessByProcessDefinitionKeyAndAccessRestriction(
       final String processDefinitionKey) {
 
@@ -64,7 +63,7 @@ public class ProcessService {
         processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
 
     final List<String> processReadAuthorizations =
-        identityAuthorizationService.getProcessReadFromAuthorization();
+        tasklistPermissionsService.getProcessDefinitionIdsWithReadPermission();
 
     if (processReadAuthorizations.contains(processEntity.getBpmnProcessId())
         || processReadAuthorizations.contains(IdentityProperties.ALL_RESOURCES)) {
@@ -83,11 +82,14 @@ public class ProcessService {
       final String processDefinitionKey,
       final List<VariableInputDTO> variables,
       final String tenantId) {
+    return startProcessInstance(processDefinitionKey, variables, tenantId, true);
+  }
 
-    if (!identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
-      throw new ForbiddenActionException(
-          "User does not have the permission to start this process.");
-    }
+  public ProcessInstanceDTO startProcessInstance(
+      final String processDefinitionKey,
+      final List<VariableInputDTO> variables,
+      final String tenantId,
+      final boolean executeWithAuthentication) {
 
     final boolean isMultiTenancyEnabled = tenantService.isMultiTenancyEnabled();
 
@@ -95,42 +97,32 @@ public class ProcessService {
       throw new InvalidRequestException("Invalid tenant.");
     }
 
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
-        createProcessInstanceCommandStep3 =
-            zeebeClient
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processDefinitionKey)
-                .latestVersion();
-
-    if (isMultiTenancyEnabled) {
-      createProcessInstanceCommandStep3.tenantId(tenantId);
-    }
-
+    final Map<String, Object> variablesMap;
     if (CollectionUtils.isNotEmpty(variables)) {
-      final Map<String, Object> variablesMap =
+      variablesMap =
           variables.stream()
               .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
-      createProcessInstanceCommandStep3.variables(variablesMap);
+    } else {
+      variablesMap = null;
     }
 
-    ProcessInstanceEvent processInstanceEvent = null;
     try {
-      processInstanceEvent = createProcessInstanceCommandStep3.send().join();
+      final var processInstance =
+          Optional.of(executeWithAuthentication)
+              .filter(Boolean::booleanValue)
+              .map(
+                  i ->
+                      tasklistServiceAdapter.createProcessInstance(
+                          processDefinitionKey, variablesMap, tenantId))
+              .orElseGet(
+                  () ->
+                      tasklistServiceAdapter.createProcessInstanceWithoutAuthentication(
+                          processDefinitionKey, variablesMap, tenantId));
       LOGGER.debug("Process instance created for process [{}]", processDefinitionKey);
-    } catch (final ClientStatusException ex) {
-      if (Status.Code.NOT_FOUND.equals(ex.getStatusCode())) {
-        throw new NotFoundApiException(
-            String.format(
-                "No process definition found with processDefinitionKey: '%s'",
-                processDefinitionKey),
-            ex);
-      }
-      throw new TasklistRuntimeException(ex.getMessage(), ex);
-    } catch (final ClientException ex) {
+      return processInstance;
+    } catch (final Exception ex) {
       throw new TasklistRuntimeException(ex.getMessage(), ex);
     }
-
-    return new ProcessInstanceDTO().setId(processInstanceEvent.getProcessInstanceKey());
   }
 
   private Object extractTypedValue(final VariableInputDTO variable) {

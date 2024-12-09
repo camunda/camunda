@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UnauthorizedException;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
@@ -55,8 +57,8 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -76,6 +78,7 @@ public class ResourceDeletionDeleteProcessor
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
+  private final TenantState tenantState;
 
   public ResourceDeletionDeleteProcessor(
       final Writers writers,
@@ -100,6 +103,7 @@ public class ResourceDeletionDeleteProcessor
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     formState = processingState.getFormState();
+    tenantState = processingState.getTenantState();
   }
 
   @Override
@@ -162,49 +166,55 @@ public class ResourceDeletionDeleteProcessor
   private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
 
-    for (final String tenantId : getAuthorizedTenants(command)) {
-      final var processOptional =
-          Optional.ofNullable(
-              processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId));
-      if (processOptional.isPresent()) {
-        final var process = processOptional.get();
-        checkAuthorization(
-            command,
-            AuthorizationResourceType.DEPLOYMENT,
-            PermissionType.DELETE_PROCESS,
-            bufferAsString(process.getBpmnProcessId()));
-        setTenantId(command, tenantId);
-        deleteProcess(process);
-        return;
-      }
+    final var authorizedTenants = getAuthorizedTenants(command);
+    forEachTenant(
+        command,
+        tenantId -> {
+          final var processOptional =
+              Optional.ofNullable(
+                  processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId));
+          if (processOptional.isPresent()) {
+            final var process = processOptional.get();
+            checkAuthorization(
+                command,
+                AuthorizationResourceType.DEPLOYMENT,
+                PermissionType.DELETE_PROCESS,
+                bufferAsString(process.getBpmnProcessId()));
+            setTenantId(command, tenantId);
+            deleteProcess(process);
+            return false;
+          }
 
-      final var drgOptional =
-          decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
-      if (drgOptional.isPresent()) {
-        final var drg = drgOptional.get();
-        checkAuthorization(
-            command,
-            AuthorizationResourceType.DEPLOYMENT,
-            PermissionType.DELETE_DRD,
-            bufferAsString(drg.getDecisionRequirementsId()));
-        setTenantId(command, tenantId);
-        deleteDecisionRequirements(drg);
-        return;
-      }
+          final var drgOptional =
+              decisionState.findDecisionRequirementsByTenantAndKey(
+                  tenantId, value.getResourceKey());
+          if (drgOptional.isPresent()) {
+            final var drg = drgOptional.get();
+            checkAuthorization(
+                command,
+                AuthorizationResourceType.DEPLOYMENT,
+                PermissionType.DELETE_DRD,
+                bufferAsString(drg.getDecisionRequirementsId()));
+            setTenantId(command, tenantId);
+            deleteDecisionRequirements(drg);
+            return false;
+          }
 
-      final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
-      if (formOptional.isPresent()) {
-        final var form = formOptional.get();
-        checkAuthorization(
-            command,
-            AuthorizationResourceType.DEPLOYMENT,
-            PermissionType.DELETE_FORM,
-            bufferAsString(form.getFormId()));
-        setTenantId(command, tenantId);
-        deleteForm(form);
-        return;
-      }
-    }
+          final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
+          if (formOptional.isPresent()) {
+            final var form = formOptional.get();
+            checkAuthorization(
+                command,
+                AuthorizationResourceType.DEPLOYMENT,
+                PermissionType.DELETE_FORM,
+                bufferAsString(form.getFormId()));
+            setTenantId(command, tenantId);
+            deleteForm(form);
+            return false;
+          }
+
+          return true;
+        });
 
     throw new NoSuchResourceException(value.getResourceKey());
   }
@@ -352,12 +362,30 @@ public class ResourceDeletionDeleteProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);
   }
 
-  private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
+  private AuthorizedTenants getAuthorizedTenants(
+      final TypedRecord<ResourceDeletionRecord> command) {
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
       return authCheckBehavior.getAuthorizedTenantIds(command);
     }
-    return List.of(tenantId);
+    return new AuthorizedTenants(tenantId);
+  }
+
+  private void forEachTenant(
+      final TypedRecord<ResourceDeletionRecord> command, final Function<String, Boolean> function) {
+    final var authorizedTenants = getAuthorizedTenants(command);
+
+    if (AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)) {
+      tenantState.forEachTenant(function);
+      return;
+    }
+
+    final var tenants = authorizedTenants.getAuthorizedTenants();
+    for (final var tenant : tenants) {
+      if (!function.apply(tenant)) {
+        return;
+      }
+    }
   }
 
   private void setTenantId(

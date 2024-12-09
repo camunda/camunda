@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public interface TenantState {
 
@@ -59,4 +60,6 @@ public interface TenantState {
    *     {@link List} of entity keys associated with that type
    */
   Map<EntityType, List<Long>> getEntitiesByType(long tenantKey);
+
+  void forEachTenant(final Function<String, Boolean> function);
 }

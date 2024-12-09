@@ -16,11 +16,13 @@ import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 
@@ -39,6 +41,7 @@ import org.springframework.security.core.Authentication;
  */
 @Configuration(proxyBeanMethods = false)
 @Profile("tasklist & operate")
+@Import(TasklistPermissionsService.class)
 public class TasklistSecurityStubsConfiguration {
 
   /** UserReader that gets user details using Operate's UserService */
@@ -117,21 +120,6 @@ public class TasklistSecurityStubsConfiguration {
       @Override
       public List<String> getUserGroups() {
         return List.of(IdentityProperties.FULL_GROUP_ACCESS);
-      }
-
-      @Override
-      public boolean isAllowedToStartProcess(final String processDefinitionKey) {
-        return true;
-      }
-
-      @Override
-      public List<String> getProcessReadFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
-      }
-
-      @Override
-      public List<String> getProcessDefinitionsFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
       }
     };
   }
