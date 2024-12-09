@@ -14,22 +14,20 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.join.query.HasParentQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -40,9 +38,14 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
 
   private final TaskTemplate taskTemplate;
+  private final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate;
 
-  public ElasticsearchUserTaskReader(final TaskTemplate taskTemplate) {
+  public ElasticsearchUserTaskReader(
+      final TaskTemplate taskTemplate,
+      @Qualifier("operateSnapshotTaskVariableTemplate")
+          final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate) {
     this.taskTemplate = taskTemplate;
+    this.snapshotTaskVariableTemplate = snapshotTaskVariableTemplate;
   }
 
   @Override
@@ -83,26 +86,17 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   }
 
   @Override
-  public List<TaskVariableEntity> getUserTaskVariables(final long flowNodeInstanceKey) {
-    LOGGER.debug("Get UserTask Completed Variables by flowNodeInstanceKey {}", flowNodeInstanceKey);
+  public List<SnapshotTaskVariableEntity> getUserTaskVariables(final long taskKey) {
+    LOGGER.debug("Get UserTask Completed Variables by flowNodeInstanceKey {}", taskKey);
 
-    final HasParentQueryBuilder hasParentQuery =
-        new HasParentQueryBuilder(
-            TaskJoinRelationshipType.TASK.getType(),
-            QueryBuilders.termQuery(TaskTemplate.ID, flowNodeInstanceKey),
-            false);
-
-    // Make sure `name` field exists, indicating only variables are present in the result set
-    final ExistsQueryBuilder existsQuery = QueryBuilders.existsQuery(TaskTemplate.VARIABLE_NAME);
-
-    final BoolQueryBuilder combinedQuery =
-        QueryBuilders.boolQuery().must(hasParentQuery).must(existsQuery);
+    final var userTaskKeyQuery =
+        QueryBuilders.termQuery(SnapshotTaskVariableTemplate.TASK_ID, taskKey);
     try {
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
-              .source(new SearchSourceBuilder().query(constantScoreQuery(combinedQuery)));
+          ElasticsearchUtil.createSearchRequest(snapshotTaskVariableTemplate, ALL)
+              .source(new SearchSourceBuilder().query(constantScoreQuery(userTaskKeyQuery)));
       return ElasticsearchUtil.scroll(
-          searchRequest, TaskVariableEntity.class, objectMapper, esClient);
+          searchRequest, SnapshotTaskVariableEntity.class, objectMapper, esClient);
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());

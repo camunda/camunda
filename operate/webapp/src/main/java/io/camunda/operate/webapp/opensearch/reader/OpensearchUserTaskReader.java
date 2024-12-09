@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
@@ -15,15 +14,15 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.webapp.reader.UserTaskReader;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.util.List;
 import java.util.Optional;
-import org.opensearch.client.opensearch._types.query_dsl.HasParentQuery;
-import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -32,9 +31,14 @@ import org.springframework.stereotype.Component;
 public class OpensearchUserTaskReader extends OpensearchAbstractReader implements UserTaskReader {
 
   private final TaskTemplate taskTemplate;
+  private final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate;
 
-  public OpensearchUserTaskReader(final TaskTemplate taskTemplate) {
+  public OpensearchUserTaskReader(
+      final TaskTemplate taskTemplate,
+      @Qualifier("operateSnapshotTaskVariableTemplate")
+          final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate) {
     this.taskTemplate = taskTemplate;
+    this.snapshotTaskVariableTemplate = snapshotTaskVariableTemplate;
   }
 
   @Override
@@ -58,22 +62,17 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
   }
 
   @Override
-  public List<TaskVariableEntity> getUserTaskVariables(final long flowNodeInstanceKey) {
-    final Query hasParentQuery =
-        new HasParentQuery.Builder()
-            .parentType(TaskJoinRelationshipType.TASK.getType())
-            .query(term(TaskTemplate.ID, flowNodeInstanceKey))
+  public List<SnapshotTaskVariableEntity> getUserTaskVariables(final long taskKey) {
+    final var userTaskKeyQuery =
+        QueryBuilders.term()
+            .field(SnapshotTaskVariableTemplate.TASK_ID)
+            .value(FieldValue.of(String.valueOf(taskKey)))
             .build()
-            .query();
-
-    // Make sure `name` field exists, indicating only variables are present in the result set
-    final Query existsQuery = exists(TaskTemplate.VARIABLE_NAME);
-
-    final Query combinedQuery =
-        QueryBuilders.bool().must(hasParentQuery, existsQuery).build().toQuery();
+            .toQuery();
 
     final var request =
-        searchRequestBuilder(taskTemplate.getAlias()).query(withTenantCheck(combinedQuery));
-    return richOpenSearchClient.doc().scrollValues(request, TaskVariableEntity.class);
+        searchRequestBuilder(snapshotTaskVariableTemplate.getAlias())
+            .query(withTenantCheck(userTaskKeyQuery));
+    return richOpenSearchClient.doc().scrollValues(request, SnapshotTaskVariableEntity.class);
   }
 }
