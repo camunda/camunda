@@ -39,7 +39,7 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
         && entityType != EntityType.MAPPING
         && entityType != EntityType.GROUP) {
       throw new IllegalArgumentException(
-          "For now, tenants can only be assigned to users, group and mappings");
+          "For now, tenants can only be assigned to users, groups and mappings");
     }
     tenantDto.setEntityType(entityType);
     tenantDto.setEntityKey(entityKey);
