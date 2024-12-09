@@ -219,7 +219,9 @@ public final class DeploymentCreateProcessor
         .forEach(
             metadata -> {
               for (final DeploymentResource resource : deploymentEvent.getResources()) {
-                if (resource.getResourceName().equals(metadata.getResourceName())) {
+                final var resourceChecksum =
+                    deploymentTransformer.getChecksum(resource.getResource());
+                if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
                   stateWriter.appendFollowUpEvent(
                       metadata.getFormKey(),
                       FormIntent.CREATED,
