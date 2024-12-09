@@ -109,6 +109,30 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveTaskByProcessInstanceAndLocalVariable() {
+    final UserTaskVariableFilterRequest variableValueFilter =
+        new UserTaskVariableFilterRequest().name("task02");
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(
+                f ->
+                    f.processInstanceVariables(List.of(variableValueFilter))
+                        .localVariables(List.of(variableValueFilter)))
+            .send()
+            .join();
+
+    // Validate the size of the items
+    assertThat(result.items()).hasSize(2);
+
+    // Validate that names "P1" and "P2" exist in the result
+    // Also validate no duplicated itens once it is 2 elements.
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1", "P2");
+  }
+
+  @Test
   public void shouldHaveCorrectUserTaskName() {
     // when
     final var result =
