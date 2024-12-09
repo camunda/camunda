@@ -33,7 +33,8 @@ public class DurationFormatterUtilTest {
   @ValueSource(ints = {0, -1000})
   void shouldReturnDashForZeroOrNegativeDuration(final int durationInMs) {
     // when
-    String result = DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
+    final String result =
+        DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
     // then
     assertThat(result).isEqualTo("-");
   }
@@ -78,7 +79,7 @@ public class DurationFormatterUtilTest {
     final String unitString = "min";
 
     // when
-    String result = DurationFormatterUtil.formatDuration(unitString, duration);
+    final String result = DurationFormatterUtil.formatDuration(unitString, duration);
 
     // then
     assertThat(result).isEqualTo(expected);
