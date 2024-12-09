@@ -7,9 +7,6 @@
  */
 package io.camunda.it.utils;
 
-import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_PASSWORD;
-import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_USERNAME;
-
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
@@ -34,6 +31,9 @@ import org.slf4j.LoggerFactory;
 public final class ZeebeClientTestFactory implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeClientTestFactory.class);
+
+  private static final String DEFAULT_USER_USERNAME = "demo";
+  private static final String DEFAULT_USER_PASSWORD = "demo";
 
   private final Map<String, User> usersRegistry = new HashMap<>();
   private final Map<String, ZeebeClient> cachedClients = new ConcurrentHashMap<>();
