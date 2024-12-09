@@ -97,12 +97,8 @@ public abstract class TasklistZeebeExtension
                   String.valueOf(tasklistProperties.getMultiTenancy().isEnabled()));
       zeebeContainer.start();
     } else {
-      // for "standard" zeebe configuration, use a container from the pool
-      if (zeebeContainerContainerPoolManager == null) {
-        zeebeContainerContainerPoolManager =
-            new ContainerPoolManager<>(3, this::createZeebeContainer, ZeebeContainer.class).init();
-      }
-      zeebeContainer = zeebeContainerContainerPoolManager.getContainer();
+      zeebeContainer = createZeebeContainer();
+      zeebeContainer.start();
     }
     prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
     LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
