@@ -181,41 +181,19 @@ public class OpenSearchTestExtension
       final TestCheck testCheck,
       final Supplier<Object> supplier,
       final Object... arguments) {
-    long shouldImportCount = 0;
     int waitingRound = 0;
     final int maxRounds = 50;
     boolean found = testCheck.test(arguments);
     final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
-      shouldImportCount = 0;
       try {
         if (supplier != null) {
           supplier.get();
         }
         refreshIndexesInElasticsearch();
-        shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
-      long imported = testImportListener.getImported();
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(500);
-          shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          shouldImportCount = 0;
-          LOGGER.error(e.getMessage(), e);
-        }
-        imported = testImportListener.getImported();
-        LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
-      }
-      refreshTasklistIndices();
       found = testCheck.test(arguments);
       if (!found) {
         sleepFor(500);
