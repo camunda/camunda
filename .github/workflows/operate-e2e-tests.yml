@@ -104,7 +104,7 @@ jobs:
         # we're excluding optimize from the build, not to impact this operate's workflow.
         run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: ./mvnw clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,auth
+        run: ./mvnw clean install -DskipTests -DskipChecks -f dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,auth
         env:
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
