@@ -41,6 +41,8 @@ jobs:
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       # Detect changes against the base branch
@@ -53,6 +55,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.7'
@@ -82,6 +85,7 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +111,8 @@ jobs:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -146,6 +151,7 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-zeebe
@@ -197,6 +203,7 @@ jobs:
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -295,6 +302,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
@@ -377,6 +386,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: identity/client
@@ -421,6 +431,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: optimize/client
@@ -466,6 +477,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       LIMITS_CPU: 4
     steps:
@@ -501,17 +513,19 @@ jobs:
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
-    timeout-minutes: 10
     needs: [detect-changes]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       # set the comparison based on the type of workflow trigger:
       #   - for PRs, we use the last commit of the base
       #   - for merge queues, we use the last commit of the target merge queue
       #   - for a push, we use the last commit before the push
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-    if: |
-      needs.detect-changes.outputs.protobuf-changes == 'true'
+    if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
       - uses: actions/checkout@v4
       - id: pr-body
@@ -556,6 +570,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions:
+      checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - build-platform-frontend
@@ -584,6 +600,7 @@ jobs:
     needs: [ check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-maven-snapshot
@@ -655,6 +672,7 @@ jobs:
     needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-camunda-docker-snapshot

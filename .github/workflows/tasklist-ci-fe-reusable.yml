@@ -7,6 +7,8 @@ jobs:
   fe-type-check:
     name: Type check
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -35,6 +37,8 @@ jobs:
   fe-eslint:
     name: ESLint
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -63,6 +67,8 @@ jobs:
   fe-stylelint:
     name: Stylelint
     runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -91,6 +97,8 @@ jobs:
   fe-tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -119,6 +127,8 @@ jobs:
   fe-visual-regression-tests:
     name: Visual regression tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.49.1
       options: --user 1001:1000
@@ -162,6 +172,8 @@ jobs:
   fe-a11y-tests:
     name: a11y tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.49.1
       options: --user 1001:1000
