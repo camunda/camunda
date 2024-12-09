@@ -49,6 +49,7 @@ tags:
   - name: User
   - name: User task
   - name: Variable
+  - name: Usage metrics
 
 paths:
   /topology:
