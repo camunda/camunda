@@ -199,6 +199,11 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public List<RoleEntity> findAllRoles(final RoleQuery filter) {
+    return List.of();
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
     LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
 

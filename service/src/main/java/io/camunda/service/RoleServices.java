@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -52,6 +53,14 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
     return search(
         query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+  }
+
+  public List<RoleEntity> findAll(final RoleQuery query) {
+    return roleSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.role().read())))
+        .findAllRoles(query);
   }
 
   @Override

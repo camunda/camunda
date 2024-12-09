@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -191,31 +192,47 @@ public class PermissionsService {
     return null;
   }
 
+  private List<Long> getAuthenticatedUserRoleKeys() {
+    final Authentication requestAuthentication =
+        SecurityContextHolder.getContext().getAuthentication();
+    if (requestAuthentication != null) {
+      final Object principal = requestAuthentication.getPrincipal();
+      if (principal instanceof final CamundaUser authenticatedPrincipal) {
+        return authenticatedPrincipal.getRoles().stream().map(RoleEntity::roleKey).toList();
+      }
+    }
+    return Collections.emptyList();
+  }
+
   private boolean isAuthorizedFor(
-      String resourceId, AuthorizationResourceType resourceType, PermissionType permissionType) {
+      final String resourceId,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
     final Authorization authorization = new Authorization(resourceType, permissionType);
     final SecurityContext securityContext = getSecurityContext(authorization);
     return authorizationChecker.isAuthorized(resourceId, securityContext);
   }
 
-  private SecurityContext getSecurityContext(Authorization authorization) {
+  private SecurityContext getSecurityContext(final Authorization authorization) {
     return new SecurityContext(getAuthentication(), authorization);
   }
 
   private io.camunda.security.auth.Authentication getAuthentication() {
     final Long authenticatedUserKey = getAuthenticatedUserKey();
+    final List<Long> authenticatedRoleKeys = getAuthenticatedUserRoleKeys();
     final List<String> authorizedTenants = tenantService.tenantIds();
-    // groups and roles will come later
+    // groups  will come later
     return new io.camunda.security.auth.Authentication.Builder()
         .user(authenticatedUserKey)
+        .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();
   }
 
-  private PermissionType getPermission(IdentityPermission permission) {
+  private PermissionType getPermission(final IdentityPermission permission) {
     try {
       return PermissionType.valueOf(permission.name());
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(
           String.format("No PermissionType found for IdentityPermission [%s]", permission));
     }
