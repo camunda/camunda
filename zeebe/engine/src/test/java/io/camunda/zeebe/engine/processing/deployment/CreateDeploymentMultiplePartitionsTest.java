@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -21,17 +22,20 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
@@ -52,6 +56,8 @@ public final class CreateDeploymentMultiplePartitionsTest {
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DMN_DECISION_TABLE_RENAMED =
       "/dmn/decision-table-with-renamed-drg-and-decision.dmn";
+  private static final String TEST_FORM_1 = "/form/test-form-1.form";
+  private static final String TEST_FORM_2 = "/form/test-form-2.form";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -239,6 +245,43 @@ public final class CreateDeploymentMultiplePartitionsTest {
         .flatExtracting(DeploymentRecordValue::getProcessesMetadata)
         .extracting(ProcessMetadataValue::getBpmnProcessId)
         .containsOnly("process", "process2");
+  }
+
+  @Test
+  public void shouldCreateDeploymentResourceWithMultipleFormsWithSameResourceName() {
+    // given
+    final var formResource1 = readResource(TEST_FORM_1);
+    final var formResource2 = readResource(TEST_FORM_2);
+
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE
+            .deployment()
+            .withJsonResource(formResource1, "test-form.form")
+            .withJsonResource(formResource2, "test-form.form")
+            .deploy();
+
+    // then
+    assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+
+    for (int partition = 1; partition <= PARTITION_COUNT; partition++) {
+      final var deployments =
+          RecordingExporter.records()
+              .withPartitionId(partition)
+              .limit(
+                  recordValueRecord ->
+                      recordValueRecord.getIntent().equals(DeploymentIntent.CREATED))
+              .formRecords()
+              .withIntent(FormIntent.CREATED);
+
+      assertThat(deployments)
+          .hasSize(2)
+          .extracting(Record::getValue)
+          .extracting(Form::getFormId, Form::getResource)
+          .containsExactlyInAnyOrder(
+              tuple("Form_0w7r08e", formResource1), tuple("Form_6s1b76p", formResource2));
+    }
   }
 
   @Test
@@ -712,5 +755,17 @@ public final class CreateDeploymentMultiplePartitionsTest {
     assertThat(deploymentCreatedEvent.getPartitionId()).isEqualTo(expectedPartition);
 
     deploymentAssert.accept(deploymentCreatedEvent);
+  }
+
+  private byte[] readResource(final String resourceName) {
+    final var resourceAsStream = getClass().getResourceAsStream(resourceName);
+    assertThat(resourceAsStream).isNotNull();
+
+    try {
+      return resourceAsStream.readAllBytes();
+    } catch (final IOException e) {
+      fail("Failed to read resource '{}'", resourceName, e);
+      return new byte[0];
+    }
   }
 }
