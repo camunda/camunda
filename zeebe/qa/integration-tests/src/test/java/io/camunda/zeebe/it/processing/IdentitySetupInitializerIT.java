@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.processing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
@@ -28,6 +29,8 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -72,6 +75,49 @@ final class IdentitySetupInitializerIT {
         .hasUserType(UserType.DEFAULT);
     final var passwordMatches =
         passwordEncoder.matches(DEFAULT_USER_PASSWORD, createdUser.getPassword());
+    assertTrue(passwordMatches);
+
+    final var createdRole = record.getDefaultRole();
+    Assertions.assertThat(createdRole).hasName(IdentitySetupInitializer.DEFAULT_ROLE_NAME);
+
+    final var createdTenant = record.getDefaultTenant();
+    Assertions.assertThat(createdTenant)
+        .hasTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
+        .hasName(IdentitySetupInitializer.DEFAULT_TENANT_NAME);
+  }
+
+  @Test
+  void shouldInitializeIdentityWithConfiguredDefaultUser() {
+    // given a broker with authorization enabled
+    final var username = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
+    final var password = UUID.randomUUID().toString();
+    final var email = UUID.randomUUID().toString();
+    createBroker(
+        true,
+        1,
+        cfg -> {
+          final var defaultUserCfg = cfg.getInitialization().getDefaultUser();
+          defaultUserCfg.setUsername(username);
+          defaultUserCfg.setName(name);
+          defaultUserCfg.setPassword(password);
+          defaultUserCfg.setEmail(email);
+        });
+
+    // then identity should be initialized
+    final var record =
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
+            .getFirst()
+            .getValue();
+
+    final var createdUser = record.getDefaultUser();
+    Assertions.assertThat(createdUser)
+        .isNotNull()
+        .hasUsername(username)
+        .hasName(name)
+        .hasEmail(email)
+        .hasUserType(UserType.DEFAULT);
+    final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
     assertTrue(passwordMatches);
 
     final var createdRole = record.getDefaultRole();
@@ -190,10 +236,14 @@ final class IdentitySetupInitializerIT {
   }
 
   private void createBroker(
-      final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
+      final boolean authorizationsEnabled,
+      final int partitionCount,
+      final Path tempDir,
+      final Consumer<CamundaSecurityProperties> securityCfg) {
     broker =
         new TestStandaloneBroker()
             .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
+            .withSecurityConfig(securityCfg)
             .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(partitionCount))
             .withRecordingExporter(true);
 
@@ -206,6 +256,18 @@ final class IdentitySetupInitializerIT {
   }
 
   private void createBroker(final boolean authorizationsEnabled, final int partitionCount) {
-    createBroker(authorizationsEnabled, partitionCount, null);
+    createBroker(authorizationsEnabled, partitionCount, cfg -> {});
+  }
+
+  private void createBroker(
+      final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
+    createBroker(authorizationsEnabled, partitionCount, tempDir, cfg -> {});
+  }
+
+  private void createBroker(
+      final boolean authorizationsEnabled,
+      final int partitionCount,
+      final Consumer<CamundaSecurityProperties> securityCfg) {
+    createBroker(authorizationsEnabled, partitionCount, null, securityCfg);
   }
 }
