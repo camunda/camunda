@@ -69,15 +69,20 @@ public class UserTaskCommandPreconditionChecker {
   protected Either<Tuple<RejectionType, String>, UserTaskRecord> check(
       final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
     final UserTaskRecord persistedRecord =
-        userTaskState.getUserTask(userTaskKey, authorizedTenantIds);
+        command.hasRequestMetadata()
+            ? userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command))
+            : userTaskState.getUserTask(userTaskKey);
 
     if (persistedRecord == null) {
       return Either.left(
           Tuple.of(
               RejectionType.NOT_FOUND,
               String.format(NO_USER_TASK_FOUND_MESSAGE, intent, userTaskKey)));
+    }
+
+    if (!command.hasRequestMetadata()) {
+      return Either.right(persistedRecord);
     }
 
     final var authRequest =
