@@ -71,24 +71,19 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    final Stream<String> authorizedResourceIdentifiers;
-    final var userKey = getUserKey(request);
-    if (userKey.isPresent()) {
-      final var userOptional = userState.getUser(userKey.get());
-      if (userOptional.isEmpty()) {
-        return Either.left(RejectionType.UNAUTHORIZED);
-      }
-      // verify if the user is authorized for the tenant
-      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-        return Either.left(RejectionType.NOT_FOUND);
-      }
-
-      authorizedResourceIdentifiers =
-          getUserAuthorizedResourceIdentifiers(
-              userOptional.get(), request.getResourceType(), request.getPermissionType());
-    } else {
-      authorizedResourceIdentifiers = Stream.empty();
+    Stream<String> authorizedResourceIdentifiers = Stream.empty();
+    final var userOptional = getUser(request.getCommand());
+    if (userOptional.isEmpty()) {
+      return Either.left(RejectionType.UNAUTHORIZED);
     }
+    // verify if the user is authorized for the tenant
+    if (!isUserAuthorizedForTenant(request, userOptional.get())) {
+      return Either.left(RejectionType.NOT_FOUND);
+    }
+
+    authorizedResourceIdentifiers =
+        getUserAuthorizedResourceIdentifiers(
+            userOptional.get(), request.getResourceType(), request.getPermissionType());
 
     // Check if authorizations contain a resource identifier that matches the required resource
     // identifiers
@@ -99,8 +94,17 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
-  private static Optional<Long> getUserKey(final AuthorizationRequest request) {
-    return getUserKey(request.getCommand());
+  /**
+   * Return a user by its key or username. If the user is not found, return an empty optional.
+   *
+   * <p>The user key might not be always present in the command authorizations (e.g. if a request
+   * comes from the gRPC gateway). The fallback if the user key is not present is to use the
+   * username.
+   */
+  private Optional<PersistedUser> getUser(final TypedRecord<?> command) {
+    return getUserKey(command)
+        .flatMap(userState::getUser)
+        .or(() -> getUsername(command).flatMap(userState::getUser));
   }
 
   private boolean isUserAuthorizedForTenant(
@@ -118,17 +122,11 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
-    return getUserKey(request)
+    return getUser(request.getCommand())
         .map(
-            userKey -> {
-              final var userOptional = userState.getUser(userKey);
-              return userOptional
-                  .map(
-                      user ->
-                          getUserAuthorizedResourceIdentifiers(
-                              user, request.getResourceType(), request.getPermissionType()))
-                  .orElseGet(Stream::empty);
-            })
+            user ->
+                getUserAuthorizedResourceIdentifiers(
+                    user, request.getResourceType(), request.getPermissionType()))
         .orElseGet(Stream::empty)
         .collect(Collectors.toSet());
   }
@@ -216,22 +214,19 @@ public final class AuthorizationCheckBehavior {
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
       return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
     }
-    final var userKey = getUserKey(command);
     final List<String> authorizedTenantIds = new ArrayList<>();
     authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return userKey
-        .map(
-            key ->
-                userState
-                    .getUser(key)
-                    .map(PersistedUser::getTenantIdsList)
-                    .orElse(authorizedTenantIds))
-        .orElse(authorizedTenantIds);
+    return getUser(command).map(PersistedUser::getTenantIdsList).orElse(authorizedTenantIds);
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {
     return Optional.ofNullable(
         (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+  }
+
+  private static Optional<String> getUsername(final TypedRecord<?> command) {
+    return Optional.ofNullable(
+        (String) command.getAuthorizations().get(Authorization.USER_TOKEN_CLAIM_USERNAME));
   }
 
   public static final class AuthorizationRequest {
