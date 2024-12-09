@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignTenantToMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -92,6 +93,7 @@ import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
+import io.camunda.zeebe.client.impl.command.AssignTenantToMappingCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -817,6 +819,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DeleteTenantCommandStep1 newDeleteTenantCommand(final long tenantKey) {
     return new DeleteTenantCommandImpl(httpClient).tenantKey(tenantKey);
+  }
+
+  @Override
+  public AssignTenantToMappingCommandStep1 newAssignTenantToMappingCommand(final long tenantKey) {
+    return new AssignTenantToMappingCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {
