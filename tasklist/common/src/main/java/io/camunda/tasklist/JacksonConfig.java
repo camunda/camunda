@@ -18,6 +18,8 @@ import io.camunda.tasklist.property.TasklistProperties;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,8 +30,8 @@ public class JacksonConfig {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Bean("tasklistObjectMapper")
-  public ObjectMapper objectMapper() {
+  @Bean("tasklistObjectMapperCustomizer")
+  public Consumer<Jackson2ObjectMapperBuilder> tasklistObjectMapperCustomizer() {
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
         OffsetDateTime.class,
@@ -45,15 +47,23 @@ public class JacksonConfig {
     //    javaTimeModule.addDeserializer(LocalDate.class, new
     // ElasticsearchConnector.CustomLocalDateDeserializer(localDateFormatter()));
 
-    return Jackson2ObjectMapperBuilder.json()
-        .modules(javaTimeModule, new Jdk8Module())
-        .featuresToDisable(
-            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-        .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT)
-        .build();
+    return builder ->
+        builder
+            .modulesToInstall(modules -> modules.addAll(List.of(javaTimeModule, new Jdk8Module())))
+            .featuresToDisable(
+                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+                DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+                DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT)
+            .build();
+  }
+
+  @Bean("tasklistObjectMapper")
+  public ObjectMapper objectMapper() {
+    final var builder = Jackson2ObjectMapperBuilder.json();
+    tasklistObjectMapperCustomizer().accept(builder);
+    return builder.build();
   }
 
   private DateTimeFormatter dateTimeFormatter() {
