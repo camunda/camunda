@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,10 +92,18 @@ public interface TypedApiEntityConsumer<T> {
 
     @Override
     public ApiEntity<T> generateContent() throws IOException {
-      buffer.asParserOnFirstToken();
-
       if (isResponse) {
-        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+        try {
+          return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+        } catch (final IOException ioe) {
+          return ApiEntity.of(
+              new ProblemDetail()
+                  .title("Unexpected server response")
+                  .status(500)
+                  .detail(
+                      json.writeValueAsString(
+                          json.readValue(buffer.asParserOnFirstToken(), Map.class))));
+        }
       }
 
       return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
