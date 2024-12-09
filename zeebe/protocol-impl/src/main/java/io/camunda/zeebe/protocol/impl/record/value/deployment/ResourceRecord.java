@@ -31,7 +31,7 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty resourceProp = new StringProperty("resourceProp", "");
+  private final BinaryProperty resourceProp = new BinaryProperty("resourceProp", new UnsafeBuffer());
 
   public ResourceRecord() {
     super(9);
@@ -46,7 +46,7 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
         .declareProperty(resourceProp);
   }
 
-  public ResourceRecord wrap(final ResourceMetadataRecord metadata, final String robotScript) {
+  public ResourceRecord wrap(final ResourceMetadataRecord metadata, final byte[] resource) {
     resourceIdProp.setValue(metadata.getResourceId());
     versionProp.setValue(metadata.getVersion());
     checksumProp.setValue(metadata.getChecksumBuffer());
@@ -55,7 +55,7 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     tenantIdProp.setValue(metadata.getTenantId());
     deploymentKeyProp.setValue(metadata.getDeploymentKey());
     versionTagProp.setValue(metadata.getVersionTag());
-    resourceProp.setValue(robotScript);
+    resourceProp.setValue(BufferUtil.wrapArray(resource));
     return this;
   }
 
@@ -186,8 +186,8 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return bufferAsString(resourceProp.getValue());
   }
 
-  public ResourceRecord setResourceProp(final String resourceProp) {
-    this.resourceProp.setValue(resourceProp);
+  public ResourceRecord setResource(final DirectBuffer resource, final int offset, final int length) {
+    resourceProp.setValue(resource, offset, length);
     return this;
   }
 }
