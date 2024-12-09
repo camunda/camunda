@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 @WebMvcTest(
     value = UsageMetricsQueryController.class,
@@ -33,6 +35,8 @@ public class UsageMetricsQueryControllerTest extends RestControllerTest {
          "decisionInstances": 5354365
        }
      """;
+
+  @MockBean UsageMetricsServices usageMetricsServices;
 
   @Test
   void shouldSearchUsageMetrics() {
