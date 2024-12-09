@@ -93,10 +93,13 @@ public class ElasticsearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    if (prefix.isBlank()) {
+      indexPrefix = Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(prefix);
+      tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+      tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
     }
-    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+
     if (tasklistProperties.getElasticsearch().isCreateSchema()) {
       elasticsearchSchemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
