@@ -68,7 +68,8 @@ final class ProcessInstanceModifiedEventApplier
             instruction -> {
               final var element =
                   process.getElementById(instruction.getElementId(), ExecutableFlowNode.class);
-              if (!element.getElementType().equals(BpmnElementType.PARALLEL_GATEWAY)) {
+              if (!element.getElementType().equals(BpmnElementType.PARALLEL_GATEWAY)
+                  && !element.getElementType().equals(BpmnElementType.INCLUSIVE_GATEWAY)) {
                 return;
               }
 
