@@ -41,6 +41,7 @@ import io.camunda.exporter.handlers.MappingCreatedHandler;
 import io.camunda.exporter.handlers.MappingDeletedHandler;
 import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
@@ -299,7 +300,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new MappingDeletedHandler(
                 indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
             new MetricFromDecisionEvaluationHandler(
-                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
+            new MigratedVariableHandler(
+                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName()));
   }
 
   @Override
