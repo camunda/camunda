@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -46,7 +47,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
 
-  private static final Logger log = LoggerFactory.getLogger(ClusterEndpoint.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ClusterEndpoint.class);
   private final ClusterConfigurationManagementRequestSender requestSender;
 
   @Autowired
@@ -205,9 +206,21 @@ public class ClusterEndpoint {
           Optional.ofNullable(partitions).map(ClusterConfigPatchRequestPartitions::getDistribution);
 
       if (newPartitionDistribution.isPresent()) {
-        log.info("Got new PartitionDistribution! " + newPartitionDistribution.toString());
+        LOG.info("Got new PartitionDistribution! " + newPartitionDistribution);
+
+        LOG.info(
+            "Got partition "
+                + newPartitionDistribution.get().getPartitioning().getFirst().getPartitionId()
+                + " with nodes "
+                + newPartitionDistribution.get().getPartitioning().getFirst().getNodes());
+        // Trigger partition redistribution
+        final ReassignPartitionsRequest reassignPartitionRequest =
+            new ReassignPartitionsRequest(
+                Set.of(new MemberId("0"), new MemberId("1"), new MemberId("2")), dryRun);
+        return ClusterApiUtils.mapOperationResponse(
+            requestSender.reassignPartitions(reassignPartitionRequest).join());
       } else {
-        log.info("Didn't get new PartitionDistribution!");
+        LOG.info("Didn't get new PartitionDistribution!");
       }
 
       if (isScale) {
