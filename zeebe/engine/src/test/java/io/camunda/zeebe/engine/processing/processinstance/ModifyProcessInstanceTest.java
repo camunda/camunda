@@ -1163,6 +1163,49 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldActivateInclusiveGateway() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .inclusiveGateway("fork")
+                .conditionExpression("true")
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .endEvent()
+                .moveToNode("fork")
+                .conditionExpression("true")
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("fork")
+        .modify();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(4))
+        .hasSize(4);
+  }
+
+  @Test
   public void verifyCallActivityWithIncidentInOutputMappingCanBeTerminated() {
     final var child = Bpmn.createExecutableProcess("child").startEvent().endEvent().done();
     final var parent =
