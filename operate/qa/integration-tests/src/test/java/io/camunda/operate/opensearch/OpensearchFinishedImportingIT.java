@@ -7,14 +7,18 @@
  */
 package io.camunda.operate.opensearch;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
+import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import io.camunda.operate.zeebeimport.opensearch.OpensearchRecordsReader;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
@@ -28,9 +32,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -218,6 +224,77 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .during(Duration.ofSeconds(10))
         .atMost(Duration.ofSeconds(12))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+  }
+
+  @Test
+  public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    EXPORTER.export(record);
+    osClient.index().refresh("*");
+
+    zeebeImporter.performOneRoundOfImport();
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+
+    // when
+    // simulates restart of zeebe importer by restarting all the record readers
+    Arrays.stream(ImportValueType.IMPORT_VALUE_TYPES)
+        .forEach(
+            type -> {
+              final var reader =
+                  beanFactory.getBean(
+                      OpensearchRecordsReader.class,
+                      1,
+                      type,
+                      operateProperties.getImporter().getQueueSize());
+              reader.postConstruct();
+            });
+
+    // then
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(OpensearchRecordsReader.class::cast)
+        .forEach(OpensearchRecordsReader::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequestBuilder =
+                  new SearchRequest.Builder()
+                      .size(100)
+                      .index(importPositionIndex.getFullQualifiedName());
+              final var documents =
+                  osClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
+
+              // all initial import position documents created for each record reader
+              return documents.hits().hits().size()
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
+  private void assertImportPositionMatchesRecord(
+      final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var importPositionDoc =
+                  osClient
+                      .doc()
+                      .getWithRetries(
+                          importPositionIndex.getFullQualifiedName(),
+                          partitionId + "-" + type.getAliasTemplate(),
+                          ImportPositionEntity.class)
+                      .orElse(new ImportPositionEntity());
+
+              assertThat(importPositionDoc.getPosition()).isEqualTo(record.getPosition());
+            });
   }
 
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {

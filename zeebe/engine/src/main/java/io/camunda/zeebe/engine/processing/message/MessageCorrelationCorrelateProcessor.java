@@ -113,7 +113,8 @@ public final class MessageCorrelationCorrelateProcessor
     correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
 
     final var authorizationRejectionOptional =
-        isAuthorizedForAllSubscriptions(command, correlatingSubscriptions);
+        isAuthorizedForAllSubscriptions(
+            command, correlatingSubscriptions, messageCorrelationRecord.getTenantId());
     if (authorizationRejectionOptional.isPresent()) {
       final var rejection = authorizationRejectionOptional.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -163,7 +164,8 @@ public final class MessageCorrelationCorrelateProcessor
 
   private Optional<Rejection> isAuthorizedForAllSubscriptions(
       final TypedRecord<MessageCorrelationRecord> command,
-      final Subscriptions correlatingSubscriptions) {
+      final Subscriptions correlatingSubscriptions,
+      final String tenantId) {
     final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
     final AtomicReference<String> processId = new AtomicReference<>();
 
@@ -177,12 +179,15 @@ public final class MessageCorrelationCorrelateProcessor
 
               request.set(
                   new AuthorizationRequest(
-                      command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType));
+                      command,
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      permissionType,
+                      tenantId));
 
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);
               processId.set(processIdString);
-              return authCheckBehavior.isAuthorized(request.get());
+              return authCheckBehavior.isAuthorized(request.get()).isRight();
             },
             true);
 

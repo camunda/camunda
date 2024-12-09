@@ -21,6 +21,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -47,6 +48,8 @@ import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryRespons
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
@@ -117,6 +120,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static MappingSearchQueryResponse toMappingSearchQueryResponse(
+      final SearchQueryResult<MappingEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new MappingSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toMappings)
                 .orElseGet(List::of));
   }
 
@@ -278,6 +292,17 @@ public final class SearchQueryResponseMapper {
             tenantEntity.assignedMemberKeys() == null
                 ? null
                 : tenantEntity.assignedMemberKeys().stream().sorted().toList());
+  }
+
+  private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {
+    return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
+  }
+
+  public static MappingItem toMapping(final MappingEntity mappingEntity) {
+    return new MappingItem()
+        .mappingKey(mappingEntity.mappingKey())
+        .claimName(mappingEntity.claimName())
+        .claimValue(mappingEntity.claimValue());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(

@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -82,7 +83,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isFalse();
+    assertThat(authorized.isRight()).isFalse();
   }
 
   @Test
@@ -99,7 +100,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -116,7 +117,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).isEmpty();
@@ -139,7 +140,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -157,7 +158,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -180,7 +181,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -198,10 +199,92 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
+  }
+
+  @Test
+  public void shouldBeAuthorizedForTenant() {
+    // given
+    final var userKey = createUser();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(userKey, resourceType, permissionType, resourceId);
+    final var tenantId = createAndAssignTenant(userKey);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedForTenant() {
+    // given
+    final var userKey = createUser();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(userKey, resourceType, permissionType, resourceId);
+    final var anotherTenantId = "authorizedForAnotherTenant";
+    createAndAssignTenant(userKey);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, anotherTenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  public void shouldGetAuthorizedTenantIds() {
+    // given
+    final var userKey = createUser();
+    final var tenantId1 = createAndAssignTenant(userKey);
+    final var tenantId2 = createAndAssignTenant(userKey);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds).containsExactlyInAnyOrder(tenantId1, tenantId2);
+  }
+
+  @Test
+  public void shouldGetDefaultAuthorizedTenantIdsIfUserKeyIsNotPresent() {
+    // given
+    final var command = mock(TypedRecord.class);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldGetDefaultAuthorizedTenantIdsIfUserIsNotPresent() {
+    // given
+    final var command = mockCommand(1L);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   private long createUser() {
@@ -240,6 +323,18 @@ public class AuthorizationCheckBehaviorTest {
     }
 
     client.add();
+  }
+
+  private String createAndAssignTenant(final long userKey) {
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityKey(userKey)
+        .withEntityType(EntityType.USER)
+        .add();
+    return tenantId;
   }
 
   private TypedRecord<?> mockCommand(final long userKey) {

@@ -15,8 +15,10 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
+import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
+import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
@@ -35,6 +37,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -302,6 +305,75 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .during(Duration.ofSeconds(10))
         .atMost(Duration.ofSeconds(12))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+  }
+
+  @Test
+  public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    EXPORTER.export(record);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+
+    // simulates restart of zeebe importer by restarting all the record readers
+    Arrays.stream(ImportValueType.IMPORT_VALUE_TYPES)
+        .forEach(
+            type -> {
+              final var reader =
+                  beanFactory.getBean(
+                      ElasticsearchRecordsReader.class,
+                      1,
+                      type,
+                      operateProperties.getImporter().getQueueSize());
+              reader.postConstruct();
+            });
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(ElasticsearchRecordsReader.class::cast)
+        .forEach(ElasticsearchRecordsReader::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
+  private void assertImportPositionMatchesRecord(
+      final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var req =
+                  new GetRequest(
+                      importPositionIndex.getFullQualifiedName(),
+                      partitionId + "-" + type.getAliasTemplate());
+              final var importPositionDoc = esClient.get(req, RequestOptions.DEFAULT);
+
+              if (!importPositionDoc.isExists()) {
+                return;
+              }
+
+              assertThat(importPositionDoc.getSourceAsMap().get("position"))
+                  .isEqualTo(record.getPosition());
+            });
   }
 
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {

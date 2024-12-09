@@ -95,7 +95,6 @@ public class GatewayModuleConfiguration implements CloseableSilently {
         new Gateway(
             configuration.shutdownTimeout(),
             configuration.config(),
-            identityConfiguration,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer());

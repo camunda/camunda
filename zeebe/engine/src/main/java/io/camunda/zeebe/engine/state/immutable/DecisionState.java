@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -92,6 +93,27 @@ public interface DecisionState {
   List<PersistedDecision> findDecisionsByTenantAndDecisionRequirementsKey(
       final String tenantId, long decisionRequirementsKey);
 
+  /**
+   * Iterates over all persisted decision requirements until the visitor returns false or all
+   * decision requirements have been visited. If {@code previousDecisionRequirements} is not null,
+   * the iteration skips all decision requirements that appear before it. The visitor is
+   * <em>not</em> called with a copy of the decision requirements to avoid needless copies of the
+   * relatively large {@link PersistedDecisionRequirements} instances.
+   */
+  void forEachDecisionRequirements(
+      final DecisionRequirementsIdentifier previousDecisionsRequirements,
+      final PersistedDecisionRequirementsVisitor visitor);
+
   /** Completely clears all caches. */
   void clearCache();
+
+  record DecisionRequirementsIdentifier(String tenantId, long decisionRequirementsKey) {}
+
+  interface PersistedDecisionRequirementsVisitor {
+    boolean visit(PersistedDecisionRequirements decisionRequirements);
+  }
+
+  interface PersistedDecisionVisitor {
+    boolean visit(PersistedDecision decision);
+  }
 }
