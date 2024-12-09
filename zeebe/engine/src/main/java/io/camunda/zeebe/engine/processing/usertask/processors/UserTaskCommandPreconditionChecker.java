@@ -71,7 +71,8 @@ public class UserTaskCommandPreconditionChecker {
     final long userTaskKey = command.getKey();
     final UserTaskRecord persistedRecord =
         command.hasRequestMetadata()
-            ? userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command))
+            ? userTaskState.getUserTask(
+                userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command))
             : userTaskState.getUserTask(userTaskKey);
 
     if (persistedRecord == null) {
