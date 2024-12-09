@@ -9,27 +9,32 @@ package io.camunda.migration.identity;
 
 import static java.util.Arrays.asList;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.migration.api.Migrator;
-import io.camunda.service.AuthorizationServices;
-import io.camunda.service.UserServices;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+@EnableConfigurationProperties(IdentityMigrationProperties.class)
 @Component("identity-migrator")
 public class MigrationRunner implements Migrator {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
+
   private ApplicationArguments args;
-  private final UserServices userService;
-  private final AuthorizationServices authorizationServices;
+
   private final AuthorizationMigrationHandler authorizationMigrationHandler;
+  private final TenantMigrationHandler tenantMigrationHandler;
 
   public MigrationRunner(
-      final UserServices userService,
-      final AuthorizationServices authorizationServices,
-      final AuthorizationMigrationHandler authorizationMigrationHandler) {
-    this.userService = userService;
-    this.authorizationServices = authorizationServices;
+      final AuthorizationMigrationHandler authorizationMigrationHandler,
+      final TenantMigrationHandler tenantMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
+    this.tenantMigrationHandler = tenantMigrationHandler;
   }
 
   @Override
@@ -38,14 +43,25 @@ public class MigrationRunner implements Migrator {
     final String command =
         args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
     if (!asList("migrate", "status").contains(command)) {
-      if ("migrate".equals(command)) {
-        authorizationMigrationHandler.migrate();
-      }
       throw new IllegalArgumentException("Unknown command: " + command);
     }
 
-    // TODO: place holder to logic
-    System.out.println("Migration Logic");
+    if ("migrate".equals(command)) {
+      migrate();
+    }
+  }
+
+  private void migrate() {
+    while (true) {
+      try {
+        tenantMigrationHandler.migrate();
+        authorizationMigrationHandler.migrate();
+        break;
+      } catch (final Exception e) {
+        LOGGER.warn("Migration failed, let's retry!", e);
+        Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
+      }
+    }
   }
 
   @Override
