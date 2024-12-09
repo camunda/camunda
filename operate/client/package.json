@@ -79,7 +79,7 @@
     "@types/mixpanel-browser": "2.50.2",
     "@types/node": "20.16.15",
     "@types/react": "18.3.14",
-    "@types/react-dom": "18.3.2",
+    "@types/react-dom": "18.3.3",
     "@types/react-transition-group": "4.4.11",
     "cross-env": "^7.0.3",
     "eslint-plugin-license-header": "^0.6.0",
