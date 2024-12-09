@@ -11,9 +11,9 @@
   </Appenders>
   <Loggers>
     <Logger name="io.camunda.tasklist" level="debug" />
-    <Logger name="org.springframework" level="warn" />
+    <Logger name="org.springframework" level="info" />
 
-    <Root level="info">
+    <Root level="debug">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
