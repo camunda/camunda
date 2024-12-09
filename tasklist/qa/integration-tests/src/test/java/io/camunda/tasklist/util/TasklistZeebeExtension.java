@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 public abstract class TasklistZeebeExtension
@@ -138,6 +139,7 @@ public abstract class TasklistZeebeExtension
             .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
             .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
             .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+    zContainer.withLogConsumer(new Slf4jLogConsumer(LOGGER));
     zContainer.addExposedPort(8080);
     return zContainer;
   }
