@@ -21,11 +21,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitionsDistribution;
 import io.camunda.zeebe.management.cluster.Error;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatusCode;
@@ -42,6 +45,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
+
+  private static final Logger log = LoggerFactory.getLogger(ClusterEndpoint.class);
   private final ClusterConfigurationManagementRequestSender requestSender;
 
   @Autowired
@@ -196,6 +201,14 @@ public class ClusterEndpoint {
       final Optional<Integer> newReplicationFactor =
           Optional.ofNullable(partitions)
               .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
+      final Optional<ClusterConfigPatchRequestPartitionsDistribution> newPartitionDistribution =
+          Optional.ofNullable(partitions).map(ClusterConfigPatchRequestPartitions::getDistribution);
+
+      if (newPartitionDistribution.isPresent()) {
+        log.info("Got new PartitionDistribution! " + newPartitionDistribution.toString());
+      } else {
+        log.info("Didn't get new PartitionDistribution!");
+      }
 
       if (isScale) {
         final var scaleRequest =
@@ -204,7 +217,13 @@ public class ClusterEndpoint {
         return ClusterApiUtils.mapOperationResponse(
             requestSender.scaleCluster(scaleRequest).join());
       } else {
-        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+        return patchCluster(
+            dryRun,
+            request,
+            brokers,
+            newPartitionCount,
+            newReplicationFactor,
+            newPartitionDistribution);
       }
 
     } catch (final Exception error) {
@@ -217,7 +236,8 @@ public class ClusterEndpoint {
       final ClusterConfigPatchRequest request,
       final ClusterConfigPatchRequestBrokers brokers,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
+      final Optional<Integer> newReplicationFactor,
+      final Optional<ClusterConfigPatchRequestPartitionsDistribution> newPartitionDistribution) {
     final Set<MemberId> brokersToAdd =
         brokers != null
             ? request.getBrokers().getAdd().stream()
@@ -232,6 +252,7 @@ public class ClusterEndpoint {
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
             : Set.of();
+
     final var patchRequest =
         new ClusterPatchRequest(
             brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
