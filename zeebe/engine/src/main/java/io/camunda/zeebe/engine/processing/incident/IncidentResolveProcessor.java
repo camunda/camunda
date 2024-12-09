@@ -214,7 +214,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private Either<String, TypedRecord<? extends UnifiedRecordValue>> createProcessInstanceCommand(
       final ElementInstance elementInstance) {
 
-    return getFailedCommandIntent(elementInstance)
+    return getFailedProcessInstanceCommandIntent(elementInstance)
         .map(
             intent -> {
               final var record = new ProcessInstanceRecord();
@@ -238,17 +238,14 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     };
   }
 
-  private Either<String, ProcessInstanceIntent> getFailedCommandIntent(
+  private Either<String, ProcessInstanceIntent> getFailedProcessInstanceCommandIntent(
       final ElementInstance elementInstance) {
     final var instanceState = elementInstance.getState();
-    switch (instanceState) {
-      case ELEMENT_ACTIVATING:
-        return Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
-      case ELEMENT_COMPLETING:
-        return Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
-      default:
-        return Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
-    }
+    return switch (instanceState) {
+      case ELEMENT_ACTIVATING -> Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+      case ELEMENT_COMPLETING -> Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
+      default -> Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
+    };
   }
 
   private void publishIncidentRelatedJob(final long jobKey) {
