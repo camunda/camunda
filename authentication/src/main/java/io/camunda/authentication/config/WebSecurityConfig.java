@@ -13,6 +13,7 @@ import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +60,10 @@ public class WebSecurityConfig {
   @Bean
   @Profile("auth-basic")
   public CamundaUserDetailsService camundaUserDetailsService(
-      final UserServices userServices, final AuthorizationServices authorizationServices) {
-    return new CamundaUserDetailsService(userServices, authorizationServices);
+      final UserServices userServices,
+      final AuthorizationServices authorizationServices,
+      final RoleServices roleServices) {
+    return new CamundaUserDetailsService(userServices, authorizationServices, roleServices);
   }
 
   @Bean

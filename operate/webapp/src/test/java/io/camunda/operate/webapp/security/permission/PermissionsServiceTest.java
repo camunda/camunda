@@ -15,7 +15,7 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.operate.webapp.security.tenant.TenantService;
-import io.camunda.security.auth.Authorization;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -40,6 +40,7 @@ public class PermissionsServiceTest {
   private PermissionsService permissionsService;
   private final long userKey = 123L;
   private final String tenantId = "default";
+  private final long roleKey = 456L;
 
   @BeforeEach
   public void setUp() {
@@ -55,6 +56,7 @@ public class PermissionsServiceTest {
 
     final CamundaUser camundaUser = mock(CamundaUser.class);
     when(camundaUser.getUserKey()).thenReturn(userKey);
+    when(camundaUser.getRoles()).thenReturn(List.of(new RoleEntity(roleKey, "roleName")));
     when(mockAuthentication.getPrincipal()).thenReturn(camundaUser);
     final SecurityContext securityContext = mock(SecurityContext.class);
     when(securityContext.getAuthentication()).thenReturn(mockAuthentication);
@@ -81,7 +83,7 @@ public class PermissionsServiceTest {
   public void testGetProcessDefinitionPermission() {
 
     final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(userKey, List.of(tenantId));
+        createCamundaAuthentication(userKey, List.of(tenantId), List.of(roleKey));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "bpmnProcessId", AuthorizationResourceType.PROCESS_DEFINITION, authentication))
@@ -103,7 +105,7 @@ public class PermissionsServiceTest {
   public void testGetDecisionDefinitionPermission() {
 
     final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(userKey, List.of(tenantId));
+        createCamundaAuthentication(userKey, List.of(tenantId), List.of(roleKey));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "decisionId", AuthorizationResourceType.DECISION_DEFINITION, authentication))
@@ -131,24 +133,12 @@ public class PermissionsServiceTest {
     assertThat(resourceIds.isEmpty()).isTrue();
   }
 
-  private io.camunda.security.auth.SecurityContext createCamundaSecurityContext(
-      long userKey,
-      List<String> tenants,
-      AuthorizationResourceType resourceType,
-      PermissionType permissionType) {
-
-    final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(userKey, tenants);
-    final Authorization authorization = new Authorization(resourceType, permissionType);
-
-    return new io.camunda.security.auth.SecurityContext(authentication, authorization);
-  }
-
   private io.camunda.security.auth.Authentication createCamundaAuthentication(
-      long userKey, List<String> tenants) {
+      final long userKey, final List<String> tenants, final List<Long> roleKeys) {
     return new io.camunda.security.auth.Authentication.Builder()
         .user(userKey)
         .tenants(tenants)
+        .roleKeys(roleKeys)
         .build();
   }
 }

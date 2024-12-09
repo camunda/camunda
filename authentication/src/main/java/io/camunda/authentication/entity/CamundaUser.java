@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.entity;
 
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.ClusterMetadata;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.Collections;
@@ -25,25 +26,18 @@ public class CamundaUser extends User {
   private List<String> authorizedApplications = List.of();
   private List<TenantDTO> tenants = List.of();
   private List<String> groups = List.of();
+  private List<RoleEntity> roles = List.of();
   private String salesPlanType;
   private Map<ClusterMetadata.AppName, String> c8Links = new HashMap<>();
   private boolean canLogout;
   private boolean apiUser;
 
   public CamundaUser(
-      final Long userKey, final String displayName, final String username, final String password) {
-    super(username, password, Collections.emptyList());
-    this.userKey = userKey;
-    this.displayName = displayName;
-    c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
-  }
-
-  public CamundaUser(
       final String displayName,
       final String username,
       final String password,
-      final List<String> roles) {
-    super(username, password, prepareAuthorities(roles));
+      final List<String> authorities) {
+    super(username, password, prepareAuthorities(authorities));
     userKey = null;
     this.displayName = displayName;
     c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
@@ -54,7 +48,8 @@ public class CamundaUser extends User {
       final String displayName,
       final String username,
       final String password,
-      final List<String> roles,
+      final List<? extends GrantedAuthority> authorities,
+      final List<RoleEntity> roles,
       final List<String> authorizedApplications,
       final List<TenantDTO> tenants,
       final List<String> groups,
@@ -62,7 +57,8 @@ public class CamundaUser extends User {
       final Map<ClusterMetadata.AppName, String> c8Links,
       final boolean canLogout,
       final boolean apiUser) {
-    super(username, password, prepareAuthorities(roles));
+    super(username, password, authorities);
+    this.roles = roles;
     this.userKey = userKey;
     this.displayName = displayName;
     this.authorizedApplications = authorizedApplications;
@@ -90,8 +86,8 @@ public class CamundaUser extends User {
     return displayName;
   }
 
-  public List<String> getRoles() {
-    return getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+  public List<RoleEntity> getRoles() {
+    return roles;
   }
 
   public List<String> getGroups() {
@@ -122,8 +118,9 @@ public class CamundaUser extends User {
     return apiUser;
   }
 
-  private static List<SimpleGrantedAuthority> prepareAuthorities(final List<String> roles) {
-    return roles.stream().map(SimpleGrantedAuthority::new).toList();
+  private static List<? extends GrantedAuthority> prepareAuthorities(
+      final List<String> authorities) {
+    return authorities.stream().map(SimpleGrantedAuthority::new).toList();
   }
 
   public static final class CamundaUserBuilder {
@@ -131,7 +128,8 @@ public class CamundaUser extends User {
     private String name;
     private String username;
     private String password;
-    private List<String> roles = List.of();
+    private List<RoleEntity> roles = List.of();
+    private List<? extends GrantedAuthority> authorities = List.of();
     private List<String> authorizedApplications = List.of();
     private List<TenantDTO> tenants = List.of();
     private List<String> groups = List.of();
@@ -166,8 +164,13 @@ public class CamundaUser extends User {
       return this;
     }
 
-    public CamundaUserBuilder withRoles(final List<String> roles) {
+    public CamundaUserBuilder withRoles(final List<RoleEntity> roles) {
       this.roles = roles;
+      return this;
+    }
+
+    public CamundaUserBuilder withAuthorities(final List<? extends GrantedAuthority> authorities) {
+      this.authorities = authorities;
       return this;
     }
 
@@ -213,6 +216,7 @@ public class CamundaUser extends User {
           name,
           username,
           password,
+          authorities,
           roles,
           authorizedApplications,
           tenants,

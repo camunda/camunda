@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -41,7 +42,10 @@ public class SearchEngineUserReader implements UserReader {
               .setDisplayName(user.getDisplayName())
               .setPermissions(
                   rolePermissionService.getPermissions(
-                      user.getRoles().stream().map(Role::fromString).toList()))
+                      user.getAuthorities().stream()
+                          .map(GrantedAuthority::getAuthority)
+                          .map(Role::fromString)
+                          .toList()))
               .setApiUser(false));
     }
     return Optional.empty();
