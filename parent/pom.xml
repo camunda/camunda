@@ -105,7 +105,7 @@
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jetbrains-annotations>24.1.0</version.jetbrains-annotations>
-    <version.jqwik>1.9.1</version.jqwik>
+    <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.byte-buddy>1.15.10</version.byte-buddy>
