@@ -20,7 +20,6 @@ import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,7 +115,6 @@ public class FlowNodeInstanceMetadataBuilder {
       final FlowNodeInstanceEntity flowNodeInstance) {
     final var userTask = userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey());
     final var event = eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId());
-    final var variables = userTaskReader.getUserTaskVariables(flowNodeInstance.getKey());
     final var result =
         new UserTaskInstanceMetadataDto(
             flowNodeInstance.getFlowNodeId(),
@@ -126,8 +124,9 @@ public class FlowNodeInstanceMetadataBuilder {
             flowNodeInstance.getEndDate(),
             event);
     if (userTask.isPresent()) {
+      final var variables = userTaskReader.getUserTaskVariables(userTask.get().getKey());
       final Map<String, Object> variablesMap = new HashMap<>();
-      for (final TaskVariableEntity v : variables) {
+      for (final var v : variables) {
         variablesMap.put(v.getName(), v.getValue());
       }
 
