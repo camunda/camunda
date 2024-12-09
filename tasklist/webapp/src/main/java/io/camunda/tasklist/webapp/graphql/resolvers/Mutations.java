@@ -17,16 +17,15 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionsService;
+import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.util.List;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
 
 @GraphQLMutationResolver
 public class Mutations {
@@ -38,45 +37,45 @@ public class Mutations {
   @GraphQLField
   @GraphQLNonNull
   public static TaskDTO completeTask(final String taskId, final List<VariableInputDTO> variables) {
-    return delegate(
-        () -> {
-          checkTaskImplementation(taskId);
-          return getBean(TaskService.class).completeTask(taskId, variables, false);
-        });
+    final var permissionService = getBean(TasklistPermissionsService.class);
+    final var taskService = getBean(TaskService.class);
+    if (!permissionService.hasPermissionToUpdateUserTask(() -> taskService.getTask(taskId))) {
+      throw new ForbiddenActionException("User does not have permission to complete the task");
+    }
+    checkTaskImplementation(taskId);
+    return taskService.completeTask(taskId, variables, false);
   }
 
   @GraphQLField
   @GraphQLNonNull
   public static TaskDTO claimTask(
       final String taskId, final String assignee, final Boolean allowOverrideAssignment) {
-    return delegate(
-        () -> {
-          checkTaskImplementation(taskId);
-          return getBean(TaskService.class).assignTask(taskId, assignee, allowOverrideAssignment);
-        });
+    final var permissionService = getBean(TasklistPermissionsService.class);
+    final var taskService = getBean(TaskService.class);
+    if (!permissionService.hasPermissionToUpdateUserTask(() -> taskService.getTask(taskId))) {
+      throw new ForbiddenActionException("User does not have permission to claim the task");
+    }
+    checkTaskImplementation(taskId);
+    return taskService.assignTask(taskId, assignee, allowOverrideAssignment);
   }
 
   @GraphQLField
   @GraphQLNonNull
   public static TaskDTO unclaimTask(final String taskId) {
-    return delegate(
-        () -> {
-          checkTaskImplementation(taskId);
-          return getBean(TaskService.class).unassignTask(taskId);
-        });
+    final var permissionService = getBean(TasklistPermissionsService.class);
+    final var taskService = getBean(TaskService.class);
+    if (!permissionService.hasPermissionToUpdateUserTask(() -> taskService.getTask(taskId))) {
+      throw new ForbiddenActionException("User does not have permission to unclaim the task");
+    }
+    checkTaskImplementation(taskId);
+    return taskService.unassignTask(taskId);
   }
 
   @GraphQLField
   @GraphQLNonNull
   public static ProcessInstanceDTO startProcess(final String processDefinitionId) {
-    return delegate(
-        () ->
-            getBean(ProcessService.class)
-                .startProcessInstance(processDefinitionId, DEFAULT_TENANT_IDENTIFIER));
-  }
-
-  private static <T> T delegate(final Supplier<T> supplier) {
-    return getBean(MutationAuthorizationDelegate.class).call(supplier);
+    return getBean(ProcessService.class)
+        .startProcessInstance(processDefinitionId, DEFAULT_TENANT_IDENTIFIER);
   }
 
   private static void checkTaskImplementation(final String taskId) {
@@ -90,14 +89,6 @@ public class Mutations {
           String.format(
               ZEEBE_USER_TASK_OPERATIONS_NOT_SUPPORTED,
               getBean(TasklistProperties.class).getDocumentation().getApiMigrationDocsUrl()));
-    }
-  }
-
-  @Component
-  public static class MutationAuthorizationDelegate {
-    @PreAuthorize("hasPermission('write')")
-    public <T> T call(final Supplier<T> supplier) {
-      return supplier.get();
     }
   }
 }

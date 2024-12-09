@@ -13,11 +13,11 @@ import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -51,11 +51,11 @@ public class ProcessService {
 
   @Autowired private TenantService tenantService;
 
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
-
   @Autowired private UserReader userReader;
 
   @Autowired private ProcessStore processStore;
+
+  @Autowired private TasklistPermissionsService permissionsService;
 
   public ProcessEntity getProcessByProcessDefinitionKeyAndAccessRestriction(
       final String processDefinitionKey) {
@@ -64,7 +64,7 @@ public class ProcessService {
         processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
 
     final List<String> processReadAuthorizations =
-        identityAuthorizationService.getProcessReadFromAuthorization();
+        permissionsService.getProcessDefinitionIdsWithReadPermission();
 
     if (processReadAuthorizations.contains(processEntity.getBpmnProcessId())
         || processReadAuthorizations.contains(IdentityProperties.ALL_RESOURCES)) {
@@ -83,8 +83,17 @@ public class ProcessService {
       final String processDefinitionKey,
       final List<VariableInputDTO> variables,
       final String tenantId) {
+    return startProcessInstance(processDefinitionKey, null, tenantId, true);
+  }
 
-    if (!identityAuthorizationService.isAllowedToStartProcess(processDefinitionKey)) {
+  public ProcessInstanceDTO startProcessInstance(
+      final String processDefinitionKey,
+      final List<VariableInputDTO> variables,
+      final String tenantId,
+      final boolean doAuthorizationCheck) {
+
+    if (doAuthorizationCheck
+        && !permissionsService.hasPermissionToCreateProcessInstance(processDefinitionKey)) {
       throw new ForbiddenActionException(
           "User does not have the permission to start this process.");
     }
