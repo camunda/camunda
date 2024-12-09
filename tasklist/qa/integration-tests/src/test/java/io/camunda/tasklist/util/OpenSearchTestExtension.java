@@ -87,17 +87,12 @@ public class OpenSearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-    if (prefix.isBlank()) {
-      indexPrefix = Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(prefix);
-      tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    }
-
-    if (tasklistProperties.getOpenSearch().isCreateSchema()) {
-      schemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("OpenSearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
+    indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
+      tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
     }
   }
 
