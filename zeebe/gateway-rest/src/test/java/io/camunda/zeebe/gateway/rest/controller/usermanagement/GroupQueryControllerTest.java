@@ -243,9 +243,6 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .build());
   }
 
-  @Test
-  void shouldFailAnInvalidSearchQuery() {}
-
   @ParameterizedTest
   @MethodSource("invalidGroupSearchQueries")
   void shouldInvalidateAuthorizationsSearchQueryWithBadQueries(
