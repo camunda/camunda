@@ -369,6 +369,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         }
         bulkRequest.add(indexRequest);
       }
+      //      the prefix is wrong
       ElasticsearchUtil.processBulkRequest(
           esClient,
           bulkRequest,
@@ -381,26 +382,24 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public Map<Class<? extends ExporterEntity>, String> getEntityToAliasMap() {
-    if (entityToESAliasMap == null) {
-      entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
-      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
-      entityToESAliasMap.put(
-          DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
-      entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
-    }
+    entityToESAliasMap = new HashMap<>();
+    entityToESAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
+    entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(
+        ProcessInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(
+        FlowNodeInstanceForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(
+        VariableForListViewEntity.class, listViewTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(VariableEntity.class, variableTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(OperationEntity.class, operationTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(
+        BatchOperationEntity.class, batchOperationTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(
+        DecisionInstanceEntity.class, decisionInstanceTemplate.getFullQualifiedName());
+    entityToESAliasMap.put(
+        DecisionRequirementsEntity.class, decisionRequirementsIndex.getFullQualifiedName());
+    entityToESAliasMap.put(DecisionDefinitionEntity.class, decisionIndex.getFullQualifiedName());
     return entityToESAliasMap;
   }
 
