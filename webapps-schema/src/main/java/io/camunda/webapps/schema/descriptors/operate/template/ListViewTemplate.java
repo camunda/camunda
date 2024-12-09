@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
+import java.util.Optional;
 
 public class ListViewTemplate extends OperateTemplateDescriptor implements Prio2Backup {
 
@@ -16,6 +17,7 @@ public class ListViewTemplate extends OperateTemplateDescriptor implements Prio2
 
   public static final String ID = "id";
   public static final String KEY = "key";
+  public static final String TENANT_ID = "tenantId";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_VERSION = "processVersion";
@@ -60,6 +62,11 @@ public class ListViewTemplate extends OperateTemplateDescriptor implements Prio2
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override
