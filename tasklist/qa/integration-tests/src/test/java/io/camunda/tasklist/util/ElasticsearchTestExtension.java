@@ -93,18 +93,12 @@ public class ElasticsearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-    if (prefix.isBlank()) {
-      indexPrefix = Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(prefix);
+    indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    if (indexPrefix == null || indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
       tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
-    }
-
-    if (tasklistProperties.getElasticsearch().isCreateSchema()) {
-      elasticsearchSchemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
     }
   }
 
@@ -234,7 +228,8 @@ public class ElasticsearchTestExtension
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (final Exception t) {
         LOGGER.error(
-            "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
+            "Elasticsearch {} indices (min {}) are not created yet. Waiting {}/{}",
+            indexPrefix,
             minCountOfIndices,
             checks,
             maxChecks);

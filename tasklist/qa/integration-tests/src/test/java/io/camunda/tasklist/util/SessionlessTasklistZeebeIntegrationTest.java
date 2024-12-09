@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.service.ProcessService;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
   public static final Boolean IS_ELASTIC = TestUtil.isElasticSearch();
@@ -69,6 +71,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Autowired private ProcessCache processCache;
   @Autowired private TaskService taskService;
   @Autowired private ProcessService processService;
+  @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
 
@@ -96,6 +99,18 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", getClient());
     ReflectionTestUtils.setField(taskService, "zeebeClient", getClient());
     ReflectionTestUtils.setField(processService, "zeebeClient", getClient());
+
+    Awaitility.await("Indices need to be created")
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      databaseTestExtension.areIndicesCreatedAfterChecks(
+                          indexPrefixHolder.getIndexPrefix(), 19, 5 * 60 /*sec*/))
+                  .describedAs(
+                      "Elasticsearch %s (min %d) indices are created",
+                      indexPrefixHolder.getIndexPrefix(), 19)
+                  .isTrue();
+            });
   }
 
   @AfterEach

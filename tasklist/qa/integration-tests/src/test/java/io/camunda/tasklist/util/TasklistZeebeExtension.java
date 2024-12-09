@@ -9,6 +9,7 @@ package io.camunda.tasklist.util;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
@@ -41,6 +42,7 @@ public abstract class TasklistZeebeExtension
   private static ContainerPoolManager<ZeebeContainer> zeebeContainerContainerPoolManager;
 
   @Autowired protected TasklistProperties tasklistProperties;
+  @Autowired protected TasklistIndexPrefixHolder indexPrefixHolder;
 
   protected ZeebeContainer zeebeContainer;
 
@@ -122,7 +124,7 @@ public abstract class TasklistZeebeExtension
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(
             ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
-    final String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    final String indexPrefix = indexPrefixHolder.getIndexPrefix();
     LOGGER.info(
         "************ Starting Zeebe:{}, indexPrefix={} ************", zeebeVersion, indexPrefix);
     final ZeebeContainer zContainer =
