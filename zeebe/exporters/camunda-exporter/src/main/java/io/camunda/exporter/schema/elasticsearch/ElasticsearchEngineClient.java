@@ -66,10 +66,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     final CreateIndexRequest request = createIndexRequest(indexDescriptor, settings);
     try {
       client.indices().create(request);
-      LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
+      LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getIndexName());
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
@@ -115,10 +115,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putMapping(request);
-      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
+      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getFullQualifiedName());
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg =
-          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
+          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }

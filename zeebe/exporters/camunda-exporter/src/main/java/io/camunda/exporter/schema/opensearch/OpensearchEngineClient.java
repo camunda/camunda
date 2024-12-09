@@ -71,10 +71,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().create(request);
-      LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
+      LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
     } catch (final IOException | OpenSearchException e) {
       final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getIndexName());
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new OpensearchExporterException(errMsg, e);
     }
@@ -120,10 +120,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putMapping(request);
-      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
+      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getFullQualifiedName());
     } catch (final IOException | OpenSearchException e) {
       final var errMsg =
-          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
+          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new OpensearchExporterException(errMsg, e);
     }
