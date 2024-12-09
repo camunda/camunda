@@ -55,6 +55,7 @@ public sealed interface ClusterConfigurationManagementRequest {
       Set<MemberId> membersToRemove,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
+      //      Optional<ClusterConfigPatchRequestPartitionsDistribution> newPartitionDistribution,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
