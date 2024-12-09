@@ -58,7 +58,7 @@ test.describe('Call Activities', () => {
     const instancesList = page.getByTestId('data-list');
 
     await expect(instancesList.getByRole('row')).toHaveCount(1);
-    await expect(instancesList.getByText('Called Process')).toBeVisible();
+    await expect(instancesList.getByText('CalledProcess')).toBeVisible();
 
     const calledProcessInstanceId = await instancesList
       .getByRole('row')
@@ -106,7 +106,7 @@ test.describe('Call Activities', () => {
 
     await popover
       .getByRole('link', {
-        name: /view called process instance/i,
+        name: /view calledProcess instance/i,
       })
       .click();
 
@@ -115,14 +115,14 @@ test.describe('Call Activities', () => {
       instanceHeader.getByText(calledProcessInstanceId),
     ).toBeVisible();
     await expect(
-      instanceHeader.getByText('Called Process', {
+      instanceHeader.getByText('CalledProcess', {
         exact: true,
       }),
     ).toBeVisible();
 
     // Expect correct instance history
     await expect(
-      instanceHistory.getByText('Called Process', {
+      instanceHistory.getByText('CalledProcess', {
         exact: true,
       }),
     ).toBeVisible();
