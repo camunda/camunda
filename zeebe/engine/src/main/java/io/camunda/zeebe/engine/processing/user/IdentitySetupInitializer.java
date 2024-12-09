@@ -31,9 +31,6 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware, Task {
-  public static final String DEFAULT_USER_USERNAME = "demo";
-  public static final String DEFAULT_USER_PASSWORD = "demo";
-  public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
   public static final String DEFAULT_ROLE_NAME = "Admin";
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
@@ -71,7 +68,10 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     }
 
     final var roleExists = roleState.getRoleKeyByName(DEFAULT_ROLE_NAME).isPresent();
-    final var userExists = userState.getUser(DEFAULT_USER_USERNAME).isPresent();
+    final var userExists =
+        userState
+            .getUser(securityConfig.getInitialization().getDefaultUser().getUsername())
+            .isPresent();
     final var tenantExists = tenantState.getTenantKeyById(DEFAULT_TENANT_ID).isPresent();
     if (roleExists && userExists && tenantExists) {
       LOG.debug("Skipping identity setup as default user, role, and tenant already exist");
@@ -86,12 +86,13 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var defaultRole = new RoleRecord().setName(DEFAULT_ROLE_NAME);
+    final var defaultUserConfig = securityConfig.getInitialization().getDefaultUser();
     final var defaultUser =
         new UserRecord()
-            .setUsername(DEFAULT_USER_USERNAME)
-            .setName(DEFAULT_USER_USERNAME)
-            .setEmail(DEFAULT_USER_EMAIL)
-            .setPassword(passwordEncoder.encode(DEFAULT_USER_PASSWORD))
+            .setUsername(defaultUserConfig.getUsername())
+            .setName(defaultUserConfig.getName())
+            .setEmail(defaultUserConfig.getEmail())
+            .setPassword(passwordEncoder.encode(defaultUserConfig.getPassword()))
             .setUserType(UserType.DEFAULT);
     final var defaultTenant =
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME);
