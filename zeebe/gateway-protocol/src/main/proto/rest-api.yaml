@@ -5795,6 +5795,9 @@ components:
         order:
           description: The order in which to sort the field.
           type: string
+          enum:
+            - asc
+            - desc
           default: asc
       required:
         - field
