@@ -45,7 +45,10 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -58,6 +61,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.TestUtil;
+import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -67,11 +71,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -173,6 +183,7 @@ public final class EngineRule extends ExternalResource {
 
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
+    final var engineSetup = new Phaser(1);
 
     forEachPartition(
         partitionId -> {
@@ -193,23 +204,34 @@ public final class EngineRule extends ExternalResource {
                           new ProcessingExporterTransistor(
                               environmentRule.getLogStream(partitionId))),
               Optional.of(
-                  new StreamProcessorListener() {
-                    @Override
-                    public void onProcessed(final TypedRecord<?> processedCommand) {
-                      lastProcessedPosition = processedCommand.getPosition();
-                      onProcessedCallback.accept(processedCommand);
-                    }
+                  new EngineSetupAwaiter(engineSetup, partitionId, partitionCount)
+                      .andThen(
+                          new StreamProcessorListener() {
+                            @Override
+                            public void onProcessed(final TypedRecord<?> processedCommand) {
+                              lastProcessedPosition = processedCommand.getPosition();
+                              onProcessedCallback.accept(processedCommand);
+                            }
 
-                    @Override
-                    public void onSkipped(final LoggedEvent skippedRecord) {
-                      lastProcessedPosition = skippedRecord.getPosition();
-                      onSkippedCallback.accept(skippedRecord);
-                    }
-                  }),
+                            @Override
+                            public void onSkipped(final LoggedEvent skippedRecord) {
+                              lastProcessedPosition = skippedRecord.getPosition();
+                              onSkippedCallback.accept(skippedRecord);
+                            }
+                          })),
               cfg -> cfg.streamProcessorMode(mode),
               awaitOpening);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
+
+    try {
+      engineSetup.awaitAdvanceInterruptibly(engineSetup.arrive(), 15, TimeUnit.SECONDS);
+    } catch (final InterruptedException | TimeoutException e) {
+      RecordLogger.logRecords();
+      throw new RuntimeException(
+          "Setup did not finish, %s partitions did not complete setup"
+              .formatted(engineSetup.getUnarrivedParties()));
+    }
   }
 
   public void snapshot() {
@@ -490,6 +512,50 @@ public final class EngineRule extends ExternalResource {
 
   public ClockClient clock() {
     return new ClockClient(environmentRule);
+  }
+
+  static final class EngineSetupAwaiter implements StreamProcessorListener {
+    private final Phaser pendingConditions;
+    private final Set<Condition> conditions;
+    private final RecordMetadata metadata = new RecordMetadata();
+
+    public EngineSetupAwaiter(
+        final Phaser parent, final int partitionId, final int partitionCount) {
+      conditions = conditions(partitionId, partitionCount);
+      pendingConditions = new Phaser(parent, conditions.size());
+    }
+
+    private static Set<Condition> conditions(final int partitionId, final int partitionCount) {
+      final var conditions = new HashSet<Condition>();
+      conditions.add(
+          new Condition(
+              "Initialized identity",
+              metadata -> metadata.getIntent() == IdentitySetupIntent.INITIALIZED));
+      if (partitionId == Protocol.DEPLOYMENT_PARTITION && partitionCount > 1) {
+        conditions.add(
+            new Condition(
+                "All other partitions finished identity setup",
+                metadata -> metadata.getIntent() == CommandDistributionIntent.FINISHED));
+      }
+      return conditions;
+    }
+
+    @Override
+    public void onProcessed(final TypedRecord<?> processedCommand) {}
+
+    @Override
+    public void onSkipped(final LoggedEvent skippedRecord) {
+      metadata.wrap(
+          skippedRecord.getMetadata(),
+          skippedRecord.getMetadataOffset(),
+          skippedRecord.getMetadataLength());
+      final var matchedCondition = conditions.removeIf(c -> c.matcher.test(metadata));
+      if (matchedCondition) {
+        pendingConditions.arrive();
+      }
+    }
+
+    record Condition(String name, Predicate<RecordMetadata> matcher) {}
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {
