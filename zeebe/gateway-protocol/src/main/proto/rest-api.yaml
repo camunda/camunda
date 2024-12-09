@@ -5029,6 +5029,18 @@ components:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
+      properties:
+        filter:
+          description: The group search filters.
+          allOf:
+            - $ref: "#/components/schemas/GroupFilterRequest"
+    GroupFilterRequest:
+      description: Group filter request
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the group.
     GroupSearchQueryResponse:
       description: Group search response.
       allOf:
