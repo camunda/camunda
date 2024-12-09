@@ -83,7 +83,7 @@ public class IndexSchemaValidator {
     if (difference != null && !difference.equal()) {
       LOGGER.debug(
           "Index fields differ from expected. Index name: {}. Difference: {}.",
-          indexDescriptor.getIndexName(),
+          indexDescriptor.getFullQualifiedName(),
           difference);
 
       if (!difference.entriesDiffering().isEmpty()) {
@@ -97,7 +97,7 @@ public class IndexSchemaValidator {
       if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
             "Index '{}': Field deletion is requested, will be ignored. Fields: {}",
-            indexDescriptor.getIndexName(),
+            indexDescriptor.getFullQualifiedName(),
             difference.entriesOnlyOnRight());
 
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
@@ -105,7 +105,8 @@ public class IndexSchemaValidator {
         newFields.put(indexDescriptor, difference.entriesOnlyOnLeft());
       }
     } else {
-      LOGGER.debug("Index fields are up to date for Index '{}'.", indexDescriptor.getIndexName());
+      LOGGER.debug(
+          "Index fields are up to date for Index '{}'.", indexDescriptor.getFullQualifiedName());
     }
   }
 
@@ -128,7 +129,7 @@ public class IndexSchemaValidator {
       throw new IndexSchemaValidationException(
           String.format(
               "Ambiguous schema update. Multiple indices for mapping '%s' has different fields. Differences: '%s'",
-              indexDescriptor.getIndexName(), differences));
+              indexDescriptor.getFullQualifiedName(), differences));
     }
 
     return differences.getFirst();
@@ -163,13 +164,13 @@ public class IndexSchemaValidator {
     if (difference.isLeftDynamic() || difference.isRightDynamic()) {
       LOGGER.debug(
           "Index '{}' is dynamic, ignoring changes found: {}",
-          indexDescriptor.getIndexName(),
+          indexDescriptor.getFullQualifiedName(),
           difference.entriesDiffering());
     } else {
       final String errorMsg =
           String.format(
               "Index name: %s. Not supported index changes are introduced. Data migration is required. Changes found: %s",
-              indexDescriptor.getIndexName(), difference.entriesDiffering());
+              indexDescriptor.getFullQualifiedName(), difference.entriesDiffering());
       LOGGER.error(errorMsg);
       throw new IndexSchemaValidationException(errorMsg);
     }
