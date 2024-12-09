@@ -47,6 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: step-security/harden-runner@v2.10.2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v4
       # Detect changes against the base branch
       - name: Detect changes
@@ -64,6 +68,10 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.56.0'
     steps:
+      - uses: step-security/harden-runner@v2.10.2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
       - run: |
