@@ -14,6 +14,7 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
@@ -49,12 +50,11 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
-
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
-
   protected ZeebeContainer zeebeContainer;
+  @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
   private ZeebeClient client;
 
@@ -177,7 +177,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   @Override
   public boolean isMultitTenancyEnabled() {
-    return operateProperties.getMultiTenancy().isEnabled();
+    return multiTenancyConfiguration.isEnabled();
   }
 
   private void testZeebeIsReady() {

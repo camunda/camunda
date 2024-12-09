@@ -101,9 +101,6 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private WebSecurityProperties webSecurity = new WebSecurityProperties();
 
-  @NestedConfigurationProperty
-  private MultiTenancyProperties multiTenancy = new MultiTenancyProperties();
-
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -350,15 +347,6 @@ public class OperateProperties {
 
   public OperateProperties setVersion(final String version) {
     this.version = version;
-    return this;
-  }
-
-  public MultiTenancyProperties getMultiTenancy() {
-    return multiTenancy;
-  }
-
-  public OperateProperties setMultiTenancy(final MultiTenancyProperties multiTenancy) {
-    this.multiTenancy = multiTenancy;
     return this;
   }
 

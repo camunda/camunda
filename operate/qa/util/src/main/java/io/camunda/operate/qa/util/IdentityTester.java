@@ -71,6 +71,7 @@ public class IdentityTester {
     registry.add(
         "management.endpoints.web.exposure.include", () -> "info,prometheus,loggers,usage-metrics");
     registry.add("server.servlet.session.cookie.name", () -> COOKIE_JSESSIONID);
-    registry.add("camunda.operate.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
+    registry.add(
+        "camunda.security.multiTenancy.enabled", () -> String.valueOf(multiTenancyEnabled));
   }
 }

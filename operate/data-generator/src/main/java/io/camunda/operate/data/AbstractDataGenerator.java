@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import jakarta.annotation.PostConstruct;
@@ -40,6 +41,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+  @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
   private boolean shutdown = false;
   @Autowired private ZeebeStore zeebeStore;
 
@@ -157,7 +159,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   protected String getTenant(final String tenantId) {
-    if (operateProperties.getMultiTenancy().isEnabled()) {
+    if (multiTenancyConfiguration.isEnabled()) {
       return tenantId;
     }
     return DEFAULT_TENANT_ID;
