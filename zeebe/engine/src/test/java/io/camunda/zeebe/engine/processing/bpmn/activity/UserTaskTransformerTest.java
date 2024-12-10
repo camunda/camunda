@@ -279,16 +279,16 @@ class UserTaskTransformerTest {
     Stream<Arguments> taskListeners() {
       return Stream.of(
           Arguments.of(
-              wrap(l -> l.create().type("myType")),
+              wrap(l -> l.creating().type("myType")),
               new ExpectedTaskListener(ZeebeTaskListenerEventType.creating, "myType", "3")),
           Arguments.of(
-              wrap(l -> l.update().typeExpression("myTypeExp1").retries("8")),
+              wrap(l -> l.updating().typeExpression("myTypeExp1").retries("8")),
               new ExpectedTaskListener(ZeebeTaskListenerEventType.updating, "myTypeExp1", "8")),
           Arguments.of(
-              wrap(l -> l.assignment().type("=myTypeExp2").retries("1")),
+              wrap(l -> l.assigning().type("=myTypeExp2").retries("1")),
               new ExpectedTaskListener(ZeebeTaskListenerEventType.assigning, "myTypeExp2", "1")),
           Arguments.of(
-              wrap(l -> l.cancel().type("myType").retriesExpression("1+2")),
+              wrap(l -> l.canceling().type("myType").retriesExpression("1+2")),
               new ExpectedTaskListener(ZeebeTaskListenerEventType.canceling, "myType", "1+2")));
     }
 
@@ -322,13 +322,13 @@ class UserTaskTransformerTest {
           transformZeebeUserTask(
               processWithUserTask(
                   b ->
-                      b.zeebeTaskListener(tl -> tl.create().type("create_1"))
-                          .zeebeTaskListener(tl -> tl.update().type("update"))
-                          .zeebeTaskListener(tl -> tl.assignment().type("assignment_2"))
-                          .zeebeTaskListener(tl -> tl.create().type("create_3"))
-                          .zeebeTaskListener(tl -> tl.cancel().type("cancel"))
-                          .zeebeTaskListener(tl -> tl.assignment().type("assignment_1"))
-                          .zeebeTaskListener(tl -> tl.create().type("create_2"))
+                      b.zeebeTaskListener(tl -> tl.creating().type("create_1"))
+                          .zeebeTaskListener(tl -> tl.updating().type("update"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("assignment_2"))
+                          .zeebeTaskListener(tl -> tl.creating().type("create_3"))
+                          .zeebeTaskListener(tl -> tl.canceling().type("cancel"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("assignment_1"))
+                          .zeebeTaskListener(tl -> tl.creating().type("create_2"))
                           .zeebeUserTask()));
 
       assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.creating))

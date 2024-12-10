@@ -57,13 +57,15 @@ public class ZeebeTaskListenersTest extends BpmnModelElementInstanceTest {
                 "my_user_task",
                 t ->
                     t.zeebeUserTask()
-                        .zeebeTaskListener(l -> l.create().type("create_listener").retries("2"))
-                        .zeebeTaskListener(l -> l.update().type("update_listener"))
-                        .zeebeTaskListener(l -> l.update().type("update_listener_2").retries("33"))
+                        .zeebeTaskListener(l -> l.creating().type("create_listener").retries("2"))
+                        .zeebeTaskListener(l -> l.updating().type("update_listener"))
                         .zeebeTaskListener(
-                            l -> l.assignment().type("assignment_listener").retries("4"))
-                        .zeebeTaskListener(l -> l.complete().type("complete_listener").retries("5"))
-                        .zeebeTaskListener(l -> l.cancel().type("cancel_listener").retries("6")))
+                            l -> l.updating().type("update_listener_2").retries("33"))
+                        .zeebeTaskListener(
+                            l -> l.assigning().type("assignment_listener").retries("4"))
+                        .zeebeTaskListener(
+                            l -> l.completing().type("complete_listener").retries("5"))
+                        .zeebeTaskListener(l -> l.canceling().type("cancel_listener").retries("6")))
             .endEvent()
             .done();
 

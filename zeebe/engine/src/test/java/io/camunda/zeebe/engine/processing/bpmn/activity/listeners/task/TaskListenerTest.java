@@ -340,9 +340,9 @@ public class TaskListenerTest {
             createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeAssignee(assignee)
-                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE))
-                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_2"))
-                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_3"))));
+                        .zeebeTaskListener(l -> l.assigning().type(LISTENER_TYPE))
+                        .zeebeTaskListener(l -> l.assigning().type(LISTENER_TYPE + "_2"))
+                        .zeebeTaskListener(l -> l.assigning().type(LISTENER_TYPE + "_3"))));
 
     // await user task creation
     RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
@@ -487,7 +487,7 @@ public class TaskListenerTest {
                 t ->
                     t.zeebeTaskListener(
                         l ->
-                            l.complete()
+                            l.completing()
                                 .typeExpression("\"listener_1_\"+my_var")
                                 .retriesExpression("5+3"))),
             Map.of("my_var", "abc"));
@@ -550,7 +550,7 @@ public class TaskListenerTest {
                             t ->
                                 t.zeebeUserTask()
                                     .zeebeAssignee("foo")
-                                    .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE)))
+                                    .zeebeTaskListener(l -> l.completing().type(LISTENER_TYPE)))
                         .serviceTask(
                             "subsequent_service_task",
                             tb -> tb.zeebeJobType("subsequent_service_task"))));
@@ -585,7 +585,7 @@ public class TaskListenerTest {
                             t ->
                                 t.zeebeUserTask()
                                     .zeebeAssignee("foo")
-                                    .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))
+                                    .zeebeTaskListener(l -> l.completing().type(LISTENER_TYPE))
                                     .zeebeOutput("=my_listener_var+\"_abc\"", "userTaskOutput"))
                         .serviceTask(
                             "subsequent_service_task",
@@ -619,7 +619,7 @@ public class TaskListenerTest {
                         .zeebeCandidateGroups("group_A, group_C, group_F")
                         .zeebeFormId("Form_0w7r08e")
                         .zeebeDueDate("2095-09-18T10:31:10+02:00")
-                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))));
+                        .zeebeTaskListener(l -> l.completing().type(LISTENER_TYPE))));
 
     // when
     final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
@@ -651,7 +651,7 @@ public class TaskListenerTest {
                         .zeebeCandidateGroups("group_A, group_C, group_F")
                         .zeebeDueDate("2085-09-21T11:22:33+02:00")
                         .zeebeFollowUpDate("2095-09-21T11:22:33+02:00")
-                        .zeebeTaskListener(l -> l.complete().type(LISTENER_TYPE))));
+                        .zeebeTaskListener(l -> l.completing().type(LISTENER_TYPE))));
 
     final var changes =
         new UserTaskRecord()
@@ -1007,7 +1007,7 @@ public class TaskListenerTest {
         taskBuilder ->
             taskBuilder
                 .zeebeAssignee(assignee)
-                .zeebeTaskListener(l -> l.assignment().type(listenerType)));
+                .zeebeTaskListener(l -> l.assigning().type(listenerType)));
   }
 
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {

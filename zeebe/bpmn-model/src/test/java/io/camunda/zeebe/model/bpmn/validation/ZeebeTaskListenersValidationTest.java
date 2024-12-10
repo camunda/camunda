@@ -39,7 +39,7 @@ public class ZeebeTaskListenersValidationTest {
             .startEvent()
             .userTask(
                 "my_user_task",
-                ut -> ut.zeebeUserTask().zeebeTaskListener(TaskListenerBuilder::complete))
+                ut -> ut.zeebeUserTask().zeebeTaskListener(TaskListenerBuilder::completing))
             .endEvent()
             .done();
 
