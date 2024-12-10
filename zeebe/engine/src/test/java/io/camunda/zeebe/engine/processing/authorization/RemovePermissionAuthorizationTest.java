@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Set;
@@ -148,5 +149,107 @@ public class RemovePermissionAuthorizationTest {
                     ownerKey,
                     "[foo]",
                     "[bar]"));
+  }
+
+  @Test
+  public void shouldRejectIfPermissionIsOnlyInheritedFromRole() {
+    // given
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var roleKey = engine.role().newRole("role").create().getKey();
+
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(roleKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "foo")
+        .withPermission(PermissionType.DELETE, "bar")
+        .add()
+        .getValue();
+    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .permission()
+            .withOwnerKey(userKey)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .expectRejection()
+            .remove();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Permission is not found")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'"
+                .formatted(
+                    PermissionType.DELETE,
+                    AuthorizationResourceType.DEPLOYMENT,
+                    "[bar, foo]",
+                    userKey,
+                    "[bar, foo]",
+                    "[]"));
+  }
+
+  @Test
+  public void shouldRejectIfPermissionIsOnlyInheritedFromGroup() {
+    // given
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var groupKey = engine.group().newGroup("role").create().getKey();
+
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(groupKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "foo")
+        .withPermission(PermissionType.DELETE, "bar")
+        .add()
+        .getValue();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .permission()
+            .withOwnerKey(userKey)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .expectRejection()
+            .remove();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Permission is not found")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'"
+                .formatted(
+                    PermissionType.DELETE,
+                    AuthorizationResourceType.DEPLOYMENT,
+                    "[bar, foo]",
+                    userKey,
+                    "[bar, foo]",
+                    "[]"));
   }
 }

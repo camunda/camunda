@@ -50,8 +50,14 @@ runs:
         secrets: |
           secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
+    - name: Check secrets availability
+      if: ${{ steps.secrets.outputs.gcloud_sa_key == '' }}
+      shell: bash
+      run: echo "::warning::Not sending any CI health metrics since no access to GHA secrets!"
+
     - name: Get build duration in milliseconds
       id: get-build-duration-millis
+      if: ${{ steps.secrets.outputs.gcloud_sa_key != '' }}
       shell: bash
       run: |
         duration=$(expr $(date +'%s') - $(date -r "$GITHUB_ACTION_PATH" +"%s"))

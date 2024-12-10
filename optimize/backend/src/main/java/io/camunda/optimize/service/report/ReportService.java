@@ -300,7 +300,7 @@ public class ReportService implements CollectionReferencingService {
                     "Was not able to retrieve report with id ["
                         + reportId
                         + "]"
-                        + "from Elasticsearch. Report does not exist."));
+                        + "from the database. Report does not exist."));
   }
 
   public AuthorizedReportDefinitionResponseDto getReportDefinition(
@@ -314,7 +314,7 @@ public class ReportService implements CollectionReferencingService {
                         "Was not able to retrieve report with id ["
                             + reportId
                             + "]"
-                            + "from Elasticsearch. Report does not exist."));
+                            + "from the database. Report does not exist."));
 
     final RoleType currentUserRole =
         reportAuthorizationService
@@ -561,7 +561,7 @@ public class ReportService implements CollectionReferencingService {
                 new NotFoundException(
                     "Was not able to retrieve report with id ["
                         + reportId
-                        + "] from database. Report does not exist."));
+                        + "] from the database. Report does not exist."));
   }
 
   private void removeReportAndAssociatedResources(
@@ -755,7 +755,7 @@ public class ReportService implements CollectionReferencingService {
                                     "Was not able to retrieve report with id ["
                                         + originalSubReportId
                                         + "]"
-                                        + "from Elasticsearch. Report does not exist."));
+                                        + "from the database. Report does not exist."));
 
                 final String reportName = keepSubReportNames ? report.getName() : null;
                 String subReportCopyId = existingReportCopies.get(originalSubReportId);
@@ -811,7 +811,7 @@ public class ReportService implements CollectionReferencingService {
                         "Was not able to retrieve report with id ["
                             + reportId
                             + "]"
-                            + "from Elasticsearch. Report does not exist."));
+                            + "from the database. Report does not exist."));
 
     if (!reportDefinition.isCombined()) {
       final SingleReportDefinitionDto<?> singleProcessReportDefinitionDto =

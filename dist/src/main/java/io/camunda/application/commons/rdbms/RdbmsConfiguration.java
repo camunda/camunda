@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.read.service.FormReader;
 import io.camunda.db.rdbms.read.service.GroupReader;
+import io.camunda.db.rdbms.read.service.IncidentReader;
 import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
@@ -29,6 +30,7 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
+import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -81,6 +83,11 @@ public class RdbmsConfiguration {
   @Bean
   public GroupReader groupReader(final GroupMapper groupMapper) {
     return new GroupReader(groupMapper);
+  }
+
+  @Bean
+  public IncidentReader incidentReader(final IncidentMapper incidentMapper) {
+    return new IncidentReader(incidentMapper);
   }
 
   @Bean
@@ -141,6 +148,7 @@ public class RdbmsConfiguration {
       final DecisionRequirementsReader decisionRequirementsReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final GroupReader groupReader,
+      final IncidentReader incidentReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
       final RoleReader roleReader,
@@ -156,6 +164,7 @@ public class RdbmsConfiguration {
         decisionRequirementsReader,
         flowNodeInstanceReader,
         groupReader,
+        incidentReader,
         processDefinitionReader,
         processInstanceReader,
         variableReader,

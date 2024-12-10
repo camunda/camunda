@@ -20,15 +20,21 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,8 +46,34 @@ public final class JobThrowErrorTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
   private static final String ERROR_CODE = "ERROR";
+  private static long userKey;
+  private static String tenantId;
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
+  @BeforeClass
+  public static void setUp() {
+    tenantId = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
+    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
+    ENGINE
+        .authorization()
+        .permission()
+        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withOwnerKey(userKey)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .add();
+  }
 
   @Before
   public void setup() {
@@ -468,10 +500,9 @@ public final class JobThrowErrorTest {
   @Test
   public void shouldRejectIfTenantIsUnauthorized() {
     // given
-    final String tenantId = "acme";
     final String falseTenantId = "foo";
     final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
 
     // when
     final Record<JobRecordValue> result =

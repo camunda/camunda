@@ -90,13 +90,22 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      final var error =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, error);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, error);
+        new AuthorizationRequest(
+            command,
+            AuthorizationResourceType.MESSAGE,
+            PermissionType.CREATE,
+            command.getValue().getTenantId());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  authRequest.getPermissionType(), authRequest.getResourceType())
+              : "Expected to publish a new message for tenant '%s', but no such tenant was found"
+                  .formatted(command.getValue().getTenantId());
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;
     }
 

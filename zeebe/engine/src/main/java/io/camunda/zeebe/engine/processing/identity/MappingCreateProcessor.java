@@ -58,7 +58,7 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
     final var authorizationRequest =
         new AuthorizationRequest(
             command, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
               authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());

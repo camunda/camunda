@@ -25,6 +25,7 @@ public record FlowNodeInstanceDbModel(
     FlowNodeType type,
     FlowNodeState state,
     Long incidentKey,
+    Long numSubprocessIncidents,
     String tenantId)
     implements Copyable<FlowNodeInstanceDbModel> {
 
@@ -46,6 +47,7 @@ public record FlowNodeInstanceDbModel(
                 .type(type)
                 .state(state)
                 .incidentKey(incidentKey)
+                .numSubprocessIncidents(numSubprocessIncidents)
                 .tenantId(tenantId))
         .build();
   }
@@ -64,6 +66,7 @@ public record FlowNodeInstanceDbModel(
     private FlowNodeType type;
     private FlowNodeState state;
     private Long incidentKey;
+    private Long numSubprocessIncidents = 0L;
     private String tenantId;
 
     // Public constructor to initialize the builder
@@ -120,6 +123,16 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
+    public Long numSubprocessIncidents() {
+      return numSubprocessIncidents;
+    }
+
+    public FlowNodeInstanceDbModelBuilder numSubprocessIncidents(
+        final Long numSubprocessIncidents) {
+      this.numSubprocessIncidents = numSubprocessIncidents;
+      return this;
+    }
+
     public FlowNodeInstanceDbModelBuilder processDefinitionId(final String bpmnProcessId) {
       processDefinitionId = bpmnProcessId;
       return this;
@@ -144,6 +157,7 @@ public record FlowNodeInstanceDbModel(
           type,
           state,
           incidentKey,
+          numSubprocessIncidents,
           tenantId);
     }
   }

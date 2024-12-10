@@ -15,12 +15,18 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
+import java.util.UUID;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,10 +36,36 @@ public final class JobUpdateRetriesTest {
   private static final int NEW_RETRIES = 20;
   private static final String PROCESS_ID = "process";
   private static String jobType;
+  private static long userKey;
+  private static String tenantId;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @BeforeClass
+  public static void setUp() {
+    tenantId = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
+    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
+    ENGINE
+        .authorization()
+        .permission()
+        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withOwnerKey(userKey)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .add();
+  }
 
   @Before
   public void setup() {
@@ -163,10 +195,9 @@ public final class JobUpdateRetriesTest {
   @Test
   public void shouldUpdateRetriesForCustomTenant() {
     // given
-    final String tenantId = "acme";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
@@ -185,11 +216,10 @@ public final class JobUpdateRetriesTest {
   @Test
   public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
     // given
-    final String tenantId = "acme";
     final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when

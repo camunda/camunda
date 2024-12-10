@@ -127,4 +127,28 @@ public class TenantController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .removeMember(tenantKey, EntityType.MAPPING, mappingKey));
   }
+
+  @PutMapping(
+      path = "/{tenantKey}/groups/{groupKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
+      @PathVariable final long tenantKey, @PathVariable final long groupKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantKey, EntityType.GROUP, groupKey));
+  }
+
+  @DeleteMapping(
+      path = "/{tenantKey}/groups/{groupKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
+      @PathVariable final long tenantKey, @PathVariable final long groupKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantKey, EntityType.GROUP, groupKey));
+  }
 }

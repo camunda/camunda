@@ -19,27 +19,63 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
+import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class CompleteJobTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+
   private static final String PROCESS_ID = "process";
   private static String jobType;
+  private static long userKey;
+  private static String tenantId;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @BeforeClass
+  public static void setUp() {
+    tenantId = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
+    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
+    ENGINE
+        .authorization()
+        .permission()
+        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withOwnerKey(userKey)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .add();
+  }
 
   @Before
   public void setup() {
@@ -50,7 +86,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJob() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
 
     // when
@@ -89,7 +126,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithVariables() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -110,7 +148,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithNilVariables() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -131,7 +170,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithZeroLengthVariables() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -152,7 +192,8 @@ public final class CompleteJobTest {
   public void shouldThrowExceptionOnCompletionIfVariablesAreInvalid() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     final byte[] invalidVariables = new byte[] {1}; // positive fixnum, i.e. no object
 
@@ -178,7 +219,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithSetResultDeniedFalse() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -200,7 +242,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithSetResultDeniedTrue() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -222,7 +265,8 @@ public final class CompleteJobTest {
   public void shouldRejectCompletionIfJobIsCompleted() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
     ENGINE.job().withKey(jobKey).complete();
@@ -241,7 +285,8 @@ public final class CompleteJobTest {
     ENGINE.createJob(jobType, PROCESS_ID);
 
     // when
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
     ENGINE.job().withKey(jobKey).fail();
 
@@ -255,10 +300,10 @@ public final class CompleteJobTest {
   @Test
   public void shouldCompleteJobForCustomTenant() {
     // given
-    final String tenantId = "acme";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
 
     // when
     final Record<JobRecordValue> jobCompletedRecord =
@@ -281,11 +326,11 @@ public final class CompleteJobTest {
   @Test
   public void shouldRejectCompletionIfTenantIsUnauthorized() {
     // given
-    final String tenantId = "acme";
-    final String falseTenantId = "foo";
+    final String falseTenantId = UUID.randomUUID().toString();
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate();
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
 
     // when
     final Record<JobRecordValue> jobRecord =

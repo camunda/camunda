@@ -11,47 +11,17 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class MultiTenancyValidator {
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
-
-  /**
-   * Validates whether a tenant is authorized to perform the request. It does so by checking the
-   * provided tenant against the list of authorized tenant in the authentication context.
-   *
-   * @param tenantId the tenant to check if it's authorized
-   * @param multiTenancyEnabled whether multi-tenancy is enabled
-   * @param commandName the name of the command, used for error messages
-   * @return a optional {@link ProblemDetail} if the tenant is not authorized
-   */
-  public static Optional<ProblemDetail> validateAuthorization(
-      final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
-    if (!multiTenancyEnabled) {
-      return Optional.empty();
-    }
-
-    final var authorizedTenants = RequestMapper.getAuthentication().authenticatedTenantIds();
-    if (authorizedTenants == null || !authorizedTenants.contains(tenantId)) {
-      return Optional.of(
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.UNAUTHORIZED,
-              ERROR_MESSAGE_INVALID_TENANT.formatted(
-                  commandName, tenantId, "tenant is not authorized to perform this request"),
-              HttpStatus.UNAUTHORIZED.name()));
-    }
-
-    return Optional.empty();
-  }
 
   /**
    * Validates the tenantId. If multi-tenancy is disabled, the tenantId must be empty, or the

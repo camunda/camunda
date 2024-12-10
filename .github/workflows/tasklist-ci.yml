@@ -58,6 +58,7 @@ jobs:
               echo 'src_changed=true' >> $GITHUB_OUTPUT
             fi
           fi
+
   run-build:
     name: run-build
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
@@ -77,3 +78,4 @@ jobs:
     needs: check_changes
     if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit

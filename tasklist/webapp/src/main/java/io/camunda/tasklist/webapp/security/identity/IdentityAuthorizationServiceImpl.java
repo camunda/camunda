@@ -12,7 +12,7 @@ import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
 
 import io.camunda.identity.autoconfigure.IdentityProperties;
 import io.camunda.identity.sdk.Identity;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.sso.TokenAuthentication;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationSe
 
   private final Logger logger = LoggerFactory.getLogger(IdentityAuthorizationServiceImpl.class);
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private IdentityProperties identityProperties;
 
   @Override
@@ -78,7 +78,7 @@ public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationSe
   }
 
   private Optional<IdentityAuthorization> getIdentityAuthorization() {
-    if (!tasklistProperties.getIdentity().isResourcePermissionsEnabled()
+    if (!securityConfiguration.getAuthorizations().isEnabled()
         || identityProperties.baseUrl() == null) {
       return Optional.empty();
     }

@@ -11,7 +11,6 @@ import java.util.Objects;
 
 public final class AuthenticationCfg {
   private AuthMode mode = AuthMode.NONE;
-  private IdentityCfg identity = new IdentityCfg();
 
   public AuthMode getMode() {
     return mode;
@@ -21,17 +20,9 @@ public final class AuthenticationCfg {
     this.mode = mode;
   }
 
-  public IdentityCfg getIdentity() {
-    return identity;
-  }
-
-  public void setIdentity(final IdentityCfg identity) {
-    this.identity = identity;
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(mode, identity);
+    return Objects.hash(mode);
   }
 
   @Override
@@ -43,12 +34,12 @@ public final class AuthenticationCfg {
       return false;
     }
     final AuthenticationCfg that = (AuthenticationCfg) o;
-    return mode == that.mode && Objects.equals(identity, that.identity);
+    return mode == that.mode;
   }
 
   @Override
   public String toString() {
-    return "AuthenticationCfg{" + "mode=" + mode + ", identity=" + identity + '}';
+    return "AuthenticationCfg{" + "mode=" + mode + '}';
   }
 
   public enum AuthMode {

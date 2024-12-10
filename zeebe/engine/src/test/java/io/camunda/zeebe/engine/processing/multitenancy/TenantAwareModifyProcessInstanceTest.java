@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -24,7 +25,10 @@ import org.junit.rules.TestWatcher;
 
 public class TenantAwareModifyProcessInstanceTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -75,6 +79,22 @@ public class TenantAwareModifyProcessInstanceTest {
   @Test
   public void shouldRejectModifyInstanceForUnauthorizedTenant() {
     // given
+    final var userKey = ENGINE.user().newUser("username").create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE
+            .tenant()
+            .newTenant()
+            .withTenantId("another-tenant")
+            .create()
+            .getValue()
+            .getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
     ENGINE
         .deployment()
         .withXmlResource(
@@ -100,18 +120,17 @@ public class TenantAwareModifyProcessInstanceTest {
         ENGINE
             .processInstance()
             .withInstanceKey(processInstanceKey)
-            .forAuthorizedTenants("another-tenant")
             .modification()
             .activateElement("task")
             .terminateElement(task.getKey())
             .expectRejection()
-            .modify();
+            .modify(userKey);
 
     // then
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to modify process instance but no process instance found with key '%s'"
+            "Expected to modify a process instance with key '%s', but no such process instance was found"
                 .formatted(processInstanceKey));
   }
 

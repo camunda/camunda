@@ -17,13 +17,13 @@ let initialData: Awaited<ReturnType<typeof setup>>;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
-  const {instance} = initialData;
+  const {processWithListenerInstance} = initialData;
 
   await expect
     .poll(
       async () => {
         const response = await request.get(
-          `${config.endpoint}/v1/process-instances/${instance.processInstanceKey}`,
+          `${config.endpoint}/v1/process-instances/${processWithListenerInstance.processInstanceKey}`,
         );
 
         return response.status();
@@ -38,7 +38,8 @@ test.describe('Process Instance Listeners', () => {
     page,
     processInstancePage,
   }) => {
-    const processInstanceKey = initialData.instance.processInstanceKey;
+    const processInstanceKey =
+      initialData.processWithListenerInstance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     // Start flow node should NOT enable listeners tab
@@ -53,7 +54,8 @@ test.describe('Process Instance Listeners', () => {
   });
 
   test('Listeners data displayed', async ({page, processInstancePage}) => {
-    const processInstanceKey = initialData.instance.processInstanceKey;
+    const processInstanceKey =
+      initialData.processWithListenerInstance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     await processInstancePage.instanceHistory
@@ -68,7 +70,8 @@ test.describe('Process Instance Listeners', () => {
     page,
     processInstancePage,
   }) => {
-    const processInstanceKey = initialData.instance.processInstanceKey;
+    const processInstanceKey =
+      initialData.processWithListenerInstance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     // select flow node in diagram, check amount of listeners and add a token to it
@@ -197,5 +200,44 @@ test.describe('Process Instance Listeners', () => {
       page.getByText('Execution listener', {exact: true}),
     ).toBeVisible();
     await expect(page.getByText('Task listener', {exact: true})).toBeVisible();
+  });
+
+  test('Listeners on process instance or participant (root flow node)', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const processInstanceKey =
+      initialData.processWithListenerOnRootInstance.processInstanceKey;
+    await processInstancePage.navigateToProcessInstance({
+      id: processInstanceKey,
+    });
+
+    await processInstancePage.modifyInstanceButton.click();
+    await page.getByRole('button', {name: 'Continue'}).click();
+    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await page
+      .getByRole('button', {
+        name: 'Move selected instance in this flow node to another target',
+      })
+      .click();
+    await processInstancePage.diagram.clickEvent('End event');
+    await page.getByRole('button', {name: 'Apply Modifications'}).click();
+    await page.getByRole('button', {name: 'Apply', exact: true}).click();
+
+    await expect
+      .poll(async () => {
+        await processInstancePage.instanceHistory
+          .getByText(/Start event/i)
+          .click();
+        await processInstancePage.instanceHistory
+          .getByText(/processWithListenerOnRoot/i)
+          .click();
+        return processInstancePage.listenersTabButton.isVisible();
+      })
+      .toBe(true);
+
+    await processInstancePage.listenersTabButton.click();
+
+    await expect(page.getByText('Execution listener')).toBeVisible();
   });
 });

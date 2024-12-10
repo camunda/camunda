@@ -17,6 +17,9 @@ import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collections;
@@ -24,10 +27,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -307,5 +314,87 @@ public class OpensearchEngineClientIT {
         .isInstanceOf(OpensearchExporterException.class)
         .hasMessageContaining(
             "Creating index state management policy [policy_name] with min_deletion_age [test123] failed.");
+  }
+
+  @Nested
+  class ImportersCompleted {
+    final String indexPrefix = "";
+    final int partitionId = 1;
+    final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);
+
+    @BeforeEach
+    void setup() throws IOException {
+      openSearchClient
+          .indices()
+          .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
+      opensearchEngineClient.createIndex(importPositionIndex, new IndexSettings());
+    }
+
+    @Test
+    void shouldReturnRecordReadersCompletedIfAllReadersCompletedFieldIsTrue() throws IOException {
+      // given, when
+      openSearchClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
+      openSearchClient.indices().refresh();
+
+      // then
+      final var importersCompleted =
+          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
+      assertThat(importersCompleted).isEqualTo(true);
+    }
+
+    @Test
+    void shouldReturnRecordReadersNotCompletedIfSomeReadersCompletedFieldIsFalse()
+        throws IOException {
+      openSearchClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
+
+      final var decisionEntity =
+          new ImportPositionEntity().setPartitionId(partitionId).setAliasName("decision");
+
+      final var updateRequest =
+          new UpdateRequest.Builder<ImportPositionEntity, Map<String, Boolean>>()
+              .id(decisionEntity.getId())
+              .index(importPositionIndex.getFullQualifiedName())
+              .doc(Map.of("completed", false))
+              .build();
+
+      openSearchClient.update(updateRequest, ImportPositionEntity.class);
+
+      openSearchClient.indices().refresh();
+
+      final var importersCompleted =
+          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
+      assertThat(importersCompleted).isEqualTo(false);
+    }
+
+    @Test
+    void shouldReturnImportersCompletedForFreshInstall() {
+      final var importersCompleted =
+          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
+      assertThat(importersCompleted).isEqualTo(true);
+    }
+
+    private BulkRequest createImportPositionDocuments(
+        final int partitionId, final IndexDescriptor importPositionIndex) {
+      final BulkRequest.Builder br = new BulkRequest.Builder();
+      Stream.of("process-instance", "decision", "job")
+          .map(
+              type ->
+                  new ImportPositionEntity()
+                      .setCompleted(true)
+                      .setPartitionId(partitionId)
+                      .setAliasName(type))
+          .forEach(
+              entity -> {
+                br.operations(
+                    op ->
+                        op.index(
+                            i ->
+                                i.index(importPositionIndex.getFullQualifiedName())
+                                    .id(entity.getId())
+                                    .document(entity)));
+              });
+
+      return br.build();
+    }
   }
 }

@@ -71,6 +71,16 @@ deny[msg] {
         [concat(", ", get_jobs_with_setupnodecaching(input.jobs))])
 }
 
+warn[msg] {
+    # This rule warns in situations where no "secrets: inherit" is passed on
+    # calling other workflows as this is usually an oversight that prevents
+    # even basic things like CI health metrics from working
+
+    count(get_jobs_with_usesbutnosecrets(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs calling other workflows but not using 'secrets: inherit' which prevents access to secrets even for CI health metrics! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
+}
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -129,5 +139,15 @@ get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
             step["with"].cache == "yarn"
         }
         count(setupnodecaching_steps) > 0
+    }
+}
+
+get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
+    jobs_with_usesbutnosecrets := { job_id |
+        job := jobInput[job_id]
+
+        # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
+        job.uses
+        not job.secrets
     }
 }
