@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
@@ -23,12 +24,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/ */
+/**
+ * https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/process-lifecycles/
+ */
 public class RdbmsExporter implements Exporter {
 
-  /** The partition on which all process deployments are published */
+  /**
+   * The partition on which all process deployments are published
+   */
   public static final long PROCESS_DEFINITION_PARTITION = 1L;
-
+  private static final long DEFAULT_FLUSH_INTERVAL = 5000L;
+  private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
 
   private final HashMap<ValueType, List<RdbmsExportHandler>> registeredHandlers = new HashMap<>();
@@ -42,15 +48,20 @@ public class RdbmsExporter implements Exporter {
   private ExporterPositionModel exporterRdbmsPosition;
   private long lastPosition = -1;
 
+  // configuration
+  private Duration flushInterval;
+  private int maxQueueSize;
+
   public RdbmsExporter(final RdbmsService rdbmsService) {
     this.rdbmsService = rdbmsService;
   }
 
   @Override
   public void configure(final Context context) {
+    readConfiguration(context.getConfiguration());
     partitionId = context.getPartitionId();
 
-    rdbmsWriter = rdbmsService.createWriter(partitionId);
+    rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
     registerHandler();
 
     LOG.info("[RDBMS Exporter] RDBMS Exporter configured!");
@@ -59,7 +70,9 @@ public class RdbmsExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    this.controller.scheduleCancellableTask(Duration.ofSeconds(5), this::flushAndReschedule);
+    if (!flushAfterEachRecord()) {
+      this.controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    }
 
     initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
@@ -111,11 +124,16 @@ public class RdbmsExporter implements Exporter {
               record.getValueType());
         }
       }
+      
+      lastPosition = record.getPosition();
+
+      if (flushAfterEachRecord()) {
+        rdbmsWriter.flush();
+      }
     } else {
       LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());
     }
 
-    lastPosition = record.getPosition();
   }
 
   private void registerHandler() {
@@ -203,14 +221,35 @@ public class RdbmsExporter implements Exporter {
     }
   }
 
+  private void readConfiguration(final Configuration configuration) {
+    flushInterval = Duration.ofMillis((Integer) configuration.getArguments()
+        .getOrDefault("flushInterval", DEFAULT_FLUSH_INTERVAL));
+    maxQueueSize = (Integer) configuration.getArguments()
+        .getOrDefault("maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
+
+    LOG.info("[RDBMS Exporter] Configuration: flushInterval={}, maxQueueSize={}", flushInterval,
+        maxQueueSize);
+    if (flushAfterEachRecord()) {
+      LOG.info("[RDBMS Exporter] Flushing after each record");
+    }
+  }
+
+  private boolean flushAfterEachRecord() {
+    return flushInterval.isZero() || maxQueueSize <= 0;
+  }
+
   private void flushAndReschedule() {
     flushExecutionQueue();
-    controller.scheduleCancellableTask(Duration.ofSeconds(5), this::flushAndReschedule);
+    controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
   }
 
   @VisibleForTesting(
       "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
   public void flushExecutionQueue() {
+    if (flushAfterEachRecord()) {
+      LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
+      return;
+    }
     LOG.debug("[RDBMS Exporter] flushing queue");
     rdbmsWriter.flush();
   }

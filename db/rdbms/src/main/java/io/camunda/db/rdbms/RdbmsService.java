@@ -24,7 +24,9 @@ import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 
-/** A holder for all rdbms services */
+/**
+ * A holder for all rdbms services
+ */
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
@@ -133,6 +135,10 @@ public class RdbmsService {
   }
 
   public RdbmsWriter createWriter(final long partitionId) {
-    return rdbmsWriterFactory.createWriter(partitionId);
+    return rdbmsWriterFactory.createWriter(partitionId, -1);
+  }
+
+  public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
+    return rdbmsWriterFactory.createWriter(partitionId, queueSize);
   }
 }

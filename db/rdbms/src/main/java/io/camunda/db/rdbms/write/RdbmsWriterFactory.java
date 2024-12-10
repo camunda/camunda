@@ -24,8 +24,8 @@ public class RdbmsWriterFactory {
     this.exporterPositionMapper = exporterPositionMapper;
   }
 
-  public RdbmsWriter createWriter(final long partitionId) {
-    final var executionQueue = new ExecutionQueue(sqlSessionFactory, partitionId, 100);
+  public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
+    final var executionQueue = new ExecutionQueue(sqlSessionFactory, partitionId, queueSize);
     return new RdbmsWriter(
         executionQueue, new ExporterPositionService(executionQueue, exporterPositionMapper));
   }

@@ -63,12 +63,14 @@ import org.springframework.test.context.TestPropertySource;
 
 @Tag("rdbms")
 @SpringBootTest(classes = {RdbmsTestConfiguration.class})
-@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
+@TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms",
+    "zeebe.broker.exporters.rdbms.args.maxQueueSize=0"})
 class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
 
-  @Autowired private RdbmsService rdbmsService;
+  @Autowired
+  private RdbmsService rdbmsService;
 
   private RdbmsExporter exporter;
 

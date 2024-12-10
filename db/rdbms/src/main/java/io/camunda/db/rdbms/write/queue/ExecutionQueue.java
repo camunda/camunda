@@ -28,12 +28,12 @@ public class ExecutionQueue {
   private final LinkedList<QueueItem> queue = new LinkedList<>();
 
   private final long partitionId; // for addressing the logger
-  private final Integer queueFlushLimit;
+  private final int queueFlushLimit;
 
   public ExecutionQueue(
       final SqlSessionFactory sessionFactory,
       final long partitionId,
-      final Integer queueFlushLimit) {
+      final int queueFlushLimit) {
     this.sessionFactory = sessionFactory;
     this.partitionId = partitionId;
     this.queueFlushLimit = queueFlushLimit;
@@ -148,6 +148,11 @@ public class ExecutionQueue {
   }
 
   private void checkQueueForFlush() {
+    if (queueFlushLimit <= 0) {
+      // no limits, exporter must take care of it
+      return;
+    }
+
     LOG.trace(
         "[RDBMS ExecutionQueue, Partition {}] Checking if queue is flushed. Queue size: {}",
         partitionId,
