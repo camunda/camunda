@@ -50,6 +50,7 @@ jobs:
       - uses: step-security/harden-runner@v2.10.2
         with:
           egress-policy: audit
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - uses: actions/checkout@v4
       # Detect changes against the base branch
@@ -71,6 +72,7 @@ jobs:
       - uses: step-security/harden-runner@v2.10.2
         with:
           egress-policy: audit
+      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
