@@ -32,5 +32,11 @@ public enum ZeebeTaskListenerEventType {
   assignment,
   update,
   complete,
-  cancel
+  cancel,
+
+  creating,
+  assigning,
+  updating,
+  completing,
+  canceling
 }
