@@ -24,11 +24,7 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 @AutoCloseResources
-class AssignMappingToTenantTest {
-
-  private static final String TENANT_ID = "tenant-id";
-  private static final String CLAIM_NAME = "claimName";
-  private static final String CLAIM_VALUE = "claimValue";
+class AssignGroupToTenantTest {
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -36,84 +32,74 @@ class AssignMappingToTenantTest {
   @AutoCloseResource private ZeebeClient client;
 
   private long tenantKey;
-  private long mappingKey;
+  private long groupKey;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-
-    // Create Tenant
     tenantKey =
         client
             .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Initial Tenant Name")
+            .tenantId("tenant-id")
+            .name("Tenant Name")
             .send()
             .join()
             .getTenantKey();
 
-    // Create Mapping
-    mappingKey =
-        client
-            .newCreateMappingCommand()
-            .claimName(CLAIM_NAME)
-            .claimValue(CLAIM_VALUE)
-            .send()
-            .join()
-            .getMappingKey();
+    groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
   }
 
   @Test
-  void shouldAssignMappingToTenant() {
-    // When
-    client.newAssignMappingToTenantCommand(tenantKey).mappingKey(mappingKey).send().join();
+  void shouldAssignGroupToTenant() {
+    // when
+    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
 
-    // Then
-    ZeebeAssertHelper.assertEntityAssignedToTenant(
+    // then
+    ZeebeAssertHelper.assertGroupAssignedToTenant(
         tenantKey,
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityKey()).isEqualTo(mappingKey);
+          assertThat(tenant.getEntityKey()).isEqualTo(groupKey);
         });
   }
 
   @Test
-  void shouldRejectAssignIfTenantDoesNotExist() {
-    // Given
-    final long invalidTenantKey = 99999L;
+  void shouldRejectIfTenantDoesNotExist() {
+    // given
+    final long nonExistentTenantKey = 999999L;
 
-    // When / Then
+    // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(invalidTenantKey)
-                    .mappingKey(mappingKey)
+                    .newAssignGroupToTenantCommand(nonExistentTenantKey)
+                    .groupKey(groupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with key '%d', but no tenant with this key exists."
-                .formatted(invalidTenantKey));
+            "Expected to add entity to tenant with key '%d', but no tenant with this key exists."
+                .formatted(nonExistentTenantKey));
   }
 
   @Test
-  void shouldRejectAssignIfMappingDoesNotExist() {
-    // Given
-    final long invalidMappingKey = 99999L;
+  void shouldRejectIfGroupDoesNotExist() {
+    // given
+    final long nonExistentGroupKey = 888888L;
 
-    // When / Then
+    // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(tenantKey)
-                    .mappingKey(invalidMappingKey)
+                    .newAssignGroupToTenantCommand(tenantKey)
+                    .groupKey(nonExistentGroupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
             "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
-                .formatted(invalidMappingKey, tenantKey));
+                .formatted(nonExistentGroupKey, tenantKey));
   }
 }

@@ -8,10 +8,13 @@
 package io.camunda.zeebe.engine.processing.tenant;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -27,19 +30,17 @@ public class AddEntityTenantTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldAddEntityToTenant() {
-    // given
-    final var userKey =
-        engine
-            .user()
-            .newUser("username")
-            .withName("Foo Bar")
-            .withEmail("foo@bar.com")
-            .withPassword("password")
-            .create()
-            .getValue()
-            .getUserKey();
+  public void shouldAddEntitiesToTenant() {
+    // We can't use JUnit 5 parameterized tests due to JUnit 4's @Rule incompatibility, and JUnit
+    // 4's parameterized tests are not suitable for this test class    shouldAddEntityToTenant(USER,
+    //  createUser());
+    shouldAddEntityToTenant(GROUP, createGroup());
+    shouldAddEntityToTenant(MAPPING, createMapping());
+    shouldAddEntityToTenant(USER, createUser());
+  }
 
+  public void shouldAddEntityToTenant(final EntityType entityType, final long entityKey) {
+    // given
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
@@ -56,17 +57,20 @@ public class AddEntityTenantTest {
         engine
             .tenant()
             .addEntity(tenantKey)
-            .withEntityKey(userKey)
-            .withEntityType(USER)
+            .withEntityKey(entityKey)
+            .withEntityType(entityType)
             .add()
             .getValue();
 
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with key %s should be correctly added to tenant with key %s",
+            entityType, entityKey, tenantKey)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
+        .hasFieldOrPropertyWithValue("entityKey", entityKey)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
-        .hasFieldOrPropertyWithValue("entityType", USER);
+        .hasFieldOrPropertyWithValue("entityType", entityType);
   }
 
   @Test
@@ -111,17 +115,7 @@ public class AddEntityTenantTest {
   @Test
   public void shouldRejectIfEntityIsAlreadyAssignedToTenant() {
     // given
-    final var username = UUID.randomUUID().toString();
-    final var userKey =
-        engine
-            .user()
-            .newUser(username)
-            .withName("Foo Bar")
-            .withEmail("foo@bar.com")
-            .withPassword("password")
-            .create()
-            .getValue()
-            .getUserKey();
+    final var userKey = createUser();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantRecord =
         engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
@@ -144,5 +138,31 @@ public class AddEntityTenantTest {
         .hasRejectionReason(
             "Expected to add entity with key '%s' to tenant with key '%s', but the entity is already assigned to the tenant."
                 .formatted(userKey, tenantKey));
+  }
+
+  private Long createUser() {
+    return engine
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withName("Foo Bar")
+        .withEmail("foo@bar.com")
+        .withPassword("password")
+        .create()
+        .getValue()
+        .getUserKey();
+  }
+
+  private long createGroup() {
+    return engine.group().newGroup("groupName").create().getValue().getGroupKey();
+  }
+
+  private long createMapping() {
+    return engine
+        .mapping()
+        .newMapping("mappingName")
+        .withClaimValue("claimValue")
+        .create()
+        .getValue()
+        .getMappingKey();
   }
 }
