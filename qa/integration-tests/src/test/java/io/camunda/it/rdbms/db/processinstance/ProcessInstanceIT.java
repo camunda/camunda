@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -68,6 +69,33 @@ public class ProcessInstanceIT {
     assertThat(instance.parentProcessInstanceKey()).isEqualTo(-1L);
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);
     assertThat(instance.processDefinitionVersion()).isEqualTo(1);
+    assertThat(instance.hasIncident()).isFalse();
+  }
+
+  @TestTemplate
+  public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final ProcessInstanceDbModel original = ProcessInstanceFixtures.createRandomized(b -> b);
+    createAndSaveProcessInstance(rdbmsWriter, original);
+    rdbmsWriter.getProcessInstanceWriter().createIncident(original.processInstanceKey());
+    rdbmsWriter.flush();
+
+    final var instance = processInstanceReader.findOne(original.processInstanceKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.hasIncident()).isTrue();
+
+    rdbmsWriter.getProcessInstanceWriter().resolveIncident(original.processInstanceKey());
+    rdbmsWriter.flush();
+
+    final var resolvedInstance =
+        processInstanceReader.findOne(original.processInstanceKey()).orElse(null);
+
+    assertThat(resolvedInstance).isNotNull();
+    assertThat(resolvedInstance.hasIncident()).isFalse();
   }
 
   @TestTemplate

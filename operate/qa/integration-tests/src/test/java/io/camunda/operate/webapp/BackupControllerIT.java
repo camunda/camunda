@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp;
 
 import static io.camunda.management.backups.HistoryStateCode.*;
-import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,8 +18,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.snapshot.ElasticsearchSnapshotClient;
+import co.elastic.clients.elasticsearch.snapshot.GetRepositoryRequest;
+import co.elastic.clients.elasticsearch.snapshot.GetRepositoryResponse;
+import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
+import co.elastic.clients.elasticsearch.snapshot.Repository;
+import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
+import co.elastic.clients.elasticsearch.snapshot.SnapshotShardFailure;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.JsonpMapper;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.TransportException;
+import co.elastic.clients.util.ObjectBuilder;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -29,6 +41,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
+import io.camunda.webapps.backup.repository.elasticsearch.MetadataMarshaller;
 import io.camunda.webapps.controllers.BackupController;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -36,25 +49,16 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import org.apache.http.HttpStatus;
-import org.elasticsearch.ElasticsearchStatusException;
-import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.SnapshotClient;
-import org.elasticsearch.index.shard.ShardId;
-import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.snapshots.SnapshotId;
-import org.elasticsearch.snapshots.SnapshotInfo;
-import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
-import org.elasticsearch.transport.TransportException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
+import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -80,35 +84,80 @@ anymore, it will be done in a follow-up PR
     })
 @ActiveProfiles({"test", "operate", "standalone"})
 public class BackupControllerIT {
-  @Mock private SnapshotClient snapshotClient;
+  private ElasticsearchSnapshotClient snapshotClient;
 
-  @MockBean
-  @Qualifier("esClient")
+  @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
+  private ElasticsearchClient elasticsearchClient;
+
+  private final JsonpMapper jsonpMapper = new JacksonJsonpMapper();
+
+  @MockBean(name = "esClient")
   private RestHighLevelClient esClient;
 
+  @MockBean(name = "zeebeEsClient")
+  private RestHighLevelClient zeebeEsClient;
+
   @SpyBean private OperateProperties operateProperties;
-
   @Autowired private BackupController backupController;
-
-  @Autowired private ObjectMapper objectMapper;
-
   @Autowired private TestRestTemplate testRestTemplate;
 
   @LocalManagementPort private int managementPort;
 
+  @Before
+  public void setup() throws IOException {
+    snapshotClient = mock(ElasticsearchSnapshotClient.class);
+    when(elasticsearchClient._transport().jsonpMapper()).thenReturn(jsonpMapper);
+    when(elasticsearchClient.snapshot()).thenReturn(snapshotClient);
+    final var repoResponse =
+        GetRepositoryResponse.of(
+            b ->
+                b.result(
+                    Map.of(
+                        operateProperties.getBackup().getRepositoryName(),
+                        mock(Repository.class))));
+    mockGetRepoWithReturn(repoResponse);
+  }
+
+  private void mockGetRepoWithReturn(final GetRepositoryResponse response) throws IOException {
+    when(snapshotClient.getRepository((GetRepositoryRequest) any())).thenReturn(response);
+    when(snapshotClient.getRepository(
+            (Function<GetRepositoryRequest.Builder, ObjectBuilder<GetRepositoryRequest>>) any()))
+        .thenReturn(response);
+  }
+
+  private void mockGetRepoWithException(final Exception ex) throws IOException {
+    when(snapshotClient.getRepository((GetRepositoryRequest) any())).thenThrow(ex);
+    when(snapshotClient.getRepository(
+            (Function<GetRepositoryRequest.Builder, ObjectBuilder<GetRepositoryRequest>>) any()))
+        .thenThrow(ex);
+  }
+
+  private void mockGetWithReturn(final GetSnapshotResponse response) throws IOException {
+    when(snapshotClient.get((GetSnapshotRequest) any())).thenReturn(response);
+    when(snapshotClient.get(
+            (Function<GetSnapshotRequest.Builder, ObjectBuilder<GetSnapshotRequest>>) any()))
+        .thenReturn(response);
+  }
+
+  private void mockGetWithException(final Exception ex) throws IOException {
+    when(snapshotClient.get((GetSnapshotRequest) any())).thenThrow(ex);
+    when(snapshotClient.get(
+            (Function<GetSnapshotRequest.Builder, ObjectBuilder<GetSnapshotRequest>>) any()))
+        .thenThrow(ex);
+  }
+
   @Test
   public void shouldReturnNotFoundStatusWhenBackupIdNotFound() throws Exception {
-    when(esClient.snapshot()).thenReturn(snapshotClient);
-    when(snapshotClient.get(any(), any()))
-        .thenThrow(
-            new ElasticsearchStatusException(
-                "type=snapshot_missing_exception", RestStatus.NOT_FOUND));
+    final ElasticsearchException ex =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(ex.error().type()).thenReturn("snapshot_missing_exception");
+    mockGetWithException(ex);
 
     final ResponseEntity<Map> result =
         testRestTemplate.getForEntity(
             "http://localhost:" + managementPort + "/actuator/backup-history/2", Map.class);
 
-    assertThat(result.getStatusCode().value()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+    assertThat(result.getStatusCode().value()).isEqualTo(404);
 
     final Map<String, String> resultBody = (Map<String, String>) result.getBody();
     assertThat(resultBody.get("message")).isEqualTo("No backup with id [2] found.");
@@ -120,40 +169,38 @@ public class BackupControllerIT {
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
-    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
-    when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final ElasticsearchException elsEx =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(elsEx.error().type()).thenReturn("repository_missing_exception");
+    mockGetRepoWithException(elsEx);
 
     assertReturnsError(() -> backupController.takeBackup(1L), 404, expectedMessage);
 
     assertReturnsError(() -> backupController.takeBackup(1L), 404, expectedMessage);
 
-    verify(esClient, times(2)).snapshot();
+    verify(elasticsearchClient, times(2)).snapshot();
   }
 
   @Test
   public void shouldFailCreateBackupOnBackupIdNotFound() throws IOException {
     final long backupId = 2L;
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
-    when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshotName", "uuid"));
-    final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotInfo.snapshot()).thenReturn("snapshotName");
+    final List<SnapshotInfo> snapshotInfos = List.of(snapshotInfo);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).total(1).remaining(1)));
 
     final String expectedMessage =
         String.format("A backup with ID [%s] already exists. Found snapshots:", backupId);
     assertReturnsError(() -> backupController.takeBackup(backupId), 400, expectedMessage);
-    verify(esClient, times(2)).snapshot();
+    verify(elasticsearchClient, times(2)).snapshot();
   }
 
   @Test
   public void shouldFailCreateBackupOn1stRequestFailedWithConnectionError() throws IOException {
     final long backupId = 2L;
-    when(snapshotClient.getRepository(any(), any()))
-        .thenThrow(new TransportException("Elastic is not available"));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final TransportException ex = mock(TransportException.class);
+    mockGetRepoWithException(ex);
 
     final String expectedMessage =
         String.format(
@@ -165,10 +212,9 @@ public class BackupControllerIT {
   @Test
   public void shouldFailCreateBackupOn2ndRequestFailedWithConnectionError() throws IOException {
     final long backupId = 2L;
-    when(snapshotClient.getRepository(any(), any())).thenReturn(null);
-    when(snapshotClient.get(any(), any()))
-        .thenThrow(new TransportException("Elastic is not available"));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final TransportException ex = mock(TransportException.class);
+
+    mockGetWithException(ex);
 
     final String expectedMessage =
         String.format(
@@ -180,21 +226,22 @@ public class BackupControllerIT {
   @Test
   public void shouldFailGetStateOnNoBackupFound() throws IOException {
     final long backupId = 2L;
-    when(snapshotClient.get(any(), any()))
-        .thenThrow(
-            new ElasticsearchStatusException(
-                SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final ElasticsearchException ex =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(ex.error().type()).thenReturn(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+    mockGetWithException(ex);
 
     final String expectedMessage = String.format("No backup with id [%s] found.", backupId);
     assertReturnsError(() -> backupController.getBackupState(backupId), 404, expectedMessage);
-    verify(esClient, times(1)).snapshot();
+    verify(elasticsearchClient, times(1)).snapshot();
   }
 
   @Test
   public void shouldFailGetStateOnConnectionError() throws IOException {
     final long backupId = 2L;
-    when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
+    final TransportException ex = mock(TransportException.class);
+    mockGetRepoWithException(ex);
+    mockGetWithException(ex);
 
     final String expectedMessage =
         String.format(
@@ -206,19 +253,13 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnCompletedState() throws IOException {
     final long backupId = 2L;
-    final var snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final var snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final var snapshotInfo3 =
-        createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+    final var snapshotInfo1 = createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
+    final var snapshotInfo2 = createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
+    final var snapshotInfo3 = createSnapshotInfoMock("snapshotName3", SnapshotState.SUCCESS);
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final var snapshotResponse =
+        GetSnapshotResponse.of(b -> b.remaining(1).total(1).snapshots(snapshotInfos));
+    mockGetWithReturn(snapshotResponse);
 
     final var response = backupController.getBackupState(backupId);
     final var backupState = (HistoryBackupInfo) response.getBody();
@@ -233,30 +274,32 @@ public class BackupControllerIT {
   public void shouldReturnFailedState1() throws IOException {
     final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
     final SnapshotShardFailure failure1 =
-        new SnapshotShardFailure(
-            "someNodeId1",
-            new ShardId("someIndex1", UUID.randomUUID().toString(), 1),
-            "Shard is not allocated");
+        SnapshotShardFailure.of(
+            b ->
+                b.index("1")
+                    .nodeId("someNodeId1")
+                    .shardId("someIndex1" + UUID.randomUUID() + 1)
+                    .status("FAILURE")
+                    .reason("Shard 1 is not allocated"));
     final SnapshotShardFailure failure2 =
-        new SnapshotShardFailure(
-            "someNodeId2",
-            new ShardId("someIndex2", UUID.randomUUID().toString(), 2),
-            "Shard is not allocated");
+        SnapshotShardFailure.of(
+            b ->
+                b.index("2")
+                    .nodeId("someNodeId2")
+                    .shardId("someIndex2" + UUID.randomUUID() + 2)
+                    .status("FAILURE")
+                    .reason("Shard 2 is not allocated"));
     final List<SnapshotShardFailure> shardFailures = asList(failure1, failure2);
     final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.FAILED, shardFailures);
+        createSnapshotInfoMock("snapshotName3", SnapshotState.FAILED, shardFailures);
     final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
 
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).total(1).remaining(1)));
 
     final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(FAILED);
@@ -269,28 +312,21 @@ public class BackupControllerIT {
     assertThat(backupState.getDetails())
         .extracting(d -> d.getFailures())
         .containsExactly(
-            null,
-            null,
-            snapshotInfos.get(2).shardFailures().stream().map(si -> si.toString()).toList());
+            null, null, snapshotInfos.get(2).failures().stream().map(si -> si.reason()).toList());
   }
 
   @Test
   public void shouldReturnFailedState2() throws IOException {
     final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.PARTIAL);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+        createSnapshotInfoMock("snapshotName3", SnapshotState.PARTIAL);
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(FAILED);
@@ -303,24 +339,19 @@ public class BackupControllerIT {
 
   @Test
   public void shouldReturnFailedState3WhenMoreSnapshotsThanExpected() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName3", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo4 =
-        createSnapshotInfoMock(
-            "snapshotName4", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName4", SnapshotState.SUCCESS);
     final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3, snapshotInfo4});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+        asList(snapshotInfo1, snapshotInfo2, snapshotInfo3, snapshotInfo4);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(FAILED);
@@ -334,19 +365,14 @@ public class BackupControllerIT {
   public void shouldReturnIncompatibleState() throws IOException {
     final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.INCOMPATIBLE);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+        createSnapshotInfoMock("snapshotName3", SnapshotState.INCOMPATIBLE);
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(INCOMPATIBLE);
@@ -361,17 +387,13 @@ public class BackupControllerIT {
     final long backupId = 2L;
     // we have only 2 out of 3 snapshots + timeout
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    when(snapshotInfo1.startTime()).thenReturn(0L);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
+    when(snapshotInfo1.startTimeInMillis()).thenReturn(0L);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(HistoryStateCode.INCOMPLETE);
@@ -386,19 +408,14 @@ public class BackupControllerIT {
     final long backupId = 2L;
     // we have only 2 out of 3 snapshots
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo3 =
-        createSnapshotInfoMock(
-            "snapshotName3", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+        createSnapshotInfoMock("snapshotName3", SnapshotState.IN_PROGRESS);
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(IN_PROGRESS);
@@ -410,19 +427,16 @@ public class BackupControllerIT {
 
   @Test
   public void shouldReturnInProgressState2() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     // we have only 2 out of 3 snapshots
     final SnapshotInfo snapshotInfo1 =
-        createSnapshotInfoMock(
-            "snapshotName1", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
+        createSnapshotInfoMock("snapshotName1", SnapshotState.IN_PROGRESS);
     final SnapshotInfo snapshotInfo2 =
-        createSnapshotInfoMock(
-            "snapshotName2", UUID.randomUUID().toString(), SnapshotState.IN_PROGRESS);
+        createSnapshotInfoMock("snapshotName2", SnapshotState.IN_PROGRESS);
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final HistoryBackupInfo backupState =
         (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
@@ -435,10 +449,10 @@ public class BackupControllerIT {
 
   @Test
   public void shouldFailDeleteBackupOnNonExistingRepository() throws IOException {
-    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
-    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
-    when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final ElasticsearchException elsEx =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(elsEx.error().type()).thenReturn("repository_missing_exception");
+    mockGetRepoWithException(elsEx);
     final var webResponse = backupController.deleteBackup(3L);
     assertThat(webResponse.getStatus()).isEqualTo(404);
 
@@ -450,14 +464,15 @@ public class BackupControllerIT {
             operateProperties.getBackup().getRepositoryName());
     final String actualMessage = error.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
-    verify(esClient, times(1)).snapshot();
+    verify(elasticsearchClient, times(1)).snapshot();
   }
 
   @Test
   public void shouldFailGetBackupOnNonExistingRepository() throws IOException {
-    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
-    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
-    when(esClient.snapshot()).thenThrow(elsEx);
+    final ElasticsearchException elsEx =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(elsEx.error().type()).thenReturn("repository_missing_exception");
+    mockGetWithException(elsEx);
     final var webResponse = backupController.getBackupState(3L);
     assertThat(webResponse.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     final var error = (Error) webResponse.getBody();
@@ -468,14 +483,16 @@ public class BackupControllerIT {
             operateProperties.getBackup().getRepositoryName());
     final String actualMessage = error.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
-    verify(esClient, times(1)).snapshot();
+    verify(elasticsearchClient, times(1)).snapshot();
   }
 
   @Test
   public void shouldFailGetBackupsOnNonExistingRepository() throws IOException {
-    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
-    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
-    when(esClient.snapshot()).thenThrow(elsEx);
+    final ElasticsearchException elsEx =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(elsEx.error().type()).thenReturn("repository_missing_exception");
+    mockGetRepoWithException(elsEx);
+    mockGetWithException(elsEx);
 
     final String expectedMessage =
         String.format(
@@ -483,23 +500,25 @@ public class BackupControllerIT {
             operateProperties.getBackup().getRepositoryName());
     assertReturnsError(() -> backupController.getBackups(), 404, expectedMessage);
 
-    verify(esClient, times(1)).snapshot();
+    verify(elasticsearchClient, times(1)).snapshot();
   }
 
   @Test
   public void shouldReturnEmptyBackupsOnNoBackupFound() throws IOException {
-    when(snapshotClient.get(any(), any()))
-        .thenThrow(
-            new ElasticsearchStatusException(
-                SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final ElasticsearchException elsEx =
+        mock(ElasticsearchException.class, Answers.RETURNS_DEEP_STUBS);
+    when(elsEx.error().type()).thenReturn(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+    mockGetWithException(elsEx);
+    final var response = backupController.getBackups();
 
-    assertThat((List<HistoryBackupInfo>) backupController.getBackups().getBody()).isEmpty();
+    assertThat((List<HistoryBackupInfo>) response.getBody()).isEmpty();
   }
 
   @Test
   public void shouldFailGetBackupsOnConnectionError() throws IOException {
-    when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
+    final TransportException elsEx = mock(TransportException.class);
+    mockGetRepoWithException(elsEx);
+    mockGetWithException(elsEx);
 
     final String expectedMessage =
         String.format(
@@ -515,39 +534,23 @@ public class BackupControllerIT {
     final long backupId3 = 3L;
     // COMPLETED
     final SnapshotInfo snapshotInfo11 =
-        createSnapshotInfoMock(
-            new Metadata(backupId1, "8.8.8", 1, 2),
-            UUID.randomUUID().toString(),
-            SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 1, 2), SnapshotState.SUCCESS);
+
     final SnapshotInfo snapshotInfo12 =
-        createSnapshotInfoMock(
-            new Metadata(backupId1, "8.8.8", 2, 2),
-            UUID.randomUUID().toString(),
-            SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 2, 2), SnapshotState.SUCCESS);
+
     // we have only 2 out of 3 snapshots + TIMEOUT -> INCOMPLETE
     final SnapshotInfo snapshotInfo21 =
-        createSnapshotInfoMock(
-            new Metadata(backupId2, "8.8.8", 1, 3),
-            UUID.randomUUID().toString(),
-            SnapshotState.SUCCESS);
-    when(snapshotInfo21.startTime()).thenReturn(0L);
+        createSnapshotInfoMock(new Metadata(backupId2, "8.8.8", 1, 3), SnapshotState.SUCCESS);
+    when(snapshotInfo21.startTimeInMillis()).thenReturn(0L);
     final SnapshotInfo snapshotInfo22 =
-        createSnapshotInfoMock(
-            new Metadata(backupId2, "8.8.8", 2, 3),
-            UUID.randomUUID().toString(),
-            SnapshotState.SUCCESS);
-    when(snapshotInfo22.startTime()).thenReturn(0L);
+        createSnapshotInfoMock(new Metadata(backupId2, "8.8.8", 2, 3), SnapshotState.SUCCESS);
+    when(snapshotInfo22.startTimeInMillis()).thenReturn(0L);
     // IN_PROGRESS
     final SnapshotInfo snapshotInfo31 =
-        createSnapshotInfoMock(
-            new Metadata(backupId3, "8.8.8", 1, 3),
-            UUID.randomUUID().toString(),
-            SnapshotState.SUCCESS);
+        createSnapshotInfoMock(new Metadata(backupId3, "8.8.8", 1, 3), SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo32 =
-        createSnapshotInfoMock(
-            new Metadata(backupId3, "8.8.8", 2, 3),
-            UUID.randomUUID().toString(),
-            SnapshotState.IN_PROGRESS);
+        createSnapshotInfoMock(new Metadata(backupId3, "8.8.8", 2, 3), SnapshotState.IN_PROGRESS);
     final List<SnapshotInfo> snapshotInfos =
         asList(
             new SnapshotInfo[] {
@@ -558,9 +561,9 @@ public class BackupControllerIT {
               snapshotInfo31,
               snapshotInfo32
             });
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
     assertThat(backups).hasSize(3);
@@ -604,24 +607,21 @@ public class BackupControllerIT {
     final Long backupId1 = 123L;
     // COMPLETED
     final Metadata metadata1 = new Metadata(backupId1, "8.8.8", 1, 2);
-    final SnapshotInfo snapshotInfo11 =
-        createSnapshotInfoMock(metadata1, UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo11 = createSnapshotInfoMock(metadata1, SnapshotState.SUCCESS);
     // remove backupId from metadata
     final Metadata metadata1WithNoId = new Metadata(null, "8.8.8", 1, 2);
-    when(snapshotInfo11.userMetadata())
-        .thenReturn(objectMapper.convertValue(metadata1WithNoId, new TypeReference<>() {}));
+    when(snapshotInfo11.metadata())
+        .thenReturn(MetadataMarshaller.asJson(metadata1WithNoId, jsonpMapper));
 
     final Metadata metadata2 = new Metadata(backupId1, "8.8.8", 2, 2);
-    final SnapshotInfo snapshotInfo12 =
-        createSnapshotInfoMock(metadata2, UUID.randomUUID().toString(), SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo12 = createSnapshotInfoMock(metadata2, SnapshotState.SUCCESS);
     final Metadata metadata2WithNoId = new Metadata(backupId1, "8.8.8", 2, 2);
-    when(snapshotInfo12.userMetadata())
-        .thenReturn(objectMapper.convertValue(metadata2WithNoId, new TypeReference<>() {}));
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo11, snapshotInfo12});
-    when(snapshotClient.get(any(), any()))
-        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
-    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotInfo12.metadata())
+        .thenReturn(MetadataMarshaller.asJson(metadata2WithNoId, jsonpMapper));
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo11, snapshotInfo12);
+    final var returnedResponse =
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1));
+    mockGetWithReturn(returnedResponse);
 
     final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
     assertThat(backups).hasSize(1);
@@ -638,58 +638,60 @@ public class BackupControllerIT {
     assertThat(backupState.getDetails())
         .extracting(HistoryBackupDetail::getSnapshotName)
         .containsExactlyInAnyOrder(
-            snapshotInfos.stream().map(si -> si.snapshotId().getName()).toArray(String[]::new));
+            snapshotInfos.stream().map(si -> si.snapshot()).toArray(String[]::new));
     assertThat(backupState.getDetails())
         .extracting(d -> d.getState())
         .containsExactlyInAnyOrder(
-            snapshotInfos.stream().map(si -> si.state().name()).toArray(String[]::new));
+            snapshotInfos.stream().map(si -> si.state()).toArray(String[]::new));
     assertThat(backupState.getDetails())
         .extracting(d -> d.getStartTime().toInstant().toEpochMilli())
         .containsExactlyInAnyOrder(
-            snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
+            snapshotInfos.stream().map(si -> si.startTimeInMillis()).toArray(Long[]::new));
   }
 
-  private SnapshotInfo createSnapshotInfoMock(
-      final String name, final String uuid, final SnapshotState state) {
-    return createSnapshotInfoMock(null, name, uuid, state, null);
+  private SnapshotInfo createSnapshotInfoMock(final String name, final SnapshotState state) {
+    return createSnapshotInfoMock(null, name, state, null);
   }
 
-  private SnapshotInfo createSnapshotInfoMock(
-      final Metadata metadata, final String uuid, final SnapshotState state) {
-    return createSnapshotInfoMock(metadata, null, uuid, state, null);
+  private SnapshotInfo createSnapshotInfoMock(final Metadata metadata, final SnapshotState state) {
+    return createSnapshotInfoMock(metadata, null, state, null);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      final String name,
-      final String uuid,
-      final SnapshotState state,
-      final List<SnapshotShardFailure> failures) {
-    return createSnapshotInfoMock(null, name, uuid, state, failures);
+      final String name, final SnapshotState state, final List<SnapshotShardFailure> failures) {
+    return createSnapshotInfoMock(null, name, state, failures);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
       final Metadata metadata,
       final String name,
-      final String uuid,
       final SnapshotState state,
       final List<SnapshotShardFailure> failures) {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     if (metadata != null) {
-      when(snapshotInfo.snapshotId())
-          .thenReturn(
-              new SnapshotId(new WebappsSnapshotNameProvider().getSnapshotName(metadata), uuid));
-      when(snapshotInfo.userMetadata())
-          .thenReturn(objectMapper.convertValue(metadata, new TypeReference<>() {}));
+      when(snapshotInfo.snapshot())
+          .thenReturn(new WebappsSnapshotNameProvider().getSnapshotName(metadata));
+      when(snapshotInfo.metadata()).thenReturn(MetadataMarshaller.asJson(metadata, jsonpMapper));
     } else {
-      when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId(name, uuid));
-      when(snapshotInfo.userMetadata())
-          .thenReturn(asMap("version", "someVersion", "partNo", 1, "partCount", 3));
+      when(snapshotInfo.snapshot()).thenReturn(name);
+      when(snapshotInfo.metadata())
+          .thenReturn(
+              Map.of(
+                  "backupId",
+                  JsonData.of("1"),
+                  "version",
+                  JsonData.of("someVersion"),
+                  "partNo",
+                  JsonData.of(1),
+                  "partCount",
+                  JsonData.of(3)));
     }
-    when(snapshotInfo.state()).thenReturn(state);
-    when(snapshotInfo.shardFailures()).thenReturn(failures);
-    when(snapshotInfo.startTime()).thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());
+    when(snapshotInfo.state()).thenReturn(state.toString());
+    when(snapshotInfo.failures()).thenReturn(failures);
+    when(snapshotInfo.startTimeInMillis())
+        .thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());
     return snapshotInfo;
   }
 
@@ -699,9 +701,14 @@ public class BackupControllerIT {
       final String expectedMessage) {
     final var webResponse = runnable.get();
 
-    assertThat(webResponse.getStatus()).isEqualTo(httpStatusCode);
+    try {
+      assertThat(webResponse.getStatus()).isEqualTo(httpStatusCode);
 
-    final var error = (Error) webResponse.getBody();
-    assertThat(error.getMessage()).contains(expectedMessage);
+      final var error = (Error) webResponse.getBody();
+      assertThat(error.getMessage()).contains(expectedMessage);
+    } catch (final Throwable e) {
+      System.out.println("web response is " + webResponse.getBody());
+      throw e;
+    }
   }
 }

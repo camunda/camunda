@@ -50,6 +50,32 @@ public class ProcessInstanceWriter {
     }
   }
 
+  public void createIncident(final long key) {
+    final boolean wasMerged = mergeToQueue(key, b -> b.numIncidents(b.numIncidents() + 1));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.incrementIncidentCount",
+              key));
+    }
+  }
+
+  public void resolveIncident(final long key) {
+    final boolean wasMerged = mergeToQueue(key, b -> b.numIncidents(b.numIncidents() - 1));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.decrementIncidentCount",
+              key));
+    }
+  }
+
   private boolean mergeToQueue(
       final long key,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> mergeFunction) {

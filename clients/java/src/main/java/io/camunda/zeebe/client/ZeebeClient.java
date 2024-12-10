@@ -17,6 +17,7 @@ package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -1566,4 +1567,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the delete tenant command
    */
   DeleteTenantCommandStep1 newDeleteTenantCommand(long tenantKey);
+
+  /**
+   * Command to assign a mapping rule to a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newAssignMappingToTenantCommand(tenantKey)
+   *   .mappingKey(mappingKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>This command sends an HTTP PUT request to assign the specified mapping rule to the given
+   * tenant.
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder for the assign tenant to mapping command
+   */
+  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(long tenantKey);
 }

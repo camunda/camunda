@@ -19,11 +19,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.spy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
@@ -56,6 +59,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -70,15 +74,59 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.net.ssl.SSLHandshakeException;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 @WireMockTest
 public final class OAuthCredentialsProviderTest {
+
+  private static final String VALID_TRUSTSTORE_PATH =
+      OAuthCredentialsProviderTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/truststore.jks")
+          .getPath();
+
+  private static final String TAMPERED_TRUSTSTORE_PATH =
+      OAuthCredentialsProviderTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/untruststore.jks")
+          .getPath();
+
+  private static final String VALID_IDENTITY_PATH =
+      OAuthCredentialsProviderTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/identity.p12")
+          .getPath();
+
+  private static final String VALID_CLIENT_PATH =
+      OAuthCredentialsProviderTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/localhost.p12")
+          .getPath();
+
+  private static final String TRUSTSTORE_PASSWORD = "password";
+  private static final String KEYSTORE_PASSWORD = "password";
+  private static final String KEYSTORE_MATERIAL_PASSWORD = "password";
+
+  @RegisterExtension
+  static WireMockExtension httpsWiremock =
+      WireMockExtension.newInstance()
+          .options(
+              WireMockConfiguration.wireMockConfig()
+                  .dynamicPort()
+                  .dynamicHttpsPort()
+                  .trustStorePath(VALID_TRUSTSTORE_PATH)
+                  .trustStorePassword(TRUSTSTORE_PASSWORD)
+                  .needClientAuth(true)
+                  .keystorePath(VALID_IDENTITY_PATH)
+                  .keystorePassword(KEYSTORE_PASSWORD))
+          .build();
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Key<String> AUTH_KEY =
@@ -91,19 +139,21 @@ public final class OAuthCredentialsProviderTest {
   private static final String ACCESS_TOKEN = "someToken";
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
-
   private final TestCredentialsApplier applier = new TestCredentialsApplier();
-  private final WireMockRuntimeInfo wireMockInfo;
+  private final WireMockRuntimeInfo defaultWiremockRuntimeInfo;
+
+  private WireMockRuntimeInfo currentWiremockRuntimeInfo;
 
   private Path cacheFilePath;
 
-  public OAuthCredentialsProviderTest(final WireMockRuntimeInfo wireMockInfo) {
-    this.wireMockInfo = wireMockInfo;
+  public OAuthCredentialsProviderTest(final WireMockRuntimeInfo defaultWiremockRuntimeInfo) {
+    this.defaultWiremockRuntimeInfo = defaultWiremockRuntimeInfo;
   }
 
   @BeforeEach
   void beforeEach(final @TempDir Path tmpDir) throws IOException {
     cacheFilePath = Files.createFile(tmpDir.resolve("cache"));
+    currentWiremockRuntimeInfo = defaultWiremockRuntimeInfo;
   }
 
   @Test
@@ -203,7 +253,7 @@ public final class OAuthCredentialsProviderTest {
     // then - ensure we did request twice (once applyCredentials, once shouldRetryRequest), but
     // still return false since the credentials are the same
     assertThat(shouldRetry).isFalse();
-    wireMockInfo.getWireMock().verifyThat(2, RequestPatternBuilder.allRequests());
+    currentWiremockRuntimeInfo.getWireMock().verifyThat(2, RequestPatternBuilder.allRequests());
   }
 
   @Test
@@ -225,7 +275,7 @@ public final class OAuthCredentialsProviderTest {
     provider.applyCredentials(applier);
 
     // then
-    wireMockInfo.getWireMock().verifyThat(0, RequestPatternBuilder.allRequests());
+    currentWiremockRuntimeInfo.getWireMock().verifyThat(0, RequestPatternBuilder.allRequests());
   }
 
   @Test
@@ -248,7 +298,7 @@ public final class OAuthCredentialsProviderTest {
     provider.applyCredentials(applier);
 
     // then
-    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+    currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
     assertThat(cache.readCache().get(CLIENT_ID))
         .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
@@ -273,7 +323,7 @@ public final class OAuthCredentialsProviderTest {
     provider.shouldRetryRequest(unauthorizedCode);
 
     // then
-    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+    currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
     assertThat(cache.readCache().get(CLIENT_ID))
         .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
@@ -290,7 +340,7 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .readTimeout(Duration.ofMillis(500))
             .build();
-    wireMockInfo
+    currentWiremockRuntimeInfo
         .getWireMock()
         .register(
             WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
@@ -299,7 +349,7 @@ public final class OAuthCredentialsProviderTest {
     // when/then
     assertThatCode(() -> provider.applyCredentials(applier))
         .isInstanceOf(SocketTimeoutException.class);
-    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+    currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
   @Test
@@ -336,7 +386,7 @@ public final class OAuthCredentialsProviderTest {
     assertThat(applier.credentials)
         .containsOnly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN))
         .hasSize(10);
-    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+    currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
   private void mockCredentials(final String token, final String scope) {
@@ -354,7 +404,7 @@ public final class OAuthCredentialsProviderTest {
             .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
             .collect(Collectors.joining("&"));
 
-    wireMockInfo
+    currentWiremockRuntimeInfo
         .getWireMock()
         .register(
             WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
@@ -388,7 +438,11 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private String tokenUrlString() {
-    return wireMockInfo.getHttpBaseUrl() + "/oauth/token";
+    return currentWiremockRuntimeInfo.getHttpBaseUrl() + "/oauth/token";
+  }
+
+  private String tokenHttpsUrlString() {
+    return currentWiremockRuntimeInfo.getHttpsBaseUrl() + "/oauth/token";
   }
 
   private static final class TestCredentialsApplier implements CredentialsApplier {
@@ -571,7 +625,7 @@ public final class OAuthCredentialsProviderTest {
     }
 
     private void mockAuthorizedRestRequest() throws JsonProcessingException {
-      wireMockInfo
+      currentWiremockRuntimeInfo
           .getWireMock()
           .register(
               WireMock.get(RestGatewayPaths.getTopologyUrl())
@@ -592,7 +646,7 @@ public final class OAuthCredentialsProviderTest {
     }
 
     private void mockUnauthorizedRestRequest() throws JsonProcessingException {
-      wireMockInfo
+      currentWiremockRuntimeInfo
           .getWireMock()
           .register(
               WireMock.get(RestGatewayPaths.getTopologyUrl())
@@ -608,7 +662,7 @@ public final class OAuthCredentialsProviderTest {
       return ZeebeClient.newClientBuilder()
           .usePlaintext()
           .grpcAddress(new URI("http://localhost:" + grpcServer.getPort()))
-          .restAddress(new URI(wireMockInfo.getHttpBaseUrl()))
+          .restAddress(new URI(currentWiremockRuntimeInfo.getHttpBaseUrl()))
           .credentialsProvider(
               new OAuthCredentialsProviderBuilder()
                   .clientId(CLIENT_ID)
@@ -617,6 +671,99 @@ public final class OAuthCredentialsProviderTest {
                   .authorizationServerUrl(tokenUrlString())
                   .credentialsCachePath(cacheFilePath.toString())
                   .build());
+    }
+  }
+
+  @Nested
+  final class CustomSSLTests {
+
+    @Test
+    void shouldSucceedSSLConnection() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+      // given
+      final OAuthCredentialsProvider provider = initializeBuilderWithSSL().build();
+      mockCredentials(ACCESS_TOKEN, null);
+
+      // when
+      provider.applyCredentials(applier);
+
+      // then
+      assertThat(applier.credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldFailWhenSSLCredsNotSpecified() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+      // given
+      final OAuthCredentialsProvider provider =
+          initializeBuilderWithSSL()
+              .keystorePath(null)
+              .keystorePassword(null)
+              .keystoreKeyPassword(null)
+              .truststorePath(null)
+              .truststorePassword(null)
+              .build();
+      mockCredentials(ACCESS_TOKEN, null);
+
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .hasMessageContaining("unable to find valid certification path to requested target");
+    }
+
+    @Test
+    void shouldFailWhenTrustStoreDoesNotContainCorrectRootCACert() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+      // given
+      final OAuthCredentialsProvider provider =
+          initializeBuilderWithSSL().truststorePath(Paths.get(TAMPERED_TRUSTSTORE_PATH)).build();
+      mockCredentials(ACCESS_TOKEN, null);
+
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(SSLHandshakeException.class)
+          .hasMessageContaining("signature check failed");
+    }
+
+    @Test
+    void shouldFailWhenKeystorePasswordIsIncorrect() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+      // given
+      final OAuthCredentialsProvider provider =
+          initializeBuilderWithSSL().keystorePassword("qwerty").build();
+
+      mockCredentials(ACCESS_TOKEN, null);
+
+      // when
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(RuntimeException.class)
+          .hasStackTraceContaining("keystore password was incorrect");
+    }
+
+    @Test
+    void shouldFailWhenMaterialPasswordIsIncorrect() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+      // given
+      final OAuthCredentialsProvider provider =
+          initializeBuilderWithSSL().keystoreKeyPassword("qwerty").build();
+
+      mockCredentials(ACCESS_TOKEN, null);
+
+      assertThatThrownBy(() -> provider.applyCredentials(applier))
+          .isInstanceOf(RuntimeException.class)
+          .hasStackTraceContaining("bad key is used during decryption");
+    }
+
+    private OAuthCredentialsProviderBuilder initializeBuilderWithSSL() {
+      return new OAuthCredentialsProviderBuilder()
+          .clientId(CLIENT_ID)
+          .clientSecret(SECRET)
+          .keystorePath(Paths.get(VALID_CLIENT_PATH))
+          .keystorePassword(KEYSTORE_PASSWORD)
+          .keystoreKeyPassword(KEYSTORE_MATERIAL_PASSWORD)
+          .truststorePath(Paths.get(VALID_TRUSTSTORE_PATH))
+          .truststorePassword(TRUSTSTORE_PASSWORD)
+          .audience(AUDIENCE)
+          .authorizationServerUrl(tokenHttpsUrlString())
+          .credentialsCachePath(cacheFilePath.toString());
     }
   }
 }
