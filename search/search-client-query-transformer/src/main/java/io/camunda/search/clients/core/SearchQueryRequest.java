@@ -36,6 +36,17 @@ public record SearchQueryRequest(
     return searchRequest(fn);
   }
 
+  public Builder toBuilder() {
+    return new Builder()
+        .index(index)
+        .query(query)
+        .sort(sort)
+        .searchAfter(searchAfter)
+        .from(from)
+        .size(size)
+        .source(source);
+  }
+
   public static final class Builder implements ObjectBuilder<SearchQueryRequest> {
 
     private List<String> index;
