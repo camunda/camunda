@@ -63,13 +63,6 @@
       <outputDirectory></outputDirectory>
     </file>
 
-    <!-- logback configuration -->
-    <file>
-      <source>src/config/environment-logback-demo.xml</source>
-      <outputDirectory>config</outputDirectory>
-      <destName>environment-logback.xml</destName>
-    </file>
-
     <!-- environment configuration -->
     <file>
       <source>src/config/environment-config-demo.yaml</source>
