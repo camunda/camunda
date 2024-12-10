@@ -81,6 +81,17 @@ warn[msg] {
     msg := sprintf("There are GitHub Actions jobs calling other workflows but not using 'secrets: inherit' which prevents access to secrets even for CI health metrics! Affected job IDs: %s",
         [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
 }
+
+deny[msg] {
+    # only enforced on Unified CI and related workflows
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
+
+    count(get_jobs_without_permissions(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using default GITHUB_TOKEN permissions which are too wide! Affected job IDs: %s",
+        [concat(", ", get_jobs_without_permissions(input.jobs))])
+}
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -149,5 +160,16 @@ get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
         # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
         job.uses
         not job.secrets
+    }
+}
+
+get_jobs_without_permissions(jobInput) = jobs_without_permissions {
+    jobs_without_permissions := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        not job.permissions
     }
 }
