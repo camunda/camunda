@@ -25,15 +25,15 @@ import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class AssignTenantToMappingTest extends ClientRestTest {
+public class AssignMappingToTenantTest extends ClientRestTest {
 
   private static final long TENANT_KEY = 123L;
   private static final long MAPPING_KEY = 456L;
 
   @Test
-  void shouldAssignTenantToMapping() {
+  void shouldAssignMappingToTenant() {
     // when
-    client.newAssignTenantToMappingCommand(TENANT_KEY).mappingKey(MAPPING_KEY).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_KEY).mappingKey(MAPPING_KEY).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -52,7 +52,7 @@ public class AssignTenantToMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignTenantToMappingCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_KEY)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())
@@ -71,7 +71,7 @@ public class AssignTenantToMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignTenantToMappingCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_KEY)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())
@@ -90,7 +90,7 @@ public class AssignTenantToMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignTenantToMappingCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_KEY)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())
@@ -109,7 +109,7 @@ public class AssignTenantToMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignTenantToMappingCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_KEY)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())

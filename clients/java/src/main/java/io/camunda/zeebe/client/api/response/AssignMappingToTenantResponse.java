@@ -15,4 +15,4 @@
  */
 package io.camunda.zeebe.client.api.response;
 
-public interface AssignTenantToMappingResponse {}
+public interface AssignMappingToTenantResponse {}

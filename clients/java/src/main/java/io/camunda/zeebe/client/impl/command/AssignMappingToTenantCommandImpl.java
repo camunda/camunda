@@ -16,44 +16,44 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.AssignTenantToMappingCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.AssignTenantToMappingResponse;
+import io.camunda.zeebe.client.api.response.AssignMappingToTenantResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class AssignTenantToMappingCommandImpl implements AssignTenantToMappingCommandStep1 {
+public final class AssignMappingToTenantCommandImpl implements AssignMappingToTenantCommandStep1 {
 
   private final long tenantKey;
   private long mappingKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AssignTenantToMappingCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public AssignMappingToTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
     this.httpClient = httpClient;
     this.tenantKey = tenantKey;
-    this.httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignTenantToMappingCommandStep1 mappingKey(final long mappingKey) {
+  public AssignMappingToTenantCommandStep1 mappingKey(final long mappingKey) {
     this.mappingKey = mappingKey;
     return this;
   }
 
   @Override
-  public FinalCommandStep<AssignTenantToMappingResponse> requestTimeout(
+  public FinalCommandStep<AssignMappingToTenantResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public ZeebeFuture<AssignTenantToMappingResponse> send() {
-    final HttpZeebeFuture<AssignTenantToMappingResponse> result = new HttpZeebeFuture<>();
+  public ZeebeFuture<AssignMappingToTenantResponse> send() {
+    final HttpZeebeFuture<AssignMappingToTenantResponse> result = new HttpZeebeFuture<>();
     final String endpoint = String.format("/tenants/%d/mapping-rules/%d", tenantKey, mappingKey);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;

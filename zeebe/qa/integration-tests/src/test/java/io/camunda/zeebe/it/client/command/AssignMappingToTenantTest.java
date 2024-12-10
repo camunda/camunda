@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 @AutoCloseResources
-class AssignTenantToMappingTest {
+class AssignMappingToTenantTest {
 
   private static final String TENANT_ID = "tenant-id";
   private static final String CLAIM_NAME = "claimName";
@@ -66,7 +66,7 @@ class AssignTenantToMappingTest {
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignTenantToMappingCommand(tenantKey).mappingKey(mappingKey).send().join();
+    client.newAssignMappingToTenantCommand(tenantKey).mappingKey(mappingKey).send().join();
 
     // Then
     ZeebeAssertHelper.assertTenantMappingAssigned(
@@ -87,7 +87,7 @@ class AssignTenantToMappingTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignTenantToMappingCommand(invalidTenantKey)
+                    .newAssignMappingToTenantCommand(invalidTenantKey)
                     .mappingKey(mappingKey)
                     .send()
                     .join())
@@ -107,7 +107,7 @@ class AssignTenantToMappingTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignTenantToMappingCommand(tenantKey)
+                    .newAssignMappingToTenantCommand(tenantKey)
                     .mappingKey(invalidMappingKey)
                     .send()
                     .join())

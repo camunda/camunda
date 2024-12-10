@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.response.AssignTenantToMappingResponse;
+import io.camunda.zeebe.client.api.response.AssignMappingToTenantResponse;
 
 /** Command to assign a tenant to a mapping. */
-public interface AssignTenantToMappingCommandStep1
-    extends FinalCommandStep<AssignTenantToMappingResponse> {
+public interface AssignMappingToTenantCommandStep1
+    extends FinalCommandStep<AssignMappingToTenantResponse> {
 
   /**
    * Sets the mapping key for the assignment.
@@ -28,5 +28,5 @@ public interface AssignTenantToMappingCommandStep1
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignTenantToMappingCommandStep1 mappingKey(long mappingKey);
+  AssignMappingToTenantCommandStep1 mappingKey(long mappingKey);
 }
