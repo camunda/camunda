@@ -392,7 +392,7 @@ public class ElasticSearchSchemaManager
     }
 
     final List<IndexMappingCreator<IndexSettings.Builder>> allDynamicMappings =
-        new MappingMetadataUtilES(esClient.documentBasedSearchClient())
+        new MappingMetadataUtilES(esClient)
             .getAllDynamicMappings(indexNameService.getIndexPrefix());
     for (final IndexMappingCreator<IndexSettings.Builder> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(esClient, mapping);

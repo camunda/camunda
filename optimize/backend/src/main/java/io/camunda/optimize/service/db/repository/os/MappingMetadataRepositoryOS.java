@@ -29,8 +29,7 @@ public class MappingMetadataRepositoryOS implements MappingMetadataRepository {
 
   @Override
   public String[] getIndexAliasesWithImportIndexFlag(final boolean isImportIndex) {
-    final MappingMetadataUtilOS mappingUtil =
-        new MappingMetadataUtilOS(osClient.documentBasedSearchClient());
+    final MappingMetadataUtilOS mappingUtil = new MappingMetadataUtilOS(osClient);
     return mappingUtil.getAllMappings(osClient.getIndexNameService().getIndexPrefix()).stream()
         .filter(mapping -> isImportIndex == mapping.isImportIndex())
         .map(osClient.getIndexNameService()::getOptimizeIndexAliasForIndex)

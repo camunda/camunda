@@ -13,10 +13,10 @@ import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import io.camunda.search.clients.DocumentBasedSearchClient;
 import java.util.Collection;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +26,9 @@ public class MappingMetadataUtilOS extends MappingMetadataUtil<Builder> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
 
-  public MappingMetadataUtilOS(final DocumentBasedSearchClient dbClient) {
-    super(dbClient);
+  @Autowired
+  public MappingMetadataUtilOS(final OptimizeOpenSearchClient openSearchClient) {
+    super(openSearchClient.documentBasedSearchClient());
   }
 
   @Override
