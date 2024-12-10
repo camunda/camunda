@@ -810,7 +810,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
-    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isNotNull();
+    assertThat(result.items().getFirst().getProcessDefinitionId())
+        .isEqualTo(flowNodeInstance.getProcessDefinitionId());
   }
 
   @Test
