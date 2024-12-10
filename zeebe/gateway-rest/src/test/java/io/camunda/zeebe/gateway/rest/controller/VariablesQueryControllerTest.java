@@ -158,10 +158,6 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                     {
                         "field": "name",
                         "order": "desc"
-                    },
-                    {
-                        "field": "value",
-                        "order": "asc"
                     }
                 ]
             }""";
@@ -183,13 +179,13 @@ public class VariablesQueryControllerTest extends RestControllerTest {
     verify(variableServices)
         .search(
             new VariableQuery.Builder()
-                .sort(new VariableSort.Builder().name().desc().value().asc().build())
+                .sort(new VariableSort.Builder().name().desc().build())
                 .build());
   }
 
   @Test
   void shouldInvalidateVariableSearchQueryWithBadSortOrder() {
-    // given
+    // given`
     final var request =
         """
             {
@@ -205,9 +201,9 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc'",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);

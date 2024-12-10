@@ -5886,8 +5886,8 @@ components:
           description: The field to sort by.
           type: string
         order:
+          description: The sort order.
           $ref: "#/components/schemas/SortOrderEnum"
-          default: asc
       required:
         - field
     SearchQueryResponse:
@@ -6281,6 +6281,7 @@ components:
       enum:
         - asc
         - desc
+      default: asc
 
     MessageCorrelationRequest:
       type: object
