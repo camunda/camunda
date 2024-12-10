@@ -8,16 +8,16 @@
 package io.camunda.search.sort;
 
 public enum SortOrder {
-  ASC("asc"),
-  DESC("desc");
+  ASC("ASC"),
+  DESC("DESC");
 
   private final String value;
 
-  SortOrder(String value) {
+  SortOrder(final String value) {
     this.value = value;
   }
 
   public String value() {
-    return this.value;
+    return value;
   }
 }
