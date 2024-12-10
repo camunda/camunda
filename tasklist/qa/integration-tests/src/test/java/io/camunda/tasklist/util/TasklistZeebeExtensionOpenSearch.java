@@ -9,6 +9,7 @@ package io.camunda.tasklist.util;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.tasklist.qa.util.TestUtil;
 import java.io.IOException;
 import java.time.Instant;
@@ -65,16 +66,18 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   @Override
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     return Map.of(
-        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL",
-        "http://host.testcontainers.internal:9205",
-        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_DELAY",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL",
+        "http://host.testcontainers.internal:9200",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
+        ConnectionTypes.OPENSEARCH.name(),
+        "        \"ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE\",\n",
         "1",
-        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE",
         "1",
-        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX",
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
         indexPrefix,
-        "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
-        "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
+        "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
+        "io.camunda.exporter.CamundaExporter");
   }
 
   @Override
