@@ -10,6 +10,8 @@ package io.camunda.zeebe.it.util;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.impl.JwtAuthorizationEncoder;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
@@ -75,6 +77,10 @@ public class AuthorizationsUtil {
     return createClient(broker, username, password);
   }
 
+  public ZeebeClient createClient(final String username) {
+    return createClient(broker, username);
+  }
+
   public static ZeebeClient createClient(
       final TestStandaloneBroker broker, final String username, final String password) {
     return broker
@@ -91,6 +97,27 @@ public class AuthorizationsUtil {
                         .formatted(
                             Base64.getEncoder()
                                 .encodeToString("%s:%s".formatted(username, password).getBytes())));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
+                return false;
+              }
+            })
+        .build();
+  }
+
+  public static ZeebeClient createClient(final TestStandaloneBroker broker, final String username) {
+    final JwtAuthorizationEncoder encoder = Authorization.jwtEncoder();
+    encoder.withClaim("preferred_username", username);
+    return broker
+        .newClientBuilder()
+        .defaultRequestTimeout(Duration.ofSeconds(15))
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put("Authorization", "Bearer %s".formatted(encoder.encode()));
               }
 
               @Override
