@@ -8,5 +8,6 @@
 package io.camunda.migration.identity.midentity;
 
 public enum MigrationEntityType {
-  TENANT
+  TENANT,
+  MAPPING_RULE
 }

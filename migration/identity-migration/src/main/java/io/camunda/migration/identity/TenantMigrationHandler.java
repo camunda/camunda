@@ -53,8 +53,4 @@ public class TenantMigrationHandler implements MigrationHandler {
     }
     return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, null);
   }
-
-  private boolean isConflictError(final Exception e) {
-    return e.getMessage().contains("Failed with code 409: 'Conflict'");
-  }
 }

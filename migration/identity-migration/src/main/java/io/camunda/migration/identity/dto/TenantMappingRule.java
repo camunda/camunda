@@ -5,13 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.dto;
 
-public interface MigrationHandler {
+import java.util.Set;
 
-  void migrate();
+public class TenantMappingRule extends MappingRule {
+  private Set<Tenant> appliedTenants;
 
-  default boolean isConflictError(final Exception e) {
-    return e.getMessage().contains("Failed with code 409: 'Conflict'");
+  public Set<Tenant> getAppliedTenants() {
+    return appliedTenants;
+  }
+
+  public void setAppliedTenants(final Set<Tenant> appliedTenants) {
+    this.appliedTenants = appliedTenants;
   }
 }
