@@ -12,8 +12,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.client.api.command.MigrationPlan;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.util.Either;
@@ -256,6 +259,50 @@ public class TestRestOperateClient implements AutoCloseable {
 
   public URI getEndpoint() {
     return endpoint;
+  }
+
+  private Either<Exception, HttpRequest> migrateProcessInstanceRequest(
+      final long targetDefinitionKey, final MigrationPlan migrationPlan) {
+    final HttpRequest request;
+
+    final CreateBatchOperationRequestDto createBatchOperationRequestDto =
+        new CreateBatchOperationRequestDto();
+    createBatchOperationRequestDto.setName("migration");
+    createBatchOperationRequestDto.setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE);
+
+    final MigrationPlanDto migrationPlanDto = new MigrationPlanDto();
+    migrationPlanDto.setTargetProcessDefinitionKey(Long.toString(targetDefinitionKey));
+    migrationPlanDto.setMappingInstructions(
+        migrationPlan.getMappingInstructions().stream()
+            .map(
+                mappingInstruction ->
+                    new MigrationPlanDto.MappingInstruction()
+                        .setSourceElementId(mappingInstruction.getSourceElementId())
+                        .setTargetElementId(mappingInstruction.getTargetElementId()))
+            .toList());
+
+    createBatchOperationRequestDto.setMigrationPlan(migrationPlanDto);
+
+    try {
+      request =
+          HttpRequest.newBuilder()
+              .uri(new URI(String.format("%s/api/process-instances/batch-operation", endpoint)))
+              .header("content-type", "application/json")
+              .POST(
+                  HttpRequest.BodyPublishers.ofString(
+                      new ObjectMapper().writeValueAsString(createBatchOperationRequestDto)))
+              .build();
+    } catch (final URISyntaxException | JsonProcessingException e) {
+      return Either.left(e);
+    }
+    return Either.right(request);
+  }
+
+  public Either<Exception, BatchOperationEntity> migrateProcessInstanceWith(
+      final long targetDefinitionKey, final MigrationPlan migrationPlan) {
+    return migrateProcessInstanceRequest(targetDefinitionKey, migrationPlan)
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, BatchOperationEntity.class));
   }
 
   @Override
