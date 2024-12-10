@@ -48,7 +48,7 @@ public class ClientConfig {
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
-    multiTenancyEnabled = operateProperties.getMultiTenancy().isEnabled();
+    multiTenancyEnabled = securityConfiguration.getMultiTenancy().isEnabled();
     try {
       return String.format(
           "window.clientConfig = %s;", new ObjectMapper().writeValueAsString(this));
