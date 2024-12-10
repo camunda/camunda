@@ -216,7 +216,14 @@ public final class AuthorizationCheckBehavior {
     }
     final List<String> authorizedTenantIds = new ArrayList<>();
     authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return getUser(command).map(PersistedUser::getTenantIdsList).orElse(authorizedTenantIds);
+    return getUser(command)
+        .map(
+            user -> {
+              final List<String> tenantIds = user.getTenantIdsList();
+              // Use default tenant IDs if user's tenant list is empty
+              return tenantIds.isEmpty() ? authorizedTenantIds : tenantIds;
+            })
+        .orElse(authorizedTenantIds);
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {
