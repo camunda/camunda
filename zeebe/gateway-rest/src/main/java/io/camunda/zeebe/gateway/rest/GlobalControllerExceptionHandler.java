@@ -36,8 +36,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   // Thrown by the OpenApi in case of an invalid enum value
   private static final String INVALID_ENUM_VALUE_EXCEPTION_MESSAGE = "Unexpected value";
 
-
-
   @Override
   protected ProblemDetail createProblemDetail(
       final Exception ex,

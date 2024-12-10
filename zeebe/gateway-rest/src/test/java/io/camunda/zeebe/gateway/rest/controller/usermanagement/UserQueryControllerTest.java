@@ -182,9 +182,9 @@ public class UserQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc'",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)),
