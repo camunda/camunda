@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
@@ -859,6 +860,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final long tenantKey) {
     return new RemoveUserFromTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public CreateGroupCommandStep1 newCreateGroupCommand() {
+    return new CreateGroupCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

@@ -17,6 +17,7 @@ package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
@@ -1516,4 +1517,35 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the remove user from tenant command
    */
   RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(long tenantKey);
+
+  /**
+   * Command to assign a group to a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newAssignGroupToTenantCommand(tenantKey)
+   *   .groupKey(groupKey)
+   *   .send();
+   * </pre>
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder to configure and send the assign group to tenant command
+   */
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey);
+
+  /**
+   * Command to create a group.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newCreateGroupCommand()
+   *  .name("Group Name")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the create group command
+   */
+  CreateGroupCommandStep1 newCreateGroupCommand();
 }
