@@ -102,4 +102,19 @@ class AssignGroupToTenantTest {
             "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
                 .formatted(nonExistentGroupKey, tenantKey));
   }
+
+  @Test
+  void shouldRejectIfAlreadyAssigned() {
+    // given
+    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+
+    // when / then
+    assertThatThrownBy(
+            () -> client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining(
+            "Expected to add entity with key '%d' to tenant with key '%d', but the entity is already assigned to the tenant."
+                .formatted(groupKey, tenantKey));
+  }
 }
