@@ -12,6 +12,18 @@ import java.util.Set;
 public class TenantMappingRule extends MappingRule {
   private Set<Tenant> appliedTenants;
 
+  public TenantMappingRule() {}
+
+  public TenantMappingRule(
+      final String name,
+      final String claimName,
+      final String claimValue,
+      final Operator operator,
+      final Set<Tenant> appliedTenants) {
+    super(MappingRuleType.TENANT, name, claimName, claimValue, operator);
+    this.appliedTenants = appliedTenants;
+  }
+
   public Set<Tenant> getAppliedTenants() {
     return appliedTenants;
   }

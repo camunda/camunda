@@ -59,9 +59,11 @@ public class ManagementIdentityClient {
   }
 
   public void updateMigrationStatus(final Collection<MigrationStatusUpdateRequest> migrations) {
-    final HttpEntity<Collection<MigrationStatusUpdateRequest>> requestEntity =
-        new HttpEntity<>(migrations, null);
-    restTemplate.exchange(
-        MIGRATION_MARK_STATUS_ENDPOINT, HttpMethod.POST, requestEntity, Void.class);
+    if (migrations != null && !migrations.isEmpty()) {
+      final HttpEntity<Collection<MigrationStatusUpdateRequest>> requestEntity =
+          new HttpEntity<>(migrations, null);
+      restTemplate.exchange(
+          MIGRATION_MARK_STATUS_ENDPOINT, HttpMethod.POST, requestEntity, Void.class);
+    }
   }
 }

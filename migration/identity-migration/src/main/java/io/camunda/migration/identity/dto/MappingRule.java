@@ -15,6 +15,21 @@ public class MappingRule {
   protected String claimValue;
   protected Operator operator;
 
+  public MappingRule() {}
+
+  public MappingRule(
+      final MappingRuleType type,
+      final String name,
+      final String claimName,
+      final String claimValue,
+      final Operator operator) {
+    this.type = type;
+    this.name = name;
+    this.claimName = claimName;
+    this.claimValue = claimValue;
+    this.operator = operator;
+  }
+
   public MappingRuleType getType() {
     return type;
   }

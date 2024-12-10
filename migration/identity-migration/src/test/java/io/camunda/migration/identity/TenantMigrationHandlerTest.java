@@ -18,12 +18,8 @@ import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.midentity.MigrationStatusUpdateRequest;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
+import io.camunda.migration.identity.service.TenantService;
 import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.CreateTenantResponse;
-import io.camunda.zeebe.client.impl.ZeebeClientFutureImpl;
-import io.camunda.zeebe.client.impl.response.CreateTenantResponseImpl;
 import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -37,8 +33,7 @@ public class TenantMigrationHandlerTest {
   final ArgumentCaptor<Collection<MigrationStatusUpdateRequest>> migrationStatusCaptor =
       ArgumentCaptor.forClass(Collection.class);
   @Mock private ManagementIdentityClient managementIdentityClient;
-  @Mock private ZeebeClient zeebeClient;
-  @Mock private CreateTenantCommandStep1 createTenantCommandStep1;
+  @Mock private TenantService tenantService;
   private final ManagementIdentityTransformer managementIdentityTransformer =
       new ManagementIdentityTransformer();
   private TenantMigrationHandler migrationHandler;
@@ -46,12 +41,10 @@ public class TenantMigrationHandlerTest {
   @BeforeEach
   void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    when(zeebeClient.newCreateTenantCommand()).thenReturn(createTenantCommandStep1);
-    when(createTenantCommandStep1.tenantId(any())).thenReturn(createTenantCommandStep1);
-    when(createTenantCommandStep1.name(any())).thenReturn(createTenantCommandStep1);
+    // when(tenantService.fetchOrCreateTenant(any(), any())).thenReturn(null);
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityClient, managementIdentityTransformer, zeebeClient);
+            managementIdentityClient, managementIdentityTransformer, tenantService);
   }
 
   @AfterEach
@@ -59,12 +52,7 @@ public class TenantMigrationHandlerTest {
 
   @Test
   void stopWhenNoMoreRecords() {
-
     // given
-    final ZeebeClientFutureImpl<CreateTenantResponse, Object> future =
-        new ZeebeClientFutureImpl<>();
-    future.complete(new CreateTenantResponseImpl());
-    when(createTenantCommandStep1.send()).thenReturn(future);
     when(managementIdentityClient.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
@@ -74,17 +62,14 @@ public class TenantMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenants(any(), anyInt());
-    verify(createTenantCommandStep1, times(2)).send();
+    verify(tenantService, times(2)).fetchOrCreateTenant(any(), any());
   }
 
   @Test
   void ignoreWhenTenantAlreadyExists() {
-    final ZeebeClientFutureImpl<CreateTenantResponse, Object> future =
-        new ZeebeClientFutureImpl<>();
-    future.completeExceptionally(new ProblemException(0, "Failed with code 409: 'Conflict'", null));
-    when(createTenantCommandStep1.send()).thenReturn(future);
-
     // given
+    when(tenantService.fetchOrCreateTenant(any(), any()))
+        .thenThrow(new ProblemException(0, "Failed with code 409: 'Conflict'", null));
     when(managementIdentityClient.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
@@ -94,16 +79,21 @@ public class TenantMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenants(any(), anyInt());
-    verify(createTenantCommandStep1, times(2)).send();
+    verify(tenantService, times(2)).fetchOrCreateTenant(any(), any());
+    verify(managementIdentityClient, times(2))
+        .updateMigrationStatus(migrationStatusCaptor.capture());
+    assertTrue(
+        migrationStatusCaptor.getAllValues().stream()
+            .flatMap(Collection::stream)
+            .allMatch(MigrationStatusUpdateRequest::success),
+        "All requests should succeed");
   }
 
   @Test
   void setErrorWhenTenantCreationHasError() {
     // given
-    final ZeebeClientFutureImpl<CreateTenantResponse, Object> future =
-        new ZeebeClientFutureImpl<>();
-    future.completeExceptionally(new ProblemException(0, "runtime exception!", null));
-    when(createTenantCommandStep1.send()).thenReturn(future);
+    when(tenantService.fetchOrCreateTenant(any(), any()))
+        .thenThrow(new ProblemException(0, "runtime exception!", null));
     when(managementIdentityClient.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
@@ -117,9 +107,9 @@ public class TenantMigrationHandlerTest {
     assertTrue(
         migrationStatusCaptor.getAllValues().stream()
             .flatMap(Collection::stream)
-            .allMatch(request -> request.error() != null),
-        "All requests should have a non-null error field");
+            .noneMatch(MigrationStatusUpdateRequest::success),
+        "All requests should failed");
     verify(managementIdentityClient, times(2)).fetchTenants(any(), anyInt());
-    verify(createTenantCommandStep1, times(2)).send();
+    verify(tenantService, times(2)).fetchOrCreateTenant(any(), any());
   }
 }

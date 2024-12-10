@@ -11,7 +11,7 @@ import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.midentity.MigrationStatusUpdateRequest;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.migration.identity.service.TenantService;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -21,15 +21,15 @@ public class TenantMigrationHandler implements MigrationHandler {
   public static final int SIZE = 2;
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
-  private final ZeebeClient client;
+  private final TenantService tenantService;
 
   public TenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
-      final ZeebeClient client) {
+      final TenantService tenantService) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.client = client;
+    this.tenantService = tenantService;
   }
 
   @Override
@@ -45,7 +45,7 @@ public class TenantMigrationHandler implements MigrationHandler {
 
   private MigrationStatusUpdateRequest createTenant(final Tenant tenant) {
     try {
-      client.newCreateTenantCommand().name(tenant.name()).tenantId(tenant.tenantId()).send().join();
+      tenantService.fetchOrCreateTenant(tenant.tenantId(), tenant.name());
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);

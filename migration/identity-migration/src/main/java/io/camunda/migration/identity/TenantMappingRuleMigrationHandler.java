@@ -7,11 +7,14 @@
  */
 package io.camunda.migration.identity;
 
+import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.midentity.MigrationStatusUpdateRequest;
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.migration.identity.service.MappingService;
+import io.camunda.migration.identity.service.TenantService;
+import io.camunda.search.entities.TenantEntity;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -21,15 +24,18 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
   public static final int SIZE = 100;
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
-  private final ZeebeClient zeebeClient;
+  private final TenantService tenantService;
+  private final MappingService mappingService;
 
   public TenantMappingRuleMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
-      final ZeebeClient zeebeClient) {
+      final TenantService tenantService,
+      final MappingService mappingService) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.zeebeClient = zeebeClient;
+    this.tenantService = tenantService;
+    this.mappingService = mappingService;
   }
 
   @Override
@@ -50,26 +56,29 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
   private MigrationStatusUpdateRequest createTenantMappingRule(
       final TenantMappingRule tenantMappingRule) {
     try {
-      // OPERATOR should be added
-      // Name should be added
-      zeebeClient
-          .newCreateMappingCommand()
-          .claimName(tenantMappingRule.getClaimName())
-          .claimValue(tenantMappingRule.getClaimValue());
-    } catch (final Exception e) {
-      if (!isConflictError(e)) {
-        return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, e);
+      final var mappingKey =
+          mappingService.findOrCreateMapping(
+              tenantMappingRule.getName(),
+              tenantMappingRule.getClaimName(),
+              tenantMappingRule.getClaimValue());
+      for (final Tenant mappingTenant : tenantMappingRule.getAppliedTenants()) {
+        final var tenant =
+            tenantService.fetchOrCreateTenant(mappingTenant.tenantId(), mappingTenant.name());
+        assignMappingToTenant(tenant, mappingKey);
       }
+      return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, null);
+    } catch (final Exception e) {
+      return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, e);
     }
+  }
 
+  private void assignMappingToTenant(final TenantEntity tenant, final Long mappingKey) {
     try {
-      // Command for add member
+      tenantService.assignMemberToTenant(tenant.key(), mappingKey);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
-        return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, e);
+        throw e;
       }
     }
-
-    return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, null);
   }
 }
