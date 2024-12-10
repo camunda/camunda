@@ -12,6 +12,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
@@ -21,6 +22,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -60,6 +62,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
+  private final CamundaSecurityProperties securityProperties;
   private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
 
   public TestStandaloneCamunda() {
@@ -95,10 +98,13 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
 
+    securityProperties = new CamundaSecurityProperties();
+
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("operate-config", operateProperties, OperateProperties.class)
         .withBean("tasklist-config", tasklistProperties, TasklistProperties.class)
+        .withBean("security-config", securityProperties, CamundaSecurityProperties.class)
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
@@ -156,6 +162,14 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   public TestRestOperateClient newOperateClient() {
     return new TestRestOperateClient(restAddress());
+  }
+
+  public TestRestTasklistClient newTasklistClient() {
+    return new TestRestTasklistClient(restAddress(), esContainer.getHttpHostAddress());
+  }
+
+  public TestAuthorizationClient newAuthorizationClient(final ZeebeClient camundaClient) {
+    return new TestAuthorizationClient(camundaClient, esContainer.getHttpHostAddress());
   }
 
   @Override
@@ -323,5 +337,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  public TestStandaloneCamunda withSecurityConfig(
+      final Consumer<CamundaSecurityProperties> modifier) {
+    modifier.accept(securityProperties);
+    return this;
   }
 }

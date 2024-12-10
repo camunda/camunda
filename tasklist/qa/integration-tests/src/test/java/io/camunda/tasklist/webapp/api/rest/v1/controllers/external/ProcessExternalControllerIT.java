@@ -19,7 +19,6 @@ import io.camunda.tasklist.util.TestCheck;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.nio.charset.StandardCharsets;
@@ -163,19 +162,6 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
 
     // then
     assertThat(result).hasHttpStatus(HttpStatus.NOT_FOUND);
-  }
-
-  @Test
-  public void startProcess() throws Exception {
-    final var result =
-        startProcessDeployInvokeAndReturn("startedByFormProcess.bpmn", "startedByForm");
-    assertThat(result)
-        .hasHttpStatus(HttpStatus.OK)
-        .extractingContent(objectMapper, ProcessInstanceDTO.class)
-        .satisfies(
-            processInstanceDTO -> {
-              Assertions.assertThat(processInstanceDTO.getId()).isNotNull();
-            });
   }
 
   @Test
