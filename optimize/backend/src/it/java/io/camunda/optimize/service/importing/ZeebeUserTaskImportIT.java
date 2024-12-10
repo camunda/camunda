@@ -548,7 +548,11 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
     zeebeExtension.unassignUserTask(
         getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
-    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+      waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+    } else {
+      waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    }
 
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
@@ -611,7 +615,11 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
     zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
-    waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+      waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+    } else {
+      waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    }
 
     // when
     importAllZeebeEntitiesFromLastIndex();
