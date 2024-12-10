@@ -8,11 +8,9 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 
@@ -20,12 +18,10 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
 
   private final MutableMappingState mappingState;
   private final MutableAuthorizationState authorizationState;
-  private final MutableTenantState tenantState;
 
   public MappingDeletedApplier(final MutableProcessingState state) {
     mappingState = state.getMappingState();
     authorizationState = state.getAuthorizationState();
-    tenantState = state.getTenantState();
   }
 
   @Override
@@ -39,17 +35,8 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
               "Expected to delete mapping with key '%s', but a mapping with this key does not exist.",
               value.getMappingKey()));
     }
-    final var persistedMapping = mapping.get();
-    removeMappingFromTenantState(persistedMapping);
     // remove mapping from authorization state
     authorizationState.deleteOwnerTypeByKey(mappingKey);
     mappingState.delete(mappingKey);
-  }
-
-  private void removeMappingFromTenantState(final PersistedMapping persistedMapping) {
-    persistedMapping
-        .getTenantKeysList()
-        .forEach(
-            tenantKey -> tenantState.removeEntity(tenantKey, persistedMapping.getMappingKey()));
   }
 }

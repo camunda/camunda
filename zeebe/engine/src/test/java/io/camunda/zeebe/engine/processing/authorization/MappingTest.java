@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -90,6 +92,7 @@ public class MappingTest {
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
     final var group = engine.group().newGroup("group").create();
     final var role = engine.role().newRole("role").create();
+    final var tenant = engine.tenant().newTenant().withTenantId("tenant").create();
     engine
         .group()
         .addEntity(group.getKey())
@@ -99,6 +102,12 @@ public class MappingTest {
     engine
         .role()
         .addEntity(role.getKey())
+        .withEntityKey(mappingRecord.getKey())
+        .withEntityType(EntityType.MAPPING)
+        .add();
+    engine
+        .tenant()
+        .addEntity(tenant.getKey())
         .withEntityKey(mappingRecord.getKey())
         .withEntityType(EntityType.MAPPING)
         .add();
@@ -116,6 +125,12 @@ public class MappingTest {
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
+                .withEntityKey(mappingRecord.getKey())
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantKey(tenant.getKey())
                 .withEntityKey(mappingRecord.getKey())
                 .exists())
         .isTrue();

@@ -22,10 +22,12 @@ import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -111,6 +113,15 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   private void deleteMapping(final PersistedMapping mapping) {
     final var mappingKey = mapping.getMappingKey();
+    for (final var tenantKey : mapping.getTenantKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          tenantKey,
+          TenantIntent.ENTITY_REMOVED,
+          new TenantRecord()
+              .setTenantKey(tenantKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
     for (final var roleKey : mapping.getRoleKeysList()) {
       stateWriter.appendFollowUpEvent(
           roleKey,
