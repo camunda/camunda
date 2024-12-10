@@ -14,6 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -29,10 +31,27 @@ public class TestRestOperateClient implements AutoCloseable {
   private final URI endpoint;
   private final HttpClient httpClient;
 
-  public TestRestOperateClient(final URI endpoint) {
-    this.endpoint = endpoint;
+  public TestRestOperateClient(final URI endpoint, final String username, final String password) {
+    this(
+        endpoint,
+        HttpClient.newBuilder()
+            .authenticator(
+                new Authenticator() {
+                  @Override
+                  protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password.toCharArray());
+                  }
+                })
+            .build());
+  }
 
-    httpClient = HttpClient.newHttpClient();
+  public TestRestOperateClient(final URI endpoint) {
+    this(endpoint, HttpClient.newHttpClient());
+  }
+
+  private TestRestOperateClient(final URI endpoint, final HttpClient httpClient) {
+    this.endpoint = endpoint;
+    this.httpClient = httpClient;
   }
 
   private Either<Exception, HttpRequest> createProcessInstanceRequest(final long key) {
@@ -54,8 +73,22 @@ public class TestRestOperateClient implements AutoCloseable {
     return Either.right(request);
   }
 
-  private Either<Exception, HttpResponse<String>> sendProcessInstanceQuery(
-      final HttpRequest request) {
+  private Either<Exception, HttpRequest> createInternalGetProcessDefinitionByKeyRequest(
+      final long key) {
+    final HttpRequest request;
+    try {
+      request =
+          HttpRequest.newBuilder()
+              .uri(new URI(String.format("%sapi/processes/%d", endpoint, key)))
+              .GET()
+              .build();
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    }
+    return Either.right(request);
+  }
+
+  private Either<Exception, HttpResponse<String>> sendRequest(final HttpRequest request) {
     try {
       return Either.right(httpClient.send(request, BodyHandlers.ofString()));
     } catch (final IOException | InterruptedException e) {
@@ -63,8 +96,8 @@ public class TestRestOperateClient implements AutoCloseable {
     }
   }
 
-  private Either<Exception, ProcessInstanceResult> mapProcessInstanceResult(
-      final HttpResponse<String> response) {
+  private <T> Either<Exception, T> mapResult(
+      final HttpResponse<String> response, final Class<T> tClass) {
     if (response.statusCode() != 200) {
       return Either.left(
           new IllegalStateException(
@@ -74,7 +107,7 @@ public class TestRestOperateClient implements AutoCloseable {
     }
 
     try {
-      return Either.right(OBJECT_MAPPER.readValue(response.body(), ProcessInstanceResult.class));
+      return Either.right(OBJECT_MAPPER.readValue(response.body(), tClass));
     } catch (final JsonProcessingException e) {
       return Either.left(e);
     }
@@ -82,8 +115,12 @@ public class TestRestOperateClient implements AutoCloseable {
 
   public Either<Exception, ProcessInstanceResult> getProcessInstanceWith(final long key) {
     return createProcessInstanceRequest(key)
-        .flatMap(this::sendProcessInstanceQuery)
-        .flatMap(this::mapProcessInstanceResult);
+        .flatMap(this::sendRequest)
+        .flatMap(r -> mapResult(r, ProcessInstanceResult.class));
+  }
+
+  public Either<Exception, HttpResponse<String>> internalGetProcessDefinitionByKey(final long key) {
+    return createInternalGetProcessDefinitionByKeyRequest(key).flatMap(this::sendRequest);
   }
 
   @Override
