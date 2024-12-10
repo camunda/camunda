@@ -54,7 +54,7 @@
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/main --watchAll=false --passWithNoTests",
     "analyze-bundle": "react-app-rewired build && source-map-explorer 'build/static/js/*.js'",
     "playwright": "playwright test",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.47.2 /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.49.1 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "cross-env REACT_APP_VERSION=0.0.0-SNAPSHOT yarn build"
   },
@@ -66,8 +66,8 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@camunda8/sdk": "^8.6.8",
-    "@cyclonedx/webpack-plugin": "3.13.0",
-    "@playwright/test": "1.47.2",
+    "@cyclonedx/webpack-plugin": "3.15.0",
+    "@playwright/test": "1.49.1",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.0.1",
     "@testing-library/react-hooks": "8.0.1",
@@ -124,5 +124,6 @@
   "resolutions": {
     "react-scripts/postcss-preset-env/postcss-custom-properties": "^14.0.0",
     "@testing-library/dom": "10.4.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha256.c17d3797fb9a9115bf375e31bfd30058cac6bc9c3b8807a3d8cb2094794b51ca"
 }
