@@ -1,12 +1,12 @@
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
 
   <id>production</id>
 
   <formats>
-      <format>tar.gz</format>
-      <format>zip</format>
+    <format>tar.gz</format>
+    <format>zip</format>
   </formats>
 
   <includeBaseDirectory>false</includeBaseDirectory>
@@ -20,7 +20,6 @@
       <directory>src/config/</directory>
       <excludes>
         <exclude>${exclude.from.config}</exclude>
-        <exclude>environment-logback-demo.xml</exclude>
         <exclude>environment-config-demo.yaml</exclude>
       </excludes>
       <outputDirectory>config/</outputDirectory>

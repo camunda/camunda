@@ -1,6 +1,6 @@
 <assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
 
   <id>demo</id>
 
@@ -25,9 +25,9 @@
       <directory>src/config/</directory>
       <excludes>
         <exclude>${exclude.from.config}</exclude>
-        <exclude>environment-logback.xml</exclude>
+        <exclude>environment-log4j2.xml</exclude>
         <!-- this will be included in files section -->
-        <exclude>environment-logback-demo.xml</exclude>
+        <exclude>environment-log4j2-demo.xml</exclude>
         <exclude>environment-config.yaml</exclude>
         <exclude>environment-config-demo.yaml</exclude>
       </excludes>
@@ -63,13 +63,6 @@
       <outputDirectory></outputDirectory>
     </file>
 
-    <!-- logback configuration -->
-    <file>
-      <source>src/config/environment-logback-demo.xml</source>
-      <outputDirectory>config</outputDirectory>
-      <destName>environment-logback.xml</destName>
-    </file>
-
     <!-- environment configuration -->
     <file>
       <source>src/config/environment-config-demo.yaml</source>
@@ -80,7 +73,8 @@
     <!-- elastic config -->
     <file>
       <source>src/elastic/config/elasticsearch.yml</source>
-      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.demo.version}/config</outputDirectory>
+      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.demo.version}/config
+      </outputDirectory>
     </file>
   </files>
 

@@ -7,42 +7,46 @@
  */
 package io.camunda.optimize.util.tomcat;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
 import com.google.common.collect.Lists;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Objects;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LoggingConfigurationReader {
 
+  /* The order of this list is important */
   private final LinkedList<String> loggingConfigNames =
-      Lists.newLinkedList(
-          Arrays.asList("environment-logback.xml", "logback-test.xml", "logback.xml"));
+      Lists.newLinkedList(Arrays.asList("environment-log4j2.xml", "log4j2-test.xml", "log4j2.xml"));
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   public LoggingConfigurationReader() {}
 
-  public void defineLogbackLoggingConfiguration() {
-    final LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-    loggerContext.reset();
-    final JoranConfigurator configurator = new JoranConfigurator();
-    try (final InputStream configStream = getLogbackConfigurationFileStream()) {
-      configurator.setContext(loggerContext);
-      configurator.doConfigure(configStream); // loads logback file
-      Objects.requireNonNull(configStream).close();
-    } catch (final JoranException | IOException e) {
+  public void defineLog4jLoggingConfiguration() {
+    // Log4j2 code
+
+    final InputStream configStream = getLog4j2ConfigurationFileStream();
+    if (configStream == null) {
+      throw new OptimizeRuntimeException("Configuration file not found");
+    }
+
+    try {
+      final ConfigurationSource configSource = new ConfigurationSource(configStream);
+      final LoggerContext loggerContext = Configurator.initialize(null, configSource);
+      enableElasticsearchRequestLogging(loggerContext);
+    } catch (final IOException e) {
       // since logging setup broke, print it in standard error stream
       e.printStackTrace();
     }
-    enableElasticsearchRequestLogging(loggerContext);
   }
 
   private void enableElasticsearchRequestLogging(final LoggerContext loggerContext) {
@@ -57,7 +61,7 @@ public class LoggingConfigurationReader {
     }
   }
 
-  private InputStream getLogbackConfigurationFileStream() {
+  private InputStream getLog4j2ConfigurationFileStream() {
     return loggingConfigNames.stream()
         .map(config -> getClass().getClassLoader().getResourceAsStream(config))
         .filter(Objects::nonNull)
