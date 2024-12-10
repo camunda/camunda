@@ -136,14 +136,13 @@ public class OperateProcessInstanceMigrationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
-              final Optional<ProcessDefinition> any =
-                  result.items().stream()
-                      .filter(
-                          processDefinition ->
-                              processDefinition.getProcessDefinitionKey() == processDefinitionKey)
-                      .findAny();
-              assertThat(any).isPresent();
+              final var result =
+                  zeebeClient
+                      .newProcessDefinitionQuery()
+                      .filter(instance -> instance.processDefinitionKey(processDefinitionKey))
+                      .send()
+                      .join();
+              assertThat(result.items()).isNotEmpty();
             });
     return processDefinitionKey;
   }
