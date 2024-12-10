@@ -56,7 +56,7 @@ jobs:
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks -D skipOptimize
-          -D camunda.it.opensearch.aws_instance_url="$url"
+          -D camunda.it.opensearch.aws.url="$url"
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}
           verify
