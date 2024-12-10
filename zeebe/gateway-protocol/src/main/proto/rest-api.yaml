@@ -5887,7 +5887,8 @@ components:
           type: string
         order:
           description: The sort order.
-          $ref: "#/components/schemas/SortOrderEnum"
+          allOf:
+            - $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     SearchQueryResponse:
