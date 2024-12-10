@@ -2,6 +2,7 @@ name: AWS OpenSearch Manual Run Integration Tests
 
 on:
   workflow_dispatch: { }
+  push: { }
 
 defaults:
   run:
@@ -43,6 +44,10 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_9_URL;
+      - name: DEBUG
+        run: |
+          env | grep AWS
+          exit 1
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
