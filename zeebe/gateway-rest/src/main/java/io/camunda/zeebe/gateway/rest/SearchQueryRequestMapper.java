@@ -958,11 +958,7 @@ public final class SearchQueryRequestMapper {
       final var builder = builderSupplier.get();
       for (final SearchQuerySortRequest sort : sorting) {
         validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
-        if (sort.getOrder() == SortOrderEnum.ASC) {
-          builder.asc();
-        } else if (sort.getOrder() == SortOrderEnum.DESC) {
-          builder.desc();
-        }
+        applySortOrder(sort.getOrder(), builder);
       }
 
       return validationErrors.isEmpty()
