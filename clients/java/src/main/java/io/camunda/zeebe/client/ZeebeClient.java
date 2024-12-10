@@ -50,6 +50,7 @@ import io.camunda.zeebe.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
@@ -1548,4 +1549,21 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the create group command
    */
   CreateGroupCommandStep1 newCreateGroupCommand();
+
+  /**
+   * Command to unassign a group from a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newUnassignGroupFromTenantCommand(tenantKey)
+   *   .groupKey(groupKey)
+   *   .send();
+   * </pre>
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder to configure and send the unassign group from tenant command
+   */
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
 }
