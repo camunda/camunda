@@ -137,7 +137,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
 
     try {
       return fetchIndexMatchingIndexes(indexWildCard)
-          .thenCompose(indices -> setIndexLifeCycle(indices.toArray(String[]::new)));
+          .thenComposeAsync(indices -> setIndexLifeCycle(indices.toArray(String[]::new)), executor);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
     }
@@ -224,7 +224,8 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
                             + response.getReason()));
               }
               return CompletableFuture.completedFuture(null);
-            });
+            },
+            executor);
   }
 
   @Override

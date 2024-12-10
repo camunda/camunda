@@ -28,7 +28,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.GetIndexRequest.Builder;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
@@ -136,7 +136,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     }
     final String indexWildcard = "^" + indexPrefix + INDEX_WILDCARD;
     return fetchMatchingIndexes(indexWildcard)
-        .thenCompose(this::setIndexLifeCycleToMatchingIndices);
+        .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
   }
 
   @Override
@@ -192,12 +192,13 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     final Pattern indexNamePattern = Pattern.compile(indexWildcard);
     return client
         .indices()
-        .get(new Builder().index(ALL_INDICES).build())
-        .thenApply(
+        .get(new GetIndexRequest.Builder().index(ALL_INDICES).build())
+        .thenApplyAsync(
             response ->
                 response.result().keySet().stream()
                     .filter(indexName -> indexNamePattern.matcher(indexName).matches())
-                    .toList());
+                    .toList(),
+            executor);
   }
 
   public CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
