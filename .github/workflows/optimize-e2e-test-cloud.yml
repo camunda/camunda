@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
+        uses: hashicorp/vault-action@c46b8b88227585d3999accc9441c5810fe186a84
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

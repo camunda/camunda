@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
@@ -28,6 +29,7 @@ import io.camunda.db.rdbms.write.service.VariableWriter;
 public class RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final AuthorizationWriter authorizationWriter;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final DecisionRequirementsWriter decisionRequirementsWriter;
@@ -49,6 +51,7 @@ public class RdbmsWriter {
       final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter = new DecisionInstanceWriter(executionQueue);
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
@@ -64,6 +67,10 @@ public class RdbmsWriter {
     userTaskWriter = new UserTaskWriter(executionQueue);
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
+  }
+
+  public AuthorizationWriter getAuthorizationWriter() {
+    return authorizationWriter;
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
