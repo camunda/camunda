@@ -7,8 +7,11 @@
  */
 package io.camunda.it.operate;
 
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.UPDATE;
+import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.BATCH;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -19,7 +22,8 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
-import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
+import io.camunda.zeebe.it.util.AuthorizationsUtil;
+import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.Either;
@@ -27,20 +31,40 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 public class OperateProcessInstanceMigrationIT {
 
+  private static final String SUPER_USER = "super";
+  private static final String RESTRICTED_USER = "restricted";
+  private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
+  private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
+
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testStandaloneCamunda;
 
   private static ZeebeClient zeebeClient;
+  private static TestRestOperateClient superOperateClient;
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
     testStandaloneCamunda = new TestStandaloneCamunda();
     zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+  }
+
+  @BeforeAll
+  public static void before() {
+    final var authorizationsUtil =
+        new AuthorizationsUtil(
+            testStandaloneCamunda, testStandaloneCamunda.getElasticSearchHostAddress());
+    final var defaultClient = authorizationsUtil.getDefaultClient();
+    // create super user that can read all process definitions
+    final var superZeebeClient =
+        authorizationsUtil.createUserAndClient(
+            SUPER_USER, "password", new Permissions(BATCH, UPDATE, List.of("*")));
+    superOperateClient = testStandaloneCamunda.newOperateClient(SUPER_USER, "password");
   }
 
   @Test
@@ -64,10 +88,8 @@ public class OperateProcessInstanceMigrationIT {
 
     // when
     // execute MIGRATE_PROCESS_INSTANCE
-    final Either<Exception, BatchOperationEntity> exceptionProcessInstanceResultEither =
-        testStandaloneCamunda
-            .newOperateClient()
-            .migrateProcessInstanceWith(processInstanceKey, migrationPlan);
+    final Either<Exception, BatchOperationEntity> response =
+        superOperateClient.migrateProcessInstanceWith(processInstanceKey, migrationPlan);
 
     // then
     // This should:
