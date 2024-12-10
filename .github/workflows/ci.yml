@@ -578,6 +578,7 @@ jobs:
         with:
           name: optimize-unit-tests-frontend-junit
           path: |
+            pom.xml
             **/jest-test-results.xml
           retention-days: 7
           if-no-files-found: ignore
