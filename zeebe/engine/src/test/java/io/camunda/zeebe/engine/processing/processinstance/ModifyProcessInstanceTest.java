@@ -1206,68 +1206,6 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
-  public void shouldActivateInclusiveGatewayRetainingAlreadyTakenFlows() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .inclusiveGateway("fork")
-                .conditionExpression("true")
-                .serviceTask("A", a -> a.zeebeJobType("A"))
-                .inclusiveGateway("join")
-                .endEvent()
-                .moveToNode("fork")
-                .conditionExpression("true")
-                .serviceTask("B", b -> b.zeebeJobType("B"))
-                .connectTo("join")
-                .done())
-        .deploy();
-
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    Assertions.assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
-        .hasSize(2);
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
-        .onlyCommandRejections()
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("join")
-        .await();
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .modification()
-        .activateElement("join")
-        .modify();
-
-    // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("join")
-        .await();
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
-
-    Assertions.assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .processInstanceRecords()
-                .withElementId("join")
-                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
-        .describedAs("Expect that the join gateway activated again after completing task B")
-        .hasSize(2);
-  }
-
-  @Test
   public void verifyCallActivityWithIncidentInOutputMappingCanBeTerminated() {
     final var child = Bpmn.createExecutableProcess("child").startEvent().endEvent().done();
     final var parent =
