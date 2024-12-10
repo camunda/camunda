@@ -235,4 +235,16 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
     return this;
   }
+
+  public TestStandaloneBroker withRdbmsExporter() {
+    withProperty("camunda.database.type", "rdbms");
+    withProperty("spring.datasource.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
+    withProperty("spring.datasource.username", "sa");
+    withProperty("spring.datasource.password", "");
+    withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
+    withProperty("logging.level.org.mybatis", "DEBUG");
+    withExporter("rdbms", cfg -> cfg.setClassName("-"));
+    return this;
+  }
 }

@@ -45,71 +45,83 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * The tests must take this into account, as the state in Zeebe and the exporter backend is not
  * reset between test cases.
  */
-public class BrokerWithCamundaExporterITInvocationProvider
+public class BrokerITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(BrokerWithCamundaExporterITInvocationProvider.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BrokerITInvocationProvider.class);
 
-  private final Map<String, ExporterType> exporterTypes;
-  private final Map<String, TestStandaloneBroker> testBrokers = new HashMap<>();
+  private final Set<ExporterType> supportedExporterTypes = new HashSet<>();
+  private final Set<ExporterType> activeExporterTypes = new HashSet<>();
+  private final Map<ExporterType, TestStandaloneBroker> testBrokers = new HashMap<>();
   private final Set<Profile> additionalProfiles = new HashSet<>();
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
   private Consumer<CamundaSecurityProperties> additionalSecurityConfig = cfg -> {};
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final Map<String, ZeebeClientTestFactory> zeebeClientTestFactories = new HashMap<>();
+  private final Map<ExporterType, ZeebeClientTestFactory> zeebeClientTestFactories =
+      new HashMap<>();
   private final List<User> registeredUsers = new ArrayList<>();
 
-  public BrokerWithCamundaExporterITInvocationProvider() {
-    exporterTypes = new HashMap<>();
-    exporterTypes.put(
-        "with-camunda-exporter-elasticsearch", ExporterType.CAMUNDA_EXPORTER_ELASTIC_SEARCH);
+  public BrokerITInvocationProvider() {
+    supportedExporterTypes.add(ExporterType.CAMUNDA_EXPORTER_ELASTIC_SEARCH);
+    supportedExporterTypes.add(ExporterType.RDBMS_EXPORTER_H2);
+
+    // Default
+    activeExporterTypes.addAll(supportedExporterTypes);
   }
 
-  public BrokerWithCamundaExporterITInvocationProvider withAdditionalProfiles(
-      final Profile... profiles) {
+  /** Without Camunda Exporter (ES/OS) */
+  public BrokerITInvocationProvider withoutCamundaExporter() {
+    activeExporterTypes.remove(ExporterType.CAMUNDA_EXPORTER_ELASTIC_SEARCH);
+    return this;
+  }
+
+  /** Without Rdbms Exporter (H2) */
+  public BrokerITInvocationProvider withoutRdbmsExporter() {
+    activeExporterTypes.remove(ExporterType.RDBMS_EXPORTER_H2);
+    return this;
+  }
+
+  public BrokerITInvocationProvider withAdditionalProfiles(final Profile... profiles) {
     additionalProfiles.addAll(asList(profiles));
     return this;
   }
 
-  public BrokerWithCamundaExporterITInvocationProvider withAdditionalProperty(
-      final String key, final Object value) {
+  public BrokerITInvocationProvider withAdditionalProperty(final String key, final Object value) {
     additionalProperties.put(key, value);
     return this;
   }
 
-  public BrokerWithCamundaExporterITInvocationProvider withAdditionalBrokerConfig(
+  public BrokerITInvocationProvider withAdditionalBrokerConfig(
       final Consumer<BrokerBasedProperties> modifier) {
     additionalBrokerConfig = additionalBrokerConfig.andThen(modifier);
     return this;
   }
 
-  public BrokerWithCamundaExporterITInvocationProvider withAdditionalSecurityConfig(
+  public BrokerITInvocationProvider withAdditionalSecurityConfig(
       final Consumer<CamundaSecurityProperties> modifier) {
     additionalSecurityConfig = additionalSecurityConfig.andThen(modifier);
     return this;
   }
 
-  public BrokerWithCamundaExporterITInvocationProvider withAuthorizationsEnabled() {
-    return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-        .withAdditionalProperty("camunda.security.authorizations.enabled", true);
+  public BrokerITInvocationProvider withAuthorizationsEnabled() {
+    return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
-  public BrokerWithCamundaExporterITInvocationProvider withUsers(final User... users) {
+  public BrokerITInvocationProvider withUsers(final User... users) {
     registeredUsers.addAll(List.of(users));
     return this;
   }
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    LOGGER.info("Starting up '{}' camunda instances", exporterTypes.size());
-    exporterTypes.entrySet().parallelStream()
+    LOGGER.info("Starting up '{}' camunda instances", supportedExporterTypes.size());
+    supportedExporterTypes.parallelStream()
         .forEach(
-            entry -> {
-              LOGGER.info("Start up '{}'", entry.getKey());
+            exporterType -> {
+              LOGGER.info("Start up '{}'", exporterType);
 
-              switch (entry.getValue()) {
+              switch (exporterType) {
                 case CAMUNDA_EXPORTER_ELASTIC_SEARCH -> {
                   final ElasticsearchContainer elasticsearchContainer =
                       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -132,16 +144,33 @@ public class BrokerWithCamundaExporterITInvocationProvider
                           .withAdditionalProfiles(additionalProfiles)
                           .start();
                   closeables.add(testBroker);
-                  testBrokers.put(entry.getKey(), testBroker);
+                  testBrokers.put(exporterType, testBroker);
                   testBroker.awaitCompleteTopology();
                   final var zeebeClientTestFactory =
                       new ZeebeClientTestFactory().withUsers(registeredUsers);
-                  zeebeClientTestFactories.put(entry.getKey(), zeebeClientTestFactory);
+                  zeebeClientTestFactories.put(exporterType, zeebeClientTestFactory);
                   closeables.add(zeebeClientTestFactory);
+                  addClientFactory(exporterType);
+                }
+                case RDBMS_EXPORTER_H2 -> {
+                  final var testBroker =
+                      new TestStandaloneBroker()
+                          .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
+                          .withBrokerConfig(additionalBrokerConfig)
+                          .withRecordingExporter(true)
+                          .withProperty("camunda.rest.query.enabled", true)
+                          .withRdbmsExporter()
+                          .withAdditionalProperties(additionalProperties)
+                          .withAdditionalProfiles(additionalProfiles)
+                          .start();
+                  closeables.add(testBroker);
+                  testBrokers.put(exporterType, testBroker);
+                  testBroker.awaitCompleteTopology();
+                  addClientFactory(exporterType);
                 }
                 default -> throw new RuntimeException("Unknown exporter type");
               }
-              LOGGER.info("Start up of '{}' finished.", entry.getKey());
+              LOGGER.info("Start up of '{}' finished.", exporterType);
             });
   }
 
@@ -153,20 +182,20 @@ public class BrokerWithCamundaExporterITInvocationProvider
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext extensionContext) {
-    return testBrokers.keySet().stream().map(this::invocationContext);
+    return activeExporterTypes.stream().map(this::invocationContext);
   }
 
-  private TestTemplateInvocationContext invocationContext(final String standaloneCamundaKey) {
+  private TestTemplateInvocationContext invocationContext(final ExporterType exporterType) {
     return new TestTemplateInvocationContext() {
 
       @Override
       public String getDisplayName(final int invocationIndex) {
-        return standaloneCamundaKey;
+        return "Exporter: " + exporterType.name();
       }
 
       @Override
       public List<Extension> getAdditionalExtensions() {
-        return asList(
+        return List.of(
             new ParameterResolver() {
 
               @Override
@@ -180,12 +209,11 @@ public class BrokerWithCamundaExporterITInvocationProvider
               public Object resolveParameter(
                   final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
                 final Parameter parameter = parameterCtx.getParameter();
-                final TestGateway<?> testGateway = testBrokers.get(standaloneCamundaKey);
+                final TestGateway<?> testGateway = testBrokers.get(exporterType);
                 if (TestStandaloneBroker.class.equals(parameter.getType())) {
                   return testGateway;
                 } else if (ZeebeClient.class.equals(parameter.getType())) {
-                  final var zeebeClientTestFactory =
-                      zeebeClientTestFactories.get(standaloneCamundaKey);
+                  final var zeebeClientTestFactory = zeebeClientTestFactories.get(exporterType);
                   return zeebeClientTestFactory.createZeebeClient(
                       testGateway, parameter.getAnnotation(Authenticated.class));
                 }
@@ -210,7 +238,14 @@ public class BrokerWithCamundaExporterITInvocationProvider
             });
   }
 
+  private void addClientFactory(final ExporterType exporterType) {
+    final var zeebeClientTestFactory = new ZeebeClientTestFactory().withUsers(registeredUsers);
+    zeebeClientTestFactories.put(exporterType, zeebeClientTestFactory);
+    closeables.add(zeebeClientTestFactory);
+  }
+
   public enum ExporterType {
-    CAMUNDA_EXPORTER_ELASTIC_SEARCH
+    CAMUNDA_EXPORTER_ELASTIC_SEARCH,
+    RDBMS_EXPORTER_H2
   }
 }

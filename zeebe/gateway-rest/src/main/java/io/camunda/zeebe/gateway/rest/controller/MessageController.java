@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -28,10 +28,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MessageController {
 
   private final MessageServices messageServices;
-  private final MultiTenancyCfg multiTenancyCfg;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   public MessageController(
-      final MessageServices messageServices, final MultiTenancyCfg multiTenancyCfg) {
+      final MessageServices messageServices, final MultiTenancyConfiguration multiTenancyCfg) {
     this.messageServices = messageServices;
     this.multiTenancyCfg = multiTenancyCfg;
   }

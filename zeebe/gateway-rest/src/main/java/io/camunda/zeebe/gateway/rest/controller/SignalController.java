@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.BroadcastSignalRequest;
@@ -27,11 +27,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class SignalController {
 
   private final SignalServices signalServices;
-  private final MultiTenancyCfg multiTenancyCfg;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   @Autowired
   public SignalController(
-      final SignalServices signalServices, final MultiTenancyCfg multiTenancyCfg) {
+      final SignalServices signalServices, final MultiTenancyConfiguration multiTenancyCfg) {
     this.signalServices = signalServices;
     this.multiTenancyCfg = multiTenancyCfg;
   }

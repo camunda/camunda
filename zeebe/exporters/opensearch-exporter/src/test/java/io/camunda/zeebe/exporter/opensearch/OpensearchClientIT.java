@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class OpensearchClientIT {
@@ -111,12 +113,11 @@ public class OpensearchClientIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "AWS OS IT runners currently support only STS-based authentication")
   void shouldAuthenticateWithBasicAuth() {
-    // we currently only allow role-based authentication in our AWS OS ITs
-    if (searchDB.isAwsTest()) {
-      return;
-    }
-
     // given
     searchDB.testClient().putUser("user", "^AHq>z@)&l;RJU=\"", List.of("admin"));
     searchDB.config().getAuthentication().setUsername("user");
