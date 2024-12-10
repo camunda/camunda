@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
@@ -48,7 +49,12 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest) {
-    brokerRequest.setAuthorization(authentication.token());
+
+    Optional.ofNullable(authentication)
+        .map(Authentication::token)
+        .ifPresentOrElse(
+            brokerRequest::setAuthorization, brokerRequest::enabledAnonymousAuthorization);
+
     return brokerClient
         .sendRequest(brokerRequest)
         .handleAsync(

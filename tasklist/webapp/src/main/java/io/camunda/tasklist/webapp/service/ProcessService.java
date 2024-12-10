@@ -15,17 +15,11 @@ import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.grpc.Status;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +50,8 @@ public class ProcessService {
   @Autowired private UserReader userReader;
 
   @Autowired private ProcessStore processStore;
+
+  @Autowired private TasklistServiceAdapter tasklistServiceAdapter;
 
   public ProcessEntity getProcessByProcessDefinitionKeyAndAccessRestriction(
       final String processDefinitionKey) {
@@ -95,42 +91,22 @@ public class ProcessService {
       throw new InvalidRequestException("Invalid tenant.");
     }
 
-    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
-        createProcessInstanceCommandStep3 =
-            zeebeClient
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processDefinitionKey)
-                .latestVersion();
-
-    if (isMultiTenancyEnabled) {
-      createProcessInstanceCommandStep3.tenantId(tenantId);
-    }
-
+    Map<String, Object> variablesMap = null;
     if (CollectionUtils.isNotEmpty(variables)) {
-      final Map<String, Object> variablesMap =
+      variablesMap =
           variables.stream()
               .collect(Collectors.toMap(VariableInputDTO::getName, this::extractTypedValue));
-      createProcessInstanceCommandStep3.variables(variablesMap);
     }
 
-    ProcessInstanceEvent processInstanceEvent = null;
     try {
-      processInstanceEvent = createProcessInstanceCommandStep3.send().join();
+      final var processInstance =
+          tasklistServiceAdapter.createProcessInstance(
+              processDefinitionKey, variablesMap, tenantId);
       LOGGER.debug("Process instance created for process [{}]", processDefinitionKey);
-    } catch (final ClientStatusException ex) {
-      if (Status.Code.NOT_FOUND.equals(ex.getStatusCode())) {
-        throw new NotFoundApiException(
-            String.format(
-                "No process definition found with processDefinitionKey: '%s'",
-                processDefinitionKey),
-            ex);
-      }
-      throw new TasklistRuntimeException(ex.getMessage(), ex);
-    } catch (final ClientException ex) {
+      return processInstance;
+    } catch (final Exception ex) {
       throw new TasklistRuntimeException(ex.getMessage(), ex);
     }
-
-    return new ProcessInstanceDTO().setId(processInstanceEvent.getProcessInstanceKey());
   }
 
   private Object extractTypedValue(final VariableInputDTO variable) {

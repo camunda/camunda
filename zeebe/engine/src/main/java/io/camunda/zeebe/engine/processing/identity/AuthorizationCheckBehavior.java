@@ -71,6 +71,10 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
+    if (request.getCommand().isAnonymous()) {
+      return true;
+    }
+
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
