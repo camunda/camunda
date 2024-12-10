@@ -17,11 +17,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [ os-exporter ]
+        group: [ os-exporter, search-client-os ]
         include:
           - group: os-exporter
             name: "Zeebe OS Exporter Integration Tests"
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+          - group: search-client-os
+            name: "Search Client OS Integration Tests"
+            maven-modules: "'io.camunda:search-client-opensearch'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
