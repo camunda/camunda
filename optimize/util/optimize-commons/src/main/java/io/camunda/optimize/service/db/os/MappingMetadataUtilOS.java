@@ -16,6 +16,7 @@ import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondit
 import java.util.Collection;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -25,8 +26,9 @@ public class MappingMetadataUtilOS extends MappingMetadataUtil<Builder> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
 
-  public MappingMetadataUtilOS(final OptimizeOpenSearchClient dbClient) {
-    super(dbClient);
+  @Autowired
+  public MappingMetadataUtilOS(final OptimizeOpenSearchClient openSearchClient) {
+    super(openSearchClient.documentBasedSearchClient());
   }
 
   @Override

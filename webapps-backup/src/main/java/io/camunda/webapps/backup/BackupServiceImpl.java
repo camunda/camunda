@@ -47,6 +47,8 @@ public class BackupServiceImpl implements BackupService {
 
   private final BackupRepositoryProps backupProps;
 
+  private final DynamicIndicesProvider dynamicIndicesProvider;
+
   private final BackupRepository repository;
 
   private String[][] indexPatternsOrdered;
@@ -60,7 +62,8 @@ public class BackupServiceImpl implements BackupService {
       final List<Prio5Backup> prio5BackupIndices,
       final List<Prio6Backup> prio6BackupIndices,
       final BackupRepositoryProps operateProperties,
-      final BackupRepository repository) {
+      final BackupRepository repository,
+      final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.prio1BackupIndices = prio1BackupIndices;
     this.prio2BackupTemplates = prio2BackupTemplates;
@@ -70,6 +73,7 @@ public class BackupServiceImpl implements BackupService {
     this.prio6BackupIndices = prio6BackupIndices;
     this.repository = repository;
     backupProps = operateProperties;
+    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Override
@@ -114,15 +118,22 @@ public class BackupServiceImpl implements BackupService {
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = backupProps.repositoryName();
-    final int count = getIndexPatternsOrdered().length;
+    final var indexPatternsArray = getIndexPatternsOrdered();
+    final int count = indexPatternsArray.length;
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
     for (int index = 0; index < count; index++) {
-      final List<String> indexPattern = Arrays.asList(getIndexPatternsOrdered()[index]);
+      List<String> indexPatternList = Arrays.asList(indexPatternsArray[index]);
       final Metadata metadata = new Metadata(request.getBackupId(), version, index + 1, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
+      // Add all the dynamic indices in the last step
+      if (index == count - 1) {
+        indexPatternList = new ArrayList<>(indexPatternList);
+        indexPatternList.addAll(dynamicIndicesProvider.getAllDynamicIndices());
+      }
+
       final SnapshotRequest snapshotRequest =
-          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
+          new SnapshotRequest(repositoryName, snapshotName, indexPatternList, metadata);
 
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
