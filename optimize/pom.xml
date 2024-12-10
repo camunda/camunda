@@ -47,7 +47,7 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.29.30</awssdk.version>
+    <awssdk.version>2.29.31</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4.1</apache.http5-client.version>
     <apache.http5-core.version>5.3.1</apache.http5-core.version>
