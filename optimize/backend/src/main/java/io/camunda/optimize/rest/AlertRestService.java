@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.query.alert.AlertCreationRequestDto;
 import io.camunda.optimize.service.alert.AlertService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.ValidationHelper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -20,8 +21,6 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -43,10 +42,9 @@ public class AlertRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createAlert(
-      @Context final ContainerRequestContext requestContext,
-      final AlertCreationRequestDto toCreate) {
+      final AlertCreationRequestDto toCreate, final HttpServletRequest request) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    final String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String user = sessionService.getRequestUserOrFailNotAuthorized(request);
     return alertService.createAlert(toCreate, user);
   }
 
@@ -55,21 +53,19 @@ public class AlertRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateAlert(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("id") final String alertId,
-      final AlertCreationRequestDto toCreate) {
+      final AlertCreationRequestDto toCreate,
+      final HttpServletRequest request) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    final String user = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String user = sessionService.getRequestUserOrFailNotAuthorized(request);
     alertService.updateAlert(alertId, toCreate, user);
   }
 
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteAlert(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("id") final String alertId) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+  public void deleteAlert(@PathParam("id") final String alertId, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     alertService.deleteAlert(alertId, userId);
   }
 
@@ -77,9 +73,8 @@ public class AlertRestService {
   @Path("/delete")
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteAlerts(
-      @Context final ContainerRequestContext requestContext,
-      @NotNull @RequestBody final List<String> alertIds) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @NotNull @RequestBody final List<String> alertIds, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     alertService.deleteAlerts(alertIds, userId);
   }
 }

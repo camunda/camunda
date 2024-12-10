@@ -17,14 +17,9 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.PanelNotificationConstants;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
-import io.camunda.optimize.tomcat.ExternalHomeServlet;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
-import java.net.URL;
 import java.util.Optional;
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http2.Http2Protocol;
@@ -37,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -110,30 +104,6 @@ public class OptimizeTomcatConfig {
                 configureHttpsConnector(this);
               }
             });
-      }
-    };
-  }
-
-  @Bean
-  ServletContextInitializer externalResourcesServlet() {
-    LOG.debug("Registering servlet 'externalResourcesServlet'...");
-    return new ServletContextInitializer() {
-      @Override
-      public void onStartup(final ServletContext servletContext) throws ServletException {
-        final URL webappURL = getClass().getClassLoader().getResource("webapp");
-        if (webappURL == null) {
-          LOG.debug("Static content directory 'webapp' not found. No bean will be registered.");
-          return;
-        }
-
-        final String webappPath = webappURL.toExternalForm();
-        final ServletRegistration.Dynamic webappServlet =
-            servletContext.addServlet("external-home", ExternalHomeServlet.class);
-        webappServlet.setInitParameter("resourceBase", "/webapp");
-
-        webappServlet.addMapping("/external/*");
-        webappServlet.addMapping("/*");
-        webappServlet.setLoadOnStartup(1);
       }
     };
   }
