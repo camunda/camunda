@@ -5,16 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { EntityData } from "src/components/entityList/EntityList";
+package io.camunda.security.configuration;
 
-export type Permission = {
-  permissionType: string;
-  resourceIds: string[];
-};
+public class BasicAuthConfiguration {
+  private boolean httpBasicAuthEnabled = true;
 
-export type Authorization = EntityData & {
-  ownerKey: number;
-  ownerType: string;
-  resourceType: string;
-  permissions: Permission[];
-};
+  public boolean isHttpBasicAuthEnabled() {
+    return httpBasicAuthEnabled;
+  }
+
+  public void setHttpBasicAuthEnabled(final boolean httpBasicAuthEnabled) {
+    this.httpBasicAuthEnabled = httpBasicAuthEnabled;
+  }
+}

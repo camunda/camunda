@@ -7,13 +7,18 @@
  */
 package io.camunda.authentication.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import io.camunda.authentication.CamundaUserDetailsService;
+import io.camunda.authentication.csrf.SpaCsrfTokenRequestHandler;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -21,13 +26,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -38,6 +51,8 @@ public class WebSecurityConfig {
       new String[] {
         "/login",
         "/logout",
+        // these are handled by the frontend
+        "/identity/**",
         // endpoint for failure forwarding
         "/error",
         // all actuator endpoints
@@ -47,6 +62,8 @@ public class WebSecurityConfig {
         "/health",
         "/startup"
       };
+  public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
+
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
   @Bean
@@ -60,22 +77,13 @@ public class WebSecurityConfig {
   @Profile("auth-basic")
   public CamundaUserDetailsService camundaUserDetailsService(
       final UserServices userServices, final AuthorizationServices authorizationServices) {
-    return new CamundaUserDetailsService(userServices, authorizationServices);
-  }
-
-  @Bean
-  public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
-    try {
-      return httpSecurity.build();
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
+    return new CamundaUserDetailsService(userServices, authorizationServices, true);
   }
 
   @Bean
   @Primary
   @Profile("auth-oidc")
-  public HttpSecurity oidcHttpSecurity(
+  public SecurityFilterChain oidcSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
       final ClientRegistrationRepository clientRegistrationRepository)
@@ -92,19 +100,76 @@ public class WebSecurityConfig {
                                 .getJwkSetUri())))
         .oauth2Login(oauthLoginConfigurer -> {})
         .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
+        .logout((logout) -> logout.logoutSuccessUrl("/"))
+        .build();
   }
 
   @Bean
-  @Primary
   @Profile("auth-basic")
-  public HttpSecurity localHttpSecurity(
+  @Order(1)
+  public SecurityFilterChain basicAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final AuthFailureHandler authFailureHandler,
+      final SecurityConfiguration securityConfiguration)
+      throws Exception {
+    final boolean isEnabled = securityConfiguration.getBasicAuth().isHttpBasicAuthEnabled();
+    LOG.info("HTTP Basic authentication is {}", isEnabled ? "enabled" : "disabled");
+    if (!isEnabled) {
+      return null;
+    }
+    return baseHttpSecurity(
+            httpSecurity.securityMatchers(
+                matchers -> matchers.requestMatchers(this::isBasicAuthRequest)),
+            authFailureHandler)
+        .httpBasic(Customizer.withDefaults())
+        .build();
+  }
+
+  @Bean
+  @Profile("auth-basic")
+  @Order(2)
+  public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
-    LOG.info("Configuring basic auth login");
+    LOG.info("Configuring login auth");
+    final var cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
+    cookieCsrfTokenRepository.setHeaderName(CSRF_TOKEN_HEADER);
+    cookieCsrfTokenRepository.setCookieCustomizer(
+        responseCookieBuilder -> responseCookieBuilder.httpOnly(false));
     return baseHttpSecurity(httpSecurity, authFailureHandler)
-        .httpBasic(withDefaults())
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
+        .formLogin(
+            formLogin ->
+                formLogin
+                    .loginProcessingUrl("/login")
+                    .failureHandler(authFailureHandler)
+                    .successHandler(this::genericSuccessHandler))
+        .logout(
+            (logout) ->
+                logout.logoutUrl("/logout").logoutSuccessHandler(this::genericSuccessHandler))
+        .exceptionHandling(
+            exceptionHandling ->
+                exceptionHandling
+                    .authenticationEntryPoint(authFailureHandler)
+                    .accessDeniedHandler(authFailureHandler))
+        .csrf(
+            csrfConfigurer ->
+                csrfConfigurer
+                    .csrfTokenRepository(cookieCsrfTokenRepository)
+                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
+        .addFilterAfter(new CsrfTokenCookieFilter(cookieCsrfTokenRepository), CsrfFilter.class)
+        .build();
+  }
+
+  private void genericSuccessHandler(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    response.setStatus(HttpStatus.NO_CONTENT.value());
+  }
+
+  private boolean isBasicAuthRequest(final HttpServletRequest request) {
+    final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
   }
 
   private HttpSecurity baseHttpSecurity(
@@ -134,6 +199,29 @@ public class WebSecurityConfig {
           .anonymous(AbstractHttpConfigurer::disable);
     } catch (final Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  private static class CsrfTokenCookieFilter extends OncePerRequestFilter {
+
+    private final CookieCsrfTokenRepository tokenRepository;
+
+    public CsrfTokenCookieFilter(final CookieCsrfTokenRepository tokenRepository) {
+      this.tokenRepository = tokenRepository;
+    }
+
+    @Override
+    protected void doFilterInternal(
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final FilterChain filterChain)
+        throws ServletException, IOException {
+      final var existingToken = tokenRepository.loadToken(request);
+      if (existingToken == null) {
+        final var token = tokenRepository.generateToken(request);
+        tokenRepository.saveToken(token, request, response);
+      }
+      filterChain.doFilter(request, response);
     }
   }
 }
