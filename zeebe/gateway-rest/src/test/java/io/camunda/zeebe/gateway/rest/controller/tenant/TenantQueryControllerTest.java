@@ -211,7 +211,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort": [{"field": "tenantId", "order": "asc"}]
+              "sort": [{"field": "tenantId", "order": "ASC"}]
             }
             """)
         .exchange()
@@ -281,7 +281,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -301,7 +301,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

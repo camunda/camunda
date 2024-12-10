@@ -225,7 +225,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort":  [{"field": "name", "order":  "asc"}],
+              "sort":  [{"field": "name", "order":  "ASC"}],
               "page":  {"from":  20, "limit":  2}
             }
             """)
@@ -299,7 +299,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -319,7 +319,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

@@ -157,7 +157,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -233,7 +233,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

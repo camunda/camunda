@@ -148,7 +148,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "ownerType",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -291,7 +291,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "ownerType",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -379,7 +379,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -399,7 +399,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

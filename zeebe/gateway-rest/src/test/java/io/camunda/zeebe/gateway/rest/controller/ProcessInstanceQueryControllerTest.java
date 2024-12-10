@@ -187,11 +187,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "bpmnProcessId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "processDefinitionKey",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -274,7 +274,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -315,7 +315,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

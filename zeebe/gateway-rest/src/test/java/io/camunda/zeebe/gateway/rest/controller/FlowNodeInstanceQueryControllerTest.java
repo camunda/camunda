@@ -260,17 +260,17 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         """
              {
                "sort": [
-                 { "field": "flowNodeInstanceKey", "order": "asc" },
-                 { "field": "processInstanceKey", "order": "asc" },
-                 { "field": "processDefinitionKey", "order": "asc" },
-                 { "field": "processDefinitionId", "order": "asc" },
-                 { "field": "startDate", "order": "desc" },
-                 { "field": "endDate", "order": "desc" },
-                 { "field": "flowNodeId", "order": "asc" },
-                 { "field": "type", "order": "asc" },
-                 { "field": "state", "order": "asc" },
-                 { "field": "incidentKey", "order": "asc" },
-                 { "field": "tenantId", "order": "asc" }
+                 { "field": "flowNodeInstanceKey", "order": "ASC" },
+                 { "field": "processInstanceKey", "order": "ASC" },
+                 { "field": "processDefinitionKey", "order": "ASC" },
+                 { "field": "processDefinitionId", "order": "ASC" },
+                 { "field": "startDate", "order": "DESC" },
+                 { "field": "endDate", "order": "DESC" },
+                 { "field": "flowNodeId", "order": "ASC" },
+                 { "field": "type", "order": "ASC" },
+                 { "field": "state", "order": "ASC" },
+                 { "field": "incidentKey", "order": "ASC" },
+                 { "field": "tenantId", "order": "ASC" }
                ]
              }
             """;
