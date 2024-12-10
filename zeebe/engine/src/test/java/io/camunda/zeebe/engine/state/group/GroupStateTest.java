@@ -205,4 +205,22 @@ public class GroupStateTest {
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();
   }
+
+  @Test
+  void shouldAddTenant() {
+    // given
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var tenantKey = 100L;
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+
+    // when
+    groupState.addTenant(groupKey, tenantKey);
+
+    // then
+    final var group = groupState.get(groupKey);
+    assertThat(group.isPresent()).isTrue();
+    assertThat(group.get().getTenantKeys()).containsExactly(tenantKey);
+  }
 }

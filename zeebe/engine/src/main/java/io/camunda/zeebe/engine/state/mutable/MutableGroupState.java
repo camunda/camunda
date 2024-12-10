@@ -21,4 +21,6 @@ public interface MutableGroupState extends GroupState {
   void removeEntity(final long groupKey, final long entityKey);
 
   void delete(final long groupKey);
+
+  void addTenant(final long mappingKey, final long tenantKey);
 }
