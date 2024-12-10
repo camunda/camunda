@@ -8,17 +8,23 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Set;
 
-public record UserFilter(Long key, String username, String name, String email)
+public record UserFilter(Set<Long> keys, String username, String name, String email)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<UserFilter> {
-    private Long key;
+    private Set<Long> keys;
     private String username;
     private String name;
     private String email;
 
     public Builder key(final Long value) {
-      key = value;
+      keys = Set.of(value);
+      return this;
+    }
+
+    public Builder keys(final Set<Long> value) {
+      keys = value;
       return this;
     }
 
@@ -39,7 +45,7 @@ public record UserFilter(Long key, String username, String name, String email)
 
     @Override
     public UserFilter build() {
-      return new UserFilter(key, username, name, email);
+      return new UserFilter(keys, username, name, email);
     }
   }
 }
