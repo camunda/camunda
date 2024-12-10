@@ -28,11 +28,15 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
   private final UserServices userServices;
   private final AuthorizationServices authorizationServices;
+  private final boolean canLogout;
 
   public CamundaUserDetailsService(
-      final UserServices userServices, final AuthorizationServices authorizationServices) {
+      final UserServices userServices,
+      final AuthorizationServices authorizationServices,
+      final boolean canLogout) {
     this.userServices = userServices;
     this.authorizationServices = authorizationServices;
+    this.canLogout = canLogout;
   }
 
   @Override
@@ -70,7 +74,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
         .withAuthorizedApplications(authorizedApplications)
-        .withCanLogout(true) // FIXME
+        .withCanLogout(canLogout)
         .build();
   }
 }

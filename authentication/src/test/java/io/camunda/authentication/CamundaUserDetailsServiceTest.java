@@ -42,7 +42,7 @@ public class CamundaUserDetailsServiceTest {
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    userDetailsService = new CamundaUserDetailsService(userService, authorizationServices);
+    userDetailsService = new CamundaUserDetailsService(userService, authorizationServices, true);
   }
 
   @Test
