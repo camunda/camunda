@@ -548,11 +548,18 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
     zeebeExtension.unassignUserTask(
         getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
-    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
-      waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
-    } else {
-      waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
-    }
+    // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+
+    // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
+    waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
+    zeebeExtension.unassignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
+    // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
+    waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+
+    // } else {
+    //  waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    // }
 
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
@@ -615,11 +622,18 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
     zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
-    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
-      waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
-    } else {
-      waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
-    }
+    // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+
+    // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
+    waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
+    zeebeExtension.unassignUserTask(
+        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
+    // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
+    waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+
+    // } else {
+    //  waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    // }
 
     // when
     importAllZeebeEntitiesFromLastIndex();
