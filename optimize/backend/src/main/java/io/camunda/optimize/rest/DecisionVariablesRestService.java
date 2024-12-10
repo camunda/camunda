@@ -12,13 +12,12 @@ import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRespo
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.variable.DecisionVariableService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -63,9 +62,8 @@ public class DecisionVariablesRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getInputValues(
-      @Context final ContainerRequestContext requestContext,
-      final DecisionVariableValueRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final DecisionVariableValueRequestDto requestDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return decisionVariableService.getInputVariableValues(userId, requestDto);
   }
 
@@ -74,9 +72,8 @@ public class DecisionVariablesRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getOutputValues(
-      @Context final ContainerRequestContext requestContext,
-      final DecisionVariableValueRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final DecisionVariableValueRequestDto requestDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return decisionVariableService.getOutputVariableValues(userId, requestDto);
   }
 }

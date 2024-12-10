@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupD
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import io.camunda.optimize.service.AssigneeCandidateGroupService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -22,8 +23,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,9 +68,9 @@ public class CandidateGroupRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdentitySearchResultResponseDto searchCandidateGroups(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return assigneeCandidateGroupService.searchForCandidateGroupsAsUser(userId, requestDto);
   }
 
@@ -80,9 +79,9 @@ public class CandidateGroupRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdentitySearchResultResponseDto searchCandidateGroups(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid final AssigneeCandidateGroupReportSearchRequestDto requestDto,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return assigneeCandidateGroupService.searchForCandidateGroupsAsUser(userId, requestDto);
   }
 }

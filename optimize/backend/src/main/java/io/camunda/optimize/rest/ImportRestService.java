@@ -13,14 +13,13 @@ import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Set;
@@ -47,12 +46,12 @@ public class ImportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<EntityIdResponseDto> importEntities(
-      @Context final ContainerRequestContext requestContext,
       @QueryParam("collectionId") final String collectionId,
-      final String exportedDtoJson) {
+      final String exportedDtoJson,
+      final HttpServletRequest request) {
     final Set<OptimizeEntityExportDto> exportDtos =
         entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateUserAuthorization(collectionId);
     return entityImportService.importEntitiesAsUser(userId, collectionId, exportDtos);
   }

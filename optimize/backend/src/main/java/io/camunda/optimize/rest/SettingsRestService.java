@@ -10,13 +10,12 @@ package io.camunda.optimize.rest;
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import org.springframework.stereotype.Component;
 
@@ -42,9 +41,8 @@ public class SettingsRestService {
   @PUT
   @Produces(MediaType.APPLICATION_JSON)
   public void setSettings(
-      @Context final ContainerRequestContext requestContext,
-      @NotNull final SettingsDto settingsDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @NotNull final SettingsDto settingsDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     settingsService.setSettings(userId, settingsDto);
   }
 }

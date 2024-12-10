@@ -40,7 +40,8 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
 
     return Response.status(Response.Status.UNAUTHORIZED)
         .type(MediaType.APPLICATION_JSON_TYPE)
-        .cookie(cookieService.createDeleteOptimizeAuthNewCookie(true))
+        // TODO migrate to Spring MVC
+        //        .cookie(cookieService.createDeleteOptimizeAuthNewCookie(true))
         .entity(getErrorResponseDto(notAuthorizedException))
         .build();
   }

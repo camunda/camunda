@@ -9,16 +9,14 @@ package io.camunda.optimize.rest;
 
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.LocalizationService;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(LocalizationRestService.LOCALIZATION_PATH)
-@Component
+@RestController
+@RequestMapping("/api" + LocalizationRestService.LOCALIZATION_PATH)
 public class LocalizationRestService {
 
   public static final String LOCALIZATION_PATH = "/localization";
@@ -30,10 +28,9 @@ public class LocalizationRestService {
     this.localizationService = localizationService;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping()
   @CacheRequest
-  public byte[] getLocalizationFile(@QueryParam("localeCode") final String localeCode) {
+  public byte[] getLocalizationFile(@RequestParam(name = "localeCode") final String localeCode) {
     return localizationService.getLocalizationFileBytes(localeCode);
   }
 }

@@ -36,6 +36,7 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.SettingsService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
@@ -111,13 +112,13 @@ public class SharingPublicReaderRestService {
   @Path(SHARE_PATH + REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("shareId") final String reportShareId,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
             protectedSharingRestService.evaluateReport(
-                requestContext, reportShareId, paginationRequestDto));
+                reportShareId, paginationRequestDto, request));
   }
 
   @POST
@@ -131,19 +132,15 @@ public class SharingPublicReaderRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("shareId") final String dashboardShareId,
       @PathParam("reportId") final String reportId,
       final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
             protectedSharingRestService.evaluateReport(
-                requestContext,
-                dashboardShareId,
-                reportId,
-                reportEvaluationFilter,
-                paginationRequestDto));
+                dashboardShareId, reportId, reportEvaluationFilter, paginationRequestDto, request));
   }
 
   @GET
@@ -161,10 +158,10 @@ public class SharingPublicReaderRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Path(PROCESS_VARIABLES_PATH)
   public List<ProcessVariableNameResponseDto> getVariableNames(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final ProcessVariableNameRequestDto variableRequestDtos) {
+      @Valid final ProcessVariableNameRequestDto variableRequestDtos,
+      final HttpServletRequest request) {
     return executeIfSharingEnabled(
-        () -> processVariableRestService.getVariableNames(requestContext, variableRequestDtos));
+        () -> processVariableRestService.getVariableNames(variableRequestDtos, request));
   }
 
   @POST

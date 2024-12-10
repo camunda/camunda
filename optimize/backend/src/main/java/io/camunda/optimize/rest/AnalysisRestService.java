@@ -24,14 +24,13 @@ import io.camunda.optimize.service.BranchAnalysisService;
 import io.camunda.optimize.service.OutlierAnalysisService;
 import io.camunda.optimize.service.export.CSVUtils;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
@@ -63,10 +62,9 @@ public class AnalysisRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public BranchAnalysisResponseDto getBranchAnalysis(
-      @Context final ContainerRequestContext requestContext,
-      final BranchAnalysisRequestDto branchAnalysisDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final ZoneId timezone = extractTimezone(requestContext);
+      final BranchAnalysisRequestDto branchAnalysisDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final ZoneId timezone = extractTimezone(request);
     return branchAnalysisService.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
 
@@ -74,12 +72,11 @@ public class AnalysisRestService {
   @Path("/flowNodeOutliers")
   @Produces(MediaType.APPLICATION_JSON)
   public Map<String, FindingsDto> getFlowNodeOutlierMap(
-      @Context final ContainerRequestContext requestContext,
-      final ProcessDefinitionParametersDto parameters) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final ProcessDefinitionParametersDto parameters, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams =
-        new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+        new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
     final Map<String, FindingsDto> flowNodeOutlierMap =
         outlierAnalysisService.getFlowNodeOutlierMap(outlierAnalysisParams);
     final List<Map.Entry<String, FindingsDto>> sortedFindings =
@@ -105,12 +102,11 @@ public class AnalysisRestService {
   @Path("/durationChart")
   @Produces(MediaType.APPLICATION_JSON)
   public List<DurationChartEntryDto> getCountByDurationChart(
-      @Context final ContainerRequestContext requestContext,
-      final FlowNodeOutlierParametersDto parameters) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final FlowNodeOutlierParametersDto parameters, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
-        new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+        new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
     return outlierAnalysisService.getCountByDurationChart(outlierAnalysisParams);
   }
 
@@ -118,12 +114,11 @@ public class AnalysisRestService {
   @Path("/significantOutlierVariableTerms")
   @Produces(MediaType.APPLICATION_JSON)
   public List<VariableTermDto> getSignificantOutlierVariableTerms(
-      @Context final ContainerRequestContext requestContext,
-      final FlowNodeOutlierParametersDto parameters) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final FlowNodeOutlierParametersDto parameters, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
-        new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(requestContext), userId);
+        new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
     return outlierAnalysisService.getSignificantOutlierVariableTerms(outlierAnalysisParams);
   }
 
@@ -132,16 +127,15 @@ public class AnalysisRestService {
   // octet stream on success, json on potential error
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   public Response getSignificantOutlierVariableTermsInstanceIds(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("fileName") final String fileName,
-      final FlowNodeOutlierVariableParametersDto parameters) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final FlowNodeOutlierVariableParametersDto parameters,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
     final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto>
         outlierAnalysisParams =
-            new OutlierAnalysisServiceParameters<>(
-                parameters, extractTimezone(requestContext), userId);
+            new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
     final List<String[]> processInstanceIdsCsv =
         CSVUtils.mapIdList(
             outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(

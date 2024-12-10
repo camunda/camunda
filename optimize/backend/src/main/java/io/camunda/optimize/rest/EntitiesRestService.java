@@ -17,6 +17,7 @@ import io.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import io.camunda.optimize.rest.mapper.EntityRestMapper;
 import io.camunda.optimize.service.entities.EntitiesService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BeanParam;
@@ -54,9 +55,8 @@ public class EntitiesRestService {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<EntityResponseDto> getEntities(
-      @Context final ContainerRequestContext requestContext,
-      @BeanParam final EntitySorter entitySorter) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @BeanParam final EntitySorter entitySorter, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
@@ -76,9 +76,9 @@ public class EntitiesRestService {
   @Path("/delete-conflicts")
   @Consumes(MediaType.APPLICATION_JSON)
   public boolean entitiesHaveDeleteConflicts(
-      @Context final ContainerRequestContext requestContext,
-      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return entitiesService.entitiesHaveConflicts(entities, userId);
   }
 
@@ -86,9 +86,9 @@ public class EntitiesRestService {
   @Path("/delete")
   @Consumes(MediaType.APPLICATION_JSON)
   public void bulkDeleteEntities(
-      @Context final ContainerRequestContext requestContext,
-      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     entitiesService.bulkDeleteEntities(entities, userId);
   }
 }

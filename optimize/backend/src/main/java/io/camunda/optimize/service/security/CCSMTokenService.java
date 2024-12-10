@@ -33,8 +33,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.servlet.http.Cookie;
 import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.NewCookie;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Date;
@@ -88,15 +86,15 @@ public class CCSMTokenService {
     return List.of(optimizeAuthCookie, optimizeRefreshCookie);
   }
 
-  public List<NewCookie> createOptimizeAuthNewCookies(
+  public List<Cookie> createOptimizeAuthNewCookies(
       final Tokens tokens, final AccessToken accessToken, final String scheme) {
-    final NewCookie optimizeAuthCookie =
+    final Cookie optimizeAuthCookie =
         authCookieService.createCookie(
             OPTIMIZE_AUTHORIZATION,
             accessToken.getToken().getToken(),
             accessToken.getToken().getExpiresAt(),
             scheme);
-    final NewCookie optimizeRefreshCookie =
+    final Cookie optimizeRefreshCookie =
         authCookieService.createCookie(
             OPTIMIZE_REFRESH_TOKEN,
             tokens.getRefreshToken(),
@@ -111,7 +109,7 @@ public class CCSMTokenService {
         authCookieService.createDeleteOptimizeRefreshCookie());
   }
 
-  public List<NewCookie> createOptimizeDeleteAuthNewCookies() {
+  public List<Cookie> createOptimizeDeleteAuthNewCookies() {
     return List.of(
         authCookieService.createDeleteOptimizeAuthNewCookie(true),
         authCookieService.createDeleteOptimizeRefreshNewCookie(true));
@@ -125,14 +123,13 @@ public class CCSMTokenService {
     return authentication().authorizeUriBuilder(authorizeUri).build();
   }
 
-  public Tokens exchangeAuthCode(
-      final AuthCodeDto authCode, final ContainerRequestContext requestContext) {
+  public Tokens exchangeAuthCode(final AuthCodeDto authCode, final URI uri) {
     // If a redirect root URL is explicitly set, we append the callback subpath and use that.
     // Otherwise, we use the one provided in the request
     final String redirectUri =
         getConfiguredRedirectUri()
             .map(CCSMTokenService::appendCallbackSubpath)
-            .orElse(requestContext.getUriInfo().getAbsolutePath().toString());
+            .orElse(uri.toString());
     LOG.trace("Exchanging auth code with redirectUri: {}", redirectUri);
     try {
       return authentication().exchangeAuthCode(authCode, redirectUri);
