@@ -44,7 +44,7 @@ jobs:
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
     needs: [detect-changes]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, amd16]
     timeout-minutes: 5
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
@@ -85,7 +85,9 @@ jobs:
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
     needs: [detect-changes]
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - amd16
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
