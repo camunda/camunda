@@ -10,6 +10,7 @@ package io.camunda.it.operate;
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.UPDATE;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.BATCH;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
@@ -100,9 +101,9 @@ public class OperateProcessInstanceMigrationIT {
     //   * Zeebe should process and export the respective events
     //   * Process should be migrated
     //   * Operation should be marked completed by exporter at the end
-
-    zeebeClient.newFlownodeInstanceQuery().sort(s -> s.flowNodeInstanceKey().desc()).send().join();
-
+    if (response.isLeft()) {
+      fail(response.getLeft());
+    }
     waitForFNIState(processInstanceKey, "subProcess2");
 
     final var flowNodeInstanceSearchQueryResponse =
