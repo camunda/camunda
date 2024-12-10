@@ -59,6 +59,7 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
@@ -129,6 +130,7 @@ import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
@@ -838,6 +840,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public CreateGroupCommandStep1 newCreateGroupCommand() {
     return new CreateGroupCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
+      final long tenantKey) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {
