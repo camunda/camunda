@@ -4,7 +4,7 @@ package main
 # aligned with the inclusion criteria and best practices:
 # See https://github.com/camunda/camunda/wiki/CI-&-Automation#unified-ci
 
-unified_ci_workflow_names = ["CI", "Zeebe CI"]
+unified_ci_workflow_names = ["CI", "Tasklist Frontend Jobs", "Zeebe CI"]
 
 # The `input` variable is a data structure that contains a YAML file's contents
 # as objects and arrays. See https://www.openpolicyagent.org/docs/latest/philosophy/#how-does-opa-work
