@@ -71,10 +71,10 @@ public class OperateProcessInstanceMigrationIT {
   void shouldMigrateSubprocessToSubprocess() throws Exception {
     // given
     // process instances that are running
-    deployProcess("migration-subprocess.bpm");
+    deployProcess("process/migration-subprocess.bpmn");
     final long processInstanceKey = createProcessInstance("prWithSubprocess");
     completeJob("taskA");
-    final var processDefinitionTo = deployProcess("migration-subprocess2.bpm");
+    final var processDefinitionTo = deployProcess("process/migration-subprocess2.bpmn");
 
     // we have the given migration plan
     final MigrationPlan migrationPlan =
