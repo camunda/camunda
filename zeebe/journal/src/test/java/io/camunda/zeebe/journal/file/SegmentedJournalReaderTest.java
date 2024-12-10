@@ -17,6 +17,7 @@ package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
@@ -68,7 +69,7 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
-  void shouldReadAfterCompact() {
+  void shouldReadAfterCompact() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 5; i++) {
       assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);
@@ -86,7 +87,7 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
-  void shouldSeekToAnyIndexInMultipleSegments() {
+  void shouldSeekToAnyIndexInMultipleSegments() throws CheckedJournalException {
     // given
     long asqn = 1;
 
@@ -105,7 +106,7 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
-  void shouldSeekToAnyAsqnInMultipleSegments() {
+  void shouldSeekToAnyAsqnInMultipleSegments() throws CheckedJournalException {
     // given
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
@@ -123,7 +124,7 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
-  void shouldNotReadWhenAccessingDeletedSegment() {
+  void shouldNotReadWhenAccessingDeletedSegment() throws CheckedJournalException {
     // given
     journal.append(recordDataWriter);
     final var reader = journal.openReader();
@@ -136,7 +137,7 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
-  void shouldReadAfterReset() {
+  void shouldReadAfterReset() throws CheckedJournalException {
     // given
     journal.append(recordDataWriter);
     final var reader = journal.openReader();
@@ -152,7 +153,7 @@ class SegmentedJournalReaderTest {
   }
 
   @Test
-  void shouldBuiltIndexOnDemandWhileSeek() {
+  void shouldBuiltIndexOnDemandWhileSeek() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
       assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);

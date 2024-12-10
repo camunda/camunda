@@ -52,7 +52,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeek() {
+  void shouldSeek() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, recordDataWriter).index();
@@ -72,7 +72,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToFirst() {
+  void shouldSeekToFirst() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, recordDataWriter).index();
@@ -91,7 +91,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToLast() {
+  void shouldSeekToLast() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, recordDataWriter).index();
@@ -109,7 +109,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldNotReadIfSeekIsHigherThanLast() {
+  void shouldNotReadIfSeekIsHigherThanLast() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, recordDataWriter).index();
@@ -124,7 +124,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldReadAppendedDataAfterSeek() {
+  void shouldReadAppendedDataAfterSeek() throws CheckedJournalException {
     // given
     for (int i = 0; i < ENTRIES; i++) {
       journal.append(recordDataWriter).index();
@@ -141,7 +141,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToAsqn() {
+  void shouldSeekToAsqn() throws CheckedJournalException {
     // given that all records with index i will have an asqn of startAsqn + i
     final long startAsqn = 10;
     for (int i = 0; i < ENTRIES; i++) {
@@ -162,7 +162,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToHighestAsqnLowerThanProvidedAsqn() {
+  void shouldSeekToHighestAsqnLowerThanProvidedAsqn() throws CheckedJournalException {
     // given
     final var expectedRecord = journal.append(1, recordDataWriter);
     journal.append(5, recordDataWriter);
@@ -177,7 +177,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToHighestAsqnWithinBoundIndex() {
+  void shouldSeekToHighestAsqnWithinBoundIndex() throws CheckedJournalException {
     // given
     final var firstIndex = journal.append(1, recordDataWriter).index();
     final var secondIndex = journal.append(4, recordDataWriter).index();
@@ -203,7 +203,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToLastAsqn() {
+  void shouldSeekToLastAsqn() throws CheckedJournalException {
     // given
     final var expectedRecord = journal.append(5, recordDataWriter);
     journal.append(recordDataWriter);
@@ -214,7 +214,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToHighestLowerAsqnSkippingRecordsWithNoAsqn() {
+  void shouldSeekToHighestLowerAsqnSkippingRecordsWithNoAsqn() throws CheckedJournalException {
     // given
     final var expectedRecord = journal.append(1, recordDataWriter);
     journal.append(recordDataWriter);
@@ -230,7 +230,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToFirstWhenAllAsqnIsHigher() {
+  void shouldSeekToFirstWhenAllAsqnIsHigher() throws CheckedJournalException {
     // given
     final var expectedRecord = journal.append(recordDataWriter);
     journal.append(5, recordDataWriter);
@@ -246,7 +246,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToFirstIfLowerThanFirst() {
+  void shouldSeekToFirstIfLowerThanFirst() throws CheckedJournalException {
     // given
     for (int i = 1; i <= ENTRIES; i++) {
       journal.append(i, recordDataWriter).index();
@@ -265,7 +265,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekAfterTruncate() {
+  void shouldSeekAfterTruncate() throws CheckedJournalException {
     // given
     long lastIndex = -1;
     for (int i = 1; i <= ENTRIES; i++) {
@@ -284,7 +284,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekAfterCompact() {
+  void shouldSeekAfterCompact() throws CheckedJournalException {
     // given
     journal.append(1, recordDataWriter).index();
     journal.append(2, recordDataWriter).index();
@@ -303,7 +303,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToIndex() {
+  void shouldSeekToIndex() throws CheckedJournalException {
     // given
     long asqn = 1;
     JournalRecord lastRecordWritten = null;
@@ -343,7 +343,7 @@ final class JournalReaderTest {
   }
 
   @Test
-  void shouldSeekToFirstWhenNoRecordsWithValidAsqnExists() {
+  void shouldSeekToFirstWhenNoRecordsWithValidAsqnExists() throws CheckedJournalException {
     // given
     for (int i = 0; i < ENTRIES; i++) {
       journal.append(recordDataWriter);

@@ -82,7 +82,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldFailAppendWithIncorrectChecksum() {
+  public void shouldFailAppendWithIncorrectChecksum() throws CheckedJournalException {
     // given
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 12345, new byte[1]));
     final VersionedAppendRequest request =

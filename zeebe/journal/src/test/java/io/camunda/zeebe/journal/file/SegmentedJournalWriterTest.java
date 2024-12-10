@@ -9,7 +9,7 @@ package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -41,7 +41,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @BeforeEach
-  void beforeEach(final @TempDir Path tempDir) {
+  void beforeEach(final @TempDir Path tempDir) throws CheckedJournalException {
     segments = journalFactory.segmentsManager(tempDir);
     segments.open();
     writer = new SegmentedJournalWriter(segments, flusher, journalFactory.metrics());
@@ -53,7 +53,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldResetLastFlushedIndexOnDeleteAfter() throws FlushException {
+  void shouldResetLastFlushedIndexOnDeleteAfter() throws CheckedJournalException {
     // given
     writer.append(1, journalFactory.entry());
     writer.append(2, journalFactory.entry());
@@ -70,7 +70,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldResetLastFlushedIndexOnReset() throws FlushException {
+  void shouldResetLastFlushedIndexOnReset() throws CheckedJournalException {
     // given
     writer.append(1, journalFactory.entry());
     writer.append(2, journalFactory.entry());
@@ -85,7 +85,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldUpdateDescriptor() {
+  void shouldUpdateDescriptor() throws CheckedJournalException {
     // given
     while (segments.getFirstSegment() == segments.getLastSegment()) {
       writer.append(-1, journalFactory.entry());
@@ -103,7 +103,8 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldResetToLastEntryEvenIfLastPositionInDescriptorIsIncorrect() throws IOException {
+  void shouldResetToLastEntryEvenIfLastPositionInDescriptorIsIncorrect()
+      throws IOException, CheckedJournalException {
     // given
     while (segments.getFirstSegment() == segments.getLastSegment()) {
       writer.append(-1, journalFactory.entry());
@@ -132,7 +133,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldInvalidateNextEntryAfterAppend() {
+  void shouldInvalidateNextEntryAfterAppend() throws CheckedJournalException {
     try (final SegmentedJournalReader reader =
         new SegmentedJournalReader(journalFactory.journal(segments), new JournalMetrics("1"))) {
       // when
@@ -146,7 +147,8 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldInvalidateNextEntryAfterAppendingSerializedRecord(@TempDir final Path tempDir) {
+  void shouldInvalidateNextEntryAfterAppendingSerializedRecord(@TempDir final Path tempDir)
+      throws CheckedJournalException {
     // given
     final var writtenRecord = writer.append(-1, journalFactory.entry());
 
