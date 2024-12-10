@@ -235,6 +235,7 @@ public class ClusterEndpoint {
         return ClusterApiUtils.mapOperationResponse(
             requestSender.scaleCluster(scaleRequest).join());
       } else {
+        LOG.info("Invoking patchCluster...");
         return patchCluster(
             dryRun,
             request,
@@ -274,6 +275,7 @@ public class ClusterEndpoint {
     Optional<Set<PartitionMetadata>> newPartitionsMetadata = Optional.empty();
 
     if (newPartitionDistribution.isPresent()) {
+      LOG.info("Setting partitions metadata...");
       newPartitionsMetadata =
           Optional.of(convertToPartitionsMetadata(newPartitionDistribution.get()));
     }
@@ -287,6 +289,7 @@ public class ClusterEndpoint {
             newPartitionsMetadata,
             dryRun);
 
+    LOG.info("Invoking requestSender.patchCluster...");
     return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
   }
 

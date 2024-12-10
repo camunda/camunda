@@ -171,12 +171,12 @@ public final class ClusterConfigurationManagementRequestsHandler
               });
     }
 
-    if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
-      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
-      failedFuture.completeExceptionally(
-          new UnsupportedOperationException("Partition scaling is not enabled."));
-      return failedFuture;
-    }
+    //    if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
+    //      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
+    //      failedFuture.completeExceptionally(
+    //          new UnsupportedOperationException("Partition scaling is not enabled."));
+    //      return failedFuture;
+    //    }
 
     return handleRequest(
         clusterPatchRequest.dryRun(),
