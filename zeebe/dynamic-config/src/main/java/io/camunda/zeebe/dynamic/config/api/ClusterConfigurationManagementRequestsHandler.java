@@ -161,22 +161,35 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
 
-    if (clusterPatchRequest.newPartitionsMetadata().isPresent()) {
+    if (clusterPatchRequest.newPartitionsDistribution().isPresent()) {
       clusterPatchRequest
-          .newPartitionsMetadata()
+          .newPartitionsDistribution()
           .get()
+          .getPartitionsList()
           .forEach(
-              partitionMetadata -> {
-                LOG.info("Got new partitionMetadata " + partitionMetadata.toString());
+              partition -> {
+                final StringBuilder sb =
+                    new StringBuilder("Got new partitionDistribution - partitionId: ");
+                sb.append(partition.getPartitionId()).append(" members: ");
+                partition
+                    .getMembersList()
+                    .forEach(
+                        member -> {
+                          sb.append(" \nmemberId: ").append(member.getMemberId());
+                          sb.append(" priority: ").append(member.getPriority());
+                        });
+                LOG.info(sb.toString());
               });
+    } else {
+      LOG.info("No new partitionDistribution");
     }
 
-    //    if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
-    //      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
-    //      failedFuture.completeExceptionally(
-    //          new UnsupportedOperationException("Partition scaling is not enabled."));
-    //      return failedFuture;
-    //    }
+    if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
+      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
+      failedFuture.completeExceptionally(
+          new UnsupportedOperationException("Partition scaling is not enabled."));
+      return failedFuture;
+    }
 
     return handleRequest(
         clusterPatchRequest.dryRun(),
@@ -184,7 +197,8 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterPatchRequest.membersToAdd(),
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+            clusterPatchRequest.newReplicationFactor(),
+            clusterPatchRequest.newPartitionsDistribution()));
   }
 
   @Override

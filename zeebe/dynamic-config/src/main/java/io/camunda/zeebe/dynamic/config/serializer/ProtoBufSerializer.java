@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ChangeStatus;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.CompletedChange;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionConfig;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionsDistribution;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -928,10 +929,10 @@ public class ProtoBufSerializer
           clusterPatchRequest.hasNewReplicationFactor()
               ? Optional.of(clusterPatchRequest.getNewReplicationFactor())
               : Optional.empty();
-      //      final Optional<Set<PartitionMetadata>> newPartitionsMetadata =
-      //          clusterPatchRequest.hasNewPartitionsMetadata()
-      //              ? Optional.of(clusterPatchRequest.getNewPartitionsMetadata())
-      //              : Optional.empty();
+      final Optional<PartitionsDistribution> newPartitionsDistribution =
+          clusterPatchRequest.hasNewPartitionsDistribution()
+              ? Optional.of(clusterPatchRequest.getNewPartitionsDistribution())
+              : Optional.empty();
       return new ClusterPatchRequest(
           clusterPatchRequest.getMembersToAddList().stream()
               .map(MemberId::from)
@@ -941,8 +942,7 @@ public class ProtoBufSerializer
               .collect(Collectors.toSet()),
           newPartitionCount,
           newReplicationFactor,
-          Optional.empty(),
-          //          newPartitionsMetadata,
+          newPartitionsDistribution,
           clusterPatchRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

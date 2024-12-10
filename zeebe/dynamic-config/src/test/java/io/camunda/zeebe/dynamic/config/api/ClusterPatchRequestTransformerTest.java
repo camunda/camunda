@@ -56,7 +56,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                patchRequest.newPartitionsDistribution())
             .operations(ClusterConfiguration.init());
 
     // then
@@ -82,7 +83,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                patchRequest.newPartitionsDistribution())
             .operations(ClusterConfiguration.init());
 
     // then
@@ -235,7 +237,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                patchRequest.newPartitionsDistribution())
             .operations(oldClusterTopology);
     assertThat(result).isRight();
     final var operations = result.get();

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionsDistribution;
 import java.util.Optional;
 import java.util.Set;
 
@@ -56,7 +56,7 @@ public sealed interface ClusterConfigurationManagementRequest {
       Set<MemberId> membersToRemove,
       Optional<Integer> newPartitionCount,
       Optional<Integer> newReplicationFactor,
-      Optional<Set<PartitionMetadata>> newPartitionsMetadata,
+      Optional<PartitionsDistribution> newPartitionsDistribution,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
