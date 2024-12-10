@@ -17,6 +17,7 @@ import io.camunda.optimize.rest.util.TimeZoneUtil;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import io.camunda.optimize.service.variable.ProcessVariableService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -51,9 +52,9 @@ public class ProcessVariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNames(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final ProcessVariableNameRequestDto variableRequestDto) {
-    variableRequestDto.setTimezone(TimeZoneUtil.extractTimezone(requestContext));
+      @Valid final ProcessVariableNameRequestDto variableRequestDto,
+      final HttpServletRequest request) {
+    variableRequestDto.setTimezone(TimeZoneUtil.extractTimezone(request));
     return processVariableService.getVariableNames(variableRequestDto);
   }
 
@@ -62,9 +63,8 @@ public class ProcessVariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(
-      @Context final ContainerRequestContext requestContext,
-      final GetVariableNamesForReportsRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final GetVariableNamesForReportsRequestDto requestDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return processVariableService.getVariableNamesForAuthorizedReports(
         userId, requestDto.getReportIds());
   }
@@ -74,9 +74,9 @@ public class ProcessVariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValues(
-      @Context final ContainerRequestContext requestContext,
-      final ProcessVariableValueRequestDto variableValueRequestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final ProcessVariableValueRequestDto variableValueRequestDto,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return processVariableService.getVariableValues(userId, variableValueRequestDto);
   }
 
@@ -85,9 +85,8 @@ public class ProcessVariableRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public List<String> getVariableValuesForReports(
-      @Context final ContainerRequestContext requestContext,
-      final ProcessVariableReportValuesRequestDto requestDto) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      final ProcessVariableReportValuesRequestDto requestDto, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return processVariableService.getVariableValuesForReports(userId, requestDto);
   }
 

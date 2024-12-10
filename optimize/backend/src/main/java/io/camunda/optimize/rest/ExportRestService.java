@@ -30,6 +30,7 @@ import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.export.CsvExportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
@@ -46,12 +47,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path("/export")
-@Component
+@RestController
+@RequestMapping("/api/export")
 public class ExportRestService {
-
   private final CsvExportService csvExportService;
   private final EntityExportService entityExportService;
   private final SessionService sessionService;
@@ -72,10 +73,10 @@ public class ExportRestService {
   @Produces(value = {MediaType.APPLICATION_JSON})
   @Path("report/json/{reportId}/{fileName}")
   public Response getJsonReport(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("reportId") final String reportId,
-      @PathParam("fileName") final String fileName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathParam("fileName") final String fileName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     final List<ReportDefinitionExportDto> jsonReports =
         entityExportService.getReportExportDtosAsUser(userId, Sets.newHashSet(reportId));
@@ -89,8 +90,9 @@ public class ExportRestService {
   public Response getJsonDashboard(
       @Context final ContainerRequestContext requestContext,
       @PathParam("dashboardId") final String dashboardId,
-      @PathParam("fileName") final String fileName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathParam("fileName") final String fileName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
     final List<OptimizeEntityExportDto> jsonDashboards =
         entityExportService.getCompleteDashboardExportAsUser(userId, dashboardId);
@@ -103,12 +105,12 @@ public class ExportRestService {
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   @Path("csv/{reportId}/{fileName}")
   public Response getCsvReport(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("reportId") final String reportId,
-      @PathParam("fileName") final String fileName) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathParam("fileName") final String fileName,
+      final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateAuthorization();
-    final ZoneId timezone = extractTimezone(requestContext);
+    final ZoneId timezone = extractTimezone(request);
 
     final Optional<byte[]> csvForReport =
         csvExportService.getCsvBytesForEvaluatedReportResult(userId, reportId, timezone);
@@ -128,12 +130,12 @@ public class ExportRestService {
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   @Path("csv/process/rawData/{fileName}")
   public Response getRawDataCsv(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("fileName") final String fileName,
-      @Valid final ProcessRawDataCsvExportRequestDto request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @Valid final ProcessRawDataCsvExportRequestDto request,
+      final HttpServletRequest servletRequest) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(servletRequest);
     validateAuthorization();
-    final ZoneId timezone = extractTimezone(requestContext);
+    final ZoneId timezone = extractTimezone(servletRequest);
 
     final SingleProcessReportDefinitionRequestDto reportDefinitionDto =
         SingleProcessReportDefinitionRequestDto.builder()

@@ -12,9 +12,7 @@ import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.container.ContainerResponseContext;
-import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.Provider;
 import java.time.ZoneId;
@@ -26,17 +24,16 @@ import org.springframework.stereotype.Component;
 
 @Provider
 @Component
-public class ResponseTimezoneFilter implements ContainerResponseFilter {
+public class ResponseTimezoneFilter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ResponseTimezoneFilter.class);
 
   public ResponseTimezoneFilter() {}
 
-  @Override
-  public void filter(
-      final ContainerRequestContext requestContext,
-      final ContainerResponseContext responseContext) {
-    ObjectWriterInjector.set(new DateMod(extractTimezone(requestContext)));
+  public void filter(final HttpServletRequest request) {
+    // TODO migrate to Spring MVC
+    // TODO check if this works
+    ObjectWriterInjector.set(new DateMod(extractTimezone(request)));
   }
 
   public static class DateMod extends ObjectWriterModifier {
