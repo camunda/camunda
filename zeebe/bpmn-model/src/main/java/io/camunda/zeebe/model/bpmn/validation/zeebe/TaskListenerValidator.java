@@ -27,6 +27,8 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 public class TaskListenerValidator implements ModelElementValidator<ZeebeTaskListener> {
 
   private static final List<ZeebeTaskListenerEventType> SUPPORTED_VALUES =
+      Arrays.asList(ZeebeTaskListenerEventType.assigning, ZeebeTaskListenerEventType.completing);
+  private static final List<ZeebeTaskListenerEventType> SUPPORTED_DEPRECATED_VALUES =
       Arrays.asList(ZeebeTaskListenerEventType.assignment, ZeebeTaskListenerEventType.complete);
 
   @Override
@@ -39,11 +41,17 @@ public class TaskListenerValidator implements ModelElementValidator<ZeebeTaskLis
       final ZeebeTaskListener zeebeTaskListener,
       final ValidationResultCollector validationResultCollector) {
     final ZeebeTaskListenerEventType eventType = zeebeTaskListener.getEventType();
-    if (eventType != null && !SUPPORTED_VALUES.contains(eventType)) {
+    if (eventType != null
+        && !SUPPORTED_VALUES.contains(eventType)
+        && !SUPPORTED_DEPRECATED_VALUES.contains(eventType)) {
       final String errorMessage =
           String.format(
-              "Task listener event type '%s' is not supported. Currently, only %s event types are supported.",
-              eventType, SUPPORTED_VALUES.stream().map(Enum::name).collect(joining(", ")));
+              "Task listener event type '%s' is not supported. Currently, only %s event types and %s deprecated event types are supported.",
+              eventType,
+              SUPPORTED_VALUES.stream().map(Enum::name).collect(joining("', '", "'", "'")),
+              SUPPORTED_DEPRECATED_VALUES.stream()
+                  .map(Enum::name)
+                  .collect(joining("', '", "'", "'")));
       validationResultCollector.addError(0, errorMessage);
     }
   }
