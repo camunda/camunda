@@ -84,11 +84,17 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Qualifier("tasklistFlowNodeInstanceTemplate")
   private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
+
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
-      List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames) {
+      final List<String> flowNodeInstanceIds,
+      final List<String> varNames,
+      final Set<String> fieldNames) {
 
     final Query.Builder flowNodeInstanceKeyQ = new Query.Builder();
     flowNodeInstanceKeyQ.terms(
@@ -124,13 +130,14 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     try {
       return OpenSearchUtil.scroll(searchRequest, VariableEntity.class, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public Map<String, List<SnapshotTaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
 
@@ -183,7 +190,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           .collect(
               groupingBy(
                   SnapshotTaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -191,7 +198,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   }
 
   @Override
-  public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(List<String> taskIds) {
+  public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds) {
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskVariableTemplate)
             .query(
@@ -210,39 +217,28 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
+  @Override
   public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
     final List<BulkOperation> operations = new ArrayList<BulkOperation>();
-    for (SnapshotTaskVariableEntity variableEntity : finalVariables) {
+    for (final SnapshotTaskVariableEntity variableEntity : finalVariables) {
       operations.add(createUpsertRequest(variableEntity));
     }
     bulkRequest.operations(operations);
     bulkRequest.refresh(Refresh.WaitFor);
     try {
       OpenSearchUtil.processBulkRequest(osClient, bulkRequest.build());
-    } catch (PersistenceException ex) {
+    } catch (final PersistenceException ex) {
       throw new TasklistRuntimeException(ex);
     }
   }
 
-  private BulkOperation createUpsertRequest(SnapshotTaskVariableEntity variableEntity) {
-    return new BulkOperation.Builder()
-        .update(
-            UpdateOperation.of(
-                i ->
-                    i.index(taskVariableTemplate.getFullQualifiedName())
-                        .id(variableEntity.getId())
-                        .docAsUpsert(true)
-                        .document(CommonUtils.getJsonObjectFromEntity(variableEntity))
-                        .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)))
-        .build();
-  }
-
+  @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
     final var processInstanceKeyQuery =
         TermsQuery.of(
@@ -288,7 +284,8 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
   }
 
-  public VariableEntity getRuntimeVariable(final String variableId, Set<String> fieldNames) {
+  @Override
+  public VariableEntity getRuntimeVariable(final String variableId, final Set<String> fieldNames) {
 
     final SearchRequest.Builder request = new SearchRequest.Builder();
     request
@@ -307,15 +304,16 @@ public class VariableStoreOpenSearch implements VariableStore {
       } else {
         throw new NotFoundException(String.format("Variable with id %s was not found", variableId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public SnapshotTaskVariableEntity getTaskVariable(
-      final String variableId, Set<String> fieldNames) {
+      final String variableId, final Set<String> fieldNames) {
 
     final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate);
     request.query(q -> q.ids(ids -> ids.values(variableId)));
@@ -332,7 +330,7 @@ public class VariableStoreOpenSearch implements VariableStore {
         throw new NotFoundException(
             String.format("Task variable with id %s was not found", variableId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -341,7 +339,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
   @Override
   public List<String> getProcessInstanceIdsWithMatchingVars(
-      List<String> varNames, List<String> varValues) {
+      final List<String> varNames, final List<String> varValues) {
     final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
 
     for (int i = 0; i < varNames.size(); i++) {
@@ -409,7 +407,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
         listProcessIdsMatchingVars.add(processInstanceIds);
 
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String message =
             String.format("Exception occurred while obtaining flowInstanceIds: %s", e.getMessage());
         throw new TasklistRuntimeException(message, e);
@@ -427,8 +425,21 @@ public class VariableStoreOpenSearch implements VariableStore {
             .orElse(Collections.emptySet()));
   }
 
+  private BulkOperation createUpsertRequest(final SnapshotTaskVariableEntity variableEntity) {
+    return new BulkOperation.Builder()
+        .update(
+            UpdateOperation.of(
+                i ->
+                    i.index(taskVariableTemplate.getFullQualifiedName())
+                        .id(variableEntity.getId())
+                        .docAsUpsert(true)
+                        .document(CommonUtils.getJsonObjectFromEntity(variableEntity))
+                        .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)))
+        .build();
+  }
+
   private void applyFetchSourceForVariableIndex(
-      SearchRequest.Builder searchSourceBuilder, final Set<String> fieldNames) {
+      final SearchRequest.Builder searchSourceBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
       final Set<String> elsFieldNames =
@@ -442,7 +453,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   }
 
   private void applyFetchSourceForTaskVariableTemplate(
-      SearchRequest.Builder searchRequestBuilder, final Set<String> fieldNames) {
+      final SearchRequest.Builder searchRequestBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
       final Set<String> elsFieldNames =

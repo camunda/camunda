@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return !record.getIntent().equals(VariableIntent.MIGRATED);
   }
 
   @Override
@@ -69,6 +70,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
         .setName(recordValue.getName())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPosition(record.getPosition());
+
     if (recordValue.getValue().length() > variableSizeThreshold) {
       entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
       entity.setFullValue(recordValue.getValue());

@@ -17,7 +17,7 @@ import java.util.List;
 import org.slf4j.Logger;
 
 /**
- * Write all information of the current import index to elasticsearch. If Optimize is restarted the
+ * Write all information of the current import index to the database. If Optimize is restarted the
  * import index can thus be restored again.
  */
 public class StoreTimestampBasedImportIndexImportService

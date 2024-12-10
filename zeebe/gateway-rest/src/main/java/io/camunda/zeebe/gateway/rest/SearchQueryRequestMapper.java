@@ -30,6 +30,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
@@ -43,7 +44,9 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -58,7 +61,9 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.MappingSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
@@ -129,6 +134,20 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
+  public static Either<ProblemDetail, GroupQuery> toGroupQuery(
+      final GroupSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.groupSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::group,
+            SearchQueryRequestMapper::applyGroupSortField);
+    return buildSearchQuery(null, sort, page, SearchQueryBuilders::groupSearchQuery);
+  }
+
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
       final TenantSearchQueryRequest request) {
     if (request == null) {
@@ -142,6 +161,21 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyTenantSortField);
     final var filter = toTenantFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
+  }
+
+  public static Either<ProblemDetail, MappingQuery> toMappingQuery(
+      final MappingSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.mappingSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::mapping,
+            SearchQueryRequestMapper::applyMappingSortField);
+    final var filter = toMappingFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
@@ -457,6 +491,15 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static MappingFilter toMappingFilter(final MappingFilterRequest filter) {
+    final var builder = FilterBuilders.mapping();
+    if (filter != null) {
+      ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
+      ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
+    }
+    return builder.build();
+  }
+
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
@@ -556,6 +599,9 @@ public final class SearchQueryRequestMapper {
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(
                       vars -> builder.processInstanceVariables(toVariableValueFilters(vars)));
+              Optional.ofNullable(f.getLocalVariables())
+                  .filter(variables -> !variables.isEmpty())
+                  .ifPresent(vars -> builder.localVariables(toVariableValueFilters(vars)));
             });
 
     return builder.build();
@@ -659,6 +705,21 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
+  private static List<String> applyGroupSortField(
+      final String field, final GroupSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "groupKey" -> builder.groupKey();
+        case "name" -> builder.name();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   private static List<String> applyTenantSortField(
       final String field, final TenantSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
@@ -669,6 +730,22 @@ public final class SearchQueryRequestMapper {
         case "key" -> builder.tenantKey();
         case "name" -> builder.name();
         case "tenantId" -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyMappingSortField(
+      final String field, final MappingSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "mappingKey" -> builder.mappingKey();
+        case "claimName" -> builder.claimName();
+        case "claimValue" -> builder.claimValue();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

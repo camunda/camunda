@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,6 +32,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
@@ -50,6 +52,8 @@ public final class MsgPackConverter {
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, Number>> NUMBER_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
+  private static final TypeReference<HashMap<PermissionType, Set<String>>>
+      PERMISSION_MAP_TYPE_REFERENCE = new TypeReference<>() {};
 
   /*
    * Extract from jackson doc:
@@ -172,8 +176,12 @@ public final class MsgPackConverter {
     return convertToMap(NUMBER_MAP_TYPE_REFERENCE, buffer);
   }
 
-  private static <T extends Object> Map<String, T> convertToMap(
-      final TypeReference<HashMap<String, T>> typeRef, final DirectBuffer buffer) {
+  public static Map<PermissionType, Set<String>> convertToPermissionMap(final DirectBuffer buffer) {
+    return convertToMap(PERMISSION_MAP_TYPE_REFERENCE, buffer);
+  }
+
+  private static <T extends Object, U extends Object> Map<U, T> convertToMap(
+      final TypeReference<HashMap<U, T>> typeRef, final DirectBuffer buffer) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
 
     try {

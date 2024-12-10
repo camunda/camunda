@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static java.util.function.Predicate.not;
 
-import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -195,24 +194,24 @@ public final class ProcessInstanceModificationModifyProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE)
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      final String reason =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(),
-              authRequest.getResourceType(),
-              "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()));
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
-      return;
-    }
-
-    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
-        .isAuthorized(processInstance.getValue().getTenantId())) {
-      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authRequest.getPermissionType(),
+                  authRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "modify a process instance",
+                  processInstance.getValue().getProcessInstanceKey(),
+                  "such process instance");
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       return;
     }
 

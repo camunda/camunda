@@ -32,8 +32,11 @@
     END_DATE,
     TENANT_ID,
     TREE_PATH,
-    INCIDENT_KEY IS NOT NULL AS HAS_INCIDENT,
-    INCIDENT_KEY
+    INCIDENT_KEY,
+    CASE
+    WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN TRUE
+    ELSE FALSE
+    END AS HAS_INCIDENT
     FROM FLOW_NODE_INSTANCE
     <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
     ) t
@@ -78,10 +81,10 @@
       <foreach collection="filter.incidentKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
     <if test="filter.hasIncident == true">
-      AND INCIDENT_KEY IS NOT NULL
+      AND (NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL)
     </if>
     <if test="filter.hasIncident == false">
-      AND INCIDENT_KEY IS NULL
+      AND (NUM_SUBPROCESS_INCIDENTS = 0 AND INCIDENT_KEY IS NULL)
     </if>
     <if test="filter.treePaths != null and !filter.treePaths.isEmpty()">
       AND TREE_PATH IN
@@ -117,11 +120,11 @@
     flushCache="true">
     INSERT INTO FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
-                                    START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY)
+                                    START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS)
     VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
-            #{treePath}, #{incidentKey})
+            #{treePath}, #{incidentKey}, #{numSubprocessIncidents})
   </insert>
 
   <update
@@ -132,6 +135,36 @@
     UPDATE FLOW_NODE_INSTANCE
     SET STATE = #{state},
         END_DATE = #{endDate}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+
+  <update
+    id="updateIncident"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$UpdateIncidentDto"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET INCIDENT_KEY = #{incidentKey}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+
+  <update
+    id="incrementSubprocessIncidentCount"
+    statementType="PREPARED"
+    parameterType="java.lang.Long"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS + 1
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+
+  <update
+    id="decrementSubprocessIncidentCount"
+    statementType="PREPARED"
+    parameterType="java.lang.Long"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS - 1
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 </mapper>

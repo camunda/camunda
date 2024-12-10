@@ -8,15 +8,19 @@
 package io.camunda.zeebe.engine.processing.deployment;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.DecisionRequirementsResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.FormResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.ProcessResource;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeploymentResourceUtil;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionRequirementsIdentifier;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
@@ -28,8 +32,11 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 
 @ExcludeAuthorizationCheck
@@ -79,7 +86,15 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   }
 
   private Resource findNextResource() {
+    return findProcessResource()
+        .or(this::findFormResource)
+        .or(this::findDecisionRequirementsResource)
+        .orElse(null);
+  }
+
+  private Optional<Resource> findProcessResource() {
     final var foundProcess = new MutableReference<PersistedProcess>();
+
     processState.forEachProcess(
         null, // TODO: Continue where we left off
         process -> {
@@ -94,11 +109,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return false;
         });
 
-    if (foundProcess.get() != null) {
-      return new ProcessResource(foundProcess.get());
-    }
+    return Optional.ofNullable(foundProcess.get()).map(ProcessResource::new);
+  }
 
+  private Optional<Resource> findFormResource() {
     final var foundForm = new MutableReference<PersistedForm>();
+
     formState.forEachForm(
         null, // TODO: Continue where we left off
         form -> {
@@ -112,12 +128,50 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           foundForm.set(copy);
           return false;
         });
-    if (foundForm.get() != null) {
-      return new FormResource(foundForm.get());
-    }
-    // TODO: Continue with decisionState
 
-    return null;
+    return Optional.ofNullable(foundForm.get()).map(FormResource::new);
+  }
+
+  private Optional<Resource> findDecisionRequirementsResource() {
+    final var foundDecisionRequirements = new MutableReference<PersistedDecisionRequirements>();
+    final var foundDecisions = new MutableReference<Collection<PersistedDecision>>();
+    final var foundDecisionDeploymentKey = new MutableLong(NO_DEPLOYMENT_KEY);
+
+    decisionState.forEachDecisionRequirements(
+        null, // TODO: Continue where we left off
+        decisionRequirements -> {
+          final var decisions =
+              decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+                  decisionRequirements.getTenantId(),
+                  decisionRequirements.getDecisionRequirementsKey());
+
+          // DRGs are not associated with a deployment key, so we need to check if any of the
+          // decisions are associated with a deployment key instead.
+          final var deploymentKey =
+              decisions.stream()
+                  .map(PersistedDecision::getDeploymentKey)
+                  .filter(key -> key != NO_DEPLOYMENT_KEY)
+                  .findAny()
+                  .orElse(NO_DEPLOYMENT_KEY);
+
+          if (deploymentKey != NO_DEPLOYMENT_KEY
+              && deploymentState.hasStoredDeploymentRecord(deploymentKey)) {
+            return true;
+          }
+
+          final var copy = new PersistedDecisionRequirements();
+          BufferUtil.copy(decisionRequirements, copy);
+          foundDecisionRequirements.set(copy);
+          foundDecisions.set(decisions);
+          foundDecisionDeploymentKey.set(deploymentKey);
+          return false;
+        });
+
+    return Optional.ofNullable(foundDecisionRequirements.get())
+        .map(
+            decisionRequirements ->
+                new DecisionRequirementsResource(
+                    foundDecisionDeploymentKey.get(), decisionRequirements, foundDecisions.get()));
   }
 
   private Set<Resource> findResourcesWithDeploymentKey(
@@ -154,7 +208,23 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return form.getTenantId().equals(tenantId) && formDeploymentKey == deploymentKey;
         });
 
-    // TODO: Continue with decisionState
+    decisionState.forEachDecisionRequirements(
+        new DecisionRequirementsIdentifier(tenantId, deploymentKey),
+        decisionRequirements -> {
+          final var decisions =
+              decisionState.findDecisionsByTenantAndDecisionRequirementsKey(
+                  decisionRequirements.getTenantId(),
+                  decisionRequirements.getDecisionRequirementsKey());
+          if (decisions.stream()
+              .anyMatch(decision -> decision.getDeploymentKey() == deploymentKey)) {
+            resources.add(
+                new DecisionRequirementsResource(
+                    deploymentKey, decisionRequirements.copy(), decisions));
+            return true;
+          }
+          return decisionRequirements.getTenantId().equals(tenantId);
+        });
+
     return resources;
   }
 
@@ -194,6 +264,18 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       case FormResource(final var form) -> {
         final var metadata = deploymentRecord.formMetadata().add();
         resourceUtil.applyFormMetadata(form, metadata);
+      }
+      case DecisionRequirementsResource(
+              final var deploymentKey,
+              final var decisionRequirements,
+              final var decisions) -> {
+        final var requirementsMetadata = deploymentRecord.decisionRequirementsMetadata().add();
+        resourceUtil.applyDecisionRequirementsMetadata(decisionRequirements, requirementsMetadata);
+        decisions.forEach(
+            decision -> {
+              final var decisionMetadata = deploymentRecord.decisionsMetadata().add();
+              resourceUtil.applyDecisionMetadata(decision, decisionMetadata);
+            });
       }
     }
   }
@@ -238,6 +320,23 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       @Override
       public String tenantId() {
         return form.getTenantId();
+      }
+    }
+
+    record DecisionRequirementsResource(
+        long deploymentKey,
+        PersistedDecisionRequirements decisionRequirements,
+        Collection<PersistedDecision> decisions)
+        implements Resource {
+
+      @Override
+      public long key() {
+        return decisionRequirements.getDecisionRequirementsKey();
+      }
+
+      @Override
+      public String tenantId() {
+        return decisionRequirements.getTenantId();
       }
     }
   }

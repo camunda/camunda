@@ -16,8 +16,11 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
+import io.camunda.tasklist.zeebe.ImportValueType;
+import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.tasklist.zeebeimport.es.RecordsReaderElasticSearch;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
@@ -36,6 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -296,6 +300,75 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
               assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+            });
+  }
+
+  @Test
+  public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    EXPORTER.export(record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+
+    // simulates restart of zeebe importer by restarting all the record readers
+    Arrays.stream(ImportValueType.values())
+        .forEach(
+            type -> {
+              final var reader =
+                  beanFactory.getBean(
+                      RecordsReaderElasticSearch.class,
+                      1,
+                      type,
+                      tasklistProperties.getImporter().getQueueSize());
+              reader.postConstruct();
+            });
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+  }
+
+  private void assertImportPositionMatchesRecord(
+      final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var req =
+                  new GetRequest(
+                      importPositionIndex.getFullQualifiedName(),
+                      partitionId + "-" + type.getAliasTemplate());
+              final var importPositionDoc = tasklistEsClient.get(req, RequestOptions.DEFAULT);
+
+              if (!importPositionDoc.isExists()) {
+                return;
+              }
+
+              assertThat(importPositionDoc.getSourceAsMap().get("position"))
+                  .isEqualTo(record.getPosition());
+            });
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderElasticSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = tasklistEsClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
             });
   }
 

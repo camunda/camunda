@@ -97,7 +97,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(persistedTenant.getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       rejectCommandWithUnauthorizedError(
           command, authorizationRequest, persistedTenant.getTenantId());
       return false;

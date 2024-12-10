@@ -46,7 +46,7 @@ public class PermissionsBehavior {
         new AuthorizationRequest(
             command, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
 
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
               authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
@@ -79,11 +79,8 @@ public class PermissionsBehavior {
     for (final PermissionValue permission : record.getPermissions()) {
       final var addedResourceIds = permission.getResourceIds();
       final var currentResourceIds =
-          authCheckBehavior.getAuthorizedResourceIdentifiers(
-              record.getOwnerKey(),
-              record.getOwnerType(),
-              record.getResourceType(),
-              permission.getPermissionType());
+          authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+              record.getOwnerKey(), record.getResourceType(), permission.getPermissionType());
 
       final var duplicates = new HashSet<>(currentResourceIds);
       duplicates.retainAll(addedResourceIds);
@@ -108,11 +105,8 @@ public class PermissionsBehavior {
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
       final var currentResourceIdentifiers =
-          authCheckBehavior.getAuthorizedResourceIdentifiers(
-              record.getOwnerKey(),
-              record.getOwnerType(),
-              record.getResourceType(),
-              permission.getPermissionType());
+          authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+              record.getOwnerKey(), record.getResourceType(), permission.getPermissionType());
 
       final var removedResourceIds = permission.getResourceIds();
       if (!currentResourceIdentifiers.containsAll(removedResourceIds)) {

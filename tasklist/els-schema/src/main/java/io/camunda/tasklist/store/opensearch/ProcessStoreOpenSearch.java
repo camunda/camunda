@@ -8,6 +8,7 @@
 package io.camunda.tasklist.store.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -70,6 +71,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -291,7 +293,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                 mn -> mn.term(t -> t.field(ProcessIndex.BPMN_PROCESS_ID).value(FieldValue.of(""))))
             .minimumShouldMatch("1");
 
-    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
+    if (securityConfiguration.getAuthorizations().isEnabled()) {
       if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }

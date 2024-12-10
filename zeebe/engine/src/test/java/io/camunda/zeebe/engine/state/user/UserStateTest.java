@@ -145,7 +145,7 @@ public class UserStateTest {
     user.setPassword(updatedPassword);
     user.setEmail(updatedEmail);
 
-    userState.updateUser(user);
+    userState.update(user);
 
     final var persistedUserAfterUpdate = userState.getUser(username).get();
     assertThat(persistedUserAfterUpdate.getName()).isEqualTo(updatedName);
@@ -173,7 +173,7 @@ public class UserStateTest {
 
     assertThat(userState.getUser(username)).isNotEmpty();
 
-    userState.deleteUser(userKey);
+    userState.delete(userKey);
 
     assertThat(userState.getUser(username)).isEmpty();
   }

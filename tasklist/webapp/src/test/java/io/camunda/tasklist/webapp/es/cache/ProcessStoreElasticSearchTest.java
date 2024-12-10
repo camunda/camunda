@@ -20,6 +20,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
+import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
@@ -70,6 +72,7 @@ class ProcessStoreElasticSearchTest {
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
+  @Mock private SecurityConfiguration securityConfiguration;
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
 
   @BeforeEach
@@ -168,8 +171,9 @@ class ProcessStoreElasticSearchTest {
   public void shouldNotReturnProcessesWhenResourceAuthIsEnabledButNoAuthorization()
       throws IOException {
     // when
-    when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-    when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(true);
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
+    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
     when(identityProperties.baseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
     when(processIndex.getAlias()).thenReturn("index_alias");
@@ -214,8 +218,9 @@ class ProcessStoreElasticSearchTest {
   @Test
   public void shouldReturnProcessesWhenResourceAuthorizationIsFalse() throws Exception {
     // when
-    when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-    when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(false);
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
+    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(false);
     mockElasticSearchSuccessWithAggregatedResponse();
 
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
@@ -235,7 +240,9 @@ class ProcessStoreElasticSearchTest {
     // Mock IdentityProperties
     final IdentityProperties tasklistIdentityProperties = mock(IdentityProperties.class);
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
-    when(tasklistIdentityProperties.isResourcePermissionsEnabled()).thenReturn(true);
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
+    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
 
     // Define behavior of tasklistProperties.getIdentity()
     when(tasklistProperties.getIdentity()).thenReturn(tasklistIdentityProperties);

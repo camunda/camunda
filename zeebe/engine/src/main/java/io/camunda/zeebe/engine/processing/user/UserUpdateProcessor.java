@@ -73,7 +73,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.UPDATE)
             .addResourceId(persistedUser.getUsername());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
+    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       final var message =
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authRequest.getPermissionType(),

@@ -243,6 +243,11 @@ public final class ProcessInstanceClient {
       return expectation.apply(processInstanceKey);
     }
 
+    public Record<ProcessInstanceRecordValue> cancel(final long userKey) {
+      writeCancelCommandWithUserKey(userKey);
+      return expectation.apply(processInstanceKey);
+    }
+
     public Record<ErrorRecordValue> cancelWithError() {
       writeCancelCommand();
       return ERROR_EXPECTATION.apply(processInstanceKey);
@@ -262,6 +267,24 @@ public final class ProcessInstanceClient {
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
           new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    private void writeCancelCommandWithUserKey(final long userKey) {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.CANCEL,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          userKey,
           authorizedTenants);
     }
 
@@ -394,6 +417,25 @@ public final class ProcessInstanceClient {
               processInstanceKey,
               ProcessInstanceModificationIntent.MODIFY,
               record,
+              authorizedTenants);
+
+      if (expectation == REJECTION_EXPECTATION) {
+        return expectation.apply(processInstanceKey);
+      } else {
+        return expectation.apply(position);
+      }
+    }
+
+    public Record<ProcessInstanceModificationRecordValue> modify(final long userKey) {
+      record.setProcessInstanceKey(processInstanceKey);
+      activateInstructions.forEach(record::addActivateInstruction);
+
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceModificationIntent.MODIFY,
+              record,
+              userKey,
               authorizedTenants);
 
       if (expectation == REJECTION_EXPECTATION) {
