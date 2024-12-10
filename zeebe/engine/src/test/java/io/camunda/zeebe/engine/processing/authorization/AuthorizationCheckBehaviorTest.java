@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.auth.impl.Authorization.AUTHORIZED_USER_KEY;
+import static io.camunda.zeebe.auth.impl.Authorization.USER_TOKEN_CLAIM_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,11 +30,24 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class AuthorizationCheckBehaviorTest {
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
   private AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final boolean useUserKey;
+
+  public AuthorizationCheckBehaviorTest(final boolean useUserKey) {
+    this.useUserKey = useUserKey;
+  }
+
+  @Parameterized.Parameters(name = "useUserKey = {0}")
+  public static Object[] parameters() {
+    return new Object[] {true, false};
+  }
 
   @Before
   public void before() {
@@ -52,12 +66,13 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldBeAuthorizedWhenUserHasPermission() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(userKey, resourceType, permissionType, resourceId);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request =
@@ -71,11 +86,12 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldNotBeAuthorizedWhenUserHasNoPermission() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request =
@@ -89,13 +105,14 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldGetResourceIdentifiersWhenUserHasPermissions() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(userKey, resourceType, permissionType, resourceId1, resourceId2);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
@@ -109,10 +126,11 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldGetEmptySetWhenUserHasNoPermissions() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
@@ -126,13 +144,14 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldBeAuthorizedWhenRoleHasPermissions() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var roleKey = createRole(userKey);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(roleKey, resourceType, permissionType, resourceId);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request =
@@ -146,14 +165,15 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldGetResourceIdentifiersWhenRoleHasPermissions() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var roleKey = createRole(userKey);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(roleKey, resourceType, permissionType, resourceId1, resourceId2);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
@@ -167,13 +187,14 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldBeAuthorizedWhenGroupHasPermissions() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var groupKey = createGroup(userKey);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(groupKey, resourceType, permissionType, resourceId);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request =
@@ -187,14 +208,15 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldGetResourceIdentifiersWhenGroupHasPermissions() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var groupKey = createGroup(userKey);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(groupKey, resourceType, permissionType, resourceId1, resourceId2);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
@@ -208,13 +230,14 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldBeAuthorizedForTenant() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(userKey, resourceType, permissionType, resourceId);
     final var tenantId = createAndAssignTenant(userKey);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request =
@@ -229,14 +252,15 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldBeUnauthorizedForTenant() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var resourceType = AuthorizationResourceType.DEPLOYMENT;
     final var permissionType = PermissionType.DELETE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(userKey, resourceType, permissionType, resourceId);
     final var anotherTenantId = "authorizedForAnotherTenant";
     createAndAssignTenant(userKey);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var request =
@@ -251,10 +275,11 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldGetAuthorizedTenantIds() {
     // given
-    final var userKey = createUser();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = createUser(username);
     final var tenantId1 = createAndAssignTenant(userKey);
     final var tenantId2 = createAndAssignTenant(userKey);
-    final var command = mockCommand(userKey);
+    final var command = mockCommand(userKey, username, useUserKey);
 
     // when
     final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
@@ -278,7 +303,7 @@ public class AuthorizationCheckBehaviorTest {
   @Test
   public void shouldGetDefaultAuthorizedTenantIdsIfUserIsNotPresent() {
     // given
-    final var command = mockCommand(1L);
+    final var command = mockCommand(1L, "nonExistingUser", true);
 
     // when
     final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
@@ -287,10 +312,10 @@ public class AuthorizationCheckBehaviorTest {
     assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
-  private long createUser() {
+  private long createUser(final String username) {
     return engine
         .user()
-        .newUser(UUID.randomUUID().toString())
+        .newUser(username)
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -337,9 +362,14 @@ public class AuthorizationCheckBehaviorTest {
     return tenantId;
   }
 
-  private TypedRecord<?> mockCommand(final long userKey) {
+  private TypedRecord<?> mockCommand(
+      final long userKey, final String username, final boolean useUserKey) {
     final var command = mock(TypedRecord.class);
-    when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_USER_KEY, userKey));
+    if (useUserKey) {
+      when(command.getAuthorizations()).thenReturn(Map.of(AUTHORIZED_USER_KEY, userKey));
+    } else {
+      when(command.getAuthorizations()).thenReturn(Map.of(USER_TOKEN_CLAIM_USERNAME, username));
+    }
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }
