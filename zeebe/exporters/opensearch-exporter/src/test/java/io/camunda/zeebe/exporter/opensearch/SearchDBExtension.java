@@ -17,9 +17,7 @@ public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
   protected static final String IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY =
-      "camunda.it.opensearch.aws_instance_url";
-
-  private static boolean isAwsTest;
+      "camunda.it.opensearch.aws.url";
 
   static SearchDBExtension create() {
     final var openSearchAwsInstanceUrl =
@@ -27,7 +25,6 @@ public abstract class SearchDBExtension
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return new ContainerizedSearchDBExtension();
     } else {
-      isAwsTest = true;
       return new AWSSearchDBExtension(openSearchAwsInstanceUrl);
     }
   }
@@ -45,8 +42,4 @@ public abstract class SearchDBExtension
   abstract TestClient testClient();
 
   abstract OpensearchClient client();
-
-  public boolean isAwsTest() {
-    return isAwsTest;
-  }
 }
