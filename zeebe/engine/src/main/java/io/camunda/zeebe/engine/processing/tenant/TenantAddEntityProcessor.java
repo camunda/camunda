@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -35,6 +36,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final TenantState tenantState;
   private final UserState userState;
   private final MappingState mappingState;
+  private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -51,6 +53,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     tenantState = state.getTenantState();
     userState = state.getUserState();
     mappingState = state.getMappingState();
+    groupState = state.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -124,6 +127,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     return switch (entityType) {
       case USER -> checkUserAssignment(entityKey, command, tenantId, tenantKey);
       case MAPPING -> checkMappingAssignment(entityKey, command, tenantId, tenantKey);
+      case GROUP -> checkGroupAssignment(entityKey, command, tenantKey);
       default ->
           throw new IllegalStateException(
               formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
@@ -137,17 +141,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final long tenantKey) {
     final var user = userState.getUser(entityKey);
     if (user.isEmpty()) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
+      createEntityNotExistRejectCommand(command, entityKey, tenantKey);
       return false;
     }
     if (user.get().getTenantIdsList().contains(tenantId)) {
-      rejectCommand(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          formatErrorMessage(entityKey, tenantKey, "is already assigned to the tenant"));
+      createAlreadyAssignedRejectCommand(command, entityKey, tenantKey);
       return false;
     }
     return true;
@@ -167,13 +165,42 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       return false;
     }
     if (mapping.get().getTenantIdsList().contains(tenantId)) {
-      rejectCommand(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          formatErrorMessage(entityKey, tenantKey, "is already assigned to the tenant"));
+      createEntityNotExistRejectCommand(command, entityKey, tenantKey);
       return false;
     }
     return true;
+  }
+
+  private boolean checkGroupAssignment(
+      final long entityKey, final TypedRecord<TenantRecord> command, final long tenantKey) {
+    final var group = groupState.get(entityKey);
+
+    if (group.isEmpty()) {
+      createEntityNotExistRejectCommand(command, entityKey, tenantKey);
+      return false;
+    }
+
+    if (tenantState.getEntityType(tenantKey, entityKey).isPresent()) {
+      createAlreadyAssignedRejectCommand(command, entityKey, tenantKey);
+      return false;
+    }
+    return true;
+  }
+
+  private void createEntityNotExistRejectCommand(
+      final TypedRecord<TenantRecord> command, final long entityKey, final long tenantKey) {
+    rejectCommand(
+        command,
+        RejectionType.NOT_FOUND,
+        formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
+  }
+
+  private void createAlreadyAssignedRejectCommand(
+      final TypedRecord<TenantRecord> command, final long entityKey, final long tenantKey) {
+    rejectCommand(
+        command,
+        RejectionType.INVALID_ARGUMENT,
+        formatErrorMessage(entityKey, tenantKey, "is already assigned to the tenant"));
   }
 
   private String formatErrorMessage(
