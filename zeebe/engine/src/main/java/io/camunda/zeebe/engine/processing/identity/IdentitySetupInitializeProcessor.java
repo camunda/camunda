@@ -14,11 +14,13 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.PersistedRole;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -75,7 +77,18 @@ public final class IdentitySetupInitializeProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<IdentitySetupRecord> command) {
-    final var existingEntities = findExistingDefaultEntityKeys(command.getValue());
+    roleState.getRole(command.getValue().getDefaultRole().getRoleKey());
+    final var existingEntities =
+        new DefaultEntityKeys(
+            roleState
+                .getRole(command.getValue().getDefaultRole().getRoleKey())
+                .map(PersistedRole::getRoleKey),
+            userState
+                .getUser(command.getValue().getDefaultUser().getUsername())
+                .map(PersistedUser::getUserKey),
+            tenantState
+                .getTenantByKey(command.getValue().getDefaultTenant().getTenantKey())
+                .map(PersistedTenant::getTenantKey));
     initializeDefaultEntities(command.getKey(), existingEntities, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
