@@ -15,7 +15,7 @@ deny[msg] {
 
 deny[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_without_timeoutminutes(input.jobs)) > 0
 
@@ -25,7 +25,7 @@ deny[msg] {
 
 warn[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 15)) > 0
 
@@ -35,7 +35,7 @@ warn[msg] {
 
 deny[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
