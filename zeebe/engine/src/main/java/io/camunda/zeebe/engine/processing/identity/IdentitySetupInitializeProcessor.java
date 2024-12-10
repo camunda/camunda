@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.PersistedRole;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -48,6 +50,7 @@ public final class IdentitySetupInitializeProcessor
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final TypedRejectionWriter rejectionWriter;
 
   public IdentitySetupInitializeProcessor(
       final ProcessingState processingState,
@@ -58,15 +61,24 @@ public final class IdentitySetupInitializeProcessor
     userState = processingState.getUserState();
     tenantState = processingState.getTenantState();
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<IdentitySetupRecord> command) {
-    final var key = keyGenerator.nextKey();
     final var setupRecord = command.getValue();
     final var existingEntityKeys = findExistingDefaultEntityKeys(setupRecord);
+    if (existingEntityKeys.role().isPresent()
+        && existingEntityKeys.user().isPresent()
+        && existingEntityKeys.tenant().isPresent()) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.ALREADY_EXISTS, "Default entities already exist");
+      return;
+    }
+
+    final var key = keyGenerator.nextKey();
     setNewEntityKeys(existingEntityKeys, setupRecord);
     initializeDefaultEntities(key, existingEntityKeys, setupRecord);
     commandDistributionBehavior

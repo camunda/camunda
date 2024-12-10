@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProces
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.ProcessResource;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeploymentResourceUtil;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -42,6 +44,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   private final FormState formState;
   private final DecisionState decisionState;
   private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
 
   public DeploymentReconstructProcessor(
       final KeyGenerator keyGenerator,
@@ -53,10 +56,19 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     formState = processingState.getFormState();
     decisionState = processingState.getDecisionState();
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
   }
 
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> record) {
+    if (deploymentState.hasStoredAllDeployments()) {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.ALREADY_EXISTS,
+          "Deployments are already stored and don't need to be reconstructed");
+      return;
+    }
+
     final var key = keyGenerator.nextKey();
     final var resource = findNextResource();
     if (resource == null) {
