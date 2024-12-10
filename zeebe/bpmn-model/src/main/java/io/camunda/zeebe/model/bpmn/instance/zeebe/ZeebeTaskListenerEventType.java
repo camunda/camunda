@@ -28,10 +28,34 @@ package io.camunda.zeebe.model.bpmn.instance.zeebe;
  * </ul>
  */
 public enum ZeebeTaskListenerEventType {
+  /**
+   * @deprecated use {@link #creating} instead
+   */
+  @Deprecated
   create,
+
+  /**
+   * @deprecated use {@link #assigning} instead
+   */
+  @Deprecated
   assignment,
+
+  /**
+   * @deprecated use {@link #updating} instead
+   */
+  @Deprecated
   update,
+
+  /**
+   * @deprecated use {@link #completing} instead
+   */
+  @Deprecated
   complete,
+
+  /**
+   * @deprecated use {@link #canceling} instead
+   */
+  @Deprecated
   cancel,
 
   creating,
