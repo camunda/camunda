@@ -30,6 +30,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.SharingService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.Consumes;
@@ -87,12 +88,11 @@ public class SharingRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Path(REPORT_SUB_PATH)
   public IdResponseDto createNewReportShare(
-      @Context final ContainerRequestContext requestContext,
-      final ReportShareRestDto createSharingDto) {
+      final ReportShareRestDto createSharingDto, final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
             sharingService.createNewReportShareIfAbsent(
-                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(requestContext)),
+                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(request)),
         EventReportingEvent.REPORT_SHARE_ENABLED,
         "Sharing of reports is disabled per Optimize configuration");
   }
@@ -102,12 +102,11 @@ public class SharingRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Path(DASHBOARD_SUB_PATH)
   public IdResponseDto createNewDashboardShare(
-      @Context final ContainerRequestContext requestContext,
-      final DashboardShareRestDto createSharingDto) {
+      final DashboardShareRestDto createSharingDto, final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
             sharingService.createNewDashboardShare(
-                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(requestContext)),
+                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(request)),
         EventReportingEvent.DASHBOARD_SHARE_ENABLED,
         "Sharing of dashboards is disabled per Optimize configuration");
   }
@@ -148,14 +147,14 @@ public class SharingRestService {
   @Path(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("shareId") final String reportShareId,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
-    final ZoneId timezone = extractTimezone(requestContext);
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      final HttpServletRequest request) {
+    final ZoneId timezone = extractTimezone(request);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
         sharingService.evaluateReportShare(
             reportShareId, timezone, PaginationDto.fromPaginationRequest(paginationRequestDto)),
-        requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE),
+        request.getHeader(X_OPTIMIZE_CLIENT_LOCALE),
         // In multi-instance SaaS, name resolution will be reenabled in
         // https://github.com/camunda/camunda-optimize/issues/10123
         ConfigurationService.getOptimizeProfile(environment) == OptimizeProfile.CLOUD);
@@ -166,12 +165,12 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
-      @Context final ContainerRequestContext requestContext,
       @PathParam("shareId") final String dashboardShareId,
       @PathParam("reportId") final String reportId,
       final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
-    final ZoneId timezone = extractTimezone(requestContext);
+      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      final HttpServletRequest request) {
+    final ZoneId timezone = extractTimezone(request);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
         sharingService.evaluateReportForSharedDashboard(
             dashboardShareId,
@@ -179,7 +178,7 @@ public class SharingRestService {
             timezone,
             reportEvaluationFilter,
             PaginationDto.fromPaginationRequest(paginationRequestDto)),
-        requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE),
+        request.getHeader(X_OPTIMIZE_CLIENT_LOCALE),
         // In multi-instance SaaS, name resolution will be reenabled in
         // https://github.com/camunda/camunda-optimize/issues/10123
         ConfigurationService.getOptimizeProfile(environment) == OptimizeProfile.CLOUD);
@@ -211,9 +210,8 @@ public class SharingRestService {
   @Path(DASHBOARD_SUB_PATH + "/{dashboardId}/isAuthorizedToShare")
   @Produces(MediaType.APPLICATION_JSON)
   public Response isAuthorizedToShareDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("dashboardId") final String dashboardId) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+      @PathParam("dashboardId") final String dashboardId, final HttpServletRequest request) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     sharingService.validateAndCheckAuthorization(dashboardId, userId);
     // if no error was thrown
     return Response.status(Response.Status.OK).entity("OK").build();

@@ -18,8 +18,8 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -80,8 +80,8 @@ public class SessionService implements ConfigurationReloadable {
     return isValid;
   }
 
-  public String getRequestUserOrFailNotAuthorized(final ContainerRequestContext requestContext) {
-    return AuthCookieService.getAuthCookieToken(requestContext)
+  public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
+    return AuthCookieService.getAuthCookieToken(request)
         .flatMap(AuthCookieService::getTokenSubject)
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
   }
