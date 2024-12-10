@@ -10,6 +10,7 @@ package io.camunda.application.commons.backup;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
+import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileOperateTasklist;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
@@ -81,6 +82,8 @@ public class HistoryBackupComponent {
         prio5BackupIndices,
         prio6BackupIndices,
         backupRepositoryProps,
-        backupRepository);
+        backupRepository,
+        // TODO use real implementation
+        DynamicIndicesProvider.noop());
   }
 }

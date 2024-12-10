@@ -25,6 +25,9 @@ import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.es.clients.ElasticsearchSearchClient;
+import io.camunda.search.os.clients.OpensearchSearchClient;
 import jakarta.ws.rs.NotSupportedException;
 
 public final class SchemaUpgradeClientFactory {
@@ -38,7 +41,10 @@ public final class SchemaUpgradeClientFactory {
           (OptimizeElasticsearchClient) upgradeDependencies.databaseClient();
       final ElasticSearchMetadataService metadataService =
           (ElasticSearchMetadataService) upgradeDependencies.metadataService();
-      final MappingMetadataUtilES mappingUtil = new MappingMetadataUtilES(esClient);
+      final DocumentBasedSearchClient documentBasedSearchClient =
+          new ElasticsearchSearchClient(esClient.getEsClient());
+      final MappingMetadataUtilES mappingUtil =
+          new MappingMetadataUtilES(documentBasedSearchClient);
       return new SchemaUpgradeClientES(
           new ElasticSearchSchemaManager(
               metadataService,
@@ -57,7 +63,10 @@ public final class SchemaUpgradeClientFactory {
           (OptimizeOpenSearchClient) upgradeDependencies.databaseClient();
       final OpenSearchMetadataService metadataService =
           (OpenSearchMetadataService) upgradeDependencies.metadataService();
-      final MappingMetadataUtilOS mappingUtil = new MappingMetadataUtilOS(osClient);
+      final DocumentBasedSearchClient documentBasedSearchClient =
+          new OpensearchSearchClient(osClient.getOpenSearchClient());
+      final MappingMetadataUtilOS mappingUtil =
+          new MappingMetadataUtilOS(documentBasedSearchClient);
       return new SchemaUpgradeClientOS(
           new OpenSearchSchemaManager(
               metadataService,
