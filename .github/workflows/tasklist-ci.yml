@@ -33,32 +33,6 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
-  check_changes:
-    name: Check for changes in the client folder
-    runs-on: ubuntu-latest
-    outputs:
-      has_changed_frontend: ${{ steps.filter.outputs.src_changed }}
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 0
-      - id: filter
-        run: |
-          echo "src_changed=false" >> $GITHUB_OUTPUT
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # For pull requests, compare the PR base and head commits
-            git fetch origin ${{ github.base_ref }}
-
-            if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -q 'tasklist/client/'; then
-              echo 'src_changed=true' >> $GITHUB_OUTPUT
-            fi
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            # For pushes, compare the current commit with the previous one
-            if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q 'tasklist/client/'; then
-              echo 'src_changed=true' >> $GITHUB_OUTPUT
-            fi
-          fi
-
   run-build:
     name: run-build
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
@@ -72,10 +46,3 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-
-  run-fe-ci:
-    name: run-frontend-tests
-    needs: check_changes
-    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
-    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
-    secrets: inherit
