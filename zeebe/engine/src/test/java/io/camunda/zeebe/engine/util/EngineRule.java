@@ -47,6 +47,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -134,6 +136,7 @@ public final class EngineRule extends ExternalResource {
   @Override
   protected void before() {
     start();
+    awaitIdentitySetup();
   }
 
   public void start() {
@@ -463,6 +466,17 @@ public final class EngineRule extends ExternalResource {
                                   MsgPackConverter.convertToJson(value.getDirectBuffer())));
                   return entries;
                 }));
+  }
+
+  public void awaitIdentitySetup() {
+    if (partitionCount > 1) {
+      RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+          .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
+          .await();
+    } else {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
+    }
+    RecordingExporter.reset();
   }
 
   public void awaitProcessingOf(final Record<?> record) {
