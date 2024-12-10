@@ -16,6 +16,7 @@ public enum ErrorType {
   IO_MAPPING_ERROR("I/O mapping error"),
   JOB_NO_RETRIES("No more retries left", true),
   EXECUTION_LISTENER_NO_RETRIES("Execution Listener no more retries left", true),
+  TASK_LISTENER_NO_RETRIES("Task Listener no more retries left", true),
   CONDITION_ERROR("Condition error"),
   EXTRACT_VALUE_ERROR("Extract value error"),
   CALLED_ELEMENT_ERROR("Called element error"),
@@ -35,7 +36,7 @@ public enum ErrorType {
     this(title, false);
   }
 
-  ErrorType(final String title, boolean resolvedViaRetries) {
+  ErrorType(final String title, final boolean resolvedViaRetries) {
     this.title = title;
     this.resolvedViaRetries = resolvedViaRetries;
   }
