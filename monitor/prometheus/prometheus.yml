@@ -15,6 +15,14 @@ scrape_configs:
           namespace: 'local'
           pod: 'zeebe'
 
+  - job_name: 'core'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['core:9600']
+        labels:
+          namespace: 'local'
+          pod: 'core'
+
   - job_name: 'broker-1'
     static_configs:
       - targets: ['broker-1:9600']
