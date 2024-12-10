@@ -52,6 +52,14 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true'
       }}
+  tasklist-frontend-changes:
+    description: Output whether Tasklist frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
+      }}
   tasklist-backend-changes:
     description: Output whether Tasklist backend build should be run based on GitHub event and files changed
     value: >-
@@ -210,6 +218,9 @@ runs:
       filters: |
         tasklist-backend-change:
           - 'tasklist/!(client/**)/**'
+
+        tasklist-frontend-change:
+          - tasklist/client/**
 
   - uses: dorny/paths-filter@v3
     id: filter-optimize

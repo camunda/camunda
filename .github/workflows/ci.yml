@@ -38,6 +38,7 @@ jobs:
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
+      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
@@ -444,6 +445,12 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  tasklist-frontend-tests:
+    if: needs.detect-changes.outputs.tasklist-frontend-changes == 'true'
+    needs: [detect-changes]
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'

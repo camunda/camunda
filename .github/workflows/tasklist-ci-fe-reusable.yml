@@ -156,7 +156,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: visual-regression-report
+          name: tasklist-visual-regression-report
           path: tasklist/client/playwright-report/
           retention-days: 30
       - name: Observe build status
@@ -201,7 +201,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: a11y-report
+          name: tasklist-a11y-report
           path: tasklist/client/playwright-report/
           retention-days: 30
       - name: Observe build status
