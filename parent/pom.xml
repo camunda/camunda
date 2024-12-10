@@ -1932,7 +1932,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.7.0</version>
+        <version>3.7.1</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
