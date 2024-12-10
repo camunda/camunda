@@ -8,7 +8,10 @@
 package io.camunda.security.configuration;
 
 public class MultiTenancyConfiguration {
-  private boolean enabled = SecurityConfiguration.DEFAULT_MULTITENANCY_ENABLED;
+
+  private static final boolean DEFAULT_MULTITENANCY_ENABLED = false;
+
+  private boolean enabled = DEFAULT_MULTITENANCY_ENABLED;
 
   public boolean isEnabled() {
     return enabled;

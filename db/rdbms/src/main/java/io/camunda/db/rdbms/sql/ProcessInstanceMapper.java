@@ -19,6 +19,10 @@ public interface ProcessInstanceMapper {
 
   void updateStateAndEndDate(EndProcessInstanceDto dto);
 
+  void incrementIncidentCount(Long processInstanceKey);
+
+  void decrementIncidentCount(Long processInstanceKey);
+
   ProcessInstanceEntity findOne(Long processInstanceKey);
 
   Long count(ProcessInstanceDbQuery filter);

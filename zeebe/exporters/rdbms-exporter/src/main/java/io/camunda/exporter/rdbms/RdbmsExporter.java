@@ -125,6 +125,9 @@ public class RdbmsExporter implements Exporter {
           List.of(new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter())));
     }
     registeredHandlers.put(
+        ValueType.AUTHORIZATION,
+        List.of(new AuthorizationExportHandler(rdbmsWriter.getAuthorizationWriter())));
+    registeredHandlers.put(
         ValueType.DECISION,
         List.of(new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter())));
     registeredHandlers.put(
@@ -141,6 +144,12 @@ public class RdbmsExporter implements Exporter {
         List.of(
             new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()),
             new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter())));
+    registeredHandlers.put(
+        ValueType.INCIDENT,
+        List.of(
+            new IncidentExportHandler(rdbmsWriter.getIncidentWriter()),
+            new ProcessInstanceIncidentExportHandler(rdbmsWriter.getProcessInstanceWriter()),
+            new FlowNodeInstanceIncidentExportHandler(rdbmsWriter.getFlowNodeInstanceWriter())));
     registeredHandlers.put(
         ValueType.TENANT, List.of(new TenantExportHandler(rdbmsWriter.getTenantWriter())));
     registeredHandlers.put(
@@ -205,7 +214,7 @@ public class RdbmsExporter implements Exporter {
 
   private void flushAndReschedule() {
     flushExecutionQueue();
-    controller.scheduleCancellableTask(Duration.ofSeconds(5), this::flushAndReschedule);
+    controller.scheduleCancellableTask(Duration.ofMillis(100), this::flushAndReschedule);
   }
 
   @VisibleForTesting(

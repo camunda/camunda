@@ -9,9 +9,6 @@ package io.camunda.security.configuration;
 
 public class SecurityConfiguration {
 
-  static final boolean DEFAULT_AUTHORIZATIONS_ENABLED = false;
-  static final boolean DEFAULT_MULTITENANCY_ENABLED = false;
-
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
 
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();

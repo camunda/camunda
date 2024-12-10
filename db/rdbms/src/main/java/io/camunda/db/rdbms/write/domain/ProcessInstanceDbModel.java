@@ -22,6 +22,7 @@ public record ProcessInstanceDbModel(
     String tenantId,
     Long parentProcessInstanceKey,
     Long parentElementInstanceKey,
+    Integer numIncidents,
     String elementId,
     int version)
     implements DbModel<ProcessInstanceDbModel> {
@@ -42,6 +43,7 @@ public record ProcessInstanceDbModel(
                 .parentProcessInstanceKey(parentProcessInstanceKey)
                 .parentElementInstanceKey(parentElementInstanceKey)
                 .state(state)
+                .numIncidents(numIncidents)
                 .tenantId(tenantId)
                 .version(version))
         .build();
@@ -60,6 +62,7 @@ public record ProcessInstanceDbModel(
     private Long parentProcessInstanceKey;
     private Long parentElementInstanceKey;
     private String elementId;
+    private int numIncidents = 0;
     private int version;
 
     // Public constructor to initialize the builder
@@ -113,6 +116,15 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
+    public int numIncidents() {
+      return numIncidents;
+    }
+
+    public ProcessInstanceDbModelBuilder numIncidents(final int numIncidents) {
+      this.numIncidents = numIncidents;
+      return this;
+    }
+
     public ProcessInstanceDbModelBuilder elementId(final String elementId) {
       this.elementId = elementId;
       return this;
@@ -135,6 +147,7 @@ public record ProcessInstanceDbModel(
           tenantId,
           parentProcessInstanceKey,
           parentElementInstanceKey,
+          numIncidents,
           elementId,
           version);
     }
