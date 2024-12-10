@@ -76,12 +76,12 @@ public class ZeebeTaskListenersTest extends BpmnModelElementInstanceTest {
     assertThat(taskListeners)
         .extracting("eventType", "type", "retries")
         .containsExactly(
-            tuple(ZeebeTaskListenerEventType.create, "create_listener", "2"),
-            tuple(ZeebeTaskListenerEventType.update, "update_listener", DEFAULT_RETRIES),
-            tuple(ZeebeTaskListenerEventType.update, "update_listener_2", "33"),
-            tuple(ZeebeTaskListenerEventType.assignment, "assignment_listener", "4"),
-            tuple(ZeebeTaskListenerEventType.complete, "complete_listener", "5"),
-            tuple(ZeebeTaskListenerEventType.cancel, "cancel_listener", "6"));
+            tuple(ZeebeTaskListenerEventType.creating, "create_listener", "2"),
+            tuple(ZeebeTaskListenerEventType.updating, "update_listener", DEFAULT_RETRIES),
+            tuple(ZeebeTaskListenerEventType.updating, "update_listener_2", "33"),
+            tuple(ZeebeTaskListenerEventType.assigning, "assignment_listener", "4"),
+            tuple(ZeebeTaskListenerEventType.completing, "complete_listener", "5"),
+            tuple(ZeebeTaskListenerEventType.canceling, "cancel_listener", "6"));
   }
 
   private Collection<ZeebeTaskListener> getTaskListeners(
