@@ -68,8 +68,12 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
-    ofNullable(getProcessVariablesQuery(filter.processInstanceVariableFilter()))
+    ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
+
+    // Local Variable Query: Check if localVariable with specified varName and varValue exists
+    // No need validate parent as the localVariable is the only children from Task
+    ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
@@ -129,7 +133,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
   }
 
-  private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getProcessInstanceVariablesQuery(
+      final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
       final var queries =
@@ -142,7 +147,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return null;
   }
 
-  private SearchQuery getTaskVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getLocalVariablesQuery(final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
 

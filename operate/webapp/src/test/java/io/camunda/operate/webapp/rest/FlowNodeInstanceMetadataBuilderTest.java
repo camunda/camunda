@@ -26,8 +26,8 @@ import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -112,11 +112,11 @@ class FlowNodeInstanceMetadataBuilderTest {
                         .setCorrelationKey("23-05")));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
         .thenReturn(userTask);
-    when(userTaskReader.getUserTaskVariables(flowNodeInstance.getKey()))
+    when(userTaskReader.getUserTaskVariables(userTask.get().getKey()))
         .thenReturn(
             List.of(
-                new TaskVariableEntity().setName("name").setValue("Homer Simpson"),
-                new TaskVariableEntity().setName("City").setValue("Springfield")));
+                new SnapshotTaskVariableEntity().setName("name").setValue("Homer Simpson"),
+                new SnapshotTaskVariableEntity().setName("City").setValue("Springfield")));
     final var metadata = (UserTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
     assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.USER_TASK);
     assertStandardValues(metadata);

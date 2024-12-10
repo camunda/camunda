@@ -14,6 +14,7 @@ on:
       - "distro/**"
       - "operate.Dockerfile"
       - "operate/**"
+      - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
   pull_request:
@@ -25,6 +26,7 @@ on:
       - "distro/**"
       - "operate.Dockerfile"
       - "operate/**"
+      - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
 

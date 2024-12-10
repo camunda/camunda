@@ -8,6 +8,7 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -71,6 +72,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   private ObjectMapper objectMapper;
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -176,7 +178,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
       final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
     final QueryBuilder qb;
 
-    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
+    if (securityConfiguration.getAuthorizations().isEnabled()) {
       if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }
@@ -231,7 +233,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""))
             .minimumShouldMatch(1);
 
-    if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
+    if (securityConfiguration.getAuthorizations().isEnabled()) {
       if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }

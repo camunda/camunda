@@ -56,7 +56,6 @@ public final class GatewayCfgTest {
         .setPrivateKeyPath(new File("privateKeyPath"));
     CUSTOM_CFG.getThreads().setManagementThreads(100);
     CUSTOM_CFG.getLongPolling().setEnabled(false);
-    CUSTOM_CFG.getMultiTenancy().setEnabled(true);
     CUSTOM_CFG.getInterceptors().add(new InterceptorCfg());
     CUSTOM_CFG.getInterceptors().get(0).setId("example");
     CUSTOM_CFG.getInterceptors().get(0).setClassName("io.camunda.zeebe.example.Interceptor");
@@ -211,7 +210,6 @@ public final class GatewayCfgTest {
             new File(
                 getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath()));
     expected.getLongPolling().setEnabled(true);
-    expected.getMultiTenancy().setEnabled(false);
 
     expected.getInterceptors().add(new InterceptorCfg());
     expected.getInterceptors().get(0).setId("overwritten");

@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.queue;
 
 public enum ContextType {
+  AUTHORIZATION,
   EXPORTER_POSITION,
   DECISION_DEFINITION,
   DECISION_INSTANCE,
@@ -16,6 +17,7 @@ public enum ContextType {
   PROCESS_INSTANCE,
   FLOW_NODE,
   TENANT,
+  INCIDENT,
   VARIABLE,
   ROLE,
   USER,

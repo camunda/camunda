@@ -11,21 +11,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil.ProcessFlowNode;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -36,159 +41,171 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ContextConfiguration(classes = {XmlUtil.class})
 class XmlUtilTest {
 
-  public static final String PROCESS_DEFINITION_ID = "testProcess";
-  public static final long PROCESS_DEFINITION_KEY = 1L;
+  public static final String PROC_DEF_ID1 = "testProcess";
+  public static final String PROC_DEF_ID2 = "parent_process_v1";
+  public static final String PROC_DEF_ID3 = "eventSubprocessProcess";
+  public static final String PROC_DEF_ID41 = "Process_0diikxu";
+  public static final String PROC_DEF_ID42 = "Process_18z2cdf";
+  private static final Long PROC_DEF_KEY = 1L;
   @Autowired XmlUtil xmlUtil;
   @MockBean ProcessDefinitionServices processDefinitionServices;
   @Mock ProcessDefinitionEntity processDefinition;
-  @Mock UserTaskEntity userTaskEntity;
-  @Mock FlowNodeInstanceEntity flowNodeInstanceEntity;
-  private String bpmn;
+  @Mock BiConsumer<Long, ProcessFlowNode> mockConsumer;
+  private String bpmn1;
+  private String bpmn2;
+  private String bpmn3;
+  private String bpmn4;
+
+  String loadBpmn(final String name) throws IOException {
+    try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream(name)) {
+      assert inputStream != null;
+      return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+    }
+  }
 
   @BeforeEach
   void setupServices() throws Exception {
-    bpmn =
-        new String(
-            getClass().getClassLoader().getResourceAsStream("./user-task.bpmn").readAllBytes(),
-            StandardCharsets.UTF_8);
-    when(processDefinition.bpmnXml()).thenReturn(bpmn);
-    when(processDefinition.processDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
-    when(processDefinition.processDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
-    when(processDefinitionServices.getByKey(eq(PROCESS_DEFINITION_KEY)))
-        .thenReturn(processDefinition);
-    when(userTaskEntity.processDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
-    when(flowNodeInstanceEntity.processDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
-    when(flowNodeInstanceEntity.type()).thenReturn(FlowNodeType.START_EVENT);
+    bpmn1 = loadBpmn("xmlUtil-test1.bpmn");
+    bpmn2 = loadBpmn("xmlUtil-test2.bpmn");
+    bpmn3 = loadBpmn("xmlUtil-test3.bpmn");
+    bpmn4 = loadBpmn("xmlUtil-test4.bpmn");
+    when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
+    when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID1);
+    when(processDefinitionServices.getByKey(eq(PROC_DEF_KEY))).thenReturn(processDefinition);
+  }
+
+  private void verifyFlowNodesBpmn1() {
+    verify(mockConsumer)
+        .accept(XmlUtilTest.PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start"));
+    verify(mockConsumer)
+        .accept(XmlUtilTest.PROC_DEF_KEY, new ProcessFlowNode("Event_0692jdh", "End"));
+    verify(mockConsumer).accept(XmlUtilTest.PROC_DEF_KEY, new ProcessFlowNode("taskB", "Task B"));
+  }
+
+  private void verifyFlowNodesBpmn2(final long key) {
+    verify(mockConsumer).accept(key, new ProcessFlowNode("call_activity", "Call Activity"));
+    verify(mockConsumer).accept(key, new ProcessFlowNode("taskX", "TaskX"));
+    verify(mockConsumer).accept(key, new ProcessFlowNode("taskY", "TaskY"));
+  }
+
+  private void verifyFlowNodesBpmn3(final long key) {
+    verify(mockConsumer)
+        .accept(key, new ProcessFlowNode("parentProcessTask", "Parent process task"));
+    verify(mockConsumer).accept(key, new ProcessFlowNode("subprocessTask", "Subprocess task"));
+    verify(mockConsumer)
+        .accept(
+            key, new ProcessFlowNode("SubProcess_006dg16", "Event Subprocess inside Subprocess"));
+    verify(mockConsumer)
+        .accept(key, new ProcessFlowNode("taskInSubprocess", "Task in sub-subprocess"));
+    verify(mockConsumer)
+        .accept(key, new ProcessFlowNode("StartEvent_0kpitfv", "Timer in sub-subprocess"));
   }
 
   @Test
-  void shouldReturnFlowNodeName() {
+  void shouldNotThrowExceptionWithInvalidXML() {
     // given
-    when(flowNodeInstanceEntity.flowNodeId()).thenReturn("StartEvent_1");
+    when(processDefinition.bpmnXml()).thenReturn("not-xml");
     // when
-    final var actual = xmlUtil.getFlowNodeName(flowNodeInstanceEntity);
+    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
-    verify(processDefinitionServices).getByKey(eq(PROCESS_DEFINITION_KEY));
-    assertThat(actual).isEqualTo("Start");
+    verifyNoInteractions(mockConsumer);
   }
 
   @Test
-  void shouldReturnUserTaskName() {
+  void shouldExtractFlowNodeNames() {
     // given
-    when(userTaskEntity.elementId()).thenReturn("taskB");
+    when(processDefinition.bpmnXml()).thenReturn(bpmn1);
     // when
-    final var actual = xmlUtil.getUserTaskName(userTaskEntity);
+    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
-    verify(processDefinitionServices).getByKey(eq(PROCESS_DEFINITION_KEY));
-    assertThat(actual).isEqualTo("Task B");
+    verifyFlowNodesBpmn1();
+    verifyNoMoreInteractions(mockConsumer);
   }
 
   @Test
-  void shouldReturnNameForStartEvent() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            bpmn,
-            PROCESS_DEFINITION_ID,
-            BpmnElementType.START_EVENT.getElementTypeName().get(),
-            "StartEvent_1");
-    // then
-    assertThat(actual).isEqualTo("Start");
-  }
-
-  @Test
-  void shouldReturnNameForUserTaskEvent() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            bpmn,
-            PROCESS_DEFINITION_ID,
-            BpmnElementType.USER_TASK.getElementTypeName().get(),
-            "taskB");
-    // then
-    assertThat(actual).isEqualTo("Task B");
-  }
-
-  @Test
-  void shouldReturnNameForEndEvent() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            bpmn,
-            PROCESS_DEFINITION_ID,
-            BpmnElementType.END_EVENT.getElementTypeName().get(),
-            "Event_0692jdh");
-    // then
-    assertThat(actual).isEqualTo("End");
-  }
-
-  @Test
-  void shouldReturnNodeIdWhenNameNotDefined() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            bpmn,
-            PROCESS_DEFINITION_ID,
-            BpmnElementType.USER_TASK.getElementTypeName().get(),
-            "taskA");
-    // then
-    assertThat(actual).isEqualTo("taskA");
-  }
-
-  @Test
-  void shouldReturnNodeIdWhenNodeMissing() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            bpmn,
-            PROCESS_DEFINITION_ID,
-            BpmnElementType.USER_TASK.getElementTypeName().get(),
-            "taskC");
-    // then
-    assertThat(actual).isEqualTo("taskC");
-  }
-
-  @Test
-  void shouldReturnNodeIdWhenProcessDefinitionIdMissing() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            bpmn, "not-found", BpmnElementType.USER_TASK.getElementTypeName().get(), "taskD");
-    // then
-    assertThat(actual).isEqualTo("taskD");
-  }
-
-  @Test
-  void shouldReturnNodeIdWhenXmlInvalid() {
-    // when
-    final var actual =
-        xmlUtil.extractFlowNodeName(
-            "not-xml",
-            PROCESS_DEFINITION_ID,
-            BpmnElementType.USER_TASK.getElementTypeName().get(),
-            "taskE");
-    // then
-    assertThat(actual).isEqualTo("taskE");
-  }
-
-  @Test
-  void shouldSearchProcessDefinitionsAndResolveNames() {
+  void shouldExtractFlowNodeNamesWithCallActivity() {
     // given
-    when(userTaskEntity.elementId()).thenReturn("taskB");
+    when(processDefinition.bpmnXml()).thenReturn(bpmn2);
+    when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID2);
+    // when
+    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    // then
+    verifyFlowNodesBpmn2(PROC_DEF_KEY);
+    verifyNoMoreInteractions(mockConsumer);
+  }
+
+  @Test
+  void shouldExtractFlowNodeNamesWithSubProcess() {
+    // given
+    when(processDefinition.bpmnXml()).thenReturn(bpmn3);
+    when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID3);
+    // when
+    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    // then
+    verifyFlowNodesBpmn3(PROC_DEF_KEY);
+    verifyNoMoreInteractions(mockConsumer);
+  }
+
+  @Test
+  void shouldExtractFlowNodeNamesWith2Processes1() {
+    // given
+    when(processDefinition.bpmnXml()).thenReturn(bpmn4);
+    when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID41);
+    // when
+    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    // then
+    verify(mockConsumer)
+        .accept(PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start process A"));
+    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessFlowNode("Activity_0whadek", "Do task A"));
+    verify(mockConsumer)
+        .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_0ovp9k6", "End process B"));
+    verifyNoMoreInteractions(mockConsumer);
+  }
+
+  @Test
+  void shouldExtractFlowNodeNamesWith2Processes2() {
+    // given
+    when(processDefinition.bpmnXml()).thenReturn(bpmn4);
+    when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID42);
+    // when
+    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    // then
+    verify(mockConsumer)
+        .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_00cm7tu", "Start process B"));
+    verify(mockConsumer).accept(PROC_DEF_KEY, new ProcessFlowNode("Activity_0w5vpxz", "Do task B"));
+    verify(mockConsumer)
+        .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_083hekc", "End process B"));
+    verifyNoMoreInteractions(mockConsumer);
+  }
+
+  @Test
+  void shouldExtractFlowNodeNamesForMultipleProcessDefinitions() {
+    // given
+    when(processDefinition.bpmnXml()).thenReturn(bpmn1);
+    when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
+    final var processDefinition2 =
+        new ProcessDefinitionEntity(2L, "", PROC_DEF_ID2, bpmn2, "", 1, "", "", "");
+    final var processDefinition3 =
+        new ProcessDefinitionEntity(3L, "", PROC_DEF_ID3, bpmn3, "", 1, "", "", "");
     when(processDefinitionServices.search(any()))
         .thenReturn(
             new SearchQueryResult.Builder<ProcessDefinitionEntity>()
-                .items(List.of(processDefinition))
+                .items(List.of(processDefinition, processDefinition2, processDefinition3))
+                .total(3)
                 .build());
     // when
-    final var actual = xmlUtil.getUserTasksNames(List.of(userTaskEntity));
+    xmlUtil.extractFlowNodeNames(Set.of(PROC_DEF_KEY, 2L, 3L), mockConsumer);
     // then
-    verify(processDefinitionServices)
-        .search(
-            ProcessDefinitionQuery.of(
-                q -> q.filter(f -> f.processDefinitionKeys(List.of(PROCESS_DEFINITION_KEY)))));
-    assertThat(actual).hasSize(1);
-    assertThat(actual.get(PROCESS_DEFINITION_KEY)).hasSize(1);
-    assertThat(actual.get(PROCESS_DEFINITION_KEY).get("taskB")).isEqualTo("Task B");
+    verifyFlowNodesBpmn1();
+    verifyFlowNodesBpmn2(2L);
+    verifyFlowNodesBpmn3(3L);
+    verifyNoMoreInteractions(mockConsumer);
+
+    final var searchRequestCaptor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
+    verify(processDefinitionServices).search(searchRequestCaptor.capture());
+    final var actualQuery = searchRequestCaptor.getValue();
+    assertThat(actualQuery.filter().processDefinitionKeys()).hasSize(3);
+    assertThat(actualQuery.filter().processDefinitionKeys()).containsOnly(PROC_DEF_KEY, 2L, 3L);
+    assertThat(actualQuery.page()).isEqualTo(new SearchQueryPage.Builder().size(3).build());
   }
 }

@@ -7,6 +7,7 @@ jobs:
   fe-type-check:
     name: Type check
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     defaults:
       run:
         working-directory: tasklist/client
@@ -35,6 +36,7 @@ jobs:
   fe-eslint:
     name: ESLint
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     defaults:
       run:
         working-directory: tasklist/client
@@ -63,6 +65,7 @@ jobs:
   fe-stylelint:
     name: Stylelint
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     defaults:
       run:
         working-directory: tasklist/client
@@ -91,6 +94,7 @@ jobs:
   fe-tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     defaults:
       run:
         working-directory: tasklist/client
@@ -119,6 +123,7 @@ jobs:
   fe-visual-regression-tests:
     name: Visual regression tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.47.2
       options: --user 1001:1000
@@ -146,7 +151,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: visual-regression-report
+          name: tasklist-visual-regression-report
           path: tasklist/client/playwright-report/
           retention-days: 30
       - name: Observe build status
@@ -162,6 +167,7 @@ jobs:
   fe-a11y-tests:
     name: a11y tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.47.2
       options: --user 1001:1000
@@ -189,7 +195,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: a11y-report
+          name: tasklist-a11y-report
           path: tasklist/client/playwright-report/
           retention-days: 30
       - name: Observe build status

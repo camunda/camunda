@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
@@ -15,6 +16,7 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
+import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
@@ -27,12 +29,14 @@ import io.camunda.db.rdbms.write.service.VariableWriter;
 public class RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final AuthorizationWriter authorizationWriter;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
   private final DecisionRequirementsWriter decisionRequirementsWriter;
   private final ExporterPositionService exporterPositionService;
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
   private final GroupWriter groupWriter;
+  private final IncidentWriter incidentWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceWriter processInstanceWriter;
   private final TenantWriter tenantWriter;
@@ -47,11 +51,13 @@ public class RdbmsWriter {
       final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter = new DecisionInstanceWriter(executionQueue);
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue);
     groupWriter = new GroupWriter(executionQueue);
+    incidentWriter = new IncidentWriter(executionQueue);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
     tenantWriter = new TenantWriter(executionQueue);
@@ -61,6 +67,10 @@ public class RdbmsWriter {
     userTaskWriter = new UserTaskWriter(executionQueue);
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
+  }
+
+  public AuthorizationWriter getAuthorizationWriter() {
+    return authorizationWriter;
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
@@ -81,6 +91,10 @@ public class RdbmsWriter {
 
   public GroupWriter getGroupWriter() {
     return groupWriter;
+  }
+
+  public IncidentWriter getIncidentWriter() {
+    return incidentWriter;
   }
 
   public ProcessDefinitionWriter getProcessDefinitionWriter() {
