@@ -60,7 +60,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.4'
@@ -90,8 +90,8 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
@@ -115,9 +115,9 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
@@ -142,8 +142,8 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
@@ -176,8 +176,8 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
@@ -228,6 +228,7 @@ jobs:
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -272,7 +273,6 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
@@ -333,6 +333,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
@@ -343,7 +345,6 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
         with:
@@ -416,11 +417,11 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: identity/client
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -467,10 +468,10 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: ./.github/actions/setup-build
@@ -507,10 +508,10 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: ./.github/actions/setup-build
@@ -547,13 +548,13 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: optimize/client
     env:
       LIMITS_CPU: 4
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: "Parse pom.xml for versions"
@@ -595,10 +596,10 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       LIMITS_CPU: 4
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Setup Maven
@@ -636,19 +637,20 @@ jobs:
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
-    timeout-minutes: 10
     needs: [detect-changes]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       # set the comparison based on the type of workflow trigger:
       #   - for PRs, we use the last commit of the base
       #   - for merge queues, we use the last commit of the target merge queue
       #   - for a push, we use the last commit before the push
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-    if: |
-      needs.detect-changes.outputs.protobuf-changes == 'true'
+    if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - id: pr-body
         name: Fetch latest PR body
@@ -687,13 +689,12 @@ jobs:
 
   openapi-lint:
     name: C8 REST OpenAPI linting
-    timeout-minutes: 2
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    if: |
-      needs.detect-changes.outputs.openapi-changes == 'true'
+    timeout-minutes: 2
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - name: Install Vacuum
         run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
@@ -718,6 +719,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions:
+      checks: read
     needs:
       - actionlint
       - build-operate-backend
@@ -735,7 +738,6 @@ jobs:
       - protobuf-checks
       - zeebe-ci
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
         continue-on-error: true
@@ -751,12 +753,12 @@ jobs:
     needs: [ check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
       cancel-in-progress: false
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - name: Import Secrets
         id: secrets
@@ -823,12 +825,12 @@ jobs:
     needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
     steps:
-      - uses: GitHubSecurityLab/actions-permissions/monitor@v1
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
