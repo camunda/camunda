@@ -47,6 +47,8 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -90,6 +92,7 @@ public final class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
+  private boolean awaitIdentitySetup = true;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -134,6 +137,9 @@ public final class EngineRule extends ExternalResource {
   @Override
   protected void before() {
     start();
+    if (awaitIdentitySetup) {
+      awaitIdentitySetup();
+    }
   }
 
   public void start() {
@@ -146,6 +152,11 @@ public final class EngineRule extends ExternalResource {
 
   public void stop() {
     forEachPartition(environmentRule::closeStreamProcessor);
+  }
+
+  public EngineRule withoutAwaitingIdentitySetup() {
+    awaitIdentitySetup = false;
+    return this;
   }
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
@@ -463,6 +474,17 @@ public final class EngineRule extends ExternalResource {
                                   MsgPackConverter.convertToJson(value.getDirectBuffer())));
                   return entries;
                 }));
+  }
+
+  public void awaitIdentitySetup() {
+    if (partitionCount > 1) {
+      RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+          .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
+          .await();
+    } else {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
+    }
+    RecordingExporter.reset();
   }
 
   public void awaitProcessingOf(final Record<?> record) {

@@ -297,12 +297,7 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
-        keyGenerator,
-        typedRecordProcessors,
-        processingState,
-        writers,
-        commandDistributionBehavior,
-        securityConfig);
+        keyGenerator, typedRecordProcessors, processingState, writers, commandDistributionBehavior);
 
     return typedRecordProcessors;
   }
