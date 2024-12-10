@@ -20,7 +20,6 @@ public class GatewayCfg {
   private LongPollingCfg longPolling = new LongPollingCfg();
   private List<InterceptorCfg> interceptors = new ArrayList<>();
   private List<FilterCfg> filters = new ArrayList<>();
-  private MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
 
   public void init() {
     init(ConfigurationDefaults.DEFAULT_HOST);
@@ -91,18 +90,9 @@ public class GatewayCfg {
     this.filters = filters;
   }
 
-  public MultiTenancyCfg getMultiTenancy() {
-    return multiTenancy;
-  }
-
-  public void setMultiTenancy(final MultiTenancyCfg multiTenancy) {
-    this.multiTenancy = multiTenancy;
-  }
-
   @Override
   public int hashCode() {
-    return Objects.hash(
-        network, cluster, threads, security, longPolling, interceptors, multiTenancy);
+    return Objects.hash(network, cluster, threads, security, longPolling, interceptors);
   }
 
   @Override
@@ -119,8 +109,7 @@ public class GatewayCfg {
         && Objects.equals(threads, that.threads)
         && Objects.equals(security, that.security)
         && Objects.equals(longPolling, that.longPolling)
-        && Objects.equals(interceptors, that.interceptors)
-        && Objects.equals(multiTenancy, that.multiTenancy);
+        && Objects.equals(interceptors, that.interceptors);
   }
 
   @Override
@@ -137,9 +126,6 @@ public class GatewayCfg {
         + ", longPolling="
         + longPolling
         + ", interceptors="
-        + interceptors
-        + ", multiTenancy="
-        + multiTenancy
-        + '}';
+        + interceptors;
   }
 }

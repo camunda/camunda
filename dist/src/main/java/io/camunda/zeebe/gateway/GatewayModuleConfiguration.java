@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
@@ -51,6 +52,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
 
   private final GatewayBasedConfiguration configuration;
   private final IdentityConfiguration identityConfiguration;
+  private final SecurityConfiguration securityConfiguration;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
@@ -63,6 +65,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   public GatewayModuleConfiguration(
       final GatewayBasedConfiguration configuration,
       final IdentityConfiguration identityConfiguration,
+      final SecurityConfiguration securityConfiguration,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
@@ -70,6 +73,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final JobStreamClient jobStreamClient) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
+    this.securityConfiguration = securityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
@@ -95,6 +99,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
         new Gateway(
             configuration.shutdownTimeout(),
             configuration.config(),
+            securityConfiguration,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer());

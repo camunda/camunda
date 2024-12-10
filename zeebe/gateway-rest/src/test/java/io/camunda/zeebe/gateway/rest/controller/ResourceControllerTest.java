@@ -13,10 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
@@ -40,7 +40,7 @@ public class ResourceControllerTest extends RestControllerTest {
   static final String DELETE_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/deletion";
 
   @MockBean ResourceServices resourceServices;
-  @MockBean MultiTenancyCfg multiTenancyCfg;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
   @Captor ArgumentCaptor<DeployResourcesRequest> deployRequestCaptor;
   @Captor ArgumentCaptor<ResourceDeletionRequest> deleteRequestCaptor;
 

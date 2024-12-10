@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
@@ -33,11 +33,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProcessInstanceController {
 
   private final ProcessInstanceServices processInstanceServices;
-  private final MultiTenancyCfg multiTenancyCfg;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   public ProcessInstanceController(
       final ProcessInstanceServices processInstanceServices,
-      final MultiTenancyCfg multiTenancyCfg) {
+      final MultiTenancyConfiguration multiTenancyCfg) {
     this.processInstanceServices = processInstanceServices;
     this.multiTenancyCfg = multiTenancyCfg;
   }
