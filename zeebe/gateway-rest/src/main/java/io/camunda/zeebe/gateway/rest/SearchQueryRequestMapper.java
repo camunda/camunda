@@ -81,6 +81,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
@@ -376,6 +377,11 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserQuery> toUserQuery(final UserSearchQueryRequest request) {
+    return toUserQuery(request, null);
+  }
+
+  public static Either<ProblemDetail, UserQuery> toUserQuery(
+      final UserSearchQueryRequest request, final Set<Long> userKeysSubset) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.userSearchQuery().build());
     }
@@ -386,7 +392,7 @@ public final class SearchQueryRequestMapper {
             request.getSort(),
             SortOptionBuilders::user,
             SearchQueryRequestMapper::applyUserSortField);
-    final var filter = toUserFilter(request.getFilter());
+    final var filter = toUserFilter(request.getFilter(), userKeysSubset);
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
   }
 
@@ -602,15 +608,23 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static UserFilter toUserFilter(final UserFilterRequest filter) {
+  private static UserFilter toUserFilter(
+      final UserFilterRequest filter, final Set<Long> userKeysSubset) {
     return Optional.ofNullable(filter)
         .map(
-            f ->
-                FilterBuilders.user()
-                    .username(f.getUsername())
-                    .name(f.getName())
-                    .email(f.getEmail())
-                    .build())
+            f -> {
+              final var filterBuilder =
+                  FilterBuilders.user()
+                      .username(f.getUsername())
+                      .name(f.getName())
+                      .email(f.getEmail());
+
+              if (userKeysSubset != null) {
+                filterBuilder.keys(userKeysSubset);
+              }
+
+              return filterBuilder.build();
+            })
         .orElse(null);
   }
 
