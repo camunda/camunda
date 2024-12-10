@@ -10,13 +10,14 @@ package io.camunda.zeebe.gateway;
 import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 
 import com.google.rpc.Code;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -83,6 +84,7 @@ public final class Gateway implements CloseableSilently {
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
+  private final SecurityConfiguration securityConfiguration;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -94,20 +96,29 @@ public final class Gateway implements CloseableSilently {
 
   public Gateway(
       final GatewayCfg gatewayCfg,
+      final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
-    this(DEFAULT_SHUTDOWN_TIMEOUT, gatewayCfg, brokerClient, actorSchedulingService, jobStreamer);
+    this(
+        DEFAULT_SHUTDOWN_TIMEOUT,
+        gatewayCfg,
+        securityConfiguration,
+        brokerClient,
+        actorSchedulingService,
+        jobStreamer);
   }
 
   public Gateway(
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
+      final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
+    this.securityConfiguration = securityConfiguration;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
@@ -176,7 +187,7 @@ public final class Gateway implements CloseableSilently {
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler) {
     final NetworkCfg network = gatewayCfg.getNetwork();
-    final MultiTenancyCfg multiTenancy = gatewayCfg.getMultiTenancy();
+    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
 
     final var serverBuilder = applyNetworkConfig(network);
     applyExecutorConfiguration(serverBuilder);
