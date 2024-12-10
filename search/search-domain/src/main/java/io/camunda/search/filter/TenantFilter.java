@@ -8,9 +8,10 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Set;
 import java.util.function.Function;
 
-public record TenantFilter(Long key, String tenantId, String name, Long memberKey)
+public record TenantFilter(Long key, String tenantId, String name, Set<Long> memberKeys)
     implements FilterBase {
 
   public static TenantFilter of(final Function<Builder, Builder> builderFunction) {
@@ -22,7 +23,7 @@ public record TenantFilter(Long key, String tenantId, String name, Long memberKe
     private Long key;
     private String tenantId;
     private String name;
-    private Long memberKey;
+    private Set<Long> memberKeys;
 
     public Builder key(final Long value) {
       key = value;
@@ -40,13 +41,17 @@ public record TenantFilter(Long key, String tenantId, String name, Long memberKe
     }
 
     public Builder memberKey(final Long value) {
-      memberKey = value;
+      return memberKeys(Set.of(value));
+    }
+
+    public Builder memberKeys(final Set<Long> value) {
+      memberKeys = value;
       return this;
     }
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantId, name, memberKey);
+      return new TenantFilter(key, tenantId, name, memberKeys);
     }
   }
 }

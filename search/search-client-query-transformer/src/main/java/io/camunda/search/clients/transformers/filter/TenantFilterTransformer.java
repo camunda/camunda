@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
@@ -33,10 +34,10 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
         filter.name() == null ? null : term(NAME, filter.name()),
-        filter.memberKey() == null
+        filter.memberKeys() == null
             ? null
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
-                term(TenantIndex.MEMBER_KEY, filter.memberKey())));
+                longTerms(TenantIndex.MEMBER_KEY, filter.memberKeys())));
   }
 }
