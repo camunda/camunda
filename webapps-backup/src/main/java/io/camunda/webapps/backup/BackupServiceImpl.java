@@ -9,13 +9,8 @@ package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,18 +28,7 @@ public class BackupServiceImpl implements BackupService {
   private final Executor threadPoolTaskExecutor;
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
-  private final List<Prio1Backup> prio1BackupIndices;
-
-  private final List<Prio2Backup> prio2BackupTemplates;
-
-  private final List<Prio3Backup> prio3BackupTemplates;
-
-  private final List<Prio4Backup> prio4BackupTemplates;
-
-  private final List<Prio5Backup> prio5BackupIndices;
-
-  private final List<Prio6Backup> prio6BackupIndices;
-
+  private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupProps;
 
   private final BackupRepository repository;
@@ -53,21 +37,11 @@ public class BackupServiceImpl implements BackupService {
 
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
-      final List<Prio1Backup> prio1BackupIndices,
-      final List<Prio2Backup> prio2BackupTemplates,
-      final List<Prio3Backup> prio3BackupTemplates,
-      final List<Prio4Backup> prio4BackupTemplates,
-      final List<Prio5Backup> prio5BackupIndices,
-      final List<Prio6Backup> prio6BackupIndices,
+      final BackupPriorities backupPriorities,
       final BackupRepositoryProps operateProperties,
       final BackupRepository repository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
-    this.prio1BackupIndices = prio1BackupIndices;
-    this.prio2BackupTemplates = prio2BackupTemplates;
-    this.prio3BackupTemplates = prio3BackupTemplates;
-    this.prio4BackupTemplates = prio4BackupTemplates;
-    this.prio5BackupIndices = prio5BackupIndices;
-    this.prio6BackupIndices = prio6BackupIndices;
+    this.backupPriorities = backupPriorities;
     this.repository = repository;
     backupProps = operateProperties;
   }
@@ -103,13 +77,13 @@ public class BackupServiceImpl implements BackupService {
   }
 
   @Override
-  public GetBackupStateResponseDto getBackupState(final Long backupId) {
-    return repository.getBackupState(backupProps.repositoryName(), backupId);
+  public List<GetBackupStateResponseDto> getBackups() {
+    return repository.getBackups(backupProps.repositoryName());
   }
 
   @Override
-  public List<GetBackupStateResponseDto> getBackups() {
-    return repository.getBackups(backupProps.repositoryName());
+  public GetBackupStateResponseDto getBackupState(final Long backupId) {
+    return repository.getBackupState(backupProps.repositoryName(), backupId);
   }
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
@@ -148,16 +122,16 @@ public class BackupServiceImpl implements BackupService {
     if (indexPatternsOrdered == null) {
       indexPatternsOrdered =
           new String[][] {
-            fullQualifiedName(prio1BackupIndices),
-            fullQualifiedName(prio2BackupTemplates),
+            fullQualifiedName(backupPriorities.prio1()),
+            fullQualifiedName(backupPriorities.prio2()),
             // dated indices
-            fullQualifiedNameWithMatcher(prio2BackupTemplates),
-            fullQualifiedName(prio3BackupTemplates),
-            fullQualifiedName(prio4BackupTemplates),
+            fullQualifiedNameWithMatcher(backupPriorities.prio2()),
+            fullQualifiedName(backupPriorities.prio3()),
+            fullQualifiedName(backupPriorities.prio4()),
             // dated indices
-            fullQualifiedNameWithMatcher(prio4BackupTemplates),
-            fullQualifiedName(prio5BackupIndices),
-            fullQualifiedName(prio6BackupIndices)
+            fullQualifiedNameWithMatcher(backupPriorities.prio4()),
+            fullQualifiedName(backupPriorities.prio5()),
+            fullQualifiedName(backupPriorities.prio6())
           };
     }
     return indexPatternsOrdered;
