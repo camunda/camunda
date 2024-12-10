@@ -33,6 +33,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the requests for the configuration management. This is expected be running on the
@@ -40,6 +42,8 @@ import java.util.function.Function;
  */
 public final class ClusterConfigurationManagementRequestsHandler
     implements ClusterConfigurationManagementApi {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ClusterConfigurationManagementRequestsHandler.class);
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
@@ -156,6 +160,16 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
+
+    if (clusterPatchRequest.newPartitionsMetadata().isPresent()) {
+      clusterPatchRequest
+          .newPartitionsMetadata()
+          .get()
+          .forEach(
+              partitionMetadata -> {
+                LOG.info("Got new partitionMetadata " + partitionMetadata.toString());
+              });
+    }
 
     if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
       final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();

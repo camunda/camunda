@@ -8,6 +8,8 @@
 package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
@@ -16,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -24,7 +25,11 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitionsDistribution;
 import io.camunda.zeebe.management.cluster.Error;
+import io.camunda.zeebe.model.bpmn.instance.Resource;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -214,11 +219,11 @@ public class ClusterEndpoint {
                 + " with nodes "
                 + newPartitionDistribution.get().getPartitioning().getFirst().getNodes());
         // Trigger partition redistribution
-        final ReassignPartitionsRequest reassignPartitionRequest =
-            new ReassignPartitionsRequest(
-                Set.of(new MemberId("0"), new MemberId("1"), new MemberId("2")), dryRun);
-        return ClusterApiUtils.mapOperationResponse(
-            requestSender.reassignPartitions(reassignPartitionRequest).join());
+        //        final ReassignPartitionsRequest reassignPartitionRequest =
+        //            new ReassignPartitionsRequest(
+        //                Set.of(new MemberId("0"), new MemberId("1"), new MemberId("2")), dryRun);
+        //        return ClusterApiUtils.mapOperationResponse(
+        //            requestSender.reassignPartitions(reassignPartitionRequest).join());
       } else {
         LOG.info("Didn't get new PartitionDistribution!");
       }
@@ -266,11 +271,50 @@ public class ClusterEndpoint {
                 .collect(Collectors.toSet())
             : Set.of();
 
+    Optional<Set<PartitionMetadata>> newPartitionsMetadata = Optional.empty();
+
+    if (newPartitionDistribution.isPresent()) {
+      newPartitionsMetadata =
+          Optional.of(convertToPartitionsMetadata(newPartitionDistribution.get()));
+    }
+
     final var patchRequest =
         new ClusterPatchRequest(
-            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+            brokersToAdd,
+            brokersToRemove,
+            newPartitionCount,
+            newReplicationFactor,
+            newPartitionsMetadata,
+            dryRun);
 
     return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
+  }
+
+  private Set<PartitionMetadata> convertToPartitionsMetadata(
+      final ClusterConfigPatchRequestPartitionsDistribution distribution) {
+    final Set<PartitionMetadata> partitionMetadataSet = new HashSet<>();
+
+    distribution
+        .getPartitioning()
+        .forEach(
+            partitioning -> {
+              final Set<MemberId> members = new HashSet<>();
+              final Map<MemberId, Integer> priorities = new HashMap<>();
+              final PartitionId partitionId = PartitionId.from("", partitioning.getPartitionId());
+              partitioning
+                  .getNodes()
+                  .forEach(
+                      node -> {
+                        final MemberId memberId = MemberId.from(String.valueOf(node.getNodeId()));
+                        members.add(memberId);
+                        priorities.put(memberId, node.getPriority());
+                      });
+
+              partitionMetadataSet.add(
+                  new PartitionMetadata(partitionId, members, priorities, 10, null));
+            });
+
+    return partitionMetadataSet;
   }
 
   private ResponseEntity<?> forceRemoveBrokers(

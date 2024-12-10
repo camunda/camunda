@@ -928,6 +928,10 @@ public class ProtoBufSerializer
           clusterPatchRequest.hasNewReplicationFactor()
               ? Optional.of(clusterPatchRequest.getNewReplicationFactor())
               : Optional.empty();
+      //      final Optional<Set<PartitionMetadata>> newPartitionsMetadata =
+      //          clusterPatchRequest.hasNewPartitionsMetadata()
+      //              ? Optional.of(clusterPatchRequest.getNewPartitionsMetadata())
+      //              : Optional.empty();
       return new ClusterPatchRequest(
           clusterPatchRequest.getMembersToAddList().stream()
               .map(MemberId::from)
@@ -937,6 +941,8 @@ public class ProtoBufSerializer
               .collect(Collectors.toSet()),
           newPartitionCount,
           newReplicationFactor,
+          Optional.empty(),
+          //          newPartitionsMetadata,
           clusterPatchRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
