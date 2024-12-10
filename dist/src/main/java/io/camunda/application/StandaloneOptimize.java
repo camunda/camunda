@@ -7,13 +7,9 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.initializers.DefaultAuthenticationInitializer;
-import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.optimize.OptimizeModuleConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringBootConfiguration;
@@ -44,20 +40,9 @@ public class StandaloneOptimize {
             .sources(OptimizeModuleConfiguration.class)
             .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
-            .properties(getDefaultProperties())
-            .initializers(
-                new DefaultAuthenticationInitializer(), new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
 
     standaloneOptimizeApplication.run(args);
-  }
-
-  private static Map<String, Object> getDefaultProperties() {
-    final HashMap<String, Object> properties = new HashMap<>();
-
-    properties.put(ACTUATOR_PORT_PROPERTY_KEY, CONFIGURATION_SERVICE.getActuatorPort());
-
-    return properties;
   }
 }

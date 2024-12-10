@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize;
 
-import io.camunda.zeebe.gateway.Gateway;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -25,11 +23,5 @@ import org.springframework.context.annotation.Profile;
 @Profile("optimize")
 public class OptimizeModuleConfiguration {
 
-  // if present, then it will ensure
-  // that the gateway is started first
-  private final Gateway gateway;
-
-  public OptimizeModuleConfiguration(@Autowired(required = false) final Gateway gateway) {
-    this.gateway = gateway;
-  }
+  public OptimizeModuleConfiguration() {}
 }
