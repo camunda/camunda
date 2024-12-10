@@ -93,7 +93,7 @@ public class TaskListenerTest {
     // then
     assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
-        JobListenerEventType.COMPLETE,
+        JobListenerEventType.COMPLETING,
         LISTENER_TYPE,
         LISTENER_TYPE + "_2",
         LISTENER_TYPE + "_3");
@@ -141,7 +141,7 @@ public class TaskListenerTest {
     // then
     assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
-        JobListenerEventType.ASSIGNMENT,
+        JobListenerEventType.ASSIGNING,
         LISTENER_TYPE,
         LISTENER_TYPE + "_2",
         LISTENER_TYPE + "_3");
@@ -310,7 +310,7 @@ public class TaskListenerTest {
 
     // then
     assertTaskListenerJobsCompletionSequence(
-        processInstanceKey, JobListenerEventType.ASSIGNMENT, LISTENER_TYPE, LISTENER_TYPE + "_2");
+        processInstanceKey, JobListenerEventType.ASSIGNING, LISTENER_TYPE, LISTENER_TYPE + "_2");
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `CLAIMING` and `ASSIGNED` events
@@ -355,7 +355,7 @@ public class TaskListenerTest {
     // then: verify the task listener completion sequence for the assignment event
     assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
-        JobListenerEventType.ASSIGNMENT,
+        JobListenerEventType.ASSIGNING,
         LISTENER_TYPE,
         LISTENER_TYPE + "_2",
         LISTENER_TYPE + "_3");
@@ -810,7 +810,7 @@ public class TaskListenerTest {
             RecordingExporter.jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.TASK_LISTENER)
-                .withJobListenerEventType(JobListenerEventType.COMPLETE)
+                .withJobListenerEventType(JobListenerEventType.COMPLETING)
                 .withIntent(JobIntent.COMPLETED)
                 .limit(3))
         .extracting(Record::getValue)
