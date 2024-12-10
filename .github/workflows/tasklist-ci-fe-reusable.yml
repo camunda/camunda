@@ -120,7 +120,7 @@ jobs:
     name: Visual regression tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.47.2
+      image: mcr.microsoft.com/playwright:v1.49.1
       options: --user 1001:1000
     defaults:
       run:
@@ -163,7 +163,7 @@ jobs:
     name: a11y tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.47.2
+      image: mcr.microsoft.com/playwright:v1.49.1
       options: --user 1001:1000
     defaults:
       run:
