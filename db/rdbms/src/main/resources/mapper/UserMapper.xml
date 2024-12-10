@@ -35,7 +35,12 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
-    <if test="filter.key != null">AND USER_KEY = #{filter.key}</if>
+    <if test="filter.keys != null and !filter.keys.isEmpty()">
+      AND USER_KEY IN
+      <foreach collection="filter.keys" item="key" open="(" separator="," close=")">
+        #{key}
+      </foreach>
+    </if>
     <if test="filter.username != null">AND USERNAME = #{filter.username}</if>
     <if test="filter.name != null">AND NAME = #{filter.name}</if>
     <if test="filter.email != null">AND EMAIL = #{filter.email}</if>

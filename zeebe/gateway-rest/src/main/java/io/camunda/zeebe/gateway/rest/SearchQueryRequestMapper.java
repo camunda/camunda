@@ -82,6 +82,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
@@ -389,6 +390,20 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyUserSortField);
     final var filter = toUserFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userSearchQuery);
+  }
+
+  public static UserQuery mergeWithTenantKeys(
+      final UserQuery baseQuery, final Set<Long> tenantUserKeys) {
+    return UserQuery.of(
+        builder ->
+            builder
+                .filter(
+                    f -> {
+                      f.keys(tenantUserKeys);
+                      return f;
+                    })
+                .sort(baseQuery.sort())
+                .page(baseQuery.page()));
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
