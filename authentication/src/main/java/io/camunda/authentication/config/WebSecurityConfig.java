@@ -45,7 +45,10 @@ public class WebSecurityConfig {
         // endpoints defined in BrokerHealthRoutes
         "/ready",
         "/health",
-        "/startup"
+        "/startup",
+        // deprecated Tasklist v1 Public Endpoints
+        "/v1/external/process/**",
+        "/new/**"
       };
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 

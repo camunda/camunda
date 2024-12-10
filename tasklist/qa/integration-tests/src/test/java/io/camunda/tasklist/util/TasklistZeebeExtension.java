@@ -139,6 +139,7 @@ public abstract class TasklistZeebeExtension
             .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
             .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
     zContainer.addExposedPort(8080);
+    zContainer.addExposedPort(26502);
     return zContainer;
   }
 
