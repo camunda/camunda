@@ -13,8 +13,8 @@ import static org.mockito.Mockito.mock;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.search.entities.UserEntity;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.TenantServices.TenantDTO;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -58,6 +58,7 @@ public class TenantRequestAttributeFilterTest {
   private FilterChain filterChain;
   private MockHttpServletRequest request;
   private MockHttpServletResponse response;
+  private MultiTenancyConfiguration multiTenancyConfiguration;
 
   @BeforeEach
   public void setUp() {
@@ -75,12 +76,14 @@ public class TenantRequestAttributeFilterTest {
               }
             });
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+    multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
   }
 
   @Test
   public void basicAuthPopulatesTenantIdsForKnownUser() throws ServletException, IOException {
     // given
-    final Filter filter = new TenantRequestAttributeFilter(new MultiTenancyCfg().setEnabled(true));
+    final Filter filter = new TenantRequestAttributeFilter(multiTenancyConfiguration);
     request.setUserPrincipal(new UsernamePasswordAuthenticationToken(camundaUser, "secret"));
 
     // when
@@ -97,7 +100,8 @@ public class TenantRequestAttributeFilterTest {
   public void basicAuthReturnsDefaultTenantWhenMultiTenancyIsDisabled()
       throws ServletException, IOException {
     // given
-    final Filter filter = new TenantRequestAttributeFilter(new MultiTenancyCfg().setEnabled(false));
+    multiTenancyConfiguration.setEnabled(false);
+    final Filter filter = new TenantRequestAttributeFilter(multiTenancyConfiguration);
     request.setUserPrincipal(new UsernamePasswordAuthenticationToken(camundaUser, "secret"));
 
     // when
@@ -113,7 +117,7 @@ public class TenantRequestAttributeFilterTest {
   @Test
   public void basicAuthReturnsUnauthorizedForUnknownUser() throws ServletException, IOException {
     // given
-    final Filter filter = new TenantRequestAttributeFilter(new MultiTenancyCfg().setEnabled(true));
+    final Filter filter = new TenantRequestAttributeFilter(multiTenancyConfiguration);
     request.setUserPrincipal(new UsernamePasswordAuthenticationToken("unknown", "secret"));
 
     // when / then
@@ -128,7 +132,7 @@ public class TenantRequestAttributeFilterTest {
   public void returnsUnauthorizedWhenPrincipalIsNotAuthenticated()
       throws ServletException, IOException {
     // given
-    final Filter filter = new TenantRequestAttributeFilter(new MultiTenancyCfg().setEnabled(true));
+    final Filter filter = new TenantRequestAttributeFilter(multiTenancyConfiguration);
     request.setUserPrincipal(mock(Principal.class));
 
     // when / then
