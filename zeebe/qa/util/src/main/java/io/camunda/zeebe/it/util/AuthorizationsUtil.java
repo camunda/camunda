@@ -29,10 +29,10 @@ import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 
-public class AuthorizationsUtil {
+public class AuthorizationsUtil implements AutoCloseable {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  private final HttpClient httpClient = HttpClient.newHttpClient();
   private final TestGateway<?> gateway;
   private final ZeebeClient client;
   private final String elasticsearchUrl;
@@ -71,18 +71,21 @@ public class AuthorizationsUtil {
             .send()
             .join();
 
+    createPermissions(userCreateResponse.getUserKey(), permissions);
+    awaitUserExistsInElasticsearch(username);
+    return userCreateResponse.getUserKey();
+  }
+
+  public void createPermissions(final long userKey, final Permissions... permissions) {
     for (final Permissions permission : permissions) {
       client
-          .newAddPermissionsCommand(userCreateResponse.getUserKey())
+          .newAddPermissionsCommand(userKey)
           .resourceType(permission.resourceType())
           .permission(permission.permissionType())
           .resourceIds(permission.resourceIds())
           .send()
           .join();
     }
-
-    awaitUserExistsInElasticsearch(username);
-    return userCreateResponse.getUserKey();
   }
 
   public ZeebeClient createClient(final String username, final String password) {
@@ -152,7 +155,7 @@ public class AuthorizationsUtil {
         .atMost(Duration.ofSeconds(15))
         .until(
             () -> {
-              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+              final var response = httpClient.send(request, BodyHandlers.ofString());
               final var userExistsResponse =
                   OBJECT_MAPPER.readValue(response.body(), UserExistsResponse.class);
               return userExistsResponse.count > 0;
@@ -161,6 +164,11 @@ public class AuthorizationsUtil {
 
   public ZeebeClient getDefaultClient() {
     return client;
+  }
+
+  @Override
+  public void close() {
+    httpClient.close();
   }
 
   public record Permissions(

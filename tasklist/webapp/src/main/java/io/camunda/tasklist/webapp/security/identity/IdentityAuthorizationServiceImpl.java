@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,12 +58,6 @@ public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationSe
     final List<String> defaultGroups = new ArrayList<>();
     defaultGroups.add(FULL_GROUP_ACCESS);
     return defaultGroups;
-  }
-
-  @Override
-  public boolean isAllowedToStartProcess(final String processDefinitionKey) {
-    return !Collections.disjoint(
-        getProcessDefinitionsFromAuthorization(), Set.of(ALL_RESOURCES, processDefinitionKey));
   }
 
   @Override

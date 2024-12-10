@@ -23,7 +23,6 @@ import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -313,22 +311,6 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
           .extracting("id", "bpmnProcessId", "version")
           .contains(tuple(processId2, "travelSearchProcess", 2))
           .doesNotContain(tuple(processId1, "travelSearchProcess", 1));
-    }
-  }
-
-  @Nested
-  class StartAndDeleteProcessInstanceTests {
-    @Test
-    public void startProcessInstance() throws Exception {
-      final var result =
-          startProcessDeployInvokeAndReturn("startedByFormProcess.bpmn", "startedByForm");
-      assertThat(result)
-          .hasHttpStatus(HttpStatus.OK)
-          .extractingContent(objectMapper, ProcessInstanceDTO.class)
-          .satisfies(
-              processInstanceDTO -> {
-                Assertions.assertThat(processInstanceDTO.getId()).isNotNull();
-              });
     }
   }
 

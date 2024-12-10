@@ -503,6 +503,18 @@ public class RequestMapper {
         .build();
   }
 
+  public static Authentication getAnonymousAuthentication() {
+    return new Builder()
+        .token(
+            Authorization.jwtEncoder()
+                .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+                .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+                .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+                .withClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true)
+                .build())
+        .build();
+  }
+
   public static <T> Either<ProblemDetail, T> getResult(
       final Optional<ProblemDetail> error, final Supplier<T> resultSupplier) {
     return error

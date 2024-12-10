@@ -120,11 +120,6 @@ public class TasklistSecurityStubsConfiguration {
       }
 
       @Override
-      public boolean isAllowedToStartProcess(final String processDefinitionKey) {
-        return true;
-      }
-
-      @Override
       public List<String> getProcessReadFromAuthorization() {
         return List.of(IdentityProperties.ALL_RESOURCES);
       }
