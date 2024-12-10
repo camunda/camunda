@@ -31,7 +31,8 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final BinaryProperty resourceProp = new BinaryProperty("resourceProp", new UnsafeBuffer());
+  private final BinaryProperty resourceProp =
+      new BinaryProperty("resourceProp", new UnsafeBuffer());
 
   public ResourceRecord() {
     super(9);
@@ -186,7 +187,8 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return bufferAsString(resourceProp.getValue());
   }
 
-  public ResourceRecord setResource(final DirectBuffer resource, final int offset, final int length) {
+  public ResourceRecord setResource(
+      final DirectBuffer resource, final int offset, final int length) {
     resourceProp.setValue(resource, offset, length);
     return this;
   }

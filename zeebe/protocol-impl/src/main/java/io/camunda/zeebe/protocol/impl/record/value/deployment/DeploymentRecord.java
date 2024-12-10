@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,9 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final ArrayProperty<FormMetadataRecord> formMetadataProp =
       new ArrayProperty<>("formMetadata", FormMetadataRecord::new);
 
+  private final ArrayProperty<ResourceMetadataRecord> resourceMetadataProp =
+      new ArrayProperty<>("resourceMetadata", ResourceMetadataRecord::new);
+
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
@@ -56,6 +60,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .declareProperty(decisionRequirementsMetadataProp)
         .declareProperty(decisionMetadataProp)
         .declareProperty(formMetadataProp)
+        .declareProperty(resourceMetadataProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp);
   }
@@ -78,6 +83,10 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   public ValueArray<FormMetadataRecord> formMetadata() {
     return formMetadataProp;
+  }
+
+  public ValueArray<ResourceMetadataRecord> resourceMetadata() {
+    return resourceMetadataProp;
   }
 
   @Override
@@ -148,6 +157,19 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
       metadataList.add(copyRecord);
     }
 
+    return metadataList;
+  }
+
+  @Override
+  public List<ResourceMetadataValue> getResourceMetadata() {
+    final var metadataList = new ArrayList<ResourceMetadataValue>();
+
+    for (final ResourceMetadataRecord metadata : resourceMetadataProp) {
+      final var copyRecord = new ResourceMetadataRecord();
+      final var copyBuffer = BufferUtil.createCopy(metadata);
+      copyRecord.wrap(copyBuffer);
+      metadataList.add(copyRecord);
+    }
     return metadataList;
   }
 

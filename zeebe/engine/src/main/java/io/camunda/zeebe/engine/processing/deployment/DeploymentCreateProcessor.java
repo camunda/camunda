@@ -46,12 +46,15 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -227,6 +230,7 @@ public final class DeploymentCreateProcessor
     createBpmnResources(deploymentEvent);
     createDmnResources(deploymentEvent);
     createFormResources(deploymentEvent);
+    createResources(deploymentEvent);
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     stateWriter.appendFollowUpEvent(
         command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
@@ -282,6 +286,22 @@ public final class DeploymentCreateProcessor
                       metadata.getFormKey(),
                       FormIntent.CREATED,
                       new FormRecord().wrap(metadata, resource.getResource()));
+                }
+              }
+            });
+  }
+
+  private void createResources(final DeploymentRecord deploymentEvent) {
+    deploymentEvent.resourceMetadata().stream()
+        .filter(not(ResourceMetadataRecord::isDuplicate))
+        .forEach(
+            metadata -> {
+              for (final DeploymentResource resource : deploymentEvent.getResources()) {
+                if (resource.getResourceName().equals(metadata.getResourceName())) {
+                  stateWriter.appendFollowUpEvent(
+                      metadata.getResourceKey(),
+                      ResourceIntent.CREATED,
+                      new ResourceRecord().wrap(metadata, resource.getResource()));
                 }
               }
             });
