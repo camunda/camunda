@@ -10,6 +10,7 @@ package io.camunda.security.configuration;
 public class SecurityConfiguration {
 
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
+  private BasicAuthConfiguration basicAuth = new BasicAuthConfiguration();
 
   private InitializationConfiguration initialization = new InitializationConfiguration();
 
@@ -37,5 +38,13 @@ public class SecurityConfiguration {
 
   public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
     this.multiTenancy = multiTenancy;
+  }
+
+  public BasicAuthConfiguration getBasicAuth() {
+    return basicAuth;
+  }
+
+  public void setBasicAuth(final BasicAuthConfiguration basicAuth) {
+    this.basicAuth = basicAuth;
   }
 }

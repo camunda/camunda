@@ -74,17 +74,18 @@ const AppHeader: React.FC = () => {
             },
           },
         ],
-        bottomElements: camundaUser
-          ? [
-              {
-                key: "logout",
-                label: "Log out",
-                renderIcon: ArrowRight,
-                kind: "ghost",
-                onClick: logout,
-              },
-            ]
-          : undefined,
+        bottomElements:
+          camundaUser && camundaUser.canLogout
+            ? [
+                {
+                  key: "logout",
+                  label: "Log out",
+                  renderIcon: ArrowRight,
+                  kind: "ghost",
+                  onClick: logout,
+                },
+              ]
+            : undefined,
       }}
     />
   );
