@@ -254,6 +254,35 @@ public final class DbProcessState implements MutableProcessState {
   }
 
   @Override
+  public void setMissingDeploymentKey(
+      final String tenantId, final long processDefinitionKey, final long deploymentKey) {
+    tenantIdKey.wrapString(tenantId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.deploymentKey.wrapLong(deploymentKey);
+
+    final var process = processColumnFamily.get(tenantAwareProcessDefinitionKey);
+
+    if (process.getDeploymentKey() == deploymentKey) {
+      return;
+    }
+
+    if (process.hasDeploymentKey()) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to set deployment key '%d' for process with key '%d' but process already has deployment key '%d'.",
+              deploymentKey, processDefinitionKey, process.getDeploymentKey()));
+    }
+
+    processId.wrapBuffer(process.getBpmnProcessId());
+
+    process.setDeploymentKey(deploymentKey);
+    processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
+    processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.upsert(
+        tenantAwareProcessIdAndDeploymentKey, fkProcessDefinitionKey);
+    updateInMemoryState(process);
+  }
+
+  @Override
   public void deleteProcess(final ProcessRecord processRecord) {
     tenantIdKey.wrapString(processRecord.getTenantId());
     processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
