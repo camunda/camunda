@@ -65,7 +65,7 @@ jobs:
       CONFTEST_VERSION: '0.56.0'
     steps:
       - uses: actions/checkout@v4
-      - uses: camunda/infra-global-github-actions/actionlint@gh-620-centralized-infracheck-workflow
+      - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           ignore: |
             property "vault_.+" is not defined in object type
