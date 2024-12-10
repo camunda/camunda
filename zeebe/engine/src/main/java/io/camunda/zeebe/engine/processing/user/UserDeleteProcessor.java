@@ -18,17 +18,18 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -41,14 +42,13 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
   private static final String USER_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to delete user with key %s, but a user with this key does not exist";
   private final UserState userState;
-  private final RoleState roleState;
-  private final GroupState groupState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final TenantState tenantState;
 
   public UserDeleteProcessor(
       final KeyGenerator keyGenerator,
@@ -58,8 +58,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.keyGenerator = keyGenerator;
     userState = state.getUserState();
-    roleState = state.getRoleState();
-    groupState = state.getGroupState();
+    tenantState = state.getTenantState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -123,6 +122,17 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
   private void deleteUser(final PersistedUser user) {
     final var userKey = user.getUserKey();
+    for (final var tenantId : user.getTenantIdsList()) {
+      final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
+      stateWriter.appendFollowUpEvent(
+          tenantKey,
+          TenantIntent.ENTITY_REMOVED,
+          new TenantRecord()
+              .setTenantKey(tenantKey)
+              .setEntityKey(userKey)
+              .setEntityType(EntityType.USER));
+    }
+
     for (final var roleKey : user.getRoleKeysList()) {
       stateWriter.appendFollowUpEvent(
           roleKey,

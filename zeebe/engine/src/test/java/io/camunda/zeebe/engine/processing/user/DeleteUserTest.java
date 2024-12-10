@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -59,6 +61,8 @@ public class DeleteUserTest {
             .create();
     final var group = ENGINE.group().newGroup("group").create();
     final var role = ENGINE.role().newRole("role").create();
+    final var tenant = ENGINE.tenant().newTenant().withTenantId("tenant").create();
+
     ENGINE
         .group()
         .addEntity(group.getKey())
@@ -68,6 +72,12 @@ public class DeleteUserTest {
     ENGINE
         .role()
         .addEntity(role.getKey())
+        .withEntityKey(userRecord.getKey())
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .tenant()
+        .addEntity(tenant.getKey())
         .withEntityKey(userRecord.getKey())
         .withEntityType(EntityType.USER)
         .add();
@@ -85,6 +95,12 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
+                .withEntityKey(userRecord.getKey())
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantKey(tenant.getKey())
                 .withEntityKey(userRecord.getKey())
                 .exists())
         .isTrue();
