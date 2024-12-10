@@ -27,7 +27,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
-import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -114,7 +114,7 @@ import org.springframework.web.client.RestTemplate;
       DatabaseInfo.class,
       OperateIndexController.class,
       WebappsModuleConfiguration.class,
-      ServiceSecurityProperties.class,
+      CamundaSecurityProperties.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,

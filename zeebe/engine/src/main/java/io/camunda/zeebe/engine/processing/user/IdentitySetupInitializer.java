@@ -7,16 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -33,27 +36,31 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_USER_PASSWORD = "demo";
   public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
   public static final String DEFAULT_ROLE_NAME = "Admin";
+  public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final KeyGenerator keyGenerator;
-  private final EngineConfiguration config;
+  private final SecurityConfiguration securityConfig;
   private final PasswordEncoder passwordEncoder;
   private final RoleState roleState;
   private final UserState userState;
+  private final TenantState tenantState;
 
   public IdentitySetupInitializer(
       final KeyGenerator keyGenerator,
-      final EngineConfiguration config,
+      final SecurityConfiguration securityConfig,
       final MutableProcessingState processingState) {
     this.keyGenerator = keyGenerator;
-    this.config = config;
+    this.securityConfig = securityConfig;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     userState = processingState.getUserState();
     roleState = processingState.getRoleState();
+    tenantState = processingState.getTenantState();
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    if (!config.isEnableAuthorization()) {
+    if (!securityConfig.getAuthorizations().isEnabled()) {
       // If authorization is disabled we don't need to setup identity.
       LOG.debug("Skipping identity setup as authorization is disabled");
       return;
@@ -70,8 +77,9 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     final var roleExists = roleState.getRoleKeyByName(DEFAULT_ROLE_NAME).isPresent();
     final var userExists = userState.getUser(DEFAULT_USER_USERNAME).isPresent();
-    if (roleExists && userExists) {
-      LOG.debug("Skipping identity setup as default user and role already exist");
+    final var tenantExists = tenantState.getTenantKeyById(DEFAULT_TENANT_ID).isPresent();
+    if (roleExists && userExists && tenantExists) {
+      LOG.debug("Skipping identity setup as default user, role, and tenant already exist");
       return;
     }
 
@@ -92,9 +100,17 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setEmail(DEFAULT_USER_EMAIL)
             .setPassword(passwordEncoder.encode(DEFAULT_USER_PASSWORD))
             .setUserType(UserType.DEFAULT);
+    final var defaultTenant =
+        new TenantRecord()
+            .setTenantKey(keyGenerator.nextKey())
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setName(DEFAULT_TENANT_NAME);
 
     final var setupRecord =
-        new IdentitySetupRecord().setDefaultRole(defaultRole).setDefaultUser(defaultUser);
+        new IdentitySetupRecord()
+            .setDefaultRole(defaultRole)
+            .setDefaultUser(defaultUser)
+            .setDefaultTenant(defaultTenant);
 
     taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
     return taskResultBuilder.build();

@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -282,7 +283,10 @@ public final class TestStreams {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
-            .recordProcessors(List.of(new Engine(wrappedFactory, new EngineConfiguration())))
+            .recordProcessors(
+                List.of(
+                    new Engine(
+                        wrappedFactory, new EngineConfiguration(), new SecurityConfiguration())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class))
@@ -410,6 +414,17 @@ public final class TestStreams {
 
     public FluentLogWriter authorizations(final String... tenantIds) {
       metadata.authorization(AuthorizationUtil.getAuthInfo(tenantIds));
+      return this;
+    }
+
+    public FluentLogWriter authorizations(final long userKey) {
+      metadata.authorization(AuthorizationUtil.getAuthInfo(userKey));
+      return this;
+    }
+
+    public FluentLogWriter authorizationsWithUserKey(
+        final long userKey, final String... tenantIds) {
+      metadata.authorization(AuthorizationUtil.getAuthInfo(userKey, tenantIds));
       return this;
     }
 

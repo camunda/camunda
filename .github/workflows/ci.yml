@@ -38,6 +38,7 @@ jobs:
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
+      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
@@ -135,7 +136,7 @@ jobs:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-frontend
@@ -411,12 +412,12 @@ jobs:
         working-directory: identity/client
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: identity/client/yarn.lock
+          node-version: "20"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: identity/client
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Check formatting
@@ -438,6 +439,12 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  tasklist-frontend-tests:
+    if: needs.detect-changes.outputs.tasklist-frontend-changes == 'true'
+    needs: [detect-changes]
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
@@ -541,12 +548,12 @@ jobs:
         uses: YunaBraska/java-info-action@main
         with:
           work-dir: ./optimize
-      - name: Set Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          cache: yarn
-          cache-dependency-path: optimize/client/yarn.lock
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Unit tests

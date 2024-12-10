@@ -16,6 +16,13 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
   private Long processInstanceKey;
   private Long flowNodeInstanceId;
   private String flowNodeId;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
+  private Long processDefinitionKey;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.7.0. */
+  private String bpmnProcessId;
+
   private String tenantId;
   private String type;
   private String worker;
@@ -186,6 +193,24 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
     return this;
   }
 
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public JobEntity setProcessDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public JobEntity setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -193,11 +218,13 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         processInstanceKey,
         flowNodeInstanceId,
         flowNodeId,
+        processDefinitionKey,
+        bpmnProcessId,
         tenantId,
         type,
         worker,
-        state,
         retries,
+        state,
         errorMessage,
         errorCode,
         deadline,
@@ -225,11 +252,13 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         && Objects.equals(processInstanceKey, jobEntity.processInstanceKey)
         && Objects.equals(flowNodeInstanceId, jobEntity.flowNodeInstanceId)
         && Objects.equals(flowNodeId, jobEntity.flowNodeId)
+        && Objects.equals(processDefinitionKey, jobEntity.processDefinitionKey)
+        && Objects.equals(bpmnProcessId, jobEntity.bpmnProcessId)
         && Objects.equals(tenantId, jobEntity.tenantId)
         && Objects.equals(type, jobEntity.type)
         && Objects.equals(worker, jobEntity.worker)
-        && Objects.equals(state, jobEntity.state)
         && Objects.equals(retries, jobEntity.retries)
+        && Objects.equals(state, jobEntity.state)
         && Objects.equals(errorMessage, jobEntity.errorMessage)
         && Objects.equals(errorCode, jobEntity.errorCode)
         && Objects.equals(deadline, jobEntity.deadline)
@@ -247,8 +276,14 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         + processInstanceKey
         + ", flowNodeInstanceId="
         + flowNodeInstanceId
-        + ", flowNodeId="
+        + ", flowNodeId='"
         + flowNodeId
+        + '\''
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
         + ", tenantId='"
         + tenantId
         + '\''
@@ -285,6 +320,7 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         + '\''
         + ", position="
         + position
-        + '}';
+        + "} "
+        + super.toString();
   }
 }

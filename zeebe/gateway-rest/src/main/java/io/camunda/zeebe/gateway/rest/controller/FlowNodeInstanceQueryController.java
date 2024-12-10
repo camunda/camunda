@@ -19,7 +19,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,12 +33,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class FlowNodeInstanceQueryController {
 
   private final FlowNodeInstanceServices flownodeInstanceServices;
-  private final XmlUtil xmlUtil;
+  private final ProcessCache processCache;
 
   public FlowNodeInstanceQueryController(
-      final FlowNodeInstanceServices flownodeInstanceServices, final XmlUtil xmlUtil) {
+      final FlowNodeInstanceServices flownodeInstanceServices, final ProcessCache processCache) {
     this.flownodeInstanceServices = flownodeInstanceServices;
-    this.xmlUtil = xmlUtil;
+    this.processCache = processCache;
   }
 
   @PostMapping(
@@ -61,7 +61,7 @@ public class FlowNodeInstanceQueryController {
           flownodeInstanceServices
               .withAuthentication(RequestMapper.getAuthentication())
               .getByKey(flowNodeInstanceKey);
-      final String name = xmlUtil.getFlowNodeName(flowNode);
+      final var name = processCache.getFlowNodeName(flowNode);
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toFlowNodeInstance(flowNode, name));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -75,9 +75,10 @@ public class FlowNodeInstanceQueryController {
           flownodeInstanceServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
-      final var nameMap = xmlUtil.getFlowNodesNames(result.items());
+      final var processCacheItems = processCache.getFlowNodeNames(result.items());
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toFlowNodeInstanceSearchQueryResponse(result, nameMap));
+          SearchQueryResponseMapper.toFlowNodeInstanceSearchQueryResponse(
+              result, processCacheItems));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

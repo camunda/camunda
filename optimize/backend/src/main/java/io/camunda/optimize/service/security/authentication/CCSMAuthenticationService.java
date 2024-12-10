@@ -115,6 +115,14 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       }
       redirectUri += configurationService.getContextPath().orElse("");
     }
+
+    // Instead of redirecting to the home page, we redirect to a redirector that
+    // will redirect again to the home page. The reason is that we need to attach
+    // auth cookies to the request, and this only happens if the redirection is initiated
+    // by a human. Having a redirector that does window.location=<url> simulates the behavior.
+    final String targetUri = redirectUri;
+    redirectUri += "/external/static/redirect.html?url=" + targetUri;
+
     LOG.trace("Using root redirect Url: {}", redirectUri);
     return redirectUri;
   }

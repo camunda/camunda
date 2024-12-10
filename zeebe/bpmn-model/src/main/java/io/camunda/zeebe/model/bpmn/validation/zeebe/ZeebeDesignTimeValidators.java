@@ -103,6 +103,7 @@ public final class ZeebeDesignTimeValidators {
                 ZeebeTaskListener::getEventType, ZeebeConstants.ATTRIBUTE_EVENT_TYPE)
             .hasNonEmptyAttribute(ZeebeTaskListener::getType, ZeebeConstants.ATTRIBUTE_TYPE)
             .hasNonEmptyAttribute(ZeebeTaskListener::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
+    validators.add(new TaskListenerValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(ZeebeSubscription.class)
             .hasNonEmptyAttribute(

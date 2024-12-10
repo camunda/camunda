@@ -15,7 +15,7 @@ deny[msg] {
 
 deny[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_without_timeoutminutes(input.jobs)) > 0
 
@@ -25,7 +25,7 @@ deny[msg] {
 
 warn[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 15)) > 0
 
@@ -35,7 +35,7 @@ warn[msg] {
 
 deny[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
@@ -61,6 +61,26 @@ deny[msg] {
     msg := "This GitHub Actions workflows triggers on.push to any branch! Use on.pull_request for non-main/stable* branches."
 }
 
+deny[msg] {
+    # This rule enforces the best practices listed and explained in
+    # https://github.com/camunda/camunda/wiki/CI-&-Automation#caching-strategy
+
+    count(get_jobs_with_setupnodecaching(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using setup-node with caching instead of setup-yarn-cache! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_setupnodecaching(input.jobs))])
+}
+
+warn[msg] {
+    # This rule warns in situations where no "secrets: inherit" is passed on
+    # calling other workflows as this is usually an oversight that prevents
+    # even basic things like CI health metrics from working
+
+    count(get_jobs_with_usesbutnosecrets(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs calling other workflows but not using 'secrets: inherit' which prevents access to secrets even for CI health metrics! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
+}
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -106,5 +126,28 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
             step.uses == "./.github/actions/observe-build-status"
         }
         count(cihealth_steps) < 1
+    }
+}
+
+get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
+    jobs_with_setupnodecaching := { job_id |
+        job := jobInput[job_id]
+
+        setupnodecaching_steps := { step |
+            step := job.steps[_]
+            startswith(step.uses, "actions/setup-node")
+            step["with"].cache == "yarn"
+        }
+        count(setupnodecaching_steps) > 0
+    }
+}
+
+get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
+    jobs_with_usesbutnosecrets := { job_id |
+        job := jobInput[job_id]
+
+        # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
+        job.uses
+        not job.secrets
     }
 }

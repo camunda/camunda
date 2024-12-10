@@ -8,10 +8,10 @@
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
-public class TasklistMetricIndex extends TasklistIndexDescriptor implements Prio4Backup {
+public class TasklistMetricIndex extends TasklistIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "metric";
   public static final String INDEX_VERSION = "8.3.0";

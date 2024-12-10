@@ -24,15 +24,12 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.gateway.interceptors.util.ContextInspectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.util.TestInterceptor;
-import io.camunda.zeebe.gateway.interceptors.util.TestTenantProvidingInterceptor;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import io.netty.util.NetUtil;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.agrona.CloseHelper;
@@ -155,113 +152,6 @@ final class InterceptorIT {
 
     // then
     assertThat(ContextInspectingInterceptor.CONTEXT_QUERY_API.get()).isNotNull();
-  }
-
-  @Test
-  void shouldSetAuthorizedTenantsViaContext() {
-    // given
-    final var tenantInterceptorCfg = new InterceptorCfg();
-    tenantInterceptorCfg.setId("tenantProviderTest");
-    tenantInterceptorCfg.setClassName(TestTenantProvidingInterceptor.class.getName());
-    final var contextInspectingInterceptorCfg = new InterceptorCfg();
-    contextInspectingInterceptorCfg.setId("test");
-    contextInspectingInterceptorCfg.setClassName(ContextInspectingInterceptor.class.getName());
-
-    config.getInterceptors().add(0, tenantInterceptorCfg);
-    config.getInterceptors().add(1, contextInspectingInterceptorCfg);
-
-    // when
-    gateway.start().join();
-    try (final var client = createZeebeClient()) {
-      try {
-        client.newTopologyRequest().send().join();
-      } catch (final ClientStatusException ignored) {
-        // ignore any errors, we just really care that the interceptor was called
-      }
-    }
-
-    // then
-    assertThat(ContextInspectingInterceptor.CONTEXT_TENANT_IDS.get()).isNotNull();
-    assertThat(ContextInspectingInterceptor.CONTEXT_TENANT_IDS.get())
-        .containsExactlyInAnyOrderElementsOf(List.of("tenant-1"));
-  }
-
-  @Test
-  void shouldUseLastValueOfAuthorizedTenantsSetViaContext() {
-    // given
-    final var tenantInterceptorCfg = new InterceptorCfg();
-    tenantInterceptorCfg.setId("tenantProviderTest");
-    tenantInterceptorCfg.setClassName(TestTenantProvidingInterceptor.class.getName());
-    final var secondTenantInterceptorCfg = new InterceptorCfg();
-    secondTenantInterceptorCfg.setId("secondTenantProviderTest");
-    secondTenantInterceptorCfg.setClassName(TestTenantProvidingInterceptor.class.getName());
-    final var contextInspectingInterceptorCfg = new InterceptorCfg();
-    contextInspectingInterceptorCfg.setId("test");
-    contextInspectingInterceptorCfg.setClassName(ContextInspectingInterceptor.class.getName());
-
-    config.getInterceptors().addFirst(tenantInterceptorCfg);
-    config.getInterceptors().add(secondTenantInterceptorCfg);
-    config.getInterceptors().addLast(contextInspectingInterceptorCfg);
-
-    // reset calls from previous tests
-    TestTenantProvidingInterceptor.resetInterceptorsCalls();
-
-    // when
-    gateway.start().join();
-    try (final var client = createZeebeClient()) {
-      try {
-        client.newTopologyRequest().send().join();
-      } catch (final ClientStatusException ignored) {
-        // ignore any errors, we just really care that the interceptor was called
-      }
-    }
-
-    // then
-    assertThat(ContextInspectingInterceptor.CONTEXT_TENANT_IDS.get()).isNotNull();
-    assertThat(ContextInspectingInterceptor.CONTEXT_TENANT_IDS.get())
-        .containsExactlyInAnyOrderElementsOf(List.of("tenant-2"));
-  }
-
-  @Test
-  void shouldNotUseAuthorizedTenantsSetViaContextWhenMultiTenancyIsDisabled() {
-    // given
-    final var tenantInterceptorCfg = new InterceptorCfg();
-    tenantInterceptorCfg.setId("tenantProviderTest");
-    tenantInterceptorCfg.setClassName(TestTenantProvidingInterceptor.class.getName());
-    final var contextInspectingInterceptorCfg = new InterceptorCfg();
-    contextInspectingInterceptorCfg.setId("test");
-    contextInspectingInterceptorCfg.setClassName(ContextInspectingInterceptor.class.getName());
-
-    config.getInterceptors().addFirst(tenantInterceptorCfg);
-    config.getInterceptors().addLast(contextInspectingInterceptorCfg);
-    config.getMultiTenancy().setEnabled(false);
-
-    // reset calls from previous tests
-    TestTenantProvidingInterceptor.resetInterceptorsCalls();
-
-    // when
-    gateway.start().join();
-    try (final var client = createZeebeClient()) {
-      try {
-        // TODO: capture Broker request to assert that tenant id is set to <default>
-        final DeploymentEvent response =
-            client
-                .newDeployResourceCommand()
-                .addResourceFromClasspath("processes/one-task-process.bpmn")
-                .send()
-                .join();
-
-        // then
-        // the tenant authorizations list is still set on the gRPC context
-        assertThat(ContextInspectingInterceptor.CONTEXT_TENANT_IDS.get()).isNotNull();
-        assertThat(ContextInspectingInterceptor.CONTEXT_TENANT_IDS.get())
-            .containsExactlyInAnyOrderElementsOf(List.of("tenant-1"));
-        // but the tenant authorizations list is ignored, and the <default> tenant is used
-        assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-      } catch (final ClientStatusException ignored) {
-        // ignore any errors, we just really care that the interceptor was called
-      }
-    }
   }
 
   private ZeebeClient createZeebeClient() {

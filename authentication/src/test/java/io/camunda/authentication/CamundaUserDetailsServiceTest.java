@@ -52,7 +52,7 @@ public class CamundaUserDetailsServiceTest {
         .thenReturn(
             new SearchQueryResult<>(
                 1,
-                List.of(new UserEntity(1L, TEST_USER_ID, "Foo Bar", "not@tested", "password1")),
+                List.of(new UserEntity(1L, TEST_USER_ID, "Foo Bar", "email@tested", "password1")),
                 null));
 
     when(authorizationServices.search(any()))
@@ -76,6 +76,7 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getName()).isEqualTo("Foo Bar");
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");
+    assertThat(user.getEmail()).isEqualTo("email@tested");
     assertThat(user.getAuthorizedApplications()).containsExactlyInAnyOrder("operate", "identity");
   }
 

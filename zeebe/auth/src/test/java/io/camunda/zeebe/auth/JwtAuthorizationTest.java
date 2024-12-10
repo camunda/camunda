@@ -179,27 +179,6 @@ public class JwtAuthorizationTest {
   }
 
   @Test
-  public void shouldFailJwtTokenValidationWithNoAuthorizedTenants() {
-    // given
-    final String jwtToken =
-        JWT.create()
-            .withIssuer(DEFAULT_ISSUER)
-            .withAudience(DEFAULT_AUDIENCE)
-            .withSubject(DEFAULT_SUBJECT)
-            .sign(Algorithm.none());
-
-    // when
-    final JwtAuthorizationDecoder decoder =
-        Authorization.jwtDecoder(jwtToken).withClaim(Authorization.AUTHORIZED_TENANTS);
-
-    // then
-    assertThatThrownBy(() -> decoder.decode())
-        .isInstanceOf(UnrecoverableException.class)
-        .hasMessage(
-            "Authorization data unavailable: The Claim 'authorized_tenants' is not present in the JWT.");
-  }
-
-  @Test
   public void shouldFailJwtTokenDecodingWithInvalidJwtToken() {
     // given
     final String invalidJwtToken = "invalid.jwt.token";

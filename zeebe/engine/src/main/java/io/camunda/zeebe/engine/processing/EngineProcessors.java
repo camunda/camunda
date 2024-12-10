@@ -101,6 +101,7 @@ public final class EngineProcessors {
     final var clock = typedRecordProcessorContext.getClock();
     final int partitionId = typedRecordProcessorContext.getPartitionId();
     final var config = typedRecordProcessorContext.getConfig();
+    final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
     final DueDateTimerChecker timerChecker =
         new DueDateTimerChecker(
@@ -116,7 +117,9 @@ public final class EngineProcessors {
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
     final var authCheckBehavior =
         new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(), processingState.getUserState(), config);
+            processingState.getAuthorizationState(),
+            processingState.getUserState(),
+            securityConfig);
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
@@ -299,7 +302,7 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        config);
+        securityConfig);
 
     return typedRecordProcessors;
   }
@@ -417,7 +420,7 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT,
         DeploymentIntent.RECONSTRUCT,
-        new DeploymentReconstructProcessor(keyGenerator, writers));
+        new DeploymentReconstructProcessor(keyGenerator, processingState, writers));
 
     typedRecordProcessors.withListener(
         new DeploymentReconstructionStarter(processingState.getDeploymentState()));

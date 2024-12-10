@@ -19,7 +19,6 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateMappingRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
@@ -32,6 +31,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
+import com.google.monitoring.v3.UpdateGroupRequest;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -65,6 +65,8 @@ import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -88,6 +90,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -228,11 +231,6 @@ public class RequestMapper {
         validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
-            .flatMap(
-                tenantId ->
                     validateMessageCorrelationRequest(correlationRequest)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
@@ -279,6 +277,20 @@ public class RequestMapper {
     return getResult(
         RoleRequestValidator.validateCreateRequest(roleCreateRequest),
         () -> new CreateRoleRequest(roleCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
+      final GroupCreateRequest groupCreateRequest) {
+    return getResult(
+        GroupRequestValidator.validateCreateRequest(groupCreateRequest),
+        () -> new CreateGroupRequest(groupCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
+      final GroupUpdateRequest groupUpdateRequest, final long groupKey) {
+    return getResult(
+        GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
+        () -> new UpdateGroupRequest(groupKey, groupUpdateRequest.getChangeset().getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -372,12 +384,7 @@ public class RequestMapper {
       final boolean multiTenancyEnabled) {
     try {
       final Either<ProblemDetail, String> validationResponse =
-          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources")
-              .flatMap(
-                  tenant ->
-                      validateAuthorization(tenant, multiTenancyEnabled, "Deploy Resources")
-                          .map(Either::<ProblemDetail, String>left)
-                          .orElseGet(() -> Either.right(tenant)));
+          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources");
       if (validationResponse.isLeft()) {
         return Either.left(validationResponse.getLeft());
       }
@@ -405,11 +412,6 @@ public class RequestMapper {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(
                 messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Publish Message")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateMessagePublicationRequest(messagePublicationRequest)
@@ -441,11 +443,6 @@ public class RequestMapper {
       final SignalBroadcastRequest request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Broadcast Signal")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateSignalBroadcastRequest(request)
@@ -568,11 +565,6 @@ public class RequestMapper {
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
             .flatMap(
                 tenant ->
-                    validateAuthorization(tenant, multiTenancyEnabled, "Create Process Instance")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)))
-            .flatMap(
-                tenant ->
                     validateCreateProcessInstanceRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenant)));
@@ -648,11 +640,6 @@ public class RequestMapper {
       final EvaluateDecisionRequest request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Evaluate Decision")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateEvaluateDecisionRequest(request)
@@ -793,4 +780,8 @@ public class RequestMapper {
   public record UpdateRoleRequest(long roleKey, String name) {}
 
   public record CreateTenantRequest(String tenantId, String name) {}
+
+  public record CreateGroupRequest(String name) {}
+
+  public record UpdateGroupRequest(long groupKey, String name) {}
 }

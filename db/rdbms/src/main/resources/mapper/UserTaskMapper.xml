@@ -236,10 +236,28 @@
     </if>
 
     <!-- Variables Basic Filter -->
-    <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
+    <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
       AND EXISTS (Select * from VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
       AND ( 1 = 1
-      <foreach collection="filter.variableFilters" item="operation">
+      <foreach collection="filter.processInstanceVariableFilter" item="operation">
+        OR ( v.VAR_NAME = #{operation.name}
+        /**
+        FIXME waiting for the new API implementation of the variableFilter which uses the new
+        operator class.
+        (eq as property is not allowed since the expression language from mybatis also supports a
+        "eq" function)
+        test="operation.eq != null"
+        **/
+        )
+      </foreach>
+      ))
+    </if>
+
+    <!-- Local Variables Basic Filter -->
+    <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
+      AND EXISTS (Select * from VARIABLE v where v.SCOPE_KEY = ut.USER_TASK_KEY
+      AND ( 1 = 1
+      <foreach collection="filter.localVariableFilters" item="operation">
         OR ( v.VAR_NAME = #{operation.name}
         /**
         FIXME waiting for the new API implementation of the variableFilter which uses the new

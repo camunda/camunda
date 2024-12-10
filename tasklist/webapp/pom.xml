@@ -15,12 +15,12 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>webapps-backup</artifactId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>webapps-schema</artifactId>
+      <artifactId>webapps-common</artifactId>
     </dependency>
 
     <dependency>
@@ -42,6 +42,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-els-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
 
     <!-- ZEEBE -->
@@ -333,11 +338,6 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
     </dependency>
 
     <dependency>

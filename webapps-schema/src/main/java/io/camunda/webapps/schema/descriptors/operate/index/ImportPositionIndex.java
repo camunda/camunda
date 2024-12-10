@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.index;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 
-public class ImportPositionIndex extends OperateIndexDescriptor implements Prio3Backup {
+public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "import-position";
 

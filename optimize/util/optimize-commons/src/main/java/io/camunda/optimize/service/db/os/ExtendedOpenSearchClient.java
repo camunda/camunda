@@ -39,7 +39,6 @@ import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
@@ -181,13 +180,6 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
       throws IOException, OpenSearchException {
     final JsonEndpoint<Map<String, Object>, HashMap, ErrorResponse> endpoint =
         arbitraryEndpoint(method, path, getDeserializer(HashMap.class));
-    return arbitraryRequest(json, endpoint);
-  }
-
-  public CountResponse countFromJson(final String method, final String path, final String json)
-      throws IOException, OpenSearchException {
-    final JsonEndpoint<Map<String, Object>, CountResponse, ErrorResponse> endpoint =
-        arbitraryEndpoint(method, path, getDeserializer(CountResponse.class));
     return arbitraryRequest(json, endpoint);
   }
 

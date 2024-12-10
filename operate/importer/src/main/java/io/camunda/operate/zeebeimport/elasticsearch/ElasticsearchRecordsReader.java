@@ -135,7 +135,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   @PostConstruct
-  private void postConstruct() {
+  public void postConstruct() {
     batchSizeThrottle =
         new NumberThrottleable.DivideNumberThrottle(
             operateProperties.getZeebeElasticsearch().getBatchSize());
@@ -144,6 +144,20 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     countEmptyRuns = 0;
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
+
+    try {
+      final var latestPosition =
+          importPositionHolder.getLatestLoadedPosition(
+              importValueType.getAliasTemplate(), partitionId);
+
+      importPositionHolder.recordLatestLoadedPosition(latestPosition);
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to write initial import position index document for value type [{}] and partition [{}]",
+          importValueType,
+          partitionId,
+          e);
+    }
   }
 
   @Override

@@ -15,6 +15,7 @@ import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
@@ -34,7 +35,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -52,13 +52,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<byte[], DirectBuffer> checksumGenerator;
+  private final ChecksumGenerator checksumGenerator;
   private final DecisionState decisionState;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<byte[], DirectBuffer> checksumGenerator,
+      final ChecksumGenerator checksumGenerator,
       final DecisionState decisionState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -95,7 +95,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     if (deployment.hasDuplicatesOnly()) {
       return;
     }
-    final var checksum = checksumGenerator.apply(resource.getResource());
+    final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.decisionRequirementsMetadata().stream()
         .filter(drg -> checksum.equals(drg.getChecksumBuffer()))
         .findFirst()
@@ -234,7 +234,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final DeploymentRecord deploymentEvent) {
 
     final LongSupplier newDecisionRequirementsKey = keyGenerator::nextKey;
-    final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
+    final DirectBuffer checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     final var drgRecord = deploymentEvent.decisionRequirementsMetadata().add();
 
     drgRecord

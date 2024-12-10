@@ -50,6 +50,34 @@ public class FlowNodeInstanceIT {
   }
 
   @TestTemplate
+  public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceReader flowNodeInstanceReader = rdbmsService.getFlowNodeInstanceReader();
+
+    final FlowNodeInstanceDbModel original = createAndSaveFlowNodeInstance(rdbmsWriter, b -> b);
+    rdbmsWriter.getFlowNodeInstanceWriter().createIncident(original.flowNodeInstanceKey(), 42L);
+    rdbmsWriter.flush();
+
+    final var instance =
+        flowNodeInstanceReader.findOne(original.flowNodeInstanceKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.hasIncident()).isTrue();
+    assertThat(instance.incidentKey()).isEqualTo(42L);
+
+    rdbmsWriter.getFlowNodeInstanceWriter().resolveIncident(original.flowNodeInstanceKey());
+    rdbmsWriter.flush();
+
+    final var resolvedInstance =
+        flowNodeInstanceReader.findOne(original.flowNodeInstanceKey()).orElse(null);
+
+    assertThat(resolvedInstance).isNotNull();
+    assertThat(resolvedInstance.hasIncident()).isFalse();
+    assertThat(resolvedInstance.incidentKey()).isNull();
+  }
+
+  @TestTemplate
   public void shouldFindFlowNodeInstanceByProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

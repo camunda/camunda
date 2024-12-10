@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaCreationIT extends OperateSearchAbstractIT {
@@ -54,7 +55,11 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
 
   @Autowired private EventTemplate eventTemplate;
   @Autowired private ListViewTemplate listViewTemplate;
-  @Autowired private ProcessIndex processIndex;
+
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
+
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private IndicesCheck indicesCheck;

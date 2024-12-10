@@ -105,7 +105,7 @@ services:
       - opensearch
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.0.6@sha256:bb9bca49d0e2a065de44e1f505add4c477136a96cd9ebf9c97d4b0178d0f0302
+    image: bitnami/keycloak:26.0.7@sha256:586f85341c86a793b29ab5e1be134c20193d91c152d64441940943efe6882e12
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     ports:
       - '18080:8080'

@@ -11,13 +11,13 @@ import static io.camunda.tasklist.util.TestCheck.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.util.List;
@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -46,7 +47,9 @@ public class OpenSearchChecks {
 
   @Autowired private ProcessStore processStore;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   /** Checks whether the process of given args[0] processId (Long) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)

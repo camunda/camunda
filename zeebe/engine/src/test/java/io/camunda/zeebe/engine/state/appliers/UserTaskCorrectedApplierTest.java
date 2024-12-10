@@ -62,9 +62,9 @@ public class UserTaskCorrectedApplierTest {
         Arguments.of(
             3, List.of(UserTaskIntent.CREATING, UserTaskIntent.CREATED), LifecycleState.UPDATING),
         Arguments.of(
-            4,
-            List.of(UserTaskIntent.CREATING, UserTaskIntent.CREATED),
-            LifecycleState.COMPLETING));
+            4, List.of(UserTaskIntent.CREATING, UserTaskIntent.CREATED), LifecycleState.COMPLETING),
+        Arguments.of(
+            5, List.of(UserTaskIntent.CREATING, UserTaskIntent.CREATED), LifecycleState.CLAIMING));
   }
 
   @ParameterizedTest(name = "on {2}")
@@ -131,6 +131,7 @@ public class UserTaskCorrectedApplierTest {
     return switch (state) {
       case CREATING -> UserTaskIntent.CREATING;
       case ASSIGNING -> UserTaskIntent.ASSIGNING;
+      case CLAIMING -> UserTaskIntent.CLAIMING;
       case UPDATING -> UserTaskIntent.UPDATING;
       case CANCELING -> UserTaskIntent.CANCELING;
       case COMPLETING -> UserTaskIntent.COMPLETING;

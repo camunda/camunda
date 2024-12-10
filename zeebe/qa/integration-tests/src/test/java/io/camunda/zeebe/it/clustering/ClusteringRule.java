@@ -32,6 +32,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -368,7 +369,8 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             atomixCluster,
             brokerClient,
-            new SimpleMeterRegistry());
+            new SimpleMeterRegistry(),
+            new SecurityConfiguration());
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =

@@ -146,6 +146,29 @@ public class MappingControllerTest extends RestControllerTest {
     verifyNoInteractions(mappingServices);
   }
 
+  @Test
+  void deleteMappingShouldReturnNoContent() {
+    // given
+    final long mappingKey = 100L;
+
+    final var mappingRecord = new MappingRecord().setMappingKey(mappingKey);
+
+    when(mappingServices.deleteMapping(mappingKey))
+        .thenReturn(CompletableFuture.completedFuture(mappingRecord));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(mappingServices, times(1)).deleteMapping(mappingKey);
+  }
+
   private MappingDTO validCreateMappingRequest() {
     return new MappingDTO("newClaimName", "newClaimValue");
   }

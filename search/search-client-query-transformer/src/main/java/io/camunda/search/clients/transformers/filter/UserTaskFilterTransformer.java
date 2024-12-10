@@ -13,7 +13,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -36,6 +35,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -66,35 +66,15 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
 
-    // Task Variable Query: Check if taskVariable with specified varName and varValue exists
-    final var taskVariableQuery = getTaskVariablesQuery(filter.variableFilters());
+    // Process Instance Variable Query: Check if processVariable  with specified varName and
+    // varValue exists
+    ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
+        .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
 
-    // Process Variable Query: Check if processVariable  with specified varName and varValue exists
-    final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
+    // Local Variable Query: Check if localVariable with specified varName and varValue exists
+    // No need validate parent as the localVariable is the only children from Task
+    ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
-    if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
-      // Task Variable Name Query
-      final var taskVarNameQuery =
-          filter.variableFilters() != null
-              ? stringTerms(
-                  "name",
-                  filter.variableFilters().stream()
-                      .map(VariableValueFilter::name)
-                      .collect(Collectors.toList()))
-              : null;
-
-      // Process Condition:
-      // 1. Check for process variables in the parent process.
-      // 2. Check for variables in subprocesses.
-      // 3. Ensure there is no overriding taskVariable.
-      final var processVariableCondition =
-          and(
-              hasParentQuery("process", processVariableQuery),
-              not(hasChildQuery("taskVariable", taskVarNameQuery)));
-
-      // Combine taskVariable, processVariable, and subprocessVariable queries with OR logic
-      queries.add(or(taskVariableQuery, processVariableCondition));
-    }
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
     return and(queries);
@@ -153,27 +133,28 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
   }
 
-  private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getProcessInstanceVariablesQuery(
+      final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
       final var queries =
           variableFilters.stream()
               .map(transformer::apply)
-              .map((q) -> hasChildQuery("processVariable", q))
+              .map((q) -> hasChildQuery(TaskJoinRelationshipType.PROCESS_VARIABLE.getType(), q))
               .collect(Collectors.toList());
       return or(queries);
     }
     return null;
   }
 
-  private SearchQuery getTaskVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getLocalVariablesQuery(final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
 
       final var queries =
           variableFilters.stream()
               .map(transformer::apply)
-              .map((q) -> hasChildQuery("taskVariable", q))
+              .map((q) -> hasChildQuery(TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), q))
               .collect(Collectors.toList());
       return or(queries);
     }

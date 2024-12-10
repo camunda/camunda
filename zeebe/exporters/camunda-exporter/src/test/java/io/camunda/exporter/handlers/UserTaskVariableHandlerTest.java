@@ -8,10 +8,12 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -23,10 +25,13 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class UserTaskVariableHandlerTest {
 
@@ -41,7 +46,7 @@ public class UserTaskVariableHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(TaskVariableEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(UserTaskVariableBatch.class);
   }
 
   @Test
@@ -68,9 +73,9 @@ public class UserTaskVariableHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldGenerateId() {
     // given
-    final long expectedId = 123;
+    final long processInstanceKey = 123L;
     final String name = "name";
     final Record<VariableRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -80,14 +85,15 @@ public class UserTaskVariableHandlerTest {
                     .withValue(
                         ImmutableVariableRecordValue.builder()
                             .withName("name")
-                            .withScopeKey(expectedId)
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withScopeKey(processInstanceKey)
                             .build()));
 
     // when
     final var idList = underTest.generateIds(processInstanceRecord);
 
     // then
-    assertThat(idList).containsExactly(expectedId + "-" + name);
+    assertThat(idList).containsExactly(processInstanceKey + "-" + name);
   }
 
   @Test
@@ -103,30 +109,66 @@ public class UserTaskVariableHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final TaskVariableEntity inputEntity =
+    final String id = "id";
+    final UserTaskVariableBatch variableBatch =
+        new UserTaskVariableBatch().setId(id).setVariables(new ArrayList<>());
+
+    final TaskVariableEntity processVariableEntity =
         new TaskVariableEntity()
-            .setId("111")
+            .setId(id)
             .setValue("value")
             .setIsTruncated(false)
+            .setProcessInstanceId(123L)
             .setScopeKey(123L);
+
+    final TaskVariableEntity taskVariableEntity =
+        new TaskVariableEntity()
+            .setId(id + TaskTemplate.LOCAL_VARIABLE_SUFFIX)
+            .setValue("value")
+            .setIsTruncated(false)
+            .setProcessInstanceId(123L)
+            .setScopeKey(456L);
+
+    variableBatch.getVariables().addAll(List.of(processVariableEntity, taskVariableEntity));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
+    final ArgumentCaptor<String> idCaptor = ArgumentCaptor.forClass(String.class);
+    final ArgumentCaptor<TaskVariableEntity> entityCaptor =
+        ArgumentCaptor.forClass(TaskVariableEntity.class);
+    final ArgumentCaptor<Map<String, Object>> updateFieldsCaptor =
+        ArgumentCaptor.forClass(Map.class);
+    final ArgumentCaptor<String> routingCaptor = ArgumentCaptor.forClass(String.class);
+
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(variableBatch, mockRequest);
 
     // then
+    assertThat(variableBatch.getVariables()).hasSize(2);
+    verify(mockRequest, times(2))
+        .upsertWithRouting(
+            eq(indexName),
+            idCaptor.capture(),
+            entityCaptor.capture(),
+            updateFieldsCaptor.capture(),
+            routingCaptor.capture());
+
+    // Get the captured values
+    final List<String> capturedIds = idCaptor.getAllValues();
+    final List<TaskVariableEntity> capturedEntities = entityCaptor.getAllValues();
+    final List<Map<String, Object>> capturedUpdateFields = updateFieldsCaptor.getAllValues();
+    final List<String> capturedRoutings = routingCaptor.getAllValues();
+
     final Map<String, Object> updateFieldsMap = new HashMap<>();
     updateFieldsMap.put(TaskTemplate.VARIABLE_FULL_VALUE, null);
     updateFieldsMap.put(TaskTemplate.VARIABLE_VALUE, "value");
     updateFieldsMap.put(TaskTemplate.IS_TRUNCATED, false);
 
-    verify(mockRequest, times(1))
-        .upsertWithRouting(
-            indexName,
-            inputEntity.getId(),
-            inputEntity,
-            updateFieldsMap,
-            String.valueOf(inputEntity.getScopeKey()));
+    // Perform assertions without considering the order
+    assertThat(capturedIds).containsExactlyInAnyOrder(id, id + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
+    assertThat(capturedEntities)
+        .containsExactlyInAnyOrder(processVariableEntity, taskVariableEntity);
+    assertThat(capturedUpdateFields).containsExactlyInAnyOrder(updateFieldsMap, updateFieldsMap);
+    assertThat(capturedRoutings).containsExactlyInAnyOrder("123", "123");
   }
 
   @Test
@@ -148,26 +190,73 @@ public class UserTaskVariableHandlerTest {
             r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
 
     // when
-    final TaskVariableEntity variableEntity =
-        new TaskVariableEntity().setId(variableScopeKey + "-" + variableRecordValue.getName());
-    underTest.updateEntity(variableRecord, variableEntity);
+    final var batch = new UserTaskVariableBatch().setVariables(new ArrayList<>()).setId("id");
+
+    underTest.updateEntity(variableRecord, batch);
 
     // then
-    assertThat(variableEntity.getId())
+    assertThat(batch.getVariables()).hasSize(2);
+    final var processVariable =
+        batch.getVariables().stream()
+            .filter(
+                v ->
+                    TaskJoinRelationshipType.PROCESS_VARIABLE
+                        .getType()
+                        .equals(v.getJoin().getName()))
+            .findFirst()
+            .get();
+
+    final var localVariable =
+        batch.getVariables().stream()
+            .filter(
+                v ->
+                    TaskJoinRelationshipType.LOCAL_VARIABLE.getType().equals(v.getJoin().getName()))
+            .findFirst()
+            .get();
+
+    assertThat(processVariable).isNotNull();
+    assertThat(localVariable).isNotNull();
+
+    // Local Variable Assertions
+    assertThat(localVariable.getId())
+        .isEqualTo(
+            variableRecordValue.getScopeKey()
+                + "-"
+                + variableRecordValue.getName()
+                + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
+
+    assertThat(localVariable.getKey()).isEqualTo(variableRecord.getKey());
+    assertThat(localVariable.getName()).isEqualTo(variableRecordValue.getName());
+    assertThat(localVariable.getScopeKey()).isEqualTo(variableRecordValue.getScopeKey());
+    assertThat(localVariable.getTenantId()).isEqualTo(variableRecordValue.getTenantId());
+    assertThat(localVariable.getValue()).isEqualTo(variableRecordValue.getValue());
+    assertThat(localVariable.getProcessInstanceId()).isEqualTo(processInstanceKey);
+    assertThat(localVariable.getIsTruncated()).isFalse();
+    assertThat(localVariable.getFullValue()).isNull();
+    assertThat(localVariable.getPosition()).isEqualTo(variableRecord.getPosition());
+    assertThat(localVariable.getJoin()).isNotNull();
+    assertThat(localVariable.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
+    assertThat(localVariable.getJoin().getName())
+        .isEqualTo(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
+
+    // Process Variable Assertions
+    assertThat(processVariable.getId())
         .isEqualTo(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
-    assertThat(variableEntity.getKey()).isEqualTo(variableRecord.getKey());
-    assertThat(variableEntity.getName()).isEqualTo(variableRecordValue.getName());
-    assertThat(variableEntity.getScopeKey()).isEqualTo(variableRecordValue.getScopeKey());
-    assertThat(variableEntity.getTenantId()).isEqualTo(variableRecordValue.getTenantId());
-    assertThat(variableEntity.getValue()).isEqualTo(variableRecordValue.getValue());
-    assertThat(variableEntity.getProcessInstanceId()).isEqualTo(processInstanceKey);
-    assertThat(variableEntity.getIsTruncated()).isFalse();
-    assertThat(variableEntity.getFullValue()).isNull();
-    assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
-    assertThat(variableEntity.getJoin()).isNotNull();
-    assertThat(variableEntity.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
-    assertThat(variableEntity.getJoin().getName())
-        .isEqualTo(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+
+    assertThat(processVariable.getKey()).isEqualTo(variableRecord.getKey());
+    assertThat(processVariable.getName()).isEqualTo(variableRecordValue.getName());
+    assertThat(processVariable.getScopeKey()).isEqualTo(variableRecordValue.getScopeKey());
+    assertThat(processVariable.getTenantId()).isEqualTo(variableRecordValue.getTenantId());
+    assertThat(processVariable.getValue()).isEqualTo(variableRecordValue.getValue());
+    assertThat(processVariable.getProcessInstanceId()).isEqualTo(processInstanceKey);
+    assertThat(processVariable.getIsTruncated()).isFalse();
+    assertThat(processVariable.getFullValue()).isNull();
+    assertThat(processVariable.getPosition()).isEqualTo(variableRecord.getPosition());
+    assertThat(processVariable.getJoin()).isNotNull();
+    assertThat(processVariable.getJoin().getParent())
+        .isEqualTo(variableRecordValue.getProcessInstanceKey());
+    assertThat(processVariable.getJoin().getName())
+        .isEqualTo(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
   }
 
   @Test
@@ -188,11 +277,13 @@ public class UserTaskVariableHandlerTest {
             r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
 
     // when
-    final TaskVariableEntity variableEntity =
-        new TaskVariableEntity().setId(processInstanceKey + "-" + variableRecordValue.getName());
-    underTest.updateEntity(variableRecord, variableEntity);
+    final UserTaskVariableBatch batch = new UserTaskVariableBatch().setVariables(new ArrayList<>());
+    underTest.updateEntity(variableRecord, batch);
 
     // then
+    assertThat(batch.getVariables()).hasSize(1);
+    final var variableEntity = batch.getVariables().get(0);
+    assertThat(variableEntity).isNotNull();
     assertThat(variableEntity.getId())
         .isEqualTo(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
     assertThat(variableEntity.getKey()).isEqualTo(variableRecord.getKey());
@@ -205,7 +296,8 @@ public class UserTaskVariableHandlerTest {
     assertThat(variableEntity.getFullValue()).isNull();
     assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
     assertThat(variableEntity.getJoin()).isNotNull();
-    assertThat(variableEntity.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
+    assertThat(variableEntity.getJoin().getParent())
+        .isEqualTo(variableRecordValue.getProcessInstanceKey());
     assertThat(variableEntity.getJoin().getName())
         .isEqualTo(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
   }
@@ -217,6 +309,8 @@ public class UserTaskVariableHandlerTest {
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
             .withValue("v".repeat(underTest.variableSizeThreshold + 1))
+            .withScopeKey(123)
+            .withProcessInstanceKey(123)
             .build();
 
     final Record<VariableRecordValue> variableRecord =
@@ -225,10 +319,12 @@ public class UserTaskVariableHandlerTest {
             r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
 
     // when
-    final TaskVariableEntity variableEntity = new TaskVariableEntity();
-    underTest.updateEntity(variableRecord, variableEntity);
+    final UserTaskVariableBatch batch = new UserTaskVariableBatch().setVariables(new ArrayList<>());
+    underTest.updateEntity(variableRecord, batch);
 
     // then
+    assertThat(batch.getVariables()).hasSize(1);
+    final var variableEntity = batch.getVariables().get(0);
     assertThat(variableEntity.getValue()).isEqualTo("v".repeat(underTest.variableSizeThreshold));
     assertThat(variableEntity.getFullValue())
         .isEqualTo("v".repeat(underTest.variableSizeThreshold + 1));

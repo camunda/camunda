@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
 
@@ -33,13 +33,13 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<byte[], DirectBuffer> checksumGenerator;
+  private final ChecksumGenerator checksumGenerator;
   private final FormState formState;
 
   public FormResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<byte[], DirectBuffer> checksumGenerator,
+      final ChecksumGenerator checksumGenerator,
       final FormState formState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -69,7 +69,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     if (deployment.hasDuplicatesOnly()) {
       return;
     }
-    final var checksum = checksumGenerator.apply(resource.getResource());
+    final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.formMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
         .findFirst()
@@ -131,7 +131,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
       final DeploymentResource resource,
       final DeploymentRecord deployment) {
     final LongSupplier newFormKey = keyGenerator::nextKey;
-    final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
+    final DirectBuffer checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     final String tenantId = deployment.getTenantId();
 
     formRecord.setFormId(form.id);

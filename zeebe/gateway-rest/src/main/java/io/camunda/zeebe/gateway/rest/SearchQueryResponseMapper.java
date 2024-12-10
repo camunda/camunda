@@ -20,7 +20,9 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -45,8 +47,12 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
+import io.camunda.zeebe.gateway.protocol.rest.GroupItem;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
@@ -68,6 +74,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -109,6 +116,17 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
   }
 
+  public static GroupSearchQueryResponse toGroupSearchQueryResponse(
+      final SearchQueryResult<GroupEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroups)
+                .orElseGet(List::of));
+  }
+
   public static TenantSearchQueryResponse toTenantSearchQueryResponse(
       final SearchQueryResult<TenantEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -117,6 +135,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static MappingSearchQueryResponse toMappingSearchQueryResponse(
+      final SearchQueryResult<MappingEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new MappingSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toMappings)
                 .orElseGet(List::of));
   }
 
@@ -144,13 +173,13 @@ public final class SearchQueryResponseMapper {
 
   public static FlowNodeInstanceSearchQueryResponse toFlowNodeInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
-      final Map<Long, Map<String, String>> nameMap) {
+      final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
     return new FlowNodeInstanceSearchQueryResponse()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(instances -> toFlowNodeInstance(instances, nameMap))
+                .map(instances -> toFlowNodeInstance(instances, processCacheItems))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -167,13 +196,13 @@ public final class SearchQueryResponseMapper {
 
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result,
-      final Map<Long, Map<String, String>> nameMap) {
+      final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
     return new UserTaskSearchQueryResponse()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(tasks -> toUserTasks(tasks, nameMap))
+                .map(tasks -> toUserTasks(tasks, processCacheItems))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -265,6 +294,14 @@ public final class SearchQueryResponseMapper {
     return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
   }
 
+  private static List<GroupItem> toGroups(final List<GroupEntity> groups) {
+    return groups.stream().map(SearchQueryResponseMapper::toGroup).toList();
+  }
+
+  public static GroupItem toGroup(final GroupEntity groupEntity) {
+    return new GroupItem().key(groupEntity.key()).name(groupEntity.name());
+  }
+
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {
     return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
   }
@@ -280,6 +317,17 @@ public final class SearchQueryResponseMapper {
                 : tenantEntity.assignedMemberKeys().stream().sorted().toList());
   }
 
+  private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {
+    return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
+  }
+
+  public static MappingItem toMapping(final MappingEntity mappingEntity) {
+    return new MappingItem()
+        .mappingKey(mappingEntity.mappingKey())
+        .claimName(mappingEntity.claimName())
+        .claimValue(mappingEntity.claimValue());
+  }
+
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
       final List<DecisionDefinitionEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
@@ -291,13 +339,17 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<FlowNodeInstanceItem> toFlowNodeInstance(
-      final List<FlowNodeInstanceEntity> instances, final Map<Long, Map<String, String>> nameMap) {
+      final List<FlowNodeInstanceEntity> instances,
+      final Map<Long, ProcessCacheItem> processCacheItems) {
     return instances.stream()
         .map(
-            instance ->
-                toFlowNodeInstance(
-                    instance,
-                    nameMap.get(instance.processDefinitionKey()).get(instance.flowNodeId())))
+            instance -> {
+              final var flowNodeName =
+                  processCacheItems
+                      .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
+                      .getFlowNodeName(instance.flowNodeId());
+              return toFlowNodeInstance(instance, flowNodeName);
+            })
         .toList();
   }
 
@@ -343,11 +395,16 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<UserTaskItem> toUserTasks(
-      final List<UserTaskEntity> tasks, final Map<Long, Map<String, String>> nameMap) {
+      final List<UserTaskEntity> tasks, final Map<Long, ProcessCacheItem> processCacheItems) {
     return tasks.stream()
         .map(
-            (UserTaskEntity t) ->
-                toUserTask(t, nameMap.get(t.processDefinitionKey()).get(t.elementId())))
+            (final UserTaskEntity t) -> {
+              final var name =
+                  processCacheItems
+                      .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
+                      .getFlowNodeName(t.elementId());
+              return toUserTask(t, name);
+            })
         .toList();
   }
 

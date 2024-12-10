@@ -51,6 +51,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
 public final class ElasticsearchIncidentUpdateRepository implements IncidentUpdateRepository {
@@ -79,7 +80,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
       final String listViewAlias,
       final String flowNodeAlias,
       final String operationAlias,
-      final ElasticsearchAsyncClient client,
+      @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
     this.partitionId = partitionId;
@@ -91,6 +92,11 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
     this.client = client;
     this.executor = executor;
     this.logger = logger;
+  }
+
+  @Override
+  public void close() throws Exception {
+    client._transport().close();
   }
 
   @Override

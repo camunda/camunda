@@ -27,7 +27,7 @@ public class InsertDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.insertDataByIndexName(index, data);
   }
 

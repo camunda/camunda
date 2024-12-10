@@ -15,6 +15,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setGateway
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -237,7 +238,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             brokerCfg,
             scheduler,
             atomixCluster,
-            TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler));
+            TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
+            new SecurityConfiguration());
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());

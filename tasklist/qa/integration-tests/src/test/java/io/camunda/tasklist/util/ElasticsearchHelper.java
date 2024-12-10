@@ -13,8 +13,8 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -55,7 +55,9 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired
   @Qualifier("tasklistVariableTemplate")

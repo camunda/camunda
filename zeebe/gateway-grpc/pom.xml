@@ -166,11 +166,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-sdk</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 

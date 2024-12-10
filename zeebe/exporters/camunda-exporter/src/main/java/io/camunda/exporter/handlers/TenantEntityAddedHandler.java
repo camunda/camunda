@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -57,13 +56,9 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
-    final EntityJoinRelation joinRelation =
-        TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey());
     entity
-        .setKey(value.getTenantKey())
-        .setTenantId(value.getTenantId())
-        .setName(value.getName())
-        .setJoin(joinRelation);
+        .setMemberKey(value.getEntityKey())
+        .setJoin(TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey()));
   }
 
   @Override

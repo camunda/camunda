@@ -64,8 +64,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final var record = command.getValue();
 
     final var tenantKey = record.getTenantKey();
-    final var persistedRecord = tenantState.getTenantByKey(tenantKey);
-    if (persistedRecord.isEmpty()) {
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    if (persistedTenant.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
@@ -73,18 +73,20 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
               .formatted(tenantKey));
       return;
     }
+    final var tenantId = persistedTenant.get().getTenantId();
+    record.setTenantId(tenantId);
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(record.getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest, record.getTenantId());
+            .addResourceId(tenantId);
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
+      rejectCommandWithUnauthorizedError(command, authorizationRequest, tenantId);
       return;
     }
 
     final var entityKey = record.getEntityKey();
     if (!isEntityPresentAndNotAssigned(
-        entityKey, record.getEntityType(), command, tenantKey, record.getTenantId())) {
+        entityKey, record.getEntityType(), command, tenantKey, tenantId)) {
       return;
     }
 
