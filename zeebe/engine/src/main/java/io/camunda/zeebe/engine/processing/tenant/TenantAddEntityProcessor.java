@@ -180,7 +180,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       return false;
     }
 
-    if (tenantState.getEntityType(tenantKey, entityKey).isPresent()) {
+    if (group.get().getTenantKeys().contains(tenantKey)) {
       createAlreadyAssignedRejectCommand(command, entityKey, tenantKey);
       return false;
     }
