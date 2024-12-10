@@ -1,0 +1,139 @@
+name: Tasklist E2E Tests Manual Run(ElasticSearch/OpenSearch)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: ElasticSearch/OpenSearch version
+        required: false
+      search_db:
+        description: Application search engine
+        type: choice
+        options:
+          - elasticsearch
+          # option commented, because opensearch is failing for the moment
+          # - opensearch 
+
+run-name: Tasklist E2E Tests Manual Run. ${{ inputs.search_db }} ${{ inputs.version }}
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+
+      - name: Replace Version
+        if: ${{  inputs.version != '' }}
+        working-directory: ./tasklist/config
+        run: |
+          out=$(grep -o -E "${{ inputs.search_db }}:[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" docker-compose.yml)
+          sed -i "s/$out/${{ inputs.search_db }}:${{ inputs.version }}/g" docker-compose.yml 
+
+      - name: Run services (ElasticSearch)
+        if: ${{ contains(inputs.search_db, 'elasticsearch') }}
+        working-directory: ./tasklist/config
+        run: |
+          export DATABASE=elasticsearch
+          docker compose up -d elasticsearch zeebe
+      
+      - name: Run services (OpenSearch)
+        if: ${{ contains(inputs.search_db, 'opensearch') }}
+        working-directory: ./tasklist/config
+        run: |
+          export DATABASE=opensearch
+          docker compose up -d opensearch zeebe
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Setup yarn
+        run: npm install -g yarn
+      - name: Install node dependencies
+        working-directory: ./tasklist/client
+        run: yarn install
+      - name: Add Yarn binaries to Path
+        working-directory: ./tasklist/client
+        run: |
+          echo "$(yarn bin)" >> $GITHUB_PATH
+          echo "$(yarn global bin)" >> $GITHUB_PATH
+      - name: Install Playwright
+        run: yarn exec playwright install -- --with-deps chromium
+        working-directory: ./tasklist/client
+      - name: Build frontend
+        working-directory: ./tasklist/client
+        run: yarn build
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v4.5
+        with:
+          maven-version: "3.9.6"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: "Create settings.xml"
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        # Currently, the e2e environment of tasklist conflicts with the optimize build. For the moment,
+        # we're excluding optimize from the build, not to impact this tasklist's workflow.
+        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      
+      - name: Start Tasklist (ElasticSearch)
+        if: ${{ contains(inputs.search_db, 'elasticsearch') }}
+        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+      
+      - name: Start Tasklist (Opensearch)
+        if: ${{ contains(inputs.search_db, 'opensearch') }}
+        run: mvn -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false --camunda.tasklist.opensearch.url=http://opensearch:9200 --camunda.tasklist.zeebeOpensearch.url=http://opensearch:9200 --camunda.tasklist.database=opensearch"
+      
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Run tests
+        working-directory: ./tasklist/client
+        run: yarn run test:e2e:ci
+        env:
+          ZEEBE_GATEWAY_ADDRESS: localhost:26500
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright report
+          path: tasklist/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
