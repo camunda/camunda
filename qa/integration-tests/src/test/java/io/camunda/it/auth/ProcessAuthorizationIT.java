@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.application.Profile;
-import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
 import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
 import io.camunda.it.utils.ZeebeClientTestFactory.User;
@@ -53,8 +53,9 @@ class ProcessAuthorizationIT {
                   PROCESS_DEFINITION, READ, List.of("service_tasks_v1", "service_tasks_v2"))));
 
   @RegisterExtension
-  static final BrokerWithCamundaExporterITInvocationProvider PROVIDER =
-      new BrokerWithCamundaExporterITInvocationProvider()
+  static final BrokerITInvocationProvider PROVIDER =
+      new BrokerITInvocationProvider()
+          .withoutRdbmsExporter()
           .withAdditionalProfiles(Profile.AUTH_BASIC)
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER);
