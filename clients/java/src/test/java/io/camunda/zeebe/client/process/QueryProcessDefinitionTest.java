@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import java.util.Collections;
@@ -139,13 +140,13 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
     assertThat(sorts).hasSize(7);
-    assertSort(sorts.get(0), "processDefinitionKey", "asc");
-    assertSort(sorts.get(1), "name", "desc");
-    assertSort(sorts.get(2), "resourceName", "asc");
-    assertSort(sorts.get(3), "version", "asc");
-    assertSort(sorts.get(4), "versionTag", "desc");
-    assertSort(sorts.get(5), "processDefinitionId", "desc");
-    assertSort(sorts.get(6), "tenantId", "asc");
+    assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "name", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "resourceName", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "version", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "versionTag", SortOrderEnum.DESC);
+    assertSort(sorts.get(5), "processDefinitionId", SortOrderEnum.DESC);
+    assertSort(sorts.get(6), "tenantId", SortOrderEnum.ASC);
   }
 
   @Test
@@ -174,7 +175,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final String order) {
+      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }
