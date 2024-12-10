@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms;
+package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.MappingDbModel;
 import io.camunda.db.rdbms.write.domain.MappingDbModel.MappingDbModelBuilder;
 import io.camunda.db.rdbms.write.service.MappingWriter;
+import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
