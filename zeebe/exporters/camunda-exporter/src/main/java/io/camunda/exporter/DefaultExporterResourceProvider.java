@@ -288,7 +288,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
+                templateDescriptorsMap
+                    .get(SnapshotTaskVariableTemplate.class)
+                    .getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new OperationFromProcessInstanceHandler(
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),

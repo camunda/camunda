@@ -14,83 +14,38 @@ import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.Com
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import org.agrona.CloseHelper;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Testcontainers
-final class OpensearchClientIT {
-  private static final String PASSWORD = "P@a$5w0rd";
-  private static final String ADMIN_PASSWORD_ENV_VAR = "OPENSEARCH_INITIAL_ADMIN_PASSWORD";
-
-  @Container
-  private static final OpensearchContainer<?> CONTAINER =
-      TestSearchContainers.createDefaultOpensearchContainer()
-          .withSecurityEnabled()
-          .withEnv(ADMIN_PASSWORD_ENV_VAR, PASSWORD);
+public class OpensearchClientIT {
 
   private static final int PARTITION_ID = 1;
 
-  private final ProtocolFactory recordFactory = new ProtocolFactory();
-  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
-  private final TemplateReader templateReader = new TemplateReader(config.index);
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
-  private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
-
-  private TestClient testClient;
-  private OpensearchClient client;
-
-  @BeforeEach
-  public void beforeEach() {
-    // as all tests use the same endpoint, we need a per-test unique prefix
-    config.index.prefix = UUID.randomUUID() + "-test-record";
-    config.url = CONTAINER.getHttpHostAddress();
-    config.getAuthentication().setUsername(CONTAINER.getUsername());
-    config.getAuthentication().setPassword(PASSWORD);
-    testClient = new TestClient(config, indexRouter);
-    client =
-        new OpensearchClient(
-            config,
-            bulkRequest,
-            RestClientFactory.of(config, true),
-            indexRouter,
-            templateReader,
-            new OpensearchMetrics(new SimpleMeterRegistry()));
-  }
-
-  @AfterEach
-  void afterEach() {
-    CloseHelper.quietCloseAll(testClient, client);
-  }
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   @Test
   void shouldThrowExceptionIfFailToFlushBulk() {
     // given - a record with a negative timestamp will not be indexed because its field in ES is a
     // date, which must be a positive number of milliseconds since the UNIX epoch
     final var invalidRecord =
-        recordFactory.generateRecord(
-            ValueType.VARIABLE,
-            b ->
-                b.withTimestamp(Long.MIN_VALUE)
-                    .withBrokerVersion(VersionUtil.getVersionLowerCase()));
-    client.index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
-    client.putComponentTemplate();
-    client.putIndexTemplate(ValueType.VARIABLE);
+        searchDB
+            .recordFactory()
+            .generateRecord(
+                ValueType.VARIABLE,
+                b ->
+                    b.withTimestamp(Long.MIN_VALUE)
+                        .withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    searchDB.client().index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
+    searchDB.client().putComponentTemplate();
+    searchDB.client().putIndexTemplate(ValueType.VARIABLE);
 
     // when/then
-    assertThatThrownBy(client::flush)
+    assertThatThrownBy(searchDB.client()::flush)
         .isInstanceOf(OpensearchExporterException.class)
         .hasMessageContaining(
             "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse field [timestamp]");
@@ -101,22 +56,28 @@ final class OpensearchClientIT {
     // given
     final var valueType = ValueType.VARIABLE;
     final String indexTemplateName =
-        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
-    final String indexTemplateAlias = indexRouter.aliasNameForValueType(valueType);
+        searchDB
+            .indexRouter()
+            .indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+    final String indexTemplateAlias = searchDB.indexRouter().aliasNameForValueType(valueType);
     final Template expectedTemplate =
-        templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
-            indexTemplateAlias);
+        searchDB
+            .templateReader()
+            .readIndexTemplate(
+                valueType,
+                searchDB
+                    .indexRouter()
+                    .searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
+                indexTemplateAlias);
 
     // required since all index templates are composed with it
-    client.putComponentTemplate();
+    searchDB.client().putComponentTemplate();
 
     // when
-    client.putIndexTemplate(valueType);
+    searchDB.client().putIndexTemplate(valueType);
 
     // then
-    final var templateWrapper = testClient.getIndexTemplate(valueType);
+    final var templateWrapper = searchDB.testClient().getIndexTemplate(valueType);
     assertThat(templateWrapper)
         .as("should have created template for value type %s", valueType)
         .isPresent()
@@ -131,19 +92,19 @@ final class OpensearchClientIT {
   @Test
   void shouldPutComponentTemplate() {
     // given
-    final Template expectedTemplate = templateReader.readComponentTemplate();
+    final Template expectedTemplate = searchDB.templateReader().readComponentTemplate();
 
     // when
-    client.putComponentTemplate();
+    searchDB.client().putComponentTemplate();
 
     // then
-    final var templateWrapper = testClient.getComponentTemplate();
+    final var templateWrapper = searchDB.testClient().getComponentTemplate();
     assertThat(templateWrapper)
         .as("should have created component template")
         .isPresent()
         .get()
         .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(config.index.prefix);
+        .isEqualTo(searchDB.config().index.prefix);
 
     final var template = templateWrapper.get().template();
     assertIndexTemplate(template, expectedTemplate);
@@ -151,25 +112,30 @@ final class OpensearchClientIT {
 
   @Test
   void shouldAuthenticateWithBasicAuth() {
+    // we currently only allow role-based authentication in our AWS OS ITs
+    if (searchDB.isAwsTest()) {
+      return;
+    }
+
     // given
-    testClient.putUser("user", "^AHq>z@)&l;RJU=\"", List.of("admin"));
-    config.getAuthentication().setUsername("user");
-    config.getAuthentication().setPassword("^AHq>z@)&l;RJU=\"");
+    searchDB.testClient().putUser("user", "^AHq>z@)&l;RJU=\"", List.of("admin"));
+    searchDB.config().getAuthentication().setUsername("user");
+    searchDB.config().getAuthentication().setPassword("^AHq>z@)&l;RJU=\"");
 
     // when
     // force recreating the client
     final var authenticatedClient =
         new OpensearchClient(
-            config,
-            bulkRequest,
-            RestClientFactory.of(config, true),
-            indexRouter,
-            templateReader,
+            searchDB.config(),
+            searchDB.bulkRequest(),
+            RestClientFactory.of(searchDB.config(), true),
+            searchDB.indexRouter(),
+            searchDB.templateReader(),
             new OpensearchMetrics(new SimpleMeterRegistry()));
     authenticatedClient.putComponentTemplate();
 
     // then
-    assertThat(testClient.getComponentTemplate()).isPresent();
+    assertThat(searchDB.testClient().getComponentTemplate()).isPresent();
   }
 
   private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {

@@ -19,6 +19,8 @@ public interface FlowNodeInstanceMapper {
 
   void updateStateAndEndDate(EndFlowNodeDto dto);
 
+  void updateIncident(UpdateIncidentDto dto);
+
   Long count(FlowNodeInstanceDbQuery filter);
 
   List<FlowNodeInstanceEntity> search(FlowNodeInstanceDbQuery filter);
@@ -27,4 +29,6 @@ public interface FlowNodeInstanceMapper {
       long flowNodeInstanceKey,
       FlowNodeInstanceEntity.FlowNodeState state,
       OffsetDateTime endDate) {}
+
+  record UpdateIncidentDto(long flowNodeInstanceKey, Long incidentKey) {}
 }
