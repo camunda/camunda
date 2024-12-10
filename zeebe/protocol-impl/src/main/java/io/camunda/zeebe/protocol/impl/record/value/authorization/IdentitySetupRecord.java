@@ -12,9 +12,6 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
-import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
-import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 
 public class IdentitySetupRecord extends UnifiedRecordValue implements IdentitySetupRecordValue {
 
@@ -33,7 +30,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public RoleRecordValue getDefaultRole() {
+  public RoleRecord getDefaultRole() {
     return defaultRoleProp.getValue();
   }
 
@@ -43,7 +40,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public UserRecordValue getDefaultUser() {
+  public UserRecord getDefaultUser() {
     return defaultUserProp.getValue();
   }
 
@@ -53,7 +50,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public TenantRecordValue getDefaultTenant() {
+  public TenantRecord getDefaultTenant() {
     return defaultTenantProp.getValue();
   }
 

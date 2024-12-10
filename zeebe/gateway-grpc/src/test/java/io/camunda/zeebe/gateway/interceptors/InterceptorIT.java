@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Test;
 final class InterceptorIT {
 
   private final GatewayCfg config = new GatewayCfg();
+  private final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
   private final ActorScheduler scheduler =
       ActorScheduler.newActorScheduler()
           .setCpuBoundActorThreadCount(1)
@@ -81,7 +83,9 @@ final class InterceptorIT {
             topologyManager);
 
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
-    gateway = new Gateway(config, brokerClient, scheduler, jobStreamClient.streamer());
+    gateway =
+        new Gateway(
+            config, securityConfiguration, brokerClient, scheduler, jobStreamClient.streamer());
 
     cluster.start().join();
     scheduler.start();

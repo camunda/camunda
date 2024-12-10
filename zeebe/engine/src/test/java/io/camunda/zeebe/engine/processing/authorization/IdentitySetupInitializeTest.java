@@ -44,35 +44,34 @@ public class IdentitySetupInitializeTest {
   @Test
   public void shouldCreateRoleUserAndTenant() {
     // given
-    final var roleKey = 1;
     final var roleName = "roleName";
-    final var role = new RoleRecord().setRoleKey(roleKey).setName(roleName);
-    final var userKey = 2L;
+    final var role = new RoleRecord().setName(roleName);
     final var username = "username";
     final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
-            .setUserKey(userKey)
             .setUsername(username)
             .setName(userName)
             .setPassword(password)
             .setEmail(mail);
-    final var tenantKey = 3;
     final var tenantId = "tenant-id";
     final var tenantName = "tenant-name";
-    final var tenant =
-        new TenantRecord().setTenantKey(tenantKey).setName(tenantName).setTenantId(tenantId);
+    final var tenant = new TenantRecord().setName(tenantName).setTenantId(tenantId);
 
     // when
-    engine
-        .identitySetup()
-        .initialize()
-        .withRole(role)
-        .withUser(user)
-        .withTenant(tenant)
-        .initialize();
+    final var initialized =
+        engine
+            .identitySetup()
+            .initialize()
+            .withRole(role)
+            .withUser(user)
+            .withTenant(tenant)
+            .initialize();
+    final var userKey = initialized.getValue().getDefaultUser().getUserKey();
+    final var roleKey = initialized.getValue().getDefaultRole().getRoleKey();
+    final var tenantKey = initialized.getValue().getDefaultTenant().getTenantKey();
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).getFirst().getValue())
@@ -95,16 +94,14 @@ public class IdentitySetupInitializeTest {
   @Test
   public void shouldNotCreateUserIfAlreadyExists() {
     // given
-    final var roleKey = 1;
     final var roleName = "roleName";
-    final var role = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    final var role = new RoleRecord().setName(roleName);
     final var username = "username";
     final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
-            .setUserKey(2)
             .setUsername(username)
             .setName(userName)
             .setPassword(password)
@@ -125,7 +122,7 @@ public class IdentitySetupInitializeTest {
 
     // then
     assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsAssignedToRole(roleKey, userKey);
+    assertUserIsAssignedToRole(initializeRecord.getValue().getDefaultRole().getRoleKey(), userKey);
   }
 
   @Test
@@ -133,14 +130,12 @@ public class IdentitySetupInitializeTest {
     // given
     final var roleName = "roleName";
     final var role = new RoleRecord().setRoleKey(1).setName(roleName);
-    final var userKey = 2;
     final var username = "username";
     final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
-            .setUserKey(userKey)
             .setUsername(username)
             .setName(userName)
             .setPassword(password)
@@ -153,7 +148,7 @@ public class IdentitySetupInitializeTest {
 
     // then
     assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsAssignedToRole(roleKey, userKey);
+    assertUserIsAssignedToRole(roleKey, initializeRecord.getValue().getDefaultUser().getUserKey());
     Assertions.assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)

@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.application.Profile;
-import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
 import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
 import io.camunda.it.utils.ZeebeClientTestFactory.User;
@@ -59,8 +59,9 @@ class UserTaskAuthorizationIT {
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
 
   @RegisterExtension
-  static final BrokerWithCamundaExporterITInvocationProvider PROVIDER =
-      new BrokerWithCamundaExporterITInvocationProvider()
+  static final BrokerITInvocationProvider PROVIDER =
+      new BrokerITInvocationProvider()
+          .withoutRdbmsExporter()
           .withAdditionalProfiles(Profile.AUTH_BASIC)
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, USER1_USER, USER2_USER);

@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
@@ -19,10 +19,14 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@ExtendWith(BrokerWithCamundaExporterITInvocationProvider.class)
 public class IncidentExporterIT {
+
+  // RDBMS doesn't support Incidents up to now
+  @RegisterExtension
+  static final BrokerITInvocationProvider PROVIDER =
+      new BrokerITInvocationProvider().withoutRdbmsExporter();
 
   @TestTemplate
   void shouldExportIncident(final TestStandaloneBroker testBroker) {
