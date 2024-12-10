@@ -9,7 +9,6 @@ package io.camunda.security.configuration;
 
 public class BasicAuthConfiguration {
   private boolean httpBasicAuthEnabled = true;
-  private String quickstartUsername;
 
   public boolean isHttpBasicAuthEnabled() {
     return httpBasicAuthEnabled;
@@ -17,13 +16,5 @@ public class BasicAuthConfiguration {
 
   public void setHttpBasicAuthEnabled(final boolean httpBasicAuthEnabled) {
     this.httpBasicAuthEnabled = httpBasicAuthEnabled;
-  }
-
-  public String getQuickstartUsername() {
-    return quickstartUsername;
-  }
-
-  public void setQuickstartUsername(final String quickstartUsername) {
-    this.quickstartUsername = quickstartUsername;
   }
 }

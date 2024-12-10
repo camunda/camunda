@@ -12,7 +12,6 @@ import io.camunda.authentication.csrf.SpaCsrfTokenRequestHandler;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
-import io.camunda.security.configuration.BasicAuthConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
@@ -36,24 +35,16 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -93,14 +84,13 @@ public class WebSecurityConfig {
       final UserServices userServices,
       final AuthorizationServices authorizationServices,
       final RoleServices roleServices,
-      final TenantServices tenantServices,
-      final SecurityConfiguration securityConfiguration) {
+      final TenantServices tenantServices) {
     return new CamundaUserDetailsService(
         userServices,
         authorizationServices,
         roleServices,
         tenantServices,
-        securityConfiguration.getBasicAuth().getQuickstartUsername() == null);
+        true);
   }
 
   @Bean
@@ -151,55 +141,6 @@ public class WebSecurityConfig {
   @Bean
   @Profile("auth-basic")
   @Order(2)
-  public SecurityFilterChain quickstartAuthFilterChain(
-      final HttpSecurity httpSecurity,
-      final AuthFailureHandler authFailureHandler,
-      final AuthenticationManager authenticationManager,
-      final UserDetailsService userDetailsService,
-      final SecurityConfiguration securityConfiguration)
-      throws Exception {
-    final var userDetails =
-        getQuickstartUserDetails(userDetailsService, securityConfiguration.getBasicAuth());
-    LOG.info("Quickstart authentication is {}", userDetails != null ? "enabled" : "disabled");
-    if (userDetails == null) {
-      return null;
-    }
-    final RequestMatcher requestMatcher =
-        request ->
-            !(securityConfiguration.getBasicAuth().isHttpBasicAuthEnabled()
-                && isBasicAuthRequest(request));
-    return httpSecurity
-        .csrf(AbstractHttpConfigurer::disable)
-        .cors(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .securityMatchers(matcher -> matcher.requestMatchers(requestMatcher))
-        .authorizeHttpRequests(requests -> requests.requestMatchers(requestMatcher).permitAll())
-        .addFilterAfter(
-            new QuickstartAuthenticationFilter(authenticationManager, userDetails),
-            BasicAuthenticationFilter.class)
-        .build();
-  }
-
-  private UserDetails getQuickstartUserDetails(
-      final UserDetailsService userDetailsService, final BasicAuthConfiguration configuration) {
-    final var username = configuration.getQuickstartUsername();
-    if (username == null) {
-      return null;
-    }
-    try {
-      return userDetailsService.loadUserByUsername(username);
-    } catch (final UsernameNotFoundException e) {
-      LOG.warn(
-          "Quickstart authentication is enabled, but the user '{}' doesn't exist: {}",
-          username,
-          e.getMessage());
-    }
-    return null;
-  }
-
-  @Bean
-  @Profile("auth-basic")
-  @Order(3)
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
@@ -278,29 +219,6 @@ public class WebSecurityConfig {
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
-  }
-
-  private static class QuickstartAuthenticationFilter extends OncePerRequestFilter {
-    private final AuthenticationManager authenticationManager;
-    private final UserDetails userDetails;
-
-    private QuickstartAuthenticationFilter(
-        final AuthenticationManager authenticationManager, final UserDetails userDetails) {
-      this.authenticationManager = authenticationManager;
-      this.userDetails = userDetails;
-    }
-
-    @Override
-    protected void doFilterInternal(
-        final HttpServletRequest request,
-        final HttpServletResponse response,
-        final FilterChain filterChain)
-        throws ServletException, IOException {
-      final var authentication = new UsernamePasswordAuthenticationToken(userDetails, "");
-      authenticationManager.authenticate(authentication);
-      SecurityContextHolder.getContext().setAuthentication(authentication);
-      filterChain.doFilter(request, response);
-    }
   }
 
   private static class CsrfTokenCookieFilter extends OncePerRequestFilter {
