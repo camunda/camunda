@@ -17,6 +17,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
@@ -59,6 +60,7 @@ public class IndexDescriptors {
                 new GroupIndex(indexPrefix, isElasticsearch),
                 new ImportPositionIndex(indexPrefix, isElasticsearch),
                 new IncidentTemplate(indexPrefix, isElasticsearch),
+                new JobTemplate(indexPrefix, isElasticsearch),
                 new ListViewTemplate(indexPrefix, isElasticsearch),
                 new MappingIndex(indexPrefix, isElasticsearch),
                 new MetricIndex(indexPrefix, isElasticsearch),
