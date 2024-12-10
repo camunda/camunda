@@ -244,8 +244,8 @@ public final class BpmnJobBehavior {
   private static JobListenerEventType fromTaskListenerEventType(
       final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
-      case assigning -> JobListenerEventType.ASSIGNMENT;
-      case completing -> JobListenerEventType.COMPLETE;
+      case assigning -> JobListenerEventType.ASSIGNING;
+      case completing -> JobListenerEventType.COMPLETING;
       default -> throw new IllegalStateException("Unexpected value: " + eventType);
     };
   }
