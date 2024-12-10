@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
@@ -85,6 +86,12 @@ public class MyBatisConfiguration {
 
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
+  }
+
+  @Bean
+  public MapperFactoryBean<AuthorizationMapper> authorizationMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, AuthorizationMapper.class);
   }
 
   @Bean

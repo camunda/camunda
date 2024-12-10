@@ -28,7 +28,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.5</version>
+      <version>8.6.6</version>
     </dependency>
 
     <!-- Test dependencies -->

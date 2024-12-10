@@ -26,7 +26,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,7 +38,6 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-  private final KeyGenerator keyGenerator;
   private final SecurityConfiguration securityConfig;
   private final PasswordEncoder passwordEncoder;
   private final RoleState roleState;
@@ -47,10 +45,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   private final TenantState tenantState;
 
   public IdentitySetupInitializer(
-      final KeyGenerator keyGenerator,
-      final SecurityConfiguration securityConfig,
-      final MutableProcessingState processingState) {
-    this.keyGenerator = keyGenerator;
+      final SecurityConfiguration securityConfig, final MutableProcessingState processingState) {
     this.securityConfig = securityConfig;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     userState = processingState.getUserState();
@@ -90,21 +85,16 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    final var defaultRole =
-        new RoleRecord().setRoleKey(keyGenerator.nextKey()).setName(DEFAULT_ROLE_NAME);
+    final var defaultRole = new RoleRecord().setName(DEFAULT_ROLE_NAME);
     final var defaultUser =
         new UserRecord()
-            .setUserKey(keyGenerator.nextKey())
             .setUsername(DEFAULT_USER_USERNAME)
             .setName(DEFAULT_USER_USERNAME)
             .setEmail(DEFAULT_USER_EMAIL)
             .setPassword(passwordEncoder.encode(DEFAULT_USER_PASSWORD))
             .setUserType(UserType.DEFAULT);
     final var defaultTenant =
-        new TenantRecord()
-            .setTenantKey(keyGenerator.nextKey())
-            .setTenantId(DEFAULT_TENANT_ID)
-            .setName(DEFAULT_TENANT_NAME);
+        new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME);
 
     final var setupRecord =
         new IdentitySetupRecord()

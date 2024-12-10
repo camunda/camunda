@@ -9,13 +9,14 @@ package io.camunda.zeebe.gateway.api.util;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
@@ -65,17 +66,20 @@ public final class StubbedGateway {
   private final StubbedJobStreamer jobStreamer;
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
+  private final SecurityConfiguration securityConfiguration;
   private Server server;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
-      final GatewayCfg config) {
+      final GatewayCfg config,
+      final SecurityConfiguration securityConfiguration) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
+    this.securityConfiguration = securityConfiguration;
   }
 
   public void start() throws IOException {
@@ -84,7 +88,7 @@ public final class StubbedGateway {
     final var clientStreamAdapter = new StreamJobsHandler(jobStreamer);
     actorScheduler.submitActor(clientStreamAdapter).join();
 
-    final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
+    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
     final EndpointManager endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);

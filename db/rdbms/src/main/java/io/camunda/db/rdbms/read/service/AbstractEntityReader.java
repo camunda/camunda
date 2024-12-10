@@ -21,6 +21,7 @@ import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 abstract class AbstractEntityReader<T> {
@@ -31,9 +32,11 @@ abstract class AbstractEntityReader<T> {
     this.searchColumnFinder = searchColumnFinder;
   }
 
-  public DbQuerySorting<T> convertSort(
-      final SortOption sortOption, final SearchColumn<T> discriminatorColumn) {
+  @SafeVarargs
+  public final DbQuerySorting<T> convertSort(
+      final SortOption sortOption, final SearchColumn<T>... discriminatorColumns) {
     final var builder = new DbQuerySorting.Builder<T>();
+    final var discriminatorColumnList = new ArrayList<>(Arrays.asList(discriminatorColumns));
 
     for (final FieldSorting fieldSorting : sortOption.getFieldSortings()) {
       final var column = searchColumnFinder.findByProperty(fieldSorting.field());
@@ -41,10 +44,14 @@ abstract class AbstractEntityReader<T> {
         throw new IllegalArgumentException("Unknown sortField: " + fieldSorting.field());
       }
 
+      // remove the column from the discriminator list to not sort double
+      discriminatorColumnList.remove(column);
       builder.addEntry(column, fieldSorting.order());
     }
 
-    builder.addEntry(discriminatorColumn, SortOrder.ASC);
+    for (final SearchColumn<T> discriminatorColumn : discriminatorColumnList) {
+      builder.addEntry(discriminatorColumn, SortOrder.ASC);
+    }
 
     return builder.build();
   }
