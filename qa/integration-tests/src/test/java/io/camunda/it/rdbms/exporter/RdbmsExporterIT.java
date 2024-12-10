@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
@@ -26,9 +27,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporter;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -36,6 +39,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
@@ -43,8 +47,13 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -57,6 +66,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -613,5 +624,150 @@ class RdbmsExporterIT {
     // then
     final var deletedMapping = rdbmsService.getMappingReader().findOne(key);
     assertThat(deletedMapping).isEmpty();
+  }
+
+  @Test
+  public void shouldExportAndModifyAuthorization() {
+    // given
+    final var authorizationRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1", "resource2"),
+                PermissionType.CREATE, Set.of("resource3", "resource4")));
+
+    // when
+    exporter.export(authorizationRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
+    final var authorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+    assertThat(authorization).isNotNull();
+
+    // given
+    final var authorizationUpdatedRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource5", "resource6"),
+                PermissionType.CREATE, Set.of("resource7", "resource8")));
+
+    // when
+    exporter.export(authorizationUpdatedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedRecordValue = (AuthorizationRecordValue) authorizationUpdatedRecord.getValue();
+    final var updatedAuthorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+
+    assertThat(updatedAuthorization).isNotNull();
+    assertThat(updatedAuthorization.permissions()).hasSize(2);
+    assertThat(updatedAuthorization.permissions())
+        .contains(
+            new Permission(
+                PermissionType.READ, Set.of("resource1", "resource2", "resource5", "resource6")));
+    assertThat(updatedAuthorization.permissions())
+        .contains(
+            new Permission(
+                PermissionType.CREATE, Set.of("resource3", "resource4", "resource7", "resource8")));
+  }
+
+  @Test
+  public void shouldExportAndRemoveAuthorization() {
+    // given
+    final var authorizationRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1", "resource2"),
+                PermissionType.CREATE, Set.of("resource3", "resource4")));
+
+    // when
+    exporter.export(authorizationRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
+    final var authorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+    assertThat(authorization).isNotNull();
+
+    // given
+    final var authorizationUpdatedRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_REMOVED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1"),
+                PermissionType.CREATE, Set.of("resource3")));
+
+    // when
+    exporter.export(authorizationUpdatedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedAuthorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+
+    assertThat(updatedAuthorization).isNotNull();
+    assertThat(updatedAuthorization.permissions()).hasSize(2);
+    assertThat(updatedAuthorization.permissions())
+        .contains(new Permission(PermissionType.READ, Set.of("resource2")));
+    assertThat(updatedAuthorization.permissions())
+        .contains(new Permission(PermissionType.CREATE, Set.of("resource4")));
+  }
+
+  private void compareAuthorizations(
+      final AuthorizationRecordValue recordValue, final AuthorizationEntity entity) {
+    assertThat(recordValue.getOwnerKey()).isEqualTo(entity.ownerKey());
+    assertThat(recordValue.getOwnerType().name()).isEqualTo(entity.ownerType());
+    assertThat(recordValue.getResourceType().name()).isEqualTo(entity.resourceType());
+
+    for (final PermissionValue permissionValue : recordValue.getPermissions()) {
+      if (!permissionValue.getResourceIds().isEmpty()) {
+        assertThat(entity.permissions())
+            .contains(
+                new Permission(
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()));
+      }
+    }
   }
 }
