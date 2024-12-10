@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Gauge.Timer;
@@ -138,8 +140,9 @@ final class JournalMetrics {
     seekLatency = SEEK_LATENCY.labels(partitionId);
   }
 
-  void observeSegmentCreation(final Runnable segmentCreation) {
-    segmentCreationTime.time(segmentCreation);
+  void observeSegmentCreation(final CheckedRunnable segmentCreation)
+      throws CheckedJournalException {
+    segmentCreationTime.time(CheckedRunnable.toUnchecked(segmentCreation));
   }
 
   Histogram.Timer observeSegmentFlush() {

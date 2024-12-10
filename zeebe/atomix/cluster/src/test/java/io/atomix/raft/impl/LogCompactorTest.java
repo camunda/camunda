@@ -14,6 +14,7 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -53,7 +54,7 @@ final class LogCompactorTest {
   }
 
   @Test
-  void shouldCompact() {
+  void shouldCompact() throws CheckedJournalException {
     // given
     compactor.setCompactableIndex(12);
 
@@ -69,7 +70,7 @@ final class LogCompactorTest {
   }
 
   @Test
-  void shouldCompactIgnoringThreshold() {
+  void shouldCompactIgnoringThreshold() throws CheckedJournalException {
     // given
     compactor.setCompactableIndex(12);
 
@@ -93,7 +94,7 @@ final class LogCompactorTest {
   }
 
   @Test
-  void shouldCompactBasedOnOldestSnapshot() {
+  void shouldCompactBasedOnOldestSnapshot() throws CheckedJournalException {
     // given
     final var store = new TestSnapshotStore(new AtomicReference<>());
     InMemorySnapshot.newPersistedSnapshot(0, 10L, 1, 30, store).reserve();

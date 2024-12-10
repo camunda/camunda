@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.CreationFileException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -48,14 +52,15 @@ final class SegmentLoader {
       final Path segmentFile,
       final SegmentDescriptor descriptor,
       final long lastWrittenAsqn,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex)
+      throws CheckedJournalException {
     final MappedByteBuffer mappedSegment;
 
     final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
     try {
       mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
-      throw new JournalException(
+      throw new CreationFileException(
           String.format("Failed to create new segment file %s", segmentFile), e);
     }
 
@@ -68,6 +73,9 @@ final class SegmentLoader {
               "Failed to ensure durability of segment %s with descriptor %s, rolling back",
               segmentFile, descriptor),
           e);
+    } catch (final UncheckedIOException e) {
+      throw new FlushException(
+          String.format("Failed to flush segment at %s", segmentFile.toString()), e.getCause());
     }
 
     // while flushing the file's contents ensures its data is present on disk on recovery, it's also
@@ -76,7 +84,7 @@ final class SegmentLoader {
     try {
       FileUtil.flushDirectory(segmentFile.getParent());
     } catch (final IOException e) {
-      throw new JournalException(
+      throw new FlushException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),
           e);
     }
@@ -91,7 +99,8 @@ final class SegmentLoader {
   }
 
   UninitializedSegment createUninitializedSegment(
-      final Path segmentFile, final SegmentDescriptor descriptor, final JournalIndex journalIndex) {
+      final Path segmentFile, final SegmentDescriptor descriptor, final JournalIndex journalIndex)
+      throws CheckedJournalException {
     final MappedByteBuffer mappedSegment;
 
     try {
@@ -107,7 +116,7 @@ final class SegmentLoader {
     try {
       FileUtil.flushDirectory(segmentFile.getParent());
     } catch (final IOException e) {
-      throw new JournalException(
+      throw new FlushException(
           String.format("Failed to flush journal directory after creating segment %s", segmentFile),
           e);
     }
