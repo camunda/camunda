@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
@@ -267,8 +268,11 @@ public class TestRestOperateClient implements AutoCloseable {
 
     final CreateBatchOperationRequestDto createBatchOperationRequestDto =
         new CreateBatchOperationRequestDto();
-    createBatchOperationRequestDto.setName("migration");
+
+    final ListViewQueryDto listViewQueryDto = new ListViewQueryDto();
+    //    createBatchOperationRequestDto.setName("migration");
     createBatchOperationRequestDto.setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE);
+    createBatchOperationRequestDto.setQuery(listViewQueryDto);
 
     final MigrationPlanDto migrationPlanDto = new MigrationPlanDto();
     migrationPlanDto.setTargetProcessDefinitionKey(Long.toString(targetDefinitionKey));
@@ -284,13 +288,12 @@ public class TestRestOperateClient implements AutoCloseable {
     createBatchOperationRequestDto.setMigrationPlan(migrationPlanDto);
 
     try {
+      final String jsonBody = new ObjectMapper().writeValueAsString(createBatchOperationRequestDto);
       request =
           HttpRequest.newBuilder()
-              .uri(new URI(String.format("%s/api/process-instances/batch-operation", endpoint)))
+              .uri(new URI(String.format("%sapi/process-instances/batch-operation", endpoint)))
               .header("content-type", "application/json")
-              .POST(
-                  HttpRequest.BodyPublishers.ofString(
-                      new ObjectMapper().writeValueAsString(createBatchOperationRequestDto)))
+              .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
               .build();
     } catch (final URISyntaxException | JsonProcessingException e) {
       return Either.left(e);
