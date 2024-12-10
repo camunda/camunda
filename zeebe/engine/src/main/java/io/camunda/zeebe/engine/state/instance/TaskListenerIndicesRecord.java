@@ -26,28 +26,28 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
     declareProperty(assignmentTaskListenerIndexProp).declareProperty(completeTaskListenerIndexProp);
   }
 
-  public Integer getTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public Integer getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
-      case assignment -> assignmentTaskListenerIndexProp.getValue();
-      case complete -> completeTaskListenerIndexProp.getValue();
+      case assigning -> assignmentTaskListenerIndexProp.getValue();
+      case completing -> completeTaskListenerIndexProp.getValue();
       default ->
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     };
   }
 
-  public void incrementTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     switch (eventType) {
-      case assignment -> assignmentTaskListenerIndexProp.increment();
-      case complete -> completeTaskListenerIndexProp.increment();
+      case assigning -> assignmentTaskListenerIndexProp.increment();
+      case completing -> completeTaskListenerIndexProp.increment();
       default ->
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     }
   }
 
-  public void resetTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     switch (eventType) {
-      case assignment -> assignmentTaskListenerIndexProp.reset();
-      case complete -> completeTaskListenerIndexProp.reset();
+      case assigning -> assignmentTaskListenerIndexProp.reset();
+      case completing -> completeTaskListenerIndexProp.reset();
       default ->
           throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
     }
