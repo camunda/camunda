@@ -369,7 +369,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         }
         bulkRequest.add(indexRequest);
       }
-      //      the prefix is wrong
       ElasticsearchUtil.processBulkRequest(
           esClient,
           bulkRequest,
