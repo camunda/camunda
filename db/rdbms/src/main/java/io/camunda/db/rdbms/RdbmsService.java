@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
@@ -29,6 +30,7 @@ import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
+  private final AuthorizationReader authorizationReader;
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionInstanceReader decisionInstanceReader;
   private final DecisionRequirementsReader decisionRequirementsReader;
@@ -47,6 +49,7 @@ public class RdbmsService {
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
+      final AuthorizationReader authorizationReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -63,6 +66,7 @@ public class RdbmsService {
       final FormReader formReader,
       final MappingReader mappingReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
+    this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
     this.decisionDefinitionReader = decisionDefinitionReader;
     this.decisionInstanceReader = decisionInstanceReader;
@@ -78,6 +82,10 @@ public class RdbmsService {
     this.userTaskReader = userTaskReader;
     this.formReader = formReader;
     this.mappingReader = mappingReader;
+  }
+
+  public AuthorizationReader getAuthorizationReader() {
+    return authorizationReader;
   }
 
   public DecisionDefinitionReader getDecisionDefinitionReader() {
