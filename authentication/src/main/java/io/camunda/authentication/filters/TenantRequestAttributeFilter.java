@@ -9,8 +9,8 @@ package io.camunda.authentication.filters;
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.TenantServices.TenantDTO;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -31,9 +31,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class TenantRequestAttributeFilter extends OncePerRequestFilter {
   private static final Logger LOG = LoggerFactory.getLogger(TenantRequestAttributeFilter.class);
 
-  private final MultiTenancyCfg multiTenancyCfg;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
-  public TenantRequestAttributeFilter(final MultiTenancyCfg multiTenancyCfg) {
+  public TenantRequestAttributeFilter(final MultiTenancyConfiguration multiTenancyCfg) {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 

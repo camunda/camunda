@@ -13,10 +13,10 @@ import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -145,7 +145,7 @@ public class WebSecurityConfig {
 
   @Bean
   public FilterRegistrationBean<TenantRequestAttributeFilter>
-      tenantRequestAttributeFilterRegistration(final MultiTenancyCfg multiTenancyCfg) {
-    return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(multiTenancyCfg));
+      tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
+    return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
   }
 }
