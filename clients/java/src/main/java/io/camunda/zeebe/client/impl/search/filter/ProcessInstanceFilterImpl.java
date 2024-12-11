@@ -32,7 +32,9 @@ import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -234,8 +236,27 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter variables(
-      List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
+      final List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
     filter.setVariables(variableValueFilters);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter variables(final Map<String, String> variableValueFilters) {
+    if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
+      List<ProcessInstanceVariableFilterRequest> variableFilters =
+          variableValueFilters.entrySet().stream()
+              .map(
+                  entry -> {
+                    ProcessInstanceVariableFilterRequest request =
+                        new ProcessInstanceVariableFilterRequest();
+                    request.setName(entry.getKey());
+                    request.setValue(entry.getValue());
+                    return request;
+                  })
+              .collect(Collectors.toList());
+      filter.setVariables(variableFilters);
+    }
     return this;
   }
 

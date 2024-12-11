@@ -549,6 +549,25 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldQueryProcessInstancesByVariableSingleUsingMap() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.variables(Map.of("xyz", "\"bar\"")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
   void shouldQueryProcessInstancesByVariableMulti() {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1", "service_tasks_v2");
