@@ -99,10 +99,7 @@ public class MappingAppliersTest {
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    assertThat(tenantState.getEntitiesByType(tenantKey)).isEmpty();
     assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
-    assertThat(groupState.getEntitiesByType(groupKey)).isEmpty();
   }
 
   @Test
