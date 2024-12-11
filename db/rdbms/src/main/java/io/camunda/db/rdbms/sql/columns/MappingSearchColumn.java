@@ -13,7 +13,9 @@ import java.util.function.Function;
 public enum MappingSearchColumn implements SearchColumn<MappingEntity> {
   MAPPING_KEY("mappingKey", MappingEntity::mappingKey),
   CLAIM_NAME("claimName", MappingEntity::claimName),
-  CLAIM_VALUE("claimValue", MappingEntity::claimValue);
+  CLAIM_VALUE("claimValue", MappingEntity::claimValue),
+  NAME("name", MappingEntity::name),
+  OPERATOR("operator", MappingEntity::operator);
 
   private final String property;
   private final Function<MappingEntity, Object> propertyReader;
