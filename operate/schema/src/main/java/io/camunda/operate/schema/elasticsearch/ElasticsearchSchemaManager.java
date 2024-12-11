@@ -63,7 +63,7 @@ import org.springframework.util.StreamUtils;
 
 @Conditional(ElasticsearchCondition.class)
 @Component("schemaManager")
-@Profile("!test")
+@Profile("test")
 public class ElasticsearchSchemaManager implements SchemaManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
