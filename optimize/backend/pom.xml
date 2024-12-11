@@ -16,7 +16,7 @@
     <it.test.excludedGroups />
     <it.test.includedGroups />
     <test.forkCount />
-    <version.tomcat>10.1.33</version.tomcat>
+    <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
   <dependencies>
