@@ -6,14 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-function shouldDisplayNotification(errorCode: string, statusCode?: number) {
-  if (statusCode) {
-    return true;
-  }
+function shouldDisplayInfoNotification(errorMessage: string) {
+  const ERROR_CODE_PATTERN = /java\.net\.sockettimeoutexception/gi;
 
-  const ERROR_CODE_PATTERN = /task is not assigned/gi;
-
-  return !ERROR_CODE_PATTERN.test(errorCode);
+  return ERROR_CODE_PATTERN.test(errorMessage);
 }
 
-export {shouldDisplayNotification};
+export {shouldDisplayInfoNotification};

@@ -25,7 +25,15 @@ function useCompleteTask() {
         return response.json();
       }
 
-      throw error ?? new Error('Could not complete task');
+      if (error !== null || error !== undefined) {
+        const errorMessage =
+          error.response instanceof Response
+            ? (await error.response.json())?.message
+            : undefined;
+        throw new Error(errorMessage);
+      } else {
+        new Error('Could not complete task');
+      }
     },
   });
 }
