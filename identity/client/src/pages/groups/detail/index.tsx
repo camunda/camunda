@@ -80,7 +80,7 @@ const Details: FC = () => {
                 {
                   key: "members",
                   label: t("Members"),
-                  content: <Members groupId={group?.id} />,
+                  content: <Members groupId={group?.key} />,
                 },
                 {
                   key: "roles",
