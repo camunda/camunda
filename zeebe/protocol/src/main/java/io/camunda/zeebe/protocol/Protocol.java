@@ -95,6 +95,13 @@ public final class Protocol {
   public static final String USER_TASK_FOLLOW_UP_DATE_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "followUpDate";
 
+  /** Task header key used for the priority of the user task */
+  public static final String USER_TASK_PRIORITY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "priority";
+
+  /** Task header key used for the action associated with the user task */
+  public static final String USER_TASK_ACTION_HEADER_NAME = RESERVED_HEADER_NAME_PREFIX + "action";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
