@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.FlowNodeInstanceState;
+import io.camunda.client.api.search.FlowNodeInstanceType;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
 public interface FlownodeInstanceFilter extends SearchRequestFilter {
@@ -65,7 +67,7 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @param value the state of flow node instance
    * @return the updated filter
    */
-  FlownodeInstanceFilter state(final String value);
+  FlownodeInstanceFilter state(final FlowNodeInstanceState value);
 
   /**
    * Filters flow node instances by type.
@@ -73,7 +75,7 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
    * @param value the type of flow node instance
    * @return the updated filter
    */
-  FlownodeInstanceFilter type(final String value);
+  FlownodeInstanceFilter type(final FlowNodeInstanceType value);
 
   /**
    * Filters flow node instances by incident (has an incident)

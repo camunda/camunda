@@ -15,6 +15,9 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.zeebe.client.api.search.FlowNodeInstanceState;
+import io.camunda.zeebe.client.api.search.FlowNodeInstanceType;
+
 public interface FlowNodeInstance {
 
   /** key */
@@ -48,11 +51,11 @@ public interface FlowNodeInstance {
   Long getIncidentKey();
 
   /** state of flow node instance */
-  String getState();
+  FlowNodeInstanceState getState();
 
   /** tenant id for flow node instance */
   String getTenantId();
 
   /** type of flow node instance */
-  String getType();
+  FlowNodeInstanceType getType();
 }
