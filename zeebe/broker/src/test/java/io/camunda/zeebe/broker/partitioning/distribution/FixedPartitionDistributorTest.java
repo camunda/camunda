@@ -155,6 +155,80 @@ final class FixedPartitionDistributorTest {
         .containsExactlyInAnyOrderElementsOf(expectedDistribution);
   }
 
+  // TODO test an initial fixed partition distribution and try to set a new fixed partitions
+  // distribution
+  @Test
+  void shouldProcessNewFixedPartitionDistribution() {
+    // given
+    final var initialDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2, node(1), 1), 2, node(0)),
+            new PartitionMetadata(
+                partition(2), Set.of(node(1), node(2)), Map.of(node(1), 2, node(2), 1), 2, node(1)),
+            new PartitionMetadata(
+                partition(3),
+                Set.of(node(2), node(0)),
+                Map.of(node(2), 2, node(0), 1),
+                2,
+                node(2)));
+    final var distributor =
+        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
+            .assignMember(1, 0, 2)
+            .assignMember(1, 1, 1)
+            .assignMember(2, 1, 2)
+            .assignMember(2, 2, 1)
+            .assignMember(3, 2, 2)
+            .assignMember(3, 0, 1)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1), node(2));
+    final var sortedPartitionIds = List.of(partition(1), partition(2), partition(3));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(distribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(initialDistribution);
+
+    // now test the new distribution
+    final var newDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition(1), Set.of(node(1), node(2)), Map.of(node(1), 1, node(2), 2), 2, node(2)),
+            new PartitionMetadata(
+                partition(2), Set.of(node(2), node(0)), Map.of(node(2), 1, node(0), 2), 2, node(0)),
+            new PartitionMetadata(
+                partition(3),
+                Set.of(node(0), node(1)),
+                Map.of(node(0), 1, node(1), 2),
+                2,
+                node(1)));
+
+    distributor.setDistribution(
+        Map.of(
+            partition(1),
+            Set.of(
+                new FixedDistributionMember(node(1), 1), new FixedDistributionMember(node(2), 2)),
+            partition(2),
+            Set.of(
+                new FixedDistributionMember(node(2), 1), new FixedDistributionMember(node(0), 2)),
+            partition(3),
+            Set.of(
+                new FixedDistributionMember(node(0), 1), new FixedDistributionMember(node(1), 2))));
+
+    // when
+    final var changedDistribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(changedDistribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(newDistribution);
+  }
+
   private PartitionId partition(final int id) {
     return PartitionId.from(PARTITION_GROUP_NAME, id);
   }
