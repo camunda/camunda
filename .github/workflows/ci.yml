@@ -704,6 +704,7 @@ jobs:
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
+      - tasklist-frontend-tests
       - zeebe-ci
     steps:
       - uses: actions/checkout@v4
