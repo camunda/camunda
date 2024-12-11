@@ -20,8 +20,10 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   @Override
   public CamundaUserDTO getCurrentUser() {
-    final var authenticatedUser =
-        (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    final Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if (!(principal instanceof final CamundaUser authenticatedUser)) {
+      return null;
+    }
 
     return new CamundaUserDTO(
         authenticatedUser.getUserId(),

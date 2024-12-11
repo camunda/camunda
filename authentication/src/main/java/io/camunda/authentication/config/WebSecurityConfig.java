@@ -23,6 +23,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -40,11 +41,13 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.session.web.http.CookieSerializer;
 import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -148,6 +151,27 @@ public class WebSecurityConfig {
   @Bean
   @Profile("auth-basic")
   @Order(2)
+  public SecurityFilterChain unauthenticatedSecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final AuthFailureHandler authFailureHandler,
+      final SecurityConfiguration securityConfiguration)
+      throws Exception {
+    if (securityConfiguration.isEnabled()) {
+      return null;
+    }
+    LOG.warn("Authentication is disabled");
+    final RequestMatcher requestMatcher = request -> !hasSessionCookie(request);
+
+    return httpSecurity
+        .securityMatchers(matchers -> matchers.requestMatchers(requestMatcher))
+        .authorizeHttpRequests(requests -> requests.requestMatchers(requestMatcher).permitAll())
+        .csrf(CsrfConfigurer::disable)
+        .build();
+  }
+
+  @Bean
+  @Profile("auth-basic")
+  @Order(3)
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
@@ -204,6 +228,14 @@ public class WebSecurityConfig {
   private boolean isApiRequest(final HttpServletRequest request) {
     final String requestURI = request.getRequestURI();
     return requestURI.startsWith("/v1") || requestURI.startsWith("/v2");
+  }
+
+  private boolean hasSessionCookie(final HttpServletRequest request) {
+    if (request.getCookies() == null) {
+      return false;
+    }
+    return Arrays.stream(request.getCookies())
+        .anyMatch(cookie -> cookie.getName().equals(SESSION_COOKIE_NAME));
   }
 
   private HttpSecurity baseHttpSecurity(
