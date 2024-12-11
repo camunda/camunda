@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.cloud;
 import static io.camunda.optimize.service.util.PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.optimize.dto.optimize.cloud.TokenResponseDto;
 import io.camunda.optimize.dto.optimize.cloud.panelnotifications.PanelNotificationRequestDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -35,7 +36,13 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CCSaaSNotificationClient.class);
+
+  @SuppressFBWarnings(
+      value = "IS2_INCONSISTENT_SYNC",
+      justification = "False positives"
+  )
   private TokenResponseDto accessToken;
+
   private Instant tokenExpires = Instant.now();
   private final CCSaaSM2MTokenProvider m2mTokenProvider;
 
