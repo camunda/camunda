@@ -575,6 +575,90 @@ public class AuthorizationCheckBehaviorTest {
                     .addResourceId(secondResourceId)))
         .isRight();
   }
+  @Test
+  public void shouldGetAuthorizationsForMapping() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mapping =
+        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(mapping.getMappingKey(), resourceType, permissionType, resourceId);
+    final var command = mockCommandWithMapping(claimName, claimValue);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorizations =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+  }
+
+  @Test
+  public void shouldGetAuthorizationsForMappingThroughAssignedRole() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mapping =
+        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mappingKey = mapping.getMappingKey();
+    final var roleKey = engine.role().newRole(UUID.randomUUID().toString()).create().getKey();
+    engine
+        .role()
+        .addEntity(roleKey)
+        .withEntityType(EntityType.MAPPING)
+        .withEntityKey(mappingKey)
+        .add();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(roleKey, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithMapping(claimName, claimValue);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorizations =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+  }
+
+  @Test
+  public void shouldGetAuthorizationsForMappingThroughAssignedGroup() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mapping =
+        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mappingKey = mapping.getMappingKey();
+    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
+    engine
+        .group()
+        .addEntity(groupKey)
+        .withEntityType(EntityType.MAPPING)
+        .withEntityKey(mappingKey)
+        .add();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(groupKey, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithMapping(claimName, claimValue);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorizations =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+  }
 
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);

@@ -137,16 +137,17 @@ public final class AuthorizationCheckBehavior {
 
     return getUserKey(request)
         .map(
-            userKey -> {
-              final var userOptional = userState.getUser(userKey);
-              return userOptional
-                  .map(
-                      user ->
-                          getUserAuthorizedResourceIdentifiers(
-                              user, request.getResourceType(), request.getPermissionType()))
-                  .orElseGet(Stream::empty);
-            })
-        .orElseGet(Stream::empty)
+            userKey ->
+                userState
+                    .getUser(userKey)
+                    .map(
+                        persistedUser ->
+                            getUserAuthorizedResourceIdentifiers(
+                                persistedUser,
+                                request.getResourceType(),
+                                request.getPermissionType()))
+                    .orElseGet(Stream::empty))
+        .orElseGet(() -> getMappingsAuthorizedResourceIdentifiers(request))
         .collect(Collectors.toSet());
   }
 
