@@ -3622,6 +3622,13 @@ components:
         claimValue:
           type: string
           description: The value of the claim to match.
+        name:
+          type: string
+          description: The name of the mapping.
+        operator:
+          type: string
+          description: The operator used for the mapping comparison.
+          enum: [ EQUALS, CONTAINS ]
 
     MappingSearchQueryResponse:
       description: Mapping rule search response.
@@ -4924,6 +4931,13 @@ components:
         claimValue:
           type: string
           description: The value of the claim to match.
+        name:
+          type: string
+          description: The name of the mapping.
+        operator:
+          type: string
+          description: The operator used for the mapping comparison.
+          enum: [ EQUALS, CONTAINS ]
     CamundaUser:
       type: "object"
       properties:
@@ -5181,9 +5195,18 @@ components:
         claimValue:
           type: string
           description: The value of the claim to map.
+        name:
+          type: string
+          description: The name of the mapping.
+        operator:
+          type: string
+          description: The operator used for the mapping comparison.
+          enum: [EQUALS, CONTAINS]
       required:
         - claimName
         - claimValue
+        - name
+        - operator
     MappingRuleCreateResponse:
       type: object
       properties:
@@ -5197,6 +5220,13 @@ components:
         claimValue:
           type: string
           description: The value of the claim to map.
+        name:
+          type: string
+          description: The name of the mapping.
+        operator:
+          type: string
+          description: The operator used for the mapping comparison.
+          enum: [ EQUALS, CONTAINS, STARTS_WITH, ENDS_WITH ]
     MappingSearchResponse:
       type: object
       allOf:
@@ -5220,6 +5250,13 @@ components:
         claimValue:
           type: string
           description: The value of the claim to map.
+        name:
+          type: string
+          description: The name of the mapping.
+        operator:
+          type: string
+          description: The operator used for the mapping comparison.
+          enum: [ EQUALS, CONTAINS ]
 
     TopologyResponse:
       description: The response of a topology request.
