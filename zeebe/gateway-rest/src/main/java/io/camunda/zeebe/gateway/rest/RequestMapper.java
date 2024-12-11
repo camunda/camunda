@@ -109,6 +109,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -714,27 +715,44 @@ public class RequestMapper {
     final JobResult jobResult = new JobResult();
     jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
 
-    jobResult.setCorrectedAttributes(
-        getStringListOrEmpty(request, r -> r.getResult().getCorrectedAttributes()));
-
-    if (request.getResult().getCorrections() == null) {
+    final var jobResultCorrections = request.getResult().getCorrections();
+    if (jobResultCorrections == null) {
       return jobResult;
     }
 
     final JobResultCorrections corrections = new JobResultCorrections();
-    corrections.setAssignee(
-        getStringOrEmpty(request, r -> r.getResult().getCorrections().getAssignee()));
-    corrections.setDueDate(
-        getStringOrEmpty(request, r -> r.getResult().getCorrections().getDueDate()));
-    corrections.setFollowUpDate(
-        getStringOrEmpty(request, r -> r.getResult().getCorrections().getFollowUpDate()));
-    corrections.setCandidateGroups(
-        getStringListOrEmpty(request, r -> r.getResult().getCorrections().getCandidateGroups()));
-    corrections.setCandidateUsers(
-        getStringListOrEmpty(request, r -> r.getResult().getCorrections().getCandidateUsers()));
-    corrections.setPriority(
-        getIntOrDefault(request, r -> r.getResult().getCorrections().getPriority(), -1));
-    return jobResult.setCorrections(corrections);
+    final List<String> correctedAttributes = new ArrayList<>();
+
+    if (jobResultCorrections.getAssignee() != null) {
+      corrections.setAssignee(jobResultCorrections.getAssignee());
+      // `UserTaskRecord.ASSIGNEE` will be available after merging
+      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
+      correctedAttributes.add("assignee");
+    }
+    if (jobResultCorrections.getDueDate() != null) {
+      corrections.setDueDate(jobResultCorrections.getDueDate());
+      correctedAttributes.add(UserTaskRecord.DUE_DATE);
+    }
+    if (jobResultCorrections.getFollowUpDate() != null) {
+      corrections.setFollowUpDate(jobResultCorrections.getFollowUpDate());
+      correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
+    }
+    if (jobResultCorrections.getCandidateUsersList() != null) {
+      corrections.setCandidateUsers(jobResultCorrections.getCandidateUsersList());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
+    }
+    if (jobResultCorrections.getCandidateGroupsList() != null) {
+      corrections.setCandidateGroups(jobResultCorrections.getCandidateGroupsList());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
+    }
+    if (jobResultCorrections.getPriority() != null) {
+      corrections.setPriority(jobResultCorrections.getPriority());
+      correctedAttributes.add(UserTaskRecord.PRIORITY);
+    }
+
+    jobResult.setCorrections(corrections);
+    jobResult.setCorrectedAttributes(correctedAttributes);
+    return jobResult;
   }
 
   private static <R> boolean getBooleanOrDefault(

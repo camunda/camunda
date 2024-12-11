@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -326,8 +327,7 @@ public class JobControllerTest extends RestControllerTest {
           {
             "result": {
               "denied": true,
-              "corrections": {},
-              "correctedAttributes": []
+              "corrections": {}
             }
           }
         """;
@@ -365,13 +365,10 @@ public class JobControllerTest extends RestControllerTest {
                 "assignee": "Test",
                 "dueDate": "2025-05-23T01:02:03+01:00",
                 "followUpDate": "2025-05-25T01:02:03+01:00",
-                "candidateUsers": ["UserA", "UserB"],
-                "candidateGroups": ["GroupA", "GroupB"],
+                "candidateUsersList": ["UserA", "UserB"],
+                "candidateGroupsList": ["GroupA", "GroupB"],
                 "priority": 20
-              },
-              "correctedAttributes": [
-                "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority"
-              ]
+              }
             }
           }
         """;
@@ -391,6 +388,7 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+
     Assertions.assertEquals(
         "Test", jobResultArgumentCaptor.getValue().getCorrections().getAssignee());
     Assertions.assertEquals(
@@ -406,9 +404,15 @@ public class JobControllerTest extends RestControllerTest {
         List.of("GroupA", "GroupB"),
         jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
     Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+
     Assertions.assertEquals(
         List.of(
-            "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority"),
+            "assignee",
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.PRIORITY),
         jobResultArgumentCaptor.getValue().getCorrectedAttributes());
   }
 
@@ -425,13 +429,10 @@ public class JobControllerTest extends RestControllerTest {
               "denied": false,
               "corrections": {
                 "assignee": "Test",
-                "candidateUsers": ["UserA", "UserB"],
-                "candidateGroups": ["GroupA", "GroupB"],
+                "candidateUsersList": ["UserA", "UserB"],
+                "candidateGroupsList": ["GroupA", "GroupB"],
                 "priority": 20
-              },
-              "correctedAttributes": [
-                "assignee", "candidateUsers", "candidateGroups", "priority"
-              ]
+              }
             }
           }
         """;
@@ -463,8 +464,13 @@ public class JobControllerTest extends RestControllerTest {
         List.of("GroupA", "GroupB"),
         jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
     Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+
     Assertions.assertEquals(
-        List.of("assignee", "candidateUsers", "candidateGroups", "priority"),
+        List.of(
+            "assignee",
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.PRIORITY),
         jobResultArgumentCaptor.getValue().getCorrectedAttributes());
   }
 
@@ -480,8 +486,7 @@ public class JobControllerTest extends RestControllerTest {
             "result": {
               "denied": false,
               "corrections": {}
-            },
-            "correctedAttributes": []
+            }
           }
         """;
 

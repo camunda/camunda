@@ -5611,12 +5611,6 @@ components:
           nullable: true
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"
-        correctedAttributes:
-          type: array
-          description: List of the attributes that were corrected by the worker.
-          items:
-            type: string
-          nullable: true
     JobResultCorrections:
       type: object
       description: Attributes that were corrected by the worker. Others are considered not corrected.
@@ -5635,13 +5629,13 @@ components:
           format: date-time
           description: The follow-up date of the task.
           nullable: true
-        candidateUsers:
+        candidateUsersList:
           type: array
           description: The list of candidate users of the task.
           items:
             type: string
           nullable: true
-        candidateGroups:
+        candidateGroupsList:
           type: array
           description: The list of candidate groups of the task.
           items:

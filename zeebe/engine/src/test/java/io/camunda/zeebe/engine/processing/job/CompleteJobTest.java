@@ -30,8 +30,8 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.List;
+import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -267,7 +267,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithResultWithCorrections() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     final JobResultCorrections corrections = new JobResultCorrections();
     corrections.setAssignee("TestAssignee");
@@ -304,7 +305,8 @@ public final class CompleteJobTest {
   public void shouldCompleteJobWithPartiallySetResultCorrections() {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
-    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
 
     final JobResultCorrections corrections = new JobResultCorrections();
     corrections.setAssignee("TestAssignee");
