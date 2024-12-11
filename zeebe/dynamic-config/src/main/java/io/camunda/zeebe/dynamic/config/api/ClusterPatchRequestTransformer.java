@@ -8,6 +8,8 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionsDistribution;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -15,8 +17,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class ClusterPatchRequestTransformer implements ConfigurationChangeRequest {
 
@@ -48,6 +52,35 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
           new ClusterConfigurationRequestFailedException.InvalidRequest(
               new IllegalArgumentException(
                   "Cannot add and remove the same member in the same request")));
+    }
+
+    if (newPartitionsDistribution.isPresent()) {
+      final Set<PartitionMetadata> newPartitionsMetadata = new HashSet<>();
+      newPartitionsDistribution.get().getPartitionsList().stream()
+          .forEach(
+              partitionDistribution -> {
+                final Map<MemberId, Integer> newPriorities =
+                    partitionDistribution.getMembersList().stream()
+                        .collect(
+                            Collectors.toMap(
+                                member -> MemberId.from(member.getMemberId()),
+                                member -> member.getPriority()));
+
+                final Set<MemberId> newMembers = newPriorities.keySet();
+
+                newPartitionsMetadata.add(
+                    new PartitionMetadata(
+                        new PartitionId("mygroup", partitionDistribution.getPartitionId()),
+                        newMembers,
+                        newPriorities,
+                        3,
+                        newMembers.stream().findFirst().get()));
+              });
+      return new PartitionReassignRequestTransformer(
+              clusterConfiguration.members().keySet(),
+              Optional.of(clusterConfiguration.minReplicationFactor()),
+              Optional.of(clusterConfiguration.partitionCount()))
+          .newOperations(clusterConfiguration, newPartitionsMetadata);
     }
 
     final var newSetOfMembers = new HashSet<>(clusterConfiguration.members().keySet());

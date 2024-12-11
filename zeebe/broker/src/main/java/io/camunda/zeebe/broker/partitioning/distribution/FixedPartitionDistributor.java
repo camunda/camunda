@@ -28,9 +28,13 @@ import java.util.stream.Collectors;
  * intentionally not publicly instantiable to reduce the risk of configuration errors.
  */
 public final class FixedPartitionDistributor implements PartitionDistributor {
-  private final Map<PartitionId, Set<FixedDistributionMember>> distribution;
+  private Map<PartitionId, Set<FixedDistributionMember>> distribution;
 
   FixedPartitionDistributor(final Map<PartitionId, Set<FixedDistributionMember>> distribution) {
+    this.distribution = distribution;
+  }
+
+  public void setDistribution(final Map<PartitionId, Set<FixedDistributionMember>> distribution) {
     this.distribution = distribution;
   }
 
