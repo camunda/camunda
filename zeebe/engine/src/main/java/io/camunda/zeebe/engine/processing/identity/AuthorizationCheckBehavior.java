@@ -145,33 +145,6 @@ public final class AuthorizationCheckBehavior {
     return authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
   }
 
-  /**
-   * Get all authorized resource identifiers for a given owner, resource type and permission type.
-   * This includes direct authorizations and inherited authorizations, for example authorizations
-   * for users from assigned roles or groups.
-   */
-  public Set<String> getAllAuthorizedResourceIdentifiers(
-      final long ownerKey,
-      final AuthorizationOwnerType ownerType,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    return switch (ownerType) {
-      case USER -> {
-        final var userOptional = userState.getUser(ownerKey);
-        if (userOptional.isEmpty()) {
-          yield new HashSet<>();
-        }
-        yield getUserAuthorizedResourceIdentifiers(userOptional.get(), resourceType, permissionType)
-            .collect(Collectors.toSet());
-      }
-      case ROLE, GROUP ->
-          // Roles and groups can only have direct authorizations
-          getDirectAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
-      // TODO add MAPPING
-      default -> new HashSet<>();
-    };
-  }
-
   private Stream<String> getUserAuthorizedResourceIdentifiers(
       final PersistedUser user,
       final AuthorizationResourceType resourceType,
