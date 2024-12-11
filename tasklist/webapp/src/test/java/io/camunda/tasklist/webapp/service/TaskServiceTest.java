@@ -26,10 +26,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.ZeebeClient;
 import io.camunda.client.api.ZeebeFuture;
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
-import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -415,7 +413,6 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
     when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
@@ -508,15 +505,9 @@ class TaskServiceTest {
     final var taskId = 123L;
     final var taskBefore = mock(TaskEntity.class);
 
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
-    when(taskBefore.getKey()).thenReturn(taskId);
     when(taskStore.getTask(String.valueOf(taskId))).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setAssignee(null);
     when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
-    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
-        .thenReturn(mock(UnassignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
-        .thenReturn(mock(ZeebeFuture.class));
     final var result = instance.unassignTask(String.valueOf(taskId));
 
     // Then
@@ -530,15 +521,12 @@ class TaskServiceTest {
     final var taskId = 123L;
     final var taskBefore = mock(TaskEntity.class);
 
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
-    when(taskBefore.getKey()).thenReturn(taskId);
     when(taskStore.getTask(String.valueOf(taskId))).thenReturn(taskBefore);
     final var unassignedTask = new TaskEntity().setAssignee(null);
     when(taskStore.persistTaskUnclaim(taskBefore)).thenReturn(unassignedTask);
-    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)))
-        .thenReturn(mock(UnassignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskUnassignCommand(Long.valueOf(taskId)).send())
-        .thenThrow(new ClientException("reason for error"));
+    doThrow(new TasklistRuntimeException("reason for error"))
+        .when(tasklistServicesAdapter)
+        .unassignUserTask(any());
 
     // Then
     assertThatThrownBy(() -> instance.unassignTask(String.valueOf(taskId)))

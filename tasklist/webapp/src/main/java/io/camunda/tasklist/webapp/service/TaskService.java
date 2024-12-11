@@ -275,14 +275,7 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
-    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
-      } catch (final ClientException exception) {
-        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
-    }
+    tasklistServicesAdapter.unassignUserTask(taskEntity);
     return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 

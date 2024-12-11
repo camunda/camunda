@@ -93,6 +93,26 @@ public class TasklistServicesAdapter {
                 .assignUserTask(task.getKey(), assignee, "", true));
   }
 
+  public void unassignUserTask(final TaskEntity task) {
+    if (!isJobBasedUserTask(task)) {
+      unassignCamundaUserTask(task);
+    } else if (isNotAuthorizedToUnassignJobBasedUserTask(task)) {
+      throw new ForbiddenActionException("Not allowed to unassign user task.");
+    }
+  }
+
+  private boolean isNotAuthorizedToUnassignJobBasedUserTask(final TaskEntity task) {
+    return !permissionServices.hasPermissionToUpdateJobBasedUserTask(task);
+  }
+
+  private void unassignCamundaUserTask(final TaskEntity task) {
+    executeCamundaServiceAuthenticated(
+        (authentication) ->
+            userTaskServices
+                .withAuthentication(authentication)
+                .unassignUserTask(task.getKey(), ""));
+  }
+
   private ProcessInstanceCreateRequest toProcessInstanceCreateRequest(
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
     final var tenantValidationResult =

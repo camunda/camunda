@@ -73,6 +73,11 @@ public class TestRestTasklistClient implements AutoCloseable {
         Optional.ofNullable(assignee).map(a -> mapToRequestBody("assignee", a)).orElse(null));
   }
 
+  public HttpResponse<String> unassignUserTask(final long userTaskKey) {
+    final var path = String.format("%sv1/tasks/%d/unassign", endpoint, userTaskKey);
+    return sendRequest("PATCH", path, null);
+  }
+
   private String mapToRequestBody(final String key, final Object value) {
     try {
       return OBJECT_MAPPER.writeValueAsString(Map.of(key, value));

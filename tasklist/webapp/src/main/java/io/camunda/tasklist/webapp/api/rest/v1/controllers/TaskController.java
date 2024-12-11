@@ -326,7 +326,6 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/unassign")
   public ResponseEntity<TaskResponse> unassignTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
