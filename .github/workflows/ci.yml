@@ -90,6 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - run: echo "Checking commit '${{ github.event.head_commit.message }}'"
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
