@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -25,6 +26,14 @@ public class MappingValidator {
           }
           if (request.getClaimValue() == null || request.getClaimValue().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimValue"));
+          }
+          if (request.getName() == null || request.getName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+          }
+          if (request.getOperator() == null) {
+            violations.add(
+                ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                    "operator", request.getOperator(), "a supported operator value"));
           }
         });
   }
