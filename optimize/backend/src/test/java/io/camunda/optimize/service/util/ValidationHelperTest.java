@@ -11,6 +11,8 @@ import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.FixedDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
@@ -27,7 +29,7 @@ import org.junit.jupiter.api.Test;
 public class ValidationHelperTest {
 
   @Test
-  void shouldBeSuccessfulWhenDtoCorrect() {
+  void shouldBeSuccessfullyValidatedWhenDtoHasValidFieldValues() {
     // given
     final BranchAnalysisRequestDto dto = new BranchAnalysisRequestDto();
     dto.setFilter(
@@ -93,8 +95,9 @@ public class ValidationHelperTest {
   @Test
   void shouldValidateFiltersCorrectly() {
     // given
-    final ProcessFilterDto<?> validFilter = new InstanceStartDateFilterDto();
+    final ProcessFilterDto<DateFilterDataDto<?>> validFilter = new InstanceStartDateFilterDto();
     validFilter.setFilterLevel(FilterApplicationLevel.INSTANCE);
+    validFilter.setData(new FixedDateFilterDataDto(null, null));
 
     // when
     final Throwable thrown =
@@ -102,7 +105,10 @@ public class ValidationHelperTest {
             () -> ValidationHelper.validateProcessFilters(List.of(validFilter)));
 
     // then
-    Assertions.assertThat(thrown).isInstanceOf(NullPointerException.class);
+    Assertions.assertThat(thrown)
+        .isInstanceOf(OptimizeValidationException.class)
+        .hasMessageContaining(
+            "start date filter  at least one sub field not allowed to be empty or null");
   }
 
   @Test
