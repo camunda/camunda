@@ -187,9 +187,6 @@
     <version.keycloak>25.0.6</version.keycloak>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
-
-    <version.javassist>3.30.2-GA</version.javassist>
-
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
     <version.mybatis>3.5.17</version.mybatis>
     <version.mybatis-spring-boot-starter>3.0.4</version.mybatis-spring-boot-starter>
@@ -2149,12 +2146,6 @@
         <groupId>net.sf.jopt-simple</groupId>
         <artifactId>jopt-simple</artifactId>
         <version>${version.jopt-simple}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.javassist</groupId>
-        <artifactId>javassist</artifactId>
-        <version>${version.javassist}</version>
       </dependency>
 
       <dependency>
