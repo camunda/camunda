@@ -47,13 +47,9 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
   private final List<AbstractIngestedImportMediatorFactory> ingestedMediatorFactories;
   private final List<AbstractZeebeImportMediatorFactory> zeebeMediatorFactories;
 
-  @Autowired
-  private Environment environment;
+  @Autowired private Environment environment;
 
-  @SuppressFBWarnings(
-      value = "IS2_INCONSISTENT_SYNC",
-      justification = "False positives"
-  )
+  @SuppressFBWarnings(value = "IS2_INCONSISTENT_SYNC", justification = "False positives")
   private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers =
       new ArrayList<>();
 

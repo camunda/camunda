@@ -37,10 +37,7 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CCSaaSNotificationClient.class);
 
-  @SuppressFBWarnings(
-      value = "IS2_INCONSISTENT_SYNC",
-      justification = "False positives"
-  )
+  @SuppressFBWarnings(value = "IS2_INCONSISTENT_SYNC", justification = "False positives")
   private TokenResponseDto accessToken;
 
   private Instant tokenExpires = Instant.now();
