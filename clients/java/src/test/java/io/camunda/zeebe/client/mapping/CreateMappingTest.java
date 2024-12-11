@@ -109,6 +109,6 @@ public class CreateMappingTest extends ClientRestTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("claimValue");
+        .hasMessageContaining("operator");
   }
 }

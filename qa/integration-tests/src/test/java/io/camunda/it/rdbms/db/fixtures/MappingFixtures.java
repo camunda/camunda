@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingDbModel;
 import io.camunda.db.rdbms.write.domain.MappingDbModel.MappingDbModelBuilder;
+import io.camunda.zeebe.protocol.record.value.Operator;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -29,7 +30,9 @@ public final class MappingFixtures extends CommonFixtures {
         new MappingDbModelBuilder()
             .mappingKey(nextKey())
             .claimName("claimName-" + UUID.randomUUID())
-            .claimValue("claimValue-" + UUID.randomUUID());
+            .claimValue("claimValue-" + UUID.randomUUID())
+            .name("name" + UUID.randomUUID())
+            .operator(Operator.CONTAINS.name());
 
     return builderFunction.apply(builder).build();
   }

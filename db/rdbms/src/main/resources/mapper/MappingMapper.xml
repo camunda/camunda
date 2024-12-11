@@ -17,12 +17,14 @@
       <idArg column="MAPPING_KEY" javaType="long"/>
       <arg column="CLAIM_NAME" javaType="string"/>
       <arg column="CLAIM_VALUE" javaType="string"/>
+      <arg column="NAME" javaType="string"/>
+      <arg column="OPERATOR" javaType="string"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
-    INSERT INTO MAPPINGS (MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE)
-    VALUES (#{mappingKey}, #{claimName}, #{claimValue})
+    INSERT INTO MAPPINGS (MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME, OPERATOR)
+    VALUES (#{mappingKey}, #{claimName}, #{claimValue}, #{name}, #{operator})
   </insert>
 
   <delete id="delete" parameterType="long">
@@ -44,7 +46,9 @@
     SELECT
     MAPPING_KEY,
     CLAIM_NAME,
-    CLAIM_VALUE
+    CLAIM_VALUE,
+    NAME,
+    OPERATOR
     FROM MAPPINGS
     <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
     ) t
@@ -63,6 +67,12 @@
     </if>
     <if test="filter.claimValue">
       AND CLAIM_VALUE = #{filter.claimValue}
+    </if>
+    <if test="filter.name != null">
+      AND NAME = #{filter.name}
+    </if>
+    <if test="filter.operator != null">
+      AND OPERATOR = #{filter.operator}
     </if>
   </sql>
 
