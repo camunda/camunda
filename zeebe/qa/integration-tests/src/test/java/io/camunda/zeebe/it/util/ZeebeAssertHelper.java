@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
@@ -451,7 +453,20 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertTenantMappingAssigned(
-      final long tenantKey, final long mappingKey, final Consumer<TenantRecordValue> consumer) {
+      final long tenantKey, final Consumer<TenantRecordValue> consumer) {
+    final TenantRecordValue tenantRecordValue =
+        RecordingExporter.tenantRecords()
+            .withIntent(TenantIntent.ENTITY_ADDED)
+            .withTenantKey(tenantKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(tenantRecordValue).isNotNull();
+    consumer.accept(tenantRecordValue);
+  }
+
+  public static void assertGroupAssignedToTenant(
+      final long tenantKey, final Consumer<TenantRecordValue> consumer) {
     final TenantRecordValue tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_ADDED)
@@ -473,5 +488,31 @@ public final class ZeebeAssertHelper {
             .getValue();
 
     assertThat(mapping).isNotNull();
+  }
+
+  public static void assertGroupCreated(
+      final String groupName, final Consumer<GroupRecordValue> consumer) {
+    final GroupRecordValue groupRecordValue =
+        RecordingExporter.groupRecords()
+            .withIntent(GroupIntent.CREATED)
+            .withName(groupName)
+            .getFirst()
+            .getValue();
+
+    assertThat(groupRecordValue).isNotNull();
+    consumer.accept(groupRecordValue);
+  }
+
+  public static void assertGroupUnassignedFromTenant(
+      final long tenantKey, final Consumer<TenantRecordValue> consumer) {
+    final var tenantRecordValue =
+        RecordingExporter.tenantRecords()
+            .withIntent(TenantIntent.ENTITY_REMOVED)
+            .withTenantKey(tenantKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(tenantRecordValue).isNotNull();
+    consumer.accept(tenantRecordValue);
   }
 }

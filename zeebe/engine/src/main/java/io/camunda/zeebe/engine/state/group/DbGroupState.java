@@ -127,6 +127,28 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
+  public void addTenant(final long groupKey, final long tenantKey) {
+    this.groupKey.wrapLong(groupKey);
+    final PersistedGroup persistedGroup = groupColumnFamily.get(this.groupKey);
+    if (persistedGroup != null) {
+      persistedGroup.addTenantKey(tenantKey);
+      groupColumnFamily.update(this.groupKey, persistedGroup);
+    }
+  }
+
+  @Override
+  public void removeTenant(final long groupKey, final long tenantKey) {
+    this.groupKey.wrapLong(groupKey);
+    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    if (persistedGroup != null) {
+      final List<Long> tenantKeys = persistedGroup.getTenantKeys();
+      tenantKeys.remove(tenantKey);
+      persistedGroup.setTenantKeys(tenantKeys);
+      groupColumnFamily.update(this.groupKey, persistedGroup);
+    }
+  }
+
+  @Override
   public Optional<PersistedGroup> get(final long groupKey) {
     this.groupKey.wrapLong(groupKey);
     final var persistedGroup = groupColumnFamily.get(this.groupKey);

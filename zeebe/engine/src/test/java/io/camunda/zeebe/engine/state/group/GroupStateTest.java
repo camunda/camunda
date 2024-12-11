@@ -205,4 +205,51 @@ public class GroupStateTest {
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();
   }
+
+  @Test
+  void shouldAddTenant() {
+    // given
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var tenantKey = 100L;
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+
+    // when
+    groupState.addTenant(groupKey, tenantKey);
+
+    // then
+    final var group = groupState.get(groupKey);
+    assertThat(group.isPresent()).isTrue();
+    assertThat(group.get().getTenantKeys()).containsExactly(tenantKey);
+  }
+
+  @Test
+  void shouldRemoveTenant() {
+    // given
+    final var groupKey = 1L;
+    final var groupName = "group";
+    final var tenantKey1 = 100L;
+    final var tenantKey2 = 200L;
+
+    // Create a group and add tenants
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    groupState.create(groupKey, groupRecord);
+    groupState.addTenant(groupKey, tenantKey1);
+    groupState.addTenant(groupKey, tenantKey2);
+
+    // Ensure tenants are added correctly
+    final var groupBeforeRemove = groupState.get(groupKey);
+    assertThat(groupBeforeRemove.isPresent()).isTrue();
+    assertThat(groupBeforeRemove.get().getTenantKeys())
+        .containsExactlyInAnyOrder(tenantKey1, tenantKey2);
+
+    // when
+    groupState.removeTenant(groupKey, tenantKey1);
+
+    // then
+    final var groupAfterRemove = groupState.get(groupKey);
+    assertThat(groupAfterRemove.isPresent()).isTrue();
+    assertThat(groupAfterRemove.get().getTenantKeys()).containsExactly(tenantKey2);
+  }
 }
