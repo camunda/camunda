@@ -2788,10 +2788,10 @@
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.7.tgz#50ae4353eaaddc04044279812f52c8c65857dbcb"
   integrity sha512-hKormJbkJqzQGhziax5PItDUTMAM9uE2XXQmM37dyd4hVM+5aVl7oVxMVUiVQn2oCQFN/LKCZdvSM0pFRqbSmQ==
 
-"@types/react-dom@18.3.3":
-  version "18.3.3"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.3.3.tgz#3654138d0da1b0c7916f6ed0dc1cc2b576d47650"
-  integrity sha512-uTYkxTLkYp41nq/ULXyXMtkNT1vu5fXJoqad6uTNCOGat5t9cLgF4vMNLBXsTOXpdOI44XzKPY1M5RRm0bQHuw==
+"@types/react-dom@18.3.4":
+  version "18.3.4"
+  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.3.4.tgz#25119d84a654b3894b49eded7c4b68f2ca9a0f6d"
+  integrity sha512-HMqjZ3RJxmfoOn3sVc0T0fO6qSrLDnUQYB+azHKdBBz1eOt0Sq4wUu2Sf1/Dt18gqhECg0fZ33tkh/6YdwrSCw==
 
 "@types/react-dom@^18.0.0":
   version "18.3.0"
