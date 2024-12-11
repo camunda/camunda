@@ -345,6 +345,7 @@ class UserTaskTransformerTest {
     @DisplayName(
         "Should transform user task with deprecated task listener event types and use new style")
     @Test
+    @SuppressWarnings("deprecation")
     void shouldTransformDeprecatedTaskListenersAndUseNewStyle() {
       final var create = ZeebeTaskListenerEventType.create;
       final var update = ZeebeTaskListenerEventType.update;

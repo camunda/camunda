@@ -321,6 +321,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     return listener;
   }
 
+  @SuppressWarnings("deprecation")
   private static ZeebeTaskListenerEventType getZeebeTaskListenerEventType(
       final ZeebeTaskListener zeebeTaskListener) {
     return switch (zeebeTaskListener.getEventType()) {

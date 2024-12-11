@@ -28,6 +28,8 @@ public class TaskListenerValidator implements ModelElementValidator<ZeebeTaskLis
 
   private static final List<ZeebeTaskListenerEventType> SUPPORTED_VALUES =
       Arrays.asList(ZeebeTaskListenerEventType.assigning, ZeebeTaskListenerEventType.completing);
+
+  @SuppressWarnings("deprecation")
   private static final List<ZeebeTaskListenerEventType> SUPPORTED_DEPRECATED_VALUES =
       Arrays.asList(ZeebeTaskListenerEventType.assignment, ZeebeTaskListenerEventType.complete);
 
