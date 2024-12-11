@@ -28,6 +28,7 @@ import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
@@ -1127,6 +1128,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateRoleCommandStep1 newCreateRoleCommand();
+
+  /**
+   * Command to create a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newCreateGroupCommand()
+   *  .name(name)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  CreateGroupCommandStep1 newCreateGroupCommand();
 
   /**
    * Command to create a user.
