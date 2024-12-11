@@ -498,6 +498,8 @@ public final class EndpointManager {
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
     if (userClaims != null) {
+      authorizationToken.withClaim(
+          Authorization.AUTHORIZED_USER_KEY, userClaims.get(Authorization.AUTHORIZED_USER_KEY));
       userClaims.forEach(
           (key, value) -> {
             authorizationToken.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);

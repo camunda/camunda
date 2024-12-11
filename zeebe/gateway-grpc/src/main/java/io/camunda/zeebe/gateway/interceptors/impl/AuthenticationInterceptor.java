@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import static io.camunda.zeebe.auth.impl.Authorization.AUTHORIZED_USER_KEY;
+
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.service.UserServices;
@@ -29,6 +31,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
   public static final Context.Key<Map<String, Object>> USER_CLAIMS =
       Context.key("io.camunda.zeebe:user_claim");
+  public static final Context.Key<Long> USER_KEY = Context.key("io.camunda.zeebe:user_key");
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -66,6 +69,20 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       // get user claims and set them in the context
       final JwtDecoder jwtDecoder = new JwtDecoder(token);
       final var claims = jwtDecoder.decode().getClaims();
+      final var username = getUsernameFromClaims(claims);
+      final var user = loadUserByUsername(username);
+      if (user.isEmpty()) {
+        LOGGER.debug(
+            "Denying call {} as the user {} does not exist",
+            methodDescriptor.getFullMethodName(),
+            username);
+        return deny(
+            call,
+            Status.UNAUTHENTICATED
+                .augmentDescription("Expected a valid user, but user does not exist")
+                .withCause(new IllegalArgumentException("User does not exist")));
+      }
+      claims.put(AUTHORIZED_USER_KEY, user.get().userKey());
       final var context = Context.current().withValue(USER_CLAIMS, claims);
       return Contexts.interceptCall(context, call, headers, next);
 
@@ -82,7 +99,15 @@ public class AuthenticationInterceptor implements ServerInterceptor {
     }
   }
 
-  public Optional<UserEntity> loadUserByUsername(final String username) {
+  private String getUsernameFromClaims(final Map<String, Object> claims) {
+    final var username = claims.get("preferred_username");
+    if (username == null) {
+      throw new IllegalArgumentException("No username found in claims");
+    }
+    return (String) username;
+  }
+
+  private Optional<UserEntity> loadUserByUsername(final String username) {
     final var userQuery =
         SearchQueryBuilders.userSearchQuery(
             fn -> fn.filter(f -> f.username(username)).page(p -> p.size(1)));
