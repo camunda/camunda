@@ -233,9 +233,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private ZeebeTaskListenerEventType mapIntentToEventType(final UserTaskIntent intent) {
     return switch (intent) {
-      case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assignment;
-      case UPDATE -> ZeebeTaskListenerEventType.update;
-      case COMPLETE -> ZeebeTaskListenerEventType.complete;
+      case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assigning;
+      case UPDATE -> ZeebeTaskListenerEventType.updating;
+      case COMPLETE -> ZeebeTaskListenerEventType.completing;
       default ->
           throw new IllegalArgumentException("Unexpected user task intent: '%s'".formatted(intent));
     };
@@ -244,11 +244,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private ZeebeTaskListenerEventType mapLifecycleStateToEventType(
       final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
-      case CREATING -> ZeebeTaskListenerEventType.create;
-      case ASSIGNING, CLAIMING -> ZeebeTaskListenerEventType.assignment;
-      case UPDATING -> ZeebeTaskListenerEventType.update;
-      case COMPLETING -> ZeebeTaskListenerEventType.complete;
-      case CANCELING -> ZeebeTaskListenerEventType.cancel;
+      case CREATING -> ZeebeTaskListenerEventType.creating;
+      case ASSIGNING, CLAIMING -> ZeebeTaskListenerEventType.assigning;
+      case UPDATING -> ZeebeTaskListenerEventType.updating;
+      case COMPLETING -> ZeebeTaskListenerEventType.completing;
+      case CANCELING -> ZeebeTaskListenerEventType.canceling;
       default ->
           throw new IllegalArgumentException(
               "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));

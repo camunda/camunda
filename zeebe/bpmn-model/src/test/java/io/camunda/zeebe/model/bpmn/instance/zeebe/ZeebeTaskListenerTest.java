@@ -65,7 +65,7 @@ public class ZeebeTaskListenerTest extends BpmnModelElementInstanceTest {
 
     final String modelXml =
         Bpmn.convertToString(modelInstance)
-            .replace("eventType=\"cancel\"", "eventType=\"rejection\"");
+            .replace("eventType=\"canceling\"", "eventType=\"rejection\"");
 
     // when
     final ZeebeTaskListeners taskListeners =

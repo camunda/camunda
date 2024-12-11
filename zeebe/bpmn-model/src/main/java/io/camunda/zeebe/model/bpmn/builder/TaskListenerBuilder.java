@@ -35,23 +35,23 @@ public class TaskListenerBuilder {
   }
 
   public TaskListenerBuilder create() {
-    return eventType(ZeebeTaskListenerEventType.create);
+    return eventType(ZeebeTaskListenerEventType.creating);
   }
 
   public TaskListenerBuilder update() {
-    return eventType(ZeebeTaskListenerEventType.update);
+    return eventType(ZeebeTaskListenerEventType.updating);
   }
 
   public TaskListenerBuilder assignment() {
-    return eventType(ZeebeTaskListenerEventType.assignment);
+    return eventType(ZeebeTaskListenerEventType.assigning);
   }
 
   public TaskListenerBuilder complete() {
-    return eventType(ZeebeTaskListenerEventType.complete);
+    return eventType(ZeebeTaskListenerEventType.completing);
   }
 
   public TaskListenerBuilder cancel() {
-    return eventType(ZeebeTaskListenerEventType.cancel);
+    return eventType(ZeebeTaskListenerEventType.canceling);
   }
 
   public TaskListenerBuilder type(final String type) {
