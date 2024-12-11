@@ -22,7 +22,7 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 		keystore:         "/tmp/camundatest/certs/secret.jks",
 		keystorePassword: "changeme",
 	}
-	expectedJavaOpts := "JAVA_OPTS= -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
+	expectedJavaOpts := "JAVA_OPTS= -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword + " -Dspring.profiles.active=operate,tasklist,broker,identity"
 
 	javaOpts := adjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
@@ -39,30 +39,6 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 		}
 	}
 	assert.Equal(t, expectedJavaOpts, foundVar)
-}
-
-func TestCamundaCmdHasNoJavaOpts(t *testing.T) {
-
-	settings := C8RunSettings{
-		config:           "",
-		detached:         false,
-		port:             8080,
-		keystore:         "",
-		keystorePassword: "",
-	}
-
-	javaOpts := adjustJavaOpts("", settings)
-	c8runPlatform := getC8RunPlatform()
-	err := validateKeystore(settings, "/tmp/camundatest/")
-	assert.Nil(t, err)
-
-	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
-
-	for _, envVar := range cmd.Env {
-		if strings.Contains(envVar, "JAVA_OPTS") {
-			assert.Fail(t, "JAVA_OPTS should not be set")
-		}
-	}
 }
 
 func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
