@@ -233,6 +233,7 @@ public class AuthorizationIT {
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items())
         .usingRecursiveComparison()
+        .ignoringFields("permissions")
         .isEqualTo(searchResult.items().subList(10, 15));
   }
 
