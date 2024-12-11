@@ -52,9 +52,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
@@ -163,7 +166,47 @@ public final class RequestMapper extends RequestUtil {
     if (!request.hasResult()) {
       return null;
     }
-    return new JobResult().setDenied(request.getResult().getDenied());
+
+    if (!request.getResult().hasCorrections()) {
+      return new JobResult().setDenied(request.getResult().getDenied());
+    }
+
+    final JobResultCorrections corrections = new JobResultCorrections();
+    final List<String> correctedAttributes = new ArrayList<>();
+
+    if (request.getResult().getCorrections().hasAssignee()) {
+      // `UserTaskRecord.ASSIGNEE` will be available after merging
+      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
+      corrections.setAssignee(request.getResult().getCorrections().getAssignee());
+      correctedAttributes.add("assignee");
+    }
+    if (request.getResult().getCorrections().hasDueDate()) {
+      corrections.setDueDate(request.getResult().getCorrections().getDueDate());
+      correctedAttributes.add(UserTaskRecord.DUE_DATE);
+    }
+    if (request.getResult().getCorrections().hasFollowUpDate()) {
+      corrections.setFollowUpDate(request.getResult().getCorrections().getFollowUpDate());
+      correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
+    }
+    if (request.getResult().getCorrections().hasCandidateUsersList()) {
+      corrections.setCandidateUsers(
+          request.getResult().getCorrections().getCandidateUsersList().getValuesList());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
+    }
+    if (request.getResult().getCorrections().hasCandidateGroupsList()) {
+      corrections.setCandidateGroups(
+          request.getResult().getCorrections().getCandidateGroupsList().getValuesList());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
+    }
+    if (request.getResult().getCorrections().hasPriority()) {
+      corrections.setPriority(request.getResult().getCorrections().getPriority());
+      correctedAttributes.add(UserTaskRecord.PRIORITY);
+    }
+
+    return new JobResult()
+        .setDenied(request.getResult().getDenied())
+        .setCorrections(corrections)
+        .setCorrectedAttributes(correctedAttributes);
   }
 
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
