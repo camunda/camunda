@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -25,11 +26,13 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.Permissio
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
@@ -69,7 +72,7 @@ public class IdentitySetupInitializeTest {
             .withUser(user)
             .withTenant(tenant)
             .initialize();
-    final var userKey = initialized.getValue().getDefaultUser().getUserKey();
+    final var userKey = initialized.getValue().getUsers().getFirst().getUserKey();
     final var roleKey = initialized.getValue().getDefaultRole().getRoleKey();
     final var tenantKey = initialized.getValue().getDefaultTenant().getTenantKey();
 
@@ -148,7 +151,8 @@ public class IdentitySetupInitializeTest {
 
     // then
     assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsAssignedToRole(roleKey, initializeRecord.getValue().getDefaultUser().getUserKey());
+    assertUserIsAssignedToRole(
+        roleKey, initializeRecord.getValue().getUsers().getFirst().getUserKey());
     Assertions.assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
@@ -275,7 +279,7 @@ public class IdentitySetupInitializeTest {
 
     final List<Tuple> expectedPermissions = new ArrayList<>();
     for (final PermissionType value : PermissionType.values()) {
-      expectedPermissions.add(Tuple.tuple(value, Set.of(WILDCARD_PERMISSION)));
+      expectedPermissions.add(tuple(value, Set.of(WILDCARD_PERMISSION)));
     }
 
     Assertions.assertThat(addedPermissions)

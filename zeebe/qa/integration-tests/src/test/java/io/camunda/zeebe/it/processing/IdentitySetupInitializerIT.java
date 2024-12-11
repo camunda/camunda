@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
@@ -41,11 +42,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ZeebeIntegration
 final class IdentitySetupInitializerIT {
 
-  private static final String DEFAULT_USER_USERNAME = "demo";
-  private static final String DEFAULT_USER_NAME = "Demo";
-  private static final String DEFAULT_USER_PASSWORD = "demo";
-  private static final String DEFAULT_USER_EMAIL = "demo@demo.com";
-
   private static PasswordEncoder passwordEncoder;
   @AutoCloseResource private ZeebeClient client;
   @AutoCloseResource private TestStandaloneBroker broker;
@@ -58,37 +54,6 @@ final class IdentitySetupInitializerIT {
   @Test
   void shouldInitializeIdentity() {
     // given a broker with authorization enabled
-    createBroker(true, 1);
-
-    // then identity should be initialized
-    final var record =
-        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
-            .getFirst()
-            .getValue();
-
-    final var createdUser = record.getDefaultUser();
-    Assertions.assertThat(createdUser)
-        .isNotNull()
-        .hasUsername(DEFAULT_USER_USERNAME)
-        .hasName(DEFAULT_USER_NAME)
-        .hasEmail(DEFAULT_USER_EMAIL)
-        .hasUserType(UserType.DEFAULT);
-    final var passwordMatches =
-        passwordEncoder.matches(DEFAULT_USER_PASSWORD, createdUser.getPassword());
-    assertTrue(passwordMatches);
-
-    final var createdRole = record.getDefaultRole();
-    Assertions.assertThat(createdRole).hasName(IdentitySetupInitializer.DEFAULT_ROLE_NAME);
-
-    final var createdTenant = record.getDefaultTenant();
-    Assertions.assertThat(createdTenant)
-        .hasTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
-        .hasName(IdentitySetupInitializer.DEFAULT_TENANT_NAME);
-  }
-
-  @Test
-  void shouldInitializeIdentityWithConfiguredDefaultUser() {
-    // given a broker with authorization enabled
     final var username = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var password = UUID.randomUUID().toString();
@@ -97,11 +62,8 @@ final class IdentitySetupInitializerIT {
         true,
         1,
         cfg -> {
-          final var defaultUserCfg = cfg.getInitialization().getDefaultUser();
-          defaultUserCfg.setUsername(username);
-          defaultUserCfg.setName(name);
-          defaultUserCfg.setPassword(password);
-          defaultUserCfg.setEmail(email);
+          final var user = new ConfiguredUser(username, password, name, email);
+          cfg.getInitialization().getUsers().add(user);
         });
 
     // then identity should be initialized
@@ -110,7 +72,7 @@ final class IdentitySetupInitializerIT {
             .getFirst()
             .getValue();
 
-    final var createdUser = record.getDefaultUser();
+    final var createdUser = record.getUsers().getFirst();
     Assertions.assertThat(createdUser)
         .isNotNull()
         .hasUsername(username)
@@ -181,7 +143,8 @@ final class IdentitySetupInitializerIT {
     assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultRole().getRoleKey()))
         .describedAs("Role key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultUser().getUserKey()))
+    assertThat(
+            Protocol.decodePartitionId(firstRecord.getValue().getUsers().getFirst().getUserKey()))
         .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
 
@@ -189,7 +152,8 @@ final class IdentitySetupInitializerIT {
     assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultRole().getRoleKey()))
         .describedAs("Role key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultUser().getUserKey()))
+    assertThat(
+            Protocol.decodePartitionId(secondRecord.getValue().getUsers().getFirst().getUserKey()))
         .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
 
@@ -256,7 +220,13 @@ final class IdentitySetupInitializerIT {
   }
 
   private void createBroker(final boolean authorizationsEnabled, final int partitionCount) {
-    createBroker(authorizationsEnabled, partitionCount, cfg -> {});
+    createBroker(
+        authorizationsEnabled,
+        partitionCount,
+        cfg -> {
+          final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@demo.com");
+          cfg.getInitialization().getUsers().add(user);
+        });
   }
 
   private void createBroker(

@@ -3000,7 +3000,7 @@ final class JsonSerializableToJsonTest {
                             .setName("roleName")
                             .setEntityKey(2)
                             .setEntityType(EntityType.USER))
-                    .setDefaultUser(
+                    .addUser(
                         new UserRecord()
                             .setUserKey(3L)
                             .setUsername("username")
