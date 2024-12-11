@@ -59,7 +59,7 @@ public class GroupCreatedUpdatedHandler implements ExportHandler<GroupEntity, Gr
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createParent();
-    entity.setGroupKey(value.getGroupKey()).setName(value.getName()).setJoin(joinRelation);
+    entity.setKey(value.getGroupKey()).setName(value.getName()).setJoin(joinRelation);
   }
 
   @Override

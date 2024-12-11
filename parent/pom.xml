@@ -64,7 +64,7 @@
     <version.httpclient5>5.3.1</version.httpclient5>
     <version.httpcore5>5.2.5</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.6.5</version.identity>
+    <version.identity>8.6.6</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.2</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
@@ -78,11 +78,11 @@
     <version.netty>4.1.115.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
-    <version.opensearch.testcontainers>2.1.1</version.opensearch.testcontainers>
+    <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.5</version.protobuf>
     <version.protobuf-common>2.49.0</version.protobuf-common>
-    <version.micrometer>1.14.1</version.micrometer>
+    <version.micrometer>1.14.2</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.33.2</version.sbe>
     <version.scala>2.13.15</version.scala>
@@ -108,7 +108,7 @@
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
     <version.jetbrains-annotations>25.0.0</version.jetbrains-annotations>
-    <version.jqwik>1.9.1</version.jqwik>
+    <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.byte-buddy>1.15.10</version.byte-buddy>
@@ -125,18 +125,18 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.5</version.zpt>
+    <version.zpt>8.6.6</version.zpt>
     <version.feign>13.5</version.feign>
-    <version.google-sdk>26.50.0</version.google-sdk>
+    <version.google-sdk>26.51.0</version.google-sdk>
     <version.azure-sdk>1.2.30</version.azure-sdk>
-    <version.awssdk>2.29.30</version.awssdk>
+    <version.awssdk>2.29.31</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.26</version.swagger-annotations>
-    <version.checker-qual>3.48.2</version.checker-qual>
+    <version.checker-qual>3.48.3</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.4</version.postgresql>
@@ -152,8 +152,8 @@
     <version.caffeine>3.1.8</version.caffeine>
 
     <version.commons-io>2.18.0</version.commons-io>
-    <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
-    <version.unboundid-ldapsdk>7.0.1</version.unboundid-ldapsdk>
+    <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
+    <version.unboundid-ldapsdk>7.0.2</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
     <version.springdoc>2.6.0</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
@@ -164,7 +164,7 @@
     <version.aws-java-sdk>1.12.779</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.4</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.4</version.postgres-test-container>
-    <version.elasticsearch7>7.17.25</version.elasticsearch7>
+    <version.elasticsearch7>7.17.26</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
@@ -1932,7 +1932,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.7.0</version>
+        <version>3.7.1</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
