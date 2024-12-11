@@ -17,6 +17,8 @@ import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -110,6 +112,15 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     withRecordingExporter(true).withCamundaExporter();
 
     securityConfig = new CamundaSecurityProperties();
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 

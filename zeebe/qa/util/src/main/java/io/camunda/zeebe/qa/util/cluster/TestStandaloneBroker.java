@@ -14,6 +14,8 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -61,6 +63,15 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 

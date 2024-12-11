@@ -12,6 +12,11 @@ import java.util.List;
 
 public class InitializationConfiguration {
 
+  public static final String DEFAULT_USER_USERNAME = "demo";
+  public static final String DEFAULT_USER_PASSWORD = "demo";
+  public static final String DEFAULT_USER_NAME = "Demo";
+  public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
+
   private List<ConfiguredUser> users = new ArrayList<>();
 
   public List<ConfiguredUser> getUsers() {

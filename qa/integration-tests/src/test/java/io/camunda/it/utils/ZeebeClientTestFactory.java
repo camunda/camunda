@@ -7,6 +7,7 @@
  */
 package io.camunda.it.utils;
 
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
@@ -32,14 +33,11 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeClientTestFactory.class);
 
-  private static final String DEFAULT_USER_USERNAME = "demo";
-  private static final String DEFAULT_USER_PASSWORD = "demo";
-
   private final Map<String, User> usersRegistry = new HashMap<>();
   private final Map<String, ZeebeClient> cachedClients = new ConcurrentHashMap<>();
 
   public ZeebeClientTestFactory() {
-    usersRegistry.put(DEFAULT_USER_USERNAME, User.DEFAULT);
+    usersRegistry.put(InitializationConfiguration.DEFAULT_USER_USERNAME, User.DEFAULT);
   }
 
   public ZeebeClientTestFactory withUsers(final List<User> users) {
@@ -61,9 +59,10 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
     }
     final ZeebeClient defaultClient =
         cachedClients.computeIfAbsent(
-            DEFAULT_USER_USERNAME, __ -> createDefaultUserClient(gateway));
+            InitializationConfiguration.DEFAULT_USER_USERNAME,
+            __ -> createDefaultUserClient(gateway));
     final String username = authenticated.value();
-    if (DEFAULT_USER_USERNAME.equals(username)) {
+    if (InitializationConfiguration.DEFAULT_USER_USERNAME.equals(username)) {
       return defaultClient;
     } else {
       return cachedClients.computeIfAbsent(
@@ -80,7 +79,10 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
 
   private ZeebeClient createDefaultUserClient(final TestGateway<?> gateway) {
     final ZeebeClient defaultClient =
-        createAuthenticatedClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD);
+        createAuthenticatedClient(
+            gateway,
+            InitializationConfiguration.DEFAULT_USER_USERNAME,
+            InitializationConfiguration.DEFAULT_USER_PASSWORD);
     // block until the default user is created
     Awaitility.await()
         .atMost(Duration.ofSeconds(20))
@@ -159,7 +161,10 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
 
   public record User(String username, String password, List<Permissions> permissions) {
     public static final User DEFAULT =
-        new User(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD, List.of());
+        new User(
+            InitializationConfiguration.DEFAULT_USER_USERNAME,
+            InitializationConfiguration.DEFAULT_USER_PASSWORD,
+            List.of());
   }
 
   /**
@@ -173,6 +178,6 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   public @interface Authenticated {
 
     /** The username of the user to be used for authentication. */
-    String value() default DEFAULT_USER_USERNAME;
+    String value() default InitializationConfiguration.DEFAULT_USER_USERNAME;
   }
 }
