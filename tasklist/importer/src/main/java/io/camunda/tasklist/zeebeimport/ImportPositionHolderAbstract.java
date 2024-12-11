@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
@@ -51,8 +50,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
   @Qualifier("tasklistImportPositionUpdateThreadPoolExecutor")
   protected ThreadPoolTaskScheduler importPositionUpdateExecutor;
 
-  private final ConcurrentHashMap<String, Boolean> mostRecentProcessedImportPositions =
-      new ConcurrentHashMap<>();
+  private final Map<String, Boolean> mostRecentProcessedImportPositions = new HashMap<>();
 
   @PostConstruct
   private void init() {
