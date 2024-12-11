@@ -184,7 +184,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unexpected value 'dsc'",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)),
