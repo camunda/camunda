@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateMappingResponseImpl;
 import io.camunda.zeebe.client.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.client.protocol.rest.MappingRuleCreateRequest.OperatorEnum;
 import io.camunda.zeebe.client.protocol.rest.MappingRuleCreateResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,22 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   }
 
   @Override
+  public CreateMappingCommandStep1 name(final String name) {
+    mappingRequest.name(name);
+    return this;
+  }
+
+  @Override
+  public CreateMappingCommandStep1 operator(final String operator) {
+    OperatorEnum operatorEnum = OperatorEnum.fromValue(operator);
+    if (operatorEnum == OperatorEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      operatorEnum = null;
+    }
+    mappingRequest.operator(operatorEnum);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<CreateMappingResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -65,6 +82,8 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   public ZeebeFuture<CreateMappingResponse> send() {
     ArgumentUtil.ensureNotNull("claimName", mappingRequest.getClaimName());
     ArgumentUtil.ensureNotNull("claimValue", mappingRequest.getClaimValue());
+    ArgumentUtil.ensureNotNull("name", mappingRequest.getName());
+    ArgumentUtil.ensureNotNull("operator", mappingRequest.getOperator());
     final HttpZeebeFuture<CreateMappingResponse> result = new HttpZeebeFuture<>();
     final CreateMappingResponseImpl response = new CreateMappingResponseImpl();
     httpClient.post(
