@@ -14,6 +14,15 @@ public final class FilterBuilders {
 
   private FilterBuilders() {}
 
+  public static UsageMetricsFilter.Builder usageMetrics() {
+    return new UsageMetricsFilter.Builder();
+  }
+
+  public static UsageMetricsFilter usageMetrics(
+      final Function<UsageMetricsFilter.Builder, ObjectBuilder<UsageMetricsFilter>> fn) {
+    return fn.apply(usageMetrics()).build();
+  }
+
   public static ProcessDefinitionFilter.Builder processDefinition() {
     return new ProcessDefinitionFilter.Builder();
   }

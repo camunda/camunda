@@ -31,9 +31,11 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.MappingFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
@@ -81,6 +83,7 @@ import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -95,12 +98,13 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
       final UsageMetricsSearchQueryRequest request) {
-    if (request.getStartTime() == null || request.getEndTime() == null) {
-      return Either.left(
-          RequestValidator.createProblemDetail(List.of("startTime and endTime must not be null"))
-              .orElseThrow());
-    }
-    return Either.right(UsageMetricsQuery.of(request.getStartTime(), request.getEndTime()));
+    final UsageMetricsFilter filter =
+        new UsageMetricsFilter.Builder()
+            .startTime(Operation.gte(toOffsetDateTime(request.getStartTime())))
+            .endTime(Operation.lte(toOffsetDateTime(request.getEndTime())))
+            .build();
+    final var page = new SearchQueryPage.Builder().size(0).build();
+    return Either.right(new UsageMetricsQuery.Builder().filter(filter).page(page).build());
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
@@ -438,7 +442,12 @@ public final class SearchQueryRequestMapper {
   }
 
   private static OffsetDateTime toOffsetDateTime(final String text) {
-    return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
+    try {
+      return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
+    } catch (final Exception e) {
+      final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+      return OffsetDateTime.parse(text, formatter);
+    }
   }
 
   private static ProcessInstanceFilter toProcessInstanceFilter(

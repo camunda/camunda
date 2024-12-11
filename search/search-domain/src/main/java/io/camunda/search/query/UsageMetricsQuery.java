@@ -7,33 +7,54 @@
  */
 package io.camunda.search.query;
 
-public record UsageMetricsQuery(String startTime, String endTime) {
-  public static UsageMetricsQuery of(final String startTime, final String endTime) {
-    return new UsageMetricsQuery(startTime, endTime);
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.sort.SortOptionBuilders;
+import io.camunda.search.sort.UsageMetricsSort;
+import io.camunda.util.ObjectBuilder;
+import java.util.Objects;
+import java.util.function.Function;
+
+public record UsageMetricsQuery(
+    UsageMetricsFilter filter, UsageMetricsSort sort, SearchQueryPage page)
+    implements TypedSearchQuery<UsageMetricsFilter, UsageMetricsSort> {
+
+  public static UsageMetricsQuery of(final Function<Builder, ObjectBuilder<UsageMetricsQuery>> fn) {
+    return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder
-      extends SearchQueryBase.AbstractQueryBuilder<UsageMetricsQuery.Builder> {
-    private String startTime;
-    private String endTime;
+  public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
+      implements TypedSearchQueryBuilder<
+          UsageMetricsQuery, Builder, UsageMetricsFilter, UsageMetricsSort> {
+    private static final UsageMetricsFilter EMPTY_FILTER = FilterBuilders.usageMetrics().build();
+    private static final UsageMetricsSort EMPTY_SORT = SortOptionBuilders.usageMetrics().build();
+
+    private UsageMetricsFilter filter;
+    private UsageMetricsSort sort;
 
     @Override
-    protected UsageMetricsQuery.Builder self() {
+    protected Builder self() {
       return this;
     }
 
-    public UsageMetricsQuery.Builder startTime(final String value) {
-      startTime = value;
+    @Override
+    public Builder filter(final UsageMetricsFilter value) {
+      filter = value;
       return this;
     }
 
-    public UsageMetricsQuery.Builder endTime(final String value) {
-      endTime = value;
+    @Override
+    public Builder sort(final UsageMetricsSort value) {
+      sort = value;
       return this;
     }
 
+    @Override
     public UsageMetricsQuery build() {
-      return new UsageMetricsQuery(startTime, endTime);
+      filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
+      return new UsageMetricsQuery(filter, sort, page());
     }
   }
 }

@@ -26,6 +26,7 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -237,8 +238,52 @@ public class SearchClients
   }
 
   @Override
-  public UsageMetricsEntity searchUsageMetrics(final UsageMetricsQuery query) {
-    // TODO: Search Operate and Tasklist
-    return new UsageMetricsEntity(1L, 2L, 3L);
+  public SearchQueryResult<UsageMetricsEntity> searchUsageMetrics(final UsageMetricsQuery query) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    final var assigneesFilter =
+        new UsageMetricsQuery.Builder()
+            .filter(
+                new UsageMetricsFilter.Builder()
+                    .startTime(query.filter().startTime())
+                    .endTime(query.filter().endTime())
+                    .events("task_completed_by_assignee")
+                    .build())
+            .build();
+    final var assigneesResult =
+        executor.search(
+            assigneesFilter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+    final var processInstancesFilter =
+        new UsageMetricsQuery.Builder()
+            .filter(
+                new UsageMetricsFilter.Builder()
+                    .startTime(query.filter().startTime())
+                    .endTime(query.filter().endTime())
+                    .events("task_completed_by_assignee")
+                    .build())
+            .build();
+    final var processInstancesResult =
+        executor.search(
+            processInstancesFilter,
+            io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+    final var decisionInstancesFilter =
+        new UsageMetricsQuery.Builder()
+            .filter(
+                new UsageMetricsFilter.Builder()
+                    .startTime(query.filter().startTime())
+                    .endTime(query.filter().endTime())
+                    .events("EVENT_DECISION_INSTANCE_EVALUATED")
+                    .build())
+            .build();
+    final var decisionInstancesResult =
+        executor.search(
+            decisionInstancesFilter,
+            io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+
+    return new SearchQueryResult<>(0, List.of(), null /* aggregate */);
   }
 }

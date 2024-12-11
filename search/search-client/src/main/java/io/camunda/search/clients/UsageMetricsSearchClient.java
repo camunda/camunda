@@ -8,12 +8,13 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.UsageMetricsEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.SecurityContext;
 
 public interface UsageMetricsSearchClient {
 
-  UsageMetricsEntity searchUsageMetrics(UsageMetricsQuery query);
+  SearchQueryResult<UsageMetricsEntity> searchUsageMetrics(UsageMetricsQuery query);
 
   UsageMetricsSearchClient withSecurityContext(SecurityContext securityContext);
 }

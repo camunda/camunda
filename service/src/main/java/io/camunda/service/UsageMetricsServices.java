@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricsEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -27,7 +28,7 @@ public class UsageMetricsServices extends ApiServices<UsageMetricsServices> {
     this.usageMetricsSearchClient = usageMetricsSearchClient;
   }
 
-  public UsageMetricsEntity search(final UsageMetricsQuery query) {
+  public SearchQueryResult<UsageMetricsEntity> search(final UsageMetricsQuery query) {
     return usageMetricsSearchClient
         .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
         .searchUsageMetrics(query);

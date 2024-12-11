@@ -5,8 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.search.clients.transformers.sort;
 
-import java.time.OffsetDateTime;
+public class UsageMetricsFieldSortingTransformer implements FieldSortingTransformer {
 
-public record UsageMetricsEntity(String id, OffsetDateTime eventTime, String event, String value) {}
+  @Override
+  public String apply(final String domainField) {
+    return "id";
+  }
+}

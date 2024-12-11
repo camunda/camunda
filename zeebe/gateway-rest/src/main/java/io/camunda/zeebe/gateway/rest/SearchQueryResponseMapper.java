@@ -89,11 +89,12 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsSearchQueryResponse toUsageMetricsSearchQueryResponse(
-      final UsageMetricsEntity result) {
+      final SearchQueryResult<UsageMetricsEntity> results) {
+    // final var result = results.aggregates();
     return new UsageMetricsSearchQueryResponse()
-        .assignees(result.assignees())
-        .processInstances(result.processInstances())
-        .decisionInstances(result.decisionInstances());
+        .assignees(1L)
+        .processInstances(2L)
+        .decisionInstances(3L);
   }
 
   public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(

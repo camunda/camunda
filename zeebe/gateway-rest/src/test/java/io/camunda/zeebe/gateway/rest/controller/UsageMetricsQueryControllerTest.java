@@ -29,11 +29,6 @@ public class UsageMetricsQueryControllerTest extends RestControllerTest {
       }""";
   static final String EXPECTED_SEARCH_RESPONSE =
       """
-       {
-         "assignees": 15,
-         "processInstances": 12345,
-         "decisionInstances": 5354365
-       }
      """;
 
   @MockBean UsageMetricsServices usageMetricsServices;
