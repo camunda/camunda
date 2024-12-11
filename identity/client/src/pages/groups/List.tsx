@@ -31,7 +31,12 @@ const List: FC = () => {
   const navigate = useNavigate();
   const [, setSearch] = useState("");
 
-  const { data: groupSearchResults, loading, reload, success } = useApi(searchGroups);
+  const {
+    data: groupSearchResults,
+    loading,
+    reload,
+    success,
+  } = useApi(searchGroups);
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);

@@ -5,8 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { ApiDefinition, apiDelete, apiGet, apiPost, apiPatch } from "../request";
-import {SearchResponse} from "src/utility/api";
+import {
+  ApiDefinition,
+  apiDelete,
+  apiGet,
+  apiPost,
+  apiPatch,
+} from "../request";
+import { SearchResponse } from "src/utility/api";
 
 export const GROUPS_ENDPOINT = "/groups";
 
@@ -16,7 +22,7 @@ export type Group = {
 };
 
 export const searchGroups: ApiDefinition<SearchResponse<Group>> = () =>
-    apiPost(`${GROUPS_ENDPOINT}/search`);
+  apiPost(`${GROUPS_ENDPOINT}/search`);
 
 export type GetGroupParams = {
   id: string;
