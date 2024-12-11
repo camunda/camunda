@@ -16,12 +16,20 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -77,7 +85,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    stateWriter.appendFollowUpEvent(mappingKey, MappingIntent.DELETED, record);
+    deleteMapping(persistedMapping.get());
     responseWriter.writeEventOnCommand(mappingKey, MappingIntent.DELETED, record, command);
 
     final long key = keyGenerator.nextKey();
@@ -93,9 +101,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     mappingState
         .get(record.getMappingKey())
         .ifPresentOrElse(
-            persistedMapping ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), MappingIntent.DELETED, command.getValue()),
+            this::deleteMapping,
             () -> {
               final var errorMessage =
                   MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
@@ -103,5 +109,38 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void deleteMapping(final PersistedMapping mapping) {
+    final var mappingKey = mapping.getMappingKey();
+    for (final var tenantKey : mapping.getTenantKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          tenantKey,
+          TenantIntent.ENTITY_REMOVED,
+          new TenantRecord()
+              .setTenantKey(tenantKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
+    for (final var roleKey : mapping.getRoleKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          roleKey,
+          RoleIntent.ENTITY_REMOVED,
+          new RoleRecord()
+              .setRoleKey(roleKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
+    for (final var groupKey : mapping.getGroupKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          groupKey,
+          GroupIntent.ENTITY_REMOVED,
+          new GroupRecord()
+              .setGroupKey(groupKey)
+              .setEntityKey(mappingKey)
+              .setEntityType(EntityType.MAPPING));
+    }
+    stateWriter.appendFollowUpEvent(
+        mappingKey, MappingIntent.DELETED, new MappingRecord().setMappingKey(mappingKey));
   }
 }
