@@ -1318,7 +1318,7 @@ public class TaskListenerTest {
   @Test
   public void shouldRetryUserTaskCompleteCommandAfterExtractValueErrorIncidentResolution() {
     testUserTaskCommandRetryAfterExtractValueError(
-        ZeebeTaskListenerEventType.complete,
+        ZeebeTaskListenerEventType.completing,
         "complete_listener_var_name",
         "expression_complete_listener_2",
         UserTaskClient::complete,
@@ -1329,7 +1329,7 @@ public class TaskListenerTest {
   @Test
   public void shouldRetryUserTaskAssignCommandAfterExtractValueErrorIncidentResolution() {
     testUserTaskCommandRetryAfterExtractValueError(
-        ZeebeTaskListenerEventType.assignment,
+        ZeebeTaskListenerEventType.assigning,
         "assign_listener_var_name",
         "expression_assign_listener_2",
         userTask -> userTask.withAssignee("me").assign(),
@@ -1340,7 +1340,7 @@ public class TaskListenerTest {
   @Test
   public void shouldRetryUserTaskClaimCommandAfterExtractValueErrorIncidentResolution() {
     testUserTaskCommandRetryAfterExtractValueError(
-        ZeebeTaskListenerEventType.assignment,
+        ZeebeTaskListenerEventType.assigning,
         "claim_listener_var_name",
         "expression_claim_listener_2",
         userTask -> userTask.withAssignee("me").claim(),
@@ -1420,10 +1420,10 @@ public class TaskListenerTest {
             createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeAssignee(assignee)
-                        .zeebeTaskListener(l -> l.assignment().type(listenerType))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType))
                         .zeebeTaskListener(
-                            l -> l.assignment().typeExpression("assign_listener_var_name"))
-                        .zeebeTaskListener(l -> l.assignment().type(listenerType + "_3"))));
+                            l -> l.assigning().typeExpression("assign_listener_var_name"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_3"))));
 
     // complete the first task listener job
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
@@ -1459,7 +1459,7 @@ public class TaskListenerTest {
     // then
     assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
-        JobListenerEventType.ASSIGNMENT,
+        JobListenerEventType.ASSIGNING,
         listenerType,
         listenerType, // re-created task listener job
         "expression_assign_listener_2",
@@ -1620,10 +1620,10 @@ public class TaskListenerTest {
   }
 
   private static JobListenerEventType mapToJobListenerEventType(
-      ZeebeTaskListenerEventType eventType) {
+      final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
-      case assignment -> JobListenerEventType.ASSIGNMENT;
-      case complete -> JobListenerEventType.COMPLETE;
+      case ZeebeTaskListenerEventType.assigning -> JobListenerEventType.ASSIGNING;
+      case ZeebeTaskListenerEventType.completing -> JobListenerEventType.COMPLETING;
       default ->
           throw new IllegalArgumentException(
               "Unsupported zeebe task listener event type: '%s'".formatted(eventType));
