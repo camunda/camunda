@@ -55,10 +55,7 @@ public class MappingIT {
     final Long mappingKey = randomizedMapping.mappingKey();
     final var mapping = rdbmsService.getMappingReader().findOne(mappingKey).orElse(null);
     assertThat(mapping).isNotNull();
-    assertThat(mapping)
-        .usingRecursiveComparison()
-        .ignoringFields("operator")
-        .isEqualTo(randomizedMapping);
+    assertThat(mapping).usingRecursiveComparison().isEqualTo(randomizedMapping);
     assertThat(mapping.operator()).isEqualTo(randomizedMapping.operator());
 
     // Delete the mapping
