@@ -17,8 +17,10 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest.OperatorEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.record.value.Operator;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +71,11 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
-    final var request = new MappingRuleCreateRequest().claimValue("claimValue");
+    final var request =
+        new MappingRuleCreateRequest()
+            .claimValue("claimValue")
+            .name("name")
+            .operator(OperatorEnum.EQUALS);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -89,7 +95,12 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWitBlankClaimName() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("").claimValue("claimValue");
+    final var request =
+        new MappingRuleCreateRequest()
+            .claimName("")
+            .claimValue("claimValue")
+            .name("name")
+            .operator(OperatorEnum.EQUALS);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -109,7 +120,11 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("claimName");
+    final var request =
+        new MappingRuleCreateRequest()
+            .claimName("claimName")
+            .name("name")
+            .operator(OperatorEnum.CONTAINS);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -129,7 +144,12 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWitBlankClaimValue() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("claimName").claimValue("");
+    final var request =
+        new MappingRuleCreateRequest()
+            .claimName("claimName")
+            .claimValue("")
+            .name("name")
+            .operator(OperatorEnum.CONTAINS);
 
     // when then
     assertRequestRejectedExceptionally(
@@ -140,6 +160,51 @@ public class MappingControllerTest extends RestControllerTest {
               "status": 400,
               "title": "INVALID_ARGUMENT",
               "detail": "No claimValue provided.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
+  void shouldRejectMappingCreationWithMissingName() {
+    // given
+    final var request =
+        new MappingRuleCreateRequest()
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .operator(OperatorEnum.CONTAINS);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
+  void shouldRejectMappingCreationWithMissingOperator() {
+    // given
+    final var request =
+        new MappingRuleCreateRequest().claimName("claimName").claimValue("claimValue").name("name");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The value for operator is 'null' but must be a supported operator value.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -170,7 +235,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   private MappingDTO validCreateMappingRequest() {
-    return new MappingDTO("newClaimName", "newClaimValue");
+    return new MappingDTO("newClaimName", "newClaimValue", "mapName", Operator.EQUALS);
   }
 
   private void assertRequestRejectedExceptionally(

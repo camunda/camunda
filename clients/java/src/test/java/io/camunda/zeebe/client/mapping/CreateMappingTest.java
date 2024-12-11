@@ -26,11 +26,20 @@ public class CreateMappingTest extends ClientRestTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
+  public static final String NAME = "claimValue";
+  public static final String OPERATOR = "CONTAINS";
 
   @Test
   void shouldCreateMapping() {
     // when
-    client.newCreateMappingCommand().claimName(CLAIM_NAME).claimValue(CLAIM_VALUE).send().join();
+    client
+        .newCreateMappingCommand()
+        .claimName(CLAIM_NAME)
+        .claimValue(CLAIM_VALUE)
+        .name(NAME)
+        .operator(OPERATOR)
+        .send()
+        .join();
 
     // then
     final MappingRuleCreateRequest request =
@@ -42,7 +51,15 @@ public class CreateMappingTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullClaimName() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateMappingCommand().claimValue(CLAIM_VALUE).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateMappingCommand()
+                    .claimValue(CLAIM_VALUE)
+                    .name(NAME)
+                    .operator(OPERATOR)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimName");
   }
@@ -50,7 +67,47 @@ public class CreateMappingTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullClaimValue() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateMappingCommand().claimName(CLAIM_NAME).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateMappingCommand()
+                    .claimName(CLAIM_NAME)
+                    .name(NAME)
+                    .operator(OPERATOR)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("claimValue");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullName() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateMappingCommand()
+                    .claimName(CLAIM_NAME)
+                    .claimValue(CLAIM_VALUE)
+                    .operator(OPERATOR)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("claimValue");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullOperator() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateMappingCommand()
+                    .claimName(CLAIM_NAME)
+                    .claimValue(CLAIM_VALUE)
+                    .name(NAME)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }

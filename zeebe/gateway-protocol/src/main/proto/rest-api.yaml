@@ -5226,7 +5226,7 @@ components:
         operator:
           type: string
           description: The operator used for the mapping comparison.
-          enum: [ EQUALS, CONTAINS, STARTS_WITH, ENDS_WITH ]
+          enum: [ EQUALS, CONTAINS ]
     MappingSearchResponse:
       type: object
       allOf:

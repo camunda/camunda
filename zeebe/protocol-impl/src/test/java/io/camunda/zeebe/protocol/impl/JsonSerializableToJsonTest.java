@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.Operator;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserType;
@@ -2963,12 +2964,16 @@ final class JsonSerializableToJsonTest {
                 new MappingRecord()
                     .setMappingKey(1L)
                     .setClaimName("claimName")
-                    .setClaimValue("claimValue"),
+                    .setClaimValue("claimValue")
+                    .setName("name")
+                    .setOperator(Operator.CONTAINS),
         """
       {
         "mappingKey": 1,
         "claimName": "claimName",
-        "claimValue": "claimValue"
+        "claimValue": "claimValue",
+        "name": "name",
+        "operator": "CONTAINS"
       }
       """
       },
@@ -2982,7 +2987,9 @@ final class JsonSerializableToJsonTest {
       {
         "mappingKey": -1,
         "claimName": "",
-        "claimValue": ""
+        "claimValue": "",
+        "name": "",
+        "operator": "EQUALS"
       }
       """
       },
