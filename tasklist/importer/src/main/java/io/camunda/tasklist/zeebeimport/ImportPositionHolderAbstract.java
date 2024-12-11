@@ -12,7 +12,6 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.micrometer.core.instrument.Gauge;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -21,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
@@ -36,10 +36,8 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
   protected Map<String, ImportPositionEntity> pendingProcessedPositions = new HashMap<>();
   protected Map<String, ImportPositionEntity> inflightProcessedPositions = new HashMap<>();
-
   protected ScheduledFuture<?> scheduledTask;
   protected ReentrantLock inflightImportPositionLock = new ReentrantLock();
-
   @Autowired protected TasklistImportPositionIndex importPositionType;
 
   @Autowired
@@ -47,14 +45,14 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
   protected ObjectMapper objectMapper;
 
   @Autowired protected TasklistProperties tasklistProperties;
-
   @Autowired protected Metrics metrics;
 
   @Autowired
   @Qualifier("tasklistImportPositionUpdateThreadPoolExecutor")
   protected ThreadPoolTaskScheduler importPositionUpdateExecutor;
 
-  private final Map<String, Gauge> importPositionCompletedGauges = new HashMap<>();
+  private final ConcurrentHashMap<String, Boolean> mostRecentProcessedImportPositions =
+      new ConcurrentHashMap<>();
 
   @PostConstruct
   private void init() {
@@ -116,9 +114,9 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
           final var partition = lastProcessedPosition.getPartitionId();
           final var key = getKey(aliasName, partition);
           var importPosition = inflightProcessedPositions.get(key);
+          markPositionCompletedGauge(partition, aliasName);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
-            markPositionCompletedGauge(partition, aliasName, importPosition);
           } else {
             importPosition
                 .setPosition(lastProcessedPosition.getPosition())
@@ -127,6 +125,10 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
                 .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightProcessedPositions.put(key, importPosition);
+          mostRecentProcessedImportPositions.merge(
+              key,
+              importPosition.getCompleted(),
+              (oldCompleted, newCompleted) -> oldCompleted || newCompleted);
         },
         "record last loaded position");
   }
@@ -135,7 +137,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
   public void clearCache() {
     lastScheduledPositions.clear();
     pendingProcessedPositions.clear();
-    importPositionCompletedGauges.clear();
+    mostRecentProcessedImportPositions.clear();
     withInflightImportPositionLock(() -> inflightProcessedPositions.clear(), "clear");
   }
 
@@ -160,20 +162,22 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
     scheduleImportPositionUpdateTask();
   }
 
-  private void markPositionCompletedGauge(
-      final int partition,
-      final String aliasName,
-      final ImportPositionEntity lastProcessedPosition) {
-    importPositionCompletedGauges.put(
-        getKey(aliasName, partition),
-        metrics.registerGauge(
-            Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
-            lastProcessedPosition,
-            (pos) -> pos.getCompleted() ? 1.0 : 0.0,
-            Metrics.TAG_KEY_PARTITION,
-            Integer.toString(partition),
-            Metrics.TAG_KEY_IMPORT_POS_ALIAS,
-            aliasName));
+  private void markPositionCompletedGauge(final int partition, final String aliasName) {
+    final var key = getKey(aliasName, partition);
+    metrics.registerGauge(
+        Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+        mostRecentProcessedImportPositions,
+        (importPositions) -> {
+          final var val = mostRecentProcessedImportPositions.get(key);
+          if (val) {
+            return 1.0;
+          }
+          return 0.0;
+        },
+        Metrics.TAG_KEY_PARTITION,
+        Integer.toString(partition),
+        Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+        aliasName);
   }
 
   private String getKey(final String aliasTemplate, final int partitionId) {
