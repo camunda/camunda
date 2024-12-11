@@ -9,10 +9,10 @@ package io.camunda.security.configuration;
 
 public class ConfiguredUser {
 
-  private String username = "demo";
-  private String password = "demo";
-  private String name = "Demo";
-  private String email = "demo@demo.com";
+  private String username;
+  private String password;
+  private String name;
+  private String email;
 
   public ConfiguredUser(
       final String username, final String password, final String name, final String email) {
