@@ -36,12 +36,9 @@ const api = {
       });
     },
     logout: () =>
-      new Request(getFullURL('/api/logout'), {
+      new Request(getFullURL('/logout'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       }),
     startProcess: (payload: {
       bpmnProcessId: string;

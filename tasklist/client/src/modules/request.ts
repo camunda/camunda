@@ -8,6 +8,7 @@
 
 import {reactQueryClient} from './react-query/reactQueryClient';
 import {authenticationStore} from './stores/authentication';
+import Cookies from 'js-cookie';
 
 type RequestError =
   | {
@@ -21,8 +22,8 @@ type RequestError =
       networkError: null;
     };
 
-function getCsrfTokenFromStorage() {
-  return sessionStorage.getItem('X-CSRF-TOKEN');
+function getCsrfToken() {
+  return Cookies.get('XSRF-TOKEN') ?? '';
 }
 
 async function request(
@@ -39,7 +40,7 @@ async function request(
     }
 > {
   try {
-    const csrfToken = getCsrfTokenFromStorage();
+    const csrfToken = getCsrfToken();
     if (input instanceof Request) {
       const method = input.method;
 
@@ -58,16 +59,10 @@ async function request(
       authenticationStore.activateSession();
     }
 
-    const tokenFromResponse = response.headers.get('X-CSRF-TOKEN');
-
-    // If the token is found in the response headers, use it
-    if (tokenFromResponse) {
-      sessionStorage.setItem('X-CSRF-TOKEN', tokenFromResponse);
-    }
-
     if (!skipSessionCheck && response.status === 401) {
       authenticationStore.disableSession();
       reactQueryClient.clear();
+      window.location.href = `/login?next=${window.location.pathname}`;
     }
 
     if (response.ok) {

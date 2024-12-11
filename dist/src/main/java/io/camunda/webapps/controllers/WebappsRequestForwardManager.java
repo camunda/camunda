@@ -30,11 +30,7 @@ public class WebappsRequestForwardManager {
   @Autowired private WebappsProperties webappsProperties;
 
   public String forward(final HttpServletRequest request, final String app) {
-    if (webappsProperties.loginDelegated() && isNotLoggedIn()) {
-      return saveRequestAndRedirectToLogin(request);
-    } else {
-      return "forward:/" + app;
-    }
+    return "forward:/" + app;
   }
 
   private String saveRequestAndRedirectToLogin(final HttpServletRequest request) {

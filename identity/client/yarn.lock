@@ -1290,6 +1290,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/carbon__elements@npm:^11":
+  version: 11.10.3
+  resolution: "@types/carbon__elements@npm:11.10.3"
+  checksum: 10c0/a5708886e5059ade6cab49477c228be075e1d72eebeb7eeb60be9ae607668bba56791953c62e31ca20eb7dcf5d8c1857f0d178edd580849762bba565e79774cc
+  languageName: node
+  linkType: hard
+
 "@types/debug@npm:^4.0.0":
   version: 4.1.12
   resolution: "@types/debug@npm:4.1.12"
@@ -2921,6 +2928,7 @@ __metadata:
   dependencies:
     "@camunda/camunda-composite-components": "npm:0.11.0"
     "@carbon/react": "npm:1.71.0"
+    "@types/carbon__elements": "npm:^11"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/js-cookie": "npm:3.0.6"
     "@types/node": "npm:22.10.0"

@@ -41,7 +41,6 @@ export function login(username: string, password: string): Promise<boolean> {
 export function logout() {
   const data = new FormData();
   data.set(CSRF_REQUEST_PARAMETER, getCsrfToken());
-  console.log("LOGOUT", getCsrfToken());
   return fetch("/logout", {
     method: "post",
     body: data,
@@ -51,7 +50,7 @@ export function logout() {
   })
     .then((response: Response) => {
       if (response.status < 400) {
-        window.location.href = LOGIN_PATH;
+        window.location.href = `${LOGIN_PATH}?next=${window.location.pathname}`;
       }
     })
     .catch((e) => {

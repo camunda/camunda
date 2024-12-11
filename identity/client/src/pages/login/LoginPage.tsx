@@ -6,13 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, { useCallback, useState } from "react";
-import Page, { PageTitle } from "src/components/layout/Page.tsx";
+import React, {useCallback, useState} from "react";
+import Page from "src/components/layout/Page.tsx";
 import useTranslate from "src/utility/localization";
-import { Button, PasswordInput, TextInput } from "@carbon/react";
+import {Button, Link, PasswordInput, TextInput} from "@carbon/react";
 import "./LoginPage.scss";
-import { login } from "src/utility/auth";
-import { useLocation } from "react-router-dom";
+import {login} from "src/utility/auth";
+import {useLocation} from "react-router-dom";
+import {getCopyrightNoticeText} from "src/utility/copyright.ts";
+import camundaLogo from "src/assets/images/camunda.svg";
 
 interface Props {
   onSuccess: () => void;
@@ -77,18 +79,52 @@ function getRedirectUrl(queryString: string) {
   return next;
 }
 
+function getPageTitle(redirectUrl: string | null): string {
+  if (redirectUrl?.startsWith("/identity")) {
+    return "Identity";
+  }
+  if (redirectUrl?.startsWith("/tasklist")) {
+    return "Tasklist";
+  }
+  if (redirectUrl?.startsWith("/operate")) {
+    return "Operate";
+  }
+  return "Login";
+}
+
 export const LoginPage: React.FC = () => {
-  const { Translate } = useTranslate();
   const location = useLocation();
+  const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
-    window.location.href = getRedirectUrl(location.search) ?? "/identity/users";
-  }, [location]);
+    window.location.href = redirectUrl ?? "/identity/users";
+  }, [redirectUrl]);
+  const hasProductionLicense = false; // FIXME
   return (
-    <Page>
-      <PageTitle>
-        <Translate>Login</Translate>
-      </PageTitle>
-      <LoginForm onSuccess={onSuccess} />
+    <Page className="LoginPage">
+      <div className="content">
+        <div className="header">
+            <img src={camundaLogo} alt="Camunda"/>
+            <h1>{getPageTitle(redirectUrl)}</h1>
+        </div>
+        <LoginForm onSuccess={onSuccess} />
+        {!hasProductionLicense && <div className="license-info">
+          Non-Production License. If you would like information on production usage,
+          please refer to our{' '}
+          <Link
+              href="https://legal.camunda.com/#self-managed-non-production-terms"
+              target="_blank"
+              inline
+          >
+            terms & conditions page
+          </Link>{' '}
+          or{' '}
+          <Link href="https://camunda.com/contact/" target="_blank" inline>
+            contact sales
+          </Link>
+          .
+        </div>}
+      </div>
+      <div className="copyright-notice">{getCopyrightNoticeText()}</div>
     </Page>
   );
 };

@@ -45,6 +45,8 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.session.web.http.CookieSerializer;
+import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -58,6 +60,10 @@ public class WebSecurityConfig {
         "/logout",
         // these are handled by the frontend
         "/identity/**",
+        "/tasklist/**",
+        "/operate/**",
+        // license information is displayed on the login form
+        "/v2/license",
         // endpoint for failure forwarding
         "/error",
         // all actuator endpoints
@@ -68,6 +74,7 @@ public class WebSecurityConfig {
         "/startup"
       };
   public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
+  public static final String SESSION_COOKIE_NAME = "camunda-session";
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
@@ -173,6 +180,15 @@ public class WebSecurityConfig {
         .build();
   }
 
+  @Bean
+  public CookieSerializer cookieSerializer() {
+    final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
+    serializer.setCookieName(SESSION_COOKIE_NAME);
+    serializer.setCookiePath("/");
+    serializer.setUseHttpOnlyCookie(true);
+    return serializer;
+  }
+
   private void genericSuccessHandler(
       final HttpServletRequest request,
       final HttpServletResponse response,
@@ -183,6 +199,11 @@ public class WebSecurityConfig {
   private boolean isBasicAuthRequest(final HttpServletRequest request) {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
+  }
+
+  private boolean isApiRequest(final HttpServletRequest request) {
+    final String requestURI = request.getRequestURI();
+    return requestURI.startsWith("/v1") || requestURI.startsWith("/v2");
   }
 
   private HttpSecurity baseHttpSecurity(
