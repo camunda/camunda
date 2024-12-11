@@ -36,9 +36,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       BackupPriorityConfiguration.class,
       // Classes that provide the Beans for the indices
       TasklistIndexTemplateDescriptorsConfigurator.class,
-      IndexTemplateDescriptorsConfigurator.class
+      IndexTemplateDescriptorsConfigurator.class,
+      UserManagementIndicesConfig.class
     })
-public class BackupPrioritiesTest {
+abstract class BackupPrioritiesTest {
 
   @Autowired BackupPriorityConfiguration backupPriorityConfiguration;
 
@@ -86,10 +87,16 @@ public class BackupPrioritiesTest {
 
   @TestConfiguration
   static class TestBackupPriorityConfiguration {
+    OperateProperties operateProperties = new OperateProperties();
+
+    public TestBackupPriorityConfiguration() {
+      operateProperties.getElasticsearch().setIndexPrefix("my-index-prefix");
+    }
+
     @Primary
     @Bean
     public OperateProperties properties() {
-      return new OperateProperties();
+      return operateProperties;
     }
 
     @Primary
