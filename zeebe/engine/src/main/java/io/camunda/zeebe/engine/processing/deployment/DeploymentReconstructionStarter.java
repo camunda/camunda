@@ -15,7 +15,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,8 @@ public final class DeploymentReconstructionStarter implements StreamProcessorLif
       return;
     }
 
-    context.getScheduleService().runDelayed(Duration.ZERO, this);
+    // TODO: Re-enable this when we have time to finish deployment reconstruction
+    // context.getScheduleService().runDelayed(Duration.ZERO, this);
   }
 
   @Override
