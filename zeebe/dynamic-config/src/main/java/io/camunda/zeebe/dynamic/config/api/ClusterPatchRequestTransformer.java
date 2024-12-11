@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionsDistribution;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.util.Either;
@@ -23,16 +24,19 @@ public final class ClusterPatchRequestTransformer implements ConfigurationChange
   private final Set<MemberId> membersToRemove;
   private final Optional<Integer> newPartitionCount;
   private final Optional<Integer> newReplicationFactor;
+  private final Optional<PartitionsDistribution> newPartitionsDistribution;
 
   public ClusterPatchRequestTransformer(
       final Set<MemberId> membersToAdd,
       final Set<MemberId> membersToRemove,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
+      final Optional<Integer> newReplicationFactor,
+      final Optional<PartitionsDistribution> newPartitionsDistribution) {
     this.membersToAdd = membersToAdd;
     this.membersToRemove = membersToRemove;
     this.newPartitionCount = newPartitionCount;
     this.newReplicationFactor = newReplicationFactor;
+    this.newPartitionsDistribution = newPartitionsDistribution;
   }
 
   @Override
