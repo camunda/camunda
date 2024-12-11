@@ -10,15 +10,19 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 
+/** Provides access to authorized tenants. */
 public interface AuthorizedTenants {
 
   AuthorizedTenants DEFAULT_TENANTS =
       new AuthenticatedAuthorizedTenants(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   AuthorizedTenants ANONYMOUS = new AnonymouslyAuthorizedTenants();
 
+  /** Returns true, if the user is authorized to access the passed tenantId. */
   boolean isAuthorizedForTenantId(final String tenantId);
 
+  /** Returns true, if the user is authorized to access all passed tenants. */
   boolean isAuthorizedForTenantIds(final List<String> tenants);
 
+  /** Returns the list of authorized tenants. */
   List<String> getAuthorizedTenantIds();
 }

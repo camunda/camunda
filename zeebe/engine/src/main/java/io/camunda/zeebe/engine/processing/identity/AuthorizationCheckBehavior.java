@@ -108,6 +108,15 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  /**
+   * Returns true, if a command is executed by an anonymous authentication. So that, no
+   * authorization checks and no tenants checks are performed. Basically, it allows to run commands
+   * without authentication safely.
+   *
+   * <p>This provides anyone, i.e., when doing a broker request, with the option to run broker
+   * requests and commands anonymously. This is helpful especially if the gateway, for example,
+   * already checks authorizations and tenancy.
+   */
   private boolean isAuthorizedAnonymousUser(final TypedRecord<?> command) {
     final var authorizationClaims = command.getAuthorizations();
     final var authorizedAnonymousUserClaim =
