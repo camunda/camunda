@@ -49,7 +49,6 @@ public class IncidentEntityTransformer
         value.getCreationTime(),
         toState(value.getState()),
         value.getJobKey(),
-        value.getTreePath(),
         value.getTenantId());
   }
 

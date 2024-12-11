@@ -53,9 +53,6 @@ public interface FlowNodeInstance {
   /** tenant id for flow node instance */
   String getTenantId();
 
-  /** tree path of flow node instance */
-  String getTreePath();
-
   /** type of flow node instance */
   String getType();
 }

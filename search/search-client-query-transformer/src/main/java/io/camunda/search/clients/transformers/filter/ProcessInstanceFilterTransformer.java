@@ -23,7 +23,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.TREE_PATH;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -68,7 +67,6 @@ public final class ProcessInstanceFilterTransformer
             longOperations(
                 PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringOperations(TREE_PATH, filter.treePathOperations())).ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(START_DATE, filter.startDateOperations()))
         .ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(END_DATE, filter.endDateOperations())).ifPresent(queries::addAll);

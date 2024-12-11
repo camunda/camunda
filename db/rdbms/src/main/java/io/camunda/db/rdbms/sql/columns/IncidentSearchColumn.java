@@ -23,8 +23,7 @@ public enum IncidentSearchColumn implements SearchColumn<IncidentEntity> {
   ERROR_MESSAGE("errorMessage", IncidentEntity::errorMessage),
   STATE("state", IncidentEntity::state),
   JOB_KEY("jobKey", IncidentEntity::jobKey),
-  TENANT_ID("tenantId", IncidentEntity::tenantId),
-  TREE_PATH("treePath", IncidentEntity::treePath);
+  TENANT_ID("tenantId", IncidentEntity::tenantId);
 
   private final String property;
   private final Function<IncidentEntity, Object> propertyReader;

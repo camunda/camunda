@@ -33,7 +33,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final Long incidentKey;
   private final FlowNodeInstanceItem.StateEnum state;
   private final String tenantId;
-  private final String treePath;
   private final FlowNodeInstanceItem.TypeEnum type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
@@ -49,7 +48,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     incidentKey = item.getIncidentKey();
     state = item.getState();
     tenantId = item.getTenantId();
-    treePath = item.getTreePath();
     type = item.getType();
   }
 
@@ -114,11 +112,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public String getTreePath() {
-    return treePath;
-  }
-
-  @Override
   public String getType() {
     return type.getValue();
   }
@@ -137,7 +130,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
         incidentKey,
         state,
         tenantId,
-        treePath,
         type);
   }
 
@@ -162,7 +154,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
         && Objects.equals(incidentKey, that.incidentKey)
         && state == that.state
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(treePath, that.treePath)
         && type == that.type;
   }
 }

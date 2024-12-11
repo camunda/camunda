@@ -278,7 +278,6 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(p.processDefinitionKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
-        .treePath(p.treePath())
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
@@ -367,7 +366,6 @@ public final class SearchQueryResponseMapper {
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
-        .treePath(instance.treePath())
         .type(FlowNodeInstanceItem.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
   }
@@ -425,7 +423,6 @@ public final class SearchQueryResponseMapper {
         .creationTime(formatDate(t.creationTime()))
         .state(IncidentItem.StateEnum.fromValue(t.state().name()))
         .jobKey(t.jobKey())
-        .treePath(t.treePath())
         .tenantId(t.tenantId());
   }
 

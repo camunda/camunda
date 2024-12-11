@@ -60,7 +60,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           789L,
           333L,
           777L,
-          "PI_1/PI_2",
           OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
           ProcessInstanceState.ACTIVE,
@@ -78,7 +77,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionKey": 789,
             "parentProcessInstanceKey": 333,
             "parentFlowNodeInstanceKey": 777,
-            "treePath": "PI_1/PI_2",
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
@@ -99,7 +97,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionKey": 789,
                   "parentProcessInstanceKey": 333,
                   "parentFlowNodeInstanceKey": 777,
-                  "treePath": "PI_1/PI_2",
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
@@ -478,10 +475,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "processDefinitionVersionTag",
         ops ->
             new ProcessInstanceFilter.Builder().processDefinitionVersionTagOperations(ops).build());
-    stringOperationTestCases(
-        streamBuilder,
-        "treePath",
-        ops -> new ProcessInstanceFilter.Builder().treePathOperations(ops).build());
     customOperationTestCases(
         streamBuilder,
         "state",

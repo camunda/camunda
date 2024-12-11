@@ -108,14 +108,6 @@ public interface IncidentFilter extends SearchRequestFilter {
   IncidentFilter jobKey(final Long value);
 
   /**
-   * Filters incidents by tree path
-   *
-   * @param treePath the tree path of incident
-   * @return the updated filter
-   */
-  IncidentFilter treePath(final String treePath);
-
-  /**
    * Filters incidents by tenant id.
    *
    * @param value the id of tenant
