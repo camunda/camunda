@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.client.command;
 
+import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -24,11 +25,9 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 @AutoCloseResources
-class AssignMappingToTenantTest {
+class AssignUserToTenantTest {
 
   private static final String TENANT_ID = "tenant-id";
-  private static final String CLAIM_NAME = "claimName";
-  private static final String CLAIM_VALUE = "claimValue";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -36,7 +35,7 @@ class AssignMappingToTenantTest {
   @AutoCloseResource private ZeebeClient client;
 
   private long tenantKey;
-  private long mappingKey;
+  private long userKey;
 
   @BeforeEach
   void initClientAndInstances() {
@@ -47,35 +46,32 @@ class AssignMappingToTenantTest {
         client
             .newCreateTenantCommand()
             .tenantId(TENANT_ID)
-            .name("Initial Tenant Name")
+            .name("Tenant Name")
             .send()
             .join()
             .getTenantKey();
 
-    // Create Mapping
-    mappingKey =
+    // Create User
+    userKey =
         client
-            .newCreateMappingCommand()
-            .claimName(CLAIM_NAME)
-            .claimValue(CLAIM_VALUE)
+            .newUserCreateCommand()
+            .username("username")
+            .name("name")
+            .email("email@example.com")
+            .password("password")
             .send()
             .join()
-            .getMappingKey();
+            .getUserKey();
   }
 
   @Test
-  void shouldAssignMappingToTenant() {
+  void shouldAssignUserToTenant() {
     // When
-    client.newAssignMappingToTenantCommand(tenantKey).mappingKey(mappingKey).send().join();
+    client.newAssignUserToTenantCommand(tenantKey).userKey(userKey).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
-        tenantKey,
-        mappingKey,
-        tenant -> {
-          assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityKey()).isEqualTo(mappingKey);
-        });
+        tenantKey, userKey, tenant -> assertThat(tenant.getEntityType()).isEqualTo(USER));
   }
 
   @Test
@@ -87,8 +83,8 @@ class AssignMappingToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(invalidTenantKey)
-                    .mappingKey(mappingKey)
+                    .newAssignUserToTenantCommand(invalidTenantKey)
+                    .userKey(userKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -99,22 +95,22 @@ class AssignMappingToTenantTest {
   }
 
   @Test
-  void shouldRejectAssignIfMappingDoesNotExist() {
+  void shouldRejectAssignIfUserDoesNotExist() {
     // Given
-    final long invalidMappingKey = 99999L;
+    final long invalidUserKey = 99999L;
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(tenantKey)
-                    .mappingKey(invalidMappingKey)
+                    .newAssignUserToTenantCommand(tenantKey)
+                    .userKey(invalidUserKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
             "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
-                .formatted(invalidMappingKey, tenantKey));
+                .formatted(invalidUserKey, tenantKey));
   }
 }
