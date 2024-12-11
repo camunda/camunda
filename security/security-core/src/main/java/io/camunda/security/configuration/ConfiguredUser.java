@@ -7,12 +7,20 @@
  */
 package io.camunda.security.configuration;
 
-public class DefaultUserConfiguration {
+public class ConfiguredUser {
 
   private String username = "demo";
   private String password = "demo";
   private String name = "Demo";
   private String email = "demo@demo.com";
+
+  public ConfiguredUser(
+      final String username, final String password, final String name, final String email) {
+    this.username = username;
+    this.password = password;
+    this.name = name;
+    this.email = email;
+  }
 
   public String getUsername() {
     return username;

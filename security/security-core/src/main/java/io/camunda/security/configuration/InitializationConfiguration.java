@@ -7,15 +7,18 @@
  */
 package io.camunda.security.configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class InitializationConfiguration {
 
-  private DefaultUserConfiguration defaultUser = new DefaultUserConfiguration();
+  private List<ConfiguredUser> users = new ArrayList<>();
 
-  public DefaultUserConfiguration getDefaultUser() {
-    return defaultUser;
+  public List<ConfiguredUser> getUsers() {
+    return users;
   }
 
-  public void setDefaultUser(final DefaultUserConfiguration defaultUser) {
-    this.defaultUser = defaultUser;
+  public void setUsers(final List<ConfiguredUser> users) {
+    this.users = users;
   }
 }
