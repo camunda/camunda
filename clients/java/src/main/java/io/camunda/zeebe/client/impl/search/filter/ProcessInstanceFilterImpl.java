@@ -242,16 +242,16 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter variables(final Map<String, String> variableValueFilters) {
+  public ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      List<ProcessInstanceVariableFilterRequest> variableFilters =
+      final List<ProcessInstanceVariableFilterRequest> variableFilters =
           variableValueFilters.entrySet().stream()
               .map(
                   entry -> {
-                    ProcessInstanceVariableFilterRequest request =
+                    final ProcessInstanceVariableFilterRequest request =
                         new ProcessInstanceVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue());
+                    request.setValue(entry.getValue().toString());
                     return request;
                   })
               .collect(Collectors.toList());
