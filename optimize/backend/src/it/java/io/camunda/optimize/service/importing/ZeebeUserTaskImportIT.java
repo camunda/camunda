@@ -644,7 +644,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         createRunningUserTaskInstance(instance, exportedEvents);
     expectedUserTask.setIdleDurationInMs(0L);
     expectedUserTask.setWorkDurationInMs(
-        getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
+        getDurationInMsBetweenStartAndLastAssignOperation(exportedEvents));
     expectedUserTask.setAssigneeOperations(
         List.of(
             createAssigneeOperationDto(
@@ -656,7 +656,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 getExpectedIdFromRecords(exportedEvents, ASSIGNED),
                 UNCLAIM_OPERATION_TYPE,
                 null,
-                getTimestampForZeebeUnassignEvent(exportedEvents))));
+                getTimestampForZeebeLastUnassignEvent(exportedEvents))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
@@ -939,6 +939,11 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     return getTimestampForFirstZeebeEventsWithIntent(eventsForElement, ASSIGNED);
   }
 
+  private OffsetDateTime getTimestampForAssignedLastUserTaskEvents(
+      final List<ZeebeUserTaskRecordDto> eventsForElement) {
+    return getTimestampForLastZeebeEventsWithIntent(eventsForElement, ASSIGNED);
+  }
+
   private OffsetDateTime getExpectedEndDateForCanceledUserTaskEvents(
       final List<ZeebeUserTaskRecordDto> eventsForElement) {
     return getTimestampForFirstZeebeEventsWithIntent(eventsForElement, UserTaskIntent.CANCELED);
@@ -957,6 +962,14 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     return Duration.between(
             getExpectedStartDateForUserTaskEvents(eventsForElement),
             getTimestampForAssignedUserTaskEvents(eventsForElement))
+        .toMillis();
+  }
+
+  private long getDurationInMsBetweenStartAndLastAssignOperation(
+      final List<ZeebeUserTaskRecordDto> eventsForElement) {
+    return Duration.between(
+            getExpectedStartDateForUserTaskEvents(eventsForElement),
+            getTimestampForAssignedLastUserTaskEvents(eventsForElement))
         .toMillis();
   }
 

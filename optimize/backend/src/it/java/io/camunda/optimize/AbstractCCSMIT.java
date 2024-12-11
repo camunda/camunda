@@ -332,6 +332,17 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
   }
 
+  protected OffsetDateTime getTimestampForLastZeebeEventsWithIntent(
+      final List<? extends ZeebeRecordDto> eventsForElement, final Intent intent) {
+    final ZeebeRecordDto startOfElement =
+        eventsForElement.stream()
+            .filter(event -> event.getIntent().equals(intent))
+            .reduce((first, second) -> second)
+            .orElseThrow(eventNotFoundExceptionSupplier);
+    return OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
+  }
+
   protected OffsetDateTime getTimestampForZeebeAssignEvents(
       final List<? extends ZeebeRecordDto> eventsForElement, final String assigneeId) {
     final ZeebeRecordDto startOfElement =
@@ -349,9 +360,31 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
   }
 
+  protected OffsetDateTime getTimestampForZeebeLastAssignEvents(
+      final List<? extends ZeebeRecordDto> eventsForElement, final String assigneeId) {
+    final ZeebeRecordDto startOfElement =
+        eventsForElement.stream()
+            .filter(
+                event ->
+                    event.getIntent().equals(ASSIGNED)
+                        && ((ZeebeUserTaskRecordDto) event)
+                            .getValue()
+                            .getAssignee()
+                            .equals(assigneeId))
+            .reduce((first, second) -> second)
+            .orElseThrow(eventNotFoundExceptionSupplier);
+    return OffsetDateTime.ofInstant(
+        Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
+  }
+
   protected OffsetDateTime getTimestampForZeebeUnassignEvent(
       final List<? extends ZeebeRecordDto> eventsForElement) {
     return getTimestampForZeebeAssignEvents(eventsForElement, "");
+  }
+
+  protected OffsetDateTime getTimestampForZeebeLastUnassignEvent(
+      final List<? extends ZeebeRecordDto> eventsForElement) {
+    return getTimestampForZeebeLastAssignEvents(eventsForElement, "");
   }
 
   private <T> List<T> getZeebeExportedProcessableEvents(
