@@ -20,10 +20,10 @@ public class ListenerEventTypeTest {
     assertEquals(actual1, ListenerEventType.START);
     final ListenerEventType actual2 = ListenerEventType.fromZeebeListenerEventType("END");
     assertEquals(actual2, ListenerEventType.END);
-    final ListenerEventType actual3 = ListenerEventType.fromZeebeListenerEventType("COMPLETE");
-    assertEquals(actual3, ListenerEventType.COMPLETE);
-    final ListenerEventType actual4 = ListenerEventType.fromZeebeListenerEventType("ASSIGNMENT");
-    assertEquals(actual4, ListenerEventType.ASSIGNMENT);
+    final ListenerEventType actual3 = ListenerEventType.fromZeebeListenerEventType("COMPLETING");
+    assertEquals(actual3, ListenerEventType.COMPLETING);
+    final ListenerEventType actual4 = ListenerEventType.fromZeebeListenerEventType("ASSIGNING");
+    assertEquals(actual4, ListenerEventType.ASSIGNING);
     final ListenerEventType actual5 = ListenerEventType.fromZeebeListenerEventType("TEST");
     assertEquals(actual5, ListenerEventType.UNKNOWN);
     final ListenerEventType actual6 = ListenerEventType.fromZeebeListenerEventType(null);

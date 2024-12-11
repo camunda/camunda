@@ -67,7 +67,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual4 = resultListeners.get(0);
     assertEquals("22", actual4.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
-    assertEquals(ListenerEventType.COMPLETE, actual4.getEvent());
+    assertEquals(ListenerEventType.COMPLETING, actual4.getEvent());
     assertEquals(ListenerState.FAILED, actual4.getState());
     assertNull(actual4.getTime());
 
@@ -96,7 +96,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual2 = resultListeners.get(4);
     assertEquals("31", actual2.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
-    assertEquals(ListenerEventType.ASSIGNMENT, actual2.getEvent());
+    assertEquals(ListenerEventType.ASSIGNING, actual2.getEvent());
     assertEquals(ListenerState.UNKNOWN, actual2.getState());
     assertNotNull(actual2.getTime());
   }
@@ -267,7 +267,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setFlowNodeInstanceId(1L)
             .setState("CREATED")
             .setJobKind("TASK_LISTENER")
-            .setListenerEventType("UPDATE");
+            .setListenerEventType("UPDATING");
 
     final JobEntity e4 =
         createJob()
@@ -277,7 +277,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setFlowNodeInstanceId(2L)
             .setState("FAILED")
             .setJobKind("TASK_LISTENER")
-            .setListenerEventType("COMPLETE")
+            .setListenerEventType("COMPLETING")
             .setErrorCode("0")
             .setErrorMessage("Internal Error");
 
@@ -290,7 +290,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setState("invalid")
             .setEndTime(OffsetDateTime.now().minusMinutes(5))
             .setJobKind("TASK_LISTENER")
-            .setListenerEventType("ASSIGNMENT");
+            .setListenerEventType("ASSIGNING");
 
     // Execution Listener of other process instance that should *not* get returned
     final JobEntity e6 =

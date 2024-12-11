@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory;
 public enum ListenerEventType {
   START,
   END,
-  COMPLETE,
-  ASSIGNMENT,
+  COMPLETING,
+  ASSIGNING,
   UNKNOWN,
   UNSPECIFIED;
 
