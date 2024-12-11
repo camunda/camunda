@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.Operator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class MappingRecord extends UnifiedRecordValue implements MappingRecordValue {
@@ -18,10 +20,17 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
+  private final EnumProperty<Operator> operatorProp =
+      new EnumProperty<>("operator", Operator.class, Operator.EQUALS);
 
   public MappingRecord() {
-    super(3);
-    declareProperty(mappingKeyProp).declareProperty(claimNameProp).declareProperty(claimValueProp);
+    super(5);
+    declareProperty(mappingKeyProp)
+        .declareProperty(claimNameProp)
+        .declareProperty(claimValueProp)
+        .declareProperty(nameProp)
+        .declareProperty(operatorProp);
   }
 
   @Override
@@ -51,6 +60,25 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
 
   public MappingRecord setClaimValue(final String claimValue) {
     claimValueProp.setValue(claimValue);
+    return this;
+  }
+
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  public MappingRecord setName(final String name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  @Override
+  public Operator getOperator() {
+    return operatorProp.getValue();
+  }
+
+  public MappingRecord setOperator(final Operator operator) {
+    operatorProp.setValue(operator);
     return this;
   }
 }
