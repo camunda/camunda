@@ -115,11 +115,7 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior =
-        new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(),
-            processingState.getUserState(),
-            securityConfig);
+    final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =

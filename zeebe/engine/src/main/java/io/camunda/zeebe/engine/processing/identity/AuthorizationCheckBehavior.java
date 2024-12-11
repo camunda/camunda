@@ -9,17 +9,21 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -39,13 +43,15 @@ public final class AuthorizationCheckBehavior {
   private final AuthorizationState authorizationState;
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
+  private final MappingState mappingState;
+  private final TenantState tenantState;
 
   public AuthorizationCheckBehavior(
-      final AuthorizationState authorizationState,
-      final UserState userState,
-      final SecurityConfiguration securityConfig) {
-    this.authorizationState = authorizationState;
-    this.userState = userState;
+      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
+    authorizationState = processingState.getAuthorizationState();
+    userState = processingState.getUserState();
+    mappingState = processingState.getMappingState();
+    tenantState = processingState.getTenantState();
     this.securityConfig = securityConfig;
   }
 
@@ -87,7 +93,7 @@ public final class AuthorizationCheckBehavior {
           getUserAuthorizedResourceIdentifiers(
               userOptional.get(), request.getResourceType(), request.getPermissionType());
     } else {
-      authorizedResourceIdentifiers = Stream.empty();
+      authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -111,6 +117,17 @@ public final class AuthorizationCheckBehavior {
     }
 
     return user.getTenantIdsList().contains(tenantId);
+  }
+
+  private boolean isMappingAuthorizedForTenant(
+      final AuthorizationRequest request, final PersistedMapping mapping) {
+    if (request.tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
+      return true;
+    }
+    return tenantState
+        .getTenantKeyById(request.getTenantId())
+        .filter(persistedTenantKey -> mapping.getTenantKeysList().contains(persistedTenantKey))
+        .isPresent();
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -165,6 +182,27 @@ public final class AuthorizationCheckBehavior {
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
   }
 
+  private Stream<String> getMappingsAuthorizedResourceIdentifiers(
+      final AuthorizationRequest request) {
+    return extractUserTokenClaims(request.getCommand())
+        .<PersistedMapping>mapMulti(
+            (claim, stream) ->
+                mappingState.get(claim.claimName(), claim.claimValue()).ifPresent(stream))
+        .filter(mapping -> isMappingAuthorizedForTenant(request, mapping))
+        .<Long>mapMulti(
+            (mapping, stream) -> {
+              stream.accept(mapping.getMappingKey());
+              mapping.getGroupKeysList().forEach(stream);
+              mapping.getRoleKeysList().forEach(stream);
+            })
+        .flatMap(
+            ownerKey ->
+                authorizationState
+                    .getResourceIdentifiers(
+                        ownerKey, request.getResourceType(), request.getPermissionType())
+                    .stream());
+  }
+
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
       final List<Long> ownerKeys,
       final AuthorizationResourceType resourceType,
@@ -177,7 +215,7 @@ public final class AuthorizationCheckBehavior {
                     .stream());
   }
 
-  private boolean hasRequiredPermission(
+  private static boolean hasRequiredPermission(
       final Set<String> requiredResourceIdentifiers,
       final Stream<String> authorizedResourceIdentifiers) {
     return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
@@ -205,6 +243,23 @@ public final class AuthorizationCheckBehavior {
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {
     return Optional.ofNullable(
         (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+  }
+
+  private static Stream<UserTokenClaim> extractUserTokenClaims(final TypedRecord<?> command) {
+    return command.getAuthorizations().entrySet().stream()
+        .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
+        .flatMap(
+            claimEntry -> {
+              final var claimName =
+                  claimEntry.getKey().substring(Authorization.USER_TOKEN_CLAIM_PREFIX.length());
+              final var claimValue = claimEntry.getValue();
+              if (claimValue instanceof final Collection<?> collection) {
+                return collection.stream()
+                    .map(value -> new UserTokenClaim(claimName, value.toString()));
+              } else {
+                return Stream.of(new UserTokenClaim(claimName, claimValue.toString()));
+              }
+            });
   }
 
   public static final class AuthorizationRequest {
@@ -276,4 +331,6 @@ public final class AuthorizationCheckBehavior {
       super(NOT_FOUND_ERROR_MESSAGE.formatted(resourceMessage, authRequest.getTenantId()));
     }
   }
+
+  private record UserTokenClaim(String claimName, String claimValue) {}
 }
