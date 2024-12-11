@@ -35,7 +35,7 @@ public class TasklistPermissionServices {
     this.securityContextProvider = securityContextProvider;
   }
 
-  public boolean hasPermissionToUpdateJobBasedUserTask(final TaskEntity task) {
+  public boolean hasPermissionToUpdateUserTask(final TaskEntity task) {
     final var authentication = RequestMapper.getAuthentication();
     return isAuthorizedForResource(
         task.getBpmnProcessId(), authentication, UPDATE_USER_TASK_AUTH_CHECK);

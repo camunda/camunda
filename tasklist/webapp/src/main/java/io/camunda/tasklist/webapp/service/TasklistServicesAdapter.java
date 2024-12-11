@@ -86,7 +86,7 @@ public class TasklistServicesAdapter {
   }
 
   private boolean isNotAuthorizedToAssignJobBasedUserTask(final TaskEntity task) {
-    return !permissionServices.hasPermissionToUpdateJobBasedUserTask(task);
+    return !permissionServices.hasPermissionToUpdateUserTask(task);
   }
 
   private void assignCamundaUserTask(final TaskEntity task, final String assignee) {
@@ -106,7 +106,7 @@ public class TasklistServicesAdapter {
   }
 
   private boolean isNotAuthorizedToUnassignJobBasedUserTask(final TaskEntity task) {
-    return !permissionServices.hasPermissionToUpdateJobBasedUserTask(task);
+    return !permissionServices.hasPermissionToUpdateUserTask(task);
   }
 
   private void unassignCamundaUserTask(final TaskEntity task) {
@@ -126,7 +126,7 @@ public class TasklistServicesAdapter {
   }
 
   private boolean isNotAuthorizedToCompleteJobBasedUserTask(final TaskEntity task) {
-    return !permissionServices.hasPermissionToUpdateJobBasedUserTask(task);
+    return !permissionServices.hasPermissionToUpdateUserTask(task);
   }
 
   private void completeJobBasedUserTask(
