@@ -68,8 +68,9 @@ jobs:
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
-          ignore: |-
+          ignore: |
             property "vault_.+" is not defined in object type
+
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
