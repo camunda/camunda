@@ -185,7 +185,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldInvalidateVariableSearchQueryWithBadSortOrder() {
-    // given`
+    // given
     final var request =
         """
             {
