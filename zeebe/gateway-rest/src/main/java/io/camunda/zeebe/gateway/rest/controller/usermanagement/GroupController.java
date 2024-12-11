@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,6 +66,18 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .deleteGroup(groupKey));
+  }
+
+  @GetMapping(
+      path = "/{groupKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> getUsersAssignedToGroup(
+      @PathVariable final long groupKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .assignMember(groupKey, userKey, EntityType.USER));
   }
 
   @PostMapping(
