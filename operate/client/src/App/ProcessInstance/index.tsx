@@ -182,7 +182,9 @@ const ProcessInstance: React.FC = observer(() => {
 
   const hasPendingModifications = modifications.length > 0;
 
-  const {hasFlowNodeListeners} = processInstanceListenersStore;
+  const {
+    state: {isListenerTabSelected},
+  } = processInstanceListenersStore;
 
   if (processInstanceDetailsStore.state.status === 'forbidden') {
     return <Forbidden />;
@@ -215,7 +217,7 @@ const ProcessInstance: React.FC = observer(() => {
           header={<ProcessInstanceHeader />}
           topPanel={<TopPanel />}
           bottomPanel={
-            <BottomPanel $hasExpandedPanel={hasFlowNodeListeners}>
+            <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
               <FlowNodeInstanceLog />
               <VariablePanel />
             </BottomPanel>
