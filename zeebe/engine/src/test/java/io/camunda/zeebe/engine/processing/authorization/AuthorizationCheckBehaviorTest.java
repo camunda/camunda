@@ -324,18 +324,14 @@ public class AuthorizationCheckBehaviorTest {
   }
 
   @Test
-  public void shouldBeAuthorizedForAnyTenantWhenAnonymousAuthenticationProvided() {
+  public void shouldReturnAnonymousAuthorizedTenants() {
     // given
     final var command = mockCommandWithAnonymousUser(1L);
 
     // when
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenants = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
-    // then
-    assertThat(authorizedTenantIds).isEqualTo(AuthorizedTenants.ANONYMOUS);
-    assertThat(authorizedTenantIds.getAuthorizedTenantIds()).containsOnly("*");
-    assertThat(authorizedTenantIds.isAuthorizedForTenantId("foo")).isTrue();
-    assertThat(authorizedTenantIds.isAuthorizedForTenantIds(List.of("foo"))).isTrue();
+    assertThat(authorizedTenants).isEqualTo(AuthorizedTenants.ANONYMOUS);
   }
 
   @Test

@@ -9,6 +9,10 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import java.util.List;
 
+/**
+ * An instance of {@link AnonymouslyAuthorizedTenants} indicates that a command is executed
+ * anonymously without any authentication.
+ */
 public final class AnonymouslyAuthorizedTenants implements AuthorizedTenants {
 
   @Override
@@ -23,6 +27,7 @@ public final class AnonymouslyAuthorizedTenants implements AuthorizedTenants {
 
   @Override
   public List<String> getAuthorizedTenantIds() {
-    return List.of("*");
+    throw new UnsupportedOperationException(
+        "Retrieval of authorized tenants is not supported when authenticated anonymously");
   }
 }
