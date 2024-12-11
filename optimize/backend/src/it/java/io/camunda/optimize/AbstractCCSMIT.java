@@ -354,11 +354,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     return getTimestampForZeebeAssignEvents(eventsForElement, "");
   }
 
-  protected OffsetDateTime getTimestampForZeebeUnassignEvent2(
-      final List<? extends ZeebeRecordDto> eventsForElement) {
-    return getTimestampForZeebeAssignEvents(eventsForElement, null);
-  }
-
   private <T> List<T> getZeebeExportedProcessableEvents(
       final String exportIndex,
       final TermsQueryContainer queryForProcessableEvents,

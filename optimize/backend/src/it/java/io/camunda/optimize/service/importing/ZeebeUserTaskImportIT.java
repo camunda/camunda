@@ -656,7 +656,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 getExpectedIdFromRecords(exportedEvents, ASSIGNED),
                 UNCLAIM_OPERATION_TYPE,
                 null,
-                getTimestampForZeebeUnassignEvent2(exportedEvents))));
+                getTimestampForZeebeUnassignEvent(exportedEvents))));
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
