@@ -217,7 +217,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final ProcessInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
-    assertThat(sorts).hasSize(14);
+    assertThat(sorts).hasSize(13);
     assertSort(sorts.get(0), "key", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "bpmnProcessId", SortOrderEnum.DESC);
     assertSort(sorts.get(2), "processName", SortOrderEnum.ASC);
