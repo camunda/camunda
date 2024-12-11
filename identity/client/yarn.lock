@@ -1316,12 +1316,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:18.3.4":
-  version: 18.3.4
-  resolution: "@types/react-dom@npm:18.3.4"
+"@types/react-dom@npm:18.3.5":
+  version: 18.3.5
+  resolution: "@types/react-dom@npm:18.3.5"
   peerDependencies:
     "@types/react": ^18.0.0
-  checksum: 10c0/b5f534df2afe3640a7396b15a9585ca86049ca4133a747a738b37c60f8e26cad95dc17e844348fe4f16c05da0927f9f26d1287e3511fb62cd40d07ba9cc7735e
+  checksum: 10c0/b163d35a6b32a79f5782574a7aeb12a31a647e248792bf437e6d596e2676961c394c5e3c6e91d1ce44ae90441dbaf93158efb4f051c0d61e2612f1cb04ce4faa
   languageName: node
   linkType: hard
 
@@ -2886,7 +2886,7 @@ __metadata:
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.16.15"
     "@types/react": "npm:18.3.16"
-    "@types/react-dom": "npm:18.3.4"
+    "@types/react-dom": "npm:18.3.5"
     "@types/react-transition-group": "npm:4.4.11"
     "@typescript-eslint/eslint-plugin": "npm:8.6.0"
     "@typescript-eslint/parser": "npm:8.6.0"
