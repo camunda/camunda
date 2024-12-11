@@ -25,6 +25,8 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeTaskListenersValidationTest {
 
@@ -74,9 +76,10 @@ public class ZeebeTaskListenersValidationTest {
                 + "be added in the upcoming versions."));
   }
 
-  @Test
   @DisplayName("task listener with unsupported `eventType` property")
-  void testEventTypesNotSupported() {
+  @ParameterizedTest(name = "unsupported event type: ''{0}''")
+  @EnumSource(ZeebeTaskListenerEventType.class)
+  void testEventTypesNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -86,9 +89,7 @@ public class ZeebeTaskListenersValidationTest {
                 ut ->
                     ut.zeebeUserTask()
                         .zeebeTaskListener(
-                            l ->
-                                l.eventType(ZeebeTaskListenerEventType.assignment)
-                                    .type("not_supported_listener")))
+                            l -> l.eventType(unsupportedEventType).type("not_supported_listener")))
             .endEvent()
             .done();
 
