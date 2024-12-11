@@ -208,23 +208,23 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "version",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "name",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "tenantId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "decisionRequirementsKey",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "decisionRequirementsId",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -271,7 +271,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

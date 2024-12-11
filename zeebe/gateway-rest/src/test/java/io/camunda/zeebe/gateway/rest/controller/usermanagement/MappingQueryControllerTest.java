@@ -179,7 +179,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort":  [{"field": "claimName", "order":  "asc"}],
+              "sort":  [{"field": "claimName", "order":  "ASC"}],
               "page":  {"from":  20, "limit":  10}
             }
              """)

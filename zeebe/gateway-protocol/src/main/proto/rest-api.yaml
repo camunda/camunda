@@ -5793,9 +5793,7 @@ components:
           description: The field to sort by.
           type: string
         order:
-          description: The order in which to sort the field.
-          type: string
-          default: asc
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     SearchQueryResponse:
@@ -6184,6 +6182,12 @@ components:
         - FAILED
         - UNSPECIFIED
         - UNKNOWN
+    SortOrderEnum:
+      description: The order in which to sort the related field.
+      enum:
+        - ASC
+        - DESC
+      default: ASC
 
     MessageCorrelationRequest:
       type: object

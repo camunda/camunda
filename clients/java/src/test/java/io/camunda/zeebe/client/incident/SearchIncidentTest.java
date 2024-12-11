@@ -25,6 +25,7 @@ import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.List;
@@ -131,16 +132,16 @@ public class SearchIncidentTest extends ClientRestTest {
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
     assertThat(sorts).hasSize(10);
-    assertSort(sorts.get(0), "incidentKey", "asc");
-    assertSort(sorts.get(1), "errorType", "asc");
-    assertSort(sorts.get(2), "processDefinitionKey", "asc");
-    assertSort(sorts.get(3), "processInstanceKey", "asc");
-    assertSort(sorts.get(4), "tenantId", "asc");
-    assertSort(sorts.get(5), "flowNodeInstanceKey", "asc");
-    assertSort(sorts.get(6), "flowNodeId", "asc");
-    assertSort(sorts.get(7), "state", "asc");
-    assertSort(sorts.get(8), "jobKey", "asc");
-    assertSort(sorts.get(9), "creationTime", "desc");
+    assertSort(sorts.get(0), "incidentKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "errorType", SortOrderEnum.ASC);
+    assertSort(sorts.get(2), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "processInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(5), "flowNodeInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(6), "flowNodeId", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "state", SortOrderEnum.ASC);
+    assertSort(sorts.get(8), "jobKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(9), "creationTime", SortOrderEnum.DESC);
   }
 
   @Test
@@ -168,7 +169,7 @@ public class SearchIncidentTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final String order) {
+      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

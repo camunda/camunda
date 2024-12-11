@@ -174,7 +174,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort":  [{"field": "name", "order":  "asc"}],
+              "sort":  [{"field": "name", "order":  "ASC"}],
               "page":  {"from":  20, "limit":  10}
             }
              """)
