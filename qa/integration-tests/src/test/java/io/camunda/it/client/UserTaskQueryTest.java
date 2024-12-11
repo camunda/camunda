@@ -126,6 +126,23 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveTaskByMapProcessInstanceVariable() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.processInstanceVariables(Map.of("task2", 1)))
+            .send()
+            .join();
+
+    // Validate the size of the items
+    assertThat(result.items()).hasSize(2);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1", "P2");
+  }
+
+  @Test
   public void shouldRetrieveTaskByProcessInstanceAndLocalVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02");
