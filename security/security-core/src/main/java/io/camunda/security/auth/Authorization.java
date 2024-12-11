@@ -20,6 +20,8 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_USER_TASK;
 
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -91,8 +93,16 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
       return permissionType(READ_PROCESS_INSTANCE);
     }
 
+    public Builder updateProcessInstance() {
+      return permissionType(UPDATE_PROCESS_INSTANCE);
+    }
+
     public Builder readUserTask() {
       return permissionType(READ_USER_TASK);
+    }
+
+    public Builder updateUserTask() {
+      return permissionType(UPDATE_USER_TASK);
     }
 
     public Builder readDecisionInstance() {

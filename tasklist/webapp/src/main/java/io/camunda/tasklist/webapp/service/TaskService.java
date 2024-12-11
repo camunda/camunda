@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.ZeebeClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
@@ -73,6 +72,7 @@ public class TaskService {
   @Autowired private TaskMetricsStore taskMetricsStore;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
+  @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
 
   public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
@@ -176,19 +176,7 @@ public class TaskService {
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
     final String taskAssignee = determineTaskAssignee(assignee);
-
-    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        final AssignUserTaskResponse assigneeResponse =
-            zeebeClient
-                .newUserTaskAssignCommand(Long.parseLong(taskId))
-                .assignee(taskAssignee)
-                .send()
-                .join();
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
-    }
+    tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     updateClaimedMetric(claimedTask);

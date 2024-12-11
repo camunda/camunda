@@ -14,6 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -24,7 +26,6 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.ZeebeClient;
 import io.camunda.client.api.ZeebeFuture;
-import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
@@ -85,6 +86,7 @@ class TaskServiceTest {
   @Mock private TaskMetricsStore taskMetricsStore;
   @Mock private AssigneeMigrator assigneeMigrator;
   @Mock private TaskValidator taskValidator;
+  @Mock private TasklistServicesAdapter tasklistServicesAdapter;
 
   @InjectMocks private TaskService instance;
 
@@ -324,7 +326,6 @@ class TaskServiceTest {
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
@@ -557,16 +558,12 @@ class TaskServiceTest {
 
     problemDetail.setDetail("detail");
 
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     when(user.getUserId()).thenReturn(providedAssignee);
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
-        .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
-        .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
-        .thenThrow(new ClientException("reason for error"));
+    doThrow(new TasklistRuntimeException("reason for error"))
+        .when(tasklistServicesAdapter)
+        .assignUserTask(eq(taskBefore), any());
 
     // Then
     assertThatThrownBy(
@@ -589,17 +586,10 @@ class TaskServiceTest {
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
 
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
-        .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
-        .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
-        .thenReturn(mock(ZeebeFuture.class));
     final var result =
         instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment);
 

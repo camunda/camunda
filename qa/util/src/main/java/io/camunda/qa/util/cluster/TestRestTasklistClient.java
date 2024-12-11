@@ -62,12 +62,20 @@ public class TestRestTasklistClient implements AutoCloseable {
     return sendRequest(
         "PATCH",
         path,
-        Optional.ofNullable(variables).map(this::mapVariablesToRequestBody).orElse(null));
+        Optional.ofNullable(variables).map(v -> mapToRequestBody("variables", v)).orElse(null));
   }
 
-  private String mapVariablesToRequestBody(final List<CreateProcessInstanceVariable> variables) {
+  public HttpResponse<String> assignUserTask(final long userTaskKey, final String assignee) {
+    final var path = String.format("%sv1/tasks/%d/assign", endpoint, userTaskKey);
+    return sendRequest(
+        "PATCH",
+        path,
+        Optional.ofNullable(assignee).map(a -> mapToRequestBody("assignee", a)).orElse(null));
+  }
+
+  private String mapToRequestBody(final String key, final Object value) {
     try {
-      return OBJECT_MAPPER.writeValueAsString(Map.of("variables", variables));
+      return OBJECT_MAPPER.writeValueAsString(Map.of(key, value));
     } catch (final Exception e) {
       throw new RuntimeException("Failed to map variables to request body", e);
     }

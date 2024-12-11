@@ -10,12 +10,16 @@ package io.camunda.tasklist.webapp.service;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -35,11 +39,18 @@ public class TasklistServicesAdapter {
 
   private final TenantService tenantService;
   private final ProcessInstanceServices processInstanceServices;
+  private final UserTaskServices userTaskServices;
+  private final TasklistPermissionServices permissionServices;
 
   public TasklistServicesAdapter(
-      final TenantService tenantService, final ProcessInstanceServices processInstanceServices) {
+      final TenantService tenantService,
+      final ProcessInstanceServices processInstanceServices,
+      final UserTaskServices userTaskServices,
+      final TasklistPermissionServices permissionServices) {
     this.tenantService = tenantService;
     this.processInstanceServices = processInstanceServices;
+    this.userTaskServices = userTaskServices;
+    this.permissionServices = permissionServices;
   }
 
   public ProcessInstanceCreationRecord createProcessInstance(
@@ -62,6 +73,26 @@ public class TasklistServicesAdapter {
                     toProcessInstanceCreateRequest(bpmnProcessId, variables, tenantId)));
   }
 
+  public void assignUserTask(final TaskEntity task, final String assignee) {
+    if (!isJobBasedUserTask(task)) {
+      assignCamundaUserTask(task, assignee);
+    } else if (isNotAuthorizedToAssignJobBasedUserTask(task)) {
+      throw new ForbiddenActionException("Not allowed to assign user task.");
+    }
+  }
+
+  private boolean isNotAuthorizedToAssignJobBasedUserTask(final TaskEntity task) {
+    return !permissionServices.hasPermissionToUpdateJobBasedUserTask(task);
+  }
+
+  private void assignCamundaUserTask(final TaskEntity task, final String assignee) {
+    executeCamundaServiceAuthenticated(
+        (authentication) ->
+            userTaskServices
+                .withAuthentication(authentication)
+                .assignUserTask(task.getKey(), assignee, "", true));
+  }
+
   private ProcessInstanceCreateRequest toProcessInstanceCreateRequest(
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
     final var tenantValidationResult =
@@ -75,6 +106,10 @@ public class TasklistServicesAdapter {
     final var tenant = tenantValidationResult.get();
     return new ProcessInstanceCreateRequest(
         -1L, bpmnProcessId, -1, variables, tenant, null, null, null, List.of(), null);
+  }
+
+  private boolean isJobBasedUserTask(final TaskEntity task) {
+    return task.getImplementation().equals(TaskImplementation.JOB_WORKER);
   }
 
   private <T> T executeCamundaServiceAuthenticated(

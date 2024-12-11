@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0avwfkz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.23.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
-  <bpmn:process id="foo" name="Process With Public Access" isExecutable="true">
+  <bpmn:process id="PROCESS_WITH_JOB_BASED_USERTASK" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
-      <bpmn:extensionElements>
-        <zeebe:properties>
-          <zeebe:property name="publicAccess" value="true" />
-        </zeebe:properties>
-      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0a17qbl</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0a17qbl" sourceRef="StartEvent_1" targetRef="user-task" />
     <bpmn:userTask id="user-task">
-      <bpmn:extensionElements>
-        <zeebe:userTask />
-      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0a17qbl</bpmn:incoming>
       <bpmn:outgoing>Flow_134cqbu</bpmn:outgoing>
     </bpmn:userTask>
