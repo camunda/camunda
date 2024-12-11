@@ -17,6 +17,7 @@ const validators = {
   theme: z.enum(['light', 'dark', 'system']),
   autoSelectNextTask: z.boolean(),
   customFilters: z.record(z.string(), namedCustomFiltersSchema),
+  areNativeNotificationsEnabled: z.boolean(),
 } as const;
 
 type Validators = typeof validators;

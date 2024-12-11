@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
@@ -1584,7 +1585,26 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * tenant.
    *
    * @param tenantKey the unique identifier of the tenant
-   * @return a builder for the assign tenant to mapping command
+   * @return a builder for the assign mapping rule to tenant command
    */
   AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(long tenantKey);
+
+  /**
+   * Command to assign a user to a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newAssignUserToTenantCommand(tenantKey)
+   *   .userKey(userKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>This command sends an HTTP PUT request to assign the specified user to the given tenant.
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder for the assign user to tenant command
+   */
+  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(long tenantKey);
 }

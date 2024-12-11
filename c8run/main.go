@@ -158,7 +158,8 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.7.0-alpha1"
+	camundaVersion := "8.7.0-alpha2"
+	connectorsVersion := "8.7.0-alpha2.1"
 	if os.Getenv("CAMUNDA_VERSION") != "" {
 		camundaVersion = os.Getenv("CAMUNDA_VERSION")
 	}
@@ -403,13 +404,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)

@@ -50,9 +50,11 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchOperateZeebeRuleProvider.class);
   @Autowired public OperateProperties operateProperties;
+
   @Autowired
   @Qualifier("zeebeEsClient")
   protected RestHighLevelClient zeebeEsClient;
+
   protected ZeebeContainer zeebeContainer;
   @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
