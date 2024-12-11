@@ -15,9 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.FlowNodeInstanceState;
-import io.camunda.client.api.search.FlowNodeInstanceType;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.FlowNodeInstanceType;
 
 public interface FlownodeInstanceFilter extends SearchRequestFilter {
 

@@ -16,9 +16,9 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
-import io.camunda.client.api.search.FlowNodeInstanceState;
-import io.camunda.client.api.search.FlowNodeInstanceType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.FlowNodeInstanceType;
 import java.util.Objects;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {
