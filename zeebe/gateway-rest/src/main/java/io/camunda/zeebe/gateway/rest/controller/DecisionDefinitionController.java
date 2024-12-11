@@ -14,11 +14,10 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.DecisionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -36,10 +35,7 @@ public class DecisionDefinitionController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMapping(
-      path = "/evaluation",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMappingStringKeys(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       @RequestBody final EvaluateDecisionRequest evaluateDecisionRequest) {
     return RequestMapper.toEvaluateDecisionRequest(

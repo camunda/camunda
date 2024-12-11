@@ -97,6 +97,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -104,9 +105,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
 
-  public static final String MEDIA_TYPE_KEYS_STRING =
+  public static final MediaType MEDIA_TYPE_KEYS_STRING =
+      new MediaType("application", "vnd.camunda.api.keys.string+json");
+  public static final MediaType MEDIA_TYPE_KEYS_NUMBER =
+      new MediaType("application", "vnd.camunda.api.keys.number+json");
+  public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/vnd.camunda.api.keys.string+json";
-  public static final String MEDIA_TYPE_KEYS_NUMBER =
+  public static final String MEDIA_TYPE_KEYS_NUMBER_VALUE =
       "application/vnd.camunda.api.keys.number+json";
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(

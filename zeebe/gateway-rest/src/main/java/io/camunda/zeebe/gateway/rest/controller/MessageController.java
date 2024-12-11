@@ -16,11 +16,10 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -38,10 +37,7 @@ public class MessageController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMapping(
-      path = "/publication",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMappingStringKeys(path = "/publication")
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
       @RequestBody final MessagePublicationRequest publicationRequest) {
     return RequestMapper.toMessagePublicationRequest(
@@ -49,10 +45,7 @@ public class MessageController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
   }
 
-  @PostMapping(
-      path = "/correlation",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMappingStringKeys(path = "/correlation")
   public CompletableFuture<ResponseEntity<Object>> correlateMessage(
       @RequestBody final MessageCorrelationRequest correlationRequest) {
     return RequestMapper.toMessageCorrelationRequest(

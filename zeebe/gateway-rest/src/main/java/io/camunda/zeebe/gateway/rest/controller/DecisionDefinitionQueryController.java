@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -36,10 +36,7 @@ public class DecisionDefinitionQueryController {
 
   @Autowired private DecisionDefinitionServices decisionDefinitionServices;
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMappingStringKeys(path = "/search")
   public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
       @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)

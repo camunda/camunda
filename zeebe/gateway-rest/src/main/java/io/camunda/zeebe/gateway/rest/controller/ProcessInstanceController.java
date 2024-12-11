@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -44,9 +45,7 @@ public class ProcessInstanceController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMappingStringKeys
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       @RequestBody final CreateProcessInstanceRequest request) {
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isEnabled())

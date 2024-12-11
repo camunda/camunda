@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +42,7 @@ public class ResourceController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMapping(
-      path = "/deployments",
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @PostMappingStringKeys(path = "/deployments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> deployResources(
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {

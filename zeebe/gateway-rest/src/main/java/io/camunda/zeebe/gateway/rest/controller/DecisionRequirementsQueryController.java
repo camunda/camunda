@@ -10,16 +10,16 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.search.query.DecisionRequirementsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -29,17 +29,15 @@ public class DecisionRequirementsQueryController {
 
   @Autowired private DecisionRequirementsServices decisionRequirementsServices;
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Object> searchUserTasks(
+  @PostMappingStringKeys(path = "/search")
+  public ResponseEntity<DecisionRequirementsSearchQueryResponse> searchUserTasks(
       @RequestBody(required = false) final DecisionRequirementsSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
+  private ResponseEntity<DecisionRequirementsSearchQueryResponse> search(
+      final DecisionRequirementsQuery query) {
     try {
       final var result =
           decisionRequirementsServices

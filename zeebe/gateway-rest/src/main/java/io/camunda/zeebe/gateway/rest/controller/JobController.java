@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -46,10 +47,7 @@ public class JobController {
     this.responseObserverProvider = responseObserverProvider;
   }
 
-  @PostMapping(
-      path = "/activation",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @PostMappingStringKeys(path = "/activation")
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
     return RequestMapper.toJobsActivationRequest(activationRequest)

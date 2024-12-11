@@ -34,7 +34,20 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
       """
       {
           "items": [
-              {}
+            {
+              "flowNodeInstanceKey": 1,
+              "processInstanceKey": 2,
+              "processDefinitionKey": 3,
+              "startDate": "2023-05-17",
+              "endDate": "2023-05-23",
+              "flowNodeId": "flowNodeId",
+              "flowNodeName": "flowNodeName",
+              "treePath": "processInstanceKey/flowNodeId",
+              "type": "SERVICE_TASK",
+              "state": "COMPLETED",
+              "incident": false,
+              "tenantId": "<default>"
+            }
           ],
           "page": {
               "totalItems": 1,
