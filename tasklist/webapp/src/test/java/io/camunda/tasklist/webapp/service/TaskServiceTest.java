@@ -25,9 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.ZeebeFuture;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -444,19 +441,12 @@ class TaskServiceTest {
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
 
-    // mock zeebe command
-    final var mockedJobCommandStep1 = mock(CompleteJobCommandStep1.class);
-    when(zeebeClient.newCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
-    final var mockedJobCommandStep2 = mock(CompleteJobCommandStep1.class);
-    when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
-    final var mockedZeebeFuture = mock(ZeebeFuture.class);
-    when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.JOB_WORKER);
     // When
     final var result = instance.completeTask(taskId, variables, true);
 
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
+    verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
     verify(variableService).persistTaskVariables(taskId, variables, true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
@@ -481,19 +471,12 @@ class TaskServiceTest {
             .setCompletionTime(OffsetDateTime.now());
     when(taskStore.persistTaskCompletion(taskBefore)).thenReturn(completedTask);
 
-    // mock zeebe command
-    final var mockedJobCommandStep1 = mock(CompleteUserTaskCommandStep1.class);
-    when(zeebeClient.newUserTaskCompleteCommand(123)).thenReturn(mockedJobCommandStep1);
-    final var mockedJobCommandStep2 = mock(CompleteUserTaskCommandStep1.class);
-    when(mockedJobCommandStep1.variables(variablesMap)).thenReturn(mockedJobCommandStep2);
-    final var mockedZeebeFuture = mock(ZeebeFuture.class);
-    when(mockedJobCommandStep2.send()).thenReturn(mockedZeebeFuture);
-    when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
     // When
     final var result = instance.completeTask(taskId, variables, true);
 
     // Then
     verify(taskValidator).validateCanComplete(taskBefore);
+    verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
     verify(variableService).persistTaskVariables(taskId, variables, true);
     verify(variableService).deleteDraftTaskVariables(taskId);
     assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));

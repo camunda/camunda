@@ -8,7 +8,7 @@
     <bpmn:userTask id="user-task">
       <bpmn:extensionElements>
         <zeebe:userTask />
-        <zeebe:assignmentDefinition assignee="test" />
+        <zeebe:assignmentDefinition assignee="bar" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0a17qbl</bpmn:incoming>
       <bpmn:outgoing>Flow_134cqbu</bpmn:outgoing>

@@ -78,6 +78,11 @@ public class TestRestTasklistClient implements AutoCloseable {
     return sendRequest("PATCH", path, null);
   }
 
+  public HttpResponse<String> completeUserTask(final long userTaskKey) {
+    final var path = String.format("%sv1/tasks/%d/complete", endpoint, userTaskKey);
+    return sendRequest("PATCH", path, null);
+  }
+
   private String mapToRequestBody(final String key, final Object value) {
     try {
       return OBJECT_MAPPER.writeValueAsString(Map.of(key, value));

@@ -14,8 +14,6 @@ import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
@@ -202,24 +200,7 @@ public class TaskService {
 
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
-
-      try {
-        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-          // complete
-          CompleteJobCommandStep1 completeJobCommand =
-              zeebeClient.newCompleteCommand(Long.parseLong(taskId));
-          completeJobCommand = completeJobCommand.variables(variablesMap);
-          completeJobCommand.send().join();
-        } else {
-          zeebeClient
-              .newUserTaskCompleteCommand(Long.parseLong(taskId))
-              .variables(variablesMap)
-              .send()
-              .join();
-        }
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+      tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
       // persist completion and variables
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);

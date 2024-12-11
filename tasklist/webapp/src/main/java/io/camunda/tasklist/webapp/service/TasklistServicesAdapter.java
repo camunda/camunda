@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.service;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.UserTaskServices;
@@ -40,16 +41,19 @@ public class TasklistServicesAdapter {
   private final TenantService tenantService;
   private final ProcessInstanceServices processInstanceServices;
   private final UserTaskServices userTaskServices;
+  private final JobServices<?> jobServices;
   private final TasklistPermissionServices permissionServices;
 
   public TasklistServicesAdapter(
       final TenantService tenantService,
       final ProcessInstanceServices processInstanceServices,
       final UserTaskServices userTaskServices,
+      final JobServices<?> jobServices,
       final TasklistPermissionServices permissionServices) {
     this.tenantService = tenantService;
     this.processInstanceServices = processInstanceServices;
     this.userTaskServices = userTaskServices;
+    this.jobServices = jobServices;
     this.permissionServices = permissionServices;
   }
 
@@ -111,6 +115,39 @@ public class TasklistServicesAdapter {
             userTaskServices
                 .withAuthentication(authentication)
                 .unassignUserTask(task.getKey(), ""));
+  }
+
+  public void completeUserTask(final TaskEntity task, final Map<String, Object> variables) {
+    if (isJobBasedUserTask(task)) {
+      completeJobBasedUserTask(task, variables);
+    } else {
+      completeCamundaUserTask(task, variables);
+    }
+  }
+
+  private boolean isNotAuthorizedToCompleteJobBasedUserTask(final TaskEntity task) {
+    return !permissionServices.hasPermissionToUpdateJobBasedUserTask(task);
+  }
+
+  private void completeJobBasedUserTask(
+      final TaskEntity task, final Map<String, Object> variables) {
+    if (isNotAuthorizedToCompleteJobBasedUserTask(task)) {
+      throw new ForbiddenActionException("Not allowed to complete user task.");
+    }
+
+    executeCamundaServiceAnonymously(
+        (authentication) ->
+            jobServices
+                .withAuthentication(authentication)
+                .completeJob(task.getKey(), variables, null));
+  }
+
+  private void completeCamundaUserTask(final TaskEntity task, final Map<String, Object> variables) {
+    executeCamundaServiceAuthenticated(
+        (authentication) ->
+            userTaskServices
+                .withAuthentication(authentication)
+                .completeUserTask(task.getKey(), variables, ""));
   }
 
   private ProcessInstanceCreateRequest toProcessInstanceCreateRequest(
