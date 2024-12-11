@@ -115,5 +115,5 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
       final List<ProcessInstanceVariableFilterRequest> variableValueFilters);
 
   /** Filter by variables map */
-  ProcessInstanceFilter variables(final Map<String, String> variableValueFilters);
+  ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters);
 }
