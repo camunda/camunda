@@ -5,20 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.graphql.entity;
+package io.camunda.tasklist.webapp.dto;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.util.Objects;
 
 public class FormDTO {
 
-  @GraphQLField @GraphQLNonNull private String id;
+  private String id;
 
-  @GraphQLField @GraphQLNonNull private String processDefinitionId;
+  private String processDefinitionId;
 
-  @GraphQLField @GraphQLNonNull private String schema;
+  private String schema;
 
   private boolean isDeleted;
 
@@ -58,12 +56,17 @@ public class FormDTO {
     return this;
   }
 
-  public static FormDTO createFrom(FormEntity formEntity) {
+  public static FormDTO createFrom(final FormEntity formEntity) {
     return new FormDTO()
         .setId(formEntity.getFormId())
         .setProcessDefinitionId(formEntity.getProcessDefinitionId())
         .setSchema(formEntity.getSchema())
         .setIsDeleted(formEntity.getIsDeleted());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, processDefinitionId, schema, isDeleted);
   }
 
   @Override
@@ -79,10 +82,5 @@ public class FormDTO {
         && Objects.equals(processDefinitionId, formDTO.processDefinitionId)
         && Objects.equals(schema, formDTO.schema)
         && Objects.equals(isDeleted, formDTO.isDeleted);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, processDefinitionId, schema, isDeleted);
   }
 }

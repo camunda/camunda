@@ -91,7 +91,6 @@ public abstract class BaseWebConfigurer {
                   .requestMatchers(TasklistURIs.getAuthWhitelist(introspector))
                   .permitAll()
                   .requestMatchers(
-                      AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
                       AntPathRequestMatcher.antMatcher(ALL_REST_VERSION_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
                   .authenticated()

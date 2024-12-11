@@ -7,13 +7,13 @@
  */
 package io.camunda.tasklist.webapp.security.oauth;
 
-import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +23,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -59,7 +60,11 @@ public class JwtAuthenticationIT {
     headers.setBearerAuth("expired-token");
     // when
     final ResponseEntity<String> response =
-        testRestTemplate.postForEntity(GRAPHQL_URL, new HttpEntity<>("{}", headers), String.class);
+        testRestTemplate.exchange(
+            TasklistURIs.USERS_URL_V1.concat("/current"),
+            HttpMethod.GET,
+            new HttpEntity<>(headers), // Only headers; no body for GET requests
+            String.class);
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     assertThat(response.getBody()).contains("Token is expired");
