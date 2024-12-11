@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -16,11 +17,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.client.protocol.rest.UserRequest;
@@ -57,6 +60,7 @@ public class BasicAuthIT {
   private static final String PASSWORD = "correct_password";
   @MockBean UserServices userService;
   @MockBean AuthorizationServices authorizationServices;
+  @MockBean TenantServices tenantServices;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private MockMvc mockMvc;
@@ -73,6 +77,8 @@ public class BasicAuthIT {
                 1,
                 List.of(new UserEntity(1L, USERNAME, "name", "", passwordEncoder.encode(PASSWORD))),
                 null));
+    when(tenantServices.getTenantsByMemberKey(anyLong()))
+        .thenReturn(List.of(new TenantEntity(9L, "T1", "Tenant 1", Set.of())));
 
     when(authorizationServices.search(any()))
         .thenReturn(
