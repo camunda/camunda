@@ -35,11 +35,7 @@ public class MigrateParallelGatewayTest {
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "_target";
 
-    final String nonExistingElJobTypeExp = "=source_execution_listener_job_type";
-    final String existingElJobTypeExp = "=target_execution_listener_job_type";
-    final String existingElJobTypeVar = "target_execution_listener_job_type";
-    final String existingElJobTypeValue = "elJobType";
-
+    final String executionListenerJobType = "executionListenerJobType";
     final var deployment =
         ENGINE
             .deployment()
@@ -47,7 +43,7 @@ public class MigrateParallelGatewayTest {
                 Bpmn.createExecutableProcess(sourceProcessId)
                     .startEvent()
                     .parallelGateway("parallel1")
-                    .zeebeStartExecutionListener(nonExistingElJobTypeExp)
+                    .zeebeStartExecutionListener(executionListenerJobType)
                     .endEvent("end1")
                     .moveToLastGateway()
                     .endEvent()
@@ -56,7 +52,7 @@ public class MigrateParallelGatewayTest {
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
                     .parallelGateway("parallel2")
-                    .zeebeStartExecutionListener(existingElJobTypeExp)
+                    .zeebeStartExecutionListener(executionListenerJobType)
                     .endEvent("end2")
                     .moveToLastGateway()
                     .endEvent()
@@ -66,11 +62,14 @@ public class MigrateParallelGatewayTest {
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
     final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(sourceProcessId)
-            .withVariable(existingElJobTypeVar, existingElJobTypeValue)
-            .create();
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(executionListenerJobType)
+        .withRetries(0)
+        .fail();
 
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -92,8 +91,14 @@ public class MigrateParallelGatewayTest {
         .await();
 
     // then
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(executionListenerJobType)
+        .withRetries(1)
+        .updateRetries();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-    ENGINE.job().ofInstance(processInstanceKey).withType(existingElJobTypeValue).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(executionListenerJobType).complete();
 
     assertThat(
             RecordingExporter.records()
