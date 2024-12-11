@@ -229,25 +229,28 @@ public final class AuthorizationCheckBehavior {
       return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
     }
 
-    return getUserKey(command)
-        .map(
-            key ->
-                userState
-                    .getUser(key)
-                    .map(PersistedUser::getTenantIdsList)
-                    .orElse(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
-        .orElseGet(
-            () ->
-                extractUserTokenClaims(command)
-                    .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
-                    .<PersistedMapping>mapMulti(Optional::ifPresent)
-                    .flatMap(
-                        mapping ->
-                            mapping.getTenantKeysList().stream()
-                                .map(tenantState::getTenantByKey)
-                                .<PersistedTenant>mapMulti(Optional::ifPresent)
-                                .map(PersistedTenant::getTenantId))
-                    .collect(Collectors.toList()));
+    final var userKey = getUserKey(command);
+    if (userKey.isPresent()) {
+      return userState
+          .getUser(userKey.get())
+          .map(PersistedUser::getTenantIdsList)
+          .orElse(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+    }
+
+    final var tenantsOfMapping =
+        extractUserTokenClaims(command)
+            .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
+            .<PersistedMapping>mapMulti(Optional::ifPresent)
+            .flatMap(
+                mapping ->
+                    mapping.getTenantKeysList().stream()
+                        .map(tenantState::getTenantByKey)
+                        .<PersistedTenant>mapMulti(Optional::ifPresent)
+                        .map(PersistedTenant::getTenantId))
+            .toList();
+    return tenantsOfMapping.isEmpty()
+        ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        : tenantsOfMapping;
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {

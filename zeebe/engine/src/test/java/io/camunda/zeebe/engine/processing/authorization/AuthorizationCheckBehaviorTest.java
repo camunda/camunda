@@ -688,6 +688,21 @@ public class AuthorizationCheckBehaviorTest {
         .isEqualTo(tenantId);
   }
 
+  @Test
+  public void shouldGetDefaultAuthorizedTenantForMapping() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var command = mockCommandWithMapping(claimName, claimValue);
+
+    // when
+    // then
+    assertThat(authorizationCheckBehavior.getAuthorizedTenantIds(command))
+        .singleElement()
+        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
