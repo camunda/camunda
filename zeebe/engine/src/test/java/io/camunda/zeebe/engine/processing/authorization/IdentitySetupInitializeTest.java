@@ -265,6 +265,38 @@ public class IdentitySetupInitializeTest {
     assertNoAssignmentIsCreated(initializeRecord.getSourceRecordPosition());
   }
 
+  @Test
+  public void shouldCreateMultipleUsers() {
+    // given
+    final var user1 =
+        new UserRecord()
+            .setUsername(UUID.randomUUID().toString())
+            .setName(UUID.randomUUID().toString())
+            .setPassword(UUID.randomUUID().toString())
+            .setEmail(UUID.randomUUID().toString());
+    final var user2 =
+        new UserRecord()
+            .setUsername(UUID.randomUUID().toString())
+            .setName(UUID.randomUUID().toString())
+            .setPassword(UUID.randomUUID().toString())
+            .setEmail(UUID.randomUUID().toString());
+
+    // when
+    engine.identitySetup().initialize().withUser(user1).withUser(user2).initialize();
+
+    // then
+    Assertions.assertThat(RecordingExporter.userRecords(UserIntent.CREATED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            UserRecordValue::getUsername,
+            UserRecordValue::getPassword,
+            UserRecordValue::getName,
+            UserRecordValue::getEmail)
+        .containsExactly(
+            tuple(user1.getUsername(), user1.getPassword(), user1.getName(), user1.getEmail()),
+            tuple(user2.getUsername(), user2.getPassword(), user2.getName(), user2.getEmail()));
+  }
+
   private static void assertThatAllPermissionsAreAddedToRole(final long roleKey) {
     final var addedPermissions =
         RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)

@@ -16,6 +16,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -63,7 +65,7 @@ final class IdentitySetupInitializerIT {
         1,
         cfg -> {
           final var user = new ConfiguredUser(username, password, name, email);
-          cfg.getInitialization().getUsers().add(user);
+          cfg.getInitialization().setUsers(List.of(user));
         });
 
     // then identity should be initialized
@@ -161,7 +163,7 @@ final class IdentitySetupInitializerIT {
   }
 
   @Test
-  void shouldNotInitializeIdentityTwiceOnRestart(@TempDir final Path tempDir) {
+  void shouldNotRecreateEntitiesOnRestart(@TempDir final Path tempDir) {
     // given a broker with authorization enabled
     createBroker(true, 1, tempDir);
 
@@ -181,22 +183,61 @@ final class IdentitySetupInitializerIT {
     broker.stop();
     broker.start().awaitCompleteTopology();
 
-    // then identity should only be initialized once
-    // We send a clock reset command so we have a record we can limit our RecordingExporter on
-    // We don't join the future, because we are unauthorized to send this command. Joining it will
-    // result in an exception.
-    client.newClockResetCommand().send();
-
     assertThat(
-            RecordingExporter.records()
-                .limit(
-                    r ->
-                        r.getIntent() == ClockIntent.RESET
-                            && r.getRecordType() == RecordType.COMMAND_REJECTION)
-                .withIntent(IdentitySetupIntent.INITIALIZE)
+            RecordingExporter.identitySetupRecords()
+                .limitByCount(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED, 2)
                 .toList())
-        .describedAs("Only one initialize command must be written")
-        .hasSize(1);
+        .extracting(Record::getIntent)
+        .describedAs(
+            "No records are written in between the last INITIALIZE and INITIALIZED records")
+        .endsWith(IdentitySetupIntent.INITIALIZE, IdentitySetupIntent.INITIALIZED);
+  }
+
+  @Test
+  void shouldInitializeWithMultipleConfiguredUsers() {
+    // given a broker with authorization enabled
+    final var user1 =
+        new ConfiguredUser(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+    final var user2 =
+        new ConfiguredUser(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+    createBroker(
+        true,
+        1,
+        cfg -> {
+          cfg.getInitialization().setUsers(List.of(user1, user2));
+        });
+
+    // then identity should be initialized
+    final var record =
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
+            .getFirst()
+            .getValue();
+
+    final var firstUser = record.getUsers().getFirst();
+    Assertions.assertThat(firstUser)
+        .isNotNull()
+        .hasUsername(user1.getUsername())
+        .hasName(user1.getName())
+        .hasEmail(user1.getEmail())
+        .hasUserType(UserType.DEFAULT);
+    assertTrue(passwordEncoder.matches(user1.getPassword(), firstUser.getPassword()));
+
+    final var secondUser = record.getUsers().getLast();
+    Assertions.assertThat(secondUser)
+        .isNotNull()
+        .hasUsername(user2.getUsername())
+        .hasName(user2.getName())
+        .hasEmail(user2.getEmail())
+        .hasUserType(UserType.DEFAULT);
+    assertTrue(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword()));
   }
 
   private void createBroker(
