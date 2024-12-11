@@ -37,18 +37,22 @@ public class AuthorizationsUtil {
   private final ZeebeClient client;
   private final String elasticsearchUrl;
 
-  public AuthorizationsUtil(final TestGateway<?> gateway, final String elasticsearchUrl) {
-    this(
-        gateway,
-        createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
-        elasticsearchUrl);
-  }
-
   public AuthorizationsUtil(
       final TestGateway<?> gateway, final ZeebeClient client, final String elasticsearchUrl) {
     this.gateway = gateway;
     this.client = client;
     this.elasticsearchUrl = elasticsearchUrl;
+  }
+
+  public static AuthorizationsUtil create(
+      final TestGateway<?> gateway, final String elasticsearchUrl) {
+    final var authorizationUtil =
+        new AuthorizationsUtil(
+            gateway,
+            createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
+            elasticsearchUrl);
+    authorizationUtil.awaitUserExistsInElasticsearch(DEFAULT_USER_USERNAME);
+    return authorizationUtil;
   }
 
   public long createUser(final String username, final String password) {
