@@ -66,7 +66,7 @@ jobs:
       - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
-          ignore: |
+          ignore: |-
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
       - run: |
