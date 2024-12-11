@@ -63,10 +63,12 @@ jobs:
       CONFTEST_VERSION: '0.56.0'
     steps:
       - uses: actions/checkout@v4
-      - run: echo "::add-matcher::.github/actionlint-matcher.json"
-      - run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) $ACTIONLINT_VERSION
-          ./actionlint -shellcheck '' -ignore 'property "vault_.+" is not defined in object type' -ignore 'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
+      - uses: camunda/infra-global-github-actions/actionlint@main
+        with:
+          version: ${{ env.ACTIONLINT_VERSION }}
+          ignore: |
+            property "vault_.+" is not defined in object type
+            object type "{}" cannot be filtered by object filtering `.*` since it has no object element
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
           ./conftest test -o github --policy .github .github/workflows/*.y*ml
