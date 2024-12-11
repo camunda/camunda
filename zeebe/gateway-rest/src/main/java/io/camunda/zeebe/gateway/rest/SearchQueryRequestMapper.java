@@ -457,9 +457,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getParentFlowNodeInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
-      ofNullable(filter.getTreePath())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::treePathOperations);
       ofNullable(filter.getStartDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::startDateOperations);
@@ -555,7 +552,6 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
               Optional.ofNullable(f.getFlowNodeId()).ifPresent(builder::flowNodeIds);
-              Optional.ofNullable(f.getTreePath()).ifPresent(builder::treePaths);
               Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
               Optional.ofNullable(f.getIncidentKey()).ifPresent(builder::incidentKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
@@ -636,7 +632,6 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getState())
           .ifPresent(s -> builder.states(IncidentState.valueOf(s.getValue())));
       ofNullable(filter.getJobKey()).ifPresent(builder::jobKeys);
-      ofNullable(filter.getTreePath()).ifPresent(builder::treePaths);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
@@ -657,7 +652,6 @@ public final class SearchQueryRequestMapper {
         case "processDefinitionKey" -> builder.processDefinitionKey();
         case "parentProcessInstanceKey" -> builder.parentProcessInstanceKey();
         case "parentFlowNodeInstanceKey" -> builder.parentFlowNodeInstanceKey();
-        case "treePath" -> builder.treePath();
         case "startDate" -> builder.startDate();
         case "endDate" -> builder.endDate();
         case "state" -> builder.state();
@@ -831,7 +825,6 @@ public final class SearchQueryRequestMapper {
         case "creationTime" -> builder.creationTime();
         case "state" -> builder.state();
         case "jobKey" -> builder.jobKey();
-        case "treePath" -> builder.treePath();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

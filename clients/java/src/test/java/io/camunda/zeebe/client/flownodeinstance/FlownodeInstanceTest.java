@@ -58,7 +58,6 @@ public class FlownodeInstanceTest extends ClientRestTest {
                     .flowNodeId("flowNodeId")
                     .hasIncident(true)
                     .incidentKey(4L)
-                    .treePath("processInstanceKey/flowNodeId")
                     .tenantId("<default>"))
         .send()
         .join();
@@ -75,7 +74,6 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo(4L);
-    assertThat(filter.getTreePath()).isEqualTo("processInstanceKey/flowNodeId");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 

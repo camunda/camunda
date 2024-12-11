@@ -74,7 +74,6 @@ public class SearchIncidentTest extends ClientRestTest {
                     .creationTime("2024-05-23T23:05:00.000+000")
                     .state("ACTIVE")
                     .jobKey(5L)
-                    .treePath("PI_3/FN_flowNode/FNI_4")
                     .tenantId("tenant"))
         .send()
         .join();
@@ -93,7 +92,6 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000+000");
     assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo(5L);
-    assertThat(filter.getTreePath()).isEqualTo("PI_3/FN_flowNode/FNI_4");
     assertThat(filter.getTenantId()).isEqualTo("tenant");
   }
 

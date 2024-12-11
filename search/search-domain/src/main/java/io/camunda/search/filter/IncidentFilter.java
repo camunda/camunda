@@ -29,7 +29,6 @@ public record IncidentFilter(
     DateValueFilter creationTime,
     List<IncidentState> states,
     List<Long> jobKeys,
-    List<String> treePaths,
     List<String> tenantIds)
     implements FilterBase {
 
@@ -46,7 +45,6 @@ public record IncidentFilter(
     private DateValueFilter creationTimeFilter;
     private List<IncidentState> states;
     private List<Long> jobKeys;
-    private List<String> treePaths;
     private List<String> tenantIds;
 
     public Builder incidentKeys(final Long value, final Long... values) {
@@ -144,15 +142,6 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder treePaths(final String value, final String... values) {
-      return treePaths(collectValues(value, values));
-    }
-
-    public Builder treePaths(final List<String> values) {
-      treePaths = addValuesToList(treePaths, values);
-      return this;
-    }
-
     public Builder tenantIds(final String value, final String... values) {
       return tenantIds(collectValues(value, values));
     }
@@ -176,7 +165,6 @@ public record IncidentFilter(
           creationTimeFilter,
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(treePaths, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }

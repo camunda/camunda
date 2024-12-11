@@ -22,7 +22,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,16 +96,23 @@ public class MappingAppliersTest {
     groupState.addEntity(groupKey, group);
     // create owner
     authorizationState.insertOwnerTypeByKey(mappingKey, AuthorizationOwnerType.MAPPING);
+    // create authorization
+    authorizationState.createOrAddPermission(
+        mappingKey,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.READ,
+        Set.of("process"));
 
     // when
     mappingDeletedApplier.applyState(mappingKey, mappingRecord);
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    assertThat(tenantState.getEntitiesByType(tenantKey)).isEmpty();
     assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
-    assertThat(groupState.getEntitiesByType(groupKey)).isEmpty();
+    assertThat(
+            authorizationState.getResourceIdentifiers(
+                mappingKey, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ))
+        .isEmpty();
   }
 
   @Test

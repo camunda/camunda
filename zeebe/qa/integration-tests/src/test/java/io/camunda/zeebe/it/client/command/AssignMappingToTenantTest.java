@@ -69,7 +69,7 @@ class AssignMappingToTenantTest {
     client.newAssignMappingToTenantCommand(tenantKey).mappingKey(mappingKey).send().join();
 
     // Then
-    ZeebeAssertHelper.assertTenantMappingAssigned(
+    ZeebeAssertHelper.assertEntityAssignedToTenant(
         tenantKey,
         mappingKey,
         tenant -> {

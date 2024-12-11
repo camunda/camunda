@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.AssignMappingToTenantResponse;
 
-/** Command to assign a tenant to a mapping. */
+/** Command to assign a mapping to a tenant. */
 public interface AssignMappingToTenantCommandStep1
     extends FinalCommandStep<AssignMappingToTenantResponse> {
 
