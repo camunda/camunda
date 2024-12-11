@@ -596,7 +596,8 @@ public class VariableService {
       final String value,
       final int variableSizeThreshold) {
     return completeVariableSetup(
-        new DraftTaskVariableEntity().setId(getDraftVariableId(taskEntity.getId(), name)),
+        new DraftTaskVariableEntity()
+            .setId(getDraftVariableId(String.valueOf(taskEntity.getKey()), name)),
         taskEntity,
         name,
         value,
@@ -624,7 +625,10 @@ public class VariableService {
       final String value,
       final int variableSizeThreshold) {
 
-    entity.setTaskId(taskEntity.getId()).setName(name).setTenantId(taskEntity.getTenantId());
+    entity
+        .setTaskId(String.valueOf(taskEntity.getKey()))
+        .setName(name)
+        .setTenantId(taskEntity.getTenantId());
     if (value.length() > variableSizeThreshold) {
       // store preview
       entity.setValue(value.substring(0, variableSizeThreshold));

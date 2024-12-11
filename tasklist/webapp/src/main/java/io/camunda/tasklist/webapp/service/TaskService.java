@@ -315,7 +315,7 @@ public class TaskService {
           taskStore.updateTaskLinkedForm(task, form.bpmnId(), form.version());
           LOGGER.debug(
               "Updated Task with id {} form link of key {} to formId {} and version {}",
-              task.getId(),
+              task.getKey(),
               task.getFormKey(),
               form.bpmnId(),
               form.version());
@@ -327,7 +327,7 @@ public class TaskService {
   }
 
   private void updateCompletedMetric(final TaskEntity task) {
-    LOGGER.info("Updating completed task metric for task with ID: {}", task.getId());
+    LOGGER.info("Updating completed task metric for task with ID: {}", task.getKey());
     try {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
       assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
@@ -338,9 +338,9 @@ public class TaskService {
         taskMetricsStore.registerTaskCompleteEvent(task);
       }
     } catch (final Exception e) {
-      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
+      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getKey(), e);
       throw new TasklistRuntimeException(
-          "Error updating completed task metric for task with ID: " + task.getId(), e);
+          "Error updating completed task metric for task with ID: " + task.getKey(), e);
     }
   }
 

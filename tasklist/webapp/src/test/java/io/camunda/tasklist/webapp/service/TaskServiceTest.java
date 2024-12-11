@@ -260,18 +260,20 @@ class TaskServiceTest {
   @Test
   void getTask() {
     // Given
-    final String taskId = "123";
-    final var providedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
+    final var taskId = 123L;
+    final var taskIdAsString = String.valueOf(taskId);
+    final var providedTask =
+        new TaskEntity().setId(taskIdAsString).setKey(taskId).setState(TaskState.CREATED);
     final var expectedTask =
         new TaskDTO()
-            .setId(taskId)
+            .setId(taskIdAsString)
             .setTaskState(TaskState.CREATED)
             .setTenantId(DEFAULT_TENANT_IDENTIFIER)
             .setPriority(50);
-    when(taskStore.getTask(taskId)).thenReturn(providedTask);
+    when(taskStore.getTask(taskIdAsString)).thenReturn(providedTask);
 
     // When
-    final var result = instance.getTask(taskId);
+    final var result = instance.getTask(taskIdAsString);
 
     // Then
     assertThat(result).isEqualTo(expectedTask);

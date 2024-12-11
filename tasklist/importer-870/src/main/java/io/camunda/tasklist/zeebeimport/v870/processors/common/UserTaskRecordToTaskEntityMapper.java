@@ -66,7 +66,7 @@ public class UserTaskRecordToTaskEntityMapper {
     final TaskEntity entity =
         new TaskEntity()
             .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-            .setId(String.valueOf(record.getKey()))
+            .setId(String.valueOf(record.getValue().getElementInstanceKey()))
             .setKey(record.getKey())
             .setPartitionId(record.getPartitionId())
             .setFlowNodeBpmnId(recordValue.getElementId())
