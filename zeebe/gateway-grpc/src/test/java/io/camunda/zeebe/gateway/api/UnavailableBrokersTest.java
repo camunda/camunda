@@ -91,7 +91,10 @@ class UnavailableBrokersTest {
             new SecurityConfiguration(),
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            null,
+            null,
+            null);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());

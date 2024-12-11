@@ -370,7 +370,10 @@ public class ClusteringRule extends ExternalResource {
             atomixCluster,
             brokerClient,
             new SimpleMeterRegistry(),
-            new SecurityConfiguration());
+            new SecurityConfiguration(),
+            null,
+            null,
+            null);
     systemContexts.put(nodeId, systemContext);
 
     final Broker broker =
@@ -503,7 +506,10 @@ public class ClusteringRule extends ExternalResource {
             new SecurityConfiguration(),
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            null,
+            null,
+            null);
     gateway.start().join();
 
     return new GatewayResource(

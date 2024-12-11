@@ -10,8 +10,11 @@ package io.camunda.zeebe.gateway;
 import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 
 import com.google.rpc.Code;
+import io.camunda.search.clients.UserSearchClient;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
@@ -70,6 +73,7 @@ import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class Gateway implements CloseableSilently {
 
@@ -93,20 +97,27 @@ public final class Gateway implements CloseableSilently {
   private Server server;
   private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
+  private final UserServices userServices;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
       final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer) {
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final SecurityContextProvider securityContextProvider,
+      final UserSearchClient userSearchClient,
+      final PasswordEncoder passwordEncoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
         securityConfiguration,
         brokerClient,
         actorSchedulingService,
-        jobStreamer);
+        jobStreamer,
+        securityContextProvider,
+        userSearchClient,
+        passwordEncoder);
   }
 
   public Gateway(
@@ -115,13 +126,19 @@ public final class Gateway implements CloseableSilently {
       final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer) {
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final SecurityContextProvider securityContextProvider,
+      final UserSearchClient userSearchClient,
+      final PasswordEncoder passwordEncoder) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
+    userServices =
+        new UserServices(
+            brokerClient, securityContextProvider, userSearchClient, null, passwordEncoder);
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -195,7 +212,7 @@ public final class Gateway implements CloseableSilently {
 
     final var endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, streamJobsHandler, multiTenancy);
-    final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final var gatewayGrpcService = new GatewayGrpcService(endpointManager, userServices);
     return buildServer(serverBuilder, gatewayGrpcService);
   }
 
@@ -375,7 +392,7 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
-      interceptors.add(new AuthenticationInterceptor());
+      interceptors.add(new AuthenticationInterceptor(userServices));
     }
 
     return ServerInterceptors.intercept(service, interceptors);

@@ -185,6 +185,9 @@ final class SecurityTest {
         new SecurityConfiguration(),
         brokerClient,
         actorScheduler,
-        jobStreamClient.streamer());
+        jobStreamClient.streamer(),
+        null,
+        null,
+        null);
   }
 }

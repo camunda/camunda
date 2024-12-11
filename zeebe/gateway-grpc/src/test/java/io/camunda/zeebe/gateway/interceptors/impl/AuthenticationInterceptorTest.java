@@ -30,7 +30,7 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor()
+    new AuthenticationInterceptor(null)
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -49,7 +49,7 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor()
+    new AuthenticationInterceptor(null)
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -70,7 +70,7 @@ public class AuthenticationInterceptorTest {
         new CloseStatusCapturingServerCall();
 
     // when
-    new AuthenticationInterceptor()
+    new AuthenticationInterceptor(null)
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,

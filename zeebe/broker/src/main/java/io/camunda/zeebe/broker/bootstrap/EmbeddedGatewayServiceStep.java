@@ -40,7 +40,10 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             scheduler,
             concurrencyControl,
             jobStreamClient,
-            brokerClient);
+            brokerClient,
+            brokerStartupContext.getSecurityContextProvider(),
+            brokerStartupContext.getUserSearchClient(),
+            brokerStartupContext.getPasswordEncoder());
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
     concurrencyControl.runOnCompletion(

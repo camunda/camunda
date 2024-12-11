@@ -10,7 +10,9 @@ package io.camunda.zeebe.gateway;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.search.clients.UserSearchClient;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
@@ -27,6 +29,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Entry point for the gateway modules by using the the {@link
@@ -58,6 +61,9 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final AtomixCluster atomixCluster;
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
+  private final SecurityContextProvider securityContextProvider;
+  private final UserSearchClient userSearchClient;
+  private final PasswordEncoder passwordEncoder;
 
   private Gateway gateway;
 
@@ -70,7 +76,10 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
-      final JobStreamClient jobStreamClient) {
+      final JobStreamClient jobStreamClient,
+      final SecurityContextProvider securityContextProvider,
+      final UserSearchClient userSearchClient,
+      final PasswordEncoder passwordEncoder) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.securityConfiguration = securityConfiguration;
@@ -79,6 +88,9 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.atomixCluster = atomixCluster;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
+    this.securityContextProvider = securityContextProvider;
+    this.userSearchClient = userSearchClient;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Bean(destroyMethod = "close")
@@ -102,7 +114,10 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             securityConfiguration,
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            securityContextProvider,
+            userSearchClient,
+            passwordEncoder);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->

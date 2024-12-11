@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway;
 
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.grpc.ErrorMappingStreamObserver;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -55,9 +56,12 @@ import io.grpc.stub.StreamObserver;
 
 public class GatewayGrpcService extends GatewayImplBase {
   private final EndpointManager endpointManager;
+  private final UserServices userServices;
 
-  public GatewayGrpcService(final EndpointManager endpointManager) {
+  public GatewayGrpcService(
+      final EndpointManager endpointManager, final UserServices userServices) {
     this.endpointManager = endpointManager;
+    this.userServices = userServices;
   }
 
   @Override

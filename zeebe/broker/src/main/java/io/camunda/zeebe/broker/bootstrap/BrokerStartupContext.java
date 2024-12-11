@@ -9,7 +9,9 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.search.clients.UserSearchClient;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -34,6 +36,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Context that is utilized during broker startup and shutdown process. It contains dependencies
@@ -123,4 +126,10 @@ public interface BrokerStartupContext {
   MeterRegistry getMeterRegistry();
 
   SecurityConfiguration getSecurityConfiguration();
+
+  SecurityContextProvider getSecurityContextProvider();
+
+  UserSearchClient getUserSearchClient();
+
+  PasswordEncoder getPasswordEncoder();
 }

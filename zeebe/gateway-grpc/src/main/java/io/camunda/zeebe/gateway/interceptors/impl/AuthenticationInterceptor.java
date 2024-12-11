@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.grpc.Context;
 import io.grpc.Contexts;
@@ -17,6 +20,8 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +32,12 @@ public class AuthenticationInterceptor implements ServerInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
+  private final UserServices userServices;
+
+  public AuthenticationInterceptor(final UserServices userServices) {
+    this.userServices = userServices;
+  }
 
   @Override
   public <ReqT, RespT> Listener<ReqT> interceptCall(
@@ -69,6 +80,13 @@ public class AuthenticationInterceptor implements ServerInterceptor {
               .augmentDescription("Expected a valid token, see cause for details")
               .withCause(e));
     }
+  }
+
+  public Optional<UserEntity> loadUserByUsername(final String username) {
+    final var userQuery =
+        SearchQueryBuilders.userSearchQuery(
+            fn -> fn.filter(f -> f.username(username)).page(p -> p.size(1)));
+    return userServices.search(userQuery).items().stream().filter(Objects::nonNull).findFirst();
   }
 
   private <ReqT> ServerCall.Listener<ReqT> deny(

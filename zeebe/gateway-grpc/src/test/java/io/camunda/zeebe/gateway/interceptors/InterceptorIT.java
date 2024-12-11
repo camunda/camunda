@@ -85,7 +85,14 @@ final class InterceptorIT {
     jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
     gateway =
         new Gateway(
-            config, securityConfiguration, brokerClient, scheduler, jobStreamClient.streamer());
+            config,
+            securityConfiguration,
+            brokerClient,
+            scheduler,
+            jobStreamClient.streamer(),
+            null,
+            null,
+            null);
 
     cluster.start().join();
     scheduler.start();

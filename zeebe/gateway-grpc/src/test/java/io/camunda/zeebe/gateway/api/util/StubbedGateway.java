@@ -91,11 +91,12 @@ public final class StubbedGateway {
     final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
     final EndpointManager endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
-    final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager, null);
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
-                ServerInterceptors.intercept(gatewayGrpcService, new AuthenticationInterceptor()));
+                ServerInterceptors.intercept(
+                    gatewayGrpcService, new AuthenticationInterceptor(null)));
     server = serverBuilder.build();
     server.start();
   }
