@@ -89,11 +89,6 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
     final String requestedUrl = getRequestedUrl(req);
 
-
-    if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
-      requestedUrl = requestedUrl + "?" + req.getQueryString();
-    }
-
     if (contains(requestedUrl.toLowerCase(), REST_V1_API)) {
       req.getSession().invalidate();
       sendJSONErrorMessage(res, ex.getMessage());
