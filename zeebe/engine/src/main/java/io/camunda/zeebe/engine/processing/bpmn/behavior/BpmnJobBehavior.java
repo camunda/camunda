@@ -333,6 +333,15 @@ public final class BpmnJobBehavior {
           Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
     }
 
+    if (userTaskRecord.getPriority() > 0) {
+      headers.put(
+          Protocol.USER_TASK_PRIORITY_HEADER_NAME, String.valueOf(userTaskRecord.getPriority()));
+    }
+
+    if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
+      headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
+    }
+
     return Collections.unmodifiableMap(headers);
   }
 
