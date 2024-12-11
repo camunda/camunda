@@ -126,62 +126,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
 
-    templateDescriptorsMap =
-        Map.ofEntries(
-            entry(ListViewTemplate.class, new ListViewTemplate(globalPrefix, isElasticsearch)),
-            entry(VariableTemplate.class, new VariableTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                PostImporterQueueTemplate.class,
-                new PostImporterQueueTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                FlowNodeInstanceTemplate.class,
-                new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch)),
-            entry(IncidentTemplate.class, new IncidentTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                SequenceFlowTemplate.class,
-                new SequenceFlowTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                DecisionInstanceTemplate.class,
-                new DecisionInstanceTemplate(globalPrefix, isElasticsearch)),
-            entry(EventTemplate.class, new EventTemplate(globalPrefix, isElasticsearch)),
-            entry(TaskTemplate.class, new TaskTemplate(globalPrefix, isElasticsearch)),
-            entry(OperationTemplate.class, new OperationTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                BatchOperationTemplate.class,
-                new BatchOperationTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                DraftTaskVariableTemplate.class,
-                new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                SnapshotTaskVariableTemplate.class,
-                new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)),
-            entry(JobTemplate.class, new JobTemplate(globalPrefix, isElasticsearch)));
+    templateDescriptorsMap = createTemplateDescriptorsMap(globalPrefix, isElasticsearch);
 
-    indexDescriptorsMap =
-        Map.ofEntries(
-            entry(DecisionIndex.class, new DecisionIndex(globalPrefix, isElasticsearch)),
-            entry(
-                DecisionRequirementsIndex.class,
-                new DecisionRequirementsIndex(globalPrefix, isElasticsearch)),
-            entry(MetricIndex.class, new MetricIndex(globalPrefix, isElasticsearch)),
-            entry(ProcessIndex.class, new ProcessIndex(globalPrefix, isElasticsearch)),
-            entry(FormIndex.class, new FormIndex(globalPrefix, isElasticsearch)),
-            entry(
-                TasklistMetricIndex.class, new TasklistMetricIndex(globalPrefix, isElasticsearch)),
-            entry(RoleIndex.class, new RoleIndex(globalPrefix, isElasticsearch)),
-            entry(UserIndex.class, new UserIndex(globalPrefix, isElasticsearch)),
-            entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
-            entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
-            entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
-            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
-            entry(
-                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
-            entry(
-                TasklistImportPositionIndex.class,
-                new TasklistImportPositionIndex(globalPrefix, isElasticsearch)),
-            entry(
-                PersistentWebSessionIndexDescriptor.class,
-                new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
+    indexDescriptorsMap = createIndexDescriptorsMap(globalPrefix, isElasticsearch);
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
@@ -308,6 +255,63 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(JobTemplate.class).getFullQualifiedName(), false),
             new MigratedVariableHandler(
                 templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName()));
+  }
+
+  public static Map<Class<? extends AbstractIndexDescriptor>, IndexDescriptor>
+      createIndexDescriptorsMap(String globalPrefix, boolean isElasticsearch) {
+    return Map.ofEntries(
+        entry(DecisionIndex.class, new DecisionIndex(globalPrefix, isElasticsearch)),
+        entry(
+            DecisionRequirementsIndex.class,
+            new DecisionRequirementsIndex(globalPrefix, isElasticsearch)),
+        entry(MetricIndex.class, new MetricIndex(globalPrefix, isElasticsearch)),
+        entry(ProcessIndex.class, new ProcessIndex(globalPrefix, isElasticsearch)),
+        entry(FormIndex.class, new FormIndex(globalPrefix, isElasticsearch)),
+        entry(TasklistMetricIndex.class, new TasklistMetricIndex(globalPrefix, isElasticsearch)),
+        entry(RoleIndex.class, new RoleIndex(globalPrefix, isElasticsearch)),
+        entry(UserIndex.class, new UserIndex(globalPrefix, isElasticsearch)),
+        entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
+        entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
+        entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
+        entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
+        entry(ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
+        entry(
+            TasklistImportPositionIndex.class,
+            new TasklistImportPositionIndex(globalPrefix, isElasticsearch)),
+        entry(
+            PersistentWebSessionIndexDescriptor.class,
+            new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
+  }
+
+  public static Map<Class<? extends IndexTemplateDescriptor>, IndexTemplateDescriptor>
+      createTemplateDescriptorsMap(String globalPrefix, boolean isElasticsearch) {
+    return Map.ofEntries(
+        entry(ListViewTemplate.class, new ListViewTemplate(globalPrefix, isElasticsearch)),
+        entry(VariableTemplate.class, new VariableTemplate(globalPrefix, isElasticsearch)),
+        entry(
+            PostImporterQueueTemplate.class,
+            new PostImporterQueueTemplate(globalPrefix, isElasticsearch)),
+        entry(
+            FlowNodeInstanceTemplate.class,
+            new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch)),
+        entry(IncidentTemplate.class, new IncidentTemplate(globalPrefix, isElasticsearch)),
+        entry(SequenceFlowTemplate.class, new SequenceFlowTemplate(globalPrefix, isElasticsearch)),
+        entry(
+            DecisionInstanceTemplate.class,
+            new DecisionInstanceTemplate(globalPrefix, isElasticsearch)),
+        entry(EventTemplate.class, new EventTemplate(globalPrefix, isElasticsearch)),
+        entry(TaskTemplate.class, new TaskTemplate(globalPrefix, isElasticsearch)),
+        entry(OperationTemplate.class, new OperationTemplate(globalPrefix, isElasticsearch)),
+        entry(
+            BatchOperationTemplate.class,
+            new BatchOperationTemplate(globalPrefix, isElasticsearch)),
+        entry(
+            DraftTaskVariableTemplate.class,
+            new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)),
+        entry(
+            SnapshotTaskVariableTemplate.class,
+            new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)),
+        entry(JobTemplate.class, new JobTemplate(globalPrefix, isElasticsearch)));
   }
 
   @Override
