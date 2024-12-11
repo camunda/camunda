@@ -1537,20 +1537,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey);
 
   /**
-   * Command to create a group.
-   *
-   * <pre>
-   * zeebeClient
-   *  .newCreateGroupCommand()
-   *  .name("Group Name")
-   *  .send();
-   * </pre>
-   *
-   * @return a builder for the create group command
-   */
-  CreateGroupCommandStep1 newCreateGroupCommand();
-
-  /**
    * Command to unassign a group from a tenant.
    *
    * <p>Example usage:

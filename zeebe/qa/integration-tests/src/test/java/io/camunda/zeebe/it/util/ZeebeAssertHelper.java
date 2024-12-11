@@ -531,19 +531,6 @@ public final class ZeebeAssertHelper {
     assertThat(mapping).isNotNull();
   }
 
-  public static void assertGroupCreated(
-      final String groupName, final Consumer<GroupRecordValue> consumer) {
-    final GroupRecordValue groupRecordValue =
-        RecordingExporter.groupRecords()
-            .withIntent(GroupIntent.CREATED)
-            .withName(groupName)
-            .getFirst()
-            .getValue();
-
-    assertThat(groupRecordValue).isNotNull();
-    consumer.accept(groupRecordValue);
-  }
-
   public static void assertGroupUnassignedFromTenant(
       final long tenantKey, final Consumer<TenantRecordValue> consumer) {
     final var tenantRecordValue =

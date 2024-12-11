@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -55,11 +56,12 @@ class AssignGroupToTenantTest {
     client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
 
     // then
-    ZeebeAssertHelper.assertGroupAssignedToTenant(
+    ZeebeAssertHelper.assertEntityAssignedToTenant(
         tenantKey,
+        groupKey,
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityKey()).isEqualTo(groupKey);
+          assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP);
         });
   }
 
