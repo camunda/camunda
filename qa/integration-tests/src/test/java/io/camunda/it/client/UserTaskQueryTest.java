@@ -94,7 +94,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(Map.of("task2", 1)))
+            .filter(f -> f.localVariables(Map.of("task02", 1)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -130,7 +130,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(Map.of("task2", 1)))
+            .filter(f -> f.processInstanceVariables(Map.of("task02", 1)))
             .send()
             .join();
 
