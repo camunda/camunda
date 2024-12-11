@@ -2837,7 +2837,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ProblemDetail"                
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /groups/search:
@@ -3805,6 +3805,12 @@ components:
           description: The user task search filters.
           allOf:
             - $ref: "#/components/schemas/UserTaskFilterRequest"
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskSearchQuerySortRequest"
+
     UserTaskVariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -5847,12 +5853,6 @@ components:
     SearchQueryRequest:
       type: object
       properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            allOf:
-              - $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
           description: Pagination criteria.
           allOf:
@@ -5891,6 +5891,16 @@ components:
           default: asc
       required:
         - field
+    UserTaskSearchQuerySortRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      properties:
+        field:
+          type: string
+          description: My fancy foo bar
+          enum:
+            - assignee
+            - priority
     SearchQueryResponse:
       type: object
       properties:
