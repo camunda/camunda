@@ -65,7 +65,7 @@ jobs:
       CONFTEST_VERSION: '0.56.0'
     steps:
       - uses: actions/checkout@v4
-      - uses: camunda/infra-global-github-actions/actionlint@91bd5d2b084d04bc1ae0aba4d5b8058d575d5b60
+      - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |
