@@ -33,6 +33,7 @@ import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
+import {shouldDisplayInfoNotification} from './Details/shouldDisplayInfoNotification';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -154,10 +155,28 @@ const Task: React.FC = observer(() => {
       ? (error?.networkError?.message ?? error.message)
       : error.message;
 
+    if (shouldDisplayInfoNotification(errorMessage)) {
+      tracking.track({eventName: 'task-completion-delayed-notification'});
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: t('taskCompletionDelayedInfoTitle'),
+        subtitle: t('taskCompletionDelayedInfoSubtitle'),
+        isDismissable: true,
+      });
+      return;
+    }
+
+    const statusMatch = errorMessage.match(/status:\s*(\d+)/);
+    const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : undefined;
+
+    if (statusCode === 409) {
+      tracking.track({eventName: 'task-completion-rejected-notification'});
+    }
+
     notificationsStore.displayNotification({
       kind: 'error',
       title: t('taskCouldNotBeCompletedNotification'),
-      subtitle: getCompleteTaskErrorMessage(errorMessage),
+      subtitle: getCompleteTaskErrorMessage(errorMessage, statusCode),
       isDismissable: true,
     });
 

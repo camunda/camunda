@@ -22,6 +22,7 @@ import {tracking} from 'modules/tracking';
 import {shouldFetchMore} from '../shouldFetchMore';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
+import {shouldDisplayInfoNotification} from './shouldDisplayInfoNotification';
 import styles from './Header.module.scss';
 
 const getAssignmentToggleLabels = () =>
@@ -139,15 +140,47 @@ const AssignButton: React.FC<{
     } catch (error) {
       const errorMessage = (error as Error).message ?? '';
 
-      setAssignmentStatus('off');
+      if (shouldDisplayInfoNotification(errorMessage)) {
+        tracking.track({
+          eventName: isAssigned
+            ? 'task-unassignment-delayed-notification'
+            : 'task-assignment-delayed-notification',
+        });
+        notificationsStore.displayNotification({
+          kind: 'info',
+          title: isAssigned
+            ? t('taskDetailsUnassignmentDelayInfoTitle')
+            : t('taskDetailsAssignmentDelayInfoTitle'),
+          subtitle: isAssigned
+            ? t('taskDetailsUnassignmentDelayInfoSubtitle')
+            : t('taskDetailsAssignmentDelayInfoSubtitle'),
+          isDismissable: true,
+        });
+        return;
+      }
 
-      if (shouldDisplayNotification(errorMessage)) {
+      const statusMatch = errorMessage.match(/status:\s*(\d+)/);
+      const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : undefined;
+
+      setAssignmentStatus('off');
+      if (shouldDisplayNotification(errorMessage, statusCode)) {
+        if (statusCode === 409) {
+          tracking.track({
+            eventName: isAssigned
+              ? 'task-unassignment-rejected-notification'
+              : 'task-assignment-rejected-notification',
+          });
+        }
         notificationsStore.displayNotification({
           kind: 'error',
           title: isAssigned
             ? t('taskDetailsTaskUnassignmentError')
             : t('taskDetailsTaskAssignmentError'),
-          subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
+          subtitle: getTaskAssignmentChangeErrorMessage(
+            errorMessage,
+            statusCode,
+            isAssigned,
+          ),
           isDismissable: true,
         });
       }
