@@ -43,7 +43,8 @@ test.beforeEach(async ({processesPage}) => {
   await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
 });
 
-test.describe('Child Process Instance Migration @roundtrip', () => {
+// TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
+test.describe.skip('Child Process Instance Migration @roundtrip', () => {
   test('Migrate Child Process Instances', async ({
     processesPage,
     processesPage: {filtersPanel},
