@@ -285,6 +285,7 @@ public class AuthorizationCheckBehaviorTest {
     // then
     assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
+
   @Test
   public void shouldBeAuthorizedWhenMappingHasPermission() {
     // given
@@ -452,7 +453,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request =
         new AuthorizationRequest(
-            command, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE)
+                command, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE)
             .addResourceId(UUID.randomUUID().toString());
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
@@ -575,6 +576,7 @@ public class AuthorizationCheckBehaviorTest {
                     .addResourceId(secondResourceId)))
         .isRight();
   }
+
   @Test
   public void shouldGetAuthorizationsForMapping() {
     // given
@@ -658,6 +660,32 @@ public class AuthorizationCheckBehaviorTest {
 
     // then
     assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+  }
+
+  @Test
+  public void shouldGetAuthorizedTenantsForMapping() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mapping =
+        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
+    final var mappingKey = mapping.getMappingKey();
+    final var tenantId = "tenant";
+    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
+    final var command = mockCommandWithMapping(claimName, claimValue);
+
+    // when
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.MAPPING)
+        .withEntityKey(mappingKey)
+        .add();
+
+    // then
+    assertThat(authorizationCheckBehavior.getAuthorizedTenantIds(command))
+        .singleElement()
+        .isEqualTo(tenantId);
   }
 
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {

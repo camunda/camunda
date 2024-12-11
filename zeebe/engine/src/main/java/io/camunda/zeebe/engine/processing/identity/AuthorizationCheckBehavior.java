@@ -228,17 +228,26 @@ public final class AuthorizationCheckBehavior {
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
       return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
     }
-    final var userKey = getUserKey(command);
-    final List<String> authorizedTenantIds = new ArrayList<>();
-    authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    return userKey
+
+    return getUserKey(command)
         .map(
             key ->
                 userState
                     .getUser(key)
                     .map(PersistedUser::getTenantIdsList)
-                    .orElse(authorizedTenantIds))
-        .orElse(authorizedTenantIds);
+                    .orElse(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
+        .orElseGet(
+            () ->
+                extractUserTokenClaims(command)
+                    .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
+                    .<PersistedMapping>mapMulti(Optional::ifPresent)
+                    .flatMap(
+                        mapping ->
+                            mapping.getTenantKeysList().stream()
+                                .map(tenantState::getTenantByKey)
+                                .<PersistedTenant>mapMulti(Optional::ifPresent)
+                                .map(PersistedTenant::getTenantId))
+                    .collect(Collectors.toList()));
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {
