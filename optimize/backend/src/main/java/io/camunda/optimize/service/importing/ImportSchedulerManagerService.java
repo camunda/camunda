@@ -106,7 +106,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     initSchedulers();
   }
 
-  public synchronized Optional<IngestedDataImportScheduler> getIngestedDataImportScheduler() {
+  public Optional<IngestedDataImportScheduler> getIngestedDataImportScheduler() {
     final List<IngestedDataImportScheduler> ingestedDataImportSchedulers =
         importSchedulers.stream()
             .filter(IngestedDataImportScheduler.class::isInstance)
@@ -119,7 +119,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     return ingestedDataImportSchedulers.stream().findFirst();
   }
 
-  public synchronized Optional<ZeebeImportScheduler> getZeebeImportScheduler() {
+  public Optional<ZeebeImportScheduler> getZeebeImportScheduler() {
     final List<ZeebeImportScheduler> zeebeSchedulers =
         importSchedulers.stream()
             .filter(ZeebeImportScheduler.class::isInstance)
@@ -176,8 +176,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
         .collect(Collectors.toList());
   }
 
-  public synchronized List<AbstractImportScheduler<? extends SchedulerConfig>>
-      getImportSchedulers() {
+  public List<AbstractImportScheduler<? extends SchedulerConfig>> getImportSchedulers() {
     return importSchedulers;
   }
 }

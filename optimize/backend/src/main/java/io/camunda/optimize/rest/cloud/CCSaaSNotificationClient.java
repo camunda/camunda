@@ -82,8 +82,8 @@ public class CCSaaSNotificationClient extends AbstractCCSaaSClient {
     }
   }
 
-  private synchronized CloseableHttpResponse performNotificationRequest(
-      final HttpPost notificationRequest) throws IOException {
+  private CloseableHttpResponse performNotificationRequest(final HttpPost notificationRequest)
+      throws IOException {
     refreshAccessTokenIfRequired();
     return performRequest(notificationRequest, accessToken.getAccessToken());
   }
