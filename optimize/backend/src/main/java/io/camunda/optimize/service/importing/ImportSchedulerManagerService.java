@@ -9,6 +9,7 @@ package io.camunda.optimize.service.importing;
 
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
 import io.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
