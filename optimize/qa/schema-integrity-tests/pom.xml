@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -105,7 +107,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>${httpclient.version}</version>
+      <version>${version.httpclient}</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -133,7 +135,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
+      <version>${version.slf4j}</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>
@@ -207,7 +209,8 @@
                   <!-- thus excluding the default environment-config -->
                   <excludes>**/environment-config.yaml</excludes>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
+                  <outputDirectory>${project.build.directory}/${project.previousVersion}
+                  </outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>

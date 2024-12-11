@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -53,17 +55,14 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${camunda.maven.artifacts.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.camunda.feel</groupId>
@@ -148,14 +147,14 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jersey</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
     </dependency>
 
     <dependency>
@@ -183,7 +182,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>4.4.0</version>
+      <version>${version.java-jwt}</version>
       <exclusions>
         <exclusion>
           <groupId>com.fasterxml.jackson.core</groupId>
@@ -228,12 +227,12 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>3.1.8</version>
+      <version>${version.caffeine}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
-      <version>3.6.1</version>
+      <version>${version.commons-math}</version>
     </dependency>
     <dependency>
       <groupId>com.github.sisyphsu</groupId>
@@ -243,7 +242,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons.io.version}</version>
+      <version>${version.commons-io}</version>
       <scope>test</scope>
     </dependency>
 
@@ -258,7 +257,7 @@
     <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
-      <version>${lucene.version}</version>
+      <version>${version.lucene}</version>
       <exclusions>
         <exclusion>
           <groupId>*</groupId>
@@ -277,7 +276,7 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-test-container</artifactId>
-      <version>3.6.5</version>
+      <version>${version.zeebe-test-container}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -309,7 +308,7 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -343,14 +342,14 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
-      <version>2.10.0</version>
+      <version>${version.camunda-license-check}</version>
     </dependency>
 
     <!-- ClassGraph  -->
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.179</version>
+      <version>${version.classgraph}</version>
     </dependency>
 
     <!-- used/undeclared block -->
@@ -372,8 +371,7 @@
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
-      <version>1.23.1</version>
-      <scope>compile</scope>
+      <version>${version.agrona}</version>
     </dependency>
 
     <dependency>
@@ -391,7 +389,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.20.4</version>
+      <version>${version.testcontainers}</version>
       <scope>test</scope>
     </dependency>
 
@@ -437,20 +435,18 @@
       <groupId>jakarta.json</groupId>
       <artifactId>jakarta.json-api</artifactId>
       <version>2.1.3</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <version>${spring.boot.version}</version>
-      <scope>compile</scope>
+      <version>${version.spring-boot}</version>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.spring-boot}</version>
       <scope>test</scope>
     </dependency>
 
@@ -462,8 +458,7 @@
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>oauth2-oidc-sdk</artifactId>
-      <version>11.20.1</version>
-      <scope>compile</scope>
+      <version>${version.nimbus-sdk}</version>
     </dependency>
 
     <dependency>
@@ -474,8 +469,6 @@
     <dependency>
       <groupId>net.minidev</groupId>
       <artifactId>json-smart</artifactId>
-      <version>2.5.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -486,8 +479,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
-      <version>4.4.16</version>
-      <scope>compile</scope>
+      <version>${version.httpcomponents}</version>
     </dependency>
 
     <dependency>
@@ -506,7 +498,6 @@
       <groupId>com.vdurmont</groupId>
       <artifactId>semver4j</artifactId>
       <version>3.1.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -523,8 +514,7 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>8.13.4</version>
-      <scope>compile</scope>
+      <version>${version.elasticsearch}</version>
     </dependency>
 
     <dependency>
@@ -535,21 +525,19 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-      <version>8.13.4</version>
-      <scope>compile</scope>
+      <version>${version.elasticsearch}</version>
     </dependency>
 
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
       <artifactId>jakarta.xml.bind-api</artifactId>
       <version>4.0.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.14.2</version>
+      <version>${version.mockito}</version>
       <scope>test</scope>
     </dependency>
 
@@ -562,8 +550,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-      <scope>compile</scope>
+      <version>${version.slf4j}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -587,8 +574,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
-      <version>4.4.16</version>
-      <scope>compile</scope>
+      <version>${version.httpcomponents}</version>
     </dependency>
 
     <dependency>
@@ -617,21 +603,18 @@
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-base</artifactId>
       <version>2.5.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-      <scope>compile</scope>
+      <version>${version.guava}</version>
     </dependency>
 
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-xml-model</artifactId>
       <version>${camunda.maven.artifacts.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -644,7 +627,6 @@
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
       <version>3.1.8</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -652,13 +634,12 @@
       <groupId>org.eclipse.angus</groupId>
       <artifactId>jakarta.mail</artifactId>
       <version>2.0.3</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
-      <version>4.4</version>
+      <version>${version.commons-collections4}</version>
     </dependency>
 
     <dependency>
@@ -683,7 +664,6 @@
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
       <version>2.9.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -701,7 +681,6 @@
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <version>6.1.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -752,7 +731,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>${plugin.version.compiler}</version>
         <configuration>
           <fork>false</fork>
           <meminitial>128m</meminitial>
@@ -782,7 +761,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>${spring.boot.version}</version>
+        <version>${version.spring-boot}</version>
       </plugin>
 
       <plugin>

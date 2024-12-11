@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -78,7 +80,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
+      <version>${version.slf4j}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -101,7 +103,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
+      <version>${version.guava}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.tika</groupId>
@@ -111,12 +113,12 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.17.0</version>
+      <version>${version.commons-lang}</version>
     </dependency>
     <dependency>
       <groupId>net.jodah</groupId>
       <artifactId>failsafe</artifactId>
-      <version>2.4.4</version>
+      <version>${version.failsafe}</version>
     </dependency>
     <dependency>
       <groupId>com.vdurmont</groupId>
@@ -155,8 +157,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.779</version>
-      <scope>compile</scope>
+      <version>${version.aws-java-sdk}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -215,8 +216,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore-nio</artifactId>
-      <version>4.4.16</version>
-      <scope>compile</scope>
+      <version>${version.httpcomponents}</version>
     </dependency>
 
     <dependency>
@@ -227,7 +227,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>${httpclient.version}</version>
+      <version>${version.httpclient}</version>
       <scope>compile</scope>
     </dependency>
 
