@@ -55,14 +55,17 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
+      <version>${version.camunda}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
+      <version>${version.camunda}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
+      <version>${version.camunda}</version>
       <exclusions>
         <exclusion>
           <groupId>org.camunda.feel</groupId>
