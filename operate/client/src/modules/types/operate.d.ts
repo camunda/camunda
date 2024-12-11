@@ -109,8 +109,8 @@ interface ListenerEntity {
   event:
     | 'START'
     | 'END'
-    | 'COMPLETE'
-    | 'ASSIGNMENT'
+    | 'COMPLETING'
+    | 'ASSIGNING'
     | 'UNKNOWN'
     | 'UNSPECIFIED';
   time: string;
