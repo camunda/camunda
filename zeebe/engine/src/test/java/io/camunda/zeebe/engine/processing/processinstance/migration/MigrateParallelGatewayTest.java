@@ -96,10 +96,12 @@ public class MigrateParallelGatewayTest {
     ENGINE.job().ofInstance(processInstanceKey).withType(existingElJobTypeValue).complete();
 
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.END_EVENT)
-                .limit(2))
+                .withElementType(BpmnElementType.END_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .describedAs(
             "Expected to successfully evaluate execution listener job type and resolve incident")
