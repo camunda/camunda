@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
+import org.slf4j.Logger;
 
 @DisabledIf("isZeebeVersionPre86")
 public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
@@ -45,6 +46,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   private static final String DUE_DATE = "2024-07-24T00:00Z[GMT]";
   private static final OffsetDateTime EXPECTED_DUE_DATE = OffsetDateTime.parse("2024-07-24T00:00Z");
   private static final String ASSIGNEE_ID = "assigneeId";
+
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskImportIT.class);
 
   @Test
   public void importRunningZeebeUserTaskData() {
@@ -657,6 +660,9 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 UNCLAIM_OPERATION_TYPE,
                 null,
                 getTimestampForZeebeLastUnassignEvent(exportedEvents))));
+
+    LOG.error(exportedEvents.toString());
+
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
         .satisfies(
