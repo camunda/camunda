@@ -11,18 +11,18 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
-  private Long groupKey;
+  private Long key;
   private String name;
   private Long memberKey;
 
   private EntityJoinRelation join;
 
-  public Long getGroupKey() {
-    return groupKey;
+  public Long getKey() {
+    return key;
   }
 
-  public GroupEntity setGroupKey(final Long groupKey) {
-    this.groupKey = groupKey;
+  public GroupEntity setKey(final Long key) {
+    this.key = key;
     return this;
   }
 
