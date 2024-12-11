@@ -55,8 +55,11 @@ const EmptyMessageWrapper = styled.div`
   }
 `;
 
-const Stack = styled(BaseStack)`
-  height: calc(100% - 32px);
+const dropdownHeight = '32px';
+
+const Stack = styled(BaseStack)<{$isUserTask: boolean}>`
+  height: ${({$isUserTask}) =>
+    $isUserTask ? `calc(100% - ${dropdownHeight})` : '100%'};
 `;
 
 export {
