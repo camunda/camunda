@@ -184,7 +184,7 @@ public final class BpmnJobBehavior {
             listenerJobProperties -> {
               final var taskHeaders =
                   Collections.singletonMap(
-                      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
+                      Protocol.USER_TASK_KEY_HEADER_NAME,
                       Objects.toString(taskRecordValue.getUserTaskKey()));
               writeJobCreatedEvent(
                   context,

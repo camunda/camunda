@@ -95,6 +95,10 @@ public final class Protocol {
   public static final String USER_TASK_FOLLOW_UP_DATE_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "followUpDate";
 
+  /** Task header key used for the unique user task key. */
+  public static final String USER_TASK_KEY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
+
   /** Task header key used for the priority of the user task */
   public static final String USER_TASK_PRIORITY_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "priority";

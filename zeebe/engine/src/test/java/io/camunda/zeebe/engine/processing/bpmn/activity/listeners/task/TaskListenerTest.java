@@ -67,8 +67,6 @@ public class TaskListenerTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
-  private static final String USER_TASK_KEY_HEADER_NAME =
-      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
 
   private static final String USER_TASK_ELEMENT_ID = "my_user_task";
 
@@ -627,7 +625,7 @@ public class TaskListenerTest {
                         .zeebeTaskListener(l -> l.completing().type(listenerType))));
 
     // when
-    final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var userTaskRecord = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
     final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
@@ -641,7 +639,7 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2095-09-18T10:31:10+02:00"),
             entry(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, Objects.toString(form.getFormKey())),
-            entry(USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecordValue.getKey())));
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getKey())));
     completeJobs(processInstanceKey, listenerType);
   }
 
@@ -667,7 +665,7 @@ public class TaskListenerTest {
 
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
-    final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var userTaskRecord = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
     final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
@@ -678,7 +676,7 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2087-09-21T11:22:33+02:00"),
             entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2097-09-21T11:22:33+02:00"),
-            entry(USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecordValue.getKey())));
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getKey())));
     completeJobs(processInstanceKey, listenerType);
   }
 
