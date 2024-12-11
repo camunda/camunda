@@ -16,13 +16,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.6</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
-      <version>8.6.6</version>
       <scope>test</scope>
     </dependency>
 
@@ -49,7 +47,6 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>${elasticsearch.client.version}</version>
     </dependency>
 
     <!-- Jackson/JSON -->
@@ -78,28 +75,26 @@
       <version>${jsonpath.version}</version>
     </dependency>
 
-    <!-- Logging -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
 
-    <!-- needed for elasticsearch logs to be available over slf4j. Dependency:analyze error suppressed. -->
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-to-slf4j</artifactId>
-      <version>${elasticsearch.log4j.version}</version>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
     </dependency>
 
     <!-- Utilities -->
@@ -133,13 +128,11 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>${apache.http5-core.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -150,7 +143,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>${apache.http5-client.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -171,30 +163,26 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sdk-core</artifactId>
-      <version>${awssdk.version}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sts</artifactId>
-      <version>${awssdk.version}</version>
     </dependency>
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>netty-nio-client</artifactId>
-      <version>${awssdk.version}</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>regions</artifactId>
-      <version>${awssdk.version}</version>
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>auth</artifactId>
-      <version>${awssdk.version}</version>
+
     </dependency>
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
@@ -203,23 +191,24 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
-      <version>2.12.0</version>
     </dependency>
 
     <dependency>
-      <!-- TODO: remove when Zeebe parent becomes Optimize's one -->
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-jetty12</artifactId>
-      <version>3.9.2</version>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-netty</artifactId>
+      <version>5.15.0</version>
       <scope>test</scope>
     </dependency>
-
-    <!-- used/undeclared block -->
-
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
-      <version>3.9.2</version>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-core</artifactId>
+      <version>5.15.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-client-java</artifactId>
+      <version>5.15.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -233,8 +222,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -273,8 +260,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -292,34 +277,11 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>http-client-spi</artifactId>
-      <version>${awssdk.version}</version>
-      <scope>compile</scope>
     </dependency>
 
   </dependencies>
 
   <build>
-     <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.8.1</version>
-          <configuration>
-            <ignoredUnusedDeclaredDependencies combine.children="append">
-              <!-- TODO: remove once Zeebe's parent is Optimize's parent,
-              with https://github.com/camunda/camunda/issues/22271 -->
-              <dep>org.wiremock:wiremock-jetty12</dep>
-
-              <dep>org.apache.logging.log4j:log4j-to-slf4j</dep>
-              <dep>software.amazon.awssdk:sdk-core</dep>
-              <dep>software.amazon.awssdk:sts</dep>
-            </ignoredUnusedDeclaredDependencies>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

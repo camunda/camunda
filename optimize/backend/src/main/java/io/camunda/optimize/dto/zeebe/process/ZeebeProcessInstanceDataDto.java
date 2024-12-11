@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
@@ -90,6 +91,21 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
 
   @Override
   public BpmnEventType getBpmnEventType() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
+  public List<List<Long>> getElementInstancePath() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
+  public List<Long> getProcessDefinitionPath() {
+    throw new UnsupportedOperationException("Operation not supported");
+  }
+
+  @Override
+  public List<Integer> getCallingElementPath() {
     throw new UnsupportedOperationException("Operation not supported");
   }
 

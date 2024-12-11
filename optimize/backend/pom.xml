@@ -12,10 +12,9 @@
   <name>Optimize Backend</name>
 
   <properties>
-    <spring.security.version>6.4.1</spring.security.version>
-    <it.test.excludedGroups />
-    <it.test.includedGroups />
-    <test.forkCount />
+    <it.test.excludedGroups></it.test.excludedGroups>
+    <it.test.includedGroups></it.test.includedGroups>
+    <test.forkCount></test.forkCount>
     <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
@@ -24,9 +23,16 @@
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
-      <groupId>net.logstash.logback</groupId>
-      <artifactId>logstash-logback-encoder</artifactId>
-      <version>8.0</version>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-log4j2</artifactId>
+      <version>2.0.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -72,19 +78,18 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.6</version>
     </dependency>
 
     <!-- Zeebe dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${zeebe.version}</version>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -98,13 +103,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
-      <version>${identity.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-slf4j2-impl</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Spring -->
@@ -123,27 +121,28 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-      <version>${spring.boot.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-tomcat</artifactId>
-      <version>${spring.boot.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.tomcat.embed</groupId>
       <artifactId>tomcat-embed-core</artifactId>
-      <version>${version.tomcat}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>${version.tomcat}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -162,27 +161,22 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-config</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-client</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-resource-server</artifactId>
-      <version>${spring.security.version}</version>
     </dependency>
 
     <!-- Authentication -->
@@ -192,8 +186,8 @@
       <version>4.4.0</version>
       <exclusions>
         <exclusion>
-          <artifactId>jackson-databind</artifactId>
           <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -205,8 +199,8 @@
       <version>${quartz.version}</version>
       <exclusions>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -258,7 +252,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.14.2</version>
     </dependency>
 
     <!--Lucene dependencies-->
@@ -268,8 +261,8 @@
       <version>${lucene.version}</version>
       <exclusions>
         <exclusion>
-          <artifactId>*</artifactId>
           <groupId>*</groupId>
+          <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -299,12 +292,12 @@
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
         <exclusion>
-          <artifactId>junit</artifactId>
           <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -323,6 +316,10 @@
           <groupId>junit</groupId>
           <artifactId>junit</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -330,13 +327,11 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>${apache.http5-core.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -391,7 +386,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -410,29 +404,21 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-      <version>8.5.10</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-core</artifactId>
-      <version>6.4.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
-      <version>${spring.boot.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.glassfish.jersey.media</groupId>
       <artifactId>jersey-media-json-jackson</artifactId>
-      <version>3.1.8</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -471,8 +457,6 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
-      <version>6.4.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -485,8 +469,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -518,8 +500,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <version>1.14.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -532,16 +512,12 @@
     <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
-      <version>3.1.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
-      <version>2.12.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -554,8 +530,6 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
-      <version>4.1.115.Final</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -582,7 +556,6 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>17.0.0</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -597,7 +570,6 @@
     <dependency>
       <groupId>jakarta.annotation</groupId>
       <artifactId>jakarta.annotation-api</artifactId>
-      <version>2.1.1</version>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -609,8 +581,6 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.17.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -624,22 +594,16 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>5.4.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.17.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.12.0</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -673,8 +637,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -697,29 +659,23 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
       <version>4.4</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
-      <version>20040616</version>
-      <scope>compile</scope>
+      <version>3.2.2</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>${httpclient.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -733,15 +689,11 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-server</artifactId>
-      <version>3.1.8</version>
-      <scope>compile</scope>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -755,13 +707,46 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
-      <version>${spring.version}</version>
-      <scope>compile</scope>
     </dependency>
   </dependencies>
 
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
+    <resources>
+      <resource>
+        <targetPath>webapp</targetPath>
+        <directory>../client/dist</directory>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>src/main/ssl</directory>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <targetPath>webapp</targetPath>
+        <directory>src/it/webapp</directory>
+      </testResource>
+      <testResource>
+        <filtering>true</filtering>
+        <directory>src/it/resources</directory>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <filtering>false</filtering>
+        <directory>src/it/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+    </testResources>
 
     <plugins>
       <plugin>
@@ -781,10 +766,10 @@
         <executions>
           <execution>
             <id>add-it-source</id>
-            <phase>generate-test-sources</phase>
             <goals>
               <goal>add-test-source</goal>
             </goals>
+            <phase>generate-test-sources</phase>
             <configuration>
               <sources>
                 <source>src/it/java</source>
@@ -827,82 +812,18 @@
         <executions>
           <execution>
             <id>copy-dependencies-to-lib-folder</id>
-            <phase>package</phase>
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
               <includeScope>runtime</includeScope>
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>net.logstash.logback:logstash-logback-encoder</dep>
-            <dep>org.codehaus.janino:janino</dep>
-            <dep>io.camunda:identity-spring-boot-starter</dep>
-            <dep>org.springframework:spring-tx</dep>
-            <dep>org.springframework.boot:spring-boot-starter-web</dep>
-            <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
-            <dep>io.micrometer:micrometer-registry-prometheus</dep>
-            <dep>org.apache.httpcomponents.core5:httpcore5</dep>
-            <dep>org.eclipse.angus:jakarta.mail</dep>
-            <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
-            <dep>jakarta.servlet:jakarta.servlet-api</dep>
-            <dep>jakarta.annotation:jakarta.annotation-api</dep>
-
-            <!-- test dependencies -->
-            <dep>org.springframework.boot:spring-boot-starter-test</dep>
-            <dep>com.sun.mail:jakarta.mail</dep>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
-            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
-            <dep>org.apache.httpcomponents:httpcore-nio</dep>
-            <dep>org.glassfish.jersey.core:jersey-client</dep>
-            <dep>org.apache.tika:tika-core</dep>
-            <dep>commons-collections:commons-collections</dep>
-            <dep>org.opensearch.client:opensearch-rest-client</dep>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
       </plugin>
     </plugins>
-    <resources>
-      <resource>
-        <directory>../client/dist</directory>
-        <targetPath>webapp</targetPath>
-      </resource>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>src/main/ssl</directory>
-      </resource>
-    </resources>
-    <testResources>
-      <testResource>
-        <directory>src/it/webapp</directory>
-        <targetPath>webapp</targetPath>
-      </testResource>
-      <testResource>
-        <directory>src/it/resources</directory>
-        <filtering>true</filtering>
-        <includes>
-          <include>**/*.properties</include>
-        </includes>
-      </testResource>
-      <testResource>
-        <directory>src/it/resources</directory>
-        <filtering>false</filtering>
-        <includes>
-          <include>**/*</include>
-        </includes>
-      </testResource>
-      <testResource>
-        <directory>src/test/resources</directory>
-      </testResource>
-    </testResources>
   </build>
 
   <profiles>
@@ -946,13 +867,16 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>exec-maven-plugin</artifactId>
+            <configuration>
+              <skip>${skipTests}</skip>
+            </configuration>
             <executions>
               <execution>
                 <id>docker-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <environmentVariables>
                     <ES_VERSION>${elasticsearch.test.version}</ES_VERSION>
@@ -976,10 +900,10 @@
               </execution>
               <execution>
                 <id>docker-remove</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skip.docker}</skip>
                   <executable>docker</executable>
@@ -994,9 +918,6 @@
                 </configuration>
               </execution>
             </executions>
-            <configuration>
-              <skip>${skipTests}</skip>
-            </configuration>
           </plugin>
         </plugins>
       </build>
