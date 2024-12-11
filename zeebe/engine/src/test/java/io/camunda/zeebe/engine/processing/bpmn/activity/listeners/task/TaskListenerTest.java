@@ -622,10 +622,11 @@ public class TaskListenerTest {
                         .zeebeCandidateGroups("group_A, group_C, group_F")
                         .zeebeFormId("Form_0w7r08e")
                         .zeebeDueDate("2095-09-18T10:31:10+02:00")
+                        .zeebeTaskPriority("88")
                         .zeebeTaskListener(l -> l.completing().type(listenerType))));
 
     // when
-    final var userTaskRecord = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
     final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
@@ -639,7 +640,9 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2095-09-18T10:31:10+02:00"),
             entry(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, Objects.toString(form.getFormKey())),
-            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getKey())));
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "88"),
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"));
     completeJobs(processInstanceKey, listenerType);
   }
 
@@ -661,11 +664,12 @@ public class TaskListenerTest {
             .setCandidateGroupsList(List.of("group_J", "group_R"))
             .setCandidateUsersList(List.of("user_T"))
             .setDueDate("2087-09-21T11:22:33+02:00")
-            .setFollowUpDate("2097-09-21T11:22:33+02:00");
+            .setFollowUpDate("2097-09-21T11:22:33+02:00")
+            .setPriority(42);
 
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
-    final var userTaskRecord = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
     final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
@@ -676,7 +680,9 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2087-09-21T11:22:33+02:00"),
             entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2097-09-21T11:22:33+02:00"),
-            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getKey())));
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "42"),
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"));
     completeJobs(processInstanceKey, listenerType);
   }
 
