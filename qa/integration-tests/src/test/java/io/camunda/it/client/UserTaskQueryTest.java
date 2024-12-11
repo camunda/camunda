@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -78,6 +79,22 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.localVariables(List.of(variableValueFilter)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1")
+        .doesNotContain("P2");
+  }
+
+  @Test
+  public void shouldRetrieveTaskByMapLocalVariable() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(Map.of("task2", 1)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
