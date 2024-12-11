@@ -13,20 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.command;
+package io.camunda.zeebe.client.api.response;
 
-import io.camunda.zeebe.client.api.response.AssignMappingToTenantResponse;
-
-/** Command to assign a mapping to a tenant. */
-public interface AssignMappingToTenantCommandStep1
-    extends FinalCommandStep<AssignMappingToTenantResponse> {
-
-  /**
-   * Sets the mapping key for the assignment.
-   *
-   * @param mappingKey the key of the mapping
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  AssignMappingToTenantCommandStep1 mappingKey(long mappingKey);
-}
+public interface AssignUserToTenantResponse {}
