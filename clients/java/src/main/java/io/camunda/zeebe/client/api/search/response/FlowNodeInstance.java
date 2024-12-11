@@ -23,6 +23,9 @@ public interface FlowNodeInstance {
   /** process definition key for flow node instance */
   Long getProcessDefinitionKey();
 
+  /** process definition id for flow node instance */
+  String getProcessDefinitionId();
+
   /** process instance key for flow node instance */
   Long getProcessInstanceKey();
 
