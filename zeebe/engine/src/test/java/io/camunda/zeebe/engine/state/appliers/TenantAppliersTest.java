@@ -94,7 +94,7 @@ public class TenantAppliersTest {
     // then
     assertThat(tenantState.getEntityType(tenantKey, entityKey).get().equals(EntityType.MAPPING));
     final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
   }
 
   @Test
@@ -206,7 +206,7 @@ public class TenantAppliersTest {
     // Ensure the mapping is associated with the tenant before removal
     assertThat(tenantState.getEntityType(tenantKey, entityKey).get().equals(EntityType.MAPPING));
     final var persistedMapping = mappingState.get(entityKey).get();
-    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
+    assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
 
     // when
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
@@ -214,7 +214,7 @@ public class TenantAppliersTest {
     // then
     assertThat(tenantState.getEntityType(tenantKey, entityKey)).isEmpty();
     final var updatedMapping = mappingState.get(entityKey).get();
-    assertThat(updatedMapping.getTenantKeysList()).isEmpty();
+    assertThat(updatedMapping.getTenantIdsList()).isEmpty();
   }
 
   private TenantRecord createTenant(final long tenantKey, final String tenantId) {

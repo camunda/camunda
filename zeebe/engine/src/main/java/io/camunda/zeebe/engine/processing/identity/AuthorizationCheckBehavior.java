@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
-import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -124,10 +123,7 @@ public final class AuthorizationCheckBehavior {
     if (request.tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
       return true;
     }
-    return tenantState
-        .getTenantKeyById(request.getTenantId())
-        .filter(persistedTenantKey -> mapping.getTenantKeysList().contains(persistedTenantKey))
-        .isPresent();
+    return mapping.getTenantIdsList().contains(request.getTenantId());
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -241,12 +237,7 @@ public final class AuthorizationCheckBehavior {
         extractUserTokenClaims(command)
             .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
             .<PersistedMapping>mapMulti(Optional::ifPresent)
-            .flatMap(
-                mapping ->
-                    mapping.getTenantKeysList().stream()
-                        .map(tenantState::getTenantByKey)
-                        .<PersistedTenant>mapMulti(Optional::ifPresent)
-                        .map(PersistedTenant::getTenantId))
+            .flatMap(mapping -> mapping.getTenantIdsList().stream())
             .toList();
     return tenantsOfMapping.isEmpty()
         ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
