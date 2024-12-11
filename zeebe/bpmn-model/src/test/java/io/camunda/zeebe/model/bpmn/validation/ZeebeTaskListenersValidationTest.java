@@ -21,9 +21,12 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.TaskListenerBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeTaskListenersValidationTest {
 
@@ -41,8 +44,15 @@ public class ZeebeTaskListenersValidationTest {
             .done();
 
     // when/then
+    // as we don't fully support TL yet, two violations are expected here.
     ProcessValidationUtil.assertThatProcessHasViolations(
-        process, expect(ZeebeTaskListener.class, "Attribute 'type' must be present and not empty"));
+        process,
+        expect(ZeebeTaskListener.class, "Attribute 'type' must be present and not empty"),
+        expect(
+            ZeebeTaskListener.class,
+            "Task listeners are not yet supported. Java BPMN-modeling API for task"
+                + " listeners was introduced with version 8.6, but the support for listener execution will "
+                + "be added in the upcoming versions."));
   }
 
   @Test
@@ -55,8 +65,41 @@ public class ZeebeTaskListenersValidationTest {
                 "io/camunda/zeebe/model/bpmn/validation/ZeebeTaskListenersValidationTest.testEventTypeNotDefined.bpmn"));
 
     // when/then
+    // as we don't fully support TL yet, two violations are expected here.
     ProcessValidationUtil.assertThatProcessHasViolations(
         process,
-        expect(ZeebeTaskListener.class, "Attribute 'eventType' must be present and not empty"));
+        expect(ZeebeTaskListener.class, "Attribute 'eventType' must be present and not empty"),
+        expect(
+            ZeebeTaskListener.class,
+            "Task listeners are not yet supported. Java BPMN-modeling API for task"
+                + " listeners was introduced with version 8.6, but the support for listener execution will "
+                + "be added in the upcoming versions."));
+  }
+
+  @DisplayName("task listener with unsupported `eventType` property")
+  @ParameterizedTest(name = "unsupported event type: ''{0}''")
+  @EnumSource(ZeebeTaskListenerEventType.class)
+  void testEventTypesNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "user_task",
+                ut ->
+                    ut.zeebeUserTask()
+                        .zeebeTaskListener(
+                            l -> l.eventType(unsupportedEventType).type("not_supported_listener")))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeTaskListener.class,
+            "Task listeners are not yet supported. Java BPMN-modeling API for task"
+                + " listeners was introduced with version 8.6, but the support for listener execution will "
+                + "be added in the upcoming versions."));
   }
 }
