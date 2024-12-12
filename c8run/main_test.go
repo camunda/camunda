@@ -76,3 +76,45 @@ func TestCamundaCmdDifferentPort(t *testing.T) {
 	assert.Contains(t, javaOptsEnvVar, "-Dserver.port=8087")
 
 }
+
+func TestCamundaCmdUsername(t *testing.T) {
+
+	settings := C8RunSettings{
+		username: "admin",
+	}
+	javaOpts := adjustJavaOpts("", settings)
+	c8runPlatform := getC8RunPlatform()
+
+	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
+
+	javaOptsEnvVar := ""
+	for _, envVar := range cmd.Env {
+		if strings.Contains(envVar, "JAVA_OPTS") {
+			javaOptsEnvVar = envVar
+			break
+		}
+	}
+	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].username=admin")
+
+}
+
+func TestCamundaCmdPassword(t *testing.T) {
+
+	settings := C8RunSettings{
+		password: "changeme",
+	}
+	javaOpts := adjustJavaOpts("", settings)
+	c8runPlatform := getC8RunPlatform()
+
+	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
+
+	javaOptsEnvVar := ""
+	for _, envVar := range cmd.Env {
+		if strings.Contains(envVar, "JAVA_OPTS") {
+			javaOptsEnvVar = envVar
+			break
+		}
+	}
+	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].password=changeme")
+
+}
