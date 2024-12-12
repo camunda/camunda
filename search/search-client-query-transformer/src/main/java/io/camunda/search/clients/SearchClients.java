@@ -258,7 +258,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext)
-        .search(filter, GroupEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
 
   @Override

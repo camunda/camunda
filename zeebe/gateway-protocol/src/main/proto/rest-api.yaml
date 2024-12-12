@@ -2837,7 +2837,7 @@ paths:
           content:
             application/problem+json:
               schema:
-                $ref: "#/components/schemas/ProblemDetail"                
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /groups/search:
@@ -5286,7 +5286,7 @@ components:
       description: Group search response item.
       type: object
       properties:
-        key:
+        groupKey:
           type: integer
           description: The group key.
           format: int64
