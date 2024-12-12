@@ -3020,7 +3020,17 @@ final class JsonSerializableToJsonTest {
                             .setPassword("qux")
                             .setUserType(UserType.REGULAR))
                     .setDefaultTenant(
-                        new TenantRecord().setTenantKey(5).setTenantId("id").setName("name")),
+                        new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
+                    .addMapping(
+                        new MappingRecord()
+                            .setMappingKey(6)
+                            .setClaimName("claim1")
+                            .setClaimValue("value1"))
+                    .addMapping(
+                        new MappingRecord()
+                            .setMappingKey(7)
+                            .setClaimName("claim2")
+                            .setClaimValue("value2")),
         """
       {
         "defaultRole": {
@@ -3053,7 +3063,19 @@ final class JsonSerializableToJsonTest {
           "name": "name",
           "entityKey": -1,
           "entityType": "UNSPECIFIED"
-        }
+        },
+        "mappings": [
+          {
+            "mappingKey": 6,
+            "claimName": "claim1",
+            "claimValue": "value1"
+          },
+          {
+            "mappingKey": 7,
+            "claimName": "claim2",
+            "claimValue": "value2"
+          }
+        ]
       }
       """
       },
@@ -3078,7 +3100,8 @@ final class JsonSerializableToJsonTest {
               "name": "",
               "entityKey": -1,
               "entityType": "UNSPECIFIED"
-          }
+          },
+          "mappings": []
       }
       """
       },
