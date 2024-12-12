@@ -61,5 +61,10 @@ public interface TenantState {
    */
   Map<EntityType, List<Long>> getEntitiesByType(long tenantKey);
 
-  boolean forEachTenantUntilDone(final Function<String, Boolean> function);
+  /**
+   * Loops over all tenants and applies the provided callback. It stops looping over the tenants,
+   * when the callback function returns false, otherwise it will continue until all tenants are
+   * visited.
+   */
+  void forEachTenant(final Function<String, Boolean> callback);
 }

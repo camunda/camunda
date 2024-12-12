@@ -60,6 +60,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public class ResourceDeletionDeleteProcessor
@@ -382,13 +383,9 @@ public class ResourceDeletionDeleteProcessor
     final var authorizedTenants = getAuthorizedTenants(command);
 
     if (AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)) {
-      final var deleted = resourceDeletionCallback.apply(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-      if (!deleted) {
-        return tenantState.forEachTenantUntilDone(
-            tenant -> !resourceDeletionCallback.apply(tenant));
-      } else {
-        return true;
-      }
+      return Optional.of(tryToDeleteResourceAssignedToDefaultTenant(resourceDeletionCallback))
+          .filter(Boolean::booleanValue)
+          .orElseGet(() -> forEachTenantUntilResourceDeleted(resourceDeletionCallback));
     } else {
       for (final var tenant : authorizedTenants.getAuthorizedTenantIds()) {
         if (resourceDeletionCallback.apply(tenant)) {
@@ -397,6 +394,30 @@ public class ResourceDeletionDeleteProcessor
       }
     }
     return false;
+  }
+
+  /**
+   * Tries to delete the resource, iff it is assigned to the default tenant. If the resource was
+   * deleted, it returns true, otherwise false.
+   */
+  private boolean tryToDeleteResourceAssignedToDefaultTenant(
+      final Function<String, Boolean> resourceDeletionCallback) {
+    return resourceDeletionCallback.apply(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  /**
+   * Loops over the existing tenants to find the resource to delete. If found and deleted, it
+   * returns true, otherwise false.
+   */
+  private boolean forEachTenantUntilResourceDeleted(
+      final Function<String, Boolean> resourceDeletionCallback) {
+    final var resourceDeleted = new AtomicBoolean(false);
+    tenantState.forEachTenant(
+        tenant -> {
+          resourceDeleted.set(resourceDeletionCallback.apply(tenant));
+          return !resourceDeleted.get();
+        });
+    return resourceDeleted.get();
   }
 
   private void setTenantId(

@@ -78,7 +78,6 @@ public class AuthInfo extends UnpackedObject {
         final String jwtToken = getAuthData();
         return Authorization.jwtDecoder(jwtToken)
             .withClaim(Authorization.AUTHORIZED_TENANTS)
-            .withClaim(Authorization.AUTHORIZED_ANONYMOUS_USER)
             .decode();
       }
       default -> {
