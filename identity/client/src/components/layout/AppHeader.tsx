@@ -2,16 +2,19 @@ import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { useNavigate } from "react-router";
 import { useApi } from "src/utility/api";
-import { checkLicense, License } from "src/utility/api/headers";
+import { License } from "src/utility/api/headers";
 import { baseUrl } from "src/configuration";
 import { getAuthentication } from "src/utility/api/authentication";
 import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
 
-const AppHeader: React.FC = () => {
+interface Props {
+  license: License | null;
+}
+
+const AppHeader: React.FC<Props> = ({ license }) => {
   const routes = useGlobalRoutes();
   const navigate = useNavigate();
-  const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
 
   return (

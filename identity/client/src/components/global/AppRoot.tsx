@@ -11,6 +11,7 @@ import { FC, ReactNode } from "react";
 import { background, bodyShort01 } from "@carbon/themes";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
+import { License } from "src/utility/api/headers";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -60,14 +61,15 @@ const GridMainContent = styled.div`
 `;
 
 interface Props {
+  license: License | null;
   children?: ReactNode;
 }
 
-const AppContent: FC<Props> = ({ children }) => {
+const AppContent: FC<Props> = ({ license, children }) => {
   return (
     <>
       <GridHeader>
-        <AppHeader />
+        <AppHeader license={license} />
       </GridHeader>
       <GridMain>
         <GridMainContent>{children}</GridMainContent>
@@ -76,12 +78,17 @@ const AppContent: FC<Props> = ({ children }) => {
   );
 };
 
-const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => {
+interface Props {
+  license: License | null;
+  children?: ReactNode;
+}
+
+const AppRoot: FC<Props> = ({ license, children }) => {
   return (
     <AppRootWrapper>
       <ErrorBoundary>
         <GlobalStyle />
-        <AppContent>{children}</AppContent>
+        <AppContent license={license}>{children}</AppContent>
       </ErrorBoundary>
     </AppRootWrapper>
   );

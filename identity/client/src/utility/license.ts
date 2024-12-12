@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export function getCopyrightNoticeText() {
-  return `© Camunda Services GmbH ${new Date().getFullYear()}. All rights reserved. | ${
-    import.meta.env.VITE_APP_VERSION
-  }`;
+import { checkLicense, License } from "src/utility/api/headers";
+import { useApi } from "src/utility/api";
+
+export function useLicense(): License | null {
+  const { data } = useApi(checkLicense);
+  return data;
 }

@@ -5,18 +5,24 @@ import AppRoot from "./components/global/AppRoot";
 import GlobalRoutes from "src/components/global/GlobalRoutes";
 import { LoginPage } from "src/pages/login/LoginPage.tsx";
 import { LOGIN_PATH } from "src/utility/auth";
+import { useLicense } from "src/utility/license.ts";
 
 const App: FC = () => {
+  const license = useLicense();
   return (
     <BrowserRouter>
       <StrictMode>
         <Routes>
-          <Route key="login" path={LOGIN_PATH} Component={LoginPage} />
+          <Route
+            key="login"
+            path={LOGIN_PATH}
+            element={<LoginPage license={license} />}
+          />
           <Route
             key="identity-ui"
             path={`${baseUrl}/*`}
             element={
-              <AppRoot>
+              <AppRoot license={license}>
                 <GlobalRoutes />
               </AppRoot>
             }
