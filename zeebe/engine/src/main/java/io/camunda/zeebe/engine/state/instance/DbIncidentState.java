@@ -13,11 +13,11 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import java.util.List;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {
@@ -128,9 +128,9 @@ public final class DbIncidentState implements MutableIncidentState {
 
   @Override
   public IncidentRecord getIncidentRecord(
-      final long incidentKey, final List<String> authorizedTenantIds) {
+      final long incidentKey, final AuthorizedTenants authorizedTenantIds) {
     final IncidentRecord incident = getIncidentRecord(incidentKey);
-    if (incident != null && authorizedTenantIds.contains(incident.getTenantId())) {
+    if (incident != null && authorizedTenantIds.isAuthorizedForTenantId(incident.getTenantId())) {
       return incident;
     }
     return null;

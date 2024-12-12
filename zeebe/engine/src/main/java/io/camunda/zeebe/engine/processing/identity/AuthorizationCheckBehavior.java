@@ -76,6 +76,10 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
+    if (isAuthorizedAnonymousUser(request.getCommand())) {
+      return Either.right(null);
+    }
+
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
@@ -104,6 +108,22 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  /**
+   * Returns true, if a command is executed by an anonymous authentication. So that, no
+   * authorization checks and no tenants checks are performed. Basically, it allows to run commands
+   * without authentication safely.
+   *
+   * <p>This provides anyone, i.e., when doing a broker request, with the option to run broker
+   * requests and commands anonymously. This is helpful especially if the gateway, for example,
+   * already checks authorizations and tenancy.
+   */
+  private boolean isAuthorizedAnonymousUser(final TypedRecord<?> command) {
+    final var authorizationClaims = command.getAuthorizations();
+    final var authorizedAnonymousUserClaim =
+        authorizationClaims.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
+    return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
+  }
+
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
     return getUserKey(request.getCommand());
   }
@@ -128,6 +148,10 @@ public final class AuthorizationCheckBehavior {
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
+      return Set.of(WILDCARD_PERMISSION);
+    }
+
+    if (isAuthorizedAnonymousUser(request.getCommand())) {
       return Set.of(WILDCARD_PERMISSION);
     }
 
@@ -218,11 +242,17 @@ public final class AuthorizationCheckBehavior {
     return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
   }
 
-  public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
+  public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
+    if (isAuthorizedAnonymousUser(command)) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+
     // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
     // state
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
-      return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      final var authorizedTenants =
+          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+      return new AuthenticatedAuthorizedTenants(authorizedTenants);
     }
 
     final var userKey = getUserKey(command);
@@ -230,7 +260,9 @@ public final class AuthorizationCheckBehavior {
       return userState
           .getUser(userKey.get())
           .map(PersistedUser::getTenantIdsList)
-          .orElse(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+          .filter(t -> !t.isEmpty())
+          .<AuthorizedTenants>map(AuthenticatedAuthorizedTenants::new)
+          .orElse(AuthorizedTenants.DEFAULT_TENANTS);
     }
 
     final var tenantsOfMapping =
@@ -240,8 +272,8 @@ public final class AuthorizationCheckBehavior {
             .flatMap(mapping -> mapping.getTenantIdsList().stream())
             .toList();
     return tenantsOfMapping.isEmpty()
-        ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-        : tenantsOfMapping;
+        ? AuthorizedTenants.DEFAULT_TENANTS
+        : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
   private static Optional<Long> getUserKey(final TypedRecord<?> command) {
