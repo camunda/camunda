@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -169,6 +171,13 @@ public final class ProcessInstanceMigrationPreconditions {
       but active element with id '%s' has a different loop characteristics \
       than the target element with id '%s'. \
       Both elements must have either sequential or parallel loop characteristics.""";
+
+  private static final String ERROR_GATEWAY_NOT_MAPPED =
+      """
+      Expected to migrate process instance '%s' \
+      but gateway '%s' has at least one sequence flow taken. \
+      Joining gateways with at least one sequence flow taken must be mapped \
+      to a gateway of the same type in the target process definition.""";
 
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
@@ -873,6 +882,39 @@ public final class ProcessInstanceMigrationPreconditions {
         throw new ProcessInstanceMigrationPreconditionFailedException(
             reason, RejectionType.INVALID_STATE);
       }
+    }
+  }
+
+  public static void requireValidGatewayMapping(
+      final ExecutableFlowNode sourceGateway,
+      final Optional<String> maybeTargetGatewayId,
+      final DeployedProcess targetProcessDefinition,
+      final long processInstanceKey) {
+    if (maybeTargetGatewayId.isEmpty()) {
+      final var reason =
+          String.format(
+              ERROR_GATEWAY_NOT_MAPPED,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+
+    final String targetGatewayId = maybeTargetGatewayId.get();
+    // no need to check if the target gateway exists because it is already validated
+    final var targetGateway = targetProcessDefinition.getProcess().getElementById(targetGatewayId);
+
+    if (targetGateway.getElementType() != sourceGateway.getElementType()) {
+      final var reason =
+          String.format(
+              ERROR_ELEMENT_TYPE_CHANGED,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()),
+              sourceGateway.getElementType(),
+              targetGatewayId,
+              targetGateway.getElementType());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
     }
   }
 
