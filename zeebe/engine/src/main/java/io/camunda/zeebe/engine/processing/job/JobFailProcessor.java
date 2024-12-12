@@ -166,10 +166,12 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       incidentErrorMessage = jobErrorMessage;
     }
 
-    final ErrorType errorType =
-        value.getJobKind() == JobKind.EXECUTION_LISTENER
-            ? ErrorType.EXECUTION_LISTENER_NO_RETRIES
-            : ErrorType.JOB_NO_RETRIES;
+    final var errorType =
+        switch (value.getJobKind()) {
+          case JobKind.BPMN_ELEMENT -> ErrorType.JOB_NO_RETRIES;
+          case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
+          case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
+        };
 
     final var treePathProperties =
         new ElementTreePathBuilder()
