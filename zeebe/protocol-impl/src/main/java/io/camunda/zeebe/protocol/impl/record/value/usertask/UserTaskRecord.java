@@ -28,6 +28,8 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -516,23 +518,22 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public void setDiffAsChangedAttributes(final UserTaskRecord other) {
     changedAttributesProp.reset();
-    if (!getAssigneeBuffer().equals(other.getAssigneeBuffer())) {
-      addChangedAttribute(ASSIGNEE);
-    }
-    if (!getCandidateGroupsList().equals(other.getCandidateGroupsList())) {
-      addChangedAttribute(CANDIDATE_GROUPS);
-    }
-    if (!getCandidateUsersList().equals(other.getCandidateUsersList())) {
-      addChangedAttribute(CANDIDATE_USERS);
-    }
-    if (!getDueDateBuffer().equals(other.getDueDateBuffer())) {
-      addChangedAttribute(DUE_DATE);
-    }
-    if (!getFollowUpDateBuffer().equals(other.getFollowUpDateBuffer())) {
-      addChangedAttribute(FOLLOW_UP_DATE);
-    }
-    if (getPriority() != other.getPriority()) {
-      addChangedAttribute(PRIORITY);
+    addIfAttributeChanged(ASSIGNEE, UserTaskRecord::getAssigneeBuffer, other);
+    addIfAttributeChanged(CANDIDATE_GROUPS, UserTaskRecord::getCandidateGroupsList, other);
+    addIfAttributeChanged(CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList, other);
+    addIfAttributeChanged(DUE_DATE, UserTaskRecord::getDueDateBuffer, other);
+    addIfAttributeChanged(FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer, other);
+    addIfAttributeChanged(PRIORITY, UserTaskRecord::getPriority, other);
+  }
+
+  private <T> void addIfAttributeChanged(
+      final String attribute,
+      final Function<UserTaskRecord, T> attributeGetter,
+      final UserTaskRecord other) {
+    final T thisAttribute = attributeGetter.apply(this);
+    final T otherAttribute = attributeGetter.apply(other);
+    if (!Objects.equals(thisAttribute, otherAttribute)) {
+      addChangedAttribute(attribute);
     }
   }
 
