@@ -298,11 +298,11 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "creationDate",
-                        "order": "DESC"
+                        "order": "desc"
                     },
                     {
                         "field": "completionDate",
-                        "order": "ASC"
+                        "order": "asc"
                     }
                 ]
             }""";
