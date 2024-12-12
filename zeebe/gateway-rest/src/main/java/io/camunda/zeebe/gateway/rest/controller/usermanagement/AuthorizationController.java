@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/authorizations")
+@RequestMapping("/v2")
 public class AuthorizationController {
   private final AuthorizationServices authorizationServices;
 
@@ -41,7 +41,7 @@ public class AuthorizationController {
   }
 
   @PatchMapping(
-      path = "/{ownerKey}",
+      path = "/authorizations/{ownerKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
@@ -52,7 +52,7 @@ public class AuthorizationController {
   }
 
   @PostMapping(
-      path = "/v2/authorizations/search",
+      path = "/authorizations/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AuthorizationSearchResponse> searchAuthorizations(
@@ -62,7 +62,7 @@ public class AuthorizationController {
   }
 
   @PostMapping(
-      path = "/v2/users/{userKey}/authorizations/search",
+      path = "/users/{userKey}/authorizations/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AuthorizationSearchResponse> searchUserAuthorizations(
