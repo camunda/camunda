@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     proxy: {
-      "/v2": {
+      "^/(v2|login|logout)": {
         target: "http://localhost:8080",
         changeOrigin: true,
       },

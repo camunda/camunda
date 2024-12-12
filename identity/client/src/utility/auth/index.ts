@@ -3,8 +3,9 @@ import {
   CSRF_REQUEST_PARAMETER,
   getCsrfToken,
 } from "src/utility/csrf.ts";
+import {baseUrl} from "src/configuration";
 
-export const LOGIN_PATH = "/login";
+export const LOGIN_PATH = `${baseUrl}/login`;
 
 export function getLoginPath(next?: string) {
   return next ? `${LOGIN_PATH}?next=${next}` : LOGIN_PATH;
