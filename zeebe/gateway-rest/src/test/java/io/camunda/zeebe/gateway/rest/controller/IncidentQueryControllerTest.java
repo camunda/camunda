@@ -246,7 +246,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "incidentKey",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }

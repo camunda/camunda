@@ -148,7 +148,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           "sort": [
                 {
                     "field": "decisionDefinitionName",
-                    "order": "desc"
+                    "order": "DESC"
                 }
           ]
       }""",

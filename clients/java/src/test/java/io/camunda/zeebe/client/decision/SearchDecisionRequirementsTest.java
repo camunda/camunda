@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.decision;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -106,18 +107,18 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     assertThat(request.getSort()).hasSize(5);
 
     assertThat(request.getSort().get(0).getField()).isEqualTo("decisionRequirementsKey");
-    assertThat(request.getSort().get(0).getOrder()).isEqualTo("desc");
+    assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.DESC);
 
     assertThat(request.getSort().get(1).getField()).isEqualTo("version");
-    assertThat(request.getSort().get(1).getOrder()).isEqualTo("asc");
+    assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
     assertThat(request.getSort().get(2).getField()).isEqualTo("name");
-    assertThat(request.getSort().get(2).getOrder()).isEqualTo("asc");
+    assertThat(request.getSort().get(2).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
     assertThat(request.getSort().get(3).getField()).isEqualTo("decisionRequirementsId");
-    assertThat(request.getSort().get(3).getOrder()).isEqualTo("asc");
+    assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
     assertThat(request.getSort().get(4).getField()).isEqualTo("tenantId");
-    assertThat(request.getSort().get(4).getOrder()).isEqualTo("desc");
+    assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

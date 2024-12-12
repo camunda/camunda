@@ -120,7 +120,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -182,9 +182,9 @@ public class UserQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)),
@@ -195,7 +195,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -215,7 +215,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

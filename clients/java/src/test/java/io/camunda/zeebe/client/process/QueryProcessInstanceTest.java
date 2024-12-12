@@ -218,19 +218,19 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = request.getSort();
     assertThat(sorts).hasSize(13);
-    assertSort(sorts.get(0), "key", "asc");
-    assertSort(sorts.get(1), "bpmnProcessId", "desc");
-    assertSort(sorts.get(2), "processName", "asc");
-    assertSort(sorts.get(3), "processVersion", "asc");
-    assertSort(sorts.get(4), "processVersionTag", "desc");
-    assertSort(sorts.get(5), "processDefinitionKey", "desc");
-    assertSort(sorts.get(6), "parentProcessInstanceKey", "asc");
-    assertSort(sorts.get(7), "parentFlowNodeInstanceKey", "asc");
-    assertSort(sorts.get(8), "startDate", "asc");
-    assertSort(sorts.get(9), "endDate", "asc");
-    assertSort(sorts.get(10), "state", "asc");
-    assertSort(sorts.get(11), "incident", "desc");
-    assertSort(sorts.get(12), "tenantId", "asc");
+    assertSort(sorts.get(0), "key", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "bpmnProcessId", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "processName", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "processVersion", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "processVersionTag", SortOrderEnum.DESC);
+    assertSort(sorts.get(5), "processDefinitionKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(6), "parentProcessInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "parentFlowNodeInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(8), "startDate", SortOrderEnum.ASC);
+    assertSort(sorts.get(9), "endDate", SortOrderEnum.ASC);
+    assertSort(sorts.get(10), "state", SortOrderEnum.ASC);
+    assertSort(sorts.get(11), "incident", SortOrderEnum.DESC);
+    assertSort(sorts.get(12), "tenantId", SortOrderEnum.ASC);
   }
 
   @Test
@@ -259,7 +259,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final String order) {
+      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }
