@@ -275,6 +275,7 @@ public class ClusterEndpoint {
       LOG.info("Setting partitions metadata...");
       newPartitionsDistribution =
           Optional.of(convertToPartitionsDistribution(newPartitionDistribution.get()));
+      LOG.info("Set partitions metadata!" + newPartitionsDistribution.get());
     }
 
     final var patchRequest =
