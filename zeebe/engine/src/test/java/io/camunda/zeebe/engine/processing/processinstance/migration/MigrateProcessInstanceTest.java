@@ -13,13 +13,17 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -193,5 +197,74 @@ public class MigrateProcessInstanceTest {
         .describedAs("Expect that bpmn process id and element id did not change")
         .hasBpmnProcessId(processId)
         .hasElementId(processId);
+  }
+
+  @Test
+  public void shouldAdjustMessageCardinalityTrackingWhenMigrated() {
+    final var deployment1 =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("proc1")
+                    .startEvent("msg_start")
+                    .message("msg")
+                    .serviceTask("task1", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+
+    ENGINE.message().withName("msg").withCorrelationKey("cardinality").publish();
+
+    final var processInstanceKey1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId("proc1")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    final var deployment2 =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("proc2")
+                    .startEvent("msg_start")
+                    .message("msg")
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+
+    // currently this breaks message cardinality:
+    // there are now two active process instances with the same process id and correlation key
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey1)
+        .migration()
+        .withTargetProcessDefinitionKey(
+            extractProcessDefinitionKeyByProcessId(deployment2, "proc2"))
+        .addMappingInstruction("task1", "task2")
+        .migrate();
+
+    final var messagePosition =
+        ENGINE
+            .message()
+            .withName("msg")
+            .withCorrelationKey("cardinality")
+            .publish()
+            .getSourceRecordPosition();
+
+    // broadcast a record to have something to limit the stream on
+    final var limitPosition = ENGINE.signal().withSignalName("dummy").broadcast().getPosition();
+
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .between(messagePosition, limitPosition)
+                .messageStartEventSubscriptionRecords()
+                .withIntent(MessageStartEventSubscriptionIntent.CORRELATED))
+        .extracting(Record::getValue)
+        .extracting(MessageStartEventSubscriptionRecordValue::getBpmnProcessId)
+        .describedAs(
+            "Expect that the message is correlated only to the process without an active instance")
+        .containsExactly("proc1");
   }
 }
