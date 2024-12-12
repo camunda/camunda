@@ -57,7 +57,7 @@ public class ProcessOverviewServiceTest {
   private final KpiService kpiService = mock(KpiService.class);
   private final DigestService digestService = mock(DigestService.class);
 
-  private final ProcessOverviewService processOverviewService =
+  private final ProcessOverviewService underTest =
       new ProcessOverviewService(
           definitionService,
           definitionAuthorizationService,
@@ -99,7 +99,7 @@ public class ProcessOverviewServiceTest {
 
     // when
     final List<ProcessOverviewResponseDto> result =
-        processOverviewService.getAllProcessOverviews(USER_ID, locale);
+        underTest.getAllProcessOverviews(USER_ID, locale);
 
     // then
     assertThat(result).hasSize(1);
@@ -136,7 +136,7 @@ public class ProcessOverviewServiceTest {
 
     // when
     final List<ProcessOverviewResponseDto> result =
-        processOverviewService.getAllProcessOverviews(USER_ID, locale);
+        underTest.getAllProcessOverviews(USER_ID, locale);
 
     // then
     assertThat(result).hasSize(1);
@@ -159,7 +159,7 @@ public class ProcessOverviewServiceTest {
 
     // when
     final List<ProcessOverviewResponseDto> result =
-        processOverviewService.getAllProcessOverviews(USER_ID, locale);
+        underTest.getAllProcessOverviews(USER_ID, locale);
 
     // then
     assertThat(result).hasSize(0);
@@ -189,7 +189,7 @@ public class ProcessOverviewServiceTest {
         .thenReturn(true);
 
     // when
-    processOverviewService.updateProcess(USER_ID, PROCESS_KEY, updateDto);
+    underTest.updateProcess(USER_ID, PROCESS_KEY, updateDto);
 
     // then
     verify(processOverviewWriter).updateProcessConfiguration(PROCESS_KEY, updateDto);
@@ -216,7 +216,7 @@ public class ProcessOverviewServiceTest {
 
     // when
     final Throwable thrown =
-        catchThrowable(() -> processOverviewService.updateProcess(USER_ID, PROCESS_KEY, updateDto));
+        catchThrowable(() -> underTest.updateProcess(USER_ID, PROCESS_KEY, updateDto));
 
     // then
     assertThat(thrown)
@@ -249,7 +249,7 @@ public class ProcessOverviewServiceTest {
 
     // when
     final Throwable thrown =
-        catchThrowable(() -> processOverviewService.updateProcess(USER_ID, PROCESS_KEY, updateDto));
+        catchThrowable(() -> underTest.updateProcess(USER_ID, PROCESS_KEY, updateDto));
 
     // then
     assertThat(thrown)
@@ -282,7 +282,7 @@ public class ProcessOverviewServiceTest {
 
     // when
     final Throwable thrown =
-        catchThrowable(() -> processOverviewService.updateProcess(USER_ID, PROCESS_KEY, updateDto));
+        catchThrowable(() -> underTest.updateProcess(USER_ID, PROCESS_KEY, updateDto));
 
     // then
     assertThat(thrown)
@@ -311,7 +311,7 @@ public class ProcessOverviewServiceTest {
     when(identityService.getUserById(any())).thenReturn(Optional.of(new UserDto(USER_ID)));
 
     // then
-    processOverviewService.updateProcess(USER_ID, PROCESS_KEY, updateDto);
+    underTest.updateProcess(USER_ID, PROCESS_KEY, updateDto);
   }
 
   @Test
@@ -333,7 +333,7 @@ public class ProcessOverviewServiceTest {
         .thenReturn(true);
 
     // when
-    processOverviewService.updateProcessOwnerIfNotSet(USER_ID, PROCESS_KEY, OWNER_ID);
+    underTest.updateProcessOwnerIfNotSet(USER_ID, PROCESS_KEY, OWNER_ID);
 
     // then
     verify(processOverviewWriter).updateProcessOwnerIfNotSet(PROCESS_KEY, OWNER_ID);
