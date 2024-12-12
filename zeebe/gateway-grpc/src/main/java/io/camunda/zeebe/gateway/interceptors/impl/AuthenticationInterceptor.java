@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.grpc.Context;
 import io.grpc.Contexts;
@@ -27,6 +28,12 @@ public class AuthenticationInterceptor implements ServerInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+
+  private final UserServices userServices;
+
+  public AuthenticationInterceptor(final UserServices userServices) {
+    this.userServices = userServices;
+  }
 
   @Override
   public <ReqT, RespT> Listener<ReqT> interceptCall(

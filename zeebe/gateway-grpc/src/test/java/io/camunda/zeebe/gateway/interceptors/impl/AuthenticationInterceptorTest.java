@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.service.UserServices;
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -30,7 +31,7 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor()
+    new AuthenticationInterceptor(mock(UserServices.class))
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -49,7 +50,7 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor()
+    new AuthenticationInterceptor(mock(UserServices.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -70,7 +71,7 @@ public class AuthenticationInterceptorTest {
         new CloseStatusCapturingServerCall();
 
     // when
-    new AuthenticationInterceptor()
+    new AuthenticationInterceptor(mock(UserServices.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
