@@ -9,6 +9,7 @@
 import {logger} from 'modules/logger';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from './mergePathname';
+import {CSRF_REQUEST_HEADER, getCsrfToken} from './csrf';
 
 type RequestParams = {
   url: string;
@@ -19,7 +20,7 @@ type RequestParams = {
 };
 
 async function request({url, method, body, headers, signal}: RequestParams) {
-  const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
+  const csrfToken = getCsrfToken();
   const hasCsrfToken =
     csrfToken !== null &&
     method !== undefined &&
@@ -33,7 +34,7 @@ async function request({url, method, body, headers, signal}: RequestParams) {
       body: typeof body === 'string' ? body : JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
-        ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
+        ...(hasCsrfToken ? {[CSRF_REQUEST_HEADER]: csrfToken} : {}),
         ...headers,
       },
       mode: 'cors',
@@ -47,11 +48,6 @@ async function request({url, method, body, headers, signal}: RequestParams) {
 
   if (response.ok) {
     authenticationStore.handleThirdPartySessionSuccess();
-
-    const csrfToken = response.headers.get('X-CSRF-TOKEN');
-    if (csrfToken !== null) {
-      sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
-    }
   }
 
   return response;
