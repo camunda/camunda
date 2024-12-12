@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -843,6 +844,7 @@ public final class ProcessInstanceMigrationPreconditions {
   public static void requireNoConcurrentCommand(
       final EventScopeInstanceState eventScopeInstanceState,
       final ElementInstance elementInstance,
+      final DeployedProcess sourceProcessDefinition,
       final long processInstanceKey) {
     final EventTrigger eventTrigger =
         eventScopeInstanceState.peekEventTrigger(elementInstance.getKey());
@@ -852,7 +854,18 @@ public final class ProcessInstanceMigrationPreconditions {
     // or
     // An active sequence flow indicates a concurrent command. It is created when taking a
     // sequence flow and writing an ACTIVATE command for the next element.
-    if (eventTrigger != null || elementInstance.getActiveSequenceFlows() > 0) {
+    // We allow migrating joining parallel gateway with at least one incoming sequence flow is taken
+    final long activeFlowsToNonGateway =
+        elementInstance.getActiveSequenceFlowIds().stream()
+            .map(
+                activeFlowId ->
+                    sourceProcessDefinition
+                        .getProcess()
+                        .getElementById(activeFlowId, ExecutableSequenceFlow.class)
+                        .getTarget())
+            .filter(element -> element.getElementType() != BpmnElementType.PARALLEL_GATEWAY)
+            .count();
+    if (eventTrigger != null || activeFlowsToNonGateway > 0) {
       final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);

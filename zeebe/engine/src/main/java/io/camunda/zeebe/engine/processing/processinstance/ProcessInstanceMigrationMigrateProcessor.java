@@ -296,7 +296,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetProcessDefinition,
         targetElementId,
         processInstanceKey);
-    requireNoConcurrentCommand(eventScopeInstanceState, elementInstance, processInstanceKey);
+    requireNoConcurrentCommand(
+        eventScopeInstanceState, elementInstance, sourceProcessDefinition, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
