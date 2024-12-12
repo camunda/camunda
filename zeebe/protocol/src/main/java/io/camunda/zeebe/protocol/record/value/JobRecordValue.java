@@ -187,12 +187,12 @@ public interface JobRecordValue
     /**
      * @return the corrected candidate users
      */
-    List<String> getCandidateGroups();
+    List<String> getCandidateGroupsList();
 
     /**
      * @return the corrected candidate groups
      */
-    List<String> getCandidateUsers();
+    List<String> getCandidateUsersList();
 
     /**
      * @return the corrected priority
