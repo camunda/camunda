@@ -16,8 +16,11 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import io.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import io.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
+import io.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierVariableParametersDto;
 import io.camunda.optimize.dto.optimize.query.analysis.OutlierAnalysisServiceParameters;
 import io.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParametersDto;
+import io.camunda.optimize.dto.optimize.query.analysis.ProcessInstanceIdDto;
+import io.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import io.camunda.optimize.service.db.reader.DurationOutliersReader;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import jakarta.ws.rs.ForbiddenException;
@@ -27,6 +30,11 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class OutlierAnalysisServiceTest {
+
+  private static final String USER_ID = "unauthorized-user";
+  private static final String PROCESS_DEFINITION_KEY = "test-process";
+  private static final List<String> TENANT_IDS = List.of("tenant1");
+
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService =
       mock(DataSourceDefinitionAuthorizationService.class);
   private final DurationOutliersReader outliersReader = mock(DurationOutliersReader.class);
@@ -36,21 +44,10 @@ public class OutlierAnalysisServiceTest {
   @Test
   void shouldReturnFlowNodeOutlierMapWhenUserIsAuthorized() {
     // given
-    final String userId = "test-user";
-    final String processDefinitionKey = "test-process";
-    final List<String> tenantIds = List.of("tenant1");
-    final ProcessDefinitionParametersDto processDefinitionParams =
-        new ProcessDefinitionParametersDto();
-    processDefinitionParams.setProcessDefinitionKey(processDefinitionKey);
-    processDefinitionParams.setTenantIds(tenantIds);
     final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> params =
-        new OutlierAnalysisServiceParameters<>(
-            processDefinitionParams, ZoneOffset.systemDefault(), userId);
-
+        getAnalysisServiceParametersWithAuthMock(new ProcessDefinitionParametersDto(), true);
     final Map<String, FindingsDto> expectedResult = Map.of("node1", new FindingsDto());
-    when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            userId, DefinitionType.PROCESS, processDefinitionKey, tenantIds))
-        .thenReturn(true);
+
     when(outliersReader.getFlowNodeOutlierMap(params)).thenReturn(expectedResult);
 
     // when
@@ -61,22 +58,62 @@ public class OutlierAnalysisServiceTest {
   }
 
   @Test
-  void shouldThrowForbiddenExceptionWhenUserIsNotAuthorized() {
+  void shouldReturnCountByDurationChartWhenUserIsAuthorized() {
     // given
-    final String userId = "unauthorized-user";
-    final String processDefinitionKey = "test-process";
-    final List<String> tenantIds = List.of("tenant1");
-    final ProcessDefinitionParametersDto processDefinitionParams =
-        new ProcessDefinitionParametersDto();
-    processDefinitionParams.setTenantIds(tenantIds);
-    processDefinitionParams.setProcessDefinitionKey(processDefinitionKey);
-    final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> params =
-        new OutlierAnalysisServiceParameters<>(
-            processDefinitionParams, ZoneOffset.systemDefault(), userId);
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> params =
+        getAnalysisServiceParametersWithAuthMock(new FlowNodeOutlierParametersDto(), true);
 
-    when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            userId, DefinitionType.PROCESS, processDefinitionKey, tenantIds))
-        .thenReturn(false);
+    final List<DurationChartEntryDto> expectedResult = List.of(new DurationChartEntryDto());
+    when(outliersReader.getCountByDurationChart(params)).thenReturn(expectedResult);
+
+    // when
+    final List<DurationChartEntryDto> result =
+        outlierAnalysisService.getCountByDurationChart(params);
+
+    // then
+    assertThat(result).isEqualTo(expectedResult);
+  }
+
+  @Test
+  void shouldReturnSignificantOutlierVariableTermsWhenUserIsAuthorized() {
+    // given
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> params =
+        getAnalysisServiceParametersWithAuthMock(new FlowNodeOutlierParametersDto(), true);
+
+    final List<VariableTermDto> expectedResult = List.of(new VariableTermDto());
+    when(outliersReader.getSignificantOutlierVariableTerms(params)).thenReturn(expectedResult);
+
+    // when
+    final List<VariableTermDto> result =
+        outlierAnalysisService.getSignificantOutlierVariableTerms(params);
+
+    // then
+    assertThat(result).isEqualTo(expectedResult);
+  }
+
+  @Test
+  void shouldReturnSignificantOutlierVariableTermsInstanceIdsWhenUserIsAuthorized() {
+    // given
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> params =
+        getAnalysisServiceParametersWithAuthMock(new FlowNodeOutlierVariableParametersDto(), true);
+
+    final List<ProcessInstanceIdDto> expectedResult = List.of(new ProcessInstanceIdDto());
+    when(outliersReader.getSignificantOutlierVariableTermsInstanceIds(params))
+        .thenReturn(expectedResult);
+
+    // when
+    final List<ProcessInstanceIdDto> result =
+        outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(params);
+
+    // then
+    assertThat(result).isEqualTo(expectedResult);
+  }
+
+  @Test
+  void shouldThrowForbiddenExceptionFlowNodeOutlierMapWhenUserIsNotAuthorized() {
+    // given
+    final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> params =
+        getAnalysisServiceParametersWithAuthMock(new ProcessDefinitionParametersDto(), false);
 
     // when/then
     assertThatThrownBy(() -> outlierAnalysisService.getFlowNodeOutlierMap(params))
@@ -86,28 +123,53 @@ public class OutlierAnalysisServiceTest {
   }
 
   @Test
-  void shouldReturnCountByDurationChartWhenUserIsAuthorized() {
+  void shouldThrowForbiddenExceptionCountByDurationChartWhenUserIsNotAuthorized() {
     // given
-    final String userId = "test-user";
-    final String processDefinitionKey = "test-process";
-    final List<String> tenantIds = List.of("tenant1");
-    final FlowNodeOutlierParametersDto flowNodeParams = new FlowNodeOutlierParametersDto();
-    flowNodeParams.setTenantIds(tenantIds);
-    flowNodeParams.setProcessDefinitionKey(processDefinitionKey);
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> params =
-        new OutlierAnalysisServiceParameters<>(flowNodeParams, ZoneOffset.systemDefault(), userId);
+        getAnalysisServiceParametersWithAuthMock(new FlowNodeOutlierParametersDto(), false);
 
-    final List<DurationChartEntryDto> expectedResult = List.of(new DurationChartEntryDto());
+    // when/then
+    assertThatThrownBy(() -> outlierAnalysisService.getCountByDurationChart(params))
+        .isInstanceOf(ForbiddenException.class)
+        .hasMessage(
+            "Current user is not authorized to access data of the provided process definition and tenant combination");
+  }
+
+  @Test
+  void shouldThrowForbiddenExceptionSignificantOutlierVariableTermsWhenUserIsNotAuthorized() {
+    // given
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> params =
+        getAnalysisServiceParametersWithAuthMock(new FlowNodeOutlierParametersDto(), false);
+    // when/then
+    assertThatThrownBy(() -> outlierAnalysisService.getSignificantOutlierVariableTerms(params))
+        .isInstanceOf(ForbiddenException.class)
+        .hasMessage(
+            "Current user is not authorized to access data of the provided process definition and tenant combination");
+  }
+
+  @Test
+  void shouldThrowForbiddenExceptionSignificantVariableTermsInstanceIdsWhenUserIsNotAuthorized() {
+    // given
+    final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto> params =
+        getAnalysisServiceParametersWithAuthMock(new FlowNodeOutlierVariableParametersDto(), false);
+
+    // when/then
+    assertThatThrownBy(
+            () -> outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(params))
+        .isInstanceOf(ForbiddenException.class)
+        .hasMessage(
+            "Current user is not authorized to access data of the provided process definition and tenant combination");
+  }
+
+  private <T extends ProcessDefinitionParametersDto>
+      OutlierAnalysisServiceParameters<T> getAnalysisServiceParametersWithAuthMock(
+          T processDefinitionParams, boolean auth) {
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            userId, DefinitionType.PROCESS, processDefinitionKey, tenantIds))
-        .thenReturn(true);
-    when(outliersReader.getCountByDurationChart(params)).thenReturn(expectedResult);
-
-    // when
-    final List<DurationChartEntryDto> result =
-        outlierAnalysisService.getCountByDurationChart(params);
-
-    // then
-    assertThat(result).isEqualTo(expectedResult);
+            USER_ID, DefinitionType.PROCESS, PROCESS_DEFINITION_KEY, TENANT_IDS))
+        .thenReturn(auth);
+    processDefinitionParams.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
+    processDefinitionParams.setTenantIds(TENANT_IDS);
+    return new OutlierAnalysisServiceParameters<>(
+        processDefinitionParams, ZoneOffset.systemDefault(), USER_ID);
   }
 }
