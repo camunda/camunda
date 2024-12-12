@@ -118,7 +118,8 @@ class DocumentAuthorizationQueryStrategyTest {
   @Test
   void shouldReturnMatchNoneQueryWhenNoAuthorizedResourcesFound() {
     // given
-    final SearchQueryRequest originalRequest = mock(SearchQueryRequest.class);
+    final SearchQueryRequest originalRequest =
+        new SearchQueryRequest.Builder().index("index").build();
     final var securityContext =
         SecurityContext.of(
             s ->
@@ -139,8 +140,8 @@ class DocumentAuthorizationQueryStrategyTest {
   @Test
   void shouldApplyAuthorizationFilterToQuery() {
     // given
-    final SearchQueryRequest originalRequest = mock(SearchQueryRequest.class);
-    when(originalRequest.query()).thenReturn(mock(SearchQuery.class));
+    final SearchQueryRequest originalRequest =
+        new SearchQueryRequest.Builder().index("index").query(mock(SearchQuery.class)).build();
     final var securityContext =
         SecurityContext.of(
             s ->

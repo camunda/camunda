@@ -29,16 +29,19 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class ProcessInstanceFilterTransformer
-    implements FilterTransformer<ProcessInstanceFilter> {
+    extends IndexFilterTransformer<ProcessInstanceFilter> {
 
   private final ServiceTransformers transformers;
 
-  public ProcessInstanceFilterTransformer(final ServiceTransformers transformers) {
+  public ProcessInstanceFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
     this.transformers = transformers;
   }
 
@@ -80,11 +83,6 @@ public final class ProcessInstanceFilterTransformer
     }
 
     return and(queries);
-  }
-
-  @Override
-  public List<String> toIndices(final ProcessInstanceFilter filter) {
-    return List.of("operate-list-view-8.3.0_alias");
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

@@ -35,16 +35,19 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
+public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
 
   private final ServiceTransformers transformers;
 
-  public UserTaskFilterTransformer(final ServiceTransformers transformers) {
+  public UserTaskFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
     this.transformers = transformers;
   }
 
@@ -78,11 +81,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
     return and(queries);
-  }
-
-  @Override
-  public List<String> toIndices(final UserTaskFilter filter) {
-    return List.of("tasklist-task-8.5.0_");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {

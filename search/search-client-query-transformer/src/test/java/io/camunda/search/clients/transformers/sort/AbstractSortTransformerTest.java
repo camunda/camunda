@@ -12,11 +12,13 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.List;
 
 public class AbstractSortTransformerTest {
 
-  private final ServiceTransformers transformers = ServiceTransformers.newInstance("");
+  private final ServiceTransformers transformers =
+      ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
   protected List<SearchSortOptions> transformRequest(
       final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {

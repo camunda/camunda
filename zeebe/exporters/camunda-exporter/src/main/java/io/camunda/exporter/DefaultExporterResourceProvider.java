@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter;
 
-import static java.util.Map.entry;
-
 import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
@@ -66,15 +64,13 @@ import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.utils.XMLUtil;
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -86,21 +82,17 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -109,10 +101,7 @@ import java.util.Set;
  */
 public class DefaultExporterResourceProvider implements ExporterResourceProvider {
 
-  private Map<? extends Class<? extends AbstractIndexDescriptor>, IndexDescriptor>
-      indexDescriptorsMap;
-  private Map<Class<? extends IndexTemplateDescriptor>, IndexTemplateDescriptor>
-      templateDescriptorsMap;
+  private IndexDescriptors indexDescriptors;
 
   private Set<ExportHandler<?, ?>> exportHandlers;
 
@@ -123,207 +112,146 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final MeterRegistry meterRegistry) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
-        ConnectionTypes.from(configuration.getConnect().getType())
-            .equals(ConnectionTypes.ELASTICSEARCH);
-
-    templateDescriptorsMap =
-        Map.ofEntries(
-            entry(ListViewTemplate.class, new ListViewTemplate(globalPrefix, isElasticsearch)),
-            entry(VariableTemplate.class, new VariableTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                PostImporterQueueTemplate.class,
-                new PostImporterQueueTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                FlowNodeInstanceTemplate.class,
-                new FlowNodeInstanceTemplate(globalPrefix, isElasticsearch)),
-            entry(IncidentTemplate.class, new IncidentTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                SequenceFlowTemplate.class,
-                new SequenceFlowTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                DecisionInstanceTemplate.class,
-                new DecisionInstanceTemplate(globalPrefix, isElasticsearch)),
-            entry(EventTemplate.class, new EventTemplate(globalPrefix, isElasticsearch)),
-            entry(TaskTemplate.class, new TaskTemplate(globalPrefix, isElasticsearch)),
-            entry(OperationTemplate.class, new OperationTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                BatchOperationTemplate.class,
-                new BatchOperationTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                DraftTaskVariableTemplate.class,
-                new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)),
-            entry(
-                SnapshotTaskVariableTemplate.class,
-                new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)),
-            entry(JobTemplate.class, new JobTemplate(globalPrefix, isElasticsearch)));
-
-    indexDescriptorsMap =
-        Map.ofEntries(
-            entry(DecisionIndex.class, new DecisionIndex(globalPrefix, isElasticsearch)),
-            entry(
-                DecisionRequirementsIndex.class,
-                new DecisionRequirementsIndex(globalPrefix, isElasticsearch)),
-            entry(MetricIndex.class, new MetricIndex(globalPrefix, isElasticsearch)),
-            entry(ProcessIndex.class, new ProcessIndex(globalPrefix, isElasticsearch)),
-            entry(FormIndex.class, new FormIndex(globalPrefix, isElasticsearch)),
-            entry(
-                TasklistMetricIndex.class, new TasklistMetricIndex(globalPrefix, isElasticsearch)),
-            entry(RoleIndex.class, new RoleIndex(globalPrefix, isElasticsearch)),
-            entry(UserIndex.class, new UserIndex(globalPrefix, isElasticsearch)),
-            entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
-            entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
-            entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
-            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
-            entry(
-                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
-            entry(
-                TasklistImportPositionIndex.class,
-                new TasklistImportPositionIndex(globalPrefix, isElasticsearch)),
-            entry(
-                PersistentWebSessionIndexDescriptor.class,
-                new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
+        ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
+    indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
             new ExporterCacheMetrics("process", meterRegistry));
 
     final var formCache =
         new ExporterEntityCacheImpl<>(
             configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
-                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new ExporterCacheMetrics("form", meterRegistry));
 
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
-                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleDeletedHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new RoleMemberAddedHandler(
-                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new RoleMemberRemovedHandler(
-                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
-                indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
-            new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
+            new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationHandler(
-                indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
-                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
             new TenantEntityAddedHandler(
-                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
             new TenantEntityRemovedHandler(
-                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
             new GroupCreatedUpdatedHandler(
-                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new GroupEntityAddedHandler(
-                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new GroupEntityRemovedHandler(
-                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
-            new GroupDeletedHandler(
-                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
-            new DecisionHandler(
-                indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
+            new DecisionHandler(indexDescriptors.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 false,
                 processCache),
             new ListViewFlowNodeFromIncidentHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new ListViewFlowNodeFromJobHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new ListViewFlowNodeFromProcessInstanceHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new ListViewVariableFromVariableHandler(
-                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
             new VariableHandler(
-                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new DecisionRequirementsHandler(
-                indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
-                templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromIncidentHandler(
-                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(),
                 false,
                 processCache),
             new SequenceFlowHandler(
-                templateDescriptorsMap.get(SequenceFlowTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
-                templateDescriptorsMap.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
                 new XMLUtil(),
                 processCache),
             new MetricFromProcessInstanceHandler(
-                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
             new TaskCompletedMetricHandler(
-                indexDescriptorsMap.get(TasklistMetricIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(
-                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName(), new XMLUtil()),
+                indexDescriptors.get(FormIndex.class).getFullQualifiedName(), new XMLUtil()),
             new FormHandler(
-                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName(), formCache),
+                indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
             new EventFromIncidentHandler(
-                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromJobHandler(
-                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromProcessInstanceHandler(
-                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromProcessMessageSubscriptionHandler(
-                templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
             new UserTaskHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(), formCache),
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(), formCache),
             new UserTaskJobBasedHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(), formCache),
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(), formCache),
             new UserTaskProcessInstanceHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName()),
             new UserTaskVariableHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
-                templateDescriptorsMap
-                    .get(SnapshotTaskVariableTemplate.class)
-                    .getFullQualifiedName(),
+                indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new OperationFromProcessInstanceHandler(
-                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromVariableDocumentHandler(
-                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
-                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new MappingCreatedHandler(
-                indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
             new MappingDeletedHandler(
-                indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
             new MetricFromDecisionEvaluationHandler(
-                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()),
-            new JobHandler(
-                templateDescriptorsMap.get(JobTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
+            new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName(), false),
             new MigratedVariableHandler(
-                templateDescriptorsMap.get(VariableTemplate.class).getFullQualifiedName()));
+                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()));
   }
 
   @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
-    return indexDescriptorsMap.values();
+    return indexDescriptors.indices();
   }
 
   @Override
   public Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors() {
-    return templateDescriptorsMap.values();
+    return indexDescriptors.templates();
   }
 
   @Override
   public <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(
       final Class<T> descriptorClass) {
-    return descriptorClass.cast(templateDescriptorsMap.get(descriptorClass));
+    return indexDescriptors.get(descriptorClass);
   }
 
   @Override
