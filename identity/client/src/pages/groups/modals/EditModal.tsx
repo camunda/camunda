@@ -29,7 +29,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
 
   const handleSubmit = async () => {
     const { success } = await callUpdateGroup({
-      key: group.key,
+      groupKey: group.groupKey,
       name: name.trim(),
     });
 

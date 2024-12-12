@@ -17,7 +17,7 @@ import { SearchResponse } from "src/utility/api";
 export const GROUPS_ENDPOINT = "/groups";
 
 export type Group = {
-  key: string;
+  groupKey: string;
   name: string;
 };
 
@@ -25,11 +25,12 @@ export const searchGroups: ApiDefinition<SearchResponse<Group>> = () =>
   apiPost(`${GROUPS_ENDPOINT}/search`);
 
 export type GetGroupParams = {
-  id: string;
+  groupKey: string;
 };
 
-export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({ id }) =>
-  apiGet(`${GROUPS_ENDPOINT}/${id}`);
+export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({
+  groupKey,
+}) => apiGet(`${GROUPS_ENDPOINT}/${groupKey}`);
 
 export type CreateGroupParams = { name: Group["name"] };
 
@@ -38,8 +39,8 @@ export const createGroup: ApiDefinition<undefined, CreateGroupParams> = (
 ) => apiPost(GROUPS_ENDPOINT, params);
 
 export const updateGroup: ApiDefinition<undefined, Group> = (group) => {
-  const { key, name } = group;
-  return apiPatch(`${GROUPS_ENDPOINT}/${key}`, {
+  const { groupKey, name } = group;
+  return apiPatch(`${GROUPS_ENDPOINT}/${groupKey}`, {
     changeset: { name },
   });
 };
@@ -47,5 +48,5 @@ export const updateGroup: ApiDefinition<undefined, Group> = (group) => {
 type DeleteGroupParams = GetGroupParams;
 
 export const deleteGroup: ApiDefinition<undefined, DeleteGroupParams> = ({
-  id,
-}) => apiDelete(`${GROUPS_ENDPOINT}/${id}`);
+  groupKey,
+}) => apiDelete(`${GROUPS_ENDPOINT}/${groupKey}`);

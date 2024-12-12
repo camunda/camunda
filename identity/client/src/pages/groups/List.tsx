@@ -40,7 +40,7 @@ const List: FC = () => {
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
-  const showDetails = ({ key }: Group) => navigate(`${key}`);
+  const showDetails = ({ groupKey }: Group) => navigate(`${groupKey}`);
 
   if (success && !groupSearchResults?.items.length) {
     return (
