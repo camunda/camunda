@@ -145,6 +145,7 @@ public interface TypedApiEntityConsumer<T> {
         generator.flush();
         return output.toString(StandardCharsets.UTF_8.name());
       } catch (final Exception ex) {
+        LOGGER.warn("Failed to serialize JSON string", ex);
         return "Original response cannot be constructed";
       }
     }
