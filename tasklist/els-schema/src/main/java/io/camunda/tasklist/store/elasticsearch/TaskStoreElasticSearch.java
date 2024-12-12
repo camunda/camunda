@@ -152,12 +152,14 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
+    final var processInstanceQuery = termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
+    final var flownodeInstanceQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+    final var finalQuery =
+        ElasticsearchUtil.joinWithAnd(processInstanceQuery, flownodeInstanceQuery);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId))
-                    .fetchField(TaskTemplate.KEY));
+                SearchSourceBuilder.searchSource().query(finalQuery).fetchField(TaskTemplate.KEY));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
     } catch (final IOException e) {
@@ -168,12 +170,15 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
+    final var processDefinitionQuery =
+        termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId);
+    final var flownodeInstanceQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+    final var finalQuery =
+        ElasticsearchUtil.joinWithAnd(processDefinitionQuery, flownodeInstanceQuery);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(TaskTemplate.KEY));
+                SearchSourceBuilder.searchSource().query(finalQuery).fetchField(TaskTemplate.KEY));
     try {
       return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
     } catch (final IOException e) {
