@@ -13,6 +13,8 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -43,16 +46,20 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -75,6 +82,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final EventScopeInstanceState eventScopeInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
+  private final KeyGenerator keyGenerator;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -83,7 +91,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -95,6 +104,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.authCheckBehavior = authCheckBehavior;
+    this.keyGenerator = keyGenerator;
 
     migrationCatchEventBehaviour =
         new ProcessInstanceMigrationCatchEventBehaviour(
@@ -308,6 +318,32 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setVersion(targetProcessDefinition.getVersion())
             .setElementId(targetElementId));
 
+    final List<DirectBuffer> activeSequenceFlowIds = elementInstance.getActiveSequenceFlowIds();
+    if (!activeSequenceFlowIds.isEmpty()) {
+      final Set<ExecutableFlowNode> mappedGateways =
+          getMappedGateways(
+              sourceProcessDefinition,
+              targetProcessDefinition,
+              sourceElementIdToTargetElementId,
+              elementInstance);
+
+      mappedGateways.forEach(
+          targetGateway -> {
+            final var gatewayInstanceRecord = new ProcessInstanceRecord();
+            gatewayInstanceRecord.wrap(elementInstanceRecord);
+            gatewayInstanceRecord
+                .setElementId(targetGateway.getId())
+                .setBpmnElementType(targetGateway.getElementType())
+                .setBpmnEventType(targetGateway.getEventType())
+                .setFlowScopeKey(elementInstance.getKey());
+
+            stateWriter.appendFollowUpEvent(
+                keyGenerator.nextKey(),
+                ProcessInstanceIntent.ELEMENT_MIGRATED,
+                gatewayInstanceRecord);
+          });
+    }
+
     if (elementInstance.getJobKey() > 0) {
       final var job = jobState.getJob(elementInstance.getJobKey());
       if (job == null) {
@@ -417,6 +453,35 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setProcessDefinitionKey(targetProcessDefinition.getKey())
             .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
             .setElementId(BufferUtil.wrapString(targetElementId)));
+  }
+
+  private static Set<ExecutableFlowNode> getMappedGateways(
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ElementInstance elementInstance) {
+    return elementInstance.getActiveSequenceFlowIds().stream()
+        .map(
+            activeFlowId ->
+                sourceProcessDefinition
+                    .getProcess()
+                    .getElementById(activeFlowId, ExecutableSequenceFlow.class)
+                    .getTarget())
+        .filter(element -> element.getElementType() == BpmnElementType.PARALLEL_GATEWAY)
+        .distinct() // we might have multiple active sequence flows to the same gateway
+        .map(
+            sourceGateway -> {
+              final String targetGatewayId =
+                  sourceElementIdToTargetElementId.get(
+                      BufferUtil.bufferAsString(sourceGateway.getId()));
+
+              // TODO -  add validations: if gateway not mapped and if gateway type changed
+              // will be added in a separate PR
+              return targetProcessDefinition
+                  .getProcess()
+                  .getElementById(targetGatewayId, ExecutableFlowNode.class);
+            })
+        .collect(Collectors.toSet());
   }
 
   /**
