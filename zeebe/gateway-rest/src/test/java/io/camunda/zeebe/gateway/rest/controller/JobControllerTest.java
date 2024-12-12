@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
@@ -389,31 +391,24 @@ public class JobControllerTest extends RestControllerTest {
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
 
-    Assertions.assertEquals(
-        "Test", jobResultArgumentCaptor.getValue().getCorrections().getAssignee());
-    Assertions.assertEquals(
-        "2025-05-23T01:02:03+01:00",
-        jobResultArgumentCaptor.getValue().getCorrections().getDueDate());
-    Assertions.assertEquals(
-        "2025-05-25T01:02:03+01:00",
-        jobResultArgumentCaptor.getValue().getCorrections().getFollowUpDate());
-    Assertions.assertEquals(
-        List.of("UserA", "UserB"),
-        jobResultArgumentCaptor.getValue().getCorrections().getCandidateUsers());
-    Assertions.assertEquals(
-        List.of("GroupA", "GroupB"),
-        jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
-    Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(
+            new JobResultCorrections()
+                .setAssignee("Test")
+                .setDueDate("2025-05-23T01:02:03+01:00")
+                .setFollowUpDate("2025-05-25T01:02:03+01:00")
+                .setCandidateUsers(List.of("UserA", "UserB"))
+                .setCandidateGroups(List.of("GroupA", "GroupB"))
+                .setPriority(20));
 
-    Assertions.assertEquals(
-        List.of(
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(
             "assignee",
             UserTaskRecord.DUE_DATE,
             UserTaskRecord.FOLLOW_UP_DATE,
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
-            UserTaskRecord.PRIORITY),
-        jobResultArgumentCaptor.getValue().getCorrectedAttributes());
+            UserTaskRecord.PRIORITY);
   }
 
   @Test
@@ -452,26 +447,73 @@ public class JobControllerTest extends RestControllerTest {
         ArgumentCaptor.forClass(JobResult.class);
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    Assertions.assertEquals(
-        "Test", jobResultArgumentCaptor.getValue().getCorrections().getAssignee());
-    Assertions.assertEquals("", jobResultArgumentCaptor.getValue().getCorrections().getDueDate());
-    Assertions.assertEquals(
-        "", jobResultArgumentCaptor.getValue().getCorrections().getFollowUpDate());
-    Assertions.assertEquals(
-        List.of("UserA", "UserB"),
-        jobResultArgumentCaptor.getValue().getCorrections().getCandidateUsers());
-    Assertions.assertEquals(
-        List.of("GroupA", "GroupB"),
-        jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
-    Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
 
-    Assertions.assertEquals(
-        List.of(
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(
+            new JobResultCorrections()
+                .setAssignee("Test")
+                .setCandidateUsers(List.of("UserA", "UserB"))
+                .setCandidateGroups(List.of("GroupA", "GroupB"))
+                .setPriority(20));
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(
             "assignee",
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
-            UserTaskRecord.PRIORITY),
-        jobResultArgumentCaptor.getValue().getCorrectedAttributes());
+            UserTaskRecord.PRIORITY);
+  }
+
+  @Test
+  void shouldCompleteJobWithResultWithCorrectionsPartiallySetAndDefault() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false,
+              "corrections": {
+                "assignee": null,
+                "dueDate": "2025-05-23T01:02:03+01:00",
+                "candidateGroupsList": ["GroupA", "GroupB"],
+                "priority": null
+              }
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final var jobResultArgumentCaptor = ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(
+            new JobResultCorrections()
+                .setDueDate("2025-05-23T01:02:03+01:00")
+                .setCandidateGroups(List.of("GroupA", "GroupB"))
+                // The remaining fields have their default non-null values,
+                // as they weren't corrected
+                .setAssignee("")
+                .setFollowUpDate("")
+                .setCandidateUsers(List.of())
+                .setPriority(-1));
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(UserTaskRecord.DUE_DATE, UserTaskRecord.CANDIDATE_GROUPS);
   }
 
   @Test
