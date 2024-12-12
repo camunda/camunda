@@ -550,8 +550,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(
             createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    zeebeExtension.unassignUserTask(
-        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
     // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
 
     // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
@@ -625,7 +623,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
     // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
 
     // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
@@ -661,7 +658,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
     // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
 
     // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
@@ -705,7 +701,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
     // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
 
     // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
