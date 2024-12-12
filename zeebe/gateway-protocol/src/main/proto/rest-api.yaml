@@ -2628,9 +2628,9 @@ paths:
         "201":
           description: The group was created successfully.
           content:
-              application/json:
-                schema:
-                  $ref: "#/components/schemas/GroupCreateResponse"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupCreateResponse"
         "400":
           description: |
             The group could not be created.
@@ -5087,60 +5087,64 @@ components:
     CamundaUser:
       type: "object"
       properties:
-          userId:
-            description: The ID of the user.
+        userId:
+          description: The ID of the user.
+          type: "string"
+        userKey:
+          description: The system generated key of the user.
+          type: "integer"
+          format: "int64"
+        displayName:
+          description: The display name of the user.
+          type: "string"
+        authorizedApplications:
+          description: The applications the user is authorized to use.
+          type: array
+          items:
             type: "string"
-          userKey:
-            description: The system generated key of the User
-            type: "integer"
-            format: "int64"
-          displayName:
-            description: The display name of the User
+        tenants:
+          description: The tenants the user is a member of.
+          type: array
+          items:
+            type: "object"
+            properties:
+              tenantId:
+                type: "string"
+                description: The ID of the tenant.
+              name:
+                type: "string"
+                description: The name of the tenant.
+        groups:
+          description: The groups assigned to the user.
+          type: array
+          items:
             type: "string"
-          authorizedApplications:
-            description: The applications the User is authorized to use
-            type: array
-            items:
-              type: "string"
-          tenants:
-            description: The tenants the User is a member of
-            type: array
-            items:
-              type: "object"
-              properties:
-                tenantId:
-                  type: "string"
-                name:
-                  type: "string"
-          groups:
-            description: The groups assigned to the user
-            type: array
-            items:
-              type: "string"
-          roles:
-            description: The roles assigned to the user
-            type: array
-            items:
-              type: "string"
-          salesPlanType:
-            description: The plan of the user
+        roles:
+          description: The roles assigned to the user.
+          type: array
+          items:
             type: "string"
-          c8Links:
-            description: The links to the components in the C8 stack
-            type: array
-            items:
-              type: "object"
-              properties:
-                name:
-                  type: "string"
-                link:
-                  type: "string"
-          canLogout:
-            description: Flag for understanding if the user is able to perform logout
-            type: boolean
-          apiUser:
-            description: Flag for understanding if the user is an API user
-            type: boolean
+        salesPlanType:
+          description: The plan of the user.
+          type: "string"
+        c8Links:
+          description: The links to the components in the C8 stack.
+          type: array
+          items:
+            type: "object"
+            properties:
+              name:
+                type: "string"
+                description: The name of the component.
+              link:
+                type: "string"
+                description: A link to the component.
+        canLogout:
+          description: Flag for understanding if the user is able to perform logout.
+          type: boolean
+        apiUser:
+          description: Flag for understanding if the user is an API user.
+          type: boolean
     UserResponse:
       type: "object"
       properties:
