@@ -735,6 +735,12 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(
+      final long userKey, final long groupKey) {
+    return new AssignUserToGroupCommandImpl(userKey, groupKey, httpClient);
+  }
+
+  @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
