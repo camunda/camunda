@@ -44,6 +44,7 @@ import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -114,6 +115,7 @@ import io.camunda.zeebe.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
+import io.camunda.zeebe.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
@@ -718,6 +720,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UpdateGroupCommandStep1 newUpdateGroupCommand(final long groupKey) {
     return new UpdateGroupCommandImpl(groupKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public DeleteGroupCommandStep1 newDeleteGroupCommand(final long groupKey) {
+    return new DeleteGroupCommandImpl(groupKey, httpClient);
   }
 
   @Override
