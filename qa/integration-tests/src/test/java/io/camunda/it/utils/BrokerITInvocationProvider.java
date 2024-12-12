@@ -14,6 +14,8 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
 import io.camunda.it.utils.ZeebeClientTestFactory.User;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -55,7 +57,17 @@ public class BrokerITInvocationProvider
   private final Map<ExporterType, TestStandaloneBroker> testBrokers = new HashMap<>();
   private final Set<Profile> additionalProfiles = new HashSet<>();
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
-  private Consumer<CamundaSecurityProperties> additionalSecurityConfig = cfg -> {};
+  private Consumer<CamundaSecurityProperties> additionalSecurityConfig =
+      cfg -> {
+        cfg.getInitialization()
+            .getUsers()
+            .add(
+                new ConfiguredUser(
+                    InitializationConfiguration.DEFAULT_USER_USERNAME,
+                    InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                    InitializationConfiguration.DEFAULT_USER_NAME,
+                    InitializationConfiguration.DEFAULT_USER_EMAIL));
+      };
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final Map<ExporterType, ZeebeClientTestFactory> zeebeClientTestFactories =

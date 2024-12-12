@@ -10,10 +10,13 @@ package io.camunda.zeebe.it.processing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -27,7 +30,10 @@ import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -50,7 +56,17 @@ final class IdentitySetupInitializerIT {
   @Test
   void shouldInitializeIdentity() {
     // given a broker with authorization enabled
-    createBroker(true, 1);
+    final var username = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
+    final var password = UUID.randomUUID().toString();
+    final var email = UUID.randomUUID().toString();
+    createBroker(
+        true,
+        1,
+        cfg -> {
+          final var user = new ConfiguredUser(username, password, name, email);
+          cfg.getInitialization().setUsers(List.of(user));
+        });
 
     // then identity should be initialized
     final var record =
@@ -58,16 +74,14 @@ final class IdentitySetupInitializerIT {
             .getFirst()
             .getValue();
 
-    final var createdUser = record.getDefaultUser();
+    final var createdUser = record.getUsers().getFirst();
     Assertions.assertThat(createdUser)
         .isNotNull()
-        .hasUsername(IdentitySetupInitializer.DEFAULT_USER_USERNAME)
-        .hasName(IdentitySetupInitializer.DEFAULT_USER_USERNAME)
-        .hasEmail(IdentitySetupInitializer.DEFAULT_USER_EMAIL)
+        .hasUsername(username)
+        .hasName(name)
+        .hasEmail(email)
         .hasUserType(UserType.DEFAULT);
-    final var passwordMatches =
-        passwordEncoder.matches(
-            IdentitySetupInitializer.DEFAULT_USER_PASSWORD, createdUser.getPassword());
+    final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
     assertTrue(passwordMatches);
 
     final var createdRole = record.getDefaultRole();
@@ -131,7 +145,8 @@ final class IdentitySetupInitializerIT {
     assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultRole().getRoleKey()))
         .describedAs("Role key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultUser().getUserKey()))
+    assertThat(
+            Protocol.decodePartitionId(firstRecord.getValue().getUsers().getFirst().getUserKey()))
         .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
 
@@ -139,7 +154,8 @@ final class IdentitySetupInitializerIT {
     assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultRole().getRoleKey()))
         .describedAs("Role key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultUser().getUserKey()))
+    assertThat(
+            Protocol.decodePartitionId(secondRecord.getValue().getUsers().getFirst().getUserKey()))
         .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
 
@@ -147,7 +163,7 @@ final class IdentitySetupInitializerIT {
   }
 
   @Test
-  void shouldNotInitializeIdentityTwiceOnRestart(@TempDir final Path tempDir) {
+  void shouldNotRecreateEntitiesOnRestart(@TempDir final Path tempDir) {
     // given a broker with authorization enabled
     createBroker(true, 1, tempDir);
 
@@ -167,29 +183,72 @@ final class IdentitySetupInitializerIT {
     broker.stop();
     broker.start().awaitCompleteTopology();
 
-    // then identity should only be initialized once
-    // We send a clock reset command so we have a record we can limit our RecordingExporter on
-    // We don't join the future, because we are unauthorized to send this command. Joining it will
-    // result in an exception.
-    client.newClockResetCommand().send();
-
     assertThat(
-            RecordingExporter.records()
-                .limit(
-                    r ->
-                        r.getIntent() == ClockIntent.RESET
-                            && r.getRecordType() == RecordType.COMMAND_REJECTION)
-                .withIntent(IdentitySetupIntent.INITIALIZE)
+            RecordingExporter.identitySetupRecords()
+                .limitByCount(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED, 2)
                 .toList())
-        .describedAs("Only one initialize command must be written")
-        .hasSize(1);
+        .extracting(Record::getIntent)
+        .describedAs(
+            "No records are written in between the last INITIALIZE and INITIALIZED records")
+        .endsWith(IdentitySetupIntent.INITIALIZE, IdentitySetupIntent.INITIALIZED);
+  }
+
+  @Test
+  void shouldInitializeWithMultipleConfiguredUsers() {
+    // given a broker with authorization enabled
+    final var user1 =
+        new ConfiguredUser(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+    final var user2 =
+        new ConfiguredUser(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+    createBroker(
+        true,
+        1,
+        cfg -> {
+          cfg.getInitialization().setUsers(List.of(user1, user2));
+        });
+
+    // then identity should be initialized
+    final var record =
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
+            .getFirst()
+            .getValue();
+
+    final var firstUser = record.getUsers().getFirst();
+    Assertions.assertThat(firstUser)
+        .isNotNull()
+        .hasUsername(user1.getUsername())
+        .hasName(user1.getName())
+        .hasEmail(user1.getEmail())
+        .hasUserType(UserType.DEFAULT);
+    assertTrue(passwordEncoder.matches(user1.getPassword(), firstUser.getPassword()));
+
+    final var secondUser = record.getUsers().getLast();
+    Assertions.assertThat(secondUser)
+        .isNotNull()
+        .hasUsername(user2.getUsername())
+        .hasName(user2.getName())
+        .hasEmail(user2.getEmail())
+        .hasUserType(UserType.DEFAULT);
+    assertTrue(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword()));
   }
 
   private void createBroker(
-      final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
+      final boolean authorizationsEnabled,
+      final int partitionCount,
+      final Path tempDir,
+      final Consumer<CamundaSecurityProperties> securityCfg) {
     broker =
         new TestStandaloneBroker()
             .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
+            .withSecurityConfig(securityCfg)
             .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(partitionCount))
             .withRecordingExporter(true);
 
@@ -202,6 +261,24 @@ final class IdentitySetupInitializerIT {
   }
 
   private void createBroker(final boolean authorizationsEnabled, final int partitionCount) {
-    createBroker(authorizationsEnabled, partitionCount, null);
+    createBroker(
+        authorizationsEnabled,
+        partitionCount,
+        cfg -> {
+          final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@demo.com");
+          cfg.getInitialization().getUsers().add(user);
+        });
+  }
+
+  private void createBroker(
+      final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
+    createBroker(authorizationsEnabled, partitionCount, tempDir, cfg -> {});
+  }
+
+  private void createBroker(
+      final boolean authorizationsEnabled,
+      final int partitionCount,
+      final Consumer<CamundaSecurityProperties> securityCfg) {
+    createBroker(authorizationsEnabled, partitionCount, null, securityCfg);
   }
 }

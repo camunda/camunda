@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.util;
 
-import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_PASSWORD;
-import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_USERNAME;
+import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
