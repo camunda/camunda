@@ -76,6 +76,32 @@ final class ClusterEndpointIT {
   }
 
   @Test
+  void shouldRequestClusterPurge() {
+    final ClusterActuator actuator;
+    try (final var cluster = createCluster(1)) {
+      // given
+      cluster.awaitCompleteTopology();
+      actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when -- request a purge
+      final var response = actuator.purge(false);
+
+      // then
+      assertThat(response.getExpectedTopology()).hasSize(BROKER_COUNT);
+      assertThat(response.getPlannedChanges())
+          .hasSize(4) // Should be 5, when DELETE_HISTORY is implemented
+          .asInstanceOf(InstanceOfAssertFactories.list(Operation.class))
+          .satisfies(
+              ops -> {
+                assertThat(ops.get(0).getOperation()).isEqualTo(OperationEnum.PARTITION_LEAVE);
+                assertThat(ops.get(1).getOperation()).isEqualTo(OperationEnum.PARTITION_LEAVE);
+                assertThat(ops.get(2).getOperation()).isEqualTo(OperationEnum.PARTITION_BOOTSTRAP);
+                assertThat(ops.get(3).getOperation()).isEqualTo(OperationEnum.PARTITION_BOOTSTRAP);
+              });
+    }
+  }
+
+  @Test
   void shouldRequestPartitionJoin() {
     try (final var cluster = createCluster(1)) {
       // given

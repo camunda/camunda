@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -359,6 +360,16 @@ public class ClusterEndpoint {
           };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
+  }
+
+  @PostMapping(path = "/purge", produces = "application/json")
+  public ResponseEntity<?> purge(@RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.purge(new PurgeRequest(dryRun)).join());
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
   }
 
   public record PartitionAddRequest(int priority) {}

@@ -35,6 +35,9 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ReassignPartitionsRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
+  record PurgeRequest(boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
   record BrokerScaleRequest(
       Set<MemberId> members, Optional<Integer> newReplicationFactor, boolean dryRun)
       implements ClusterConfigurationManagementRequest {

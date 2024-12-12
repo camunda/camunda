@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
@@ -704,6 +705,14 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodePurgeRequest(final PurgeRequest req) {
+    return Requests.PurgeRequest.newBuilder()
+        .setDryRun(req.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public byte[] encodeCancelChangeRequest(final CancelChangeRequest cancelChangeRequest) {
     return Requests.CancelTopologyChangeRequest.newBuilder()
         .setChangeId(cancelChangeRequest.changeId())
@@ -953,6 +962,17 @@ public class ProtoBufSerializer
               .map(MemberId::from)
               .collect(Collectors.toSet()),
           forceRemoveBrokersRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public PurgeRequest decodePurgeRequest(final byte[] encodedRequest) {
+    try {
+      final var purgeRequest =
+          Requests.PurgeRequest.parseFrom(encodedRequest);
+      return new PurgeRequest(purgeRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
