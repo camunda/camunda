@@ -89,6 +89,7 @@ jobs:
           issue-type: pull-request
           commands: |
             ci-problems
+            disable-cache
 
       - name: Update comment in case of failure
         if: failure()
