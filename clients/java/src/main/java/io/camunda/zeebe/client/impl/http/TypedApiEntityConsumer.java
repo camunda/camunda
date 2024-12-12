@@ -97,15 +97,9 @@ public interface TypedApiEntityConsumer<T> {
         return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
       } catch (final IOException ioe) {
         // write the original JSON response into an error response
-        final ByteArrayOutputStream output = new ByteArrayOutputStream();
-        final JsonGenerator generator = json.createGenerator(output);
-        buffer.serialize(generator);
-        generator.flush();
+        final String jsonString = getJsonString();
         return ApiEntity.of(
-            new ProblemDetail()
-                .title("Unexpected server response")
-                .status(500)
-                .detail(output.toString(StandardCharsets.UTF_8.name())));
+            new ProblemDetail().title("Unexpected server response").status(500).detail(jsonString));
       }
     }
 
@@ -142,6 +136,17 @@ public interface TypedApiEntityConsumer<T> {
     @Override
     public int getBufferedBytes() {
       return bufferedBytes;
+    }
+
+    private String getJsonString() {
+      try (final ByteArrayOutputStream output = new ByteArrayOutputStream();
+          final JsonGenerator generator = json.createGenerator(output)) {
+        buffer.serialize(generator);
+        generator.flush();
+        return output.toString(StandardCharsets.UTF_8.name());
+      } catch (final Exception ex) {
+        return "Original response cannot be constructed";
+      }
     }
   }
 
