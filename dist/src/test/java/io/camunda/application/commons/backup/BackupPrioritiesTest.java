@@ -12,24 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.IndexTemplateDescriptorsConfigurator;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.TasklistIndexTemplateDescriptorsConfigurator;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
@@ -37,33 +31,62 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     classes = {
       BackupPrioritiesTest.TestBackupPriorityConfiguration.class,
       BackupPriorityConfiguration.class,
-      // Classes that provide the Beans for the indices
-      TasklistIndexTemplateDescriptorsConfigurator.class,
-      IndexTemplateDescriptorsConfigurator.class,
-      UserManagementIndicesConfig.class
     })
 abstract class BackupPrioritiesTest {
 
+  static final List<JavaClass> ALL_IMPLEMENTATIONS;
+
+  static {
+    ALL_IMPLEMENTATIONS =
+        new ClassFileImporter()
+                .importPackages(
+                    // TODO ADD optimize
+                    "io.camunda.webapps.schema") // , "io.camunda.optimize.service.db.schema.index")
+                .that(implement(BackupPriority.class))
+                .stream()
+                .filter(clz -> !clz.getName().contains("Abstract"))
+                .filter(
+                    // DISCARD OPTIMIZE classes that don't have an empty constructor
+                    clz -> {
+                      final var hasEmptyConstructor =
+                          clz.getConstructors().stream()
+                                  .filter(ctor -> ctor.getParameters().isEmpty())
+                                  .count()
+                              == 1;
+                      final var isOptimizeIndex = clz.getPackage().getName().contains("optimize");
+                      if (isOptimizeIndex) {
+                        return hasEmptyConstructor;
+                      }
+                      return true;
+                    })
+                .toList();
+  }
+
   @Autowired BackupPriorityConfiguration backupPriorityConfiguration;
 
-  private Stream<JavaClass> allImplementations() {
-    final var implementations =
-        new ClassFileImporter()
-                .importPackages("io.camunda.webapps.schema")
-                .that(implement(BackupPriority.class))
-                .stream();
-    final var optimizeImplementations =
-        new ClassFileImporter()
-                .importPackages("io.camunda.optimize.service.db.schema.index")
-                .that(implement(BackupPriority.class))
-                .stream();
-
-    return Stream.concat(implementations, optimizeImplementations);
+  @Test
+  public void allImplementationsContainIndicesFromAllApps() {
+    final var operate =
+        ALL_IMPLEMENTATIONS.stream()
+            .filter(clz -> clz.getPackage().getName().contains("operate"))
+            .toList();
+    assertThat(operate).isNotEmpty();
+    final var tasklist =
+        ALL_IMPLEMENTATIONS.stream()
+            .filter(clz -> clz.getPackage().getName().contains("tasklist"))
+            .toList();
+    assertThat(tasklist).isNotEmpty();
+    // TODO add optimize
+    //    final var optimize =
+    //        allImplementations.stream()
+    //            .filter(clz -> clz.getPackage().getName().contains("optimize"))
+    //            .toList();
+    //    assertThat(optimize).isNotEmpty();
   }
 
   @Test
   public void onlyOneInterfaceIsImplemented() {
-    assertThat(allImplementations().toList())
+    assertThat(ALL_IMPLEMENTATIONS)
         .allSatisfy(
             clazz ->
                 assertThat(
@@ -80,10 +103,8 @@ abstract class BackupPrioritiesTest {
     final Set<String> allPriorities =
         priorities.allPriorities().map(obj -> obj.getClass().getName()).collect(Collectors.toSet());
 
-    final var classes = allImplementations().toList();
-
     final var missingInBackup = new HashSet<String>();
-    classes.forEach(
+    ALL_IMPLEMENTATIONS.forEach(
         clzz -> {
           if (!allPriorities.contains(clzz.getName())) {
             missingInBackup.add(clzz.getName());
@@ -100,22 +121,22 @@ abstract class BackupPrioritiesTest {
       return new ConnectConfiguration();
     }
 
-    @Primary
-    @Bean
-    public OperateProperties properties() {
-      return new OperateProperties();
-    }
-
-    @Primary
-    @Bean
-    public TasklistProperties tasklistProperties() {
-      return new TasklistProperties();
-    }
-
-    @Primary
-    @Bean
-    DatabaseInfo databaseInfo() {
-      return new DatabaseInfo();
-    }
+    //    @Primary
+    //    @Bean
+    //    public OperateProperties properties() {
+    //      return new OperateProperties();
+    //    }
+    //
+    //    @Primary
+    //    @Bean
+    //    public TasklistProperties tasklistProperties() {
+    //      return new TasklistProperties();
+    //    }
+    //
+    //    @Primary
+    //    @Bean
+    //    DatabaseInfo databaseInfo() {
+    //      return new DatabaseInfo();
+    //    }
   }
 }

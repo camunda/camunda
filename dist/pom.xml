@@ -236,11 +236,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-schema</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>identity-webjar</artifactId>
     </dependency>
 
@@ -272,11 +267,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-data-generator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-els-schema</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
