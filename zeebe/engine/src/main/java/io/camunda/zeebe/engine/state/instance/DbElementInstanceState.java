@@ -293,6 +293,27 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void decrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
+
+    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+
+    final var newValue = number.getValue() - 1;
+    if (newValue > 0) {
+      numberOfTakenSequenceFlows.wrapInt(newValue);
+      numberOfTakenSequenceFlowsColumnFamily.update(
+          numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+    } else {
+      numberOfTakenSequenceFlowsColumnFamily.deleteExisting(numberOfTakenSequenceFlowsKey);
+    }
+  }
+
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
