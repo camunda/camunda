@@ -73,4 +73,19 @@ public interface Exporter {
    * @param record the record to export
    */
   void export(Record<?> record);
+
+  /**
+   * Hook to perform a data purge.
+   *
+   * <p>When this method is called, the exporter <b>deletes all data</b> that has been exported so
+   * far. This method should be blocking and only return when all data has been deleted.
+   *
+   * <p>Currently there are two scenarios where this method can be called:
+   *
+   * <ol>
+   *   <li>Before a backup is restored</il>
+   *   <li>Between integration tests
+   * </ol>
+   */
+  default void purge() throws Exception {}
 }
