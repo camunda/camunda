@@ -224,24 +224,6 @@ public final class ServiceTransformers {
             UserQuery.class,
             VariableQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
-    mappers.put(ProcessInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(UserTaskQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(VariableQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(DecisionDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(DecisionRequirementsQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(DecisionInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(UserQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(RoleQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(FormQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(AuthorizationQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(IncidentQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(
-        FlowNodeInstanceQuery.class,
-        new TypedSearchQueryTransformer<FlowNodeInstanceFilter, FlowNodeInstanceSort>(mappers));
-    mappers.put(ProcessDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(TenantQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(GroupQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(MappingQuery.class, new TypedSearchQueryTransformer<>(mappers));
 
     // document entity -> domain entity
     mappers.put(DecisionDefinitionEntity.class, new DecisionDefinitionEntityTransformer());
@@ -260,7 +242,6 @@ public final class ServiceTransformers {
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
-    mappers.put(GroupEntity.class, new GroupEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
