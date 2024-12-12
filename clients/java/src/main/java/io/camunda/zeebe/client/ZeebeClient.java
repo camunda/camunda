@@ -720,16 +720,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param processDefinitionKey the key of the process definition
    * @return a builder for the request to get a process definition
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessDefinitionGetRequest newProcessDefinitionGetRequest(long processDefinitionKey);
 
   /*
@@ -743,16 +736,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param decisionDefinitionKey the key of the process definition
    * @return a builder for the request to get the XML of a process definition
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(long processDefinitionKey);
 
   /*
@@ -766,16 +752,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param processDefinitionKey the key of the process definition
    * @return a builder for the request to get the Form of process definition
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessDefinitionGetFormRequest newProcessDefinitionGetFormRequest(long processDefinitionKey);
 
   /**
@@ -792,15 +771,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the process definition query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessDefinitionQuery newProcessDefinitionQuery();
 
   /**
@@ -814,15 +786,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the request to get a process instance
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessInstanceGetRequest newProcessInstanceGetRequest(long processInstanceKey);
 
   /**
@@ -839,15 +804,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the process instance query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   ProcessInstanceQuery newProcessInstanceQuery();
 
   /**
@@ -864,15 +822,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the process instance query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   FlownodeInstanceQuery newFlownodeInstanceQuery();
 
   /**
@@ -886,16 +837,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param flowNodeInstanceKey the key of the flow node instance
    * @return a builder for the request to get a flow node instance
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(long flowNodeInstanceKey);
 
   /**
@@ -910,15 +854,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the user task query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskQuery newUserTaskQuery();
 
   /**
@@ -933,15 +870,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the decision requirements query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionRequirementsQuery newDecisionRequirementsQuery();
 
   /*
@@ -958,15 +888,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the decision definition query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionQuery newDecisionDefinitionQuery();
 
   /**
@@ -980,16 +903,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param decisionDefinitionKey the key of the decision definition
    * @return a builder for the request to get a decision definition
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionGetRequest newDecisionDefinitionGetRequest(long decisionDefinitionKey);
 
   /*
@@ -1003,16 +919,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param decisionDefinitionKey the key of the decision definition
    * @return a builder for the request to get the XML of a decision definition
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionDefinitionKey);
 
   /**
@@ -1029,15 +938,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the decision instance query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionInstanceQuery newDecisionInstanceQuery();
 
   /**
@@ -1051,16 +953,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
-   * @param decisionInstanceId
+   * @param decisionInstanceId the id of the decision instance to fetch
    * @return a builder for the request to get a decision instance
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
 
   /*
@@ -1077,15 +972,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the incident query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   IncidentQuery newIncidentQuery();
 
   /**
@@ -1099,16 +987,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param incidentKey the key of the incident
    * @return a builder for the request to get an incident
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   IncidentGetRequest newIncidentGetRequest(long incidentKey);
 
   /**
@@ -1243,15 +1124,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the request to get the XML of a decision definition
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionRequirementsGetXmlRequest newDecisionRequirementsGetXmlRequest(
       long decisionRequirementsKey);
 
@@ -1266,16 +1140,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param decisionRequirementsKey the key of the decision requirements
    * @return a builder for the request to get a decision requirements
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionRequirementsGetRequest newDecisionRequirementsGetRequest(long decisionRequirementsKey);
 
   /**
@@ -1289,16 +1156,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param userTaskKey the key of the user task
    * @return a builder for the request to get a user task form
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskGetFormRequest newUserTaskGetFormRequest(long userTaskKey);
 
   /**
@@ -1312,16 +1172,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *   .send();
    *   </pre>
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @param userTaskKey the key of the user task
    * @return a builder for the request to get a user task
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskGetRequest newUserTaskGetRequest(long userTaskKey);
 
   /**
@@ -1335,15 +1188,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .page((p) -> p.limit(100))
    *  .send();
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    * @return a builder for the variable query
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   VariableQuery newVariableQuery();
 
   /**
@@ -1356,16 +1202,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * .newVariableGetRequest(variableKey)
    * .send();
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    *  @param variableKey the key of the variable
    *  @return a builder for the request to get a variable
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   VariableGetRequest newVariableGetRequest(long variableKey);
 
   /**
@@ -1380,16 +1219,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .page((p) -> p.limit(100))
    * .send();
    *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
    *  @param userTaskKey the key of the user task
    *  @return a builder for the request to get the variables
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   UserTaskVariableQuery newUserTaskVariableQuery(long userTaskKey);
 
   /**
