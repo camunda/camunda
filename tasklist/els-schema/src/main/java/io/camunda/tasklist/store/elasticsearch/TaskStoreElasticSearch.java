@@ -60,6 +60,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -480,8 +481,11 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
 
     TermsQueryBuilder taskIdsQuery = null;
+    ExistsQueryBuilder flowNodeInstanceExistsQuery = null;
     if (taskIds != null) {
       taskIdsQuery = termsQuery(TaskTemplate.KEY, taskIds);
+    } else {
+      flowNodeInstanceExistsQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
     }
 
     QueryBuilder taskDefinitionQ = null;
@@ -558,6 +562,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             assigneeQ,
             assigneesQ,
             taskIdsQuery,
+            flowNodeInstanceExistsQuery,
             taskDefinitionQ,
             candidateGroupQ,
             candidateGroupsQ,
