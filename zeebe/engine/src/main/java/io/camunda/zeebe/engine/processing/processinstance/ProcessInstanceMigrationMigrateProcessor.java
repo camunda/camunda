@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -480,13 +481,11 @@ public class ProcessInstanceMigrationMigrateProcessor
                   sourceElementIdToTargetElementId.get(
                       BufferUtil.bufferAsString(sourceGateway.getId()));
 
-              // TODO -  add validations: if gateway not mapped and if gateway type changed
-              // target gateway will be used for validations in the next PR, please ignore
-              // the assignment for now
-              final ExecutableFlowNode targetGateway =
-                  targetProcessDefinition
-                      .getProcess()
-                      .getElementById(targetGatewayId, ExecutableFlowNode.class);
+              requireValidGatewayMapping(
+                  sourceGateway,
+                  Optional.ofNullable(targetGatewayId),
+                  targetProcessDefinition,
+                  elementInstance.getValue().getProcessInstanceKey());
 
               return activeFlow;
             })
