@@ -15,7 +15,7 @@ deny[msg] {
 
 deny[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_without_timeoutminutes(input.jobs)) > 0
 
@@ -25,7 +25,7 @@ deny[msg] {
 
 warn[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 15)) > 0
 
@@ -35,12 +35,55 @@ warn[msg] {
 
 deny[msg] {
     # only enforced on Unified CI and related workflows
-    input.name == ["CI", "Zeebe CI"][_]
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
 
     count(get_jobs_without_cihealth(input.jobs)) > 0
 
     msg := sprintf("There are GitHub Actions jobs that don't send CI Health metrics! Affected job IDs: %s",
         [concat(", ", get_jobs_without_cihealth(input.jobs))])
+}
+
+deny[msg] {
+    # only enforced on Unified CI since it is specific to detect-changes job
+    input.name == "CI"
+
+    count(get_jobs_not_needing_detectchanges(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs in Unified CI that don't depend on detect-changes job! Affected job IDs: %s",
+        [concat(", ", get_jobs_not_needing_detectchanges(input.jobs))])
+}
+
+deny[msg] {
+    # only enforced on Unified CI and related workflows
+    input.name == ["CI", "Tasklist Frontend Jobs", "Zeebe CI"][_]
+
+    count(get_jobs_without_permissions(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using default GITHUB_TOKEN permissions which are too wide! Affected job IDs: %s",
+        [concat(", ", get_jobs_without_permissions(input.jobs))])
+}
+
+deny[msg] {
+    # only enforced on Unified CI since it is specific to check-results job
+    input.name == "CI"
+
+    jobs_that_should_fail_checkresults := { job_id |
+        job := input.jobs[job_id]
+
+        # no Unified CI jobs that are part of change detection control flow structure
+        job_id != "detect-changes"
+        job_id != "check-results"
+
+        # no Unified CI jobs running after "check-results" job
+        not startswith(job_id, "deploy-")
+    }
+
+    jobs_that_actually_fail_checkresults := {x | x := input.jobs["check-results"].needs[_]}
+
+    jobs_that_should_fail_checkresults != jobs_that_actually_fail_checkresults
+
+    msg := sprintf("There are GitHub Actions jobs in Unified CI that check-results job doesn't depend on! Affected job IDs: %s",
+        [concat(", ", jobs_that_should_fail_checkresults - jobs_that_actually_fail_checkresults)])
 }
 
 deny[msg] {
@@ -71,6 +114,16 @@ deny[msg] {
         [concat(", ", get_jobs_with_setupnodecaching(input.jobs))])
 }
 
+deny[msg] {
+    # This rule prevents usage of forbidden "self-hosted" label in a "runs-on"
+    # clause as described by Infra team: https://confluence.camunda.com/x/_IlZBw
+
+    count(get_jobs_with_selfhostedlabel(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using forbidden 'self-hosted' label in 'runs-on' clause! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_selfhostedlabel(input.jobs))])
+}
+
 warn[msg] {
     # This rule warns in situations where no "secrets: inherit" is passed on
     # calling other workflows as this is usually an oversight that prevents
@@ -81,6 +134,7 @@ warn[msg] {
     msg := sprintf("There are GitHub Actions jobs calling other workflows but not using 'secrets: inherit' which prevents access to secrets even for CI health metrics! Affected job IDs: %s",
         [concat(", ", get_jobs_with_usesbutnosecrets(input.jobs))])
 }
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -142,6 +196,31 @@ get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
     }
 }
 
+get_jobs_with_selfhostedlabel(jobInput) = jobs_with_selfhostedlabel1 | jobs_with_selfhostedlabel2 {
+    # expression to check for jobs using "runs-on: self-hosted" notation (without array)
+    jobs_with_selfhostedlabel1 := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        job["runs-on"] == "self-hosted"
+    }
+    # expression to check for jobs using "runs-on: [self-hosted, ...]" notation (array)
+    jobs_with_selfhostedlabel2 := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        selfhosted_labels := { label |
+            label := job["runs-on"][_]
+            label == "self-hosted"
+        }
+        count(selfhosted_labels) > 0
+    }
+}
+
 get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
     jobs_with_usesbutnosecrets := { job_id |
         job := jobInput[job_id]
@@ -149,5 +228,36 @@ get_jobs_with_usesbutnosecrets(jobInput) = jobs_with_usesbutnosecrets {
         # check jobs that invoke other reusable workflows but don't specify "secrets: inherit"
         job.uses
         not job.secrets
+    }
+}
+
+get_jobs_not_needing_detectchanges(jobInput) = jobs_not_needing_detectchanges {
+    jobs_not_needing_detectchanges := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on Unified CI jobs that are part of change detection control flow structure
+        job_id != "detect-changes"
+        job_id != "check-results"
+
+        # not enforced on Unified CI jobs running after "check-results" job
+        not startswith(job_id, "deploy-")
+
+        # check if job declares dependency on "detect-changes" job anywhere
+        job_needs_detectchanges := { need |
+            need := job.needs[_]
+            need == "detect-changes"
+        }
+        count(job_needs_detectchanges) == 0
+    }
+}
+
+get_jobs_without_permissions(jobInput) = jobs_without_permissions {
+    jobs_without_permissions := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        not job.permissions
     }
 }

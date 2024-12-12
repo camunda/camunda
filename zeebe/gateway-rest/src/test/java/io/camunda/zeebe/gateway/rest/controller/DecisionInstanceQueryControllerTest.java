@@ -28,8 +28,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -148,7 +148,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           "sort": [
                 {
                     "field": "decisionDefinitionName",
-                    "order": "desc"
+                    "order": "DESC"
                 }
           ]
       }""",

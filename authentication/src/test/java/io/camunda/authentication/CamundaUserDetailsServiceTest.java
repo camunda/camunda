@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -41,13 +42,15 @@ public class CamundaUserDetailsServiceTest {
   @Mock private UserServices userService;
   @Mock private AuthorizationServices authorizationServices;
   @Mock private RoleServices roleServices;
+  @Mock private TenantServices tenantServices;
   private CamundaUserDetailsService userDetailsService;
 
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
     userDetailsService =
-        new CamundaUserDetailsService(userService, authorizationServices, roleServices);
+        new CamundaUserDetailsService(
+            userService, authorizationServices, roleServices, tenantServices);
   }
 
   @Test
@@ -57,7 +60,7 @@ public class CamundaUserDetailsServiceTest {
         .thenReturn(
             new SearchQueryResult<>(
                 1,
-                List.of(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "not@tested", "password1")),
+                List.of(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1")),
                 null));
 
     when(authorizationServices.findAll(any()))
@@ -82,6 +85,7 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getName()).isEqualTo("Foo Bar");
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");
+    assertThat(user.getEmail()).isEqualTo("email@tested");
     assertThat(user.getAuthorizedApplications()).containsExactlyInAnyOrder("operate", "identity");
     assertThat(user.getRoles()).isEqualTo(List.of(adminRole));
   }

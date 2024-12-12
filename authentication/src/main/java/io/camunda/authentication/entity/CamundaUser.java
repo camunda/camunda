@@ -31,6 +31,20 @@ public class CamundaUser extends User {
   private Map<ClusterMetadata.AppName, String> c8Links = new HashMap<>();
   private boolean canLogout;
   private boolean apiUser;
+  private final String email;
+
+  public CamundaUser(
+      final Long userKey,
+      final String displayName,
+      final String username,
+      final String password,
+      final String email) {
+    super(username, password, Collections.emptyList());
+    this.userKey = userKey;
+    this.displayName = displayName;
+    this.email = email;
+    c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
+  }
 
   public CamundaUser(
       final String displayName,
@@ -38,8 +52,18 @@ public class CamundaUser extends User {
       final String password,
       final List<String> authorities) {
     super(username, password, prepareAuthorities(authorities));
+  }
+
+  public CamundaUser(
+      final String displayName,
+      final String username,
+      final String password,
+      final String email,
+      final List<String> authorities) {
+    super(username, password, prepareAuthorities(authorities));
     userKey = null;
     this.displayName = displayName;
+    this.email = email;
     c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
   }
 
@@ -48,6 +72,7 @@ public class CamundaUser extends User {
       final String displayName,
       final String username,
       final String password,
+      final String email,
       final List<? extends GrantedAuthority> authorities,
       final List<RoleEntity> roles,
       final List<String> authorizedApplications,
@@ -68,6 +93,7 @@ public class CamundaUser extends User {
     this.c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
     this.canLogout = canLogout;
     this.apiUser = apiUser;
+    this.email = email;
   }
 
   public Long getUserKey() {
@@ -123,11 +149,16 @@ public class CamundaUser extends User {
     return authorities.stream().map(SimpleGrantedAuthority::new).toList();
   }
 
+  public String getEmail() {
+    return email;
+  }
+
   public static final class CamundaUserBuilder {
     private Long userKey;
     private String name;
     private String username;
     private String password;
+    private String email;
     private List<RoleEntity> roles = List.of();
     private List<? extends GrantedAuthority> authorities = List.of();
     private List<String> authorizedApplications = List.of();
@@ -161,6 +192,11 @@ public class CamundaUser extends User {
 
     public CamundaUserBuilder withPassword(final String password) {
       this.password = password;
+      return this;
+    }
+
+    public CamundaUserBuilder withEmail(final String email) {
+      this.email = email;
       return this;
     }
 
@@ -216,6 +252,7 @@ public class CamundaUser extends User {
           name,
           username,
           password,
+          email,
           authorities,
           roles,
           authorizedApplications,

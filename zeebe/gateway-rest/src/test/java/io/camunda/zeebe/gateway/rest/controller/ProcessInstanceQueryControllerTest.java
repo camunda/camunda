@@ -23,8 +23,8 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -60,7 +60,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           789L,
           333L,
           777L,
-          "PI_1/PI_2",
           OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
           ProcessInstanceState.ACTIVE,
@@ -78,7 +77,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionKey": 789,
             "parentProcessInstanceKey": 333,
             "parentFlowNodeInstanceKey": 777,
-            "treePath": "PI_1/PI_2",
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
@@ -99,7 +97,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionKey": 789,
                   "parentProcessInstanceKey": 333,
                   "parentFlowNodeInstanceKey": 777,
-                  "treePath": "PI_1/PI_2",
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
@@ -187,11 +184,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "bpmnProcessId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "processDefinitionKey",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -241,9 +238,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -274,7 +271,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -315,7 +312,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -478,10 +475,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "processDefinitionVersionTag",
         ops ->
             new ProcessInstanceFilter.Builder().processDefinitionVersionTagOperations(ops).build());
-    stringOperationTestCases(
-        streamBuilder,
-        "treePath",
-        ops -> new ProcessInstanceFilter.Builder().treePathOperations(ops).build());
     customOperationTestCases(
         streamBuilder,
         "state",

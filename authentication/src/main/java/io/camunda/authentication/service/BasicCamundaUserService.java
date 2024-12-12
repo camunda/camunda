@@ -29,6 +29,7 @@ public class BasicCamundaUserService implements CamundaUserService {
         authenticatedUser.getDisplayName(),
         authenticatedUser
             .getDisplayName(), // migrated for historical purposes username -> displayName
+        authenticatedUser.getEmail(),
         authenticatedUser.getAuthorizedApplications(),
         authenticatedUser.getTenants(),
         authenticatedUser.getGroups(),

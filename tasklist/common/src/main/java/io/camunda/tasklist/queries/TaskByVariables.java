@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.queries;
 
-import graphql.annotations.annotationTypes.GraphQLField;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 enum Operator {
@@ -16,18 +15,15 @@ enum Operator {
 
 public class TaskByVariables {
   @Schema(description = "The name of the variable.")
-  @GraphQLField
   private String name;
 
   @Schema(
       description =
           "The value of the variable. When specifying the variable value, it's crucial to maintain consistency with JSON values (serialization for the complex objects such as list) and ensure that strings remain appropriately formatted.",
       maxLength = 8191)
-  @GraphQLField
   private String value;
 
   @Schema(description = "The comparison operator to use for the variable.<br>" + "* `eq`: Equals")
-  @GraphQLField
   private Operator operator;
 
   public String getName() {

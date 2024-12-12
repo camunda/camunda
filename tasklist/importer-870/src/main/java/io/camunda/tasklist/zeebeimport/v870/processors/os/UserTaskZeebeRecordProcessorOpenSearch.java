@@ -47,7 +47,9 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private SnapshotTaskVariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
@@ -81,7 +83,8 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
                         .id(entity.getId())
                         .document(CommonUtils.getJsonObjectFromEntity(updateFields))
                         .upsert(CommonUtils.getJsonObjectFromEntity(entity))
-                        .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)))
+                        .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT)
+                        .routing(entity.getProcessInstanceId())))
         .build();
   }
 

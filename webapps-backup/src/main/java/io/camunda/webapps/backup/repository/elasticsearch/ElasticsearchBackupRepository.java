@@ -14,17 +14,14 @@ import static java.util.stream.Collectors.toList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import co.elastic.clients.elasticsearch._types.ShardFailure;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
-import co.elastic.clients.elasticsearch.snapshot.DeleteSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
+import co.elastic.clients.elasticsearch.snapshot.SnapshotShardFailure;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotSort;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
 import io.camunda.webapps.backup.BackupException.InvalidRequestException;
@@ -54,24 +51,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchBackupRepository implements BackupRepository {
-  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "type=snapshot_missing_exception";
-  private static final String REPOSITORY_MISSING_EXCEPTION_TYPE =
-      "type=repository_missing_exception";
+  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
+  private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupProps;
   private final SnapshotNameProvider snapshotNameProvider;
   private final Executor executor;
 
   public ElasticsearchBackupRepository(
       final ElasticsearchClient esClient,
-      final ObjectMapper objectMapper,
       final BackupRepositoryProps operateProperties,
       final SnapshotNameProvider snapshotNameProvider,
       final Executor executor) {
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
     backupProps = operateProperties;
     this.snapshotNameProvider = snapshotNameProvider;
     this.executor = executor;
@@ -80,43 +73,6 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   @Override
   public SnapshotNameProvider snapshotNameProvider() {
     return snapshotNameProvider;
-  }
-
-  @Override
-  public void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
-      final Runnable onSuccess,
-      final Runnable onFailure) {
-    final var request =
-        CreateSnapshotRequest.of(
-            b ->
-                b.repository(snapshotRequest.repositoryName())
-                    .snapshot(snapshotRequest.snapshotName())
-                    .indices(snapshotRequest.indices())
-                    // ignoreUnavailable = false - indices defined by their exact name MUST be
-                    // present
-                    // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
-                    // absent
-                    .ignoreUnavailable(false)
-                    // TODO not all migrated
-                    //                    .(IndicesOptions.fromOptions(false, true, true, true))
-                    .includeGlobalState(backupProps.includeGlobalState())
-                    .metadata(
-                        objectMapper.convertValue(
-                            snapshotRequest.metadata(), new TypeReference<>() {}))
-                    .featureStates("none")
-                    .waitForCompletion(true));
-    final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
-
-    executor.execute(
-        () -> {
-          try {
-            esClient.snapshot().create(request);
-            listener.onSuccess.run();
-          } catch (final Exception e) {
-            listener.onFailure.run();
-          }
-        });
   }
 
   @Override
@@ -131,13 +87,15 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             LOGGER.debug(
                 "Delete snapshot was acknowledged by Elasticsearch node: {}",
                 response.acknowledged());
-          } catch (final Exception e) {
+          } catch (final ElasticsearchException e) {
             if (isSnapshotMissingException(e)) {
               // no snapshot with given backupID exists, this is fine, log warning
               LOGGER.warn("No snapshot found for snapshot deletion: {} ", e.getMessage());
             } else {
               LOGGER.error("Exception occurred while deleting the snapshot: {}", e.getMessage(), e);
             }
+          } catch (final IOException e) {
+            throw new RuntimeException(e);
           }
         });
   }
@@ -157,7 +115,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
               "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
               repositoryName);
       throw new BackupRepositoryConnectionException(reason, ex);
-    } catch (final Exception e) {
+    } catch (final ElasticsearchException e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
@@ -173,22 +131,29 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   @Override
   public void validateNoDuplicateBackupId(final String repositoryName, final Long backupId) {
-    final GetSnapshotResponse response;
     try {
-      response =
+      final var response =
           esClient
               .snapshot()
               .get(
                   r ->
                       r.repository(repositoryName)
                           .snapshot(snapshotNameProvider.getSnapshotNamePrefix(backupId) + "*"));
+      if (!response.snapshots().isEmpty()) {
+        final String reason =
+            String.format(
+                "A backup with ID [%s] already exists. Found snapshots: [%s]",
+                backupId,
+                response.snapshots().stream().map(SnapshotInfo::snapshot).collect(joining(", ")));
+        throw new InvalidRequestException(reason);
+      }
     } catch (final IOException ex) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
               repositoryName);
       throw new BackupRepositoryConnectionException(reason, ex);
-    } catch (final Exception e) {
+    } catch (final ElasticsearchException e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         return;
@@ -198,14 +163,6 @@ public class ElasticsearchBackupRepository implements BackupRepository {
               "Exception occurred when validating whether backup with ID [%s] already exists.",
               backupId);
       throw new BackupRepositoryConnectionException(reason, e);
-    }
-    if (!response.snapshots().isEmpty()) {
-      final String reason =
-          String.format(
-              "A backup with ID [%s] already exists. Found snapshots: [%s]",
-              backupId,
-              response.snapshots().stream().map(SnapshotInfo::snapshot).collect(joining(", ")));
-      throw new InvalidRequestException(reason);
     }
   }
 
@@ -280,18 +237,57 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     }
   }
 
-  public void onDeleteResponse(final DeleteSnapshotResponse response) {}
+  @Override
+  public void executeSnapshotting(
+      final BackupService.SnapshotRequest snapshotRequest,
+      final Runnable onSuccess,
+      final Runnable onFailure) {
+    final var request =
+        CreateSnapshotRequest.of(
+            b ->
+                b.repository(snapshotRequest.repositoryName())
+                    .snapshot(snapshotRequest.snapshotName())
+                    .indices(snapshotRequest.indices())
+                    // ignoreUnavailable = false - indices defined by their exact name MUST be
+                    // present
+                    // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
+                    // absent
+                    .ignoreUnavailable(false)
+                    // TODO not all migrated
+                    //                    .(IndicesOptions.fromOptions(false, true, true, true))
+                    .includeGlobalState(backupProps.includeGlobalState())
+                    .metadata(
+                        MetadataMarshaller.asJson(
+                            snapshotRequest.metadata(), esClient._jsonpMapper()))
+                    .featureStates("none")
+                    .waitForCompletion(true));
+    final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
 
-  public void onDeleteFailure(final Exception e) {}
+    executor.execute(
+        () -> {
+          try {
+            final var response = esClient.snapshot().create(request);
+            listener.onResponse(response);
+          } catch (final Exception e) {
+            listener.onFailure(e);
+          }
+        });
+  }
+
+  private boolean isErrorType(final Exception e, final String errorType) {
+    if (e instanceof ElasticsearchException) {
+      final var type = ((ElasticsearchException) e).error().type();
+      return Objects.equals(type, errorType);
+    }
+    return false;
+  }
 
   private boolean isSnapshotMissingException(final Exception e) {
-    return e instanceof ElasticsearchException
-        && e.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+    return isErrorType(e, SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
   private boolean isRepositoryMissingException(final Exception e) {
-    return e instanceof ElasticsearchException
-        && e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+    return isErrorType(e, REPOSITORY_MISSING_EXCEPTION_TYPE);
   }
 
   // Check: see inner
@@ -312,10 +308,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
               "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
               repositoryName);
       throw new BackupRepositoryConnectionException(reason, ex);
-    } catch (final Exception e) {
+    } catch (final ElasticsearchException e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
-        // Check Tasklist returns NotFoundApiException (Similar)
         throw new ResourceNotFoundException(
             String.format("No backup with id [%s] found.", backupId));
       }
@@ -431,11 +426,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       detail.setStartTime(
           OffsetDateTime.ofInstant(
               Instant.ofEpochMilli(snapshot.startTimeInMillis()), ZoneId.systemDefault()));
-      if (null != snapshot.shards() && null != snapshot.shards().failures()) {
+      if (snapshot.failures() != null && !snapshot.failures().isEmpty()) {
         detail.setFailures(
-            snapshot.shards().failures().stream()
-                .map(ShardFailure::toString)
-                .toArray(String[]::new));
+            snapshot.failures().stream().map(SnapshotShardFailure::reason).toArray(String[]::new));
       }
       detail.setState(snapshot.state());
       details.add(detail);

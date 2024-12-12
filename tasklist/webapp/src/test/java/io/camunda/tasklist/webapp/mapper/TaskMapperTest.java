@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.dto.TaskDTO;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.time.OffsetDateTime;
 import java.util.stream.Stream;
@@ -65,12 +65,12 @@ class TaskMapperTest {
   @ParameterizedTest
   @MethodSource("toTaskSearchResponseTestData")
   void toTaskSearchResponse(
-      String cachedTaskName,
-      String flowNodeBpmnId,
-      String cachedProcessName,
-      String bpmnProcessId,
-      String name,
-      String processName) {
+      final String cachedTaskName,
+      final String flowNodeBpmnId,
+      final String cachedProcessName,
+      final String bpmnProcessId,
+      final String name,
+      final String processName) {
     // Given
     final String processDefinitionId = "2251799813685257";
     final OffsetDateTime dueDate = OffsetDateTime.now().plusDays(3);

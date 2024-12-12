@@ -99,13 +99,26 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      final AuthorizationQuery filter) {
-    return null;
+      final AuthorizationQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for authorizations: {}", query);
+
+    return rdbmsService.getAuthorizationReader().search(query);
   }
 
   @Override
-  public List<AuthorizationEntity> findAllAuthorizations(final AuthorizationQuery filter) {
-    return null;
+  public List<AuthorizationEntity> findAllAuthorizations(final AuthorizationQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for all authorizations: {}", query);
+
+    // search without size boundary to find all items
+    return rdbmsService
+        .getAuthorizationReader()
+        .search(
+            AuthorizationQuery.of(
+                b ->
+                    b.filter(query.filter())
+                        .sort(query.sort())
+                        .page(p -> p.size(Integer.MAX_VALUE))))
+        .items();
   }
 
   @Override
@@ -156,8 +169,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
-    return null;
+  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for incidents: {}", query);
+
+    return rdbmsService.getIncidentReader().search(query);
   }
 
   @Override

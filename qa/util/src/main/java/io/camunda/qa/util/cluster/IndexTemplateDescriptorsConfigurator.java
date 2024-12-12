@@ -158,8 +158,15 @@ public class IndexTemplateDescriptorsConfigurator {
     return new TasklistMetricIndex("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
-  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
+  @Bean("operateSnapshotTaskVariableTemplate")
+  public SnapshotTaskVariableTemplate getOperateSnapshotTaskVariableTemplate(
+      final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new SnapshotTaskVariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistSnapshotTaskVariableTemplate")
+  public SnapshotTaskVariableTemplate getTasklistSnapshotTaskVariableTemplate(
       final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new SnapshotTaskVariableTemplate("", databaseInfo.isElasticsearchDb());

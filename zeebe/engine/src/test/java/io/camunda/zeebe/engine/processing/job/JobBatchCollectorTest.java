@@ -320,7 +320,7 @@ final class JobBatchCollectorTest {
   }
 
   @Test
-  public void shouldCollectOnlyAuthorizedTenantJobs() {
+  public void shouldCollectOnlyProvidedTenantJobs() {
     // given
     final String tenantA = "tenant-a";
     final String tenantB = "tenant-b";

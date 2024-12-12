@@ -35,16 +35,19 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
+public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
 
   private final ServiceTransformers transformers;
 
-  public UserTaskFilterTransformer(final ServiceTransformers transformers) {
+  public UserTaskFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
     this.transformers = transformers;
   }
 
@@ -68,17 +71,16 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
-    ofNullable(getProcessVariablesQuery(filter.processInstanceVariableFilter()))
+    ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
+
+    // Local Variable Query: Check if localVariable with specified varName and varValue exists
+    // No need validate parent as the localVariable is the only children from Task
+    ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
     return and(queries);
-  }
-
-  @Override
-  public List<String> toIndices(final UserTaskFilter filter) {
-    return List.of("tasklist-task-8.5.0_");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
@@ -129,7 +131,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
   }
 
-  private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getProcessInstanceVariablesQuery(
+      final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
       final var queries =
@@ -142,7 +145,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return null;
   }
 
-  private SearchQuery getTaskVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getLocalVariablesQuery(final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
 

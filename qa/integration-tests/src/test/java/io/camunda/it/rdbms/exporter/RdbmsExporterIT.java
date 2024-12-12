@@ -7,12 +7,14 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getAuthorizationRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
@@ -25,8 +27,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporter;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -34,14 +39,21 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -54,6 +66,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -456,7 +470,7 @@ class RdbmsExporterIT {
     // then
     final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(group).isNotEmpty();
-    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // given
@@ -470,7 +484,7 @@ class RdbmsExporterIT {
     // then
     final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(updatedGroup).isNotEmpty();
-    assertThat(updatedGroup.get().key()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().groupKey()).isEqualTo(updateGroupRecordValue.getGroupKey());
     assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
 
     // when
@@ -495,7 +509,7 @@ class RdbmsExporterIT {
     // then
     final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(group).isNotEmpty();
-    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // when
@@ -515,6 +529,60 @@ class RdbmsExporterIT {
     final var deletedGroup =
         rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
     assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldExportIncident() {
+    // given
+    final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
+    final var processInstanceKey =
+        ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
+    exporter.export(processInstanceRecord);
+    final var flowNodeRecord = getFlowNodeActivatingRecord(1L);
+    final var flowNodeInstanceKey = flowNodeRecord.getKey();
+    exporter.export(flowNodeRecord);
+
+    // when
+    final var incidentKey = 42L;
+    final var incidentRecord =
+        getIncidentRecord(
+            IncidentIntent.CREATED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+    exporter.export(incidentRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
+    assertThat(flowNode).isNotEmpty();
+    assertThat(flowNode.get().incidentKey()).isEqualTo(incidentKey);
+    assertThat(flowNode.get().hasIncident()).isTrue();
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
+    assertThat(processInstance).isNotEmpty();
+    assertThat(processInstance.get().hasIncident()).isTrue();
+    final var incident = rdbmsService.getIncidentReader().findOne(incidentKey);
+    assertThat(incident).isNotEmpty();
+    assertThat(incident.get().incidentKey()).isEqualTo(incidentKey);
+    assertThat(incident.get().state()).isEqualTo(IncidentState.ACTIVE);
+
+    // given
+    final var incidentResolvedRecord =
+        getIncidentRecord(
+            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+
+    // when
+    exporter.export(incidentResolvedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var flowNode2 = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
+    assertThat(flowNode2).isNotEmpty();
+    assertThat(flowNode2.get().incidentKey()).isNull();
+    assertThat(flowNode2.get().hasIncident()).isFalse();
+    final var processInstance2 =
+        rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
+    assertThat(processInstance2).isNotEmpty();
+    assertThat(processInstance2.get().hasIncident()).isFalse();
+    final var incident2 = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
+    assertThat(incident2.state()).isEqualTo(IncidentState.RESOLVED);
   }
 
   @Test
@@ -556,5 +624,150 @@ class RdbmsExporterIT {
     // then
     final var deletedMapping = rdbmsService.getMappingReader().findOne(key);
     assertThat(deletedMapping).isEmpty();
+  }
+
+  @Test
+  public void shouldExportAndModifyAuthorization() {
+    // given
+    final var authorizationRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1", "resource2"),
+                PermissionType.CREATE, Set.of("resource3", "resource4")));
+
+    // when
+    exporter.export(authorizationRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
+    final var authorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+    assertThat(authorization).isNotNull();
+
+    // given
+    final var authorizationUpdatedRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource5", "resource6"),
+                PermissionType.CREATE, Set.of("resource7", "resource8")));
+
+    // when
+    exporter.export(authorizationUpdatedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedRecordValue = (AuthorizationRecordValue) authorizationUpdatedRecord.getValue();
+    final var updatedAuthorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+
+    assertThat(updatedAuthorization).isNotNull();
+    assertThat(updatedAuthorization.permissions()).hasSize(2);
+    assertThat(updatedAuthorization.permissions())
+        .contains(
+            new Permission(
+                PermissionType.READ, Set.of("resource1", "resource2", "resource5", "resource6")));
+    assertThat(updatedAuthorization.permissions())
+        .contains(
+            new Permission(
+                PermissionType.CREATE, Set.of("resource3", "resource4", "resource7", "resource8")));
+  }
+
+  @Test
+  public void shouldExportAndRemoveAuthorization() {
+    // given
+    final var authorizationRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1", "resource2"),
+                PermissionType.CREATE, Set.of("resource3", "resource4")));
+
+    // when
+    exporter.export(authorizationRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
+    final var authorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+    assertThat(authorization).isNotNull();
+
+    // given
+    final var authorizationUpdatedRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_REMOVED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1"),
+                PermissionType.CREATE, Set.of("resource3")));
+
+    // when
+    exporter.export(authorizationUpdatedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedAuthorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+
+    assertThat(updatedAuthorization).isNotNull();
+    assertThat(updatedAuthorization.permissions()).hasSize(2);
+    assertThat(updatedAuthorization.permissions())
+        .contains(new Permission(PermissionType.READ, Set.of("resource2")));
+    assertThat(updatedAuthorization.permissions())
+        .contains(new Permission(PermissionType.CREATE, Set.of("resource4")));
+  }
+
+  private void compareAuthorizations(
+      final AuthorizationRecordValue recordValue, final AuthorizationEntity entity) {
+    assertThat(recordValue.getOwnerKey()).isEqualTo(entity.ownerKey());
+    assertThat(recordValue.getOwnerType().name()).isEqualTo(entity.ownerType());
+    assertThat(recordValue.getResourceType().name()).isEqualTo(entity.resourceType());
+
+    for (final PermissionValue permissionValue : recordValue.getPermissions()) {
+      if (!permissionValue.getResourceIds().isEmpty()) {
+        assertThat(entity.permissions())
+            .contains(
+                new Permission(
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()));
+      }
+    }
   }
 }

@@ -28,7 +28,6 @@ public enum ProcessInstanceSearchColumn implements SearchColumn<ProcessInstanceE
       "parentProcessInstanceKey", ProcessInstanceEntity::parentProcessInstanceKey),
   PARENT_FLOW_NODE_INSTANCE_KEY(
       "parentFlowNodeInstanceKey", ProcessInstanceEntity::parentFlowNodeInstanceKey),
-  TREE_PATH("treePath", ProcessInstanceEntity::treePath),
   INCIDENT("hasIncident", ProcessInstanceEntity::hasIncident);
 
   private final String property;

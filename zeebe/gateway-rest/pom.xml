@@ -222,6 +222,11 @@
       <artifactId>spring-security-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -412,6 +417,7 @@
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
+                <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
               </configOptions>
             </configuration>
           </execution>

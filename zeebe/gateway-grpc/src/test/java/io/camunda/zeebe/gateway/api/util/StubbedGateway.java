@@ -7,25 +7,21 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import io.camunda.identity.sdk.Identity;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
-import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -70,19 +66,20 @@ public final class StubbedGateway {
   private final StubbedJobStreamer jobStreamer;
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
+  private final SecurityConfiguration securityConfiguration;
   private Server server;
-  private final Identity identity;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
-      final GatewayCfg config) {
+      final GatewayCfg config,
+      final SecurityConfiguration securityConfiguration) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
-    identity = mock(Identity.class, RETURNS_DEEP_STUBS);
+    this.securityConfiguration = securityConfiguration;
   }
 
   public void start() throws IOException {
@@ -91,18 +88,14 @@ public final class StubbedGateway {
     final var clientStreamAdapter = new StreamJobsHandler(jobStreamer);
     actorScheduler.submitActor(clientStreamAdapter).join();
 
-    final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
+    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
     final EndpointManager endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
-
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
-                ServerInterceptors.intercept(
-                    gatewayGrpcService,
-                    new AuthenticationInterceptor(),
-                    new IdentityInterceptor(identity, multiTenancy)));
+                ServerInterceptors.intercept(gatewayGrpcService, new AuthenticationInterceptor()));
     server = serverBuilder.build();
     server.start();
   }
@@ -163,17 +156,6 @@ public final class StubbedGateway {
         .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .build();
-  }
-
-  /**
-   * This can be used to adjust how the Identity sdk behaves in tests. For example, to simulate
-   * specific authorized tenants for the {@link IdentityInterceptor}. This mock is deeply stubbed
-   * using mockito.
-   *
-   * @return mock of Identity
-   */
-  public Identity getIdentityMock() {
-    return identity;
   }
 
   public static final class StubbedJobStreamer implements ClientStreamer<JobActivationProperties> {

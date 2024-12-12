@@ -17,7 +17,9 @@ package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
@@ -1127,6 +1130,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   CreateRoleCommandStep1 newCreateRoleCommand();
 
   /**
+   * Command to create a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newCreateGroupCommand()
+   *  .name(name)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  CreateGroupCommandStep1 newCreateGroupCommand();
+
+  /**
    * Command to create a user.
    *
    * <pre>
@@ -1566,4 +1587,43 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the delete tenant command
    */
   DeleteTenantCommandStep1 newDeleteTenantCommand(long tenantKey);
+
+  /**
+   * Command to assign a mapping rule to a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newAssignMappingToTenantCommand(tenantKey)
+   *   .mappingKey(mappingKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>This command sends an HTTP PUT request to assign the specified mapping rule to the given
+   * tenant.
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder for the assign mapping rule to tenant command
+   */
+  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(long tenantKey);
+
+  /**
+   * Command to assign a user to a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newAssignUserToTenantCommand(tenantKey)
+   *   .userKey(userKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>This command sends an HTTP PUT request to assign the specified user to the given tenant.
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder for the assign user to tenant command
+   */
+  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(long tenantKey);
 }

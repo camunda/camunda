@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -25,11 +26,13 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.Permissio
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
@@ -44,35 +47,34 @@ public class IdentitySetupInitializeTest {
   @Test
   public void shouldCreateRoleUserAndTenant() {
     // given
-    final var roleKey = 1;
     final var roleName = "roleName";
-    final var role = new RoleRecord().setRoleKey(roleKey).setName(roleName);
-    final var userKey = 2L;
+    final var role = new RoleRecord().setName(roleName);
     final var username = "username";
     final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
-            .setUserKey(userKey)
             .setUsername(username)
             .setName(userName)
             .setPassword(password)
             .setEmail(mail);
-    final var tenantKey = 3;
     final var tenantId = "tenant-id";
     final var tenantName = "tenant-name";
-    final var tenant =
-        new TenantRecord().setTenantKey(tenantKey).setName(tenantName).setTenantId(tenantId);
+    final var tenant = new TenantRecord().setName(tenantName).setTenantId(tenantId);
 
     // when
-    engine
-        .identitySetup()
-        .initialize()
-        .withRole(role)
-        .withUser(user)
-        .withTenant(tenant)
-        .initialize();
+    final var initialized =
+        engine
+            .identitySetup()
+            .initialize()
+            .withRole(role)
+            .withUser(user)
+            .withTenant(tenant)
+            .initialize();
+    final var userKey = initialized.getValue().getUsers().getFirst().getUserKey();
+    final var roleKey = initialized.getValue().getDefaultRole().getRoleKey();
+    final var tenantKey = initialized.getValue().getDefaultTenant().getTenantKey();
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).getFirst().getValue())
@@ -95,16 +97,14 @@ public class IdentitySetupInitializeTest {
   @Test
   public void shouldNotCreateUserIfAlreadyExists() {
     // given
-    final var roleKey = 1;
     final var roleName = "roleName";
-    final var role = new RoleRecord().setRoleKey(roleKey).setName(roleName);
+    final var role = new RoleRecord().setName(roleName);
     final var username = "username";
     final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
-            .setUserKey(2)
             .setUsername(username)
             .setName(userName)
             .setPassword(password)
@@ -125,7 +125,7 @@ public class IdentitySetupInitializeTest {
 
     // then
     assertUserIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsAssignedToRole(roleKey, userKey);
+    assertUserIsAssignedToRole(initializeRecord.getValue().getDefaultRole().getRoleKey(), userKey);
   }
 
   @Test
@@ -133,14 +133,12 @@ public class IdentitySetupInitializeTest {
     // given
     final var roleName = "roleName";
     final var role = new RoleRecord().setRoleKey(1).setName(roleName);
-    final var userKey = 2;
     final var username = "username";
     final var userName = "userName";
     final var password = "password";
     final var mail = "e@mail.com";
     final var user =
         new UserRecord()
-            .setUserKey(userKey)
             .setUsername(username)
             .setName(userName)
             .setPassword(password)
@@ -153,7 +151,8 @@ public class IdentitySetupInitializeTest {
 
     // then
     assertRoleIsNotCreated(initializeRecord.getSourceRecordPosition());
-    assertUserIsAssignedToRole(roleKey, userKey);
+    assertUserIsAssignedToRole(
+        roleKey, initializeRecord.getValue().getUsers().getFirst().getUserKey());
     Assertions.assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
@@ -266,6 +265,38 @@ public class IdentitySetupInitializeTest {
     assertNoAssignmentIsCreated(initializeRecord.getSourceRecordPosition());
   }
 
+  @Test
+  public void shouldCreateMultipleUsers() {
+    // given
+    final var user1 =
+        new UserRecord()
+            .setUsername(UUID.randomUUID().toString())
+            .setName(UUID.randomUUID().toString())
+            .setPassword(UUID.randomUUID().toString())
+            .setEmail(UUID.randomUUID().toString());
+    final var user2 =
+        new UserRecord()
+            .setUsername(UUID.randomUUID().toString())
+            .setName(UUID.randomUUID().toString())
+            .setPassword(UUID.randomUUID().toString())
+            .setEmail(UUID.randomUUID().toString());
+
+    // when
+    engine.identitySetup().initialize().withUser(user1).withUser(user2).initialize();
+
+    // then
+    Assertions.assertThat(RecordingExporter.userRecords(UserIntent.CREATED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            UserRecordValue::getUsername,
+            UserRecordValue::getPassword,
+            UserRecordValue::getName,
+            UserRecordValue::getEmail)
+        .containsExactly(
+            tuple(user1.getUsername(), user1.getPassword(), user1.getName(), user1.getEmail()),
+            tuple(user2.getUsername(), user2.getPassword(), user2.getName(), user2.getEmail()));
+  }
+
   private static void assertThatAllPermissionsAreAddedToRole(final long roleKey) {
     final var addedPermissions =
         RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
@@ -280,7 +311,7 @@ public class IdentitySetupInitializeTest {
 
     final List<Tuple> expectedPermissions = new ArrayList<>();
     for (final PermissionType value : PermissionType.values()) {
-      expectedPermissions.add(Tuple.tuple(value, Set.of(WILDCARD_PERMISSION)));
+      expectedPermissions.add(tuple(value, Set.of(WILDCARD_PERMISSION)));
     }
 
     Assertions.assertThat(addedPermissions)

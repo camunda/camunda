@@ -8,8 +8,7 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
-
-vi.mock('modules/featureFlags');
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
 describe('<TurnOnNotificationPermission/>', () => {
   it('when no decision is made, should show a dialog about enabling notifications', () => {
@@ -46,6 +45,40 @@ describe('<TurnOnNotificationPermission/>', () => {
 
   it('when notifications are not allowed, should not show a dialog about enabling notifications', () => {
     vi.stubGlobal('Notification', {permission: 'denied'});
+
+    render(<TurnOnNotificationPermission />);
+
+    expect(
+      screen.queryByRole('alertdialog', {
+        name: /^Don't miss new assignments$/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should save user selection on localStorage', async () => {
+    vi.stubGlobal('Notification', {permission: 'default'});
+
+    const {user} = render(<TurnOnNotificationPermission />);
+
+    expect(
+      screen.getByRole('alertdialog', {
+        name: /^Don't miss new assignments$/i,
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /close notification/i}));
+
+    expect(
+      screen.queryByRole('alertdialog', {
+        name: /^Don't miss new assignments$/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(getStateLocally('areNativeNotificationsEnabled')).toBe(false);
+  });
+
+  it('should respect localStorage selection', () => {
+    vi.stubGlobal('Notification', {permission: 'default'});
+    storeStateLocally('areNativeNotificationsEnabled', false);
 
     render(<TurnOnNotificationPermission />);
 

@@ -50,10 +50,14 @@ public final class DefaultJobCommandPreconditionGuard {
       final List<JobCommandCheck> customChecks) {
     this.state = state;
     this.acceptCommand = acceptCommand;
+    this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            state, intent, List.of(State.ACTIVATABLE, State.ACTIVATED), customChecks);
-    this.authCheckBehavior = authCheckBehavior;
+            state,
+            intent,
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            customChecks,
+            authCheckBehavior);
   }
 
   public boolean onCommand(
@@ -80,7 +84,7 @@ public final class DefaultJobCommandPreconditionGuard {
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    if (authCheckBehavior.isAuthorized(request).isRight()) {
       return Either.right(job);
     }
 

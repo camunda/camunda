@@ -12,10 +12,13 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -61,6 +64,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
   private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
+  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneCamunda() {
     super(
@@ -106,6 +110,18 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     // default exporters
     withRecordingExporter(true).withCamundaExporter();
+
+    securityConfig = new CamundaSecurityProperties();
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 
   @Override
@@ -156,6 +172,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   public TestRestOperateClient newOperateClient() {
     return new TestRestOperateClient(restAddress());
+  }
+
+  public TestRestOperateClient newOperateClient(final String username, final String password) {
+    return new TestRestOperateClient(restAddress(), username, password);
   }
 
   @Override
@@ -230,6 +250,16 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
    */
   public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
+    return this;
+  }
+
+  /**
+   * Modifies the security configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  public TestStandaloneCamunda withSecurityConfig(
+      final Consumer<CamundaSecurityProperties> modifier) {
+    modifier.accept(securityConfig);
     return this;
   }
 
@@ -323,5 +353,14 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  public TestStandaloneCamunda withAuthorizationsEnabled() {
+    return withSecurityConfig(
+        securityConfig -> securityConfig.getAuthorizations().setEnabled(true));
+  }
+
+  public String getElasticSearchHostAddress() {
+    return esContainer.getHttpHostAddress();
   }
 }

@@ -55,7 +55,9 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired
   @Qualifier("tasklistVariableTemplate")
@@ -172,7 +174,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   @Override
   public List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids) {
     final TermsQueryBuilder q =
-        termsQuery(TaskTemplate.ID, CollectionUtil.toSafeArrayOfStrings(ids));
+        termsQuery(TaskTemplate.KEY, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest searchRequest =
         new SearchRequest(index).source(new SearchSourceBuilder().query(q).size(QUERY_SIZE));
     try {

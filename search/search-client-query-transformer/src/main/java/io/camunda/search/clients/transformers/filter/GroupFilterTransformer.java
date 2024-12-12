@@ -10,31 +10,32 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.MEMBER_KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
-import java.util.List;
 
-public class GroupFilterTransformer implements FilterTransformer<GroupFilter> {
+public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> {
+  public GroupFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
 
     return and(
         term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()),
-        filter.groupKey() == null ? null : term(GroupIndex.KEY, filter.groupKey()),
-        filter.name() == null ? null : term(GroupIndex.NAME, filter.name()),
+        filter.groupKey() == null ? null : term(KEY, filter.groupKey()),
+        filter.name() == null ? null : term(NAME, filter.name()),
         filter.memberKey() == null
             ? null
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
-                term(GroupIndex.MEMBER_KEY, filter.memberKey())));
-  }
-
-  @Override
-  public List<String> toIndices(final GroupFilter filter) {
-    return List.of("camunda-group-8.7.0_alias");
+                term(MEMBER_KEY, filter.memberKey())));
   }
 }

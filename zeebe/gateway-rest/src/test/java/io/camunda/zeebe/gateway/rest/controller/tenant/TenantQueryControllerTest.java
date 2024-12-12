@@ -211,7 +211,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort": [{"field": "tenantId", "order": "asc"}]
+              "sort": [{"field": "tenantId", "order": "ASC"}]
             }
             """)
         .exchange()
@@ -268,9 +268,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)),
@@ -281,7 +281,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -301,7 +301,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

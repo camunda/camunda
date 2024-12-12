@@ -25,7 +25,6 @@ public record ProcessInstanceFilter(
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<Long>> parentProcessInstanceKeyOperations,
     List<Operation<Long>> parentFlowNodeInstanceKeyOperations,
-    List<Operation<String>> treePathOperations,
     List<Operation<OffsetDateTime>> startDateOperations,
     List<Operation<OffsetDateTime>> endDateOperations,
     List<Operation<String>> stateOperations,
@@ -44,7 +43,6 @@ public record ProcessInstanceFilter(
     private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<Long>> parentProcessInstanceKeyOperations;
     private List<Operation<Long>> parentFlowNodeInstanceKeyOperations;
-    private List<Operation<String>> treePathOperations;
     private List<Operation<OffsetDateTime>> startDateOperations;
     private List<Operation<OffsetDateTime>> endDateOperations;
     private List<Operation<String>> stateOperations;
@@ -178,21 +176,6 @@ public record ProcessInstanceFilter(
       return parentFlowNodeInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder treePathOperations(final List<Operation<String>> operations) {
-      treePathOperations = addValuesToList(treePathOperations, operations);
-      return this;
-    }
-
-    public Builder treePaths(final String value, final String... values) {
-      return treePathOperations(FilterUtil.mapDefaultToOperation(value, values));
-    }
-
-    @SafeVarargs
-    public final Builder treePathOperations(
-        final Operation<String> operation, final Operation<String>... operations) {
-      return treePathOperations(collectValues(operation, operations));
-    }
-
     public Builder startDateOperations(final List<Operation<OffsetDateTime>> operations) {
       startDateOperations = addValuesToList(startDateOperations, operations);
       return this;
@@ -267,7 +250,6 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(parentProcessInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(parentFlowNodeInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(treePathOperations, Collections.emptyList()),
           Objects.requireNonNullElse(startDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(endDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),

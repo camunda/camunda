@@ -38,6 +38,7 @@ jobs:
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
+      tasklist-frontend-changes: ${{ steps.filter.outputs.tasklist-frontend-changes }}
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
@@ -45,6 +46,8 @@ jobs:
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
       # Detect changes against the base branch
@@ -57,6 +60,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.4'
@@ -64,10 +68,12 @@ jobs:
       CONFTEST_VERSION: '0.56.0'
     steps:
       - uses: actions/checkout@v4
-      - run: echo "::add-matcher::.github/actionlint-matcher.json"
-      - run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) $ACTIONLINT_VERSION
-          ./actionlint -shellcheck '' -ignore 'property "vault_.+" is not defined in object type' -ignore 'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
+      - uses: camunda/infra-global-github-actions/actionlint@main
+        with:
+          version: ${{ env.ACTIONLINT_VERSION }}
+          ignore: |-
+            property "vault_.+" is not defined in object type
+            object type "{}" cannot be filtered by object filtering `.*` since it has no object element
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
           ./conftest test -o github --policy .github/conftest-*.rego .github/workflows/*.yml
@@ -86,6 +92,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -110,6 +117,7 @@ jobs:
     needs: [detect-changes]
     name: Java checks
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
@@ -136,6 +144,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-frontend
@@ -169,6 +178,7 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -220,6 +230,7 @@ jobs:
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
+    permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -324,6 +335,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
@@ -406,6 +419,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: identity/client
@@ -439,6 +453,12 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  tasklist-frontend-tests:
+    if: needs.detect-changes.outputs.tasklist-frontend-changes == 'true'
+    needs: [detect-changes]
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit
+
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     needs: [detect-changes]
@@ -450,6 +470,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
@@ -489,6 +510,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
@@ -528,6 +550,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: optimize/client
@@ -575,6 +598,7 @@ jobs:
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       LIMITS_CPU: 4
     steps:
@@ -615,17 +639,19 @@ jobs:
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
-    timeout-minutes: 10
     needs: [detect-changes]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
     env:
       # set the comparison based on the type of workflow trigger:
       #   - for PRs, we use the last commit of the base
       #   - for merge queues, we use the last commit of the target merge queue
       #   - for a push, we use the last commit before the push
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-    if: |
-      needs.detect-changes.outputs.protobuf-changes == 'true'
+    if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
       - uses: actions/checkout@v4
       - id: pr-body
@@ -665,11 +691,11 @@ jobs:
 
   openapi-lint:
     name: C8 REST OpenAPI linting
-    timeout-minutes: 2
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    if: |
-      needs.detect-changes.outputs.openapi-changes == 'true'
+    timeout-minutes: 2
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - name: Install Vacuum
@@ -695,6 +721,8 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions:
+      checks: read
     needs:
       - actionlint
       - build-operate-backend
@@ -710,6 +738,7 @@ jobs:
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
+      - tasklist-frontend-tests
       - zeebe-ci
     steps:
       - uses: actions/checkout@v4
@@ -727,6 +756,7 @@ jobs:
     needs: [ check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
@@ -798,6 +828,7 @@ jobs:
     needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-camunda-docker-snapshot

@@ -24,6 +24,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +58,6 @@ public class FlownodeInstanceTest extends ClientRestTest {
                     .flowNodeId("flowNodeId")
                     .hasIncident(true)
                     .incidentKey(4L)
-                    .treePath("processInstanceKey/flowNodeId")
                     .tenantId("<default>"))
         .send()
         .join();
@@ -74,7 +74,6 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(filter.getFlowNodeId()).isEqualTo("flowNodeId");
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo(4L);
-    assertThat(filter.getTreePath()).isEqualTo("processInstanceKey/flowNodeId");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 
@@ -112,15 +111,15 @@ public class FlownodeInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
     final List<SearchQuerySortRequest> sorts = Objects.requireNonNull(request.getSort());
     assertThat(sorts.size()).isEqualTo(9);
-    assertSort(sorts.get(0), "processDefinitionKey", "asc");
-    assertSort(sorts.get(1), "processInstanceKey", "asc");
-    assertSort(sorts.get(2), "processDefinitionId", "asc");
-    assertSort(sorts.get(3), "type", "asc");
-    assertSort(sorts.get(4), "state", "asc");
-    assertSort(sorts.get(5), "startDate", "desc");
-    assertSort(sorts.get(6), "endDate", "desc");
-    assertSort(sorts.get(7), "incidentKey", "asc");
-    assertSort(sorts.get(8), "tenantId", "asc");
+    assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "processInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(2), "processDefinitionId", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "type", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "state", SortOrderEnum.ASC);
+    assertSort(sorts.get(5), "startDate", SortOrderEnum.DESC);
+    assertSort(sorts.get(6), "endDate", SortOrderEnum.DESC);
+    assertSort(sorts.get(7), "incidentKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(8), "tenantId", SortOrderEnum.ASC);
   }
 
   @Test
@@ -136,7 +135,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String field, final String order) {
+      final SearchQuerySortRequest sort, final String field, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(field);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

@@ -20,7 +20,6 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
@@ -50,6 +49,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -77,7 +77,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   protected OpenSearchClient zeebeOsClient;
 
   @Autowired protected OperateProperties operateProperties;
-  @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
@@ -99,7 +98,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private SchemaManager schemaManager;
-  @Autowired private TestImportListener testImportListener;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
@@ -110,10 +108,12 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void starting(final Description description) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     }
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getOpensearch().isCreateSchema()) {
       schemaManager.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
@@ -247,48 +247,22 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
     boolean found = predicate.test(arguments);
     final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
       try {
         if (supplier != null) {
           supplier.get();
         }
         refreshSearchIndices();
-        zeebeImporter.performOneRoundOfImportFor(readers);
         refreshOperateSearchIndices();
         if (runPostImport) {
           runPostImportActions();
         }
-
       } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
-      }
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (testImportListener.getImportedCount() < testImportListener.getScheduledCount()
-          && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(2000);
-          zeebeImporter.performOneRoundOfImportFor(readers);
-          refreshOperateSearchIndices();
-          if (runPostImport) {
-            runPostImportActions();
-          }
-
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          LOGGER.error(e.getMessage(), e);
-        }
-        LOGGER.debug(
-            " {} of {} imports processed",
-            testImportListener.getImportedCount(),
-            testImportListener.getScheduledCount());
       }
       refreshOperateSearchIndices();
       found = predicate.test(arguments);
       if (!found) {
-        sleepFor(2000);
+        sleepFor(500);
         waitingRound++;
       }
     }
@@ -304,7 +278,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void runPostImportActions() {
-    if (zeebePostImporter.getPostImportActions().size() == 0) {
+    if (zeebePostImporter.getPostImportActions().isEmpty()) {
       zeebePostImporter.initPostImporters();
     }
     for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {

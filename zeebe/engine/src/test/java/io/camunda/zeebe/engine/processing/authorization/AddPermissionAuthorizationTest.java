@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Set;
@@ -94,7 +95,7 @@ public class AddPermissionAuthorizationTest {
   }
 
   @Test
-  public void shouldRejectIfPermissionAlreadyExists() {
+  public void shouldRejectIfPermissionAlreadyExistsDirectly() {
     // given
     final var ownerKey =
         engine
@@ -139,5 +140,98 @@ public class AddPermissionAuthorizationTest {
                     ownerKey,
                     "[bar]",
                     "[bar, baz]"));
+  }
+
+  @Test
+  public void shouldNotRejectIfPermissionAlreadyExistsOnRole() {
+    // given -- user is assigned a role that has the permission
+    final var ownerKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var roleKey = engine.role().newRole("role").create().getKey();
+    engine.role().addEntity(roleKey).withEntityKey(ownerKey).withEntityType(EntityType.USER).add();
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(roleKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "foo")
+        .withPermission(PermissionType.DELETE, "bar", "baz")
+        .add()
+        .getValue();
+
+    // when -- assigning the permission directly to the user
+    final var response =
+        engine
+            .authorization()
+            .permission()
+            .withOwnerKey(ownerKey)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .add();
+
+    // then
+    assertThat(response.getValue())
+        .extracting(
+            AuthorizationRecordValue::getOwnerKey,
+            AuthorizationRecordValue::getOwnerType,
+            AuthorizationRecordValue::getResourceType)
+        .containsExactly(
+            ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
+  }
+
+  @Test
+  public void shouldNotRejectIfPermissionAlreadyExistsOnGroup() {
+    // given -- user is assigned a group that has the permission
+    final var ownerKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var groupKey = engine.group().newGroup("group").create().getKey();
+    engine
+        .group()
+        .addEntity(groupKey)
+        .withEntityKey(ownerKey)
+        .withEntityType(EntityType.USER)
+        .add();
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(groupKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "foo")
+        .withPermission(PermissionType.DELETE, "bar", "baz")
+        .add()
+        .getValue();
+
+    // when -- assigning the permission directly to the user
+    final var response =
+        engine
+            .authorization()
+            .permission()
+            .withOwnerKey(ownerKey)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .add();
+
+    // then
+    assertThat(response.getValue())
+        .extracting(
+            AuthorizationRecordValue::getOwnerKey,
+            AuthorizationRecordValue::getOwnerType,
+            AuthorizationRecordValue::getResourceType)
+        .containsExactly(
+            ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
   }
 }

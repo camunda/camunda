@@ -7,33 +7,30 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
-import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import java.util.List;
 
 public class IdentitySetupRecord extends UnifiedRecordValue implements IdentitySetupRecordValue {
 
   private final ObjectProperty<RoleRecord> defaultRoleProp =
       new ObjectProperty<>("defaultRole", new RoleRecord());
-  private final ObjectProperty<UserRecord> defaultUserProp =
-      new ObjectProperty<>("defaultUser", new UserRecord());
+  private final ArrayProperty<UserRecord> usersProp = new ArrayProperty<>("users", UserRecord::new);
   private final ObjectProperty<TenantRecord> defaultTenantProp =
       new ObjectProperty<>("defaultTenant", new TenantRecord());
 
   public IdentitySetupRecord() {
     super(3);
-    declareProperty(defaultRoleProp)
-        .declareProperty(defaultUserProp)
-        .declareProperty(defaultTenantProp);
+    declareProperty(defaultRoleProp).declareProperty(usersProp).declareProperty(defaultTenantProp);
   }
 
   @Override
-  public RoleRecordValue getDefaultRole() {
+  public RoleRecord getDefaultRole() {
     return defaultRoleProp.getValue();
   }
 
@@ -43,22 +40,22 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public UserRecordValue getDefaultUser() {
-    return defaultUserProp.getValue();
-  }
-
-  public IdentitySetupRecord setDefaultUser(final UserRecord user) {
-    defaultUserProp.getValue().copyFrom(user);
-    return this;
+  public List<UserRecordValue> getUsers() {
+    return usersProp.stream().map(UserRecordValue.class::cast).toList();
   }
 
   @Override
-  public TenantRecordValue getDefaultTenant() {
+  public TenantRecord getDefaultTenant() {
     return defaultTenantProp.getValue();
   }
 
   public IdentitySetupRecord setDefaultTenant(final TenantRecord tenant) {
     defaultTenantProp.getValue().copyFrom(tenant);
+    return this;
+  }
+
+  public IdentitySetupRecord addUser(final UserRecord user) {
+    usersProp.add().copyFrom(user);
     return this;
   }
 }

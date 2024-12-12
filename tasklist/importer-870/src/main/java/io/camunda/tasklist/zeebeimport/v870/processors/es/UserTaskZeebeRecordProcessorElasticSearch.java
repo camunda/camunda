@@ -50,7 +50,9 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
-  @Autowired private SnapshotTaskVariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
@@ -88,7 +90,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           .id(entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
+          .retryOnConflict(UPDATE_RETRY_COUNT)
+          .routing(entity.getProcessInstanceId());
 
     } catch (final IOException e) {
       throw new PersistenceException(

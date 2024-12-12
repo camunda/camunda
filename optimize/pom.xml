@@ -14,8 +14,8 @@
     <camunda.maven.artifacts.version>7.22.0</camunda.maven.artifacts.version>
 
     <!-- We use this version to compile but run IT against containers with zeebe.docker.version -->
-    <zeebe.version>8.7.0-alpha2</zeebe.version>
-    <identity.version>8.7.0-alpha2</identity.version>
+    <zeebe.version>8.6.0</zeebe.version>
+    <identity.version>8.6.0</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -47,7 +47,7 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.29.23</awssdk.version>
+    <awssdk.version>2.29.32</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4.1</apache.http5-client.version>
     <apache.http5-core.version>5.3.1</apache.http5-core.version>
@@ -77,7 +77,7 @@
     <junit.platform.version>1.11.3</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
-    <google-java-format.plugin.version>1.25.0</google-java-format.plugin.version>
+    <google-java-format.plugin.version>1.25.2</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 

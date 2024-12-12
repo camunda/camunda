@@ -19,7 +19,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTem
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.TREE_PATH;
 
 public class IncidentFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -37,7 +36,6 @@ public class IncidentFieldSortingTransformer implements FieldSortingTransformer 
       case "creationTime" -> CREATION_TIME;
       case "state" -> STATE;
       case "jobKey" -> JOB_KEY;
-      case "treePath" -> TREE_PATH;
       case "tenantId" -> TENANT_ID;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };

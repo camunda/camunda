@@ -43,6 +43,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.List;
 
 public class SearchClients
@@ -67,10 +68,11 @@ public class SearchClients
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
 
-  public SearchClients(final DocumentBasedSearchClient searchClient, final String prefix) {
+  public SearchClients(
+      final DocumentBasedSearchClient searchClient, final IndexDescriptors indexDescriptors) {
     this(
         searchClient,
-        ServiceTransformers.newInstance(prefix),
+        ServiceTransformers.newInstance(indexDescriptors),
         SecurityContext.withoutAuthentication());
   }
 
@@ -198,7 +200,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext)
-        .search(filter, GroupEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
 
   @Override

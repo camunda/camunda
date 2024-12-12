@@ -39,7 +39,6 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {TestApplication.class},
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".cloud.clusterId=wrong-scope",
       // OAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI +
       // "=https://weblogin.cloud.ultrawombat.com/"

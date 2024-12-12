@@ -24,7 +24,9 @@ import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
@@ -92,7 +95,9 @@ import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
+import io.camunda.zeebe.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ClockPinCommandImpl;
@@ -101,6 +106,7 @@ import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateMappingCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateRoleCommandImpl;
@@ -703,6 +709,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
+  public CreateGroupCommandStep1 newCreateGroupCommand() {
+    return new CreateGroupCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
@@ -817,6 +828,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DeleteTenantCommandStep1 newDeleteTenantCommand(final long tenantKey) {
     return new DeleteTenantCommandImpl(httpClient).tenantKey(tenantKey);
+  }
+
+  @Override
+  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final long tenantKey) {
+    return new AssignMappingToTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final long tenantKey) {
+    return new AssignUserToTenantCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {

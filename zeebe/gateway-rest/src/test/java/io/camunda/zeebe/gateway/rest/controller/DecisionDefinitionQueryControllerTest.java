@@ -191,15 +191,15 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "decisionDefinitionKey",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "version",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                          "field": "decisionDefinitionId"
@@ -262,7 +262,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

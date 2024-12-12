@@ -25,10 +25,12 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -53,7 +55,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "endDate":"2023-05-23T00:00:00.000Z",
                    "flowNodeId":"flowNodeId",
                    "flowNodeName":"flowNodeName",
-                   "treePath":"processInstanceKey/flowNodeId",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":false,
@@ -81,7 +82,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
                       "flowNodeId",
-                      "processInstanceKey/flowNodeId",
+                      null,
                       FlowNodeType.SERVICE_TASK,
                       FlowNodeState.ACTIVE,
                       false,
@@ -101,7 +102,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
                    "flowNodeId":"startEvent_1",
-                   "treePath":"5/23",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
@@ -118,7 +118,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2023-05-17T10:10:10Z"),
           OffsetDateTime.parse("2023-05-23T10:10:10Z"),
           "startEvent_1",
-          "5/23",
+          null,
           FlowNodeType.SERVICE_TASK,
           FlowNodeState.ACTIVE,
           true,
@@ -130,18 +130,18 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
   static final String FLOW_NODE_INSTANCES_SEARCH_URL = FLOW_NODE_INSTANCES_URL + "search";
 
   @MockBean FlowNodeInstanceServices flowNodeInstanceServices;
-  @MockBean XmlUtil xmlUtil;
+  @MockBean ProcessCache processCache;
 
   @BeforeEach
   void setupServices() {
     when(flowNodeInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(flowNodeInstanceServices);
-    when(xmlUtil.getFlowNodeName(any())).thenReturn("flowNodeName");
-    final var processDefinitionMap = mock(HashMap.class);
-    final var userTaskNamesMap = mock(HashMap.class);
-    when(userTaskNamesMap.get(any())).thenReturn("flowNodeName");
-    when(processDefinitionMap.get(any())).thenReturn(userTaskNamesMap);
-    when(xmlUtil.getFlowNodesNames(any())).thenReturn(processDefinitionMap);
+    when(processCache.getFlowNodeName(any())).thenReturn("flowNodeName");
+    final var processCacheItem = mock(ProcessCacheItem.class);
+    when(processCacheItem.getFlowNodeName(any())).thenReturn("flowNodeName");
+    final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
+    when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
+    when(processCache.getFlowNodeNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -162,7 +162,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(xmlUtil).getFlowNodesNames(any());
+    verify(processCache).getFlowNodeNames(any());
   }
 
   @Test
@@ -187,7 +187,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(xmlUtil).getFlowNodesNames(any());
+    verify(processCache).getFlowNodeNames(any());
   }
 
   @Test
@@ -208,7 +208,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                 "type": "SERVICE_TASK",
                 "flowNodeId": "StartEvent_1",
                 "flowNodeName": "name",
-                "treePath": "2251799813685989/2251799813685996",
                 "hasIncident": true,
                 "incidentKey": 2251799813685320,
                 "tenantId": "default"
@@ -241,7 +240,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .states(FlowNodeState.ACTIVE)
                         .types(FlowNodeType.SERVICE_TASK)
                         .flowNodeIds("StartEvent_1")
-                        .treePaths("2251799813685989/2251799813685996")
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")
@@ -315,7 +313,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
-    verify(xmlUtil).getFlowNodesNames(any());
+    verify(processCache).getFlowNodeNames(any());
   }
 
   @Test
@@ -332,7 +330,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_GET_RESPONSE);
 
     verify(flowNodeInstanceServices).getByKey(23L);
-    verify(xmlUtil).getFlowNodeName(any());
+    verify(processCache).getFlowNodeName(any());
   }
 
   @Test
@@ -359,6 +357,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                 """);
 
     verify(flowNodeInstanceServices).getByKey(5L);
-    verify(xmlUtil, never()).getFlowNodeName(any());
+    verify(processCache, never()).getFlowNodeName(any());
   }
 }

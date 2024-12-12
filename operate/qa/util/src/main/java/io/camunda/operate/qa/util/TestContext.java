@@ -47,11 +47,13 @@ public class TestContext<T extends TestContext<T>> {
   private Boolean multitenancyEnabled;
   private final Map<String, String> operateContainerEnvs = new LinkedHashMap<>();
 
+  private String connectionType;
+
   public File getZeebeDataFolder() {
     return zeebeDataFolder;
   }
 
-  public T setZeebeDataFolder(File zeebeDataFolder) {
+  public T setZeebeDataFolder(final File zeebeDataFolder) {
     this.zeebeDataFolder = zeebeDataFolder;
     return (T) this;
   }
@@ -60,7 +62,7 @@ public class TestContext<T extends TestContext<T>> {
     return network;
   }
 
-  public T setNetwork(Network network) {
+  public T setNetwork(final Network network) {
     this.network = network;
     return (T) this;
   }
@@ -69,7 +71,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalPostgresHost;
   }
 
-  public TestContext<T> setInternalPostgresHost(String internalPostgresHost) {
+  public TestContext<T> setInternalPostgresHost(final String internalPostgresHost) {
     this.internalPostgresHost = internalPostgresHost;
     return this;
   }
@@ -78,7 +80,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalPostgresPort;
   }
 
-  public TestContext<T> setInternalPostgresPort(Integer internalPostgresPort) {
+  public TestContext<T> setInternalPostgresPort(final Integer internalPostgresPort) {
     this.internalPostgresPort = internalPostgresPort;
     return this;
   }
@@ -87,7 +89,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalPostgresHost;
   }
 
-  public TestContext<T> setExternalPostgresHost(String externalPostgresHost) {
+  public TestContext<T> setExternalPostgresHost(final String externalPostgresHost) {
     this.externalPostgresHost = externalPostgresHost;
     return this;
   }
@@ -96,7 +98,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalPostgresPort;
   }
 
-  public TestContext<T> setExternalPostgresPort(Integer externalPostgresPort) {
+  public TestContext<T> setExternalPostgresPort(final Integer externalPostgresPort) {
     this.externalPostgresPort = externalPostgresPort;
     return this;
   }
@@ -105,7 +107,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalIdentityPort;
   }
 
-  public TestContext<T> setInternalIdentityPort(Integer internalIdentityPort) {
+  public TestContext<T> setInternalIdentityPort(final Integer internalIdentityPort) {
     this.internalIdentityPort = internalIdentityPort;
     return this;
   }
@@ -114,7 +116,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalIdentityPort;
   }
 
-  public TestContext<T> setExternalIdentityPort(Integer externalIdentityPort) {
+  public TestContext<T> setExternalIdentityPort(final Integer externalIdentityPort) {
     this.externalIdentityPort = externalIdentityPort;
     return this;
   }
@@ -123,7 +125,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalIdentityHost;
   }
 
-  public TestContext<T> setExternalIdentityHost(String externalIdentityHost) {
+  public TestContext<T> setExternalIdentityHost(final String externalIdentityHost) {
     this.externalIdentityHost = externalIdentityHost;
     return this;
   }
@@ -132,7 +134,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalIdentityHost;
   }
 
-  public TestContext<T> setInternalIdentityHost(String internalIdentityHost) {
+  public TestContext<T> setInternalIdentityHost(final String internalIdentityHost) {
     this.internalIdentityHost = internalIdentityHost;
     return this;
   }
@@ -141,7 +143,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalElsHost;
   }
 
-  public T setExternalElsHost(String externalElsHost) {
+  public T setExternalElsHost(final String externalElsHost) {
     this.externalElsHost = externalElsHost;
     return (T) this;
   }
@@ -150,7 +152,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalElsPort;
   }
 
-  public T setExternalElsPort(Integer externalElsPort) {
+  public T setExternalElsPort(final Integer externalElsPort) {
     this.externalElsPort = externalElsPort;
     return (T) this;
   }
@@ -159,7 +161,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalElsHost;
   }
 
-  public T setInternalElsHost(String internalElsHost) {
+  public T setInternalElsHost(final String internalElsHost) {
     this.internalElsHost = internalElsHost;
     return (T) this;
   }
@@ -168,7 +170,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalElsPort;
   }
 
-  public T setInternalElsPort(Integer internalElsPort) {
+  public T setInternalElsPort(final Integer internalElsPort) {
     this.internalElsPort = internalElsPort;
     return (T) this;
   }
@@ -177,7 +179,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalKeycloakHost;
   }
 
-  public TestContext<T> setExternalKeycloakHost(String externalKeycloakHost) {
+  public TestContext<T> setExternalKeycloakHost(final String externalKeycloakHost) {
     this.externalKeycloakHost = externalKeycloakHost;
     return this;
   }
@@ -186,7 +188,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalKeycloakPort;
   }
 
-  public TestContext<T> setExternalKeycloakPort(Integer externalKeycloakPort) {
+  public TestContext<T> setExternalKeycloakPort(final Integer externalKeycloakPort) {
     this.externalKeycloakPort = externalKeycloakPort;
     return this;
   }
@@ -195,7 +197,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalKeycloakHost;
   }
 
-  public TestContext<T> setInternalKeycloakHost(String internalKeycloakHost) {
+  public TestContext<T> setInternalKeycloakHost(final String internalKeycloakHost) {
     this.internalKeycloakHost = internalKeycloakHost;
     return this;
   }
@@ -204,7 +206,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalKeycloakPort;
   }
 
-  public TestContext<T> setInternalKeycloakPort(Integer internalKeycloakPort) {
+  public TestContext<T> setInternalKeycloakPort(final Integer internalKeycloakPort) {
     this.internalKeycloakPort = internalKeycloakPort;
     return this;
   }
@@ -213,7 +215,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalZeebeContactPoint;
   }
 
-  public T setExternalZeebeContactPoint(String externalZeebeContactPoint) {
+  public T setExternalZeebeContactPoint(final String externalZeebeContactPoint) {
     this.externalZeebeContactPoint = externalZeebeContactPoint;
     return (T) this;
   }
@@ -222,7 +224,7 @@ public class TestContext<T extends TestContext<T>> {
     return internalZeebeContactPoint;
   }
 
-  public T setInternalZeebeContactPoint(String internalZeebeContactPoint) {
+  public T setInternalZeebeContactPoint(final String internalZeebeContactPoint) {
     this.internalZeebeContactPoint = internalZeebeContactPoint;
     return (T) this;
   }
@@ -231,7 +233,7 @@ public class TestContext<T extends TestContext<T>> {
     return zeebeIndexPrefix;
   }
 
-  public T setZeebeIndexPrefix(String zeebeIndexPrefix) {
+  public T setZeebeIndexPrefix(final String zeebeIndexPrefix) {
     this.zeebeIndexPrefix = zeebeIndexPrefix;
     return (T) this;
   }
@@ -240,7 +242,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalOperateHost;
   }
 
-  public T setExternalOperateHost(String externalOperateHost) {
+  public T setExternalOperateHost(final String externalOperateHost) {
     this.externalOperateHost = externalOperateHost;
     return (T) this;
   }
@@ -249,7 +251,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalOperatePort;
   }
 
-  public T setExternalOperatePort(Integer externalOperatePort) {
+  public T setExternalOperatePort(final Integer externalOperatePort) {
     this.externalOperatePort = externalOperatePort;
     return (T) this;
   }
@@ -258,7 +260,7 @@ public class TestContext<T extends TestContext<T>> {
     return externalOperateContextPath;
   }
 
-  public T setExternalOperateContextPath(String externalOperateContextPath) {
+  public T setExternalOperateContextPath(final String externalOperateContextPath) {
     this.externalOperateContextPath = externalOperateContextPath;
     return (T) this;
   }
@@ -267,12 +269,12 @@ public class TestContext<T extends TestContext<T>> {
     return processesToAssert;
   }
 
-  public T setProcessesToAssert(List<String> processesToAssert) {
+  public T setProcessesToAssert(final List<String> processesToAssert) {
     this.processesToAssert = processesToAssert;
     return (T) this;
   }
 
-  public void addProcess(String bpmnProcessId) {
+  public void addProcess(final String bpmnProcessId) {
     if (processesToAssert.contains(bpmnProcessId)) {
       throw new AssertionFailedError("Process was already created earlier: " + bpmnProcessId);
     }
@@ -280,26 +282,26 @@ public class TestContext<T extends TestContext<T>> {
   }
 
   public String getInternalKeycloakBaseUrl() {
-    return String.format("http://%s:%d", this.internalKeycloakHost, this.internalKeycloakPort);
+    return String.format("http://%s:%d", internalKeycloakHost, internalKeycloakPort);
   }
 
   public String getInternalIdentityBaseUrl() {
-    return String.format("http://%s:%d", this.internalIdentityHost, this.internalIdentityPort);
+    return String.format("http://%s:%d", internalIdentityHost, internalIdentityPort);
   }
 
   public String getExternalKeycloakBaseUrl() {
-    return String.format("http://%s:%d", this.externalKeycloakHost, this.externalKeycloakPort);
+    return String.format("http://%s:%d", externalKeycloakHost, externalKeycloakPort);
   }
 
   public String getExternalIdentityBaseUrl() {
-    return String.format("http://%s:%d", this.externalIdentityHost, this.externalIdentityPort);
+    return String.format("http://%s:%d", externalIdentityHost, externalIdentityPort);
   }
 
   public Integer getPartitionCount() {
     return partitionCount;
   }
 
-  public TestContext<T> setPartitionCount(Integer partitionCount) {
+  public TestContext<T> setPartitionCount(final Integer partitionCount) {
     this.partitionCount = partitionCount;
     return this;
   }
@@ -308,8 +310,17 @@ public class TestContext<T extends TestContext<T>> {
     return multitenancyEnabled;
   }
 
-  public TestContext<T> setMultitenancyEnabled(Boolean multitenancyEnabled) {
+  public TestContext<T> setMultitenancyEnabled(final Boolean multitenancyEnabled) {
     this.multitenancyEnabled = multitenancyEnabled;
+    return this;
+  }
+
+  public String getConnectionType() {
+    return connectionType;
+  }
+
+  public TestContext<T> setConnectionType(final String connectionType) {
+    this.connectionType = connectionType;
     return this;
   }
 
@@ -317,7 +328,7 @@ public class TestContext<T extends TestContext<T>> {
     return operateContainerEnvs;
   }
 
-  public void addOperateContainerEnv(String key, String value) {
+  public void addOperateContainerEnv(final String key, final String value) {
     if (operateContainerEnvs.containsKey(key)) {
       throw new AssertionFailedError("Operate container env was already created earlier: " + key);
     }

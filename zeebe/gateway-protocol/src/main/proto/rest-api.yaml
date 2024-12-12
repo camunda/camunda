@@ -685,6 +685,89 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/groups/{groupKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignGroupToTenant
+      summary: Assign a group to a tenant
+      description: Assign a single group to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The group was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or group was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeGroupFromTenant
+      summary: Remove a group from a tenant
+      description: Removes a single group from a specified tenant without deleting the group.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The group was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or group was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /tenants/search:
     post:
       tags:
@@ -2562,8 +2645,41 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
   /groups/{groupKey}:
+    get:
+      tags:
+        - Group
+      operationId: getGroup
+      summary: Get group
+      description: |
+        Get a group by its key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The group is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags:
         - Group
@@ -2631,6 +2747,138 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /groups/{groupKey}/users/{userKey}:
+    post:
+      tags:
+        - Group
+      operationId: addUserToGroup
+      summary: Assign a user to a group
+      description: |
+        Assigns a user to a group.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The user key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was assigned successfully to the group.
+        "400":
+          description: |
+            The user could not be assigned.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or user with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: The user with the given key is already assigned to the group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: unassignUserFromGroup
+      summary: Unassign a user from a group
+      description: |
+        Unassigns a user from a group.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The user key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was unassigned successfully from the group.
+        "400":
+          description: |
+            The user could not be unassigned.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or user with the given key was not found, or the user is not assigned to this group.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /groups/search:
+    post:
+      tags:
+        - Group
+      operationId: searchGroups
+      summary: Query groups
+      description: |
+        Search for groups based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupSearchQueryRequest"
+      responses:
+        "200":
+          description: The groups search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupSearchQueryResponse"
+        "400":
+          description: >
+            The group search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
 
   /mapping-rules:
     post:
@@ -2700,6 +2948,42 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /mapping-rules/search:
+    post:
+      tags:
+        - Mapping rule
+      operationId: findMappings
+      summary: Query mappings
+      description: |
+        Search for mapping rules based on given criteria.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: The mapping rule search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingSearchResponse"
+        "400":
+          description: >
+            The mapping rule search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -3484,6 +3768,33 @@ components:
           items:
             $ref: "#/components/schemas/TenantItem"
 
+    MappingItem:
+      description: Mapping rule search response item.
+      type: object
+      properties:
+        mappingKey:
+          type: integer
+          description: The unique system-generated internal mapping ID.
+          format: int64
+        claimName:
+          type: string
+          description: The claim name to match against a token.
+        claimValue:
+          type: string
+          description: The value of the claim to match.
+
+    MappingSearchQueryResponse:
+      description: Mapping rule search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingItem"
+
     UserTaskSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3566,6 +3877,11 @@ components:
         processInstanceVariables:
           type: array
           description: Process Instance variables associated with the user task.
+          items:
+            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+        localVariables:
+          type: array
+          description: Local variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
@@ -4072,10 +4388,6 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/LongFilterProperty"
-        treePath:
-          description: The path of keys to this process instance, separated by '/'.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
           description: The start date.
           allOf:
@@ -4154,9 +4466,6 @@ components:
           type: integer
           description: The parent flow node instance key.
           format: int64
-        treePath:
-          type: string
-          description: The path of keys to this process instance, separated by '/'.
         startDate:
           type: string
           description: The start date.
@@ -4262,9 +4571,6 @@ components:
         flowNodeName:
           type: string
           description: The flow node name.
-        treePath:
-          type: string
-          description: The path of keys from process instance to this flow node instance separated by '/'.
         hasIncident:
           type: boolean
           description: Shows whether this flow node instance has an incident related to.
@@ -4316,9 +4622,6 @@ components:
           type: string
         flowNodeName:
           description: The flow node name for this flow node instance.
-          type: string
-        treePath:
-          description: The path from process instance leading to this flow node instance.
           type: string
         type:
           description: Type of flow node as defined set of values.
@@ -4473,9 +4776,6 @@ components:
           type: integer
           format: int64
           description: The job key, if exists, associated with this incident.
-        treePath:
-          type: string
-          description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
         tenantId:
           description: The tenant ID of the incident.
           type: string
@@ -4550,9 +4850,6 @@ components:
           type: integer
           description: The job key, if exists, associated with this incident.
           format: int64
-        treePath:
-          type: string
-          description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
         tenantId:
           description: The tenant ID of the incident.
           type: string
@@ -4755,6 +5052,15 @@ components:
           description: The user search filters.
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
+    MappingSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          description: The mapping search filters.
+          allOf:
+            - $ref: "#/components/schemas/MappingFilterRequest"
     UserFilterRequest:
       description: User search filter.
       type: object
@@ -4768,6 +5074,16 @@ components:
         email:
           description: The email of the user.
           type: "string"
+    MappingFilterRequest:
+      description: Mapping search filter.
+      type: object
+      properties:
+        claimName:
+          type: string
+          description: The claim name to match against a token.
+        claimValue:
+          type: string
+          description: The value of the claim to match.
     CamundaUser:
       type: "object"
       properties:
@@ -4946,7 +5262,7 @@ components:
     GroupCreateResponse:
       type: "object"
       properties:
-        roleKey:
+        groupKey:
           description: The key of the created group.
           type: "integer"
           format: "int64"
@@ -4966,6 +5282,51 @@ components:
         name:
           type: string
           description: The updated display name of the group.
+    GroupItem:
+      description: Group search response item.
+      type: object
+      properties:
+        groupKey:
+          type: integer
+          description: The group key.
+          format: int64
+        name:
+          type: string
+          description: The group name.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the group.
+          items:
+            type: integer
+            format: int64
+    GroupSearchQueryRequest:
+      description: Group search request.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          description: The group search filters.
+          allOf:
+            - $ref: "#/components/schemas/GroupFilterRequest"
+    GroupFilterRequest:
+      description: Group filter request
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the group.
+    GroupSearchQueryResponse:
+      description: Group search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching groups.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupItem"
 
     MappingRuleCreateRequest:
       type: object
@@ -4981,6 +5342,29 @@ components:
         - claimValue
     MappingRuleCreateResponse:
       type: object
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+    MappingSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingResponse"
+    MappingResponse:
+      type: "object"
       properties:
         mappingKey:
           description: The key of the created mapping rule.
@@ -5483,9 +5867,7 @@ components:
           description: The field to sort by.
           type: string
         order:
-          description: The order in which to sort the field.
-          type: string
-          default: asc
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     SearchQueryResponse:
@@ -5874,6 +6256,12 @@ components:
         - FAILED
         - UNSPECIFIED
         - UNKNOWN
+    SortOrderEnum:
+      description: The order in which to sort the related field.
+      enum:
+        - ASC
+        - DESC
+      default: ASC
 
     MessageCorrelationRequest:
       type: object

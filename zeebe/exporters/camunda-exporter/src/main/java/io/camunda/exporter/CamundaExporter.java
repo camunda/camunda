@@ -32,10 +32,13 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.SchemaManager;
+import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -64,6 +67,9 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private final ExporterMetadata metadata;
+  private boolean importersCompleted = false;
+  private SearchEngineClient searchEngineClient;
+  private int partitionId;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -87,6 +93,7 @@ public class CamundaExporter implements Exporter {
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
     clientAdapter = ClientAdapter.of(configuration);
+    partitionId = context.getPartitionId();
     provider.init(
         configuration, clientAdapter.getExporterEntityCacheProvider(), context.getMeterRegistry());
 
@@ -106,7 +113,7 @@ public class CamundaExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    final var searchEngineClient = clientAdapter.getSearchEngineClient();
+    searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
         new SchemaManager(
             searchEngineClient,
@@ -119,6 +126,7 @@ public class CamundaExporter implements Exporter {
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
+    checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
     taskManager.start();
 
@@ -150,9 +158,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (writer.getBatchSize() == 0) {
-      metrics.startFlushLatencyMeasurement();
-    }
 
     final var recordVersion = getVersion(record.getBrokerVersion());
 
@@ -165,7 +170,24 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
+    if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
+      ensureCachedRecordsLessThanBulkSize(record);
+
+      writer.addRecord(record);
+
+      LOG.info(
+          "Waiting for importers to finish, cached record with key {} but did not flush",
+          record.getKey());
+      return;
+    }
+
+    if (writer.getBatchSize() == 0) {
+      metrics.startFlushLatencyMeasurement();
+    }
+
+    // adding record is idempotent
     writer.addRecord(record);
+
     lastPosition = record.getPosition();
 
     if (shouldFlush()) {
@@ -179,6 +201,19 @@ public class CamundaExporter implements Exporter {
       // Update the record counters only after the flush was successful. If the synchronous flush
       // fails then the exporter will be invoked with the same record again.
       updateLastExportedPosition(lastPosition);
+    }
+  }
+
+  private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
+    final var maxCachedRecords = configuration.getBulk().getSize();
+
+    if (writer.getBatchSize() >= maxCachedRecords) {
+      final var warnMsg =
+          String.format(
+              "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish, retrying export for record at position [%s]",
+              maxCachedRecords, record.getPosition());
+      LOG.warn(warnMsg);
+      throw new IllegalStateException(warnMsg);
     }
   }
 
@@ -215,6 +250,29 @@ public class CamundaExporter implements Exporter {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
     scheduleDelayedFlush();
+  }
+
+  private void scheduleImportersCompletedCheck() {
+    controller.scheduleCancellableTask(
+        Duration.ofSeconds(10), this::checkImportersCompletedAndReschedule);
+  }
+
+  private void checkImportersCompletedAndReschedule() {
+    if (!importersCompleted) {
+      scheduleImportersCompletedCheck();
+    }
+    try {
+      final var importPositionIndices =
+          provider.getIndexDescriptors().stream()
+              .filter(
+                  d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
+              .toList();
+
+      importersCompleted =
+          searchEngineClient.importersCompleted(partitionId, importPositionIndices);
+    } catch (final Exception e) {
+      LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
+    }
   }
 
   private void flush() {
