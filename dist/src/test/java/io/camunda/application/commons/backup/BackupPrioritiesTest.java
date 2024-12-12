@@ -9,30 +9,25 @@ package io.camunda.application.commons.backup;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(
-    classes = {
-      BackupPrioritiesTest.TestBackupPriorityConfiguration.class,
-      BackupPriorityConfiguration.class,
-    })
-abstract class BackupPrioritiesTest {
+class BackupPrioritiesTest {
 
   static final List<JavaClass> ALL_IMPLEMENTATIONS;
 
@@ -61,8 +56,6 @@ abstract class BackupPrioritiesTest {
                     })
                 .toList();
   }
-
-  @Autowired BackupPriorityConfiguration backupPriorityConfiguration;
 
   @Test
   public void allImplementationsContainIndicesFromAllApps() {
@@ -96,9 +89,23 @@ abstract class BackupPrioritiesTest {
                     .isEqualTo(1));
   }
 
-  @Test
-  public void testBackupPriorities() {
-    final var priorities = backupPriorityConfiguration.backupPriorities();
+  public static Stream<Object[]> properties() {
+    return Stream.of(null, new OperateProperties())
+        .flatMap(
+            op ->
+                Stream.of(null, new TasklistProperties())
+                    .map(tasklist -> new Object[] {op, tasklist}))
+        // At least one property must be configured
+        .filter(arr -> !Arrays.stream(arr).allMatch(Objects::isNull));
+  }
+
+  @MethodSource("properties")
+  @ParameterizedTest
+  public void testBackupPriorities(
+      final OperateProperties operateProperties, final TasklistProperties tasklistProperties) {
+    final var configuration =
+        new BackupPriorityConfiguration(operateProperties, tasklistProperties);
+    final var priorities = configuration.backupPriorities();
 
     final Set<String> allPriorities =
         priorities.allPriorities().map(obj -> obj.getClass().getName()).collect(Collectors.toSet());
@@ -113,30 +120,17 @@ abstract class BackupPrioritiesTest {
     assertThat(missingInBackup).isEmpty();
   }
 
-  @TestConfiguration
-  static class TestBackupPriorityConfiguration {
-
-    @Bean
-    public ConnectConfiguration connectConfiguration() {
-      return new ConnectConfiguration();
-    }
-
-    //    @Primary
-    //    @Bean
-    //    public OperateProperties properties() {
-    //      return new OperateProperties();
-    //    }
-    //
-    //    @Primary
-    //    @Bean
-    //    public TasklistProperties tasklistProperties() {
-    //      return new TasklistProperties();
-    //    }
-    //
-    //    @Primary
-    //    @Bean
-    //    DatabaseInfo databaseInfo() {
-    //      return new DatabaseInfo();
-    //    }
+  @Test
+  public void shouldFailIfIndexPrefixIsDifferent() {
+    final var operateProperties = new OperateProperties();
+    operateProperties.getElasticsearch().setIndexPrefix("operate-prefix");
+    final var tasklistProperties = new TasklistProperties();
+    tasklistProperties.getElasticsearch().setIndexPrefix("tasklist-prefix");
+    final var configuration =
+        new BackupPriorityConfiguration(operateProperties, tasklistProperties);
+    assertThatThrownBy(configuration::backupPriorities)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("operate-prefix")
+        .hasMessageContaining("tasklist-prefix");
   }
 }

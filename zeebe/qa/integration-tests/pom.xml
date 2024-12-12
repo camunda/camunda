@@ -29,12 +29,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>webapps-schema</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
       <scope>test</scope>
@@ -502,17 +496,7 @@
           </systemProperties>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies>
-            <dependency>io.camunda:webapps-schema</dependency>
-          </usedDependencies>
-        </configuration>
-      </plugin>
     </plugins>
-
   </build>
 
   <profiles>

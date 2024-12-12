@@ -7,8 +7,13 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.exporter.config.ConnectionTypes;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
+import static io.camunda.application.commons.backup.ConfigValidation.allMatch;
+import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOptional;
+
+import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
@@ -49,8 +54,12 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -59,12 +68,52 @@ import org.springframework.context.annotation.Configuration;
 public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
-  final BackupPriorities backupPriorities;
+  private static final String NO_CONFIG_ERROR_MESSAGE =
+      "Expected operate or tasklist to be configured, but none of them is.";
 
-  public BackupPriorityConfiguration(final ConnectConfiguration connectConfiguration) {
-    final String indexPrefix = connectConfiguration.getIndexPrefix();
-    final boolean isElasticsearch =
-        connectConfiguration.getType().equals(ConnectionTypes.ELASTICSEARCH.getType());
+  final OperateProperties operateProperties;
+  final TasklistProperties tasklistProperties;
+
+  public BackupPriorityConfiguration(
+      @Autowired(required = false) final OperateProperties operateProperties,
+      @Autowired(required = false) final TasklistProperties tasklistProperties) {
+    this.operateProperties = operateProperties;
+    this.tasklistProperties = tasklistProperties;
+  }
+
+  private static <A> Function<Map<String, A>, String> differentConfigFor(final String field) {
+    return values ->
+        String.format(
+            "Expected %s to be configured with the same value in operate and tasklist. Got %s.",
+            field, values);
+  }
+
+  @Bean
+  public BackupPriorities backupPriorities() {
+    final var indexPrefix =
+        allMatch(
+                NO_CONFIG_ERROR_MESSAGE,
+                differentConfigFor("indexPrefix"),
+                Map.of(
+                    "operate",
+                    Optional.ofNullable(operateProperties).map(OperateProperties::getIndexPrefix),
+                    "tasklist",
+                    Optional.ofNullable(tasklistProperties)
+                        .map(TasklistProperties::getIndexPrefix)),
+                skipEmptyOptional())
+            .get();
+    final var isElasticsearch =
+        allMatch(
+                NO_CONFIG_ERROR_MESSAGE,
+                differentConfigFor("database.type"),
+                Map.of(
+                    "operate",
+                    Optional.of(DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
+                    "tasklist",
+                    Optional.ofNullable(tasklistProperties)
+                        .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH))),
+                skipEmptyOptional())
+            .get();
     final List<Prio1Backup> prio1 =
         List.of(
             // OPERATE
@@ -130,11 +179,6 @@ public class BackupPriorityConfiguration {
     LOG.debug("Prio4 are {}", prio4);
     LOG.debug("Prio5 are {}", prio5);
     LOG.debug("Prio6 are {}", prio6);
-    backupPriorities = new BackupPriorities(prio1, prio2, prio3, prio4, prio5, prio6);
-  }
-
-  @Bean
-  public BackupPriorities backupPriorities() {
-    return backupPriorities;
+    return new BackupPriorities(prio1, prio2, prio3, prio4, prio5, prio6);
   }
 }

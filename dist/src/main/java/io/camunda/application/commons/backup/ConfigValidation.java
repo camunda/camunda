@@ -8,33 +8,46 @@
 package io.camunda.application.commons.backup;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class ConfigValidation {
 
-  public static Predicate<String> skipEmpty = String::isEmpty;
+  public static Predicate<String> skipEmpty = s -> s == null || s.isEmpty();
 
   private ConfigValidation() {}
 
-  public static <A> A allMatch(
-      final String formatIfEmpty, final String formatIfDifferent, final Map<String, A> props) {
-    return allMatch(formatIfEmpty, formatIfDifferent, props, (ignored) -> false);
+  public static <A> Predicate<A> skipNull() {
+    return Objects::isNull;
+  }
+
+  public static <A> Predicate<Optional<A>> skipEmptyOptional() {
+    return Optional::isEmpty;
   }
 
   public static <A> A allMatch(
-      final String formatIfEmpty,
-      final String formatIfDifferent,
+      final String messageIfEmpty,
+      final Function<Map<String, A>, String> messageIfDifferent,
+      final Map<String, A> props) {
+    return allMatch(messageIfEmpty, messageIfDifferent, props, (ignored) -> false);
+  }
+
+  public static <A> A allMatch(
+      final String messageIfEmpty,
+      final Function<Map<String, A>, String> messageIfDifferent,
       final Map<String, A> props,
       final Predicate<A> skip) {
     final var filtered = props.values().stream().filter(a -> !skip.test(a)).toList();
     if (filtered.isEmpty()) {
-      throw new IllegalArgumentException(formatIfEmpty);
+      throw new IllegalArgumentException(messageIfEmpty);
     }
     final A firstPrefix = filtered.getFirst();
     if (filtered.stream().allMatch(p -> p.equals(firstPrefix))) {
       return firstPrefix;
     } else {
-      throw new IllegalArgumentException(String.format(formatIfDifferent, props));
+      throw new IllegalArgumentException(messageIfDifferent.apply(props));
     }
   }
 }
