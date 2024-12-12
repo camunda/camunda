@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 public class ProcessOverviewServiceTest {
@@ -338,4 +339,17 @@ public class ProcessOverviewServiceTest {
     // then
     verify(processOverviewWriter).updateProcessOwnerIfNotSet(PROCESS_KEY, OWNER_ID);
   }
+
+  @Test
+  void shouldThrowExceptionWhenOwnerIdIsNull() {
+    // when
+    final Throwable thrown =
+        catchThrowable(() -> underTest.updateProcessOwnerIfNotSet(USER_ID, PROCESS_KEY, null));
+
+    // then
+    assertThat(thrown)
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("Owner ID cannot be empty!");
+  }
+
 }
