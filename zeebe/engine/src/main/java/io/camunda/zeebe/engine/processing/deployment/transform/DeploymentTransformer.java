@@ -85,12 +85,17 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getFormState());
 
+    final var resourceTransformer =
+        new ResourceTransformer(
+            keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
+
     resourceTransformers =
         Map.ofEntries(
             entry(".bpmn", bpmnResourceTransformer),
             entry(".xml", bpmnResourceTransformer),
             entry(".dmn", dmnResourceTransformer),
-            entry(".form", formResourceTransformer));
+            entry(".form", formResourceTransformer),
+            entry(".rpa", resourceTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {

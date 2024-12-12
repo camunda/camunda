@@ -50,7 +50,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     final var copy = new PersistedResource();
     copy.resourceIdProp.setValue(BufferUtil.cloneBuffer(getResourceId()));
     copy.versionProp.setValue(getVersion());
-    copy.resourceKeyProp.setValue(getFormKey());
+    copy.resourceKeyProp.setValue(getResourceKey());
     copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
     copy.resourceNameProp.setValue(BufferUtil.cloneBuffer(getResourceName()));
     copy.tenantIdProp.setValue(getTenantId());
@@ -72,7 +72,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     return bufferAsString(versionTagProp.getValue());
   }
 
-  public long getFormKey() {
+  public long getResourceKey() {
     return resourceKeyProp.getValue();
   }
 
