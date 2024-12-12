@@ -105,10 +105,10 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
             () -> {
               assertThat(
                       databaseTestExtension.areIndicesCreatedAfterChecks(
-                          indexPrefixHolder.getIndexPrefix(), 19, 5 * 60 /*sec*/))
+                          indexPrefixHolder.getIndexPrefix(), 29, 5 * 60 /*sec*/))
                   .describedAs(
-                      "Elasticsearch %s (min %d) indices are created",
-                      indexPrefixHolder.getIndexPrefix(), 19)
+                      "Elasticsearch %s (min %d) tasklist indices are created",
+                      indexPrefixHolder.getIndexPrefix(), 29)
                   .isTrue();
             });
   }
