@@ -417,6 +417,7 @@
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
                 <openApiNullable>false</openApiNullable>
+                <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
               </configOptions>
             </configuration>
           </execution>

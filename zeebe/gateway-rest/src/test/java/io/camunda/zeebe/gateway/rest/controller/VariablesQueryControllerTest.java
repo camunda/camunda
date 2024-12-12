@@ -158,6 +158,10 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                     {
                         "field": "name",
                         "order": "DESC"
+                    },
+                    {
+                        "field": "value",
+                        "order": "asc"
                     }
                 ]
             }""";
@@ -179,7 +183,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
     verify(variableServices)
         .search(
             new VariableQuery.Builder()
-                .sort(new VariableSort.Builder().name().desc().build())
+                .sort(new VariableSort.Builder().name().desc().value().asc().build())
                 .build());
   }
 
