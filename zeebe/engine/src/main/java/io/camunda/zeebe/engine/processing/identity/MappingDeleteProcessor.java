@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -45,14 +47,16 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final TenantState tenantState;
 
   public MappingDeleteProcessor(
-      final MappingState mappingState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.mappingState = mappingState;
+    mappingState = processingState.getMappingState();
+    tenantState = processingState.getTenantState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -113,7 +117,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   private void deleteMapping(final PersistedMapping mapping) {
     final var mappingKey = mapping.getMappingKey();
-    for (final var tenantKey : mapping.getTenantKeysList()) {
+    for (final var tenantId : mapping.getTenantIdsList()) {
+      final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenantKey,
           TenantIntent.ENTITY_REMOVED,

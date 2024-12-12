@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms;
+package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedInput;
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedOutput;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
+import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.Record;

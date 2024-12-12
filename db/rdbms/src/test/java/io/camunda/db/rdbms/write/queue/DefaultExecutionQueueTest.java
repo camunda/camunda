@@ -23,12 +23,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class ExecutionQueueTest {
+class DefaultExecutionQueueTest {
 
   private SqlSession session;
   private SqlSessionFactory sqlSessionFactory;
 
-  private ExecutionQueue executionQueue;
+  private DefaultExecutionQueue executionQueue;
 
   @BeforeEach
   public void beforeEach() {
@@ -38,11 +38,20 @@ class ExecutionQueueTest {
             ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
         .thenReturn(session);
 
-    executionQueue = new ExecutionQueue(sqlSessionFactory, 1, 5);
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 5);
+  }
+
+  @Test
+  public void whenElementIsAddedNoFlushHappensBelowLimit() {
+    executionQueue.executeInQueue(mock(QueueItem.class));
+
+    Mockito.verifyNoInteractions(sqlSessionFactory);
   }
 
   @Test
   public void whenElementIsAddedNoFlushHappens() {
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0);
+
     executionQueue.executeInQueue(mock(QueueItem.class));
 
     Mockito.verifyNoInteractions(sqlSessionFactory);

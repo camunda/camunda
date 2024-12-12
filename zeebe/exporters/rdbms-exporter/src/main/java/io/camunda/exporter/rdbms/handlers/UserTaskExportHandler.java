@@ -5,13 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms;
+package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.*;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
+import io.camunda.exporter.rdbms.DateUtil;
+import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;

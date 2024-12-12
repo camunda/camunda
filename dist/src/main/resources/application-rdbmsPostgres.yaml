@@ -85,6 +85,9 @@ zeebe:
       rdbms:
         # Classname doesn't matter, since this exporter is present via spring bean
         className: RdbmsExporter
+        args:
+          flushInterval: 500
+          maxQueueSize: 1000
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:

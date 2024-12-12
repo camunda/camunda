@@ -101,10 +101,10 @@
                     "followUpDate": {
                       "type": "keyword"
                     },
-                    "candidateGroups": {
+                    "candidateGroupsList": {
                       "type": "text"
                     },
-                    "candidateUsers": {
+                    "candidateUsersList": {
                       "type": "text"
                     },
                     "priority": {

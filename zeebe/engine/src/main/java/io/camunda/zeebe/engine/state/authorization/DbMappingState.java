@@ -80,6 +80,18 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void addTenant(final long mappingKey, final String tenantId) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
+      persistedMapping.addTenantId(tenantId);
+      mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
   public void addGroup(final long mappingKey, final long groupKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
@@ -87,18 +99,6 @@ public class DbMappingState implements MutableMappingState {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
       persistedMapping.addGroupKey(groupKey);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
-  }
-
-  @Override
-  public void addTenant(final long mappingKey, final long tenantKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      persistedMapping.addTenantKey(tenantKey);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
@@ -118,6 +118,20 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void removeTenant(final long mappingKey, final String tenantId) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
+      final var tenantIds = persistedMapping.getTenantIdsList();
+      tenantIds.remove(tenantId);
+      persistedMapping.setTenantIdsList(tenantIds);
+      mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
   public void removeGroup(final long mappingKey, final long groupKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
@@ -127,20 +141,6 @@ public class DbMappingState implements MutableMappingState {
       final List<Long> groupKeys = persistedMapping.getGroupKeysList();
       groupKeys.remove(groupKey);
       persistedMapping.setGroupKeysList(groupKeys);
-      mappingColumnFamily.update(claim, persistedMapping);
-    }
-  }
-
-  @Override
-  public void removeTenant(final long mappingKey, final long tenantKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
-    if (fkClaim != null) {
-      final var claim = fkClaim.inner();
-      final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<Long> tenantKeys = persistedMapping.getTenantKeysList();
-      tenantKeys.remove(tenantKey);
-      persistedMapping.setTenantKeysList(tenantKeys);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
