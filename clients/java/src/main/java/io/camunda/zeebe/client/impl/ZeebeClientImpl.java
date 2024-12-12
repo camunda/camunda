@@ -27,6 +27,7 @@ import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -103,6 +104,7 @@ import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -731,6 +733,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DeleteGroupCommandStep1 newDeleteGroupCommand(final long groupKey) {
     return new DeleteGroupCommandImpl(groupKey, httpClient);
+  }
+
+  @Override
+  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(
+      final long userKey, final long groupKey) {
+    return new AssignUserToGroupCommandImpl(userKey, groupKey, httpClient);
   }
 
   @Override
