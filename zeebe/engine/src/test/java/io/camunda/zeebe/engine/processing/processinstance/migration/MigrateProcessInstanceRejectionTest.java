@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -1682,6 +1683,65 @@ public class MigrateProcessInstanceRejectionTest {
                 Both elements must have either sequential or parallel loop characteristics.""",
                 processInstanceKey))
         .hasKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectMigrationIfItBreaksMessageCardinality() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("proc1")
+                    .startEvent("msg_start")
+                    .message("msg")
+                    .serviceTask("task1", t -> t.zeebeJobType("task"))
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("proc2")
+                    .startEvent("msg_start")
+                    .message("msg")
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+
+    ENGINE.message().withName("msg").withCorrelationKey("cardinality").publish();
+
+    final var processInstanceKey1 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId("proc1")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+    final var processInstanceKey2 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId("proc2")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // currently this breaks message cardinality:
+    // there are now two active process instances with the same process id and correlation key
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey1)
+        .migration()
+        .withTargetProcessDefinitionKey(extractTargetProcessDefinitionKey(deployment, "proc2"))
+        .addMappingInstruction("task1", "task2")
+        // .expectRejection() // we should expect a rejection
+        .migrate();
+
+    // to show case the bug we can cancel both process instances
+    ENGINE.processInstance().withInstanceKey(processInstanceKey1).cancel();
+
+    // Bug reproduction: this cancel fails, because it tries to delete the correlation key for the
+    // bpmn process id again. However, the correlation key is still tracked for the old process id.
+    // This is a bug, and should probably be prevented by adjusting the correlation key tracking on
+    // the MIGRATED event of the process instance itself.
+    ENGINE.processInstance().withInstanceKey(processInstanceKey2).cancel();
   }
 
   private static long extractTargetProcessDefinitionKey(
