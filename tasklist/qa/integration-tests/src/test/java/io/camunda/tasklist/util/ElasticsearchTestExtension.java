@@ -148,9 +148,14 @@ public class ElasticsearchTestExtension
   @Override
   public void refreshTasklistIndices() {
     try {
+
       final RefreshRequest refreshRequest =
           new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      esClient
+          .indices()
+          .refresh(
+              refreshRequest,
+              RequestOptions.DEFAULT.toBuilder().addParameter("wait_for", "true").build());
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
