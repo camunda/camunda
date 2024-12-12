@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
@@ -119,6 +120,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .build();
 
   @MockBean ProcessInstanceServices processInstanceServices;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
 
   @BeforeEach

@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -75,6 +76,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   static final String DECISION_DEFINITIONS_GET_XML_URL = "/v2/decision-definitions/%d/xml";
 
   @MockBean DecisionDefinitionServices decisionDefinitionServices;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
 
   @BeforeEach
   void setupServices() {

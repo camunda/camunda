@@ -18,6 +18,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @WebMvcTest(value = UserController.class)
 public class UserQueryControllerTest extends RestControllerTest {
@@ -61,7 +63,9 @@ public class UserQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
 
-  @MockBean private UserServices userServices;
+  @MockBean UserServices userServices;
+  @MockBean RoleServices roleServices;
+  @MockBean PasswordEncoder passwordEncoder;
 
   @BeforeEach
   void setup() {
