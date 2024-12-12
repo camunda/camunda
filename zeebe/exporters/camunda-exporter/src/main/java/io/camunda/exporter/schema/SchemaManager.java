@@ -146,9 +146,8 @@ public class SchemaManager {
             "Index alias: '{}'. New fields will be added '{}'",
             descriptor.getFullQualifiedName(),
             newProperties);
-
-        searchEngineClient.putMapping(descriptor, newProperties);
       }
+      searchEngineClient.putMapping(descriptor, newProperties);
     }
   }
 
