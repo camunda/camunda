@@ -166,13 +166,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       incidentErrorMessage = jobErrorMessage;
     }
 
-    final var errorType =
-        switch (value.getJobKind()) {
-          case JobKind.BPMN_ELEMENT -> ErrorType.JOB_NO_RETRIES;
-          case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
-          case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
-        };
-
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceProvider(elementInstanceState::getInstance)
@@ -182,7 +175,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
     incidentEvent.reset();
     incidentEvent
-        .setErrorType(errorType)
+        .setErrorType(determineErrorType(value))
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
@@ -197,6 +190,14 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
         .setCallingElementPath(treePathProperties.callingElementPath());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
+  }
+
+  private ErrorType determineErrorType(final JobRecord jobRecord) {
+    return switch (jobRecord.getJobKind()) {
+      case JobKind.BPMN_ELEMENT -> ErrorType.JOB_NO_RETRIES;
+      case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
+      case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
+    };
   }
 
   private Either<Rejection, JobRecord> checkAuthorization(
