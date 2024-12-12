@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms;
+package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.db.rdbms.write.service.TenantWriter;
+import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
