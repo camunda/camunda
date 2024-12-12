@@ -7,9 +7,9 @@ on:
       - main
       - stable/*
       - release-*
-  pull_request: {}
-  merge_group: {}
-  workflow_dispatch: {}
+  pull_request: { }
+  merge_group: { }
+  workflow_dispatch: { }
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -57,7 +57,7 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -89,7 +89,7 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -114,7 +114,7 @@ jobs:
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     name: Java checks
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -128,7 +128,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Not running Maven Spotless here since it is checked in a dedicated job
-      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -141,7 +141,7 @@ jobs:
 
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -175,7 +175,7 @@ jobs:
 
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -188,7 +188,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -198,7 +198,6 @@ jobs:
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
-          -D skipOptimize
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -285,7 +284,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/zeebe
@@ -299,7 +298,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks -D skipOptimize
+          -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
@@ -370,7 +369,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -D skipOptimize
+          maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -399,7 +398,7 @@ jobs:
           goldenfile: camunda-docker-labels.golden.json
       - name: Run Docker tests
         run: |
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -DskipOptimize -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
+          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
           -Dcamunda.docker.test.enabled=true \
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}" \
@@ -416,7 +415,7 @@ jobs:
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -461,13 +460,13 @@ jobs:
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
 
   build-operate-backend:
     if: needs.detect-changes.outputs.operate-backend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -487,7 +486,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Maven
         run: |
-          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       # Build the docker image to verify the built artifacts and the Dockerfile
       # It does NOT push the image to the registry
       - name: Build Docker image
@@ -507,7 +506,7 @@ jobs:
 
   build-tasklist-backend:
     if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -527,7 +526,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Maven
         run: |
-          ./mvnw clean deploy -B -T1C -PskipFrontendBuild -DskipTests -DskipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean deploy -B -T1C -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       # Build the docker image to verify the built artifacts and the Dockerfile
       # It does NOT push the image to the registry
       - name: Build Docker image
@@ -547,7 +546,7 @@ jobs:
 
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -595,7 +594,7 @@ jobs:
 
   optimize-backend-unit-tests:
     if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -613,6 +612,10 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build zeebe-build-tools
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f build-tools/pom.xml install
       - name: Test
         uses: ./.github/actions/run-maven
         with:

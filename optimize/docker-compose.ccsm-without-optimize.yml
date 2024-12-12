@@ -58,7 +58,7 @@ services:
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
       KEYCLOAK_ENABLE_HEALTH_ENDPOINTS: true
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8080/health/ready" ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -86,7 +86,7 @@ services:
     networks:
       - localhost
   elasticsearch:
-    profiles: ["", "elasticsearch"]
+    profiles: [ "", "elasticsearch" ]
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
     container_name: elasticsearch
     environment:
@@ -114,14 +114,13 @@ services:
     networks:
       - localhost
   zeebe:
-    profiles: ["", "elasticsearch"]
+    profiles: [ "", "elasticsearch" ]
     image: camunda/zeebe:latest
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
     ports:
       - "26500:26500"
-      - "9600:9600"
     restart: always
     volumes:
       - ../optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
@@ -130,7 +129,7 @@ services:
     networks:
       - localhost
   tasklist:
-    profiles: ["", "elasticsearch"]
+    profiles: [ "", "elasticsearch" ]
     container_name: tasklist
     image: camunda/tasklist:latest
     ports:
@@ -146,25 +145,25 @@ services:
     networks:
       - localhost
     restart: always
-# We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
+  # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
   operate:
-    profiles: ["", "elasticsearch"]
+    profiles: [ "", "elasticsearch" ]
     image: camunda/operate:latest
     container_name: operate
     environment:
-        - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-        - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-        - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-        - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-        - SPRING_PROFILES_ACTIVE=dev-data
-        - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-        - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-        - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-        - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-        - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-        - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-        - SERVER_SERVLET_CONTEXT_PATH=/
-        - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
+      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+      - SPRING_PROFILES_ACTIVE=dev-data
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - SERVER_SERVLET_CONTEXT_PATH=/
+      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
     ports:
       - "8080:8080"
     depends_on:
@@ -175,7 +174,7 @@ services:
     restart: always
   opensearch:
     image: opensearchproject/opensearch:${OS_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
-    profiles: ["opensearch"]
+    profiles: [ "opensearch" ]
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -207,7 +206,7 @@ services:
     networks:
       - localhost
   zeebe-opensearch:
-    profiles: ["opensearch"]
+    profiles: [ "opensearch" ]
     container_name: zeebe-opensearch
     image: camunda/zeebe:latest
     environment:
@@ -226,7 +225,7 @@ services:
     networks:
       - localhost
   operate-opensearch:
-    profiles: ["opensearch"]
+    profiles: [ "opensearch" ]
     image: camunda/operate:latest
     container_name: operate-opensearch
     environment:
@@ -254,7 +253,7 @@ services:
       - localhost
     restart: always
   tasklist-opensearch:
-    profiles: ["opensearch"]
+    profiles: [ "opensearch" ]
     container_name: tasklist-opensearch
     image: camunda/tasklist:latest
     ports:

@@ -1,11 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.7.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
   <version>8.7.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
+
+  <organization>
+    <name>Camunda Services GmbH</name>
+    <url>http://www.camunda.com</url>
+  </organization>
+
+  <modules>
+    <!-- client should be built before distro -->
+    <module>client</module>
+    <module>util</module>
+    <module>backend</module>
+    <module>../optimize-distro</module>
+    <module>upgrade</module>
+    <module>qa</module>
+  </modules>
+
+  <scm>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/camunda/camunda</url>
+  </scm>
+
+  <issueManagement>
+    <system>Jira</system>
+    <url>https://app.camunda.com/jira/browse/OPT/</url>
+  </issueManagement>
+
+  <distributionManagement>
+    <repository>
+      <id>camunda-nexus</id>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize/</url>
+    </repository>
+    <snapshotRepository>
+      <id>camunda-nexus</id>
+      <url>https://artifacts.camunda.com/artifactory/camunda-optimize-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -49,27 +95,15 @@
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
     <awssdk.version>2.29.32</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
-    <apache.http5-client.version>5.4.1</apache.http5-client.version>
-    <apache.http5-core.version>5.3.1</apache.http5-core.version>
-    <guava.version>33.3.1-jre</guava.version>
-    <spring.boot.version>3.3.4</spring.boot.version>
-    <spring.version>6.1.14</spring.version>
-    <httpclient.version>4.5.14</httpclient.version>
+    <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
-
-    <netty.version>4.1.115.Final</netty.version>
-    <logback.version>1.5.12</logback.version>
-    <slf4j.version>2.0.16</slf4j.version>
-    <commons.io.version>2.18.0</commons.io.version>
 
     <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
     <version.jackson>2.18.1</version.jackson>
 
-    <!-- lucene config-->
-    <lucene.version>8.11.3</lucene.version>
     <!-- testing config -->
     <mockito.version>5.14.2</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
@@ -93,16 +127,6 @@
     <spring-boot.version>3.3.4</spring-boot.version>
   </properties>
 
-  <modules>
-    <!-- client should be built before distro -->
-    <module>client</module>
-    <module>util</module>
-    <module>backend</module>
-    <module>../optimize-distro</module>
-    <module>upgrade</module>
-    <module>qa</module>
-  </modules>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -115,7 +139,7 @@
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-framework-bom</artifactId>
-        <version>${spring.version}</version>
+        <version>${version.spring}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -123,8 +147,8 @@
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${version.jackson}</version>
-        <scope>import</scope>
         <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>jakarta.ws.rs</groupId>
@@ -133,136 +157,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <profiles>
-
-    <!-- release profile-->
-    <profile>
-      <id>release</id>
-      <properties>
-        <skip.docker>true</skip.docker>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-release-plugin</artifactId>
-            <version>3.1.1</version>
-            <configuration>
-              <localCheckout>true</localCheckout>
-              <scmCommentPrefix xml:space="preserve">build: </scmCommentPrefix>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <version>3.3.1</version>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>jar-no-fork</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>attach-test-sources</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>test-jar-no-fork</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- testing profiles-->
-    <profile>
-      <id>it</id>
-      <properties>
-        <skip.unit.tests>true</skip.unit.tests>
-      </properties>
-    </profile>
-    <profile>
-      <id>ccsm-it</id>
-      <properties>
-        <skip.unit.tests>true</skip.unit.tests>
-      </properties>
-    </profile>
-
-    <!-- database profiles-->
-    <profile>
-      <id>elasticsearch</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <database.type>elasticsearch</database.type>
-      </properties>
-    </profile>
-    <!-- database profiles-->
-    <profile>
-      <id>opensearch</id>
-      <properties>
-        <database.type>opensearch</database.type>
-      </properties>
-    </profile>
-
-    <!-- profile to auto format -->
-    <profile>
-      <id>autoFormat</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>spotless-format</id>
-                <goals>
-                  <goal>apply</goal>
-                </goals>
-                <phase>process-sources</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <!-- profile to perform strict validation checks -->
-    <profile>
-      <id>checkFormat</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.diffplug.spotless</groupId>
-            <artifactId>spotless-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>spotless-check</id>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-                <phase>validate</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-  </profiles>
 
   <dependencies>
     <!-- Common test dependencies-->
@@ -333,26 +227,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.github.netmikey.logunit</groupId>
-      <artifactId>logunit-logback</artifactId>
-      <version>2.0.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>ch.qos.logback</groupId>
-          <artifactId>logback-classic</artifactId>
-        </exclusion>
-      </exclusions>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
-      <version>${httpclient.version}</version>
+      <version>${version.httpclient}</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
-          <artifactId>commons-codec</artifactId>
           <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
         </exclusion>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -370,9 +252,66 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
-      <version>${netty.version}</version>
     </dependency>
   </dependencies>
+
+  <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>camunda-nexus</id>
+      <name>Camunda Nexus</name>
+      <url>https://artifacts.camunda.com/artifactory/internal/</url>
+    </repository>
+
+    <repository>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
+    </repository>
+
+    <!-- add the elasticsearch repo -->
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>elasticsearch-releases</id>
+      <url>https://artifacts.elastic.co/maven</url>
+      <layout>default</layout>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda-cpm</id>
+      <name>Camunda BPM Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>camunda-bpm-snapshots</id>
+      <name>Camunda BPM Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
+    </repository>
+  </repositories>
 
   <build>
     <pluginManagement>
@@ -384,21 +323,58 @@
           <configuration>
             <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
-              <!-- ignore common test dependencies -->
+              <dep>io.camunda:identity-spring-boot-starter</dep>
+              <dep>io.micrometer:micrometer-registry-prometheus</dep>
+              <dep>jakarta.annotation:jakarta.annotation-api</dep>
+              <dep>jakarta.servlet:jakarta.servlet-api</dep>
+              <dep>org.apache.httpcomponents.core5:httpcore5</dep>
+              <dep>org.apache.logging.log4j:log4j-api</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+              <dep>org.codehaus.janino:janino</dep>
+              <dep>org.eclipse.angus:jakarta.mail</dep>
+              <dep>org.springframework:spring-tx</dep>
+              <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
+              <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
+              <dep>org.springframework.boot:spring-boot-starter-web</dep>
+              <dep>software.amazon.awssdk:sdk-core</dep>
+              <dep>software.amazon.awssdk:sts</dep>
+              <dep>org.javassist:javassist</dep>
+
+              <!-- test dependencies -->
+              <dep>com.sun.mail:jakarta.mail</dep>
+              <dep>io.camunda:zeebe-build-tools</dep>
+              <dep>io.camunda.optimize:optimize-backend</dep>
+              <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
+              <dep>io.camunda.optimize:upgrade-optimize</dep>
+              <dep>io.github.netmikey.logunit:logunit-core</dep>
+              <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
+              <dep>io.netty:netty-codec-http</dep>
+              <dep>org.apache.httpcomponents:httpmime</dep>
+              <dep>org.apache.logging.log4j:log4j-core</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+              <dep>org.assertj:assertj-core</dep>
+              <dep>org.awaitility:awaitility</dep>
               <dep>org.junit.jupiter:junit-jupiter-api</dep>
-              <dep>org.junit.platform:junit-platform-launcher</dep>
               <dep>org.junit.jupiter:junit-jupiter-engine</dep>
               <dep>org.junit.jupiter:junit-jupiter-params</dep>
               <dep>org.junit.platform:junit-platform-commons</dep>
-              <dep>org.assertj:assertj-core</dep>
+              <dep>org.junit.platform:junit-platform-launcher</dep>
+              <dep>org.mock-server:mockserver-junit-jupiter</dep>
               <dep>org.mockito:mockito-inline</dep>
               <dep>org.mockito:mockito-junit-jupiter</dep>
-              <dep>org.mock-server:mockserver-junit-jupiter</dep>
-              <dep>io.github.netmikey.logunit:logunit-core</dep>
-              <dep>io.github.netmikey.logunit:logunit-logback</dep>
-              <dep>org.apache.httpcomponents:httpmime</dep>
-              <dep>org.awaitility:awaitility</dep>
+              <dep>org.springframework.boot:spring-boot-starter-test</dep>
             </ignoredUnusedDeclaredDependencies>
+            <ignoredNonTestScopedDependencies combine.children="append">
+              <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
+              <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
+              <dep>commons-collections:commons-collections</dep>
+              <dep>org.apache.httpcomponents:httpcore-nio</dep>
+              <dep>org.apache.tika:tika-core</dep>
+              <dep>org.glassfish.jersey.core:jersey-client</dep>
+              <dep>org.opensearch.client:opensearch-java</dep>
+              <dep>org.opensearch.client:opensearch-rest-client</dep>
+            </ignoredNonTestScopedDependencies>
           </configuration>
         </plugin>
         <plugin>
@@ -424,10 +400,8 @@
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>
-              --add-opens java.base/java.lang=ALL-UNNAMED
-              --add-opens java.base/java.util=ALL-UNNAMED
-            </argLine>
+            <argLine>--add-opens java.base/java.lang=ALL-UNNAMED
+              --add-opens java.base/java.util=ALL-UNNAMED</argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>
@@ -575,10 +549,10 @@
         <executions>
           <execution>
             <id>check-java-copyright</id>
-            <phase>prepare-package</phase>
             <goals>
               <goal>check</goal>
             </goals>
+            <phase>prepare-package</phase>
           </execution>
         </executions>
       </plugin>
@@ -594,94 +568,134 @@
 
   </build>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-optimize-snapshots/</url>
-    </snapshotRepository>
-    <repository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-optimize/</url>
-    </repository>
-  </distributionManagement>
+  <profiles>
 
-  <scm>
-    <url>https://github.com/camunda/camunda</url>
-    <connection>
-      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
-    </connection>
-    <developerConnection>
-      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
-    </developerConnection>
-    <tag>HEAD</tag>
-  </scm>
+    <!-- release profile-->
+    <profile>
+      <id>release</id>
+      <properties>
+        <skip.docker>true</skip.docker>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>3.1.1</version>
+            <configuration>
+              <localCheckout>true</localCheckout>
+              <scmCommentPrefix xml:space="preserve">build: </scmCommentPrefix>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+              <execution>
+                <id>attach-test-sources</id>
+                <goals>
+                  <goal>test-jar-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
-  <issueManagement>
-    <system>Jira</system>
-    <url>https://app.camunda.com/jira/browse/OPT/</url>
-  </issueManagement>
+    <!-- testing profiles-->
+    <profile>
+      <id>it</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
+    </profile>
+    <profile>
+      <id>ccsm-it</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
+    </profile>
 
-  <organization>
-    <name>Camunda Services GmbH</name>
-    <url>http://www.camunda.com</url>
-  </organization>
+    <!-- database profiles-->
+    <profile>
+      <id>elasticsearch</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <database.type>elasticsearch</database.type>
+      </properties>
+    </profile>
+    <!-- database profiles-->
+    <profile>
+      <id>opensearch</id>
+      <properties>
+        <database.type>opensearch</database.type>
+      </properties>
+    </profile>
 
-  <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
-  <repositories>
-    <repository>
-      <id>camunda-nexus</id>
-      <name>Camunda Nexus</name>
-      <url>https://artifacts.camunda.com/artifactory/internal/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
+    <!-- profile to auto format -->
+    <profile>
+      <id>autoFormat</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-format</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
-    <repository>
-      <id>central</id>
-      <name>Maven Central</name>
-      <url>https://repo1.maven.org/maven2/</url>
-    </repository>
+    <!-- profile to perform strict validation checks -->
+    <profile>
+      <id>checkFormat</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>spotless-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
-    <!-- add the elasticsearch repo -->
-    <repository>
-      <id>elasticsearch-releases</id>
-      <url>https://artifacts.elastic.co/maven</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <layout>default</layout>
-    </repository>
-
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>camunda-cpm</id>
-      <name>Camunda BPM Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
-    </repository>
-
-    <repository>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>camunda-bpm-snapshots</id>
-      <name>Camunda BPM Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
-    </repository>
-  </repositories>
+  </profiles>
 
 </project>
