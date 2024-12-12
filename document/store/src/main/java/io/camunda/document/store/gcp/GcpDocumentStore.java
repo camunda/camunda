@@ -24,9 +24,12 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.nio.channels.Channels;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,8 +37,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 
 public class GcpDocumentStore implements DocumentStore {
+
+  private static final String CONTENT_HASH_METADATA_KEY = "contentHash";
 
   private final String bucketName;
   private final Storage storage;
@@ -91,6 +97,13 @@ public class GcpDocumentStore implements DocumentStore {
         () -> createLinkInternal(documentId, durationInMillis), executor);
   }
 
+  @Override
+  public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      final String documentId, final String contentHash) {
+    return CompletableFuture.supplyAsync(
+        () -> verifyContentHashInternal(documentId, contentHash), executor);
+  }
+
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId =
@@ -114,12 +127,31 @@ public class GcpDocumentStore implements DocumentStore {
           new DocumentError.InvalidInput("Failed to serialize metadata: " + e.getMessage()));
     }
 
+    final MessageDigest md;
     try {
-      storage.createFrom(blobInfoBuilder.build(), request.contentInputStream());
+      md = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
+    } catch (final Exception e) {
+      // should never happen
+      return Either.left(new UnknownDocumentError(e));
+    }
+    final DigestInputStream digestStream = new DigestInputStream(request.contentInputStream(), md);
+
+    try {
+      storage.createFrom(blobInfoBuilder.build(), digestStream);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
-    final var documentReference = new DocumentReference(documentId, request.metadata());
+
+    final var contentHash = HexFormat.of().formatHex(md.digest());
+
+    final var metadataUpdateResult =
+        addBlobMetadata(documentId, CONTENT_HASH_METADATA_KEY, contentHash);
+    if (metadataUpdateResult.isLeft()) {
+      return Either.left(metadataUpdateResult.getLeft());
+    }
+
+    final var documentReference =
+        new DocumentReference(documentId, contentHash, request.metadata());
     return Either.right(documentReference);
   }
 
@@ -159,6 +191,48 @@ public class GcpDocumentStore implements DocumentStore {
       return Either.right(
           new DocumentLink(
               link.toString(), OffsetDateTime.now().plus(Duration.ofMillis(durationInMillis))));
+    } catch (final Exception e) {
+      return Either.left(new UnknownDocumentError(e));
+    }
+  }
+
+  private Either<DocumentError, Void> addBlobMetadata(
+      final String documentId, final String key, final String value) {
+    try {
+      final Blob blob = storage.get(bucketName, documentId);
+      if (blob == null) {
+        return Either.left(new DocumentError.DocumentNotFound(documentId));
+      }
+      final var blobInfoBuilder = BlobInfo.newBuilder(blob.getBlobId());
+      final var metadata = Optional.ofNullable(blob.getMetadata()).orElse(new HashMap<>());
+      metadata.put(key, value);
+      blobInfoBuilder.setMetadata(metadata);
+      storage.update(blobInfoBuilder.build());
+      return Either.right(null);
+    } catch (final Exception e) {
+      return Either.left(new UnknownDocumentError(e));
+    }
+  }
+
+  private Either<DocumentError, Void> verifyContentHashInternal(
+      final String documentId, final String contentHashToVerify) {
+    try {
+      final Blob blob = storage.get(bucketName, documentId);
+      if (blob == null) {
+        return Either.left(new DocumentError.DocumentNotFound(documentId));
+      }
+      final var metadata = blob.getMetadata();
+      if (metadata == null) {
+        return Either.left(new DocumentError.InvalidInput("No metadata found for document"));
+      }
+      final var storedContentHash = metadata.get(CONTENT_HASH_METADATA_KEY);
+      if (storedContentHash == null) {
+        return Either.left(new DocumentError.InvalidInput("No content hash found for document"));
+      }
+      if (!storedContentHash.equals(contentHashToVerify)) {
+        return Either.left(new DocumentError.DocumentHashMismatch(documentId, contentHashToVerify));
+      }
+      return Either.right(null);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }

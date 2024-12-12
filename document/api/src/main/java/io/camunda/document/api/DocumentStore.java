@@ -22,4 +22,7 @@ public interface DocumentStore {
 
   CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
       String documentId, long durationInMillis);
+
+  CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      String documentId, String contentHash);
 }
