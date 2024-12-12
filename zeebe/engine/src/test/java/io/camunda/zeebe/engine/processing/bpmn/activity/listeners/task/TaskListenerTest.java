@@ -443,7 +443,7 @@ public class TaskListenerTest {
             .getFirst();
     Assertions.assertThat(incident.getValue())
         .hasProcessInstanceKey(processInstanceKey)
-        .hasErrorType(ErrorType.JOB_NO_RETRIES)
+        .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
         .hasErrorMessage("No more retries left.");
 
     // resolve incident & complete failed TL job
