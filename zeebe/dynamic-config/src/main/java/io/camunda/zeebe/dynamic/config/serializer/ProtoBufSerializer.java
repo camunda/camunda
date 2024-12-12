@@ -752,6 +752,9 @@ public class ProtoBufSerializer
 
     clusterPatchRequest.newPartitionCount().ifPresent(builder::setNewPartitionCount);
     clusterPatchRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
+    clusterPatchRequest
+        .newPartitionsDistribution()
+        .ifPresent(builder::setNewPartitionsDistribution);
     clusterPatchRequest.membersToAdd().stream()
         .forEach(memberId -> builder.addMembersToAdd(memberId.id()));
     clusterPatchRequest.membersToRemove().stream()

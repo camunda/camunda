@@ -215,12 +215,6 @@ public class ClusterEndpoint {
                 + newPartitionDistribution.get().getPartitioning().getFirst().getPartitionId()
                 + " with nodes "
                 + newPartitionDistribution.get().getPartitioning().getFirst().getNodes());
-        // Trigger partition redistribution
-        //        final ReassignPartitionsRequest reassignPartitionRequest =
-        //            new ReassignPartitionsRequest(
-        //                Set.of(new MemberId("0"), new MemberId("1"), new MemberId("2")), dryRun);
-        //        return ClusterApiUtils.mapOperationResponse(
-        //            requestSender.reassignPartitions(reassignPartitionRequest).join());
       } else {
         LOG.info("Didn't get new PartitionDistribution!");
       }
