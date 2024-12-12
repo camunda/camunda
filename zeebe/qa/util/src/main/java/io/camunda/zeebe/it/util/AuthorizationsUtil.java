@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.it.util;
 
+import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -46,9 +49,9 @@ public class AuthorizationsUtil {
     final var authorizationUtil =
         new AuthorizationsUtil(
             gateway,
-            createClient(gateway, "demo", "demo"),
+            createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
             elasticsearchUrl);
-    authorizationUtil.awaitUserExistsInElasticsearch("demo");
+    authorizationUtil.awaitUserExistsInElasticsearch(DEFAULT_USER_USERNAME);
     return authorizationUtil;
   }
 
