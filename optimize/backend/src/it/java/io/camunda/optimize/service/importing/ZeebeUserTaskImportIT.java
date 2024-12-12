@@ -35,7 +35,6 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
 import org.slf4j.Logger;
@@ -550,7 +549,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         deployAndStartInstanceForProcess(
             createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
 
     // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
     waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
@@ -558,10 +556,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
     // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
     waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
-
-    // } else {
-    //  waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
-    // }
 
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
@@ -610,84 +604,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   }
 
   @Test
-  public void foo1() {
-    // import assignee userTask data after the first userTask records were already imported, hence
-    // the upsert uses the logic from the update script
-    // given
-    final ProcessInstanceEvent instance =
-        deployAndStartInstanceForProcess(
-            createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
-    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // remove all zeebe records except userTask ones to test userTask import only
-    removeAllZeebeExportRecordsExceptUserTaskRecords();
-    importAllZeebeEntitiesFromScratch();
-
-    List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
-
-    // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
-    waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
-    zeebeExtension.unassignUserTask(
-        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
-    // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
-    waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
-
-    // } else {
-    //  waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
-    // }
-
-    // when
-    importAllZeebeEntitiesFromLastIndex();
-
-    // then
-    exportedEvents = getZeebeExportedUserTaskEvents();
-    assertThat(exportedEvents).containsExactlyElementsOf(List.of());
-  }
-
-  @Test
-  public void foo2() {
-    // import assignee userTask data after the first userTask records were already imported, hence
-    // the upsert uses the logic from the update script
-    // given
-    final ProcessInstanceEvent instance =
-        deployAndStartInstanceForProcess(
-            createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
-    waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
-    // remove all zeebe records except userTask ones to test userTask import only
-    removeAllZeebeExportRecordsExceptUserTaskRecords();
-    importAllZeebeEntitiesFromScratch();
-
-    final List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
-
-    // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
-    waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
-    zeebeExtension.unassignUserTask(
-        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
-    // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
-    waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
-
-    // } else {
-    //  waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
-    // }
-
-    // when
-    importAllZeebeEntitiesFromLastIndex();
-
-    // then
-    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
-        .singleElement()
-        .satisfies(
-            savedInstance -> {
-              assertThat(
-                      savedInstance.getFlowNodeInstances().stream()
-                          .filter(flowNode -> flowNode.getFlowNodeId().equals(USER_TASK))
-                          .collect(Collectors.toList()))
-                  .containsExactlyElementsOf(List.of());
-            });
-  }
-
-  @Test
   public void importUnclaimOperation_viaUpdateScript() {
     // import assignee userTask data after the first userTask records were already imported, hence
     // the upsert uses the logic from the update script
@@ -701,7 +617,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     importAllZeebeEntitiesFromScratch();
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
-    // if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
 
     // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
     waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
@@ -709,10 +624,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
     // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
     waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
-
-    // } else {
-    //  waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
-    // }
 
     // when
     importAllZeebeEntitiesFromLastIndex();

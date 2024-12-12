@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -337,6 +338,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final ZeebeRecordDto startOfElement =
         eventsForElement.stream()
             .filter(event -> event.getIntent().equals(intent))
+            .sorted(Comparator.comparing(ZeebeRecordDto::getTimestamp))
             .reduce((first, second) -> second)
             .orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(
@@ -371,6 +373,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
                             .getValue()
                             .getAssignee()
                             .equals(assigneeId))
+            .sorted(Comparator.comparing(ZeebeRecordDto::getTimestamp))
             .reduce((first, second) -> second)
             .orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(
