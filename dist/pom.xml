@@ -235,11 +235,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
     </dependency>
 
@@ -800,7 +795,6 @@
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-importer</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>

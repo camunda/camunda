@@ -586,12 +586,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-archiver</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-importer</artifactId>
         <version>${project.version}</version>
       </dependency>
