@@ -32,6 +32,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -40,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.annotation.Order;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIntegrationTest {
   public static final Boolean IS_ELASTIC = TestUtil.isElasticSearch();
