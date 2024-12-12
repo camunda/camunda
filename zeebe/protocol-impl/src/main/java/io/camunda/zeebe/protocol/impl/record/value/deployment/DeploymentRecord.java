@@ -230,6 +230,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
         && decisionRequirementsMetadata().stream()
             .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
-        && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate);
+        && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
+        && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
   }
 }
