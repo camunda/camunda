@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
 
 public class ProcessOverviewServiceTest {
@@ -351,5 +350,4 @@ public class ProcessOverviewServiceTest {
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("Owner ID cannot be empty!");
   }
-
 }
