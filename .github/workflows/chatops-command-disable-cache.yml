@@ -1,0 +1,84 @@
+---
+name: chatops-command-ci-problems
+
+on:
+  repository_dispatch:
+    types: [disable-cache-command]
+
+jobs:
+  chatops-command-disable-cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Create URL to the run output
+      id: vars
+      run: |
+        {
+        echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Generate a GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      with:
+        github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+        github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+        github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+        github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+
+    - name: Dump the client payload context
+      env:
+        PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+      run: echo "$PAYLOAD_CONTEXT"
+
+    - uses: actions/checkout@v4
+
+    - name: Handle disable-cache command
+      id: trigger
+      env:
+        CMD_ARGS: ${{ github.event.client_payload.slash_command.args.unnamed.all }}
+        GH_REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ github.token }}
+        NO_CACHE_LABEL: "ci:no-cache"
+        PR_NUMBER: ${{ github.event.client_payload.pull_request.number }}
+      # stdout of the script is Markdown available in "result" output,
+      # stderr shows the progress of the script while working
+      run: |
+        if [[ -n "$PR_NUMBER" ]]; then
+          # Check if slash command contains a 'off' argument
+          has_off_arg=$(echo "$CMD_ARGS" | grep "off" || true)
+          if [[ -z "$has_off_arg" ]]; then
+            # Add a 'ci:no-cache' label to the PR and create a new commit to restart workflows
+            gh pr edit "$PR_NUMBER" --add-label "$NO_CACHE_LABEL"
+            # git commit --allow-empty -m "ci: REMOVEME"
+          else
+            # Remove the 'ci:no-cache' label to the PR and create a new commit to restart workflows
+            gh pr edit "$PR_NUMBER" --remove-label "$NO_CACHE_LABEL"
+            # git commit --allow-empty -m "ci: REMOVEME"
+          fi
+        else
+          echo ":debug:Command was not executed on a PR"
+        fi
+
+    - name: Add reaction
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        reactions: "+1"
+        reactions-edit-mode: replace
+
+    - name: Update comment in case of failure
+      if: failure()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        body: |
+          > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+        reactions: confused
