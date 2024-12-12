@@ -17,8 +17,7 @@ public interface ImportStore {
   ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
       throws IOException;
 
-  Either<Throwable, Boolean> updateImportPositions(
-      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositionUpdates);
+  Either<Throwable, Boolean> updateImportPositions(List<ImportPositionEntity> positions);
 
   boolean getConcurrencyMode();
 

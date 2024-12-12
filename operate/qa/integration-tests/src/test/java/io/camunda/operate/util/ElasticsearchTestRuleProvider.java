@@ -20,8 +20,6 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.operate.zeebeimport.ZeebePostImporter;
-import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -92,7 +90,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected RestHighLevelClient zeebeEsClient;
 
   @Autowired protected OperateProperties operateProperties;
-  @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
@@ -149,7 +146,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     operateProperties
         .getElasticsearch()
         .setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
-    zeebePostImporter.getPostImportActions().stream().forEach(PostImportAction::clearCache);
     assertMaxOpenScrollContexts(15);
   }
 
@@ -194,12 +190,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final Predicate<Object[]> predicate,
       final Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(),
-        maxWaitingRounds,
-        true,
-        predicate,
-        null,
-        arguments);
+        recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
   }
 
   @Override
@@ -214,22 +205,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final Supplier<Object> supplier,
       final Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final boolean runPostImport,
-      final Predicate<Object[]> predicate,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(),
-        50,
-        runPostImport,
-        predicate,
-        supplier,
-        arguments);
+        recordsReaderHolder.getAllRecordsReaders(), 50, predicate, supplier, arguments);
   }
 
   @Override
@@ -237,25 +213,13 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final ImportValueType importValueType,
       final Predicate<Object[]> predicate,
       final Object... arguments) {
-    processRecordsAndWaitFor(
-        getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
-  }
-
-  @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final boolean runPostImport,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    processRecordsAndWaitFor(
-        getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, predicate, null, arguments);
   }
 
   @Override
   public void processRecordsAndWaitFor(
       final Collection<RecordsReader> readers,
       final Integer maxWaitingRounds,
-      final boolean runPostImport,
       final Predicate<Object[]> predicate,
       final Supplier<Object> supplier,
       final Object... arguments) {
@@ -270,9 +234,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         }
         refreshSearchIndices();
         refreshOperateSearchIndices();
-        if (runPostImport) {
-          runPostImportActions();
-        }
       } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
@@ -288,20 +249,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     } else {
       LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
       //      throw new TestPrerequisitesFailedException("Conditions not met.");
-    }
-  }
-
-  @Override
-  public void runPostImportActions() {
-    if (zeebePostImporter.getPostImportActions().isEmpty()) {
-      zeebePostImporter.initPostImporters();
-    }
-    for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {
-      try {
-        action.performOneRound();
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 
