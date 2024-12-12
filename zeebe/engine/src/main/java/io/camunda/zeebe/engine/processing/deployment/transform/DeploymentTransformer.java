@@ -36,10 +36,9 @@ public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
-      new UnknownResourceTransformer();
-
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
+
+  private final ResourceTransformer defaultResourceTransformer;
 
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
@@ -73,7 +72,7 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getFormState());
 
-    final var resourceTransformer =
+    defaultResourceTransformer =
         new ResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
@@ -82,8 +81,7 @@ public final class DeploymentTransformer {
             entry(".bpmn", bpmnResourceTransformer),
             entry(".xml", bpmnResourceTransformer),
             entry(".dmn", dmnResourceTransformer),
-            entry(".form", formResourceTransformer),
-            entry(".rpa", resourceTransformer));
+            entry(".form", formResourceTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
@@ -212,30 +210,13 @@ public final class DeploymentTransformer {
         .filter(entry -> resourceName.endsWith(entry.getKey()))
         .map(Entry::getValue)
         .findFirst()
-        .orElse(UNKNOWN_RESOURCE);
+        .orElse(defaultResourceTransformer);
   }
 
   private static void handleUnexpectedError(
       final String resourceName, final RuntimeException exception, final StringBuilder errors) {
     LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
     errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
-  }
-
-  private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
-
-    @Override
-    public Either<Failure, Void> createMetadata(
-        final DeploymentResource resource,
-        final DeploymentRecord deployment,
-        final DeploymentResourceContext context) {
-      final var failureMessage =
-          String.format("%n'%s': unknown resource type", resource.getResourceName());
-      return Either.left(new Failure(failureMessage));
-    }
-
-    @Override
-    public void writeRecords(
-        final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
 
   private record BpmnResource(
