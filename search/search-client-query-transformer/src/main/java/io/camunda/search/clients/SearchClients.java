@@ -27,6 +27,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -48,7 +49,9 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchClients
     implements AuthorizationSearchClient,
@@ -239,17 +242,17 @@ public class SearchClients
 
   @Override
   public Long countAssignees(final UsageMetricsQuery query) {
-    return distinctCountUsageMetricsFor("task_completed_by_assigne", query);
+    return distinctCountUsageMetricsFor2("task_completed_by_assignee", query);
   }
 
   @Override
   public Long countProcessInstances(final UsageMetricsQuery query) {
-    return distinctCountUsageMetricsFor("EVENT_PROCESS_INSTANCE_STARTED", query);
+    return distinctCountUsageMetricsFor2("EVENT_PROCESS_INSTANCE_STARTED", query);
   }
 
   @Override
   public Long countDecisionInstances(final UsageMetricsQuery query) {
-    return distinctCountUsageMetricsFor("EVENT_DECISION_INSTANCE_EVALUATED", query);
+    return distinctCountUsageMetricsFor2("EVENT_DECISION_INSTANCE_EVALUATED", query);
   }
 
   private Long distinctCountUsageMetricsFor(final String event, final UsageMetricsQuery query) {
@@ -270,5 +273,56 @@ public class SearchClients
                 securityContext)
             .findAll(filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
+  }
+
+  private Long distinctCountUsageMetricsFor2(final String event, final UsageMetricsQuery query) {
+    final var results = new HashSet<String>();
+    final var page = SearchQueryPage.of(p -> p.size(1000));
+    final var searchExecutor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    final var filter =
+        new UsageMetricsQuery.Builder()
+            .filter(
+                new UsageMetricsFilter.Builder()
+                    .startTime(query.filter().startTime())
+                    .endTime(query.filter().endTime())
+                    .events(event)
+                    .build())
+            .page(page)
+            .build();
+    SearchQueryResult<UsageMetricsEntity> searchQueryResult =
+        searchExecutor.search(
+            filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+    results.addAll(
+        searchQueryResult.items().stream()
+            .map(UsageMetricsEntity::value)
+            .collect(Collectors.toSet()));
+    var current = searchQueryResult.items().size();
+    final var max = searchQueryResult.total();
+    while (current < max) {
+      final var sizedFilter =
+          new UsageMetricsQuery.Builder()
+              .filter(
+                  new UsageMetricsFilter.Builder()
+                      .startTime(query.filter().startTime())
+                      .endTime(query.filter().endTime())
+                      .events(event)
+                      .build())
+              .page(new SearchQueryPage.Builder().from(current).size(1000).build())
+              .build();
+      searchQueryResult =
+          searchExecutor.search(
+              sizedFilter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+      results.addAll(
+          searchQueryResult.items().stream()
+              .map(UsageMetricsEntity::value)
+              .collect(Collectors.toSet()));
+      current += searchQueryResult.items().size();
+    }
+    return (long) results.size();
   }
 }
