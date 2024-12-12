@@ -79,19 +79,6 @@ function getRedirectUrl(queryString: string) {
   return next;
 }
 
-function getPageTitle(redirectUrl: string | null): string {
-  if (redirectUrl?.startsWith("/identity")) {
-    return "Identity";
-  }
-  if (redirectUrl?.startsWith("/tasklist")) {
-    return "Tasklist";
-  }
-  if (redirectUrl?.startsWith("/operate")) {
-    return "Operate";
-  }
-  return "Login";
-}
-
 export const LoginPage: React.FC = () => {
   const location = useLocation();
   const redirectUrl = getRedirectUrl(location.search);
@@ -104,7 +91,7 @@ export const LoginPage: React.FC = () => {
       <div className="content">
         <div className="header">
             <img src={camundaLogo} alt="Camunda"/>
-            <h1>{getPageTitle(redirectUrl)}</h1>
+            <h1>Identity</h1>
         </div>
         <LoginForm onSuccess={onSuccess} />
         {!hasProductionLicense && <div className="license-info">

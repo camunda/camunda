@@ -8,7 +8,7 @@
 
 import {reactQueryClient} from './react-query/reactQueryClient';
 import {authenticationStore} from './stores/authentication';
-import Cookies from 'js-cookie';
+import {CSRF_REQUEST_HEADER, getCsrfToken} from './csrf';
 
 type RequestError =
   | {
@@ -21,10 +21,6 @@ type RequestError =
       response: Response;
       networkError: null;
     };
-
-function getCsrfToken() {
-  return Cookies.get('XSRF-TOKEN') ?? '';
-}
 
 async function request(
   input: RequestInfo,
@@ -49,7 +45,7 @@ async function request(
         method &&
         ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())
       ) {
-        input.headers.append('X-CSRF-TOKEN', csrfToken);
+        input.headers.append(CSRF_REQUEST_HEADER, csrfToken);
       }
     }
 
@@ -62,7 +58,6 @@ async function request(
     if (!skipSessionCheck && response.status === 401) {
       authenticationStore.disableSession();
       reactQueryClient.clear();
-      window.location.href = `/login?next=${window.location.pathname}`;
     }
 
     if (response.ok) {

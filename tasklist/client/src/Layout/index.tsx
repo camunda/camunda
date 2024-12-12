@@ -8,17 +8,17 @@
 
 /* istanbul ignore file */
 
-import {Outlet, useLocation} from 'react-router-dom';
+import {Outlet} from 'react-router-dom';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'AuthenticationCheck';
 import {OSNotifications} from 'OSNotifications';
 import {C3Provider} from 'C3Provider';
+import {pages} from '../modules/routing';
 
 const Layout: React.FC = () => {
-  const location = useLocation();
   return (
     <C3Provider>
-      <AuthenticationCheck redirectPath={`/login?next=${location.pathname}`}>
+      <AuthenticationCheck redirectPath={pages.login}>
         <OSNotifications />
         <Header />
         <Outlet />
