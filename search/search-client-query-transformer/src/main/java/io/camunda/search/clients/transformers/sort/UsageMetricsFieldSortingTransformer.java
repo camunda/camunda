@@ -11,6 +11,17 @@ public class UsageMetricsFieldSortingTransformer implements FieldSortingTransfor
 
   @Override
   public String apply(final String domainField) {
+    return switch (domainField) {
+      case "id" -> "id";
+      case "event" -> "event";
+      case "eventTime" -> "eventTime";
+      case "value" -> "value";
+      default -> throw new IllegalArgumentException("Unknown field: " + domainField);
+    };
+  }
+
+  @Override
+  public String defaultSortField() {
     return "id";
   }
 }

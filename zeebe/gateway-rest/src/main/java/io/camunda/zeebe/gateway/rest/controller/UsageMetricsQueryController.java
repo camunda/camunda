@@ -38,7 +38,7 @@ public class UsageMetricsQueryController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<UsageMetricsSearchQueryResponse> searchUsageMetrics(
-      @RequestBody(required = true) final UsageMetricsSearchQueryRequest query) {
+      @RequestBody final UsageMetricsSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUsageMetricsQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }

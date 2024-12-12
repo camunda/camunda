@@ -8,8 +8,7 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
-import io.camunda.search.entities.UsageMetricsEntity;
-import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -28,10 +27,11 @@ public class UsageMetricsServices extends ApiServices<UsageMetricsServices> {
     this.usageMetricsSearchClient = usageMetricsSearchClient;
   }
 
-  public SearchQueryResult<UsageMetricsEntity> search(final UsageMetricsQuery query) {
-    return usageMetricsSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchUsageMetrics(query);
+  public UsageMetricsCount search(final UsageMetricsQuery query) {
+    final var assignees = usageMetricsSearchClient.countAssignees(query);
+    final var processInstances = usageMetricsSearchClient.countProcessInstances(query);
+    final var decisionInstances = usageMetricsSearchClient.countDecisionInstances(query);
+    return new UsageMetricsCount(assignees, processInstances, decisionInstances);
   }
 
   @Override

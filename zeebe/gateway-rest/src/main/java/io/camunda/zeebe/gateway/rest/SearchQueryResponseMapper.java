@@ -28,7 +28,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.entities.UsageMetricsEntity;
+import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -89,12 +89,11 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsSearchQueryResponse toUsageMetricsSearchQueryResponse(
-      final SearchQueryResult<UsageMetricsEntity> results) {
-    // final var result = results.aggregates();
+      final UsageMetricsCount usageMetricsCount) {
     return new UsageMetricsSearchQueryResponse()
-        .assignees(1L)
-        .processInstances(2L)
-        .decisionInstances(3L);
+        .assignees(usageMetricsCount.assignees())
+        .processInstances(usageMetricsCount.processInstances())
+        .decisionInstances(usageMetricsCount.decisionInstances());
   }
 
   public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(

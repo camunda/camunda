@@ -13,13 +13,13 @@ import java.util.function.Function;
 
 public record UsageMetricsSort(List<FieldSorting> orderings) implements SortOption {
 
-  public static UsageMetricsSort of(final Function<Builder, ObjectBuilder<UsageMetricsSort>> fn) {
-    return SortOptionBuilders.usageMetrics(fn);
-  }
-
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
+  }
+
+  public static UsageMetricsSort of(final Function<Builder, ObjectBuilder<UsageMetricsSort>> fn) {
+    return SortOptionBuilders.usageMetrics(fn);
   }
 
   public static final class Builder extends SortOption.AbstractBuilder<Builder>
