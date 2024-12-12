@@ -133,6 +133,9 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
 	}
+	if settings.username != "" || settings.password != "" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo -Dcamunda.security.initialization.users[0].email=demo@demo.com"
+	}
 	if settings.username != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.username
 	}
@@ -141,6 +144,7 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	}
 	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
+	fmt.Println("Java opts: " + javaOpts)
 	return javaOpts
 }
 
@@ -165,7 +169,7 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.7.0-alpha2"
+	camundaVersion := "8.7.0-SNAPSHOT"
 	connectorsVersion := "8.7.0-alpha2.1"
 	if os.Getenv("CAMUNDA_VERSION") != "" {
 		camundaVersion = os.Getenv("CAMUNDA_VERSION")
@@ -221,6 +225,8 @@ func main() {
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
 	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+	startFlagSet.StringVar(&settings.username, "username", "", "Change the first users username (default: demo)")
+	startFlagSet.StringVar(&settings.password, "password", "", "Change the first users password (default: demo)")
 
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
 	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
