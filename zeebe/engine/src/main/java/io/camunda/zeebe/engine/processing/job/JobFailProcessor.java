@@ -46,8 +46,6 @@ import org.agrona.DirectBuffer;
 
 public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
-  public static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to cancel job with key '%d', but no such job was found";
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
