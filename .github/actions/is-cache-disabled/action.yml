@@ -1,0 +1,26 @@
+---
+name: Is cache disabled
+
+description: |
+  Checks if current PR contains a label 'ci:no-cache'
+  This information can be used to skip cache restoration
+  in the setup-maven-cache and setup-yarn-cache to test
+  workflows from scratch
+
+inputs: {}
+
+outputs:
+  is-cache-disabled:
+    description: Output whether the current PR has a label 'ci:no-cache' to disable cache restoration
+    value: ${{ steps.detect-cache-disabled.outputs.is-cache-disabled == 'true' }}
+
+runs:
+  using: composite
+  steps:
+  - id: detect-cache-disabled
+    env:
+        GH_PR_LABELS: ${{ contains(github.event.issue.labels.*.name, 'ci:no-cache') }}
+    shell: bash
+    run: |
+      echo is-cache-disabled="$GH_PR_LABELS" | tee -a $GITHUB_OUTPUT
+

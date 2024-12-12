@@ -74,6 +74,13 @@ runs:
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-full-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}-full" >> $GITHUB_ENV
         fi
+
+      # Check if PR contains a label to disable the cache
+    - name: Check if cache is disabled
+      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
+      uses: ./.github/actions/is-cache-disabled
+      id: is-cache-disabled
+
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
@@ -84,8 +91,8 @@ runs:
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
     - name: Restore maven cache
-      # Restore cache (but don't save it) if we're not on main or stable/* branches
-      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
+      # Restore cache (but don't save it) if we're not on main or stable/* branches or ci:no-cache
+      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' || steps.is-cached-disabled.outputs.is-cache-disabled == 'true' ) }}
       uses: actions/cache/restore@v4
       with:
         # This has to match the 'Cache local Maven repository' step above
