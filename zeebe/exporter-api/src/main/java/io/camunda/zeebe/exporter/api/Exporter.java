@@ -78,14 +78,10 @@ public interface Exporter {
    * Hook to perform a data purge.
    *
    * <p>When this method is called, the exporter <b>deletes all data</b> that has been exported so
-   * far. This method should be blocking and only return when all data has been deleted.
+   * far. It is called, when a cluster purge operation is executed.
    *
-   * <p>Currently there are two scenarios where this method can be called:
-   *
-   * <ol>
-   *   <li>Before a backup is restored</il>
-   *   <li>Between integration tests
-   * </ol>
+   * <p>This method should be blocking and only return when all data has been deleted. It may be
+   * retried and therefore <i>must</i> be idempotent.
    */
   default void purge() throws Exception {}
 }
