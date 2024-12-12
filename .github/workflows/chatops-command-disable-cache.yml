@@ -1,5 +1,5 @@
 ---
-name: chatops-command-ci-problems
+name: chatops-command-disable-cache
 
 on:
   repository_dispatch:
