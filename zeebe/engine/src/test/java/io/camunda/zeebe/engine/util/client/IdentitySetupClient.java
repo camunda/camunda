@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -65,6 +66,11 @@ public final class IdentitySetupClient {
 
     public IdentitySetupInitializeClient withTenant(final TenantRecord tenant) {
       record.setDefaultTenant(tenant);
+      return this;
+    }
+
+    public IdentitySetupInitializeClient withMapping(final MappingRecord mapping) {
+      record.addMapping(mapping);
       return this;
     }
 
