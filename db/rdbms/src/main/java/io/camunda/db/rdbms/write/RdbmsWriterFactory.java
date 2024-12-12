@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.db.rdbms.write.queue.ExecutionQueue;
+import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import org.apache.ibatis.session.SqlSessionFactory;
 
@@ -24,8 +24,8 @@ public class RdbmsWriterFactory {
     this.exporterPositionMapper = exporterPositionMapper;
   }
 
-  public RdbmsWriter createWriter(final long partitionId) {
-    final var executionQueue = new ExecutionQueue(sqlSessionFactory, partitionId, 100);
+  public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
+    final var executionQueue = new DefaultExecutionQueue(sqlSessionFactory, partitionId, queueSize);
     return new RdbmsWriter(
         executionQueue, new ExporterPositionService(executionQueue, exporterPositionMapper));
   }

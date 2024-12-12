@@ -52,7 +52,7 @@ public class MyBatisConfiguration {
     final var moduleConfig = new MultiTenantSpringLiquibase();
     moduleConfig.setDataSource(dataSource);
     // changelog file located in src/main/resources directly in the module
-    moduleConfig.setChangeLog("db/changelog/rdbms-support/changelog-master.xml");
+    moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
     return moduleConfig;
   }
 

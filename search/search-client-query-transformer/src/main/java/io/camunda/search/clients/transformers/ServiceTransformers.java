@@ -15,6 +15,7 @@ import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTrans
 import io.camunda.search.clients.transformers.entity.DecisionRequirementsEntityTransformer;
 import io.camunda.search.clients.transformers.entity.FlowNodeInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.FormEntityTransformer;
+import io.camunda.search.clients.transformers.entity.GroupEntityTransformer;
 import io.camunda.search.clients.transformers.entity.IncidentEntityTransformer;
 import io.camunda.search.clients.transformers.entity.MappingEntityTransformer;
 import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTransfomer;
@@ -55,6 +56,7 @@ import io.camunda.search.clients.transformers.sort.DecisionRequirementsFieldSort
 import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FlowNodeInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.GroupFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MappingFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
@@ -110,6 +112,7 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.FormSort;
+import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.MappingSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
@@ -148,6 +151,7 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
+import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
@@ -235,6 +239,7 @@ public final class ServiceTransformers {
     mappers.put(AuthorizationEntity.class, new AuthorizationEntityTransformer());
     mappers.put(RoleEntity.class, new RoleEntityTransformer());
     mappers.put(TenantEntity.class, new TenantEntityTransformer());
+    mappers.put(GroupEntity.class, new GroupEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
 
@@ -253,6 +258,7 @@ public final class ServiceTransformers {
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
     mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
+    mappers.put(GroupSort.class, new GroupFieldSortingTransformer());
     mappers.put(UserSort.class, new UserFieldSortingTransformer());
     mappers.put(MappingSort.class, new MappingFieldSortingTransformer());
 

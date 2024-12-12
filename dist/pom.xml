@@ -155,6 +155,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -798,6 +809,9 @@
             <dependency>io.camunda:operate-importer</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
+
+            <!-- used as resource but no classes -->
+            <dependency>io.camunda:camunda-db-rdbms-schema</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>

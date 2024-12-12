@@ -42,17 +42,17 @@ public class GroupQueryControllerTest extends RestControllerTest {
       {
         "items":[
           {
-            "key":111,
+            "groupKey":111,
             "name":"Group 1",
             "assignedMemberKeys":[]
           },
           {
-            "key":222,
+            "groupKey":222,
             "name":"Group 2",
             "assignedMemberKeys":[]
           },
           {
-            "key":333,
+            "groupKey":333,
             "name":"Group 3",
             "assignedMemberKeys":[]
           }
@@ -80,12 +80,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var groupKey = 111L;
     final var groupName = "groupName";
     final var group = new GroupEntity(groupKey, groupName, Set.of());
-    when(groupServices.getGroup(group.key())).thenReturn(group);
+    when(groupServices.getGroup(group.groupKey())).thenReturn(group);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(GROUP_BASE_URL, group.key()))
+        .uri("%s/%s".formatted(GROUP_BASE_URL, group.groupKey()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -95,12 +95,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "%s",
-              "key": %d
+              "groupKey": %d
             }"""
                 .formatted(groupName, groupKey));
 
     // then
-    verify(groupServices, times(1)).getGroup(group.key());
+    verify(groupServices, times(1)).getGroup(group.groupKey());
   }
 
   @Test
@@ -173,15 +173,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "key": %d,
+                 "groupKey": %d,
                  "name": "%s"
                },
                {
-                 "key": %d,
+                 "groupKey": %d,
                  "name": "%s"
                },
                {
-                 "key": %d,
+                 "groupKey": %d,
                  "name": "%s"
                }
              ],
