@@ -63,6 +63,15 @@ public interface ElementInstanceState {
       final long flowScopeKey, final DirectBuffer gatewayElementId);
 
   /**
+   * Visits all taken sequence flows of the given (joining) gateway and applies the given visitor to
+   * each taken sequence flow
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @param visitor the visitor that is applied for each taken sequence flow
+   */
+  void visitTakenSequenceFlows(final long flowScopeKey, final TakenSequenceFlowVisitor visitor);
+
+  /**
    * Returns a list of process instance keys that belong to a specific process definition.
    *
    * <p>Caution: This will also return the keys of banned process instances!
@@ -80,4 +89,13 @@ public interface ElementInstanceState {
    * @return a boolean indicating if there are running instances
    */
   boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
+
+  @FunctionalInterface
+  interface TakenSequenceFlowVisitor {
+    void visit(
+        final long flowScopeKey,
+        final DirectBuffer gatewayElementId,
+        final DirectBuffer sequenceFlowId,
+        final int number);
+  }
 }
