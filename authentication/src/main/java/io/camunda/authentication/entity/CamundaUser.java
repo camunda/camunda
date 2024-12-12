@@ -18,18 +18,15 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
-public final class CamundaUser extends User {
+public final class CamundaUser extends User implements CamundaPrincipal {
 
   private final Long userKey;
   private final String displayName;
-  private final List<String> authorizedApplications;
-  private final List<TenantDTO> tenants;
-  private final List<String> groups;
-  private final List<RoleEntity> roles;
   private final String salesPlanType;
   private final Map<ClusterMetadata.AppName, String> c8Links;
   private final boolean canLogout;
   private final String email;
+  private final AuthenticationContext authentication;
 
   private CamundaUser(
       final Long userKey,
@@ -38,21 +35,15 @@ public final class CamundaUser extends User {
       final String password,
       final String email,
       final List<? extends GrantedAuthority> authorities,
-      final List<RoleEntity> roles,
-      final List<String> authorizedApplications,
-      final List<TenantDTO> tenants,
-      final List<String> groups,
+      final AuthenticationContext authentication,
       final String salesPlanType,
       final Map<ClusterMetadata.AppName, String> c8Links,
       final boolean canLogout) {
     super(username, password, authorities);
-    this.roles = roles;
     this.userKey = userKey;
     this.displayName = displayName;
-    this.authorizedApplications = authorizedApplications;
-    this.tenants = tenants;
-    this.groups = groups;
     this.salesPlanType = salesPlanType;
+    this.authentication = authentication;
     this.c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
     this.canLogout = canLogout;
     this.email = email;
@@ -68,26 +59,6 @@ public final class CamundaUser extends User {
 
   public String getUserId() {
     return getUsername();
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
-
-  public List<RoleEntity> getRoles() {
-    return roles;
-  }
-
-  public List<String> getGroups() {
-    return groups;
-  }
-
-  public List<String> getAuthorizedApplications() {
-    return authorizedApplications;
-  }
-
-  public List<TenantDTO> getTenants() {
-    return tenants;
   }
 
   public String getSalesPlanType() {
@@ -107,8 +78,19 @@ public final class CamundaUser extends User {
     return authorities.stream().map(SimpleGrantedAuthority::new).toList();
   }
 
+  @Override
   public String getEmail() {
     return email;
+  }
+
+  @Override
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  @Override
+  public AuthenticationContext getAuthenticationContext() {
+    return authentication;
   }
 
   public static final class CamundaUserBuilder {
@@ -206,10 +188,7 @@ public final class CamundaUser extends User {
           password,
           email,
           authorities,
-          roles,
-          authorizedApplications,
-          tenants,
-          groups,
+          new AuthenticationContext(roles, authorizedApplications, tenants, groups),
           salesPlanType,
           c8Links,
           canLogout);
