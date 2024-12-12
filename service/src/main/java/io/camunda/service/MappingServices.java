@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -45,6 +48,14 @@ public class MappingServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.mapping().read())))
         .searchMappings(query);
+  }
+
+  public List<MappingEntity> findAll(final MappingQuery query) {
+    return mappingSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.mapping().read())))
+        .findAllMappings(query);
   }
 
   @Override
@@ -90,6 +101,21 @@ public class MappingServices
 
   public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
+  }
+
+  public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
+    return findAll(
+        MappingQuery.of(
+            q ->
+                q.filter(
+                    f ->
+                        f.claims(
+                            claims.entrySet().stream()
+                                .map(
+                                    claim ->
+                                        new MappingFilter.Claim(
+                                            claim.getKey(), String.valueOf(claim.getValue())))
+                                .toList()))));
   }
 
   public record MappingDTO(String claimName, String claimValue, String name) {}

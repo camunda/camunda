@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
@@ -56,7 +57,10 @@ public class PermissionsServiceTest {
 
     final CamundaUser camundaUser = mock(CamundaUser.class);
     when(camundaUser.getUserKey()).thenReturn(userKey);
-    when(camundaUser.getRoles()).thenReturn(List.of(new RoleEntity(roleKey, "roleName")));
+    when(camundaUser.getAuthenticationContext())
+        .thenReturn(
+            new AuthenticationContext(
+                List.of(new RoleEntity(roleKey, "roleName")), List.of(), List.of(), List.of()));
     when(mockAuthentication.getPrincipal()).thenReturn(camundaUser);
     final SecurityContext securityContext = mock(SecurityContext.class);
     when(securityContext.getAuthentication()).thenReturn(mockAuthentication);
