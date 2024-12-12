@@ -301,7 +301,7 @@ public final class TaskDTO {
             .setCreationTime(objectMapper.convertValue(taskEntity.getCreationTime(), String.class))
             .setCompletionTime(
                 objectMapper.convertValue(taskEntity.getCompletionTime(), String.class))
-            .setId(taskEntity.getId())
+            .setId(String.valueOf(taskEntity.getKey()))
             .setProcessInstanceId(taskEntity.getProcessInstanceId())
             .setTaskState(taskEntity.getState())
             .setAssignee(taskEntity.getAssignee())
@@ -369,7 +369,7 @@ public final class TaskDTO {
               .setCreationTime(
                   DateUtil.toOffsetDateTime(
                       DateUtil.SIMPLE_DATE_FORMAT.parse(taskDTO.getCreationTime()).toInstant()))
-              .setId(taskDTO.getId())
+              .setKey(Long.parseLong(taskDTO.getId()))
               .setProcessInstanceId(taskDTO.getProcessInstanceId())
               .setState(taskDTO.getTaskState())
               .setAssignee(taskDTO.getAssignee())

@@ -399,7 +399,7 @@ public class TasklistTester {
       final Optional<TaskEntity> teOptional =
           tasks.stream().filter(te -> state.equals(te.getState())).findFirst();
       if (teOptional.isPresent()) {
-        taskId = teOptional.get().getId();
+        taskId = String.valueOf(teOptional.get().getKey());
       } else {
         taskId = null;
       }
