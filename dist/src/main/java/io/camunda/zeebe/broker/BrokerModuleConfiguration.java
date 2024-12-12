@@ -105,7 +105,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             cluster,
             brokerClient,
             meterRegistry,
-            securityConfiguration);
+            securityConfiguration,
+            userServices);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

@@ -25,7 +25,6 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
   private final ConcurrencyControl concurrencyControl;
-  private final UserServices userServices;
 
   public EmbeddedGatewayService(
       final Duration shutdownTimeout,
@@ -34,7 +33,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final ActorSchedulingService actorScheduler,
       final ConcurrencyControl concurrencyControl,
       final JobStreamClient jobStreamClient,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final UserServices userServices) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
