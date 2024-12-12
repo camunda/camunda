@@ -76,9 +76,11 @@ public class MappingAppliersTest {
     roleState.addEntity(role);
     // create tenant
     final long tenantKey = 3L;
-    mappingState.addTenant(mappingKey, tenantKey);
+    final var tenantId = "tenant";
+    mappingState.addTenant(mappingKey, tenantId);
     final var tenant =
         new TenantRecord()
+            .setTenantId(tenantId)
             .setTenantKey(tenantKey)
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
