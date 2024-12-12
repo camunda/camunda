@@ -15,6 +15,9 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.zeebe.client.api.search.FlowNodeInstanceState;
+import io.camunda.zeebe.client.api.search.FlowNodeInstanceType;
+
 public interface FlowNodeInstance {
 
   /** key */

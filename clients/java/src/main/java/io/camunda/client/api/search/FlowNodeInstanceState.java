@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.api.search;
 
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceItem;
 
 public enum FlowNodeInstanceState {
   ACTIVE,

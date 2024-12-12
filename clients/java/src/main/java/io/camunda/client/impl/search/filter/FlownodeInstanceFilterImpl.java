@@ -15,8 +15,8 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.client.api.search.response.FlowNodeInstanceType;
+import io.camunda.client.api.search.FlowNodeInstanceState;
+import io.camunda.client.api.search.FlowNodeInstanceType;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;

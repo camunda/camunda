@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.FlowNodeInstanceType;
+import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 import java.util.Objects;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {
