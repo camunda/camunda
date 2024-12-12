@@ -16,6 +16,7 @@ import io.camunda.client.ZeebeClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
+import io.camunda.tasklist.webapp.service.CamundaClientBasedAdapter;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.zeebe.PartitionHolder;
@@ -66,6 +67,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
   @Autowired private StandalonePartitionSupplier partitionSupplier;
+  @Autowired private CamundaClientBasedAdapter tasklistServicesAdapter;
   @Autowired private ProcessCache processCache;
   @Autowired private TaskService taskService;
   @Autowired private ProcessService processService;
@@ -94,8 +96,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
     ReflectionTestUtils.setField(partitionSupplier, "zeebeClient", getClient());
-    ReflectionTestUtils.setField(taskService, "zeebeClient", getClient());
-    ReflectionTestUtils.setField(processService, "zeebeClient", getClient());
+    ReflectionTestUtils.setField(tasklistServicesAdapter, "zeebeClient", getClient());
   }
 
   @AfterEach

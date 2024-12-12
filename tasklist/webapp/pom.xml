@@ -15,11 +15,6 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-services</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
     </dependency>
 
@@ -57,6 +52,16 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-rest</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>

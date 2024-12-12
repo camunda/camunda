@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.ZeebeClient;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.store.ProcessStore;
@@ -35,10 +34,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessService.class);
-
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

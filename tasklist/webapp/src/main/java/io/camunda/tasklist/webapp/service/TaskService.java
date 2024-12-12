@@ -13,7 +13,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.ZeebeClient;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
@@ -53,10 +52,6 @@ public class TaskService {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
   @Autowired private UserReader userReader;
-
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
 
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
@@ -256,7 +251,12 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
-    tasklistServicesAdapter.unassignUserTask(taskEntity);
+    try {
+      tasklistServicesAdapter.unassignUserTask(taskEntity);
+    } catch (final Exception e) {
+      taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+      throw e;
+    }
     return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 

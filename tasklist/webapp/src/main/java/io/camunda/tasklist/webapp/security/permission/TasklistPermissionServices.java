@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class TasklistPermissionServices {
 
+  private static final Authorization CREATE_PROC_INST_AUTH_CHECK =
+      Authorization.of(a -> a.processDefinition().createProcessInstance());
   private static final Authorization UPDATE_USER_TASK_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().updateUserTask());
 
@@ -33,6 +35,11 @@ public class TasklistPermissionServices {
     this.securityConfiguration = securityConfiguration;
     this.authorizationChecker = authorizationChecker;
     this.securityContextProvider = securityContextProvider;
+  }
+
+  public boolean hasPermissionToCreateProcessInstance(final String bpmnProcessId) {
+    final var authentication = RequestMapper.getAuthentication();
+    return isAuthorizedForResource(bpmnProcessId, authentication, CREATE_PROC_INST_AUTH_CHECK);
   }
 
   public boolean hasPermissionToUpdateUserTask(final TaskEntity task) {
