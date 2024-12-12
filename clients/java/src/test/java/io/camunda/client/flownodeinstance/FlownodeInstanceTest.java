@@ -22,9 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.protocol.rest.*;
 import io.camunda.client.api.search.FlowNodeInstanceState;
 import io.camunda.client.api.search.FlowNodeInstanceType;
+import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;
 import java.util.Objects;
