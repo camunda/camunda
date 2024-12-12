@@ -219,7 +219,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
-        new ProcessInstanceElementMigratedApplier(elementInstanceState));
+        new ProcessInstanceElementMigratedApplier(elementInstanceState, processState));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {

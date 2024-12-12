@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -28,13 +29,15 @@ public class ProcessInstanceElementMigratedApplierTest {
   private MutableProcessingState processingState;
 
   private MutableElementInstanceState elementInstanceState;
+  private ProcessState processState;
   private ProcessInstanceElementMigratedApplier processInstanceElementMigratedApplier;
 
   @BeforeEach
   public void setup() {
     elementInstanceState = processingState.getElementInstanceState();
+    processState = processingState.getProcessState();
     processInstanceElementMigratedApplier =
-        new ProcessInstanceElementMigratedApplier(elementInstanceState);
+        new ProcessInstanceElementMigratedApplier(elementInstanceState, processState);
   }
 
   @Test
