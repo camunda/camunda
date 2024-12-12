@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -1067,6 +1068,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
+
+  /**
+   * Command to assign a user to a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newAssignUserToGroupCommand(123L, 456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long userKey, long groupKey);
 
   /**
    * Command to create a user.
