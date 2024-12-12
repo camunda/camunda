@@ -13,6 +13,7 @@ import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.SSO_AUTH;
 import static io.camunda.application.Profile.TASKLIST;
 
+import io.camunda.authentication.config.WebSecurityConfig;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
@@ -53,7 +54,8 @@ public class WebappsConfigurationInitializer
       propertyMap.put(
           CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY,
           activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains));
-
+      propertyMap.put(
+          SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE_NAME);
       DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
     }
   }

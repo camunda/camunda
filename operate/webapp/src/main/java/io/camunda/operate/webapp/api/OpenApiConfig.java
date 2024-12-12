@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.api;
 
-import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.authentication.config.WebSecurityConfig;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -42,7 +42,7 @@ public class OpenApiConfig {
                         new SecurityScheme()
                             .type(SecurityScheme.Type.APIKEY)
                             .in(SecurityScheme.In.COOKIE)
-                            .name(OperateURIs.COOKIE_JSESSIONID))
+                            .name(WebSecurityConfig.SESSION_COOKIE_NAME))
                     .addSecuritySchemes(
                         "bearer-key",
                         new SecurityScheme()

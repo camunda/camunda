@@ -50,8 +50,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.session.web.http.CookieSerializer;
-import org.springframework.session.web.http.DefaultCookieSerializer;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -221,15 +219,6 @@ public class WebSecurityConfig {
                     .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
         .addFilterAfter(new CsrfTokenCookieFilter(cookieCsrfTokenRepository), CsrfFilter.class)
         .build();
-  }
-
-  @Bean
-  public CookieSerializer cookieSerializer() {
-    final DefaultCookieSerializer serializer = new DefaultCookieSerializer();
-    serializer.setCookieName(SESSION_COOKIE_NAME);
-    serializer.setCookiePath("/");
-    serializer.setUseHttpOnlyCookie(true);
-    return serializer;
   }
 
   private void genericSuccessHandler(
