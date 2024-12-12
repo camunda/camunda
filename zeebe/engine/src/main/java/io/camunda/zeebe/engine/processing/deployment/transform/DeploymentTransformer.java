@@ -37,10 +37,9 @@ public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
-  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
-      new UnknownResourceTransformer();
-
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
+
+  private final ResourceTransformer defaultResourceTransformer;
 
   private final MessageDigest digestGenerator;
   // internal changes during processing
@@ -85,7 +84,7 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getFormState());
 
-    final var resourceTransformer =
+    defaultResourceTransformer =
         new ResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
@@ -94,8 +93,7 @@ public final class DeploymentTransformer {
             entry(".bpmn", bpmnResourceTransformer),
             entry(".xml", bpmnResourceTransformer),
             entry(".dmn", dmnResourceTransformer),
-            entry(".form", formResourceTransformer),
-            entry(".rpa", resourceTransformer));
+            entry(".form", formResourceTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
@@ -193,7 +191,7 @@ public final class DeploymentTransformer {
         .filter(entry -> resourceName.endsWith(entry.getKey()))
         .map(Entry::getValue)
         .findFirst()
-        .orElse(UNKNOWN_RESOURCE);
+        .orElse(defaultResourceTransformer);
   }
 
   private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
