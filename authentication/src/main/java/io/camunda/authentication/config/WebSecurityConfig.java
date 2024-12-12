@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.csrf.SpaCsrfTokenRequestHandler;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
@@ -23,7 +24,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -41,7 +44,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
@@ -55,27 +57,37 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("auth-basic|auth-oidc")
+@Profile("auth-basic|auth-basic-with-unprotected-api|auth-oidc")
 public class WebSecurityConfig {
-  public static final String[] UNAUTHENTICATED_PATHS =
-      new String[] {
-        "/login",
-        "/logout",
-        // these are handled by the frontend
-        "/identity/**",
-        "/tasklist/**",
-        "/operate/**",
-        // license information is displayed on the login form
-        "/v2/license",
-        // endpoint for failure forwarding
-        "/error",
-        // all actuator endpoints
-        "/actuator/**",
-        // endpoints defined in BrokerHealthRoutes
-        "/ready",
-        "/health",
-        "/startup"
-      };
+  public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI =
+      "spring.security.oauth2.resourceserver.jwt.issuer-uri";
+  public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI =
+      "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
+
+  public static final String LOGIN_URL = "/login";
+  public static final String LOGOUT_URL = "/logout";
+
+  public static final Set<String> UNAUTHENTICATED_PATHS =
+      Set.of(
+          LOGIN_URL,
+          LOGOUT_URL,
+          // these are handled by the frontend
+          "/identity/**",
+          "/tasklist/**",
+          "/operate/**",
+          // license information is displayed on the login form
+          "/v2/license",
+          // configuration is used for login
+          "/v2/authentication/config",
+          // endpoint for failure forwarding
+          "/error",
+          // all actuator endpoints
+          "/actuator/**",
+          // endpoints defined in BrokerHealthRoutes
+          "/ready",
+          "/health",
+          "/startup");
+  public static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
   public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
   public static final String SESSION_COOKIE_NAME = "camunda-session";
 
@@ -89,21 +101,6 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
-  public CamundaUserDetailsService camundaUserDetailsService(
-      final UserServices userServices,
-      final AuthorizationServices authorizationServices,
-      final RoleServices roleServices,
-      final TenantServices tenantServices) {
-    return new CamundaUserDetailsService(
-        userServices,
-        authorizationServices,
-        roleServices,
-        tenantServices,
-        true);
-  }
-
-  @Bean
   @Primary
   @Profile("auth-oidc")
   public SecurityFilterChain oidcSecurityFilterChain(
@@ -111,7 +108,7 @@ public class WebSecurityConfig {
       final AuthFailureHandler authFailureHandler,
       final ClientRegistrationRepository clientRegistrationRepository)
       throws Exception {
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
+    return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
         .oauth2ResourceServer(
             oauth2 ->
                 oauth2.jwt(
@@ -128,7 +125,18 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile("auth-basic")
+  @Profile({"auth-basic", "auth-basic-with-unprotected-api"})
+  public CamundaUserDetailsService camundaUserDetailsService(
+      final UserServices userServices,
+      final RoleServices roleServices,
+      final TenantServices tenantServices,
+      final AuthorizationServices authorizationServices) {
+    return new CamundaUserDetailsService(
+        userServices, authorizationServices, roleServices, tenantServices, true);
+  }
+
+  @Bean
+  @Profile({"auth-basic", "auth-basic-with-unprotected-api"})
   @Order(1)
   public SecurityFilterChain basicAuthSecurityFilterChain(
       final HttpSecurity httpSecurity,
@@ -140,10 +148,11 @@ public class WebSecurityConfig {
     if (!isEnabled) {
       return null;
     }
+    // Require valid credentials when a basic auth header is present.
     return baseHttpSecurity(
-            httpSecurity.securityMatchers(
-                matchers -> matchers.requestMatchers(this::isBasicAuthRequest)),
-            authFailureHandler)
+            withSecurityMatcher(httpSecurity, this::isBasicAuthRequest),
+            authFailureHandler,
+            UNAUTHENTICATED_PATHS)
         .httpBasic(Customizer.withDefaults())
         .build();
   }
@@ -151,28 +160,38 @@ public class WebSecurityConfig {
   @Bean
   @Profile("auth-basic")
   @Order(2)
-  public SecurityFilterChain unauthenticatedSecurityFilterChain(
-      final HttpSecurity httpSecurity,
-      final AuthFailureHandler authFailureHandler,
-      final SecurityConfiguration securityConfiguration)
+  public SecurityFilterChain loginAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
-    if (securityConfiguration.isEnabled()) {
-      return null;
-    }
-    LOG.warn("Authentication is disabled");
-    final RequestMatcher requestMatcher = request -> !hasSessionCookie(request);
-
-    return httpSecurity
-        .securityMatchers(matchers -> matchers.requestMatchers(requestMatcher))
-        .authorizeHttpRequests(requests -> requests.requestMatchers(requestMatcher).permitAll())
-        .csrf(CsrfConfigurer::disable)
-        .build();
+    return buildLoginAuthSecurityFilterChain(httpSecurity, authFailureHandler);
   }
 
   @Bean
-  @Profile("auth-basic")
+  @Profile("auth-basic-with-unprotected-api")
+  @Order(2)
+  public SecurityFilterChain loginAuthWithSessionCookiesApiSecurityFilterChain(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    // Require a valid session cookie when present. This allows the frontend clients to use
+    // login authentication.
+    return buildLoginAuthSecurityFilterChain(
+        withSecurityMatcher(httpSecurity, this::hasSessionCookie), authFailureHandler);
+  }
+
+  @Bean
+  @Profile("auth-basic-with-unprotected-api")
   @Order(3)
-  public SecurityFilterChain loginAuthSecurityFilterChain(
+  public SecurityFilterChain unauthenticatedSecurityFilterChain(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    LOG.warn("Authentication is disabled");
+    // Allow any API requests without authentication.
+    return baseHttpSecurity(
+            httpSecurity, authFailureHandler, Sets.union(UNAUTHENTICATED_PATHS, API_PATHS))
+        .build();
+  }
+
+  public SecurityFilterChain buildLoginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
     LOG.info("Configuring login auth");
@@ -180,16 +199,16 @@ public class WebSecurityConfig {
     cookieCsrfTokenRepository.setHeaderName(CSRF_TOKEN_HEADER);
     cookieCsrfTokenRepository.setCookieCustomizer(
         responseCookieBuilder -> responseCookieBuilder.httpOnly(false));
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
+    return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
         .formLogin(
             formLogin ->
                 formLogin
-                    .loginProcessingUrl("/login")
+                    .loginProcessingUrl(LOGIN_URL)
                     .failureHandler(authFailureHandler)
                     .successHandler(this::genericSuccessHandler))
         .logout(
             (logout) ->
-                logout.logoutUrl("/logout").logoutSuccessHandler(this::genericSuccessHandler))
+                logout.logoutUrl(LOGOUT_URL).logoutSuccessHandler(this::genericSuccessHandler))
         .exceptionHandling(
             exceptionHandling ->
                 exceptionHandling
@@ -238,14 +257,20 @@ public class WebSecurityConfig {
         .anyMatch(cookie -> cookie.getName().equals(SESSION_COOKIE_NAME));
   }
 
+  private boolean hasCsrfToken(final HttpServletRequest request) {
+    return request.getHeader(CSRF_TOKEN_HEADER) != null;
+  }
+
   private HttpSecurity baseHttpSecurity(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler) {
+      final HttpSecurity httpSecurity,
+      final AuthFailureHandler authFailureHandler,
+      final Set<String> unauthenticatedPaths) {
     try {
       return httpSecurity
           .authorizeHttpRequests(
               (authorizeHttpRequests) ->
                   authorizeHttpRequests
-                      .requestMatchers(UNAUTHENTICATED_PATHS)
+                      .requestMatchers(unauthenticatedPaths.toArray(String[]::new))
                       .permitAll()
                       .anyRequest()
                       .authenticated())
@@ -255,7 +280,7 @@ public class WebSecurityConfig {
                       (httpStrictTransportSecurity) ->
                           httpStrictTransportSecurity
                               .includeSubDomains(true)
-                              .maxAgeInSeconds(63072000)
+                              .maxAgeInSeconds(Duration.ofDays(2 * 365).toSeconds())
                               .preload(true)))
           .exceptionHandling(
               (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
@@ -272,6 +297,11 @@ public class WebSecurityConfig {
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
+  }
+
+  private static HttpSecurity withSecurityMatcher(
+      final HttpSecurity httpSecurity, final RequestMatcher requestMatcher) {
+    return httpSecurity.securityMatchers(matchers -> matchers.requestMatchers(requestMatcher));
   }
 
   private static class CsrfTokenCookieFilter extends OncePerRequestFilter {

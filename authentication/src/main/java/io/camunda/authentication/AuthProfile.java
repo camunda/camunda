@@ -5,17 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.service;
+package io.camunda.authentication;
 
-import io.camunda.authentication.AuthProfile;
-import io.camunda.authentication.entity.CamundaUserDTO;
-import javax.annotation.Nullable;
+public enum AuthProfile {
+  BASIC("auth-basic"),
+  BASIC_WITH_UNPROTECTED_API("auth-basic-with-unprotected-api"),
+  OIDC("auth-oidc"),
+  LDAP("ldap-auth");
 
-public interface CamundaUserService {
-  AuthProfile getProfile();
+  private final String id;
 
-  @Nullable
-  CamundaUserDTO getCurrentUser();
+  AuthProfile(final String id) {
+    this.id = id;
+  }
 
-  String getUserToken();
+  public String getId() {
+    return id;
+  }
 }

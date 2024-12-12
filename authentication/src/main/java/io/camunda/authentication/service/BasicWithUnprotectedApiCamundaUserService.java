@@ -8,14 +8,14 @@
 package io.camunda.authentication.service;
 
 import io.camunda.authentication.AuthProfile;
-import io.camunda.authentication.entity.CamundaUserDTO;
-import javax.annotation.Nullable;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 
-public interface CamundaUserService {
-  AuthProfile getProfile();
-
-  @Nullable
-  CamundaUserDTO getCurrentUser();
-
-  String getUserToken();
+@Profile("auth-basic-with-unprotected-api")
+@Service
+public class BasicWithUnprotectedApiCamundaUserService extends BasicCamundaUserService {
+  @Override
+  public AuthProfile getProfile() {
+    return AuthProfile.BASIC_WITH_UNPROTECTED_API;
+  }
 }

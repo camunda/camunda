@@ -8,7 +8,6 @@
 package io.camunda.security.configuration;
 
 public class SecurityConfiguration {
-  private boolean enabled;
 
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private BasicAuthConfiguration basicAuth = new BasicAuthConfiguration();
@@ -47,13 +46,5 @@ public class SecurityConfiguration {
 
   public void setBasicAuth(final BasicAuthConfiguration basicAuth) {
     this.basicAuth = basicAuth;
-  }
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
   }
 }

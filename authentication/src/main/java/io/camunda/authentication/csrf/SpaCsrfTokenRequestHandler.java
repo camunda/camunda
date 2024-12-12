@@ -16,6 +16,15 @@ import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.util.StringUtils;
 
+/**
+ * This CsrfTokenRequestHandler accepts an unencoded CSRF token via a request header and encoded
+ * tokens via request parameters. It's adapted from the Spring documentation on CSRF protection for
+ * single-page applications.
+ *
+ * @see <a
+ *     href="https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html#csrf-integration-javascript-spa">Spring
+ *     documentation</a>
+ */
 public class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
   private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();
   private final CsrfTokenRequestHandler xor = new XorCsrfTokenRequestAttributeHandler();

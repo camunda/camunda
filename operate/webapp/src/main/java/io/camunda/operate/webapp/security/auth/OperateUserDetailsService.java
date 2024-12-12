@@ -39,6 +39,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       + OperateProfileService.IDENTITY_AUTH_PROFILE
       + " & !"
       + OperateProfileService.AUTH_BASIC
+      + " & !"
+      + OperateProfileService.AUTH_BASIC_WITH_UNPROTECTED_API
 })
 /*
  * Required as primary for now due to a clashing bean in the always active Identity service classes.
