@@ -7,9 +7,8 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
@@ -18,8 +17,6 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebS
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
-import java.util.TreeMap;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,32 +27,10 @@ public class UserManagementIndicesConfig {
   final String prefix;
   final boolean isElasticSearch;
 
-  public UserManagementIndicesConfig(
-      @Autowired(required = false) final OperateProperties operateProperties,
-      @Autowired(required = false) final TasklistProperties tasklistProperties) {
-    // A map is used for clear error reporting
-    // A TreeMap is used to be able to fetch the "first" entry
-    final var prefixes = new TreeMap<String, String>();
-    final var databases = new TreeMap<String, Boolean>();
-    if (operateProperties != null) {
-      prefixes.put("operate", operateProperties.getIndexPrefix());
-      databases.put("operate", DatabaseInfo.isElasticsearch());
-    }
-    if (tasklistProperties != null) {
-      prefixes.put("tasklist", tasklistProperties.getIndexPrefix());
-      databases.put(
-          "tasklist", tasklistProperties.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH));
-    }
-
-    prefix =
-        ConfigValidation.allMatch(
-            ErrorMessages.noWebappConfigured,
-            ErrorMessages.differentIndexPrefixName,
-            prefixes,
-            ConfigValidation.skipEmpty);
+  public UserManagementIndicesConfig(final ConnectConfiguration connectConfiguration) {
+    prefix = connectConfiguration.getIndexPrefix();
     isElasticSearch =
-        ConfigValidation.allMatch(
-            ErrorMessages.noWebappConfigured, ErrorMessages.differentDatabaseConfigured, databases);
+        connectConfiguration.getType().equals(ConnectionTypes.ELASTICSEARCH.getType());
   }
 
   @Bean

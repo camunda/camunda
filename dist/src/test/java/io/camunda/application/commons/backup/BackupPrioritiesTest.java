@@ -10,16 +10,19 @@ package io.camunda.application.commons.backup;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexTemplateDescriptorsConfigurator;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.TasklistIndexTemplateDescriptorsConfigurator;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,16 +46,24 @@ abstract class BackupPrioritiesTest {
 
   @Autowired BackupPriorityConfiguration backupPriorityConfiguration;
 
-  @Test
-  public void onlyOneInterfaceIsImplemented() {
+  private Stream<JavaClass> allImplementations() {
     final var implementations =
         new ClassFileImporter()
                 .importPackages("io.camunda.webapps.schema")
                 .that(implement(BackupPriority.class))
-                .stream()
-                .toList();
+                .stream();
+    final var optimizeImplementations =
+        new ClassFileImporter()
+                .importPackages("io.camunda.optimize.service.db.schema.index")
+                .that(implement(BackupPriority.class))
+                .stream();
 
-    assertThat(implementations)
+    return Stream.concat(implementations, optimizeImplementations);
+  }
+
+  @Test
+  public void onlyOneInterfaceIsImplemented() {
+    assertThat(allImplementations().toList())
         .allSatisfy(
             clazz ->
                 assertThat(
@@ -66,14 +77,10 @@ abstract class BackupPrioritiesTest {
   public void testBackupPriorities() {
     final var priorities = backupPriorityConfiguration.backupPriorities();
 
-    System.out.println(priorities);
     final Set<String> allPriorities =
         priorities.allPriorities().map(obj -> obj.getClass().getName()).collect(Collectors.toSet());
 
-    final var classes =
-        new ClassFileImporter()
-            .importPackages("io.camunda.webapps.schema")
-            .that(implement(BackupPriority.class));
+    final var classes = allImplementations().toList();
 
     final var missingInBackup = new HashSet<String>();
     classes.forEach(
@@ -87,16 +94,16 @@ abstract class BackupPrioritiesTest {
 
   @TestConfiguration
   static class TestBackupPriorityConfiguration {
-    OperateProperties operateProperties = new OperateProperties();
 
-    public TestBackupPriorityConfiguration() {
-      operateProperties.getElasticsearch().setIndexPrefix("my-index-prefix");
+    @Bean
+    public ConnectConfiguration connectConfiguration() {
+      return new ConnectConfiguration();
     }
 
     @Primary
     @Bean
     public OperateProperties properties() {
-      return operateProperties;
+      return new OperateProperties();
     }
 
     @Primary
