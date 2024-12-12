@@ -1070,6 +1070,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
 
   /**
+   * Command to assign a user to a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newAssignUserToGroupCommand(123L, 456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long userKey, long groupKey);
+
+  /**
    * Command to create a user.
    *
    * <pre>
