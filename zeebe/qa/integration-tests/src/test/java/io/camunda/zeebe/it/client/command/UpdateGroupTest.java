@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -49,7 +50,8 @@ class UpdateGroupTest {
 
     // then
     ZeebeAssertHelper.assertGroupUpdated(
-        UPDATED_GROUP_NAME, group -> assertThat(group).hasName(UPDATED_GROUP_NAME));
+        UPDATED_GROUP_NAME,
+        group -> assertThat(group).hasGroupKey(groupKey).hasName(UPDATED_GROUP_NAME));
   }
 
   @Test
@@ -63,7 +65,7 @@ class UpdateGroupTest {
   @Test
   void shouldRejectUpdateIfGroupDoesNotExist() {
     // when / then
-    final long notExistingGroupKey = 67677634L;
+    final long notExistingGroupKey = Protocol.encodePartitionId(1, 111L);
     assertThatThrownBy(
             () ->
                 client
@@ -74,7 +76,7 @@ class UpdateGroupTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to update group with key '%d', but no group with this key exists."
+            "Expected to update group with key '%d', but a group with this key does not exist."
                 .formatted(notExistingGroupKey));
   }
 }
