@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize;
 
+import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.gateway.Gateway;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -23,5 +26,18 @@ import org.springframework.context.annotation.Profile;
 @Profile("optimize")
 public class OptimizeModuleConfiguration {
 
-  public OptimizeModuleConfiguration() {}
+  // if present, then it will ensure
+  // that the broker is started first
+  private final Broker broker;
+
+  // if present, then it will ensure
+  // that the gateway is started first
+  private final Gateway gateway;
+
+  public OptimizeModuleConfiguration(
+      @Autowired(required = false) final Broker broker,
+      @Autowired(required = false) final Gateway gateway) {
+    this.broker = broker;
+    this.gateway = gateway;
+  }
 }
