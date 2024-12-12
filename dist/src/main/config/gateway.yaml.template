@@ -34,10 +34,6 @@
 # This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
 # camunda.rest.enabled: true
 
-# Enable the Camunda REST Query API to start on gateway startup.
-# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
-# camunda.rest.query.enabled: false
-
 # zeebe:
   # gateway:
     # network:

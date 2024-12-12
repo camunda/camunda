@@ -28,7 +28,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = RoleQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = RoleController.class)
 public class RoleQueryControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
 

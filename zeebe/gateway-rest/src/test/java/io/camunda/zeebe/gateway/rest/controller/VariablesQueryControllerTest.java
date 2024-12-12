@@ -38,7 +38,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = VariableController.class)
 @Import(JacksonConfig.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 

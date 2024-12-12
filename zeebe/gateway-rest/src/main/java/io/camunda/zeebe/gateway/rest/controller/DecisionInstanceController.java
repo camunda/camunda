@@ -25,9 +25,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestQueryController
+@CamundaRestController
 @RequestMapping("/v2/decision-instances")
-public class DecisionInstanceQueryController {
+public class DecisionInstanceController {
 
   @Autowired private DecisionInstanceServices decisionInstanceServices;
 

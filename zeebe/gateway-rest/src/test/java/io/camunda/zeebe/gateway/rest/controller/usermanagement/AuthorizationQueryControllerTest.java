@@ -36,9 +36,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = AuthorizationQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = AuthorizationController.class)
 public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =

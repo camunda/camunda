@@ -30,14 +30,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestQueryController
+@CamundaRestController
 @RequestMapping("/v2/process-definitions")
-public class ProcessDefinitionQueryController {
+public class ProcessDefinitionController {
 
   private final ProcessDefinitionServices processDefinitionServices;
   private final FormServices formServices;
 
-  public ProcessDefinitionQueryController(
+  public ProcessDefinitionController(
       final ProcessDefinitionServices processDefinitionServices, final FormServices formServices) {
     this.processDefinitionServices = processDefinitionServices;
     this.formServices = formServices;

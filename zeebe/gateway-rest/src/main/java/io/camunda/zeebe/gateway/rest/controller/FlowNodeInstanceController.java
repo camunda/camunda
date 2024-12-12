@@ -28,14 +28,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestQueryController
+@CamundaRestController
 @RequestMapping("/v2/flownode-instances")
-public class FlowNodeInstanceQueryController {
+public class FlowNodeInstanceController {
 
   private final FlowNodeInstanceServices flownodeInstanceServices;
   private final ProcessCache processCache;
 
-  public FlowNodeInstanceQueryController(
+  public FlowNodeInstanceController(
       final FlowNodeInstanceServices flownodeInstanceServices, final ProcessCache processCache) {
     this.flownodeInstanceServices = flownodeInstanceServices;
     this.processCache = processCache;
