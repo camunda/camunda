@@ -133,6 +133,12 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
 	}
+	if settings.username != "" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.username
+	}
+	if settings.password != "" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.password
+	}
 	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	return javaOpts
