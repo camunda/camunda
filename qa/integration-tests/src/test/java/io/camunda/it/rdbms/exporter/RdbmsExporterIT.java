@@ -470,7 +470,7 @@ class RdbmsExporterIT {
     // then
     final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(group).isNotEmpty();
-    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // given
@@ -484,7 +484,7 @@ class RdbmsExporterIT {
     // then
     final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(updatedGroup).isNotEmpty();
-    assertThat(updatedGroup.get().key()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().groupKey()).isEqualTo(updateGroupRecordValue.getGroupKey());
     assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
 
     // when
@@ -509,7 +509,7 @@ class RdbmsExporterIT {
     // then
     final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
     assertThat(group).isNotEmpty();
-    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().groupKey()).isEqualTo(groupRecordValue.getGroupKey());
     assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
 
     // when

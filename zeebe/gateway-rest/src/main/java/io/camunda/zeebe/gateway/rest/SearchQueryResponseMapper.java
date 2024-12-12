@@ -299,7 +299,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static GroupItem toGroup(final GroupEntity groupEntity) {
-    return new GroupItem().key(groupEntity.key()).name(groupEntity.name());
+    return new GroupItem().groupKey(groupEntity.groupKey()).name(groupEntity.name());
   }
 
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {
