@@ -179,6 +179,13 @@ public final class ProcessInstanceMigrationPreconditions {
       Joining gateways with at least one sequence flow taken must be mapped \
       to a gateway of the same type in the target process definition.""";
 
+  private static final String ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY =
+      """
+      Expected to migrate process instance '%s' \
+      but gateway with id '%s' has a taken sequence flow mismatch. \
+      Taken sequence flow with id '%s' must connect to the mapped target gateway \
+      with id '%s' in the target process definition.""";
+
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
@@ -913,6 +920,29 @@ public final class ProcessInstanceMigrationPreconditions {
               sourceGateway.getElementType(),
               targetGatewayId,
               targetGateway.getElementType());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+  }
+
+  public static void requireSequenceFlowExistsInTarget(
+      final DirectBuffer activeSequenceFlowId,
+      final ExecutableFlowNode sourceGateway,
+      final ExecutableFlowNode targetGateway,
+      final long processInstanceKey) {
+    final boolean sequenceFLowExistsInTarget =
+        targetGateway.getIncoming().stream()
+            .map(ExecutableSequenceFlow::getId)
+            .anyMatch(activeSequenceFlowId::equals);
+
+    if (!sequenceFLowExistsInTarget) {
+      final var reason =
+          String.format(
+              ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY,
+              processInstanceKey,
+              BufferUtil.bufferAsString(sourceGateway.getId()),
+              BufferUtil.bufferAsString(activeSequenceFlowId),
+              BufferUtil.bufferAsString(targetGateway.getId()));
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_ARGUMENT);
     }
