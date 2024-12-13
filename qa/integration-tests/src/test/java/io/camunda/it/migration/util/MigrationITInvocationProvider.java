@@ -374,6 +374,7 @@ public class MigrationITInvocationProvider
       {
         put("camunda.rest.query.enabled", "true");
         put("camunda.database.url", opensearchExternalUrl);
+        put("camunda.database.type", "opensearch");
       }
     };
   }
