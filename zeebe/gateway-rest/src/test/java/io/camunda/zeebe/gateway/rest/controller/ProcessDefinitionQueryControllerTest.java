@@ -38,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = ProcessDefinitionQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
@@ -83,7 +81,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           ],
           "page": {
               "totalItems": 1,
-              "firstSortValues": [],
+              "firstSortValues": ["v"],
               "lastSortValues": [
                   "v"
               ]

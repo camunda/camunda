@@ -39,13 +39,13 @@ func downloadAndExtract(filePath, url, extractDir string, extractFunc func(strin
 	return nil
 }
 
-func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
+func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string) error {
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-windows-x86_64.zip"
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".zip"
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".zip"
 	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaVersion + "/" + camundaFilePath
-	connectorsFilePath := "connector-runtime-bundle-" + camundaVersion + "-with-dependencies.jar"
-	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + camundaVersion + "/" + connectorsFilePath
+	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
+	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -76,6 +76,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
 		filepath.Join("c8run", "endpoints.txt"),
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
+		filepath.Join("c8run", "package.bat"),
 	}
 	err = archive.ZipSource(filesToArchive, filepath.Join("c8run", "camunda8-run-"+camundaVersion+"-windows-x86_64.zip"))
 	if err != nil {
@@ -85,7 +86,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
 	return nil
 }
 
-func PackageUnix(camundaVersion string, elasticsearchVersion string) error {
+func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsVersion string) error {
 	var architecture string
 	if runtime.GOARCH == "amd64" {
 		architecture = "x86_64"
@@ -97,8 +98,8 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string) error {
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".tar.gz"
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".tar.gz"
 	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaVersion + "/" + camundaFilePath
-	connectorsFilePath := "connector-runtime-bundle-" + camundaVersion + "-with-dependencies.jar"
-	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + camundaVersion + "/" + connectorsFilePath
+	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
+	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -129,6 +130,9 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string) error {
 		filepath.Join("c8run", "endpoints.txt"),
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
+		filepath.Join("c8run", "start.sh"),
+		filepath.Join("c8run", "shutdown.sh"),
+		filepath.Join("c8run", "package.sh"),
 	}
 	outputArchive, err := os.Create(filepath.Join("c8run", "camunda8-run-"+camundaVersion+"-"+runtime.GOOS+"-"+architecture+".tar.gz"))
 	if err != nil {

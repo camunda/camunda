@@ -33,6 +33,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.23.1'
+          cache: false  # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Build c8run
         run: go build
@@ -124,6 +125,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.23.1'
+          cache: false  # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Build c8run
         run: go build

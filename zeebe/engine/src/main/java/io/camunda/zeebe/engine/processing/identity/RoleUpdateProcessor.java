@@ -68,7 +68,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
             .addResourceId(persistedRecord.get().getName());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authorizationRequest.getPermissionType(),
@@ -79,7 +79,12 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
 
-    if (roleState.getRoleKeyByName(updatedName).isPresent()) {
+    final boolean hasNameConflict =
+        roleState
+            .getRoleKeyByName(updatedName)
+            .map(key -> key != record.getRoleKey())
+            .orElse(false);
+    if (hasNameConflict) {
       final var errorMessage =
           "Expected to update role with name '%s', but a role with this name already exists."
               .formatted(updatedName);

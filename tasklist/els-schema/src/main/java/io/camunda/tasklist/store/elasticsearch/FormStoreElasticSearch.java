@@ -15,17 +15,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -51,7 +54,9 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -63,6 +68,7 @@ public class FormStoreElasticSearch implements FormStore {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
+  @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
     final FormEntity formEmbedded =
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
@@ -83,7 +89,7 @@ public class FormStoreElasticSearch implements FormStore {
   }
 
   @Override
-  public List<String> getFormIdsByProcessDefinitionId(String processDefinitionId) {
+  public List<String> getFormIdsByProcessDefinitionId(final String processDefinitionId) {
     final SearchRequest searchRequest =
         new SearchRequest(formIndex.getFullQualifiedName())
             .source(
@@ -92,38 +98,26 @@ public class FormStoreElasticSearch implements FormStore {
                     .fetchField(FormIndex.ID));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public Optional<FormIdView> getHighestVersionFormByKey(String formKey) {
-
-    final SearchSourceBuilder searchSourceBuilder =
-        new SearchSourceBuilder()
-            .query(QueryBuilders.termQuery(FormIndex.ID, formKey))
-            .sort(FormIndex.VERSION, SortOrder.DESC)
-            .size(1)
-            .fetchSource(new String[] {FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION}, null);
-
-    final SearchRequest searchRequest =
-        new SearchRequest(formIndex.getFullQualifiedName()).source(searchSourceBuilder);
+  public Optional<FormIdView> getFormByKey(final String formKey) {
+    final GetRequest getRequest = new GetRequest(formIndex.getFullQualifiedName(), formKey);
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
-      if (searchResponse.getHits().getHits().length > 0) {
-        // Extract the source and map it to your FormEntity object
-        final Map<String, Object> sourceAsMap =
-            searchResponse.getHits().getHits()[0].getSourceAsMap();
+      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
+      if (response.isExists()) {
+        final Map<String, Object> sourceAsMap = response.getSourceAsMap();
         return Optional.of(
             new FormIdView(
                 (String) sourceAsMap.get(FormIndex.ID),
                 (String) sourceAsMap.get(FormIndex.BPMN_ID),
                 ((Number) sourceAsMap.get(FormIndex.VERSION)).longValue()));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           String.format("Error retrieving the last version for the formKey: %s", formKey), e);
     }
@@ -135,14 +129,11 @@ public class FormStoreElasticSearch implements FormStore {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       final var formSearchHit =
           getRawResponseWithTenantCheck(
-              formId,
-              formIndex.getFullQualifiedName(),
-              formIndex.getIndexName(),
-              tenantAwareClient);
+              formId, formIndex, QueryType.ONLY_RUNTIME, tenantAwareClient);
       return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       return null;
     }
   }
@@ -185,7 +176,7 @@ public class FormStoreElasticSearch implements FormStore {
         formEntity.setIsDeleted((Boolean) sourceAsMap.get(FormIndex.IS_DELETED));
         return formEntity;
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
       throw new TasklistRuntimeException(formIdNotFoundMessage);
@@ -209,14 +200,13 @@ public class FormStoreElasticSearch implements FormStore {
       final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
       searchSourceBuilder.query(boolQuery);
 
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(taskTemplate, ElasticsearchUtil.QueryType.ALL);
+      final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(taskTemplate);
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       return searchResponse.getHits().getTotalHits().value > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
       throw new TasklistRuntimeException(formIdNotFoundMessage);
@@ -234,13 +224,13 @@ public class FormStoreElasticSearch implements FormStore {
       searchSourceBuilder.query(boolQuery);
 
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(processIndex, ElasticsearchUtil.QueryType.ALL);
+          ElasticsearchUtil.createSearchRequest(processIndex, QueryType.ONLY_RUNTIME);
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
 
       return searchResponse.getHits().getTotalHits().value > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
       throw new TasklistRuntimeException(formIdNotFoundMessage);

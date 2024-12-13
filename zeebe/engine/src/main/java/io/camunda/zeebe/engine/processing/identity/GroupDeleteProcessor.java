@@ -28,6 +28,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
+  private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete group with key '%s', but a group with this key does not exist.";
   private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     final var groupKey = record.getGroupKey();
     final var persistedRecord = groupState.get(groupKey);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to delete group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
+      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -68,7 +68,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.DELETE)
             .addResourceId(persistedRecord.get().getName());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authorizationRequest.getPermissionType(),
@@ -79,6 +79,8 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
     record.setName(persistedRecord.get().getName());
+
+    removeAssignedEntities(record);
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
@@ -92,7 +94,39 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+    groupState
+        .get(record.getGroupKey())
+        .ifPresentOrElse(
+            group -> {
+              removeAssignedEntities(command.getValue());
+              stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
+            },
+            () -> {
+              final var errorMessage =
+                  GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void removeAssignedEntities(final GroupRecord record) {
+    final var groupKey = record.getGroupKey();
+    groupState
+        .getEntitiesByType(groupKey)
+        .forEach(
+            (entityType, entityKeys) -> {
+              entityKeys.forEach(
+                  entityKey -> {
+                    final var entityRecord =
+                        new GroupRecord()
+                            .setGroupKey(groupKey)
+                            .setEntityKey(entityKey)
+                            .setEntityType(entityType);
+                    stateWriter.appendFollowUpEvent(
+                        groupKey, GroupIntent.ENTITY_REMOVED, entityRecord);
+                  });
+            });
   }
 }

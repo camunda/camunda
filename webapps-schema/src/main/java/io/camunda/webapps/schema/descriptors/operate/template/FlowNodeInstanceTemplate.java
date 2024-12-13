@@ -7,12 +7,13 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import java.util.Optional;
 
 public class FlowNodeInstanceTemplate extends OperateTemplateDescriptor
-    implements ProcessInstanceDependant, Prio3Backup {
+    implements ProcessInstanceDependant, Prio4Backup {
 
   public static final String INDEX_NAME = "flownode-instance";
 
@@ -31,6 +32,7 @@ public class FlowNodeInstanceTemplate extends OperateTemplateDescriptor
   public static final String TREE_PATH = "treePath";
   public static final String LEVEL = "level";
   public static final String INCIDENT = "incident"; // true/false
+  public static final String SCOPE_KEY = "scopeKey";
 
   public FlowNodeInstanceTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
@@ -39,6 +41,11 @@ public class FlowNodeInstanceTemplate extends OperateTemplateDescriptor
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

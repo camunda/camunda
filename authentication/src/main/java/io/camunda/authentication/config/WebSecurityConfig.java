@@ -10,13 +10,17 @@ package io.camunda.authentication.config;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import io.camunda.authentication.CamundaUserDetailsService;
+import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -58,8 +62,11 @@ public class WebSecurityConfig {
 
   @Bean
   @Profile("auth-basic")
-  public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
-    return new CamundaUserDetailsService(userServices);
+  public CamundaUserDetailsService camundaUserDetailsService(
+      final UserServices userServices,
+      final AuthorizationServices authorizationServices,
+      final TenantServices tenantServices) {
+    return new CamundaUserDetailsService(userServices, authorizationServices, tenantServices);
   }
 
   @Bean
@@ -134,5 +141,11 @@ public class WebSecurityConfig {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Bean
+  public FilterRegistrationBean<TenantRequestAttributeFilter>
+      tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
+    return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
   }
 }

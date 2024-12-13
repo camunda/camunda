@@ -34,10 +34,6 @@
 # This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
 # camunda.rest.enabled: true
 
-# Enable the Camunda REST Query API to start on gateway startup.
-# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
-# camunda.rest.query.enabled: false
-
 # zeebe:
   # gateway:
     # network:
@@ -59,6 +55,14 @@
       # Apply the same setting on the broker too, see ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
+
+      # Sets the size of the socket receive buffer (SO_RCVBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_SOCKETRECEIVEBUFFER.
+      # socketReceiveBuffer: 1MB
+
+      # Sets the size of the socket send buffer (SO_SNDBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_SOCKETSENDBUFFER.
+      # socketSendBuffer: 1MB
 
     # cluster:
       # Sets initial contact points (brokers), which the gateway should contact to

@@ -28,8 +28,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -44,9 +44,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = DecisionInstanceQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = DecisionInstanceController.class)
 @Import(JacksonConfig.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
@@ -71,7 +69,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                ],
                "page": {
                    "totalItems": 1,
-                   "firstSortValues": [],
+                   "firstSortValues": ["v"],
                    "lastSortValues": [
                        "v"
                    ]
@@ -148,7 +146,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           "sort": [
                 {
                     "field": "decisionDefinitionName",
-                    "order": "desc"
+                    "order": "DESC"
                 }
           ]
       }""",

@@ -12,19 +12,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,7 @@ public class UserTaskCompletionVariableHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(TaskVariableEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(SnapshotTaskVariableBatch.class);
   }
 
   @Test
@@ -113,9 +114,7 @@ public class UserTaskCompletionVariableHandlerTest {
     final var idList = underTest.generateIds(variableRecord);
 
     // then
-    assertThat(idList)
-        .containsExactlyInAnyOrder(
-            elementInstanceKey + "-" + "var1", elementInstanceKey + "-" + "var2");
+    assertThat(idList).containsExactlyInAnyOrder(String.valueOf(elementInstanceKey));
   }
 
   @Test
@@ -131,35 +130,21 @@ public class UserTaskCompletionVariableHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final var join = new TaskJoinRelationship();
-    join.setName(TaskJoinRelationshipType.TASK_VARIABLE.getType());
-    join.setParent(123L);
-    final TaskVariableEntity inputEntity =
-        new TaskVariableEntity()
-            .setId("111")
-            .setValue("value")
-            .setIsTruncated(false)
-            .setScopeKey(123L)
-            .setJoin(join);
+    final SnapshotTaskVariableEntity inputEntity =
+        new SnapshotTaskVariableEntity().setId("111").setValue("value").setIsPreview(false);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(new SnapshotTaskVariableBatch("123", List.of(inputEntity)), mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
-    updateFieldsMap.put(TaskTemplate.VARIABLE_FULL_VALUE, null);
-    updateFieldsMap.put(TaskTemplate.VARIABLE_VALUE, "value");
-    updateFieldsMap.put(TaskTemplate.IS_TRUNCATED, false);
-    updateFieldsMap.put(TaskTemplate.JOIN_FIELD_NAME, join);
+    updateFieldsMap.put(SnapshotTaskVariableTemplate.VALUE, inputEntity.getValue());
+    updateFieldsMap.put(SnapshotTaskVariableTemplate.FULL_VALUE, inputEntity.getFullValue());
+    updateFieldsMap.put(SnapshotTaskVariableTemplate.IS_PREVIEW, inputEntity.getIsPreview());
 
     verify(mockRequest, times(1))
-        .upsertWithRouting(
-            indexName,
-            inputEntity.getId(),
-            inputEntity,
-            updateFieldsMap,
-            String.valueOf(inputEntity.getScopeKey()));
+        .upsert(indexName, inputEntity.getId(), inputEntity, updateFieldsMap);
   }
 
   @Test
@@ -169,26 +154,20 @@ public class UserTaskCompletionVariableHandlerTest {
     final var taskRecord = generateRecordWithVariables(scopeKey, Map.of("var1", "val1"));
 
     // when
-    final TaskVariableEntity variableEntity =
-        new TaskVariableEntity().setId(scopeKey + "-" + "var1");
-    underTest.updateEntity(taskRecord, variableEntity);
+    final var batch = new SnapshotTaskVariableBatch(String.valueOf(scopeKey), new ArrayList<>());
+    underTest.updateEntity(taskRecord, batch);
 
     // then
+    final var variableEntity = batch.variables().getFirst();
     assertThat(variableEntity.getId()).isEqualTo(scopeKey + "-" + "var1");
     assertThat(variableEntity.getKey()).isEqualTo(taskRecord.getKey());
     assertThat(variableEntity.getName()).isEqualTo("var1");
-    assertThat(variableEntity.getScopeKey()).isEqualTo(scopeKey);
     assertThat(variableEntity.getTenantId()).isEqualTo(taskRecord.getValue().getTenantId());
-    assertThat(variableEntity.getPosition()).isEqualTo(taskRecord.getPosition());
     assertThat(variableEntity.getValue()).isEqualTo("\"val1\"");
-    assertThat(variableEntity.getProcessInstanceId())
+    assertThat(variableEntity.getProcessInstanceKey())
         .isEqualTo(taskRecord.getValue().getProcessInstanceKey());
-    assertThat(variableEntity.getIsTruncated()).isFalse();
-    assertThat(variableEntity.getFullValue()).isNull();
-    assertThat(variableEntity.getJoin()).isNotNull();
-    assertThat(variableEntity.getJoin().getParent()).isEqualTo(scopeKey);
-    assertThat(variableEntity.getJoin().getName())
-        .isEqualTo(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+    assertThat(variableEntity.getIsPreview()).isFalse();
+    assertThat(variableEntity.getFullValue()).isEqualTo("\"val1\"");
   }
 
   @Test
@@ -200,16 +179,16 @@ public class UserTaskCompletionVariableHandlerTest {
             scopeKey, Map.of("var1", "v".repeat(underTest.variableSizeThreshold + 1)));
 
     // when
-    final TaskVariableEntity variableEntity =
-        new TaskVariableEntity().setId(scopeKey + "-" + "var1");
-    underTest.updateEntity(taskRecord, variableEntity);
+    final var batch = new SnapshotTaskVariableBatch(String.valueOf(scopeKey), new ArrayList<>());
+    underTest.updateEntity(taskRecord, batch);
 
     // then
+    final var variableEntity = batch.variables().getFirst();
     assertThat(variableEntity.getValue())
         .isEqualTo("\"" + "v".repeat(underTest.variableSizeThreshold - 1));
     assertThat(variableEntity.getFullValue())
         .isEqualTo("\"" + "v".repeat(underTest.variableSizeThreshold + 1) + "\"");
-    assertThat(variableEntity.getIsTruncated()).isTrue();
+    assertThat(variableEntity.getIsPreview()).isTrue();
   }
 
   private Record<UserTaskRecordValue> generateRecordWithVariables(
@@ -221,6 +200,7 @@ public class UserTaskCompletionVariableHandlerTest {
                 .withValue(
                     ImmutableUserTaskRecordValue.builder()
                         .from(factory.generateObject(UserTaskRecordValue.class))
+                        .withUserTaskKey(elementInstanceKey)
                         .withElementInstanceKey(elementInstanceKey)
                         .withVariables(variables)
                         .build()));

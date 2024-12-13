@@ -7,17 +7,15 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -180,10 +178,9 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public UserTaskRecord getUserTask(final long key, final Map<String, Object> authorizations) {
+  public UserTaskRecord getUserTask(final long key, final AuthorizedTenants authorizedTenantIds) {
     final UserTaskRecord userTask = getUserTask(key);
-    if (userTask != null
-        && getAuthorizedTenantIds(authorizations).contains(userTask.getTenantId())) {
+    if (userTask != null && authorizedTenantIds.isAuthorizedForTenantId(userTask.getTenantId())) {
       return userTask;
     }
     return null;
@@ -199,9 +196,5 @@ public class DbUserTaskState implements MutableUserTaskState {
   public Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long key) {
     userTaskKey.wrapLong(key);
     return Optional.ofNullable(userTasksRecordRequestMetadataColumnFamily.get(userTaskKey));
-  }
-
-  private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
-    return (List<String>) authorizations.get(Authorization.AUTHORIZED_TENANTS);
   }
 }

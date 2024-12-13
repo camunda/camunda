@@ -21,6 +21,7 @@ import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -36,6 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @AutoCloseResources
 @Testcontainers
+@ZeebeIntegration
 public class IncidentResolveAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -49,8 +51,7 @@ public class IncidentResolveAuthorizationIT {
   private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withBrokerConfig(
-              b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
   @BeforeEach

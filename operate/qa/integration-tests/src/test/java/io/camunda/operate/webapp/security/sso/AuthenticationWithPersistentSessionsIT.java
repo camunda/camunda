@@ -27,6 +27,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -35,20 +36,15 @@ import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
-import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
-import io.camunda.operate.webapp.opensearch.OpensearchSessionRepository;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.SessionRepositoryConfig;
-import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -107,15 +103,10 @@ import org.springframework.web.client.RestTemplate;
       RolePermissionService.class,
       OperateURIs.class,
       OperateProperties.class,
-      SessionService.class,
-      SessionRepositoryConfig.class,
-      OperateWebSessionIndex.class,
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
-      ElasticsearchSessionRepository.class,
-      OpensearchSessionRepository.class,
       RichOpenSearchClient.class,
       OpensearchConnector.class,
       JacksonConfig.class,
@@ -123,6 +114,7 @@ import org.springframework.web.client.RestTemplate;
       DatabaseInfo.class,
       OperateIndexController.class,
       WebappsModuleConfiguration.class,
+      CamundaSecurityProperties.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationWithPersistentSessionsIT.CONTEXT_PATH,
@@ -344,7 +336,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
 
     // Save cookie for further requests
-    HttpEntity<?> httpEntity = httpEntityWithCookie(response);
+    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), new HttpHeaders());
 
     // Step 2 Get Login provider url
     mockPermissionAllowed();

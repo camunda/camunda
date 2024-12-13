@@ -20,16 +20,15 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+import io.camunda.webapps.backup.BackupException;
+import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
-import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.GenericBackupException;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.util.ExceptionSupplier;
 import java.net.SocketTimeoutException;
@@ -77,6 +76,11 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
+  public SnapshotNameProvider snapshotNameProvider() {
+    return snapshotNameProvider;
+  }
+
+  @Override
   public void deleteSnapshot(final String repositoryName, final String snapshotName) {
     final var request = deleteSnapshotRequestBuilder(repositoryName, snapshotName).build();
     safe(
@@ -111,13 +115,13 @@ public class OpensearchBackupRepository implements BackupRepository {
     } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason = noRepositoryErrorMessage(repositoryName);
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           format(
               "Exception occurred when validating existence of repository with name [%s].",
               repositoryName);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -140,7 +144,7 @@ public class OpensearchBackupRepository implements BackupRepository {
           format(
               "Exception occurred when validating whether backup with ID [%s] already exists.",
               backupId);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
     if (!response.snapshots().isEmpty()) {
       final String reason =
@@ -180,7 +184,7 @@ public class OpensearchBackupRepository implements BackupRepository {
                   groupingBy(
                       si -> {
                         final Metadata metadata =
-                            Metadata.fromMetadata(
+                            MetadataMarshaller.fromMetadata(
                                 si.getMetadata(), openSearchClient._transport().jsonpMapper());
                         Long backupId = metadata.backupId();
                         // backward compatibility with v. 8.1
@@ -199,7 +203,7 @@ public class OpensearchBackupRepository implements BackupRepository {
     } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason = noRepositoryErrorMessage(repositoryName);
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       if (isSnapshotMissingException(e)) {
         // no snapshots exist
@@ -207,7 +211,7 @@ public class OpensearchBackupRepository implements BackupRepository {
       }
       final String reason =
           format("Exception occurred when searching for backups: %s", e.getMessage());
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -218,7 +222,8 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
     final Map<String, JsonData> metadataJson =
-        snapshotRequest.metadata().asJson(openSearchClient._transport().jsonpMapper());
+        MetadataMarshaller.asJson(
+            snapshotRequest.metadata(), openSearchClient._transport().jsonpMapper());
 
     final var requestBuilder =
         createSnapshotRequestBuilder(
@@ -228,8 +233,8 @@ public class OpensearchBackupRepository implements BackupRepository {
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
+            .includeGlobalState(backupProps.includeGlobalState())
             .metadata(metadataJson)
-            // TODO Check with tasklist if they are the same
             .featureStates("none")
             .waitForCompletion(true)
             .build();
@@ -362,11 +367,11 @@ public class OpensearchBackupRepository implements BackupRepository {
       }
       if (isRepositoryMissingException(e)) {
         final String reason = noRepositoryErrorMessage(repositoryName);
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           format("Exception occurred when searching for backup with ID [%s].", backupId);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -398,7 +403,7 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
-        Metadata.fromMetadata(
+        MetadataMarshaller.fromMetadata(
             snapshots.getFirst().getMetadata(), openSearchClient._transport().jsonpMapper());
     final Integer expectedSnapshotsCount = metadata.partCount();
 
@@ -469,7 +474,7 @@ public class OpensearchBackupRepository implements BackupRepository {
     } catch (final Exception e) {
       final String message = errorMessage.apply(e);
       LOGGER.error(message, e);
-      throw new GenericBackupException(message, e);
+      throw new BackupException(message, e);
     }
   }
 }

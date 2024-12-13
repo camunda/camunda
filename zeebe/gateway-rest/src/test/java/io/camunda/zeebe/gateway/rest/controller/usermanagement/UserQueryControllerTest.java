@@ -18,6 +18,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -30,8 +31,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-@WebMvcTest(value = UserQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = UserController.class)
 public class UserQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -46,7 +48,7 @@ public class UserQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["v"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -61,7 +63,9 @@ public class UserQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
 
-  @MockBean private UserServices userServices;
+  @MockBean UserServices userServices;
+  @MockBean RoleServices roleServices;
+  @MockBean PasswordEncoder passwordEncoder;
 
   @BeforeEach
   void setup() {
@@ -120,7 +124,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -182,9 +186,9 @@ public class UserQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)),
@@ -195,7 +199,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -215,7 +219,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

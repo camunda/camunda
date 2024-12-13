@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
@@ -32,7 +33,7 @@ public final class TenantRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateTenantUpdateRequest(
-      final TenantCreateRequest request) {
+      final TenantUpdateRequest request) {
     return validate(
         violations -> {
           if (request.getName() == null || request.getName().isBlank()) {

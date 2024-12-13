@@ -19,7 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = LicenseController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = LicenseController.class)
 public class LicenseControllerTest extends RestControllerTest {
 
   static final String LICENSE_URL = "/v2/license";

@@ -21,12 +21,13 @@ import io.camunda.identity.sdk.authorizations.dto.Authorization;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.identity.sdk.tenants.Tenants;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.operate.property.IdentityProperties;
 import io.camunda.operate.property.MultiTenancyProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
+import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -70,6 +71,8 @@ public class AuthenticationIT {
 
   @SpyBean private OperateProperties operateProperties;
 
+  @SpyBean private SecurityConfiguration securityConfiguration;
+
   @Autowired private ApplicationContext applicationContext;
 
   @Before
@@ -88,13 +91,13 @@ public class AuthenticationIT {
   @Test
   public void shouldReturnAuthorizationsWhenFeatureIsEnabled() throws IOException {
     // when resource permissions are enabled and Identity returns mocked permissions
-    doReturn(new IdentityProperties().setResourcePermissionsEnabled(true))
-        .when(operateProperties)
-        .getIdentity();
+    final var authorizationsConfiguration = new AuthorizationsConfiguration();
+    authorizationsConfiguration.setEnabled(true);
+    doReturn(authorizationsConfiguration).when(securityConfiguration).getAuthorizations();
     final List<Authorization> permissions =
         new ObjectMapper()
             .readValue(
-                this.getClass().getResource("/security/identity/authorizations.json"),
+                getClass().getResource("/security/identity/authorizations.json"),
                 new TypeReference<>() {});
     doReturn(permissions).when(authorizations).forToken(any());
 
@@ -139,9 +142,9 @@ public class AuthenticationIT {
   @Test
   public void shouldReturnNullWhenFeatureIsDisabled() {
     // when resource permissions are disabled
-    doReturn(new IdentityProperties().setResourcePermissionsEnabled(false))
-        .when(operateProperties)
-        .getIdentity();
+    final var authorizationsConfiguration = new AuthorizationsConfiguration();
+    authorizationsConfiguration.setEnabled(false);
+    doReturn(authorizationsConfiguration).when(securityConfiguration).getAuthorizations();
 
     // then no Identity is called
     assertThat(identityAuthentication.getAuthorizations()).isNull();
@@ -152,9 +155,9 @@ public class AuthenticationIT {
   @Test
   public void shouldReturnEmptyListNullWhenIdentityThrowsException() {
     // when resource permissions are enabled, but Identity call throws exception
-    doReturn(new IdentityProperties().setResourcePermissionsEnabled(true))
-        .when(operateProperties)
-        .getIdentity();
+    final var authorizationsConfiguration = new AuthorizationsConfiguration();
+    authorizationsConfiguration.setEnabled(true);
+    doReturn(authorizationsConfiguration).when(securityConfiguration).getAuthorizations();
     doThrow(new RestException("smth went wrong")).when(authorizations).forToken(any());
 
     assertThat(identityAuthentication.getAuthorizations()).hasSize(0);
@@ -169,7 +172,7 @@ public class AuthenticationIT {
     final List<Tenant> tenants =
         new ObjectMapper()
             .readValue(
-                this.getClass().getResource("/security/identity/tenants.json"),
+                getClass().getResource("/security/identity/tenants.json"),
                 new TypeReference<>() {});
     doReturn(tenants).when(this.tenants).forToken(any());
 

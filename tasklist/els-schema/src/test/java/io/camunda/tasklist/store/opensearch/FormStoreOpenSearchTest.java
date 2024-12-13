@@ -16,10 +16,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
@@ -41,9 +41,9 @@ import org.opensearch.client.opensearch.core.search.TotalHits;
 class FormStoreOpenSearchTest {
   @Mock private FormIndex formIndex = new FormIndex("test", false);
 
-  @Mock private TaskTemplate taskTemplate = new TaskTemplate();
+  @Mock private TaskTemplate taskTemplate = new TaskTemplate("test", false);
 
-  @Mock private ProcessIndex processIndex = new ProcessIndex();
+  @Mock private ProcessIndex processIndex = new ProcessIndex("test", false);
 
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
 

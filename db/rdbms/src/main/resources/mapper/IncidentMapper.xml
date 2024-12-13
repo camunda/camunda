@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.IncidentMapper">
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM INCIDENT i
+    <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.IncidentDbQuery" resultMap="io.camunda.db.rdbms.sql.IncidentMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    i.INCIDENT_KEY,
+    i.FLOW_NODE_INSTANCE_KEY,
+    i.FLOW_NODE_ID,
+    i.PROCESS_INSTANCE_KEY,
+    i.PROCESS_DEFINITION_ID,
+    i.PROCESS_DEFINITION_KEY,
+    i.ERROR_MESSAGE,
+    i.ERROR_TYPE,
+    i.STATE,
+    i.CREATION_DATE,
+    i.JOB_KEY,
+    i.TENANT_ID
+    FROM INCIDENT i
+    <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.incidentKeys != null and !filter.incidentKeys.isEmpty()">
+      AND INCIDENT_KEY IN
+      <foreach collection="filter.incidentKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+      AND PROCESS_DEFINITION_KEY IN
+      <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
+      AND PROCESS_DEFINITION_ID IN
+      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+      AND PROCESS_INSTANCE_KEY IN
+      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.errorTypes != null and !filter.errorTypes.isEmpty()">
+      AND ERROR_TYPE IN
+      <foreach collection="filter.errorTypes" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.errorMessages != null and !filter.errorMessages.isEmpty()">
+      AND ERROR_MESSAGE IN
+      <foreach collection="filter.errorMessages" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.flowNodeIds != null and !filter.flowNodeIds.isEmpty()">
+      AND FLOW_NODE_ID IN
+      <foreach collection="filter.flowNodeIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.flowNodeInstanceKeys != null and !filter.flowNodeInstanceKeys.isEmpty()">
+      AND FLOW_NODE_INSTANCE_KEY IN
+      <foreach collection="filter.flowNodeInstanceKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+
+    <if test="filter.states != null and !filter.states.isEmpty()">
+      AND STATE IN
+      <foreach collection="filter.states" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.jobKeys != null and !filter.jobKeys.isEmpty()">
+      AND JOB_KEY IN
+      <foreach collection="filter.jobKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+
+    <!-- date filters -->
+    <if test="filter.creationTime != null and !filter.creationTime.after != null">
+        AND CREATION_DATE &gt; #{filter.creationTime.after}
+    </if>
+    <if test="filter.creationTime != null and !filter.creationTime.before != null">
+        AND CREATION_DATE &lt; #{filter.creationTime.before}
+    </if>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.IncidentEntity">
+    <constructor>
+      <idArg column="INCIDENT_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" />
+      <arg column="STATE" javaType="io.camunda.search.entities.IncidentEntity$IncidentState"/>
+      <arg column="JOB_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
+    flushCache="true">
+    INSERT INTO INCIDENT (INCIDENT_KEY,
+                          FLOW_NODE_INSTANCE_KEY,
+                          FLOW_NODE_ID,
+                          PROCESS_INSTANCE_KEY,
+                          PROCESS_DEFINITION_ID,
+                          PROCESS_DEFINITION_KEY,
+                          ERROR_MESSAGE,
+                          ERROR_TYPE,
+                          STATE,
+                          CREATION_DATE,
+                          JOB_KEY,
+                          TENANT_ID)
+    VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
+            #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorType},
+            #{state},             #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId})
+  </insert>
+
+  <update
+    id="updateState"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.sql.IncidentMapper$IncidentStateDto"
+    flushCache="true">
+    UPDATE INCIDENT i
+    SET STATE         = #{state},
+        ERROR_MESSAGE = #{errorMessage}
+    WHERE INCIDENT_KEY = #{incidentKey}
+  </update>
+
+
+</mapper>

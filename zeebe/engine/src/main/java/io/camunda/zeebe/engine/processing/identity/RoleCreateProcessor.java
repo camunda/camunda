@@ -28,6 +28,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleCreateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
+  private static final String ROLE_ALREADY_EXISTS_ERROR_MESSAGE =
+      "Expected to create role with name '%s', but a role with this name already exists";
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -55,7 +57,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.CREATE);
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
               authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
@@ -67,9 +69,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     final var record = command.getValue();
     final var roleKey = roleState.getRoleKeyByName(record.getName());
     if (roleKey.isPresent()) {
-      final var errorMessage =
-          "Expected to create role with name '%s', but a role with this name already exists"
-              .formatted(record.getName());
+      final var errorMessage = ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getName());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -88,7 +88,17 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.CREATED, command.getValue());
+    final var record = command.getValue();
+    roleState
+        .getRole(record.getRoleKey())
+        .ifPresentOrElse(
+            persistedRole -> {
+              final var errorMessage =
+                  ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getName());
+              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+            },
+            () -> stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.CREATED, record));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

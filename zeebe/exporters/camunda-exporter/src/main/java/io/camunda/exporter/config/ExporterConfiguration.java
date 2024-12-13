@@ -20,6 +20,7 @@ public class ExporterConfiguration {
   private ArchiverConfiguration archiver = new ArchiverConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
+  private PostExportConfiguration postExport = new PostExportConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -86,6 +87,14 @@ public class ExporterConfiguration {
     this.createSchema = createSchema;
   }
 
+  public PostExportConfiguration getPostExport() {
+    return postExport;
+  }
+
+  public void setPostExport(final PostExportConfiguration postExport) {
+    this.postExport = postExport;
+  }
+
   @Override
   public String toString() {
     return "ExporterConfiguration{"
@@ -105,6 +114,8 @@ public class ExporterConfiguration {
         + processCache
         + ", formCache="
         + formCache
+        + ", postExport="
+        + postExport
         + '}';
   }
 
@@ -119,6 +130,8 @@ public class ExporterConfiguration {
     private Map<String, Integer> shardsByIndexName = new HashMap<>();
 
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
+
+    private boolean shouldWaitForImporters = true;
 
     public String getPrefix() {
       return prefix;
@@ -150,6 +163,14 @@ public class ExporterConfiguration {
 
     public void setVariableSizeThreshold(final Integer variableSizeThreshold) {
       this.variableSizeThreshold = variableSizeThreshold;
+    }
+
+    public boolean shouldWaitForImporters() {
+      return shouldWaitForImporters;
+    }
+
+    public void setShouldWaitForImporters(final boolean shouldWaitForImporters) {
+      this.shouldWaitForImporters = shouldWaitForImporters;
     }
 
     @Override
@@ -359,6 +380,48 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "CacheConfiguration{" + "cacheSize=" + maxCacheSize + '}';
+    }
+  }
+
+  public static final class PostExportConfiguration {
+    private int batchSize = 100;
+    private int delayBetweenRuns = 2000;
+    private boolean ignoreMissingData = false;
+
+    public int getBatchSize() {
+      return batchSize;
+    }
+
+    public void setBatchSize(final int batchSize) {
+      this.batchSize = batchSize;
+    }
+
+    public int getDelayBetweenRuns() {
+      return delayBetweenRuns;
+    }
+
+    public void setDelayBetweenRuns(final int delayBetweenRuns) {
+      this.delayBetweenRuns = delayBetweenRuns;
+    }
+
+    public boolean isIgnoreMissingData() {
+      return ignoreMissingData;
+    }
+
+    public void setIgnoreMissingData(final boolean ignoreMissingData) {
+      this.ignoreMissingData = ignoreMissingData;
+    }
+
+    @Override
+    public String toString() {
+      return "PostExportConfiguration{"
+          + "batchSize="
+          + batchSize
+          + ", delayBetweenRuns="
+          + delayBetweenRuns
+          + ", ignoreMissingData="
+          + ignoreMissingData
+          + '}';
     }
   }
 }

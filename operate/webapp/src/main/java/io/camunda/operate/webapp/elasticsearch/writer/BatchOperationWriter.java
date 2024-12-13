@@ -35,7 +35,7 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.PersistOperationHelper;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -102,8 +102,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   @Autowired private ProcessReader processReader;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired private OperationStore operationStore;
 
@@ -460,7 +459,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
     final int batchSize = operateProperties.getElasticsearch().getBatchSize();
     ConstantScoreQueryBuilder query =
         queryHelper.createProcessInstancesQuery(batchOperationRequest.getQuery());
-    if (permissionsService != null) {
+    if (permissionsService.permissionsEnabled()) {
       final IdentityPermission permission =
           batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)
               ? IdentityPermission.DELETE_PROCESS_INSTANCE

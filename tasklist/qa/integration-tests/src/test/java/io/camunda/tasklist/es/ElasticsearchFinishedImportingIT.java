@@ -7,15 +7,21 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
+import io.camunda.tasklist.zeebe.ImportValueType;
+import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.tasklist.zeebeimport.es.RecordsReaderElasticSearch;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -25,16 +31,20 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +59,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @Autowired private RestHighLevelClient tasklistEsClient;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
-  @Autowired private ImportPositionIndex importPositionIndex;
+  @Autowired private TasklistImportPositionIndex importPositionIndex;
+  @Autowired private MeterRegistry meterRegistry;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @BeforeAll
@@ -59,7 +70,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
 
   @BeforeEach
   public void beforeEach() {
-    tasklistProperties.getImporter().setImportPositionUpdateInterval(1000);
+    tasklistProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.index.prefix = tasklistProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);
@@ -78,6 +89,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
+    recordsReaderHolder.resetPartitionsCompletedImporting();
+    meterRegistry.clear();
   }
 
   @Test
@@ -220,6 +233,155 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
   }
 
+  @Test
+  public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var metrics = beanFactory.getBean(Metrics.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(0.0);
+              assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
+            });
+  }
+
+  @Test
+  public void shouldMarkImporterCompletedViaMetricsAsWell() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    EXPORTER.export(record2);
+    EXPORTER.export(partitionTwoRecord2);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+
+    // then
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var metrics = beanFactory.getBean(Metrics.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
+              assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+            });
+  }
+
+  @Test
+  public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    EXPORTER.export(record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+
+    // simulates restart of zeebe importer by restarting all the record readers
+    Arrays.stream(ImportValueType.values())
+        .forEach(
+            type -> {
+              final var reader =
+                  beanFactory.getBean(
+                      RecordsReaderElasticSearch.class,
+                      1,
+                      type,
+                      tasklistProperties.getImporter().getQueueSize());
+              reader.postConstruct();
+            });
+
+    assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
+  }
+
+  private void assertImportPositionMatchesRecord(
+      final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var req =
+                  new GetRequest(
+                      importPositionIndex.getFullQualifiedName(),
+                      partitionId + "-" + type.getAliasTemplate());
+              final var importPositionDoc = tasklistEsClient.get(req, RequestOptions.DEFAULT);
+
+              if (!importPositionDoc.isExists()) {
+                return;
+              }
+
+              assertThat(importPositionDoc.getSourceAsMap().get("position"))
+                  .isEqualTo(record.getPosition());
+            });
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderElasticSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = tasklistEsClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
+  @NotNull
+  private static Gauge getGauge(final Metrics metrics, final String partition) {
+    return metrics.getGauge(
+        GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+        Metrics.TAG_KEY_PARTITION,
+        partition,
+        Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+        "process-instance");
+  }
+
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
     final var hits =
         Arrays.stream(
@@ -236,10 +398,10 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     }
     return (Boolean)
         hits.stream()
-            .filter(hit -> hit.get(ImportPositionIndex.ID).equals(partitionIdFieldValue))
+            .filter(hit -> hit.get(TasklistImportPositionIndex.ID).equals(partitionIdFieldValue))
             .findFirst()
             .orElse(new HashMap<>())
-            .getOrDefault(ImportPositionIndex.COMPLETED, false);
+            .getOrDefault(TasklistImportPositionIndex.COMPLETED, false);
   }
 
   private <T extends RecordValue> Record<T> generateRecord(

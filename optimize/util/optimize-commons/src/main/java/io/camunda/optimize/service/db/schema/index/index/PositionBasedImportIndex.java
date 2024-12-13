@@ -15,9 +15,10 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 
 public abstract class PositionBasedImportIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> {
+    extends DefaultIndexMappingCreator<TBuilder> implements Prio1Backup {
 
   public static final int VERSION = 3;
 
@@ -32,7 +33,7 @@ public abstract class PositionBasedImportIndex<TBuilder>
   private static final String TIMESTAMP_OF_LAST_ENTITY =
       ImportIndexDto.Fields.timestampOfLastEntity;
   private static final String DB_TYPE_INDEX_REFERS_TO =
-      PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+      PositionBasedImportIndexDto.Fields.dbTypeIndexRefersTo;
   private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
@@ -41,13 +42,13 @@ public abstract class PositionBasedImportIndex<TBuilder>
   }
 
   @Override
-  public int getVersion() {
-    return VERSION;
+  public boolean isImportIndex() {
+    return true;
   }
 
   @Override
-  public boolean isImportIndex() {
-    return true;
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

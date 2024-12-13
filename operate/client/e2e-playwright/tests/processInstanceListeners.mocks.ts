@@ -8,13 +8,35 @@
 
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
-const {deployProcesses, createSingleInstance} = zeebeGrpcApi;
+const {createSingleInstance, deployProcess, createWorker} = zeebeGrpcApi;
 
 const setup = async () => {
-  await deployProcesses(['processWithListener.bpmn']);
-  const instance = await createSingleInstance('processWithListener', 1);
+  await deployProcess('processWithListener.bpmn');
+  const processWithListenerInstance = await createSingleInstance(
+    'processWithListener',
+    1,
+  );
 
-  return {instance};
+  await deployProcess('processWithListenerOnRoot.bpmn');
+  createWorker('processStartListener', false);
+  const processWithListenerOnRootInstance = await createSingleInstance(
+    'processWithListenerOnRoot',
+    1,
+  );
+
+  await deployProcess('processWithUserTaskListener.bpmn');
+  const userTaskProcessInstance = await createSingleInstance(
+    'processWithUserTaskListener',
+    1,
+  );
+  createWorker('completeListener', false);
+  createWorker('endListener', false);
+
+  return {
+    processWithListenerInstance,
+    processWithListenerOnRootInstance,
+    userTaskProcessInstance,
+  };
 };
 
 export {setup};

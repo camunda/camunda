@@ -14,12 +14,26 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 )
 
-func printStatus() {
+func printStatus(port int) error {
 	endpoints, _ := os.ReadFile("endpoints.txt")
-	fmt.Println(string(endpoints))
+	t, err := template.New("endpoints").Parse(string(endpoints))
+	if err != nil {
+		return fmt.Errorf("Error: failed to parse endpoints template: %s", err.Error())
+	}
+
+	data := TemplateData{
+		ServerPort: port,
+	}
+
+	err = t.Execute(os.Stdout, data)
+	if err != nil {
+		return fmt.Errorf("Error: failed to fill endpoints template %s", err.Error())
+	}
+	return nil
 }
 
 func queryElasticsearchHealth(name string, url string) {
@@ -51,7 +65,7 @@ func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
 	if settings.keystore != "" && settings.keystorePassword != "" {
 		protocol = "https"
 	}
-	url := protocol + "://localhost:8080/operate/login"
+	url := protocol + "://localhost:" + strconv.Itoa(settings.port) + "/operate/login"
 	for retries := 24; retries >= 0; retries-- {
 		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
 		time.Sleep(14 * time.Second)
@@ -68,13 +82,13 @@ func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
 		return fmt.Errorf("Error: %s did not start!", name)
 	}
 	fmt.Println(name + " has successfully been started.")
-	err := c8.OpenBrowser(protocol)
+	err := c8.OpenBrowser(protocol, settings.port)
 	if err != nil {
 		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
 		fmt.Println("Failed to open browser")
 		return nil
 	}
-	printStatus()
+	printStatus(settings.port)
 	return nil
 }
 
@@ -111,9 +125,16 @@ func getC8RunPlatform() C8Run {
 }
 
 func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
+	protocol := "http"
 	if settings.keystore != "" && settings.keystorePassword != "" {
 		javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
+		protocol = "https"
 	}
+	if settings.port != 8080 {
+		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
+	}
+	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity"
+	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	return javaOpts
 }
 
@@ -138,7 +159,8 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.7.0-alpha1"
+	camundaVersion := "8.7.0-alpha2"
+	connectorsVersion := "8.7.0-alpha2.1"
 	if os.Getenv("CAMUNDA_VERSION") != "" {
 		camundaVersion = os.Getenv("CAMUNDA_VERSION")
 	}
@@ -155,6 +177,13 @@ func main() {
 	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
 	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
 	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
+	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+
+	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
@@ -181,12 +210,18 @@ func main() {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	startFlagSet.IntVar(&settings.port, "port", 8080, "Port to run Camunda on")
 	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
+	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
 
 	switch baseCommand {
 	case "start":
 		startFlagSet.Parse(os.Args[2:])
+	}
+
+	if settings.logLevel != "" {
+		os.Setenv("ZEEBE_LOG_LEVEL", settings.logLevel)
 	}
 
 	err := validateKeystore(settings, parentDir)
@@ -369,13 +404,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)

@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -57,7 +56,7 @@ public class AddEntityRoleMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.ROLE
@@ -118,7 +117,7 @@ public class AddEntityRoleMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -151,11 +150,10 @@ public class AddEntityRoleMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(4))
+                .limit(3))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.USER, UserIntent.CREATE),
-            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION),
             tuple(ValueType.ROLE, RoleIntent.CREATE),
             tuple(ValueType.ROLE, RoleIntent.ADD_ENTITY));
   }

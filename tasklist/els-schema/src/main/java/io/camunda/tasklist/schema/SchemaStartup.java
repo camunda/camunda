@@ -7,13 +7,10 @@
  */
 package io.camunda.tasklist.schema;
 
-import io.camunda.tasklist.exceptions.MigrationException;
-import io.camunda.tasklist.property.MigrationProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.schema.migration.Migrator;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Map;
@@ -34,14 +31,10 @@ public class SchemaStartup {
 
   @Autowired private IndexSchemaValidator schemaValidator;
 
-  @Autowired private Migrator migrator;
-
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private MigrationProperties migrationProperties;
-
   @PostConstruct
-  public void initializeSchema() throws MigrationException, IOException {
+  public void initializeSchema() throws IOException {
     try {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate index versions.");

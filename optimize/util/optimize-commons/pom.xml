@@ -15,14 +15,20 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.5</version>
+      <version>8.6.6</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
-      <version>8.6.5</version>
+      <version>8.6.6</version>
       <scope>test</scope>
     </dependency>
 
@@ -163,7 +169,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.778</version>
+      <version>1.12.779</version>
       <scope>compile</scope>
     </dependency>
 
@@ -254,15 +260,13 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.11.0</version>
+      <version>5.14.2</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.17.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -289,8 +293,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.17.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>

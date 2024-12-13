@@ -21,7 +21,9 @@ import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
@@ -74,12 +76,6 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by parentFlowNodeInstanceKey using {@link LongProperty} consumer */
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<LongProperty> fn);
 
-  /** Filter by treePath */
-  ProcessInstanceFilter treePath(final String treePath);
-
-  /** Filter by treePath using {@link StringProperty} consumer */
-  ProcessInstanceFilter treePath(final Consumer<StringProperty> fn);
-
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final OffsetDateTime startDate);
 
@@ -106,4 +102,8 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by tenantId using {@link StringProperty} consumer */
   ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn);
+
+  /** Filter by variables */
+  ProcessInstanceFilter variables(
+      final List<ProcessInstanceVariableFilterRequest> variableValueFilters);
 }

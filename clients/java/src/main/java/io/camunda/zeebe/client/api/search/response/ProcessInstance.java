@@ -33,8 +33,6 @@ public interface ProcessInstance {
 
   Long getParentFlowNodeInstanceKey();
 
-  String getTreePath();
-
   String getStartDate();
 
   String getEndDate();

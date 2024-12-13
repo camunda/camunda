@@ -21,7 +21,7 @@ import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -49,6 +49,7 @@ public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
   }
 
@@ -171,7 +172,7 @@ public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(loanProcessProcessGroup.getProcesses().get(0).getId())
         .isEqualTo(loanProcessV1Id.toString());
 
-    verify(permissionsService, times(3)).getProcessDefinitionPermission(anyString());
+    verify(permissionsService, times(3)).getProcessDefinitionPermissions(anyString());
   }
 
   private Long createAndDeployProcess(

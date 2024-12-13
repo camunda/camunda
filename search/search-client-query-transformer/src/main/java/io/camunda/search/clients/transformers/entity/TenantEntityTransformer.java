@@ -22,8 +22,6 @@ public class TenantEntityTransformer
         source.getKey(),
         source.getTenantId(),
         source.getName(),
-        source.getAssignedMemberKeys() != null
-            ? Set.copyOf(source.getAssignedMemberKeys())
-            : Set.of());
+        source.getJoin().parent() != null ? Set.of(source.getJoin().parent()) : Set.of());
   }
 }

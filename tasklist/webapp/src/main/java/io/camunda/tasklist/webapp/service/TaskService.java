@@ -14,25 +14,32 @@ import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.FormStore.FormIdView;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.tasklist.webapp.dto.TaskDTO;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.dto.VariableDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.graphql.entity.*;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -55,6 +62,7 @@ public class TaskService {
 
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
+  @Autowired private FormStore formStore;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -126,7 +134,23 @@ public class TaskService {
   }
 
   public TaskDTO getTask(final String taskId) {
-    return TaskDTO.createFrom(taskStore.getTask(taskId), objectMapper);
+    final TaskEntity task = taskStore.getTask(taskId);
+    if (taskFormLinkIsNotComplete(task)) {
+      LOGGER.debug(
+          "Task with id {} found having incorrect form linking to form with key {}",
+          taskId,
+          task.getFormKey());
+
+      final Optional<FormIdView> linkedForm = formStore.getFormByKey(task.getFormKey());
+
+      linkedForm.ifPresent(
+          form -> {
+            updateTaskLinkedForm(task, form);
+            task.setFormId(form.bpmnId());
+            task.setFormVersion(form.version());
+          });
+    }
+    return TaskDTO.createFrom(task, objectMapper);
   }
 
   public TaskDTO assignTask(
@@ -217,11 +241,6 @@ public class TaskService {
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
-        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-          // Remove variables for Job workers
-          // Remove this line after version 8.8
-          variableService.removeVariableByFlowNodeInstanceId(task.getFlowNodeInstanceId());
-        }
       } catch (final Exception e) {
         LOGGER.error(
             "Task with key {} was COMPLETED but error happened after completion: {}.",
@@ -283,12 +302,32 @@ public class TaskService {
     return userReader.getCurrentUser();
   }
 
+  private boolean taskFormLinkIsNotComplete(final TaskEntity task) {
+    return task.getFormKey() != null
+        && task.getFormId() == null
+        && (task.getIsFormEmbedded() == null || !task.getIsFormEmbedded())
+        && task.getExternalFormReference() == null;
+  }
+
+  private void updateTaskLinkedForm(final TaskEntity task, final FormIdView form) {
+    CompletableFuture.runAsync(
+        () -> {
+          taskStore.updateTaskLinkedForm(task, form.bpmnId(), form.version());
+          LOGGER.debug(
+              "Updated Task with id {} form link of key {} to formId {} and version {}",
+              task.getKey(),
+              task.getFormKey(),
+              form.bpmnId(),
+              form.version());
+        });
+  }
+
   private void updateClaimedMetric(final TaskEntity task) {
     metrics.recordCounts(COUNTER_NAME_CLAIMED_TASKS, 1, getTaskMetricLabels(task));
   }
 
   private void updateCompletedMetric(final TaskEntity task) {
-    LOGGER.info("Updating completed task metric for task with ID: {}", task.getId());
+    LOGGER.info("Updating completed task metric for task with ID: {}", task.getKey());
     try {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
       assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
@@ -299,9 +338,9 @@ public class TaskService {
         taskMetricsStore.registerTaskCompleteEvent(task);
       }
     } catch (final Exception e) {
-      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
+      LOGGER.error("Error updating completed task metric for task with ID: {}", task.getKey(), e);
       throw new TasklistRuntimeException(
-          "Error updating completed task metric for task with ID: " + task.getId(), e);
+          "Error updating completed task metric for task with ID: " + task.getKey(), e);
     }
   }
 

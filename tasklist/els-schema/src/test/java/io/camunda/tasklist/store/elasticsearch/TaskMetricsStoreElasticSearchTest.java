@@ -9,6 +9,7 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.EVENT_TASK_COMPLETED_BY_ASSIGNEE;
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
 import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
 import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
@@ -24,10 +25,10 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -162,7 +162,7 @@ public class TaskMetricsStoreElasticSearchTest {
         SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);
     final SearchRequest searchRequest =
         new SearchRequest(index.getFullQualifiedName())
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
+            .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
             .source(source);
     return searchRequest;
   }

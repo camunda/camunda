@@ -33,7 +33,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = TenantQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = TenantController.class)
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
@@ -75,15 +75,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
        }
       """
           .formatted(
-              TENANT_ENTITIES.get(0).tenantKey(),
+              TENANT_ENTITIES.get(0).key(),
               TENANT_ENTITIES.get(0).name(),
               TENANT_ENTITIES.get(0).tenantId(),
               formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys()),
-              TENANT_ENTITIES.get(1).tenantKey(),
+              TENANT_ENTITIES.get(1).key(),
               TENANT_ENTITIES.get(1).name(),
               TENANT_ENTITIES.get(1).tenantId(),
               formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys()),
-              TENANT_ENTITIES.get(2).tenantKey(),
+              TENANT_ENTITIES.get(2).key(),
               TENANT_ENTITIES.get(2).name(),
               TENANT_ENTITIES.get(2).tenantId(),
               formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys()),
@@ -106,12 +106,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
     final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
-    when(tenantServices.getByKey(tenant.tenantKey())).thenReturn(tenant);
+    when(tenantServices.getByKey(tenant.key())).thenReturn(tenant);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.tenantKey()))
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.key()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -126,10 +126,10 @@ public class TenantQueryControllerTest extends RestControllerTest {
               "assignedMemberKeys": []
             }
             """
-                .formatted(tenant.tenantKey(), tenantName, tenantId));
+                .formatted(tenant.key(), tenantName, tenantId));
 
     // then
-    verify(tenantServices, times(1)).getByKey(tenant.tenantKey());
+    verify(tenantServices, times(1)).getByKey(tenant.key());
   }
 
   @Test
@@ -211,7 +211,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort": [{"field": "tenantId", "order": "asc"}]
+              "sort": [{"field": "tenantId", "order": "ASC"}]
             }
             """)
         .exchange()
@@ -268,9 +268,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)),
@@ -281,7 +281,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -301,7 +301,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

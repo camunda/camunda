@@ -34,10 +34,6 @@
 # This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
 # camunda.rest.enabled: true
 
-# Enable the Camunda REST Query API to start on broker startup.
-# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
-# camunda.rest.query.enabled: false
-
 # zeebe:
   # broker:
     # gateway:
@@ -81,6 +77,23 @@
       # Sets the maximum size of the incoming and outgoing messages (i.e. commands and events).
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
+
+      # Sets the size of the socket receive buffer (SO_RCVBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SOCKETRECEIVEBUFFER.
+      # socketReceiveBuffer: 1MB
+
+      # Sets the size of the socket send buffer (SO_SNDBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SOCKETSENDBUFFER.
+      # socketSendBuffer: 1MB
+
+      # Connections that did not receive any message within the specified timeout will be closed.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HEARTBEATTIMEOUT.
+      # heartbeatTimeout: 15s
+
+      # Sends a heartbeat when no other data is sent over an open connection within the specified timeout.
+      # This is to ensure that the connection is kept open.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HEARTBEATINTERVAL.
+      # heartbeatInterval: 5s
 
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster

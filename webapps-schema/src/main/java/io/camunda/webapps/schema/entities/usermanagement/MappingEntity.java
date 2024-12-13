@@ -12,18 +12,18 @@ import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-  private Long mappingKey;
+  private Long key;
   private String claimName;
   private String claimValue;
 
   public MappingEntity() {}
 
-  public Long getMappingKey() {
-    return mappingKey;
+  public Long getKey() {
+    return key;
   }
 
-  public MappingEntity setMappingKey(final Long mappingKey) {
-    this.mappingKey = mappingKey;
+  public MappingEntity setKey(final Long mappingKey) {
+    key = mappingKey;
     return this;
   }
 

@@ -23,7 +23,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("123456")
             .scopeKey(2L)
@@ -54,7 +54,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("-123456")
             .scopeKey(2L)
@@ -85,7 +85,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("123.456")
             .scopeKey(2L)
@@ -116,7 +116,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("-123.456")
             .scopeKey(2L)
@@ -147,7 +147,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("non-numeric")
             .scopeKey(2L)
@@ -179,7 +179,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value(largeValue)
             .scopeKey(2L)

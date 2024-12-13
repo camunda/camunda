@@ -9,20 +9,20 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
 import static java.util.Objects.requireNonNullElse;
 
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -78,10 +78,10 @@ public class ProcessExternalController extends ApiErrorController {
                     schema = @Schema(implementation = Error.class)))
       })
   @GetMapping("{bpmnProcessId}/form")
-  public ResponseEntity<FormResponse> getFormFromProcess(@PathVariable String bpmnProcessId) {
+  public ResponseEntity<FormResponse> getFormFromProcess(@PathVariable final String bpmnProcessId) {
     try {
       final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
-      if (!process.isStartedByForm()) {
+      if (!process.getIsPublic()) {
         throw new NotFoundApiException(
             String.format("The process with bpmnProcessId: '%s' is not found", bpmnProcessId));
       } else {
@@ -95,7 +95,7 @@ public class ProcessExternalController extends ApiErrorController {
           return ResponseEntity.ok(FormResponse.fromFormEntity(form, process));
         }
       }
-    } catch (TasklistRuntimeException e) {
+    } catch (final TasklistRuntimeException e) {
       throw new NotFoundApiException("Not found");
     }
   }
@@ -126,13 +126,13 @@ public class ProcessExternalController extends ApiErrorController {
       })
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcess(
-      @PathVariable String bpmnProcessId,
+      @PathVariable final String bpmnProcessId,
       @Parameter(
               description =
                   "Required for multi-tenancy setups to ensure the process starts for the intended tenant. In environments without multi-tenancy, this parameter is not considered.")
           @RequestParam(required = false)
-          String tenantId,
-      @RequestBody(required = false) StartProcessRequest startProcessRequest) {
+          final String tenantId,
+      @RequestBody(required = false) final StartProcessRequest startProcessRequest) {
 
     if (tenantService.isMultiTenancyEnabled()) {
       if (StringUtils.isBlank(tenantId)
@@ -142,7 +142,7 @@ public class ProcessExternalController extends ApiErrorController {
     }
 
     final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId, tenantId);
-    if (!process.isStartedByForm()) {
+    if (!process.getIsPublic()) {
       throw new NotFoundApiException(
           String.format("The process with processDefinitionKey: '%s' is not found", bpmnProcessId));
     } else {

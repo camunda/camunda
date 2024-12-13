@@ -41,6 +41,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 
 @Ignore
@@ -54,9 +55,13 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired private VariableTemplate variableTemplate;
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   private Long initialBatchOperationMaxSize;
 
@@ -98,12 +103,12 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
     final var beforeUserTasks = userTaskReader.getUserTasks();
     final var userTask1 =
         beforeUserTasks.stream()
-            .filter(u -> "UserTask-1".equals(u.getElementId()))
+            .filter(u -> "UserTask-1".equals(u.getFlowNodeBpmnId()))
             .findFirst()
             .get();
     final var userTask3 =
         beforeUserTasks.stream()
-            .filter(u -> "UserTask-3".equals(u.getElementId()))
+            .filter(u -> "UserTask-3".equals(u.getFlowNodeBpmnId()))
             .findFirst()
             .get();
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
@@ -143,16 +148,16 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
     final var afterUserTasks = userTaskReader.getUserTasks();
     final var afterUserTask1 =
         afterUserTasks.stream()
-            .filter(u -> "UserTask-1".equals(u.getElementId()))
+            .filter(u -> "UserTask-1".equals(u.getFlowNodeBpmnId()))
             .findFirst()
             .get();
-    assertThat(userTask1.getUserTaskKey()).isNotEqualTo(afterUserTask1.getUserTaskKey());
+    assertThat(userTask1.getKey()).isNotEqualTo(afterUserTask1.getKey());
     final var afterUserTask3 =
         afterUserTasks.stream()
-            .filter(u -> "UserTask-3".equals(u.getElementId()))
+            .filter(u -> "UserTask-3".equals(u.getFlowNodeBpmnId()))
             .findFirst()
             .get();
-    assertThat(userTask3.getUserTaskKey()).isEqualTo(afterUserTask3.getUserTaskKey());
+    assertThat(userTask3.getKey()).isEqualTo(afterUserTask3.getKey());
   }
 
   @Test

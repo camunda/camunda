@@ -52,6 +52,10 @@ public final class BrokerCfgTest {
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
       "zeebe.broker.network.advertisedHost";
   private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
+  private static final String ZEEBE_BROKER_NETWORK_SOCKET_SEND_BUFFER =
+      "zeebe.broker.network.socketSendBuffer";
+  private static final String ZEEBE_BROKER_NETWORK_SOCKET_RECEIVE_BUFFER =
+      "zeebe.broker.network.socketReceiveBuffer";
   private static final String ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED =
       "zeebe.broker.executionMetricsExporterEnabled";
 
@@ -526,6 +530,52 @@ public final class BrokerCfgTest {
     assertThat(membershipCfg.getSuspectProbes()).isEqualTo(5);
     assertThat(membershipCfg.getFailureTimeout()).isEqualTo(Duration.ofSeconds(20));
     assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
+  }
+
+  @Test
+  public void shouldUseSocketSendBufferFromEnvironment() {
+    // given no value is defined
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSocketSendBuffer().toKilobytes()).isEqualTo(1024);
+  }
+
+  @Test
+  public void shouldOverrideSpecifiedSocketSendBufferFromEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_NETWORK_SOCKET_SEND_BUFFER, "2048KB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSocketSendBuffer().toBytes()).isEqualTo(2097152);
+  }
+
+  @Test
+  public void shouldUseDefaultSocketReceiveBufferFromEnvironment() {
+    // given no value is defined
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSocketReceiveBuffer().toKilobytes()).isEqualTo(1024);
+  }
+
+  @Test
+  public void shouldOverrideSpecifiedSocketReceiveBufferFromEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_NETWORK_SOCKET_RECEIVE_BUFFER, "2MB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSocketReceiveBuffer().toKilobytes()).isEqualTo(2048);
   }
 
   private void assertDefaultPorts(final int command, final int internal) {

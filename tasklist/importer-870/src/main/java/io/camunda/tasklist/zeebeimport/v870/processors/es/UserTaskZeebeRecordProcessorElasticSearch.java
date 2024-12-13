@@ -11,16 +11,13 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
-import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.io.IOException;
@@ -53,10 +50,11 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
-  @Autowired private SnapshotTaskVariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
-  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processUserTaskRecord(
       final Record<UserTaskRecordValue> record, final BulkRequest bulkRequest)
@@ -65,7 +63,6 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       bulkRequest.add(getTaskQuery(taskEntity.get(), record));
-      bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
         final List<SnapshotTaskVariableEntity> variables =
@@ -93,7 +90,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           .id(entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
+          .retryOnConflict(UPDATE_RETRY_COUNT)
+          .routing(entity.getProcessInstanceId());
 
     } catch (final IOException e) {
       throw new PersistenceException(
@@ -123,30 +121,6 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
               "Error preparing the query to upsert variable instance [%s]  for list view",
               variable.getId()),
           e);
-    }
-  }
-
-  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, final Record record)
-      throws PersistenceException {
-    try {
-      final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
-
-      final Map<String, Object> updateFields =
-          userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(
-              userTaskListViewEntity, record);
-
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return new UpdateRequest()
-          .index(tasklistListViewTemplate.getFullQualifiedName())
-          .id(userTaskListViewEntity.getId())
-          .upsert(objectMapper.writeValueAsString(userTaskListViewEntity), XContentType.JSON)
-          .routing(userTaskListViewEntity.getProcessInstanceId())
-          .doc(jsonMap)
-          .retryOnConflict(ElasticsearchUtil.UPDATE_RETRY_COUNT);
-    } catch (final IOException e) {
-      throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
     }
   }
 }

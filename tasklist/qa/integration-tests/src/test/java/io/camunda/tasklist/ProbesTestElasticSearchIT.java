@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
@@ -52,6 +53,7 @@ public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
 
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TestSchemaManager schemaManager;
+  @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @MockBean private PartitionHolder partitionHolder;
 
@@ -64,9 +66,8 @@ public class ProbesTestElasticSearchIT extends TasklistIntegrationTest {
   @BeforeEach
   public void before() {
     mockPartitionHolder(partitionHolder);
-    tasklistProperties
-        .getElasticsearch()
-        .setIndexPrefix("test-probes-" + TestUtil.createRandomString(5));
+    indexPrefixHolder.createNewIndexPrefix();
+    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefixHolder.getIndexPrefix());
   }
 
   @AfterEach

@@ -15,7 +15,9 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -29,7 +31,9 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -39,6 +43,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.util.List;
 
 public class SearchClients
@@ -55,19 +60,19 @@ public class SearchClients
         TenantSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient {
+        VariableSearchClient,
+        MappingSearchClient,
+        GroupSearchClient {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
 
   public SearchClients(
-      final DocumentBasedSearchClient searchClient,
-      final boolean isCamundaExporterEnabled,
-      final String prefix) {
+      final DocumentBasedSearchClient searchClient, final IndexDescriptors indexDescriptors) {
     this(
         searchClient,
-        ServiceTransformers.newInstance(isCamundaExporterEnabled, prefix),
+        ServiceTransformers.newInstance(indexDescriptors),
         SecurityContext.withoutAuthentication());
   }
 
@@ -108,6 +113,18 @@ public class SearchClients
   @Override
   public SearchClients withSecurityContext(final SecurityContext securityContext) {
     return new SearchClients(searchClient, transformers, securityContext);
+  }
+
+  @Override
+  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
 
   @Override
@@ -232,6 +249,16 @@ public class SearchClients
             new DocumentAuthorizationQueryStrategy(this),
             securityContext)
         .search(filter, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery filter) {
+    return new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext)
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
 
   @Override

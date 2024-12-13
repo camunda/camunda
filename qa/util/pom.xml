@@ -52,6 +52,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -128,6 +133,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-exporter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
   </dependencies>
 </project>

@@ -36,9 +36,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = AuthorizationQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = AuthorizationController.class)
 public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -61,7 +59,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 1,
-               "firstSortValues": [],
+               "firstSortValues": ["v"],
                "lastSortValues": [
                  "v"
                ]
@@ -148,7 +146,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "ownerType",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -291,7 +289,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "ownerType",
-                        "order": "desc"
+                        "order": "DESC"
                     }
                 ]
             }""";
@@ -366,9 +364,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 endpoint)),
@@ -379,7 +377,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -399,7 +397,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

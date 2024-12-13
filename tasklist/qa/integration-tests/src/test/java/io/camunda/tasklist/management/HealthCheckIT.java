@@ -20,7 +20,6 @@ import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -44,7 +43,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
-      ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       ElasticsearchInternalTask.class,
       TasklistProperties.class,

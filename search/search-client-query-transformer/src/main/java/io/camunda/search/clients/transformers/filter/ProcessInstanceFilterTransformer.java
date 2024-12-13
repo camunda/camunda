@@ -7,12 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
@@ -28,16 +23,27 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.TREE_PATH;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class ProcessInstanceFilterTransformer
-    implements FilterTransformer<ProcessInstanceFilter> {
+    extends IndexFilterTransformer<ProcessInstanceFilter> {
+
+  private final ServiceTransformers transformers;
+
+  public ProcessInstanceFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+    this.transformers = transformers;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
@@ -64,19 +70,19 @@ public final class ProcessInstanceFilterTransformer
             longOperations(
                 PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringOperations(TREE_PATH, filter.treePathOperations())).ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(START_DATE, filter.startDateOperations()))
         .ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(END_DATE, filter.endDateOperations())).ifPresent(queries::addAll);
     ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
     ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
-    return and(queries);
-  }
 
-  @Override
-  public List<String> toIndices(final ProcessInstanceFilter filter) {
-    return List.of("operate-list-view-8.3.0_alias");
+    if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
+      final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
+      queries.add(processVariableQuery);
+    }
+
+    return and(queries);
   }
 
   private SearchQuery getIsProcessInstanceQuery() {
@@ -88,5 +94,24 @@ public final class ProcessInstanceFilterTransformer
       return term(INCIDENT, hasIncident);
     }
     return null;
+  }
+
+  private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
+    if (variableFilters != null && !variableFilters.isEmpty()) {
+      final var transformer = getVariableValueFilterTransformer();
+      final VariableValueFilterTransformer variableTransformer =
+          (VariableValueFilterTransformer) transformer;
+      final var queries =
+          variableFilters.stream()
+              .map(v -> variableTransformer.toSearchQuery(v, "varName", "varValue"))
+              .map((q) -> hasChildQuery("variable", q))
+              .collect(Collectors.toList());
+      return or(queries);
+    }
+    return null;
+  }
+
+  private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
+    return transformers.getFilterTransformer(VariableValueFilter.class);
   }
 }

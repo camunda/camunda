@@ -19,8 +19,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
@@ -28,27 +26,26 @@ import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -68,8 +65,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   @InjectMocks private IdentityProperties identityProperties;
 
   @MockBean private IdentityAuthorizationService identityAuthorizationService;
-
-  @Autowired private ListViewStore listViewStore;
 
   @Autowired private WebApplicationContext context;
 
@@ -1318,13 +1313,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),
               tuple("var_b", "779", "779", false));
-
-      // Assure Variables from Job Worker are not persisted on task-list-view
-      assertThat(listViewStore.getVariablesByVariableName("var_0").isEmpty());
-      assertThat(listViewStore.getVariablesByVariableName("var_1").isEmpty());
-      assertThat(listViewStore.getVariablesByVariableName("var_2").isEmpty());
-      assertThat(listViewStore.getVariablesByVariableName("var_a").isEmpty());
-      assertThat(listViewStore.getVariablesByVariableName("var_b").isEmpty());
     }
 
     @Test
@@ -1400,19 +1388,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),
               tuple("var_b", "779", "779", false));
-
-      Awaitility.await("tasklist-list-view has imported the data")
-          .timeout(Duration.ofSeconds(20))
-          .untilAsserted(
-              () -> assertThat(listViewStore.getVariablesByVariableName("var_1")).isNotEmpty());
-
-      // Assert the Task Variables were persisted in the tasklist-list-view
-      assertThat(listViewStore.getVariablesByVariableName("var_a").get(0).equals("225"));
-      assertThat(listViewStore.getVariablesByVariableName("var_1").get(0).equals("11111111111"));
-
-      // Assure the Draft Variable were not persisted to list-view
-      assertThat(listViewStore.getVariablesByVariableName("var_2").isEmpty());
-      assertThat(listViewStore.getVariablesByVariableName("var_b").isEmpty());
     }
 
     @Test

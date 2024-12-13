@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -106,35 +105,31 @@ public class DbTenantStateTest {
   }
 
   @Test
-  void shouldUpdateTenantId() {
+  void shouldNotUpdateTenantIdWhenUpdatingName() {
     // given
     final long tenantKey = 1L;
-    final String oldTenantId = "tenant-1";
-    final String newTenantId = "tenant-2";
-    final String tenantName = "Tenant One";
+    final String originalTenantId = "tenant-1";
+    final String newTenantId = "tenant-2"; // This should not be updated
+    final String tenantName = "Original Name";
     final var tenantRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(oldTenantId).setName(tenantName);
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setTenantId(originalTenantId)
+            .setName(tenantName);
 
     tenantState.createTenant(tenantRecord);
 
     // when
     final var updatedRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(newTenantId).setName(tenantName);
+        new TenantRecord().setTenantKey(tenantKey).setTenantId(newTenantId).setName("New Name");
     tenantState.updateTenant(updatedRecord);
 
     // then
-    // Old tenant ID should not be found
-    final var oldKey = tenantState.getTenantKeyById(oldTenantId);
-    assertThat(oldKey).isEmpty();
-
-    // New tenant ID should be mapped to the tenantKey
-    final var newKey = tenantState.getTenantKeyById(newTenantId);
-    assertThat(newKey).isPresent();
-    assertThat(newKey.get()).isEqualTo(tenantKey);
-    // Get the record created from the persisted tenant
-    // to ensure the tenant ID was updated in the persistedTenant
-    final Optional<TenantRecord> tenantByKey = tenantState.getTenantByKey(tenantKey);
-    assertThat(tenantByKey.get().getTenantId()).isEqualTo(newTenantId);
+    // Verify that tenantId has not been updated
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    assertThat(persistedTenant).isPresent();
+    assertThat(persistedTenant.get().getTenantId()).isEqualTo(originalTenantId);
+    assertThat(persistedTenant.get().getName()).isEqualTo("New Name");
   }
 
   @Test

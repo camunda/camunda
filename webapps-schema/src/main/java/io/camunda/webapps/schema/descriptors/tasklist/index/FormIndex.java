@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
+import java.util.Optional;
 
-public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
+public class FormIndex extends TasklistIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "form";
   public static final String INDEX_VERSION = "8.4.0";
@@ -39,5 +40,10 @@ public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 }

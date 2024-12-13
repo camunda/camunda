@@ -18,6 +18,7 @@ import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
 import io.camunda.application.commons.clustering.DynamicClusterServices;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -212,6 +213,7 @@ final class StandaloneGatewaySecurityTest {
     return new GatewayModuleConfiguration(
         gatewayConfig,
         null, // identity is disabled by default
+        new SecurityConfiguration(),
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,

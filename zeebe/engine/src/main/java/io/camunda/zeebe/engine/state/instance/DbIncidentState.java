@@ -7,19 +7,17 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
-import java.util.List;
-import java.util.Map;
 import java.util.function.ObjLongConsumer;
 
 public final class DbIncidentState implements MutableIncidentState {
@@ -130,10 +128,9 @@ public final class DbIncidentState implements MutableIncidentState {
 
   @Override
   public IncidentRecord getIncidentRecord(
-      final long incidentKey, final Map<String, Object> authorizations) {
+      final long incidentKey, final AuthorizedTenants authorizedTenantIds) {
     final IncidentRecord incident = getIncidentRecord(incidentKey);
-    if (incident != null
-        && getAuthorizedTenantIds(authorizations).contains(incident.getTenantId())) {
+    if (incident != null && authorizedTenantIds.isAuthorizedForTenantId(incident.getTenantId())) {
       return incident;
     }
     return null;
@@ -178,9 +175,5 @@ public final class DbIncidentState implements MutableIncidentState {
       final IncidentRecord incidentRecord = getIncidentRecord(processIncidentKey);
       resolver.accept(incidentRecord, processIncidentKey);
     }
-  }
-
-  private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
-    return (List<String>) authorizations.get(Authorization.AUTHORIZED_TENANTS);
   }
 }

@@ -13,11 +13,19 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.entity.Permission;
+import io.camunda.service.AuthorizationServices;
+import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -29,12 +37,15 @@ public class CamundaUserDetailsServiceTest {
   private static final String TEST_USER_ID = "username1";
 
   @Mock private UserServices userService;
+  @Mock private AuthorizationServices authorizationServices;
+  @Mock private TenantServices tenantServices;
   private CamundaUserDetailsService userDetailsService;
 
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    userDetailsService = new CamundaUserDetailsService(userService);
+    userDetailsService =
+        new CamundaUserDetailsService(userService, authorizationServices, tenantServices);
   }
 
   @Test
@@ -44,7 +55,20 @@ public class CamundaUserDetailsServiceTest {
         .thenReturn(
             new SearchQueryResult<>(
                 1,
-                List.of(new UserEntity(1L, TEST_USER_ID, "Foo Bar", "not@tested", "password1")),
+                List.of(new UserEntity(1L, TEST_USER_ID, "Foo Bar", "email@tested", "password1")),
+                null));
+
+    when(authorizationServices.search(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1,
+                List.of(
+                    new AuthorizationEntity(
+                        1L,
+                        AuthorizationOwnerType.USER.name(),
+                        AuthorizationResourceType.APPLICATION.name(),
+                        List.of(
+                            new Permission(PermissionType.ACCESS, Set.of("operate", "identity"))))),
                 null));
     // when
     final CamundaUser user = (CamundaUser) userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -55,6 +79,8 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getName()).isEqualTo("Foo Bar");
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");
+    assertThat(user.getEmail()).isEqualTo("email@tested");
+    assertThat(user.getAuthorizedApplications()).containsExactlyInAnyOrder("operate", "identity");
   }
 
   @Test

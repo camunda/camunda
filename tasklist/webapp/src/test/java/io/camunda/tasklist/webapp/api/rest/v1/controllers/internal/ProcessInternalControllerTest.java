@@ -16,20 +16,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.FeatureFlagProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
-import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -38,6 +36,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -47,9 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -63,7 +60,6 @@ class ProcessInternalControllerTest {
   @Mock private ProcessStore processStore;
   @Mock private FormStore formStore;
   @Mock private ProcessService processService;
-  @Mock private ProcessInstanceStore processInstanceStore;
   @Mock private TasklistProperties tasklistProperties;
   @Mock private IdentityAuthorizationService identityAuthorizationService;
   @Mock private TenantService tenantService;
@@ -187,29 +183,6 @@ class ProcessInternalControllerTest {
               .andExpect(status().is4xxClientError());
     }
 
-    @Test
-    void deleteProcess() throws Exception {
-      // given
-      final var processInstanceId = "225599880022";
-      when(processInstanceStore.deleteProcessInstance(processInstanceId))
-          .thenReturn(DeletionStatus.DELETED);
-
-      // when
-      final var result =
-          mockMvc
-              .perform(
-                  delete(
-                      TasklistURIs.PROCESSES_URL_V1.concat("/{processInstanceId}"),
-                      processInstanceId))
-              .andDo(print())
-              .andReturn()
-              .getResponse();
-
-      // then
-      assertThat(result.getContentAsString()).isEmpty();
-      assertThat(result.getStatus()).isEqualTo(HttpStatus.NO_CONTENT.value());
-    }
-
     private static Stream<Arguments> deleteProcessExceptionTestData() {
       return Stream.of(
           Arguments.of(
@@ -220,37 +193,6 @@ class ProcessInternalControllerTest {
               DeletionStatus.NOT_FOUND,
               HttpStatus.NOT_FOUND,
               "The process with processInstanceId: '%s' is not found"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("deleteProcessExceptionTestData")
-    void deleteProcessWhenDeleteWasNotSuccessfulThenExceptionExpected(
-        final DeletionStatus deletionStatus,
-        final HttpStatus expectedHttpStatus,
-        final String errorMessageTemplate)
-        throws Exception {
-      // given
-      final var processInstanceId = "225599880033";
-      when(processInstanceStore.deleteProcessInstance(processInstanceId))
-          .thenReturn(deletionStatus);
-
-      // when
-      final var errorResponseAsString =
-          mockMvc
-              .perform(
-                  delete(
-                      TasklistURIs.PROCESSES_URL_V1.concat("/{processInstanceId}"),
-                      processInstanceId))
-              .andDo(print())
-              .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-              .andReturn()
-              .getResponse()
-              .getContentAsString();
-      final var result = CommonUtils.OBJECT_MAPPER.readValue(errorResponseAsString, Error.class);
-
-      // then
-      assertThat(result.getStatus()).isEqualTo(expectedHttpStatus.value());
-      assertThat(result.getMessage()).isEqualTo(errorMessageTemplate, processInstanceId);
     }
   }
 
@@ -267,7 +209,7 @@ class ProcessInternalControllerTest {
               .setBpmnProcessId("registerCarForRent")
               .setVersion(1)
               .setFormKey("camunda-forms:bpmn:userTaskForm_111")
-              .setStartedByForm(true);
+              .setIsPublic(true);
 
       final var expectedProcessResponse =
           new ProcessResponse()
@@ -320,7 +262,7 @@ class ProcessInternalControllerTest {
               .setBpmnProcessId("publicProcess")
               .setVersion(1)
               .setName("publicProcess")
-              .setStartedByForm(true);
+              .setIsPublic(true);
 
       final var expectedEndpointsResponse =
           new ProcessPublicEndpointsResponse()
@@ -366,7 +308,7 @@ class ProcessInternalControllerTest {
               .setBpmnProcessId("publicProcess")
               .setVersion(1)
               .setName("publicProcess")
-              .setStartedByForm(true);
+              .setIsPublic(true);
 
       final var expectedEndpointsResponse =
           new ProcessPublicEndpointsResponse()
@@ -446,7 +388,7 @@ class ProcessInternalControllerTest {
               .setVersion(1)
               .setFormKey("camunda-forms:bpmn:userTaskForm_111")
               .setBpmnXml("<abc></abc>")
-              .setStartedByForm(true)
+              .setIsPublic(true)
               .setIsFormEmbedded(false)
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 

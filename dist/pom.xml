@@ -155,6 +155,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -213,6 +224,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -227,11 +242,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
     </dependency>
 
     <dependency>
@@ -251,11 +261,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-archiver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
     </dependency>
 
@@ -267,6 +272,15 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-backup</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -405,8 +419,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-transport</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
     </dependency>
 
     <dependency>
@@ -574,11 +598,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
     </dependency>
 
     <dependency>
@@ -774,7 +793,6 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
-            <dependency>io.camunda:camunda-exporter</dependency>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
@@ -788,10 +806,12 @@
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-importer</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
+
+            <!-- used as resource but no classes -->
+            <dependency>io.camunda:camunda-db-rdbms-schema</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
@@ -817,7 +837,7 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
-              <modelPackage>io.camunda.zeebe.management.backups</modelPackage>
+              <modelPackage>io.camunda.management.backups</modelPackage>
             </configuration>
           </execution>
           <execution>

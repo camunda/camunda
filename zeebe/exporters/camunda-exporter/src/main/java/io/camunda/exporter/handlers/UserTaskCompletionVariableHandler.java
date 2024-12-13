@@ -9,11 +9,11 @@ package io.camunda.exporter.handlers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -21,12 +21,12 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UserTaskCompletionVariableHandler
-    implements ExportHandler<TaskVariableEntity, UserTaskRecordValue> {
+    implements ExportHandler<SnapshotTaskVariableBatch, UserTaskRecordValue> {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(UserTaskCompletionVariableHandler.class);
@@ -48,8 +48,8 @@ public class UserTaskCompletionVariableHandler
   }
 
   @Override
-  public Class<TaskVariableEntity> getEntityType() {
-    return TaskVariableEntity.class;
+  public Class<SnapshotTaskVariableBatch> getEntityType() {
+    return SnapshotTaskVariableBatch.class;
   }
 
   @Override
@@ -61,78 +61,95 @@ public class UserTaskCompletionVariableHandler
 
   @Override
   public List<String> generateIds(final Record<UserTaskRecordValue> record) {
-    final List<String> variableIds = new ArrayList<>();
-    record
-        .getValue()
-        .getVariables()
-        .keySet()
-        .forEach(
-            variableName ->
-                variableIds.add(
-                    ID_PATTERN.formatted(record.getValue().getElementInstanceKey(), variableName)));
-    return variableIds;
+    return List.of(String.valueOf(record.getValue().getUserTaskKey()));
   }
 
   @Override
-  public TaskVariableEntity createNewEntity(final String id) {
-    return new TaskVariableEntity().setId(id);
+  public SnapshotTaskVariableBatch createNewEntity(final String id) {
+    return new SnapshotTaskVariableBatch(id, new ArrayList<>());
   }
 
   @Override
   public void updateEntity(
-      final Record<UserTaskRecordValue> record, final TaskVariableEntity entity) {
-    final String variableName = entity.getId().split("-")[1];
-    entity
-        .setPartitionId(record.getPartitionId())
-        .setPosition(record.getPosition())
-        .setName(variableName)
-        .setTenantId(record.getValue().getTenantId())
-        .setKey(record.getKey())
-        .setProcessInstanceId(record.getValue().getProcessInstanceKey())
-        .setScopeKey(record.getValue().getElementInstanceKey());
-
-    String variableStringValue = "";
-    final Object variableValue = record.getValue().getVariables().get(variableName);
-    try {
-      variableStringValue = MAPPER.writeValueAsString(variableValue);
-    } catch (final JsonProcessingException e) {
-      LOGGER.error(
-          String.format(
-              "Failed to parse variable '%s' value as string '%s'", variableName, variableValue),
-          e);
-    }
-
-    if (variableStringValue.length() > variableSizeThreshold) {
-      entity.setValue(variableStringValue.substring(0, variableSizeThreshold));
-      entity.setFullValue(variableStringValue);
-      entity.setIsTruncated(true);
-    } else {
-      entity.setValue(variableStringValue);
-      entity.setFullValue(null);
-      entity.setIsTruncated(false);
-    }
-
-    final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
-    joinRelationship.setParent(entity.getScopeKey());
-    joinRelationship.setName(TaskJoinRelationshipType.TASK_VARIABLE.getType());
-    entity.setJoin(joinRelationship);
+      final Record<UserTaskRecordValue> record, final SnapshotTaskVariableBatch entity) {
+    final var snapshotVariableCollection = entity.variables();
+    final var recordValue = record.getValue();
+    final var recordVariables = recordValue.getVariables();
+    recordVariables.entrySet().stream()
+        .map(e -> createSnapshotVariableEntity(e, record))
+        .forEach(snapshotVariableCollection::add);
   }
 
   @Override
-  public void flush(final TaskVariableEntity entity, final BatchRequest batchRequest) {
-    final Map<String, Object> updateFields = new HashMap<>();
-
-    updateFields.put(TaskTemplate.VARIABLE_VALUE, entity.getValue());
-    updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, entity.getFullValue());
-    updateFields.put(TaskTemplate.IS_TRUNCATED, entity.getIsTruncated());
-    updateFields.put(TaskTemplate.JOIN_FIELD_NAME, entity.getJoin());
-
-    batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
+  public void flush(final SnapshotTaskVariableBatch entity, final BatchRequest batchRequest) {
+    entity.variables().forEach(v -> flushSnapshotTaskVariableEntity(v, batchRequest));
   }
 
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private void flushSnapshotTaskVariableEntity(
+      final SnapshotTaskVariableEntity entity, final BatchRequest batchRequest) {
+    final var updateFields = new HashMap<String, Object>();
+    updateFields.put(SnapshotTaskVariableTemplate.VALUE, entity.getValue());
+    updateFields.put(SnapshotTaskVariableTemplate.FULL_VALUE, entity.getFullValue());
+    updateFields.put(SnapshotTaskVariableTemplate.IS_PREVIEW, entity.getIsPreview());
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+  }
+
+  private SnapshotTaskVariableEntity createSnapshotVariableEntity(
+      final Entry<String, Object> e, final Record<UserTaskRecordValue> record) {
+    final var recordValue = record.getValue();
+    final var userTaskKey = recordValue.getUserTaskKey();
+
+    final var variableName = e.getKey();
+    final var variableValue = e.getValue();
+
+    final var variableValueAsString = toJsonString(variableValue);
+    final var snapshotVariableEntity =
+        new SnapshotTaskVariableEntity()
+            .setId(String.format(ID_PATTERN, userTaskKey, variableName))
+            .setKey(record.getKey())
+            .setPartitionId(record.getPartitionId())
+            .setName(e.getKey())
+            .setTenantId(recordValue.getTenantId())
+            .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setTaskId(String.valueOf(record.getValue().getUserTaskKey()))
+            .setFullValue(variableValueAsString);
+
+    if (variableValueAsString.length() > variableSizeThreshold) {
+      // store preview
+      snapshotVariableEntity
+          .setValue(variableValueAsString.substring(0, variableSizeThreshold))
+          .setIsPreview(true);
+    } else {
+      snapshotVariableEntity.setValue(variableValueAsString).setIsPreview(false);
+    }
+    return snapshotVariableEntity;
+  }
+
+  private String toJsonString(final Object value) {
+    try {
+      return MAPPER.writeValueAsString(value);
+    } catch (final JsonProcessingException e) {
+      LOGGER.error("Failed to parse variable value '{}'", value, e);
+      return "";
+    }
+  }
+
+  public record SnapshotTaskVariableBatch(String id, List<SnapshotTaskVariableEntity> variables)
+      implements ExporterEntity<SnapshotTaskVariableBatch> {
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public SnapshotTaskVariableBatch setId(final String id) {
+      throw new UnsupportedOperationException("Not allowed to set an id");
+    }
   }
 }

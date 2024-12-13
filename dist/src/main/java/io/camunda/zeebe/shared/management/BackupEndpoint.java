@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.Error;
+import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.StateCode;
+import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
@@ -16,11 +21,6 @@ import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
-import io.camunda.zeebe.management.backups.BackupInfo;
-import io.camunda.zeebe.management.backups.Error;
-import io.camunda.zeebe.management.backups.PartitionBackupInfo;
-import io.camunda.zeebe.management.backups.StateCode;
-import io.camunda.zeebe.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -40,7 +40,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
-@WebEndpoint(id = "backup-runtime")
+@WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
   private final BackupApi api;
 

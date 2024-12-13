@@ -33,18 +33,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>webapps-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-importer-8_6</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_7</artifactId>
       <scope>runtime</scope>
     </dependency>
 
@@ -63,10 +52,6 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
     </dependency>
 
     <dependency>
@@ -156,11 +141,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies>
-            <dependency>io.camunda:operate-importer-8_6</dependency>
-          </usedDependencies>
-        </configuration>
       </plugin>
 
     </plugins>

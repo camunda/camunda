@@ -28,6 +28,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
+  private static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete role with key '%s', but a role with this key doesn't exist.";
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     final var roleKey = record.getRoleKey();
     final var persistedRecord = roleState.getRole(roleKey);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to delete role with key '%s', but a role with this key doesn't exist."
-              .formatted(roleKey);
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -68,7 +68,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.DELETE)
             .addResourceId(persistedRecord.get().getName());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authorizationRequest.getPermissionType(),
@@ -79,7 +79,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
     record.setName(persistedRecord.get().getName());
-
+    removeMembers(record);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
     responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);
 
@@ -92,7 +92,39 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+    roleState
+        .getRole(record.getRoleKey())
+        .ifPresentOrElse(
+            role -> {
+              removeMembers(command.getValue());
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), RoleIntent.DELETED, command.getValue());
+            },
+            () -> {
+              final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void removeMembers(final RoleRecord record) {
+    final var roleKey = record.getRoleKey();
+    roleState
+        .getEntitiesByType(roleKey)
+        .forEach(
+            (entityType, entityKeys) -> {
+              entityKeys.forEach(
+                  entityKey -> {
+                    final var entityRecord =
+                        new RoleRecord()
+                            .setRoleKey(roleKey)
+                            .setEntityKey(entityKey)
+                            .setEntityType(entityType);
+                    stateWriter.appendFollowUpEvent(
+                        roleKey, RoleIntent.ENTITY_REMOVED, entityRecord);
+                  });
+            });
   }
 }

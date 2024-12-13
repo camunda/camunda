@@ -7,12 +7,13 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
+import java.util.Optional;
 
 public class TaskTemplate extends TasklistTemplateDescriptor
-    implements Prio3Backup, ProcessInstanceDependant {
+    implements Prio2Backup, ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "task";
   public static final String INDEX_VERSION = "8.5.0";
@@ -36,7 +37,9 @@ public class TaskTemplate extends TasklistTemplateDescriptor
   public static final String ACTION = "action";
   public static final String CHANGED_ATTRIBUTES = "changedAttributes";
 
+  public static final String FORM_ID = "formId";
   public static final String FORM_KEY = "formKey";
+  public static final String FORM_VERSION = "formVersion";
   public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
 
   public static final String TENANT_ID = "tenantId";
@@ -60,6 +63,8 @@ public class TaskTemplate extends TasklistTemplateDescriptor
 
   public static final String JOIN_FIELD_NAME = "join";
 
+  public static final String LOCAL_VARIABLE_SUFFIX = "-local";
+
   public TaskTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
@@ -67,6 +72,11 @@ public class TaskTemplate extends TasklistTemplateDescriptor
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

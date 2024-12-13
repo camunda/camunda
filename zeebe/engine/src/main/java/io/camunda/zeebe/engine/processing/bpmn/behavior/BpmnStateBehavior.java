@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +54,19 @@ public final class BpmnStateBehavior {
 
   public ElementInstance getElementInstance(final long elementInstanceKey) {
     return elementInstanceState.getInstance(elementInstanceKey);
+  }
+
+  public ElementTreePathProperties getElementTreePath(
+      final long elementInstanceKey,
+      final long flowScopeKey,
+      final ProcessInstanceRecordValue processInstanceRecordValue) {
+    return new ElementTreePathBuilder()
+        .withElementInstanceProvider(elementInstanceState::getInstance)
+        .withCallActivityIndexProvider(processState::getFlowElement)
+        .withElementInstanceKey(elementInstanceKey)
+        .withFlowScopeKey(flowScopeKey)
+        .withRecordValue(processInstanceRecordValue)
+        .build();
   }
 
   public JobState getJobState() {

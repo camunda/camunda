@@ -23,8 +23,8 @@ import feign.Target.HardCodedTarget;
 import feign.codec.ErrorDecoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.zeebe.management.backups.BackupInfo;
-import io.camunda.zeebe.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
@@ -60,7 +60,7 @@ public interface BackupActuator {
    * @return a new instance of {@link BackupActuator}
    */
   static BackupActuator ofAddress(final String address) {
-    final var endpoint = String.format("http://%s/actuator/backup-runtime", address);
+    final var endpoint = String.format("http://%s/actuator/backupRuntime", address);
     return of(endpoint);
   }
 
@@ -71,7 +71,7 @@ public interface BackupActuator {
    * @return a new instance of {@link BackupActuator}
    */
   static BackupActuator of(final TestApplication<?> node) {
-    return of(node.actuatorUri("backup-runtime").toString());
+    return of(node.actuatorUri("backupRuntime").toString());
   }
 
   /**

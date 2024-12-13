@@ -19,29 +19,19 @@ import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
-import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchJSONUtil;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.client.indexlifecycle.DeleteAction;
-import org.elasticsearch.client.indexlifecycle.LifecycleAction;
-import org.elasticsearch.client.indexlifecycle.LifecyclePolicy;
-import org.elasticsearch.client.indexlifecycle.Phase;
-import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
@@ -53,7 +43,6 @@ import org.elasticsearch.cluster.metadata.ComposableIndexTemplate;
 import org.elasticsearch.cluster.metadata.Template;
 import org.elasticsearch.common.compress.CompressedXContent;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,21 +75,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private List<AbstractIndexDescriptor> tasklistIndexDescriptors;
-
-  @Autowired(required = false)
-  private List<TasklistIndexDescriptor> commonIndexDescriptors;
-
-  @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
-
-  @Autowired(required = false)
-  private List<TasklistTemplateDescriptor> commonTemplateDescriptors;
+  @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
+  @Autowired private List<IndexTemplateDescriptor> templateDescriptors;
 
   @Override
   public void createSchema() {
-    if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCycles();
-    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -149,10 +128,8 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
-      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
-        LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
-        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
+      if (indexNewFields.getKey() instanceof final IndexTemplateDescriptor templateDescriptor) {
+        LOGGER.info("Update template: " + templateDescriptor.getTemplateName());
         final PutComposableIndexTemplateRequest request =
             prepareComposableTemplateRequest(templateDescriptor, null);
         putIndexTemplate(request, true);
@@ -209,125 +186,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     retryElasticsearchClient.createComponentTemplate(request);
   }
 
-  public void createIndexLifeCycles() {
-    final TimeValue timeValue =
-        TimeValue.parseTimeValue(
-            tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
-            "IndexLifeCycle " + INDEX_LIFECYCLE_NAME);
-    LOGGER.info(
-        "Create Index Lifecycle {} for min age of {} ",
-        TASKLIST_DELETE_ARCHIVED_INDICES,
-        timeValue.getStringRep());
-    final Map<String, Phase> phases = new HashMap<>();
-    final Map<String, LifecycleAction> deleteActions =
-        Collections.singletonMap(DeleteAction.NAME, new DeleteAction());
-    phases.put(DELETE_PHASE, new Phase(DELETE_PHASE, timeValue, deleteActions));
-
-    final LifecyclePolicy policy = new LifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES, phases);
-    retryElasticsearchClient.putLifeCyclePolicy(new PutLifecyclePolicyRequest(policy));
-  }
-
   private void createIndices() {
-    tasklistIndexDescriptors.forEach(this::createIndex);
-    // Note: While migrating the entities and index descriptors
-    // to the harmonized webapps-schema module, this intermediate
-    // HACK is required to ensure that the necessary templates are
-    // created so that the integration tests can run.
-    // Once all entities and index descriptors have been moved,
-    // this code snippet will be deleted and adjusted as necessary!
-    Optional.ofNullable(commonIndexDescriptors)
-        .ifPresent(
-            l ->
-                l.stream()
-                    .map(
-                        i ->
-                            new AbstractIndexDescriptor() {
-
-                              @Override
-                              public String getIndexName() {
-                                return i.getIndexName();
-                              }
-
-                              @Override
-                              public String getAlias() {
-                                return i.getAlias();
-                              }
-
-                              @Override
-                              public String getFullQualifiedName() {
-                                return i.getFullQualifiedName();
-                              }
-
-                              @Override
-                              public String getSchemaClasspathFilename() {
-                                return i.getMappingsClasspathFilename();
-                              }
-
-                              @Override
-                              protected String getIndexPrefix() {
-                                return tasklistProperties.getElasticsearch().getIndexPrefix();
-                              }
-
-                              @Override
-                              public String getVersion() {
-                                return i.getVersion();
-                              }
-                            })
-                    .forEach(this::createIndex));
+    indexDescriptors.forEach(this::createIndex);
   }
 
   private void createTemplates() {
-    tasklistTemplateDescriptors.forEach(this::createTemplate);
-    // Note: While migrating the entities and index descriptors
-    // to the harmonized webapps-schema module, this intermediate
-    // HACK is required to ensure that the necessary templates are
-    // created so that the integration tests can run.
-    // Once all entities and index descriptors have been moved,
-    // this code snippet will be deleted and adjusted as necessary!
-    Optional.ofNullable(commonTemplateDescriptors)
-        .ifPresent(
-            l ->
-                l.stream()
-                    .map(
-                        t ->
-                            new AbstractTemplateDescriptor() {
-
-                              @Override
-                              public String getSchemaClasspathFilename() {
-                                return t.getMappingsClasspathFilename();
-                              }
-
-                              @Override
-                              protected String getIndexPrefix() {
-                                return tasklistProperties.getElasticsearch().getIndexPrefix();
-                              }
-
-                              @Override
-                              public String getIndexName() {
-                                return t.getIndexName();
-                              }
-
-                              @Override
-                              public String getAlias() {
-                                return t.getAlias();
-                              }
-
-                              @Override
-                              public String getTemplateName() {
-                                return t.getTemplateName();
-                              }
-
-                              @Override
-                              public String getIndexPattern() {
-                                return t.getIndexPattern();
-                              }
-
-                              @Override
-                              public String getVersion() {
-                                return t.getVersion();
-                              }
-                            })
-                    .forEach(this::createTemplate));
+    templateDescriptors.forEach(this::createTemplate);
   }
 
   private void createIndex(
@@ -342,12 +206,12 @@ public class ElasticsearchSchemaManager implements SchemaManager {
         indexDescriptor.getFullQualifiedName());
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
     createTemplate(templateDescriptor, null);
   }
 
   public void createTemplate(
-      final TemplateDescriptor templateDescriptor, final String templateClasspathResource) {
+      final IndexTemplateDescriptor templateDescriptor, final String templateClasspathResource) {
     final PutComposableIndexTemplateRequest request =
         prepareComposableTemplateRequest(templateDescriptor, templateClasspathResource);
     putIndexTemplate(request);
@@ -390,7 +254,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private PutComposableIndexTemplateRequest prepareComposableTemplateRequest(
-      final TemplateDescriptor templateDescriptor, final String templateClasspathResource) {
+      final IndexTemplateDescriptor templateDescriptor, final String templateClasspathResource) {
     final String templateResourceName =
         templateClasspathResource != null
             ? templateClasspathResource
@@ -411,7 +275,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void overrideTemplateSettings(
-      final Map<String, Object> templateConfig, final TemplateDescriptor templateDescriptor) {
+      final Map<String, Object> templateConfig, final IndexTemplateDescriptor templateDescriptor) {
     final Settings indexSettings = getIndexSettings(templateDescriptor.getIndexName());
     final Map<String, Object> settings =
         (Map<String, Object>) templateConfig.getOrDefault("settings", new HashMap<>());
@@ -448,7 +312,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private Template getTemplateFrom(
-      final TemplateDescriptor templateDescriptor, final String templateFilename) {
+      final IndexTemplateDescriptor templateDescriptor, final String templateFilename) {
     // Easiest way to create Template from json file: create 'old' request ang retrieve needed info
     final Map<String, Object> templateConfig =
         ElasticsearchJSONUtil.readJSONFileToMap(templateFilename);

@@ -25,8 +25,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -95,7 +96,7 @@ public class IndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean
+  @Bean("operateProcessIndex")
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
@@ -140,7 +141,7 @@ public class IndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean
+  @Bean("operateFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
@@ -231,13 +232,9 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public UserTaskTemplate getUserTaskTemplate(
-      final OperateProperties operateProperties,
-      final DatabaseInfo databaseInfo,
-      final IndexPrefixHolder indexPrefixHolder) {
-    return new UserTaskTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
+  public TaskTemplate getTaskTemplate(
+      final DatabaseInfo databaseInfo, final IndexPrefixHolder indexPrefixHolder) {
+    return new TaskTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
@@ -260,7 +257,7 @@ public class IndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean
+  @Bean("operateVariableTemplate")
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,
@@ -298,6 +295,17 @@ public class IndexTemplateDescriptorsConfigurator {
     return new BatchOperationTemplate(
         operateProperties.getIndexPrefix(DatabaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb()) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean("operateSnapshotTaskVariableTemplate")
+  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
+      final DatabaseInfo databaseInfo, final IndexPrefixHolder indexPrefixHolder) {
+    return new SnapshotTaskVariableTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();

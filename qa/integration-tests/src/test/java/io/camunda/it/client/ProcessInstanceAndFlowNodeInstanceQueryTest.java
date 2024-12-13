@@ -26,15 +26,12 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -55,7 +52,8 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
+    testStandaloneCamunda =
+        new TestStandaloneCamunda().withElasticsearchExporter(false).withCamundaExporter();
   }
 
   @BeforeAll
@@ -78,7 +76,8 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     waitForProcessesToBeDeployed(zeebeClient, DEPLOYED_PROCESSES.size());
 
-    PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "service_tasks_v1"));
+    PROCESS_INSTANCES.add(
+        startProcessInstance(zeebeClient, "service_tasks_v1", "{\"xyz\":\"bar\"}"));
     PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "service_tasks_v2", "{\"path\":222}"));
     PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "manual_process"));
     PROCESS_INSTANCES.add(startProcessInstance(zeebeClient, "incident_process_v1"));
@@ -133,7 +132,6 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
     assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(result.getTreePath()).isEqualTo("PI_" + processInstanceKey);
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo("ACTIVE");
@@ -533,6 +531,42 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldQueryProcessInstancesByVariableSingle() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        List.of(new ProcessInstanceVariableFilterRequest().name("xyz").value("\"bar\""));
+
+    // when
+    final var result =
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByVariableMulti() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1", "service_tasks_v2");
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        List.of(
+            new ProcessInstanceVariableFilterRequest().name("xyz").value("\"bar\""),
+            new ProcessInstanceVariableFilterRequest().name("path").value("222"));
+
+    // when
+    final var result =
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
   void shouldSortProcessInstancesByProcessInstanceKey() {
     // when
     final var resultAsc =
@@ -775,7 +809,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
-    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isNotNull();
+    assertThat(result.items().getFirst().getProcessDefinitionId())
+        .isEqualTo(flowNodeInstance.getProcessDefinitionId());
   }
 
   @Test
@@ -786,6 +822,30 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var resultDesc =
         zeebeClient.newFlownodeInstanceQuery().sort(s -> s.flowNodeId().desc()).send().join();
     assertSorted(resultAsc, resultDesc, FlowNodeInstance::getFlowNodeId);
+  }
+
+  @Test
+  void shouldHaveCorrectFlowNodeInstanceFlowNodeName() {
+    // when
+    final var result =
+        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.flowNodeId("noOpTask")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("No Op");
+  }
+
+  @Test
+  void shouldUseFlowNodeInstanceFlowNodeIdIfNameNotSet() {
+    // when
+    final var result =
+        zeebeClient
+            .newFlownodeInstanceQuery()
+            .filter(f -> f.flowNodeId("Event_1p0nsc7"))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("Event_1p0nsc7");
   }
 
   @Test
@@ -929,19 +989,6 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
-  void shouldQueryFlowNodeInstanceByTreePath() {
-    // given
-    final var treePath = flowNodeInstance.getTreePath();
-    // when
-    final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.treePath(treePath)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getTreePath()).isEqualTo(treePath);
-  }
-
-  @Test
   void shouldQueryFlowNodeInstanceByTenantId() {
     // given
     final var tenantId = flowNodeInstance.getTenantId();
@@ -978,5 +1025,20 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
     assertThat(result.items().size()).isEqualTo(2);
     assertThat(resultBefore.items().getFirst().getFlowNodeInstanceKey()).isEqualTo(key);
+  }
+
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = zeebeClient.newFlownodeInstanceQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getFlowNodeInstanceKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getFlowNodeInstanceKey())
+        .isEqualTo(thirdKey);
   }
 }

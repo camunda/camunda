@@ -9,19 +9,17 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.graphql.spring.boot.test.GraphQLResponse;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.tasklist.qa.backup.TasklistAPICaller;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -97,11 +95,10 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   @Override
   public void assertData() throws IOException {
     try {
-      final GraphQLResponse response = tasklistAPICaller.getAllTasks();
-      assertTrue(response.isOk());
-      assertEquals(String.valueOf(PROCESS_INSTANCE_COUNT), response.get("$.data.tasks.length()"));
-      assertEquals("task1", response.get("$.data.tasks[0].name"));
-      assertEquals("CREATED", response.get("$.data.tasks[0].taskState"));
+      final List<TaskSearchResponse> response = tasklistAPICaller.getAllTasks();
+      assertEquals(PROCESS_INSTANCE_COUNT, response.size());
+      assertEquals("task1", response.get(0).getName());
+      assertEquals("CREATED", response.get(0).getTaskState().name());
       assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
           .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
     } catch (final AssertionError er) {
@@ -113,7 +110,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   @Override
   public void assertDataAfterChange() throws IOException {
     try {
-      List<TaskDTO> tasks = tasklistAPICaller.getTasks("task1");
+      List<TaskSearchResponse> tasks = tasklistAPICaller.getTasks("task1");
       assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
       assertThat(tasks)
           .filteredOn(t -> t.getTaskState().equals(TaskState.COMPLETED))
@@ -155,7 +152,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void refreshIndices();
 
   private void addDraftVariablesForAllTasks() throws IOException {
-    final var tasks = tasklistAPICaller.getAllTasks().getList("$.data.tasks", TaskDTO.class);
+    final var tasks = tasklistAPICaller.getAllTasks();
     LOGGER.info("Found '{}' tasks, adding 2 draft variables to each task.", tasks.size());
     tasks.stream()
         .parallel()
@@ -258,9 +255,12 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
   private void completeTasks(final String taskBpmnId, final int completedTasksCount)
       throws IOException {
-    final List<TaskDTO> tasks = tasklistAPICaller.getTasks(taskBpmnId);
+    final VariableInputDTO inputDto = new VariableInputDTO();
+    inputDto.setName("varOut");
+    inputDto.setValue("123");
+    final List<TaskSearchResponse> tasks = tasklistAPICaller.getTasks(taskBpmnId);
     for (int i = 0; i < completedTasksCount; i++) {
-      tasklistAPICaller.completeTask(tasks.get(i).getId(), "{name: \"varOut\", value: \"123\"}");
+      tasklistAPICaller.completeTask(tasks.get(i).getId(), List.of(inputDto));
     }
   }
 }

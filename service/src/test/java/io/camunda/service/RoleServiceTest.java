@@ -24,10 +24,12 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -140,5 +142,43 @@ public class RoleServiceTest {
     assertThat(request.getKey()).isEqualTo(roleKey);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getName()).isEqualTo(name);
+  }
+
+  @Test
+  public void shouldAddUserToRole() {
+    // given
+    final var roleKey = 100L;
+    final var entityKey = 42;
+
+    // when
+    services.addMember(roleKey, EntityType.USER, entityKey);
+
+    // then
+    final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(RoleIntent.ADD_ENTITY);
+    assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
+    final RoleRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
+    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
+  }
+
+  @Test
+  public void shouldRemoveUserFromRole() {
+    // given
+    final var roleKey = 100L;
+    final var entityKey = 42;
+
+    // when
+    services.removeMember(roleKey, EntityType.USER, entityKey);
+
+    // then
+    final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(RoleIntent.REMOVE_ENTITY);
+    assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
+    final RoleRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
+    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 }

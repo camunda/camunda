@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.reader.EventReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -21,8 +20,8 @@ import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import java.io.IOException;
-import java.io.StringReader;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -125,25 +124,32 @@ public class FlowNodeInstanceMetadataBuilder {
             flowNodeInstance.getEndDate(),
             event);
     if (userTask.isPresent()) {
+      final var variables = userTaskReader.getUserTaskVariables(userTask.get().getKey());
+      final Map<String, Object> variablesMap = new HashMap<>();
+      for (final var v : variables) {
+        variablesMap.put(v.getName(), v.getValue());
+      }
+
       final var task = userTask.get();
       result
-          .setUserTaskKey(task.getUserTaskKey())
+          .setUserTaskKey(task.getKey())
           .setAssignee(task.getAssignee())
-          .setCandidateUsers(task.getCandidateUsers())
-          .setCandidateGroups(task.getCandidateGroups())
+          .setCandidateUsers(
+              task.getCandidateUsers() != null
+                  ? Arrays.stream(task.getCandidateUsers()).toList()
+                  : null)
+          .setCandidateGroups(
+              task.getCandidateGroups() != null
+                  ? Arrays.stream(task.getCandidateGroups()).toList()
+                  : null)
           .setAction(task.getAction())
           .setDueDate(task.getDueDate())
           .setFollowUpDate(task.getFollowUpDate())
           .setChangedAttributes(task.getChangedAttributes())
           .setTenantId(task.getTenantId())
-          .setFormKey(task.getFormKey())
-          .setExternalReference(task.getExternalReference());
-      try {
-        result.setVariables(
-            new ObjectMapper().readValue(new StringReader(task.getVariables()), Map.class));
-      } catch (final IOException e) {
-        result.setVariables(Map.of());
-      }
+          .setFormKey(task.getFormKey() != null ? Long.parseLong(task.getFormKey()) : null)
+          .setExternalReference(task.getExternalFormReference())
+          .setVariables(variablesMap);
     }
     return result;
   }

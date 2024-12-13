@@ -22,13 +22,13 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
-import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.opensearch.ProcessStoreOpenSearch;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
@@ -36,6 +36,8 @@ import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,6 +74,7 @@ class ProcessStoreOpenSearchTest {
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
+  @Mock private SecurityConfiguration securityConfiguration;
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
 
   @BeforeEach
@@ -170,8 +173,9 @@ class ProcessStoreOpenSearchTest {
   public void shouldNotReturnProcessesWhenResourceAuthIsEnabledButNoAuthorization()
       throws IOException {
     // when
-    when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-    when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(true);
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
+    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
     when(identityProperties.baseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
     when(processIndex.getAlias()).thenReturn("index_alias");
@@ -220,8 +224,9 @@ class ProcessStoreOpenSearchTest {
   @Test
   public void shouldReturnProcessesWhenResourceAuthorizationIsFalse() throws Exception {
     // when
-    when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
-    when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(false);
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
+    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(false);
     mockOpenSearchSuccessWithAggregatedResponse();
 
     final List<String> authorizations = identityService.getProcessDefinitionsFromAuthorization();
@@ -243,7 +248,9 @@ class ProcessStoreOpenSearchTest {
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
 
     // Define behavior of IdentityProperties methods
-    when(tasklistIdentityProperties.isResourcePermissionsEnabled()).thenReturn(true);
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
+    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
     when(identityProperties.baseUrl()).thenReturn("baseUrl");
 
     // Define behavior of tasklistProperties.getIdentity()

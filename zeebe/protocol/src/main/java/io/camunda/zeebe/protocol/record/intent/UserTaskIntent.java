@@ -52,6 +52,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * command.
    */
   COMPLETE_TASK_LISTENER(15),
+
   /**
    * Represents the intent that means Task Listener denied the operation and the creation of the
    * next task listener or the finalization of the original user task command (COMPLETE) is not
@@ -64,6 +65,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * CREATED state.
    */
   DENY_TASK_LISTENER(16),
+
   /**
    * Represents the intent indicating that the User Task will not be completed, but rather will be
    * reverted to the CREATED state.
@@ -76,7 +78,20 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * Note that the changes are only applied to the User Task instance after all Task Listeners have
    * been handled and none denied the operation.
    */
-  CORRECTED(18);
+  CORRECTED(18),
+
+  /**
+   * Represents the intent indicating that the User Task will not be assigned and the user task's
+   * assignee remains unchanged. The user task will be reverted to the CREATED lifecycle state.
+   */
+  ASSIGNMENT_DENIED(19),
+
+  /**
+   * Represents the intent indicating that a User Task is being claimed by a user for themselves.
+   * This intent is written during the processing of a CLAIM command and marks the User Task with
+   * the `CLAIMING` lifecycle state.
+   */
+  CLAIMING(20);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -134,6 +149,10 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return COMPLETION_DENIED;
       case 18:
         return CORRECTED;
+      case 19:
+        return ASSIGNMENT_DENIED;
+      case 20:
+        return CLAIMING;
       default:
         return UNKNOWN;
     }
@@ -160,6 +179,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case MIGRATED:
       case COMPLETION_DENIED:
       case CORRECTED:
+      case ASSIGNMENT_DENIED:
+      case CLAIMING:
         return true;
       default:
         return false;

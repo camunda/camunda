@@ -13,11 +13,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -47,7 +47,7 @@ public class MessageControllerTest extends RestControllerTest {
             "tenantId": "<default>"
           }""";
   @MockBean MessageServices messageServices;
-  @MockBean MultiTenancyCfg multiTenancyCfg;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
   @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
@@ -375,47 +375,6 @@ public class MessageControllerTest extends RestControllerTest {
                   "status": 400,
                   "title": "INVALID_ARGUMENT",
                   "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
-                  "instance": "%s"
-                }"""
-                .formatted(CORRELATION_ENDPOINT));
-    verifyNoInteractions(messageServices);
-  }
-
-  @Test
-  void shouldRejectMessageCorrelationWithUnauthorizedTenantWhenMultiTenancyEnabled() {
-    // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
-
-    final var request =
-        """
-            {
-              "name": "messageName",
-              "tenantId": "unauthorizedTenant"
-            }""";
-
-    // when then
-    final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(CORRELATION_ENDPOINT)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isUnauthorized());
-    response
-        .expectBody()
-        .json(
-            """
-                {
-                  "type": "about:blank",
-                  "status": 401,
-                  "title": "UNAUTHORIZED",
-                  "detail": "Expected to handle request Correlate Message with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
                   "instance": "%s"
                 }"""
                 .formatted(CORRELATION_ENDPOINT));

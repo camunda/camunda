@@ -30,6 +30,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
+      "Expected to add entity with key '%s' to group with key '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
   private final UserState userState;
@@ -77,7 +79,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
             .addResourceId(record.getName());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authorizationRequest.getPermissionType(),
@@ -99,6 +101,15 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
+    if (isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+              record.getEntityKey(), record.getGroupKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_ADDED, record, command);
 
@@ -111,7 +122,16 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, command.getValue());
+    final var record = command.getValue();
+    if (isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+              record.getEntityKey(), record.getGroupKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+    } else {
+      stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
+    }
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -121,5 +141,9 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       case EntityType.MAPPING -> mappingState.get(entityKey).isPresent();
       default -> false;
     };
+  }
+
+  private boolean isEntityAssigned(final GroupRecord record) {
+    return groupState.getEntityType(record.getGroupKey(), record.getEntityKey()).isPresent();
   }
 }

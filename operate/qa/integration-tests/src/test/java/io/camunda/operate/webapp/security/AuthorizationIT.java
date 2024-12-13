@@ -40,7 +40,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
     classes = {TestApplication.class},
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })

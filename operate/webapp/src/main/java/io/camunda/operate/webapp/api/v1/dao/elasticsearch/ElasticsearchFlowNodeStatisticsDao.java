@@ -42,6 +42,7 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -49,7 +50,9 @@ import org.springframework.stereotype.Component;
 @Component("ElasticsearchFlowNodeStatisticsDaoV1")
 public class ElasticsearchFlowNodeStatisticsDao extends ElasticsearchDao<FlowNodeStatistics>
     implements FlowNodeStatisticsDao {
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Override
   protected void buildFiltering(

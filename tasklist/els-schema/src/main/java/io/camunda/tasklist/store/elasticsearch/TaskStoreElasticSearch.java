@@ -7,13 +7,10 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
-import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
 import static java.util.stream.Collectors.toList;
@@ -22,8 +19,6 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.Sort;
@@ -31,15 +26,17 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -49,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -62,10 +60,10 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.IdsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -103,21 +101,52 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Override
-  public TaskEntity getTask(final String id) {
+  private SearchHit getRawTaskByUserTaskKey(final String userTaskKey) {
     try {
-      final SearchHit response =
-          getRawResponseWithTenantCheck(id, taskTemplate, ALL, tenantAwareClient);
-      return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(taskTemplate)
+              .source(
+                  SearchSourceBuilder.searchSource()
+                      .query(termQuery(TaskTemplate.KEY, userTaskKey)));
+
+      final var response = tenantAwareClient.search(searchRequest);
+      if (response.getHits().getHits().length == 1) {
+        return response.getHits().getHits()[0];
+      } else if (response.getHits().getTotalHits().value > 1) {
+        throw new NotFoundException(
+            String.format(
+                "Unique %s with id %s was not found", taskTemplate.getIndexName(), userTaskKey));
+      } else {
+        throw new NotFoundException(
+            String.format("%s with id %s was not found", taskTemplate.getIndexName(), userTaskKey));
+      }
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
+  }
+
+  private String getRoutingToUpsertTask(final TaskEntity taskEntity) {
+    final var taskId = taskEntity.getId();
+    final var taskKey = String.valueOf(taskEntity.getKey());
+    if (Objects.equals(taskId, taskKey)) {
+      return taskId;
+    } else {
+      return taskEntity.getProcessInstanceId();
+    }
+  }
+
+  @Override
+  public TaskEntity getTask(final String id) {
+    final var rawTask = getRawTaskByUserTaskKey(id);
+    return fromSearchHit(rawTask.getSourceAsString(), objectMapper, TaskEntity.class);
   }
 
   @Override
@@ -126,8 +155,8 @@ public class TaskStoreElasticSearch implements TaskStore {
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
-                    .fetchField(TaskTemplate.ID));
+                    .query(termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId))
+                    .fetchField(TaskTemplate.KEY));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
     } catch (final IOException e) {
@@ -143,7 +172,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             .source(
                 SearchSourceBuilder.searchSource()
                     .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(TaskTemplate.ID));
+                    .fetchField(TaskTemplate.KEY));
     try {
       return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
     } catch (final IOException e) {
@@ -174,16 +203,13 @@ public class TaskStoreElasticSearch implements TaskStore {
    */
   @Override
   public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
-    final SearchHit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit =
-          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
+    final SearchHit taskBeforeSearchHit =
+        getRawTaskByUserTaskKey(String.valueOf(taskBefore.getKey()));
 
     final TaskEntity completedTask =
-        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
+        makeCopyOf(taskBefore)
+            .setState(TaskState.COMPLETED)
+            .setCompletionTime(OffsetDateTime.now());
 
     try {
       // update task with optimistic locking
@@ -201,7 +227,8 @@ public class TaskStoreElasticSearch implements TaskStore {
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
+              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm())
+              .routing(getRoutingToUpsertTask(completedTask));
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (final Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
@@ -212,15 +239,9 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
-    final SearchHit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit =
-          getRawResponseWithTenantCheck(taskBefore.getId(), taskTemplate, ALL, tenantAwareClient);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-
-    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+    final SearchHit taskBeforeSearchHit =
+        getRawTaskByUserTaskKey(String.valueOf(taskBefore.getKey()));
+    final TaskEntity completedTask = makeCopyOf(taskBefore).setCompletionTime(null);
 
     try {
       // update task with optimistic locking
@@ -238,7 +259,8 @@ public class TaskStoreElasticSearch implements TaskStore {
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
+              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm())
+              .routing(getRoutingToUpsertTask(completedTask));
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (final Exception e) {
       LOGGER.error("Error when trying to rollback Task to CREATED state: {}", e.getMessage());
@@ -249,15 +271,15 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
 
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+    updateTask(String.valueOf(taskBefore.getKey()), asMap(TaskTemplate.ASSIGNEE, assignee));
 
-    return taskBefore.makeCopy().setAssignee(assignee);
+    return makeCopyOf(taskBefore).setAssignee(assignee);
   }
 
   @Override
   public TaskEntity persistTaskUnclaim(final TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
-    return task.makeCopy().setAssignee(null);
+    updateTask(String.valueOf(task.getKey()), asMap(TaskTemplate.ASSIGNEE, null));
+    return makeCopyOf(task).setAssignee(null);
   }
 
   @Override
@@ -270,9 +292,17 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
+  @Override
+  public void updateTaskLinkedForm(
+      final TaskEntity task, final String formBpmnId, final long formVersion) {
+    updateTask(
+        String.valueOf(task.getKey()),
+        asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
+  }
+
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
 
-    final QueryBuilder query = idsQuery().addIds(Arrays.toString(ids.toArray()));
+    final QueryBuilder query = termsQuery(TaskTemplate.KEY, ids);
 
     final SearchRequest request =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
@@ -405,10 +435,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  private static ElasticsearchUtil.QueryType getQueryTypeByTaskState(final TaskState taskState) {
-    return TaskState.CREATED == taskState
-        ? ElasticsearchUtil.QueryType.ONLY_RUNTIME
-        : ElasticsearchUtil.QueryType.ALL;
+  private QueryType getQueryTypeByTaskState(final TaskState taskState) {
+    return TaskState.CREATED == taskState ? QueryType.ONLY_RUNTIME : QueryType.ALL;
   }
 
   private boolean checkTaskIsFirst(final TaskQuery query, final String id) {
@@ -451,9 +479,9 @@ public class TaskStoreElasticSearch implements TaskStore {
       assigneesQ = termsQuery(TaskTemplate.ASSIGNEE, query.getAssignees());
     }
 
-    IdsQueryBuilder idsQuery = null;
+    TermsQueryBuilder taskIdsQuery = null;
     if (taskIds != null) {
-      idsQuery = idsQuery().addIds(taskIds.toArray(new String[0]));
+      taskIdsQuery = termsQuery(TaskTemplate.KEY, taskIds);
     }
 
     QueryBuilder taskDefinitionQ = null;
@@ -491,7 +519,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     QueryBuilder processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
-      processInstanceIdQ = termQuery(PROCESS_INSTANCE_ID, query.getProcessInstanceId());
+      processInstanceIdQ =
+          termQuery(TaskTemplate.PROCESS_INSTANCE_ID, query.getProcessInstanceId());
     }
 
     QueryBuilder processDefinitionIdQ = null;
@@ -528,7 +557,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             assignedQ,
             assigneeQ,
             assigneesQ,
-            idsQuery,
+            taskIdsQuery,
             taskDefinitionQ,
             candidateGroupQ,
             candidateGroupsQ,
@@ -656,8 +685,9 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
-      final SearchHit searchHit =
-          getRawResponseWithTenantCheck(taskId, taskTemplate, ALL, tenantAwareClient);
+      final SearchHit searchHit = getRawTaskByUserTaskKey(taskId);
+      final var taskEntity =
+          fromSearchHit(searchHit.getSourceAsString(), objectMapper, TaskEntity.class);
       // update task with optimistic locking
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -665,11 +695,12 @@ public class TaskStoreElasticSearch implements TaskStore {
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(taskTemplate.getFullQualifiedName())
-              .id(taskId)
+              .id(searchHit.getId())
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(searchHit.getSeqNo())
-              .setIfPrimaryTerm(searchHit.getPrimaryTerm());
+              .setIfPrimaryTerm(searchHit.getPrimaryTerm())
+              .routing(getRoutingToUpsertTask(taskEntity));
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
@@ -703,8 +734,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.NAME, varNames.get(i)));
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.VALUE, varValues.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()

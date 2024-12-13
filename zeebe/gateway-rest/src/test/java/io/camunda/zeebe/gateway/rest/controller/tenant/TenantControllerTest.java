@@ -24,9 +24,14 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -201,7 +206,7 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @Test
-  void deleteUserShouldReturnNoContent() {
+  void deleteTenantShouldReturnNoContent() {
     // given
     final long key = 1234L;
 
@@ -221,5 +226,65 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1)).deleteTenant(key);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAddMemberTestCases")
+  void testAddMemberToTenant(final EntityType entityType, final String entityPath) {
+    // given
+    final var tenantKey = 100L;
+    final var entityKey = 42L;
+
+    when(tenantServices.addMember(tenantKey, entityType, entityKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).addMember(tenantKey, entityType, entityKey);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideRemoveMemberTestCases")
+  void testRemoveMemberFromTenant(final EntityType entityType, final String entityPath) {
+    // given
+    final var tenantKey = 100L;
+    final var entityKey = 42L;
+
+    when(tenantServices.removeMember(tenantKey, entityType, entityKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
+  }
+
+  private static Stream<Arguments> provideAddMemberTestCases() {
+    return Stream.of(
+        Arguments.of(EntityType.USER, "users"),
+        Arguments.of(EntityType.MAPPING, "mapping-rules"),
+        Arguments.of(EntityType.GROUP, "groups"));
+  }
+
+  private static Stream<Arguments> provideRemoveMemberTestCases() {
+    return Stream.of(
+        Arguments.of(EntityType.USER, "users"),
+        Arguments.of(EntityType.MAPPING, "mapping-rules"),
+        Arguments.of(EntityType.GROUP, "groups"));
   }
 }

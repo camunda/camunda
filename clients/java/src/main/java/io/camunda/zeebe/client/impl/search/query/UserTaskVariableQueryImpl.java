@@ -69,7 +69,7 @@ public class UserTaskVariableQueryImpl
   public ZeebeFuture<SearchQueryResponse<Variable>> send() {
     final HttpZeebeFuture<SearchQueryResponse<Variable>> result = new HttpZeebeFuture<>();
     httpClient.post(
-        String.format("/user-tasks/%d/variables", userTaskKey),
+        String.format("/user-tasks/%d/variables/search", userTaskKey),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResponse.class,

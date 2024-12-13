@@ -11,23 +11,22 @@ import static io.camunda.tasklist.util.TestCheck.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.ProcessEntity;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -48,7 +47,9 @@ public class OpenSearchChecks {
 
   @Autowired private ProcessStore processStore;
 
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   /** Checks whether the process of given args[0] processId (Long) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)
@@ -67,7 +68,7 @@ public class OpenSearchChecks {
         try {
           final ProcessEntity process = processStore.getProcess(processId);
           return process != null;
-        } catch (TasklistRuntimeException ex) {
+        } catch (final TasklistRuntimeException ex) {
           return false;
         }
       }
@@ -91,9 +92,9 @@ public class OpenSearchChecks {
         try {
           processStore.getProcess(processId);
           return false;
-        } catch (NotFoundException nfe) {
+        } catch (final NotFoundException nfe) {
           return true;
-        } catch (TasklistRuntimeException ex) {
+        } catch (final TasklistRuntimeException ex) {
           return false;
         }
       }
@@ -117,7 +118,7 @@ public class OpenSearchChecks {
         try {
           final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
           return TaskState.CREATED.equals(taskEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -143,7 +144,7 @@ public class OpenSearchChecks {
           final String taskId = (String) objects[0];
           final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
           return taskEntity.getCandidateGroups().length > 0;
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -167,7 +168,7 @@ public class OpenSearchChecks {
         try {
           final TaskEntity taskEntity = openSearchHelper.getTask(taskId);
           return taskEntity.getAssignee() != null;
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -200,7 +201,7 @@ public class OpenSearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CREATED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -233,7 +234,7 @@ public class OpenSearchChecks {
                   .map(TaskEntity::getState)
                   .collect(Collectors.toList())
                   .contains(TaskState.CREATED));
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -266,7 +267,7 @@ public class OpenSearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CANCELED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -299,61 +300,7 @@ public class OpenSearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.COMPLETED);
-        } catch (NotFoundApiException ex) {
-          return false;
-        }
-      }
-    };
-  }
-
-  /**
-   * Checks whether the process instance for given args[0] processInstanceId (String) is completed.
-   */
-  @Bean(name = PROCESS_INSTANCE_IS_COMPLETED_CHECK)
-  public TestCheck getProcessInstanceIsCompletedCheck() {
-    return new TestCheck() {
-      @Override
-      public String getName() {
-        return PROCESS_INSTANCE_IS_COMPLETED_CHECK;
-      }
-
-      @Override
-      public boolean test(final Object[] objects) {
-        assertThat(objects).hasSize(1);
-        assertThat(objects[0]).isInstanceOf(String.class);
-        final String processInstanceId = (String) objects[0];
-        try {
-          final ProcessInstanceEntity wfiEntity =
-              openSearchHelper.getProcessInstance(processInstanceId);
-          return ProcessInstanceState.COMPLETED.equals(wfiEntity.getState());
-        } catch (NotFoundApiException ex) {
-          return false;
-        }
-      }
-    };
-  }
-
-  /**
-   * Checks whether the process instance for given args[0] processInstanceId (String) is canceled.
-   */
-  @Bean(name = PROCESS_INSTANCE_IS_CANCELED_CHECK)
-  public TestCheck getProcessInstanceIsCanceledCheck() {
-    return new TestCheck() {
-      @Override
-      public String getName() {
-        return PROCESS_INSTANCE_IS_CANCELED_CHECK;
-      }
-
-      @Override
-      public boolean test(final Object[] objects) {
-        assertThat(objects).hasSize(1);
-        assertThat(objects[0]).isInstanceOf(String.class);
-        final String processInstanceId = (String) objects[0];
-        try {
-          final ProcessInstanceEntity wfiEntity =
-              openSearchHelper.getProcessInstance(processInstanceId);
-          return ProcessInstanceState.CANCELED.equals(wfiEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -378,7 +325,7 @@ public class OpenSearchChecks {
         final String varName = (String) objects[1];
         try {
           return openSearchHelper.checkVariableExists(taskId, varName);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -399,7 +346,7 @@ public class OpenSearchChecks {
         final String[] varNames = (String[]) objects;
         try {
           return openSearchHelper.checkVariablesExist(varNames);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }

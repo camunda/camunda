@@ -38,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = DecisionRequirementsQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -58,7 +56,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["v"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -208,23 +206,23 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "version",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "name",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "tenantId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "decisionRequirementsKey",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "decisionRequirementsId",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -271,7 +269,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

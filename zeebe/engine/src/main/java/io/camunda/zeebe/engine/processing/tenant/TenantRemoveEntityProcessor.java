@@ -31,6 +31,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
+      "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant.";
   private final TenantState tenantState;
   private final UserState userState;
   private final MappingState mappingState;
@@ -62,9 +64,9 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantKey = record.getTenantKey();
-    final var persistedTenantRecord = tenantState.getTenantByKey(tenantKey);
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
 
-    if (persistedTenantRecord.isEmpty()) {
+    if (persistedTenant.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
@@ -75,10 +77,10 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(persistedTenantRecord.get().getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+            .addResourceId(persistedTenant.get().getTenantId());
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       rejectCommandWithUnauthorizedError(
-          command, authorizationRequest, persistedTenantRecord.get().getTenantId());
+          command, authorizationRequest, persistedTenant.get().getTenantId());
       return;
     }
 
@@ -95,8 +97,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant."
-              .formatted(record.getEntityKey(), tenantKey));
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), tenantKey));
       return;
     }
 
@@ -107,8 +108,20 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
+    final var record = command.getValue();
+    tenantState
+        .getEntityType(record.getTenantKey(), record.getEntityKey())
+        .ifPresentOrElse(
+            entityType ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), TenantIntent.ENTITY_REMOVED, record),
+            () -> {
+              final var message =
+                  ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(
+                      record.getEntityKey(), record.getTenantKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

@@ -15,13 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.graphql.spring.boot.test.GraphQLResponse;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.io.IOException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -45,7 +46,7 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
-    final GraphQLResponse response =
+    final List<TaskSearchResponse> response =
         tester
             .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
             .waitUntil()
@@ -56,22 +57,21 @@ public class ZeebeImportIT extends TasklistZeebeIntegrationTest {
             .getAllTasks();
 
     // then
-    assertTrue(response.isOk());
-    assertEquals("3", response.get("$.data.tasks.length()"));
-    for (int i = 0; i < 3; i++) {
-      final String taskJsonPath = String.format("$.data.tasks[%d]", i);
-      assertNotNull(response.get(taskJsonPath + ".id"));
+    assertEquals(3, response.size());
+    response.forEach(
+        r -> {
+          assertNotNull(r.getId());
 
-      // process does not contain task name and process name
-      assertEquals(flowNodeBpmnId, response.get(taskJsonPath + ".name"));
-      assertEquals(bpmnProcessId, response.get(taskJsonPath + ".processName"));
+          // process does not contain task name and process name
+          assertEquals(flowNodeBpmnId, r.getName());
+          assertEquals(bpmnProcessId, r.getProcessName());
 
-      assertNotNull(response.get(taskJsonPath + ".creationTime"));
-      assertNull(response.get(taskJsonPath + ".completionTime"));
-      assertEquals(TaskState.CREATED.name(), response.get(taskJsonPath + ".taskState"));
-      assertNull(response.get(taskJsonPath + ".assignee"));
-      assertEquals("0", response.get(taskJsonPath + ".variables.length()"));
-    }
+          assertNotNull(r.getCreationDate());
+          assertNull(r.getCompletionDate());
+          assertEquals(TaskState.CREATED.name(), r.getTaskState().name());
+          assertNull(r.getAssignee());
+          assertEquals(0, r.getVariables().length);
+        });
   }
 
   @Test

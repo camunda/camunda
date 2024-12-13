@@ -8,26 +8,30 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
-public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
-
-  @Override
-  public SearchQuery toSearchQuery(final RoleFilter filter) {
-
-    return and(
-        filter.roleKey() == null ? null : term(KEY, filter.roleKey()),
-        filter.name() == null ? null : term(NAME, filter.name()));
+public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
+  public RoleFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
   }
 
   @Override
-  public List<String> toIndices(final RoleFilter filter) {
-    return List.of("identity-role-8.7.0_alias");
+  public SearchQuery toSearchQuery(final RoleFilter filter) {
+    return and(
+        term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()),
+        filter.roleKey() == null ? null : term(RoleIndex.KEY, filter.roleKey()),
+        filter.name() == null ? null : term(RoleIndex.NAME, filter.name()),
+        filter.memberKey() == null
+            ? null
+            : hasChildQuery(
+                IdentityJoinRelationshipType.MEMBER.getType(),
+                term(RoleIndex.MEMBER_KEY, filter.memberKey())));
   }
 }

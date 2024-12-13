@@ -137,6 +137,12 @@
           "old": "method java.util.List<java.lang.String> io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::getResourceIds()",
           "new": "method java.util.Set<java.lang.String> io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue::getResourceIds()",
           "justification": "This method was added and released with 8.6 without any way to use it. We can safely change the return type in 8.7."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.ZbColumnFamilies.RESOURCE_IDS_BY_OWNER_KEY_RESOURCE_TYPE_AND_PERMISSION",
+          "justification": "ColumnFamily was renamed to PERMISSIONS. It was released in 8.6 without any way to insert date into it. We can safely change this"
         }
       ]
     }

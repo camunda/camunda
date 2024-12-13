@@ -13,7 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -55,7 +54,6 @@ public final class JobActivationClient {
 
     jobBatchRecord = new JobBatchRecord();
     jobBatchRecord.setTimeout(DEFAULT_TIMEOUT).setMaxJobsToActivate(DEFAULT_MAX_ACTIVATE);
-    withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     partitionId = DEFAULT_PARTITION;
   }
 
@@ -114,6 +112,14 @@ public final class JobActivationClient {
   public Record<JobBatchRecordValue> activate() {
     final long position =
         writer.writeCommandOnPartition(partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
+
+    return expectation.apply(partitionId, position);
+  }
+
+  public Record<JobBatchRecordValue> activate(final long userKey) {
+    final long position =
+        writer.writeCommandOnPartition(
+            partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord, userKey);
 
     return expectation.apply(partitionId, position);
   }

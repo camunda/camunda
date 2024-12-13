@@ -23,6 +23,7 @@ import java.util.Map;
 public class UserTaskImpl implements UserTask {
 
   private final Long userTaskKey;
+  private final String name;
   private final String state;
   private final String assignee;
   private final String elementId;
@@ -45,6 +46,7 @@ public class UserTaskImpl implements UserTask {
 
   public UserTaskImpl(final UserTaskItem item) {
     userTaskKey = item.getUserTaskKey();
+    name = item.getName();
     state = item.getState().getValue();
     assignee = item.getAssignee();
     elementId = item.getElementId();
@@ -69,6 +71,11 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Long getUserTaskKey() {
     return userTaskKey;
+  }
+
+  @Override
+  public String getName() {
+    return name;
   }
 
   @Override

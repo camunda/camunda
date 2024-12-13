@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -24,7 +23,6 @@ public class UserProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final EngineConfiguration config,
       final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors
         .onCommand(
@@ -41,7 +39,6 @@ public class UserProcessors {
             ValueType.USER,
             UserIntent.DELETE,
             new UserDeleteProcessor(
-                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior))
-        .withListener(new DefaultUserCreator(processingState, config));
+                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior));
   }
 }

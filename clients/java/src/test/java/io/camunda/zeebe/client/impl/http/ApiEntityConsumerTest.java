@@ -56,6 +56,54 @@ class ApiEntityConsumerTest {
   }
 
   @Test
+  void testJsonApiEntityConsumerWithValidJsonOtherTypeResponse() throws IOException {
+    // given
+    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with the correct content type
+    consumer.streamStart(ContentType.APPLICATION_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content
+    final ApiEntity<TestEntity> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Error.class);
+    final ProblemDetail response = entity.problem();
+    assertThat(response).isNotNull();
+    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
+    assertThat(response.getDetail()).isEqualTo(jsonResponse);
+  }
+
+  @Test
+  void testJsonApiEntityConsumerWithValidJsonOtherTypeErrorResponse() throws IOException {
+    // given
+    final String jsonResponse = "{\"foo\":\"test\",\"bar\":123}";
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
+    final ApiEntityConsumer<TestEntity> consumer =
+        new ApiEntityConsumer<>(new ObjectMapper(), TestEntity.class, 2048);
+
+    // when
+    // Start the stream with the correct content type
+    consumer.streamStart(ContentType.APPLICATION_PROBLEM_JSON);
+    // Feed the data
+    consumer.data(byteBuffer, true);
+    // Generate the content
+    final ApiEntity<TestEntity> entity = consumer.generateContent();
+
+    // then
+    assertThat(entity).isInstanceOf(Error.class);
+    final ProblemDetail response = entity.problem();
+    assertThat(response).isNotNull();
+    assertThat(response.getTitle()).isEqualTo("Unexpected server response");
+    assertThat(response.getDetail()).isEqualTo(jsonResponse);
+  }
+
+  @Test
   void testJsonApiEntityConsumerWithProblemDetailResponse() throws IOException {
     // given
     final String problemDetailResponse =

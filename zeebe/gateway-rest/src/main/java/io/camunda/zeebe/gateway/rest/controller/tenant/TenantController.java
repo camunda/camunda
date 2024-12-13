@@ -7,13 +7,23 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
+import io.camunda.search.query.TenantQuery;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -52,8 +62,8 @@ public class TenantController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> updateTenant(
       @PathVariable final long tenantKey,
-      @RequestBody final TenantCreateRequest createTenantRequest) {
-    return RequestMapper.toTenantUpdateDto(tenantKey, createTenantRequest)
+      @RequestBody final TenantUpdateRequest tenantUpdateRequest) {
+    return RequestMapper.toTenantUpdateDto(tenantKey, tenantUpdateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenant);
   }
 
@@ -76,5 +86,108 @@ public class TenantController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .updateTenant(tenantDTO),
         ResponseMapper::toTenantUpdateResponse);
+  }
+
+  @PutMapping(
+      path = "/{tenantKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignUsersToTenant(
+      @PathVariable final long tenantKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantKey, EntityType.USER, userKey));
+  }
+
+  @DeleteMapping(
+      path = "/{tenantKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> removeUserFromTenant(
+      @PathVariable final long tenantKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantKey, EntityType.USER, userKey));
+  }
+
+  @PutMapping(
+      path = "/{tenantKey}/mapping-rules/{mappingKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
+      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantKey, EntityType.MAPPING, mappingKey));
+  }
+
+  @DeleteMapping(
+      path = "/{tenantKey}/mapping-rules/{mappingKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
+      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantKey, EntityType.MAPPING, mappingKey));
+  }
+
+  @PutMapping(
+      path = "/{tenantKey}/groups/{groupKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
+      @PathVariable final long tenantKey, @PathVariable final long groupKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantKey, EntityType.GROUP, groupKey));
+  }
+
+  @DeleteMapping(
+      path = "/{tenantKey}/groups/{groupKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
+      @PathVariable final long tenantKey, @PathVariable final long groupKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantKey, EntityType.GROUP, groupKey));
+  }
+
+  @GetMapping(
+      path = "/{tenantKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<TenantItem> getTenant(@PathVariable final long tenantKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toTenant(tenantServices.getByKey(tenantKey)));
+    } catch (final Exception exception) {
+      return RestErrorMapper.mapErrorToResponse(exception);
+    }
+  }
+
+  @PostMapping(
+      path = "/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<TenantSearchQueryResponse> searchTenants(
+      @RequestBody(required = false) final TenantSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toTenantQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<TenantSearchQueryResponse> search(final TenantQuery query) {
+    try {
+      final var result = tenantServices.search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 }

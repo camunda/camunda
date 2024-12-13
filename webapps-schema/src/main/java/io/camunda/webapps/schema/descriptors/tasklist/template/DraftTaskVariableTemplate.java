@@ -7,10 +7,11 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
+import java.util.Optional;
 
-public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio3Backup {
+public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "draft-task-variable";
   public static final String INDEX_VERSION = "8.3.0";
@@ -31,6 +32,11 @@ public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implem
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

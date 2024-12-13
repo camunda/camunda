@@ -53,6 +53,11 @@
       <artifactId>webapps-common</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>
@@ -249,13 +254,7 @@
       <artifactId>swagger-annotations-jakarta</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.github.graphql-java</groupId>
-      <artifactId>graphql-java-annotations</artifactId>
-    </dependency>
-
     <!-- TEST -->
-
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>

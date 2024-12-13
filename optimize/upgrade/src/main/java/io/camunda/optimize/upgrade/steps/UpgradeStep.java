@@ -33,9 +33,9 @@ public abstract class UpgradeStep {
 
   public abstract UpgradeStepType getType();
 
-  protected abstract void performUpgradeStep(SchemaUpgradeClient<?, ?> schemaUpgradeClient);
+  protected abstract void performUpgradeStep(SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient);
 
-  public void execute(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void execute(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     if (!skipIndexConversion && index != null) {
       index = IndexLookupUtil.convertIndexForDatabase(index, schemaUpgradeClient.getDatabaseType());
     }

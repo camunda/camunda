@@ -9,18 +9,15 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import static java.util.Objects.requireNonNullElse;
 
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
-import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
-import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
+import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
@@ -28,6 +25,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,7 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,7 +56,6 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private ProcessStore processStore;
   @Autowired private FormStore formStore;
   @Autowired private ProcessService processService;
-  @Autowired private ProcessInstanceStore processInstanceStore;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
   @Autowired private TenantService tenantService;
@@ -202,49 +198,6 @@ public class ProcessInternalController extends ApiErrorController {
   }
 
   @Operation(
-      summary = "Delete process instance by given processInstanceId.",
-      description = "Delete process instance by given `processInstanceId`.",
-      responses = {
-        @ApiResponse(
-            description = "On success returned",
-            responseCode = "204",
-            useReturnTypeSchema = true),
-        @ApiResponse(
-            description =
-                "An error is returned when the `processInstance` with `processInstanceId` is not found`.",
-            responseCode = "404",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class))),
-        @ApiResponse(
-            description =
-                "An error is returned when the `processInstance` with `processInstanceId` could not be deleted`.",
-            responseCode = "500",
-            content =
-                @Content(
-                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
-      })
-  @PreAuthorize("hasPermission('write')")
-  @DeleteMapping("{processInstanceId}")
-  public ResponseEntity<?> deleteProcessInstance(@PathVariable final String processInstanceId) {
-
-    return switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
-      case DELETED -> ResponseEntity.noContent().build();
-      case NOT_FOUND ->
-          throw new NotFoundApiException(
-              String.format(
-                  "The process with processInstanceId: '%s' is not found", processInstanceId));
-      default ->
-          throw new TasklistRuntimeException(
-              String.format(
-                  "The deletion of process with processInstanceId: '%s' could not be deleted",
-                  processInstanceId));
-    };
-  }
-
-  @Operation(
       summary = "Return all the public endpoints to start a process by a form.",
       description = "Return all the public endpoints to start a process by a form.",
       responses = {
@@ -310,7 +263,7 @@ public class ProcessInternalController extends ApiErrorController {
     }
 
     final var process = processStore.getProcessByBpmnProcessId(bpmnProcessId, tenantId);
-    if (!process.isStartedByForm()) {
+    if (!process.getIsPublic()) {
       throw new NotFoundApiException(
           String.format("The public endpoint for bpmnProcessId: '%s' is not found", bpmnProcessId));
     }

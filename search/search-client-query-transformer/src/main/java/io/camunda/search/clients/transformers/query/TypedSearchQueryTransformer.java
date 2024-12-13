@@ -8,7 +8,6 @@
 package io.camunda.search.clients.transformers.query;
 
 import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
@@ -17,7 +16,6 @@ import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.result.ResultConfigTransformer;
-import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.SortingTransformer;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
@@ -26,10 +24,9 @@ import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
-import java.util.Objects;
 
 public final class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
-    implements SearchRequestTransformer<F, S> {
+    implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
 
   private final ServiceTransformers transformers;
 
@@ -38,10 +35,9 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
   }
 
   @Override
-  public SearchQueryRequest toSearchQueryRequest(
-      final TypedSearchQuery<F, S> query, final SearchQuery authCheck) {
+  public SearchQueryRequest apply(final TypedSearchQuery<F, S> query) {
     final var filter = query.filter();
-    final var searchQueryFilter = toSearchQuery(filter, authCheck);
+    final var searchQueryFilter = toSearchQuery(filter);
     final var indices = toIndices(filter);
 
     final var page = query.page();
@@ -79,15 +75,12 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     return resultConfigTransformer.apply(resultConfig);
   }
 
-  private SearchQuery toSearchQuery(final F filter, final SearchQuery authCheck) {
-    final var filterTransformer = getFilterTransformer(filter.getClass());
-    final var transformedQuery = filterTransformer.apply(filter);
-    return and(transformedQuery, authCheck);
+  private SearchQuery toSearchQuery(final F filter) {
+    return getFilterTransformer(filter).apply(filter);
   }
 
   private List<String> toIndices(final F filter) {
-    final var filterTransformer = getFilterTransformer(filter.getClass());
-    return filterTransformer.toIndices(filter);
+    return List.of(getFilterTransformer(filter).getIndex().getAlias());
   }
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {
@@ -96,16 +89,12 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     return sortingTransformer.apply(Tuple.of(orderings, reverse));
   }
 
-  private FilterTransformer<F> getFilterTransformer(final Class<?> cls) {
-    return transformers.getFilterTransformer(cls);
+  private FilterTransformer<F> getFilterTransformer(final F filter) {
+    return transformers.getFilterTransformer(filter.getClass());
   }
 
   private SortingTransformer getSortingTransformer(final Class<? extends SortOption> cls) {
-    // TODO remove the fallback to identity once all FieldSortingTransformer are implemented
-    final ServiceTransformer<String, String> fieldSortingTransformer =
-        Objects.requireNonNullElseGet(
-            transformers.getTransformer(cls), () -> FieldSortingTransformer.identity());
-    return new SortingTransformer((FieldSortingTransformer) fieldSortingTransformer);
+    return new SortingTransformer(transformers.getFieldSortingTransformer(cls));
   }
 
   private <T extends QueryResultConfig>

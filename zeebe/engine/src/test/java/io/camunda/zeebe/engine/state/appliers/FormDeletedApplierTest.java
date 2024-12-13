@@ -58,7 +58,7 @@ public class FormDeletedApplierTest {
       formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
       final var latestFormOpt =
-          formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
       assertThat(latestFormOpt).isNotEmpty();
       assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
@@ -67,7 +67,7 @@ public class FormDeletedApplierTest {
 
       // then
       final var latestFormV1Opt =
-          formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
       assertThat(latestFormV1Opt).isNotEmpty();
       assertThat(latestFormV1Opt.get().getVersion()).isEqualTo(1);
     }
@@ -81,7 +81,7 @@ public class FormDeletedApplierTest {
       formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
       final var latestFormOpt =
-          formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
       assertThat(latestFormOpt).isNotEmpty();
       assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
@@ -90,7 +90,7 @@ public class FormDeletedApplierTest {
 
       // then
       final var latestFormV2Opt =
-          formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
       assertThat(latestFormV2Opt).isNotEmpty();
       assertThat(latestFormV2Opt.get().getVersion()).isEqualTo(2);
     }
@@ -161,9 +161,8 @@ public class FormDeletedApplierTest {
       formDeletedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
 
       // then
-      assertThat(formState.findLatestFormById(tenant1Form.getFormIdBuffer(), TENANT_1)).isEmpty();
-      assertThat(formState.findLatestFormById(tenant2Form.getFormIdBuffer(), TENANT_2))
-          .isNotEmpty();
+      assertThat(formState.findLatestFormById(tenant1Form.getFormId(), TENANT_1)).isEmpty();
+      assertThat(formState.findLatestFormById(tenant2Form.getFormId(), TENANT_2)).isNotEmpty();
     }
   }
 
@@ -197,24 +196,23 @@ public class FormDeletedApplierTest {
       formDeletedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
 
       // then
-      assertThat(formState.findLatestFormById(tenant1Form.getFormIdBuffer(), TENANT_1)).isEmpty();
-      assertThat(formState.findLatestFormById(tenant2Form.getFormIdBuffer(), TENANT_2))
-          .isNotEmpty();
+      assertThat(formState.findLatestFormById(tenant1Form.getFormId(), TENANT_1)).isEmpty();
+      assertThat(formState.findLatestFormById(tenant2Form.getFormId(), TENANT_2)).isNotEmpty();
       assertThat(
               formState.findFormByIdAndDeploymentKey(
-                  tenant1Form.getFormIdBuffer(), tenant1Form.getDeploymentKey(), TENANT_1))
+                  tenant1Form.getFormId(), tenant1Form.getDeploymentKey(), TENANT_1))
           .isEmpty();
       assertThat(
               formState.findFormByIdAndDeploymentKey(
-                  tenant2Form.getFormIdBuffer(), tenant2Form.getDeploymentKey(), TENANT_2))
+                  tenant2Form.getFormId(), tenant2Form.getDeploymentKey(), TENANT_2))
           .isNotEmpty();
       assertThat(
               formState.findFormByIdAndVersionTag(
-                  tenant1Form.getFormIdBuffer(), tenant1Form.getVersionTag(), TENANT_1))
+                  tenant1Form.getFormId(), tenant1Form.getVersionTag(), TENANT_1))
           .isEmpty();
       assertThat(
               formState.findFormByIdAndVersionTag(
-                  tenant2Form.getFormIdBuffer(), tenant2Form.getVersionTag(), TENANT_2))
+                  tenant2Form.getFormId(), tenant2Form.getVersionTag(), TENANT_2))
           .isNotEmpty();
     }
 
@@ -232,11 +230,11 @@ public class FormDeletedApplierTest {
       // then
       assertThat(
               formState.findFormByIdAndDeploymentKey(
-                  formV1.getFormIdBuffer(), formV1.getDeploymentKey(), formV1.getTenantId()))
+                  formV1.getFormId(), formV1.getDeploymentKey(), formV1.getTenantId()))
           .isEmpty();
       assertThat(
               formState.findFormByIdAndDeploymentKey(
-                  formV2.getFormIdBuffer(), formV2.getDeploymentKey(), formV2.getTenantId()))
+                  formV2.getFormId(), formV2.getDeploymentKey(), formV2.getTenantId()))
           .get()
           .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
           .containsExactly(2L, 2);
@@ -256,11 +254,11 @@ public class FormDeletedApplierTest {
       // then
       assertThat(
               formState.findFormByIdAndVersionTag(
-                  formV1.getFormIdBuffer(), formV1.getVersionTag(), formV1.getTenantId()))
+                  formV1.getFormId(), formV1.getVersionTag(), formV1.getTenantId()))
           .isEmpty();
       assertThat(
               formState.findFormByIdAndVersionTag(
-                  formV2.getFormIdBuffer(), formV2.getVersionTag(), formV2.getTenantId()))
+                  formV2.getFormId(), formV2.getVersionTag(), formV2.getTenantId()))
           .get()
           .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
           .containsExactly(2L, 2);
@@ -280,11 +278,11 @@ public class FormDeletedApplierTest {
       // then
       assertThat(
               formState.findFormByIdAndDeploymentKey(
-                  formV2.getFormIdBuffer(), formV2.getDeploymentKey(), formV2.getTenantId()))
+                  formV2.getFormId(), formV2.getDeploymentKey(), formV2.getTenantId()))
           .isEmpty();
       assertThat(
               formState.findFormByIdAndDeploymentKey(
-                  formV1.getFormIdBuffer(), formV1.getDeploymentKey(), formV1.getTenantId()))
+                  formV1.getFormId(), formV1.getDeploymentKey(), formV1.getTenantId()))
           .get()
           .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
           .containsExactly(1L, 1);
@@ -304,11 +302,11 @@ public class FormDeletedApplierTest {
       // then
       assertThat(
               formState.findFormByIdAndVersionTag(
-                  formV2.getFormIdBuffer(), formV2.getVersionTag(), formV2.getTenantId()))
+                  formV2.getFormId(), formV2.getVersionTag(), formV2.getTenantId()))
           .isEmpty();
       assertThat(
               formState.findFormByIdAndVersionTag(
-                  formV1.getFormIdBuffer(), formV1.getVersionTag(), formV1.getTenantId()))
+                  formV1.getFormId(), formV1.getVersionTag(), formV1.getTenantId()))
           .get()
           .extracting(PersistedForm::getFormKey, PersistedForm::getVersion)
           .containsExactly(1L, 1);

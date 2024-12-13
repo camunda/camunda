@@ -47,7 +47,7 @@ public class ClaimUserTaskTest {
   }
 
   @Test
-  public void shouldEmitAssigningEventForClaimedUserTask() {
+  public void shouldEmitClaimingEventForClaimedUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -66,7 +66,7 @@ public class ClaimUserTaskTest {
 
     Assertions.assertThat(claimedRecord)
         .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
+        .hasIntent(UserTaskIntent.CLAIMING);
 
     Assertions.assertThat(recordValue)
         .hasUserTaskKey(userTaskKey)
@@ -75,7 +75,7 @@ public class ClaimUserTaskTest {
   }
 
   @Test
-  public void shouldTrackCustomActionInAssigningEvent() {
+  public void shouldTrackCustomActionInClaimingEvent() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -99,7 +99,7 @@ public class ClaimUserTaskTest {
 
     Assertions.assertThat(claimedRecord)
         .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
+        .hasIntent(UserTaskIntent.CLAIMING);
 
     Assertions.assertThat(recordValue)
         .hasUserTaskKey(userTaskKey)
@@ -120,7 +120,7 @@ public class ClaimUserTaskTest {
     // then
     Assertions.assertThat(claimedRecord)
         .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
+        .hasIntent(UserTaskIntent.CLAIMING);
     Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
   }
 
@@ -212,7 +212,7 @@ public class ClaimUserTaskTest {
     // then
     Assertions.assertThat(claimedRecord)
         .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
+        .hasIntent(UserTaskIntent.CLAIMING);
     Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
   }
 
@@ -254,7 +254,7 @@ public class ClaimUserTaskTest {
 
     Assertions.assertThat(claimedRecord)
         .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
+        .hasIntent(UserTaskIntent.CLAIMING);
 
     Assertions.assertThat(recordValue).hasTenantId(tenantId);
   }

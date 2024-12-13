@@ -14,13 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.webapps.backup.BackupException;
+import io.camunda.webapps.backup.BackupException.InvalidRequestException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.GenericBackupException;
 import io.camunda.webapps.backup.repository.elasticsearch.TestSnapshotProvider;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -268,8 +268,7 @@ class OpensearchBackupRepositoryTest {
                     .build()));
 
     final var exception =
-        assertThrows(
-            GenericBackupException.class, () -> repository.validateRepositoryExists("repo"));
+        assertThrows(BackupException.class, () -> repository.validateRepositoryExists("repo"));
     assertThat(exception.getMessage()).isEqualTo("No repository with name [repo] could be found.");
   }
 
@@ -420,7 +419,7 @@ class OpensearchBackupRepositoryTest {
         .indices(List.of())
         .snapshot("snapshot")
         .uuid("uuid")
-        .metadata(metadata.asJson(new JacksonJsonpMapper()));
+        .metadata(MetadataMarshaller.asJson(metadata, new JacksonJsonpMapper()));
   }
 
   private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {

@@ -10,7 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
@@ -29,11 +29,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestInstance(Lifecycle.PER_CLASS)
-@ExtendWith(BrokerWithCamundaExporterITInvocationProvider.class)
 class DecisionInstanceQueryTest {
+
+  // TODO Bugs in RDBMS
+  @RegisterExtension
+  static final BrokerITInvocationProvider PROVIDER =
+      new BrokerITInvocationProvider().withoutRdbmsExporter();
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "invoiceAssignApprover";
@@ -89,6 +93,25 @@ class DecisionInstanceQueryTest {
             evaluatedDecisions.values().stream()
                 .map(EvaluateDecisionResponse::getDecisionInstanceKey)
                 .collect(Collectors.toSet()));
+  }
+
+  @TestTemplate
+  void shouldSearchByFromWithLimit(final ZeebeClient zeebeClient) {
+    // when
+    final var resultAll = zeebeClient.newDecisionInstanceQuery().send().join();
+
+    final var resultWithLimit =
+        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var thirdKey = resultAll.items().get(2).getDecisionInstanceKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionInstanceKey())
+        .isEqualTo(thirdKey);
   }
 
   @TestTemplate

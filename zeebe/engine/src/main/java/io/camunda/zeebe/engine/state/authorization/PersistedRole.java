@@ -43,6 +43,8 @@ public class PersistedRole extends UnpackedObject implements DbValue {
   }
 
   public PersistedRole copy() {
-    return new PersistedRole();
+    final var copy = new PersistedRole();
+    copy.copyFrom(this);
+    return copy;
   }
 }

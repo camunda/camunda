@@ -41,11 +41,11 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -59,6 +59,7 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -82,11 +83,15 @@ public class ElasticsearchChecks {
   @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private EventTemplate eventTemplate;
 
-  @Autowired private VariableTemplate variableTemplate;
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
 
   @Autowired private IncidentTemplate incidentTemplate;
 
@@ -1228,7 +1233,7 @@ public class ElasticsearchChecks {
       assertThat(objects[0]).isInstanceOf(Integer.class);
       final Integer count = (Integer) objects[0];
       try {
-        final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
+        final List<TaskEntity> userTasks = userTaskReader.getUserTasks();
         return userTasks.size() == count;
       } catch (final NotFoundException ex) {
         return false;

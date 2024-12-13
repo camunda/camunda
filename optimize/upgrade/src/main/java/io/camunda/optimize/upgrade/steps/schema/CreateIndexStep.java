@@ -33,7 +33,7 @@ public class CreateIndexStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.createOrUpdateIndex(index, readOnlyAliases);
   }
 

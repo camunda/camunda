@@ -34,7 +34,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = IncidentQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = IncidentController.class)
 public class IncidentQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -53,13 +53,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": 101,
-                      "treePath":"PI_42/FN_flowNodeId/FNI_17",
                       "tenantId": "tenantId"
                   }
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["v"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -83,7 +82,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
                       IncidentState.ACTIVE,
                       101L,
-                      "PI_42/FN_flowNodeId/FNI_17",
                       "tenantId")))
           .sortValues(new Object[] {"v"})
           .build();
@@ -102,7 +100,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
                           "jobKey": 101,
-                          "treePath":"PI_42/FN_flowNodeId/FNI_17",
                           "tenantId": "tenantId"
                       }
           """;
@@ -120,7 +117,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
-          "PI_42/FN_flowNodeId/FNI_17",
           "tenantId");
 
   static final String INCIDENT_URL = "/v2/incidents/";
@@ -194,7 +190,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "creationTime": "2024-05-23T23:05:00.000Z",
                 "state": "ACTIVE",
                 "jobKey": 101,
-                "treePath":"PI_42/FN_flowNodeId/FNI_17",
                 "tenantId": "tenantId"
               }
             }
@@ -237,7 +232,6 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                                 .build())
                         .states(IncidentState.ACTIVE)
                         .jobKeys(101L)
-                        .treePaths("PI_42/FN_flowNodeId/FNI_17")
                         .tenantIds("tenantId")
                         .build())
                 .build());
@@ -252,7 +246,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "incidentKey",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }

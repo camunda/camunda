@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 
 public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
   private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
-  private final StringProperty usernameProp = new StringProperty("username");
+  private final StringProperty usernameProp = new StringProperty("username", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty emailProp = new StringProperty("email", "");
   private final StringProperty passwordProp = new StringProperty("password", "");
@@ -37,13 +37,10 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
         .declareProperty(userTypeProp);
   }
 
-  public void wrap(final UserRecord record) {
-    userKeyProp.setValue(record.getUserKey());
-    usernameProp.setValue(record.getUsernameBuffer());
-    nameProp.setValue(record.getNameBuffer());
-    emailProp.setValue(record.getEmailBuffer());
-    passwordProp.setValue(record.getPasswordBuffer());
-    userTypeProp.setValue(record.getUserType());
+  public UserRecord copy() {
+    final UserRecord copy = new UserRecord();
+    copy.copyFrom(this);
+    return copy;
   }
 
   @Override
@@ -51,7 +48,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     return userKeyProp.getValue();
   }
 
-  public UserRecord setUserKey(final Long userKey) {
+  public UserRecord setUserKey(final long userKey) {
     userKeyProp.setValue(userKey);
     return this;
   }

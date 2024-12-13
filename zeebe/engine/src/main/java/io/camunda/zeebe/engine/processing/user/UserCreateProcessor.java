@@ -33,6 +33,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserCreateProcessor implements DistributedTypedRecordProcessor<UserRecord> {
 
+  private static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
+      "Expected to create user with username '%s', but a user with this username already exists";
   private final UserState userState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -62,7 +64,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   public void processNewCommand(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
+    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       final var message =
           AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
               authRequest.getPermissionType(), authRequest.getResourceType());
@@ -75,9 +77,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     final var user = userState.getUser(username);
 
     if (user.isPresent()) {
-      final var message =
-          "Expected to create user with username '%s', but a user with this username already exists"
-              .formatted(user.get().getUsername());
+      final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.get().getUsername());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, message);
       return;
@@ -98,7 +98,19 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processDistributedCommand(final TypedRecord<UserRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, command.getValue());
+    final var record = command.getValue();
+
+    userState
+        .getUser(record.getUserKey())
+        .ifPresentOrElse(
+            user -> {
+              final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.getUsername());
+              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
+            },
+            () -> {
+              stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record);
+              addUserPermissions(record.getUserKey(), record.getUsername());
+            });
 
     distributionBehavior.acknowledgeCommand(command);
   }
@@ -113,7 +125,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
                 new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
             .addPermission(
                 new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
-    commandWriter.appendFollowUpCommand(
-        key, AuthorizationIntent.ADD_PERMISSION, authorizationRecord);
+
+    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
   }
 }

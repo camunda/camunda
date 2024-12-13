@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
@@ -63,12 +64,15 @@ public class Engine implements RecordProcessor {
   private Writers writers;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final EngineConfiguration config;
+  private final SecurityConfiguration securityConfig;
 
   public Engine(
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final SecurityConfiguration securityConfig) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     this.config = config;
+    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -77,7 +81,8 @@ public class Engine implements RecordProcessor {
     writers = new Writers(resultBuilderMutex, eventApplier);
 
     final var typedProcessorContext =
-        new TypedRecordProcessorContextImpl(recordProcessorContext, writers, config);
+        new TypedRecordProcessorContextImpl(
+            recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);

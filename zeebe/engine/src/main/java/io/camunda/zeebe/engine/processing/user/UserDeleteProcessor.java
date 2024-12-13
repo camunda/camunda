@@ -19,16 +19,28 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.user.PersistedUser;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserDeleteProcessor implements DistributedTypedRecordProcessor<UserRecord> {
+
+  private static final String USER_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to delete user with key %s, but a user with this key does not exist";
   private final UserState userState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -36,6 +48,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final TenantState tenantState;
 
   public UserDeleteProcessor(
       final KeyGenerator keyGenerator,
@@ -45,6 +58,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.keyGenerator = keyGenerator;
     userState = state.getUserState();
+    tenantState = state.getTenantState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -59,8 +73,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
     if (persistedUser.isEmpty()) {
       final var rejectionMessage =
-          "Expected to delete user with key %s, but a user with this key does not exist"
-              .formatted(command.getValue().getUserKey());
+          USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(command.getValue().getUserKey());
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
@@ -70,7 +83,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.DELETE)
             .addResourceId(persistedUser.get().getUsername());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
+    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       final var message =
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authRequest.getPermissionType(),
@@ -81,7 +94,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    stateWriter.appendFollowUpEvent(userKey, UserIntent.DELETED, command.getValue());
+    deleteUser(persistedUser.get());
     responseWriter.writeEventOnCommand(userKey, UserIntent.DELETED, command.getValue(), command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -93,9 +106,53 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processDistributedCommand(final TypedRecord<UserRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getValue().getUserKey(), UserIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+
+    userState
+        .getUser(record.getUserKey())
+        .ifPresentOrElse(
+            this::deleteUser,
+            () -> {
+              final var message = USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getUserKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
+            });
 
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void deleteUser(final PersistedUser user) {
+    final var userKey = user.getUserKey();
+    for (final var tenantId : user.getTenantIdsList()) {
+      final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
+      stateWriter.appendFollowUpEvent(
+          tenantKey,
+          TenantIntent.ENTITY_REMOVED,
+          new TenantRecord()
+              .setTenantKey(tenantKey)
+              .setEntityKey(userKey)
+              .setEntityType(EntityType.USER));
+    }
+
+    for (final var roleKey : user.getRoleKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          roleKey,
+          RoleIntent.ENTITY_REMOVED,
+          new RoleRecord()
+              .setRoleKey(roleKey)
+              .setEntityKey(userKey)
+              .setEntityType(EntityType.USER));
+    }
+    for (final var groupKey : user.getGroupKeysList()) {
+      stateWriter.appendFollowUpEvent(
+          groupKey,
+          GroupIntent.ENTITY_REMOVED,
+          new GroupRecord()
+              .setGroupKey(groupKey)
+              .setEntityKey(userKey)
+              .setEntityType(EntityType.USER));
+    }
+
+    stateWriter.appendFollowUpEvent(
+        userKey, UserIntent.DELETED, new UserRecord().setUserKey(userKey));
   }
 }

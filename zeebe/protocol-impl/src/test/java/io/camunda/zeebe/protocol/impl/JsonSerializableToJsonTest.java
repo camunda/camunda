@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -699,16 +700,16 @@ final class JsonSerializableToJsonTest {
                               .setAssignee("frodo")
                               .setDueDate("today")
                               .setFollowUpDate("tomorrow")
-                              .setCandidateGroups(List.of("fellowship", "eagles"))
-                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setCandidateGroupsList(List.of("fellowship", "eagles"))
+                              .setCandidateUsersList(List.of("frodo", "sam", "gollum"))
                               .setPriority(1))
                       .setCorrectedAttributes(
                           List.of(
                               "assignee",
                               "dueDate",
                               "followUpDate",
-                              "candidateGroups",
-                              "candidateUsers",
+                              "candidateGroupsList",
+                              "candidateUsersList",
                               "priority"));
 
               jobRecord
@@ -772,16 +773,16 @@ final class JsonSerializableToJsonTest {
                   "assignee",
                   "dueDate",
                   "followUpDate",
-                  "candidateGroups",
-                  "candidateUsers",
+                  "candidateGroupsList",
+                  "candidateUsersList",
                   "priority"
                 ],
                 "corrections": {
                   "assignee": "frodo",
                   "dueDate": "today",
                   "followUpDate": "tomorrow",
-                  "candidateGroups": ["fellowship", "eagles"],
-                  "candidateUsers": ["frodo", "sam", "gollum"],
+                  "candidateGroupsList": ["fellowship", "eagles"],
+                  "candidateUsersList": ["frodo", "sam", "gollum"],
                   "priority": 1
                 }
               }
@@ -843,16 +844,16 @@ final class JsonSerializableToJsonTest {
                               .setAssignee("frodo")
                               .setDueDate("today")
                               .setFollowUpDate("tomorrow")
-                              .setCandidateGroups(List.of("fellowship", "eagles"))
-                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setCandidateGroupsList(List.of("fellowship", "eagles"))
+                              .setCandidateUsersList(List.of("frodo", "sam", "gollum"))
                               .setPriority(1))
                       .setCorrectedAttributes(
                           List.of(
                               "assignee",
                               "dueDate",
                               "followUpDate",
-                              "candidateGroups",
-                              "candidateUsers",
+                              "candidateGroupsList",
+                              "candidateUsersList",
                               "priority"));
 
               final Map<String, String> customHeaders =
@@ -915,16 +916,16 @@ final class JsonSerializableToJsonTest {
               "assignee",
               "dueDate",
               "followUpDate",
-              "candidateGroups",
-              "candidateUsers",
+              "candidateGroupsList",
+              "candidateUsersList",
               "priority"
             ],
             "corrections": {
               "assignee": "frodo",
               "dueDate": "today",
               "followUpDate": "tomorrow",
-              "candidateGroups": ["fellowship", "eagles"],
-              "candidateUsers": ["frodo", "sam", "gollum"],
+              "candidateGroupsList": ["fellowship", "eagles"],
+              "candidateUsersList": ["frodo", "sam", "gollum"],
               "priority": 1
             }
           }
@@ -968,8 +969,8 @@ final class JsonSerializableToJsonTest {
               "assignee": "",
               "dueDate": "",
               "followUpDate": "",
-              "candidateGroups": [],
-              "candidateUsers": [],
+              "candidateGroupsList": [],
+              "candidateUsersList": [],
               "priority": -1
             }
           }
@@ -1018,8 +1019,8 @@ final class JsonSerializableToJsonTest {
               "assignee": "",
               "dueDate": "",
               "followUpDate": "",
-              "candidateGroups": [],
-              "candidateUsers": [],
+              "candidateGroupsList": [],
+              "candidateUsersList": [],
               "priority": -1
             }
           }
@@ -1638,6 +1639,9 @@ final class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int flowScopeKey = 123;
               final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
+              final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
+              final var processDefinitionPath = List.of(101L, 102L);
+              final var callingElementPath = List.of(12345, 67890);
 
               return new ProcessInstanceRecord()
                   .setElementId(elementId)
@@ -1649,7 +1653,10 @@ final class JsonSerializableToJsonTest {
                   .setFlowScopeKey(flowScopeKey)
                   .setParentProcessInstanceKey(11)
                   .setParentElementInstanceKey(22)
-                  .setBpmnEventType(BpmnEventType.UNSPECIFIED);
+                  .setBpmnEventType(BpmnEventType.UNSPECIFIED)
+                  .setElementInstancePath(elementInstancePath)
+                  .setProcessDefinitionPath(processDefinitionPath)
+                  .setCallingElementPath(callingElementPath);
             },
         """
         {
@@ -1663,7 +1670,10 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": 11,
           "parentElementInstanceKey": 22,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[[101, 102], [103, 104]],
+          "processDefinitionPath": [101, 102],
+          "callingElementPath": [12345, 67890]
         }
         """
       },
@@ -1686,7 +1696,10 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": -1,
           "parentElementInstanceKey": -1,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[],
+          "processDefinitionPath": [],
+          "callingElementPath": []
         }
         """
       },
@@ -2970,6 +2983,99 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": ""
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// IdentitySetupRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "IdentitySetup record",
+        (Supplier<IdentitySetupRecord>)
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(
+                        new RoleRecord()
+                            .setRoleKey(1)
+                            .setName("roleName")
+                            .setEntityKey(2)
+                            .setEntityType(EntityType.USER))
+                    .addUser(
+                        new UserRecord()
+                            .setUserKey(3L)
+                            .setUsername("username")
+                            .setName("name")
+                            .setEmail("email")
+                            .setPassword("password")
+                            .setUserType(UserType.REGULAR))
+                    .addUser(
+                        new UserRecord()
+                            .setUserKey(4L)
+                            .setUsername("foo")
+                            .setName("bar")
+                            .setEmail("baz")
+                            .setPassword("qux")
+                            .setUserType(UserType.REGULAR))
+                    .setDefaultTenant(
+                        new TenantRecord().setTenantKey(5).setTenantId("id").setName("name")),
+        """
+      {
+        "defaultRole": {
+          "roleKey": 1,
+          "name": "roleName",
+          "entityKey": 2,
+          "entityType": "USER"
+        },
+        "users": [
+          {
+            "userKey": 3,
+            "username": "username",
+            "name": "name",
+            "email": "email",
+            "password": "password",
+            "userType": "REGULAR"
+          },
+          {
+            "userKey": 4,
+            "username": "foo",
+            "name": "bar",
+            "email": "baz",
+            "password": "qux",
+            "userType": "REGULAR"
+          }
+        ],
+        "defaultTenant": {
+          "tenantKey": 5,
+          "tenantId": "id",
+          "name": "name",
+          "entityKey": -1,
+          "entityType": "UNSPECIFIED"
+        }
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty IdentitySetupRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty IdentitySetupRecord",
+        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        """
+      {
+          "defaultRole": {
+              "roleKey": -1,
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
+          },
+          "users": [],
+          "defaultTenant": {
+              "tenantKey": -1,
+              "tenantId": "",
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
+          }
       }
       """
       },

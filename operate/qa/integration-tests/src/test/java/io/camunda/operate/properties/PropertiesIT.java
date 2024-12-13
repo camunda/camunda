@@ -9,8 +9,10 @@ package io.camunda.operate.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.security.configuration.SecurityConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +22,17 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplicationWithNoBeans.class, OperateProperties.class},
+    classes = {
+      TestApplicationWithNoBeans.class,
+      OperateProperties.class,
+      CamundaSecurityProperties.class
+    },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("test-properties")
+@ActiveProfiles({"test-properties", "operate", "standalone"})
 public class PropertiesIT {
 
   @Autowired private OperateProperties operateProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   @Test
   // TODO extend for new properties
@@ -55,7 +62,8 @@ public class PropertiesIT {
     assertThat(operateProperties.getIdentity().getClientId()).isEqualTo("someClientId");
     assertThat(operateProperties.getIdentity().getClientSecret()).isEqualTo("jahktewpofsdifhsdg");
     assertThat(operateProperties.getIdentity().getAudience()).isEqualTo("operateAudience");
-    assertThat(operateProperties.getIdentity().isResourcePermissionsEnabled()).isTrue();
+    // assert that it can be set from ${camunda.operate.identity.resourcePermissionsEnabled}
+    assertThat(securityConfiguration.getAuthorizations().isEnabled()).isTrue();
     assertThat(operateProperties.getMultiTenancy().isEnabled()).isTrue();
   }
 }

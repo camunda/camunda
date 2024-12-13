@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
@@ -44,7 +44,7 @@ public interface JobState {
 
   JobRecord getJob(long key);
 
-  JobRecord getJob(final long key, final Map<String, Object> authorizations);
+  JobRecord getJob(final long key, final AuthorizedTenants authorizedTenantIds);
 
   boolean jobDeadlineExists(final long jobKey, final long deadline);
 

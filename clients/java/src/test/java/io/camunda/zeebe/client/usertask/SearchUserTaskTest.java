@@ -178,7 +178,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchUserTaskByVariable() {
+  void shouldSearchUserTaskByProcessInstanceVariable() {
     // when
     final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
         new UserTaskVariableFilterRequest().name("test").value("test");
@@ -186,12 +186,29 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.variables(listFilter)).send().join();
+    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(listFilter)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getVariables()).isEqualTo(listFilter);
+    assertThat(request.getFilter().getProcessInstanceVariables()).isEqualTo(listFilter);
+  }
+
+  @Test
+  void shouldSearchUserTaskByLocalVariable() {
+    // when
+    final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
+        new UserTaskVariableFilterRequest().name("test").value("test");
+    final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
+
+    listFilter.add(userTaskVariableFilterRequest);
+
+    client.newUserTaskQuery().filter(f -> f.localVariables(listFilter)).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getLocalVariables()).isEqualTo(listFilter);
   }
 
   @Test

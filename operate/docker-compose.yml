@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -22,7 +22,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.15.3
+    image: docker.elastic.co/kibana/kibana:8.16.1
     ports:
       - 5601:5601
     links:
@@ -35,11 +35,11 @@ services:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENT=false
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
       - 8000:8000
+      - 8085:8080
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
@@ -50,13 +50,13 @@ services:
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX=e2e
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2e
       - ZEEBE_BROKER_BACKPRESSURE_ENABLED=false
-      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENT=false
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26503:26500
       - 8001:8000
+      - 8086:8080
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
@@ -76,7 +76,7 @@ services:
     command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
 
   opensearch:
-    image: opensearchproject/opensearch:2.17.1
+    image: opensearchproject/opensearch:2.18.0
     container_name: opensearch
     depends_on:
       - opensearch-init
@@ -109,17 +109,16 @@ services:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_DEPLOYMENT=false
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL=http://opensearch:9200
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE=1
-      - ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PROCESSMESSAGESUBSCRIPTION=true
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=opensearch
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://opensearch:9200
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1
     ports:
       - 26500:26500
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.5.7
+    image: camunda/operate:8.6.6
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

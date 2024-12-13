@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.controllers;
 
-import static io.camunda.webapps.controllers.WebappsRequestForwardManager.getRequestedUrl;
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
@@ -40,7 +40,7 @@ public class OperateIndexController {
    * Redirects the old frontend routes to the /operate sub-path. This can be removed after the
    * creation of the auto-discovery service.
    */
-  @GetMapping({"/processes/*", "/decisions", "/decisions/*"})
+  @GetMapping({"/processes/*", "/decisions", "/decisions/*", "/instances", "/instances/*"})
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/operate" + getRequestedUrl(request);
   }
