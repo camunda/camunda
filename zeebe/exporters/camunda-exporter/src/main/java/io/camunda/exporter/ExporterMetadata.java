@@ -12,8 +12,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.slf4j.Logger;
@@ -26,9 +29,18 @@ public final class ExporterMetadata {
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final AtomicLongFieldUpdater<ExporterMetadata> INCIDENT_POSITION_SETTER =
       AtomicLongFieldUpdater.newUpdater(ExporterMetadata.class, "lastIncidentUpdatePosition");
+
   private static final int UNSET_POSITION = -1;
 
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
+
+  private Map<TaskImplementation, Long> firstUserTaskKeys =
+      new HashMap<>() {
+        {
+          put(TaskImplementation.ZEEBE_USER_TASK, (long) UNSET_POSITION);
+          put(TaskImplementation.JOB_WORKER, (long) UNSET_POSITION);
+        }
+      };
 
   public long getLastIncidentUpdatePosition() {
     return lastIncidentUpdatePosition;
@@ -38,6 +50,24 @@ public final class ExporterMetadata {
     INCIDENT_POSITION_SETTER.updateAndGet(
         this,
         prev -> updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
+  }
+
+  public long getFirstUserTaskKey(final TaskImplementation implementation) {
+    return firstUserTaskKeys.get(implementation);
+  }
+
+  public void setFirstUserTaskKey(final TaskImplementation implementation, final long userTaskKey) {
+    if (firstUserTaskKeys.get(implementation) == UNSET_POSITION) {
+      firstUserTaskKeys.put(implementation, userTaskKey);
+    }
+  }
+
+  public Map<TaskImplementation, Long> getFirstUserTaskKeys() {
+    return firstUserTaskKeys;
+  }
+
+  public void setFirstUserTaskKeys(final Map<TaskImplementation, Long> firstUserTaskKeys) {
+    this.firstUserTaskKeys = firstUserTaskKeys;
   }
 
   public void deserialize(final byte[] bytes) {
@@ -59,7 +89,7 @@ public final class ExporterMetadata {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(lastIncidentUpdatePosition);
+    return Objects.hash(lastIncidentUpdatePosition, firstUserTaskKeys);
   }
 
   @Override
@@ -71,12 +101,18 @@ public final class ExporterMetadata {
       return false;
     }
     final ExporterMetadata that = (ExporterMetadata) o;
-    return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition;
+    return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition
+        && firstUserTaskKeys == that.firstUserTaskKeys;
   }
 
   @Override
   public String toString() {
-    return "ExporterMetadata{" + "lastIncidentUpdatePosition=" + lastIncidentUpdatePosition + '}';
+    return "ExporterMetadata{"
+        + "lastIncidentUpdatePosition="
+        + lastIncidentUpdatePosition
+        + ", firstUserTaskKeys="
+        + firstUserTaskKeys
+        + '}';
   }
 
   private long updateLastIncidentUpdatePositionMonotonic(

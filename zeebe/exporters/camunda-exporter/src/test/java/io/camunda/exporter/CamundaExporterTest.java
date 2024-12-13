@@ -22,6 +22,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.XMLUtil;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -118,9 +119,11 @@ final class CamundaExporterTest {
       final var metadata = new ExporterMetadata();
       exporter = new CamundaExporter(resourceProvider, metadata);
       expected.setLastIncidentUpdatePosition(3);
-      expected.setFirstUserTaskKey(5);
+      expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 5);
+      expected.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 5);
       metadata.setLastIncidentUpdatePosition(-1);
-      metadata.setFirstUserTaskKey(-1);
+      metadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, -1);
+      metadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, -1);
       testController.updateLastExportedRecordPosition(-1, expected.serialize());
 
       // when
@@ -129,7 +132,8 @@ final class CamundaExporterTest {
 
       // then
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(3);
-      assertThat(metadata.getFirstUserTaskKey()).isEqualTo(5);
+      assertThat(metadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER)).isEqualTo(5);
+      assertThat(metadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK)).isEqualTo(5);
     }
   }
 
@@ -145,7 +149,8 @@ final class CamundaExporterTest {
       when(exporterEngineClient.importersCompleted(anyInt(), any())).thenReturn(true);
 
       expected.setLastIncidentUpdatePosition(5);
-      expected.setFirstUserTaskKey(10);
+      expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 10);
+      expected.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 10);
 
       // when
       exporter.configure(testContext);
@@ -156,7 +161,8 @@ final class CamundaExporterTest {
       final var actual = new ExporterMetadata();
       testController.readMetadata().ifPresent(actual::deserialize);
       assertThat(actual.getLastIncidentUpdatePosition()).isEqualTo(5);
-      assertThat(actual.getFirstUserTaskKey()).isEqualTo(10);
+      assertThat(actual.getFirstUserTaskKey(TaskImplementation.JOB_WORKER)).isEqualTo(10);
+      assertThat(actual.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK)).isEqualTo(10);
     }
   }
 }
