@@ -112,7 +112,16 @@ message JobResult{
   // As a result, the completion request is rejected and the task remains active.
   // Defaults to false.
   optional bool denied = 1;
-  // Attributes that were corrected by the worker. Others are considered not corrected.
+  // JSON object with attributes that were corrected by the worker.
+  // The following attributes can be corrected, additional attributes will be ignored:
+  //   * `assignee` - reset by providing an empty String
+  //   * `dueDate` - reset by providing an empty String
+  //   * `followUpDate` - reset by providing an empty String
+  //   * `candidateGroups` - reset by providing an empty list
+  //   * `candidateUsers` - reset by providing an empty list
+  //   * `priority` - minimum 0, maximum 100, default 50
+  //  Providing any of those attributes with a `null` value or omitting it preserves
+  //  the persisted attribute's value.
   optional JobResultCorrections corrections = 2;
 }
 

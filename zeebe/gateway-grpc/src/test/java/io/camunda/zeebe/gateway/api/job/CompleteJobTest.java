@@ -153,9 +153,9 @@ public final class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequestValue.getResult().getCorrections().getAssignee()).isEqualTo("");
     assertThat(brokerRequestValue.getResult().getCorrections().getDueDate()).isEqualTo("");
     assertThat(brokerRequestValue.getResult().getCorrections().getFollowUpDate()).isEqualTo("");
-    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateUsers())
+    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateUsersList())
         .isEqualTo(List.of());
-    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateGroups())
+    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateGroupsList())
         .isEqualTo(List.of());
     assertThat(brokerRequestValue.getResult().getCorrections().getPriority()).isEqualTo(-1);
 
@@ -254,9 +254,9 @@ public final class CompleteJobTest extends GatewayTest {
         .isEqualTo(corrections.getDueDate());
     assertThat(brokerRequestValue.getResult().getCorrections().getFollowUpDate())
         .isEqualTo(corrections.getFollowUpDate());
-    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateUsers())
+    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateUsersList())
         .isEqualTo(corrections.getCandidateUsersList().getValuesList());
-    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateGroups())
+    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateGroupsList())
         .isEqualTo(corrections.getCandidateGroupsList().getValuesList());
     assertThat(brokerRequestValue.getResult().getCorrections().getPriority())
         .isEqualTo(corrections.getPriority());
