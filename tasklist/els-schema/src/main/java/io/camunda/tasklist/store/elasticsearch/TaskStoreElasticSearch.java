@@ -112,11 +112,13 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private SearchHit getRawTaskByUserTaskKey(final String userTaskKey) {
     try {
+      final var keyQuery = termsQuery(TaskTemplate.KEY, userTaskKey);
+      final var flowNodeInstanceIdExists = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
       final SearchRequest searchRequest =
           ElasticsearchUtil.createSearchRequest(taskTemplate)
               .source(
                   SearchSourceBuilder.searchSource()
-                      .query(termQuery(TaskTemplate.KEY, userTaskKey)));
+                      .query(joinWithAnd(keyQuery, flowNodeInstanceIdExists)));
 
       final var response = tenantAwareClient.search(searchRequest);
       if (response.getHits().getHits().length == 1) {
