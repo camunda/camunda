@@ -255,7 +255,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty("spring.datasource.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     withProperty("logging.level.org.mybatis", "DEBUG");
-    withExporter("rdbms", cfg -> cfg.setClassName("-"));
+    withExporter(
+        "rdbms",
+        cfg -> {
+          cfg.setClassName("-");
+          cfg.setArgs(Map.of("flushInterval", "0"));
+        });
     return this;
   }
 }

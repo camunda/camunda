@@ -7,19 +7,25 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.search.query.RoleQuery;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CreateRoleRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateRoleRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -80,5 +86,37 @@ public class RoleController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleKey));
+  }
+
+  @GetMapping(
+      path = "/{roleKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<Object> getRole(@PathVariable final long roleKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toRole(roleServices.getRole(roleKey)));
+    } catch (final Exception exception) {
+      return RestErrorMapper.mapErrorToResponse(exception);
+    }
+  }
+
+  @PostMapping(
+      path = "/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<RoleSearchQueryResponse> searchRoles(
+      @RequestBody(required = false) final RoleSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<RoleSearchQueryResponse> search(final RoleQuery query) {
+    try {
+      final var result =
+          roleServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return RestErrorMapper.mapErrorToResponse(e);
+    }
   }
 }

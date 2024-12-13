@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.write.queue.ContextType;
+import io.camunda.db.rdbms.write.queue.DefaultExecutionQueue;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
@@ -33,7 +34,7 @@ class FlowNodeInstanceWriterTest {
 
   @BeforeEach
   void setUp() {
-    executionQueue = mock(ExecutionQueue.class);
+    executionQueue = mock(DefaultExecutionQueue.class);
     writer = new FlowNodeInstanceWriter(executionQueue);
   }
 

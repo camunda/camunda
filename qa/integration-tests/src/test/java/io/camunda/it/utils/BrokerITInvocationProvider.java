@@ -148,7 +148,6 @@ public class BrokerITInvocationProvider
                           .withBrokerConfig(additionalBrokerConfig)
                           .withSecurityConfig(additionalSecurityConfig)
                           .withRecordingExporter(true)
-                          .withProperty("camunda.rest.query.enabled", true)
                           .withProperty(
                               "camunda.database.url",
                               "http://" + elasticsearchContainer.getHttpHostAddress())
@@ -170,7 +169,6 @@ public class BrokerITInvocationProvider
                           .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
                           .withBrokerConfig(additionalBrokerConfig)
                           .withRecordingExporter(true)
-                          .withProperty("camunda.rest.query.enabled", true)
                           .withRdbmsExporter()
                           .withAdditionalProperties(additionalProperties)
                           .withAdditionalProfiles(additionalProfiles)

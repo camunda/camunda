@@ -28,7 +28,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = MappingQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = MappingController.class)
 public class MappingQueryControllerTest extends RestControllerTest {
   private static final String MAPPING_BASE_URL = "/v2/mapping-rules";
 

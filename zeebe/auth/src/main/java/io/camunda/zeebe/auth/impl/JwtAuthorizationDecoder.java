@@ -90,6 +90,12 @@ public class JwtAuthorizationDecoder
           decodedJWT.getClaim(Authorization.AUTHORIZED_USER_KEY).asLong());
     }
 
+    if (decodedJWT.getClaims().containsKey(Authorization.AUTHORIZED_ANONYMOUS_USER)) {
+      claimMap.put(
+          Authorization.AUTHORIZED_ANONYMOUS_USER,
+          decodedJWT.getClaim(Authorization.AUTHORIZED_ANONYMOUS_USER).asBoolean());
+    }
+
     claimMap.putAll(
         decodedJWT.getClaims().entrySet().stream()
             .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
