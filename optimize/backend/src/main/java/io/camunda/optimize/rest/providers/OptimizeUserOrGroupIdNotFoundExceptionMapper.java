@@ -10,7 +10,6 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -26,7 +25,7 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper
   private final LocalizationService localizationService;
 
   public OptimizeUserOrGroupIdNotFoundExceptionMapper(
-      @Context final LocalizationService localizationService) {
+      final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 

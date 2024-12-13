@@ -10,7 +10,6 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ImportedIndexMismatchResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeImportIncorrectIndexVersionException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -28,7 +27,7 @@ public class OptimizeImportIncorrectIndexVersionExceptionMapper
   private final LocalizationService localizationService;
 
   public OptimizeImportIncorrectIndexVersionExceptionMapper(
-      @Context final LocalizationService localizationService) {
+      final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 

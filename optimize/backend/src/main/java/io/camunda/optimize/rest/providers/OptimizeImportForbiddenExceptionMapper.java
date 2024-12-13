@@ -10,7 +10,6 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -27,8 +26,7 @@ public class OptimizeImportForbiddenExceptionMapper
 
   private final LocalizationService localizationService;
 
-  public OptimizeImportForbiddenExceptionMapper(
-      @Context final LocalizationService localizationService) {
+  public OptimizeImportForbiddenExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 

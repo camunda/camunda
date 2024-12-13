@@ -10,7 +10,6 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -24,7 +23,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
       org.slf4j.LoggerFactory.getLogger(OptimizeConflictExceptionMapper.class);
   private final LocalizationService localizationService;
 
-  public OptimizeConflictExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeConflictExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
