@@ -9,64 +9,49 @@ package io.camunda.it.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.it.migration.util.MigrationUtil;
+import io.camunda.it.migration.util.MigrationITInvocationProvider;
+import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
+import io.camunda.it.migration.util.TasklistUtil;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Stream;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Testcontainers
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
-public class MigrationTest extends MigrationUtil {
-  private static final String API_V1 = "V1";
+public class MigrationUserTaskUpdateIT {
+
+  @RegisterExtension
+  static final MigrationITInvocationProvider PROVIDER =
+      new MigrationITInvocationProvider()
+          .withDatabaseTypes(DatabaseType.ELASTICSEARCH /*, DatabaseType.OPENSEARCH*/)
+          .withRunBefore(MigrationUserTaskUpdateIT::generateData)
+          .withRunAfter(MigrationUserTaskUpdateIT::generate87Data);
+
   private static final String API_V2 = "V2";
 
-  @BeforeAll
-  static void setUp() throws IOException, InterruptedException {
-    ES_CONTAINER.setPortBindings(List.of("9200:9200"));
-    MigrationUtil.setup();
-
-    TasklistUtil.startTasklist();
-
-    generateData();
-    TasklistUtil.tasklistContainer.stop();
-
-    ZeebeUtil.zeebeClient.close();
-    ZeebeUtil.zeebeContainer.stop();
-
-    ZeebeUtil.start87Broker();
-
-    TasklistUtil.startTasklist();
-    generate87Data();
-  }
-
-  @ParameterizedTest(name = "Assign Zeebe User Task {0} using {2}")
-  @MethodSource("zeebeTasks")
+  @TestTemplate
   @Order(1)
-  void shouldAssignTask(final String recordVersion, final long taskKey, final String apiVersion)
+  void shouldAssignZeebeTask(
+      final ZeebeClient zeebeClient,
+      final TasklistUtil tasklistUtil,
+      final TasklistUtil.UserTaskArg param)
       throws IOException, InterruptedException {
 
-    if (API_V2.equals(apiVersion)) {
-      ZeebeUtil.zeebeClient.newUserTaskAssignCommand(taskKey).assignee("demo").send().join();
+    if (API_V2.equals(param.apiVersion())) {
+      zeebeClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
     } else {
-      final var res = TasklistUtil.assign(taskKey);
+      final var res = tasklistUtil.assign(param.key(), "demo");
       assertThat(res.statusCode()).isEqualTo(200);
     }
 
@@ -75,9 +60,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -88,13 +73,15 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  @ParameterizedTest(name = "Assign JobWorker {0}")
-  @MethodSource("jobWorkers")
   @Order(1)
-  void shouldAssignJobWorker(final String recordVersion, final long taskKey)
+  @TestTemplate
+  void shouldAssignJobWorker(
+      final ZeebeClient zeebeClient,
+      final TasklistUtil tasklistUtil,
+      final TasklistUtil.UserTaskArg param)
       throws IOException, InterruptedException {
 
-    final var res = TasklistUtil.assign(taskKey);
+    final var res = tasklistUtil.assign(param.key(), "demo");
     assertThat(res.statusCode()).isEqualTo(200);
 
     Awaitility.await()
@@ -102,9 +89,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -115,16 +102,18 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  @ParameterizedTest(name = "Unassign Zeebe User Task {0} using {2}")
-  @MethodSource("zeebeTasks")
   @Order(2)
-  void shouldUnassignTask(final String recordVersion, final long taskKey, final String apiVersion)
+  @TestTemplate
+  void shouldUnassignZeebeTask(
+      final ZeebeClient zeebeClient,
+      final TasklistUtil tasklistUtil,
+      final TasklistUtil.UserTaskArg param)
       throws IOException, InterruptedException {
 
-    if (API_V2.equals(apiVersion)) {
-      ZeebeUtil.zeebeClient.newUserTaskUnassignCommand(taskKey).send().join();
+    if (API_V2.equals(param.apiVersion())) {
+      zeebeClient.newUserTaskUnassignCommand(param.key()).send().join();
     } else {
-      final var res = TasklistUtil.unassignTask(taskKey);
+      final var res = tasklistUtil.unassignTask(param.key());
       assertThat(res.statusCode()).isEqualTo(200);
     }
 
@@ -133,9 +122,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -144,12 +133,14 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  @ParameterizedTest(name = "Assign JobWorker {0}")
-  @MethodSource("jobWorkers")
   @Order(2)
-  void shouldUnAssignJobWorker(final String recordVersion, final long taskKey)
+  @TestTemplate
+  void shouldUnAssignJobWorker(
+      final ZeebeClient zeebeClient,
+      final TasklistUtil tasklistUtil,
+      final TasklistUtil.UserTaskArg param)
       throws IOException, InterruptedException {
-    final var res = TasklistUtil.unassignTask(taskKey);
+    final var res = tasklistUtil.unassignTask(param.key());
     assertThat(res.statusCode()).isEqualTo(200);
 
     Awaitility.await()
@@ -157,9 +148,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -168,13 +159,12 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  @ParameterizedTest(name = "Update Zeebe User Task {0} using {2}")
-  @MethodSource("zeebeTasksForUpdate")
   @Order(3)
-  void shouldUpdateTask(final String recordVersion, final long taskKey, final String apiVersion) {
+  @TestTemplate
+  void shouldUpdateZeebeTask(final ZeebeClient zeebeClient, final TasklistUtil.UserTaskArg param) {
 
-    if (API_V2.equals(apiVersion)) {
-      ZeebeUtil.zeebeClient.newUserTaskUpdateCommand(taskKey).priority(88).send().join();
+    if (API_V2.equals(param.apiVersion())) {
+      zeebeClient.newUserTaskUpdateCommand(param.key()).priority(88).send().join();
     }
 
     Awaitility.await()
@@ -182,9 +172,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -193,18 +183,21 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  @ParameterizedTest(name = "Complete Zeebe User Task {0} using {2}")
-  @MethodSource("zeebeTasks")
   @Order(4)
-  void shouldCompleteTask(final String recordVersion, final long taskKey, final String apiVersion)
+  @TestTemplate
+  void shouldCompleteZeebeTask(
+      final ZeebeClient zeebeClient,
+      final TasklistUtil tasklistUtil,
+      final TasklistUtil.UserTaskArg param)
       throws IOException, InterruptedException {
 
-    if (API_V2.equals(apiVersion)) {
-      ZeebeUtil.zeebeClient.newUserTaskAssignCommand(taskKey).assignee("demo").send().join();
-      ZeebeUtil.zeebeClient.newUserTaskCompleteCommand(taskKey).send().join();
+    if (API_V2.equals(param.apiVersion())) {
+      zeebeClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
+      zeebeClient.newUserTaskCompleteCommand(param.key()).send().join();
     } else {
-      TasklistUtil.assign(taskKey);
-      final var res = TasklistUtil.completeTask(taskKey);
+      final var assignRes = tasklistUtil.assign(param.key(), "demo");
+      assertThat(assignRes.statusCode()).isEqualTo(200);
+      final var res = tasklistUtil.completeTask(param.key());
       assertThat(res.statusCode()).isEqualTo(200);
     }
 
@@ -213,9 +206,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -224,13 +217,15 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  @ParameterizedTest(name = "Complete JobWorker {0}")
-  @MethodSource("jobWorkers")
   @Order(2)
-  void shouldCompleteJobWorker(final String recordVersion, final long taskKey)
+  @TestTemplate
+  void shouldCompleteJobWorker(
+      final ZeebeClient zeebeClient,
+      final TasklistUtil tasklistUtil,
+      final TasklistUtil.UserTaskArg param)
       throws IOException, InterruptedException {
-    TasklistUtil.assign(taskKey);
-    final var res = TasklistUtil.completeTask(taskKey);
+    tasklistUtil.assign(param.key(), "demo");
+    final var res = tasklistUtil.completeTask(param.key());
     assertThat(res.statusCode()).isEqualTo(200);
 
     Awaitility.await()
@@ -238,9 +233,9 @@ public class MigrationTest extends MigrationUtil {
         .until(
             () -> {
               final var task =
-                  ZeebeUtil.zeebeClient
+                  zeebeClient
                       .newUserTaskQuery()
-                      .filter(f -> f.userTaskKey(taskKey))
+                      .filter(f -> f.userTaskKey(param.key()))
                       .send()
                       .join()
                       .items()
@@ -249,7 +244,8 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  private static void generate87Data() {
+  private static void generate87Data(
+      final ZeebeClient zeebeClient, final TasklistUtil tasklistUtil) {
 
     final List<String> instances = List.of("zeebeV187task", "zeebeV287task", "jobWorkerV187task");
 
@@ -275,13 +271,13 @@ public class MigrationTest extends MigrationUtil {
                     .done();
           }
 
-          ZeebeUtil.zeebeClient
+          zeebeClient
               .newDeployResourceCommand()
               .addProcessModel(process, i + ".bpmn")
               .send()
               .join();
 
-          ZeebeUtil.zeebeClient
+          zeebeClient
               .newCreateInstanceCommand()
               .bpmnProcessId(i + "-process")
               .latestVersion()
@@ -295,7 +291,7 @@ public class MigrationTest extends MigrationUtil {
         .pollInterval(Duration.ofSeconds(2))
         .until(
             () -> {
-              final var tasks = ZeebeUtil.zeebeClient.newUserTaskQuery().send().join().items();
+              final var tasks = zeebeClient.newUserTaskQuery().send().join().items();
               if (tasks.size() == 6) {
                 tasks.forEach(
                     t -> {
@@ -304,16 +300,19 @@ public class MigrationTest extends MigrationUtil {
                               ? TaskImplementation.ZEEBE_USER_TASK
                               : TaskImplementation.JOB_WORKER;
                       final var apiVersion = t.getBpmnProcessId().contains("V1") ? "V1" : "V2";
-                      TasklistUtil.TASKS.putIfAbsent(impl, new ArrayList<>());
+                      tasklistUtil.generatedTasks.putIfAbsent(impl, new ArrayList<>());
                       final var existsOpt =
-                          TasklistUtil.TASKS.values().stream()
+                          tasklistUtil.generatedTasks.values().stream()
                               .flatMap(List::stream)
                               .filter(f -> f.key() == t.getUserTaskKey())
                               .findFirst();
                       if (existsOpt.isEmpty()) {
-                        TasklistUtil.TASKS
+                        tasklistUtil
+                            .generatedTasks
                             .get(impl)
-                            .add(new TestTarget(t.getUserTaskKey(), "8.7", apiVersion));
+                            .add(
+                                new TasklistUtil.UserTaskArg(
+                                    t.getUserTaskKey(), "8.7", apiVersion));
                       }
                     });
                 return true;
@@ -322,7 +321,7 @@ public class MigrationTest extends MigrationUtil {
             });
   }
 
-  private static void generateData() {
+  private static void generateData(final ZeebeClient zeebeClient, final TasklistUtil tasklistUtil) {
 
     final List<String> instances = List.of("zeebeV186task", "zeebeV286task", "jobWorkerV186task");
 
@@ -348,13 +347,13 @@ public class MigrationTest extends MigrationUtil {
                     .done();
           }
 
-          ZeebeUtil.zeebeClient
+          zeebeClient
               .newDeployResourceCommand()
               .addProcessModel(process, i + ".bpmn")
               .send()
               .join();
 
-          ZeebeUtil.zeebeClient
+          zeebeClient
               .newCreateInstanceCommand()
               .bpmnProcessId(i + "-process")
               .latestVersion()
@@ -362,28 +361,6 @@ public class MigrationTest extends MigrationUtil {
               .join()
               .getProcessInstanceKey();
         });
-
-    TasklistUtil.waitForTasksToBeImported(3);
-  }
-
-  private static Stream<Arguments> zeebeTasks() {
-    final Set<String> versions = Set.of(API_V1, API_V2);
-    return TasklistUtil.TASKS.get(TaskImplementation.ZEEBE_USER_TASK).stream()
-        .flatMap(
-            t ->
-                versions.stream()
-                    .filter(f -> f.equals(t.apiVersion()))
-                    .map(v -> Arguments.of(t.version(), t.key(), v)));
-  }
-
-  public Stream<Arguments> zeebeTasksForUpdate() {
-    return TasklistUtil.TASKS.get(TaskImplementation.ZEEBE_USER_TASK).stream()
-        .filter(t -> t.apiVersion().equals(API_V2))
-        .map(t -> Arguments.of(t.version(), t.key(), API_V2));
-  }
-
-  private static Stream<Arguments> jobWorkers() {
-    return TasklistUtil.TASKS.get(TaskImplementation.JOB_WORKER).stream()
-        .map(t -> Arguments.of(t.version(), t.key()));
+    tasklistUtil.waitForTasksToBeImported(3);
   }
 }
