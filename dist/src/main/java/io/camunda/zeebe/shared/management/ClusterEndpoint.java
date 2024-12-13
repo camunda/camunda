@@ -26,6 +26,7 @@ import io.camunda.zeebe.management.cluster.Error;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -363,12 +364,15 @@ public class ClusterEndpoint {
   }
 
   @PostMapping(path = "/purge", produces = "application/json")
-  public ResponseEntity<?> purge(@RequestParam(defaultValue = "false") final boolean dryRun) {
+  public CompletableFuture<ResponseEntity<?>> purge(
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      return ClusterApiUtils.mapOperationResponse(
-          requestSender.purge(new PurgeRequest(dryRun)).join());
+      return requestSender
+          .purge(new PurgeRequest(dryRun))
+          .thenApply(ClusterApiUtils::mapOperationResponse)
+          .exceptionally(ClusterApiUtils::mapError);
     } catch (final Exception error) {
-      return ClusterApiUtils.mapError(error);
+      return CompletableFuture.completedFuture(ClusterApiUtils.mapError(error));
     }
   }
 

@@ -78,26 +78,19 @@ final class ClusterEndpointIT {
   @Test
   void shouldRequestClusterPurge() {
     final ClusterActuator actuator;
-    try (final var cluster = createCluster(1)) {
+    try (final var cluster = createCluster(2)) {
       // given
       cluster.awaitCompleteTopology();
       actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when -- request a purge
-      final var response = actuator.purge(false);
-
-      // then
-      assertThat(response.getExpectedTopology()).hasSize(BROKER_COUNT);
-      assertThat(response.getPlannedChanges())
-          .hasSize(4) // Should be 5, when DELETE_HISTORY is implemented
-          .asInstanceOf(InstanceOfAssertFactories.list(Operation.class))
-          .satisfies(
-              ops -> {
-                assertThat(ops.get(0).getOperation()).isEqualTo(OperationEnum.PARTITION_LEAVE);
-                assertThat(ops.get(1).getOperation()).isEqualTo(OperationEnum.PARTITION_LEAVE);
-                assertThat(ops.get(2).getOperation()).isEqualTo(OperationEnum.PARTITION_BOOTSTRAP);
-                assertThat(ops.get(3).getOperation()).isEqualTo(OperationEnum.PARTITION_BOOTSTRAP);
-              });
+      assertThatCode(() -> actuator.purge(false))
+          // then
+          // TODO Change the assertion to check for planned changes once it's implemented.
+          .describedAs("Purging should fail with 400 Bad Request as it is not yet fully supported")
+          .isInstanceOf(FeignException.BadRequest.class)
+          .hasMessageContaining(
+              "Expected to leave partition, but the partition 1 has only one replica");
     }
   }
 

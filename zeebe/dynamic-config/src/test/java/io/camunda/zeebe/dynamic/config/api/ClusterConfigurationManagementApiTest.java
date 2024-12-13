@@ -19,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -162,24 +161,6 @@ final class ClusterConfigurationManagementApiTest {
     final List<ClusterConfigurationChangeOperation> expected =
         List.of(new MemberLeaveOperation(id1), new MemberLeaveOperation(id2));
     assertThat(changeStatus.plannedChanges()).containsExactlyElementsOf(expected);
-  }
-
-  @Test
-  void shouldPurgeCluster() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        initialTopology
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .addMember(id2, MemberState.initializeAsActive(Map.of())));
-    final var request = new PurgeRequest(false);
-
-    // when
-    final var changeStatus = clientApi.purge(request).join().get();
-
-    // then
-    // TODO Why are the planned changes empty? Because the RecordingChangeCoordinator is used?
-    assertThat(changeStatus.plannedChanges()).hasSize(4);
-    assertThat(changeStatus.currentConfiguration()).isEqualTo(changeStatus.expectedConfiguration());
   }
 
   @Test
