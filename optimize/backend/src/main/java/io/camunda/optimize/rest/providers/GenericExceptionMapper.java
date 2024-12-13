@@ -11,7 +11,6 @@ import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -29,7 +28,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
   private final LocalizationService localizationService;
 
-  public GenericExceptionMapper(@Context final LocalizationService localizationService) {
+  public GenericExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 

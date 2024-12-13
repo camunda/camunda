@@ -10,7 +10,6 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -24,7 +23,7 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
       org.slf4j.LoggerFactory.getLogger(ReportEvaluationExceptionMapper.class);
   private final LocalizationService localizationService;
 
-  public ReportEvaluationExceptionMapper(@Context final LocalizationService localizationService) {
+  public ReportEvaluationExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 

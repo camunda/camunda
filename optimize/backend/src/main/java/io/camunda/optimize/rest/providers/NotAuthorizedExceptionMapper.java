@@ -11,7 +11,6 @@ import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.security.AuthCookieService;
 import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -28,8 +27,7 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
   private final AuthCookieService cookieService;
 
   public NotAuthorizedExceptionMapper(
-      @Context final LocalizationService localizationService,
-      @Context final AuthCookieService cookieService) {
+      final LocalizationService localizationService, final AuthCookieService cookieService) {
     this.localizationService = localizationService;
     this.cookieService = cookieService;
   }
