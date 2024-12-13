@@ -725,9 +725,7 @@ public class RequestMapper {
 
     if (jobResultCorrections.getAssignee() != null) {
       corrections.setAssignee(jobResultCorrections.getAssignee());
-      // `UserTaskRecord.ASSIGNEE` will be available after merging
-      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
-      correctedAttributes.add("assignee");
+      correctedAttributes.add(UserTaskRecord.ASSIGNEE);
     }
     if (jobResultCorrections.getDueDate() != null) {
       corrections.setDueDate(jobResultCorrections.getDueDate());

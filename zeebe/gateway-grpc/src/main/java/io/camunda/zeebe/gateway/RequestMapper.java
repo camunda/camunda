@@ -175,10 +175,8 @@ public final class RequestMapper extends RequestUtil {
     final List<String> correctedAttributes = new ArrayList<>();
 
     if (request.getResult().getCorrections().hasAssignee()) {
-      // `UserTaskRecord.ASSIGNEE` will be available after merging
-      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
       corrections.setAssignee(request.getResult().getCorrections().getAssignee());
-      correctedAttributes.add("assignee");
+      correctedAttributes.add(UserTaskRecord.ASSIGNEE);
     }
     if (request.getResult().getCorrections().hasDueDate()) {
       corrections.setDueDate(request.getResult().getCorrections().getDueDate());
