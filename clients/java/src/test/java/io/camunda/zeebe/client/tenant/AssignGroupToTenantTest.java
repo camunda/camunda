@@ -33,7 +33,7 @@ public class AssignGroupToTenantTest extends ClientRestTest {
   @Test
   void shouldAssignGroupToTenant() {
     // when
-    client.newAssignGroupToTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join();
+    client.newAssignGroupToTenantCommand(TENANT_KEY, GROUP_KEY).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -50,8 +50,7 @@ public class AssignGroupToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () ->
-                client.newAssignGroupToTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join())
+            () -> client.newAssignGroupToTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -65,8 +64,7 @@ public class AssignGroupToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () ->
-                client.newAssignGroupToTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join())
+            () -> client.newAssignGroupToTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -80,8 +78,7 @@ public class AssignGroupToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () ->
-                client.newAssignGroupToTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join())
+            () -> client.newAssignGroupToTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -95,8 +92,7 @@ public class AssignGroupToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () ->
-                client.newAssignGroupToTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join())
+            () -> client.newAssignGroupToTenantCommand(TENANT_KEY, GROUP_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

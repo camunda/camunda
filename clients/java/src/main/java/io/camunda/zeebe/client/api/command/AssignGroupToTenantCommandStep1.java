@@ -18,13 +18,4 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.AssignGroupToTenantResponse;
 
 public interface AssignGroupToTenantCommandStep1
-    extends FinalCommandStep<AssignGroupToTenantResponse> {
-
-  /**
-   * Specifies the group to assign to the tenant.
-   *
-   * @param groupKey the unique key of the group
-   * @return the builder for this command
-   */
-  AssignGroupToTenantCommandStep1 groupKey(long groupKey);
-}
+    extends FinalCommandStep<AssignGroupToTenantResponse> {}

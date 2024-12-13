@@ -1526,15 +1526,14 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * zeebeClient
-   *   .newAssignGroupToTenantCommand(tenantKey)
-   *   .groupKey(groupKey)
+   *   .newAssignGroupToTenantCommand(tenantKey, groupKey)
    *   .send();
    * </pre>
    *
    * @param tenantKey the unique identifier of the tenant
    * @return a builder to configure and send the assign group to tenant command
    */
-  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey);
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey, long groupKey);
 
   /**
    * Command to unassign a group from a tenant.
@@ -1543,13 +1542,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * zeebeClient
-   *   .newUnassignGroupFromTenantCommand(tenantKey)
-   *   .groupKey(groupKey)
+   *   .newUnassignGroupFromTenantCommand(tenantKey, groupKey)
    *   .send();
    * </pre>
    *
    * @param tenantKey the unique identifier of the tenant
    * @return a builder to configure and send the unassign group from tenant command
    */
-  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
+      long tenantKey, long groupKey);
 }

@@ -30,18 +30,14 @@ public final class UnassignGroupFromTenantCommandImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long tenantKey;
-  private long groupKey;
+  private final long groupKey;
 
-  public UnassignGroupFromTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public UnassignGroupFromTenantCommandImpl(
+      final HttpClient httpClient, final long tenantKey, final long groupKey) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.tenantKey = tenantKey;
-  }
-
-  @Override
-  public UnassignGroupFromTenantCommandStep1 groupKey(final long groupKey) {
     this.groupKey = groupKey;
-    return this;
   }
 
   @Override

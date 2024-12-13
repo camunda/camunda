@@ -28,19 +28,15 @@ public final class AssignGroupToTenantCommandImpl implements AssignGroupToTenant
 
   private final HttpClient httpClient;
   private final long tenantKey;
-  private long groupKey;
+  private final long groupKey;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AssignGroupToTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public AssignGroupToTenantCommandImpl(
+      final HttpClient httpClient, final long tenantKey, final long groupKey) {
     this.httpClient = httpClient;
     this.tenantKey = tenantKey;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public AssignGroupToTenantCommandStep1 groupKey(final long groupKey) {
     this.groupKey = groupKey;
-    return this;
+    httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override

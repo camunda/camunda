@@ -865,19 +865,15 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
-  }
-
-  @Override
-  public CreateGroupCommandStep1 newCreateGroupCommand() {
-    return new CreateGroupCommandImpl(httpClient, jsonMapper);
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(
+      final long tenantKey, final long groupKey) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey, groupKey);
   }
 
   @Override
   public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final long tenantKey) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey);
+      final long tenantKey, final long groupKey) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey, groupKey);
   }
 
   private JobClient newJobClient() {

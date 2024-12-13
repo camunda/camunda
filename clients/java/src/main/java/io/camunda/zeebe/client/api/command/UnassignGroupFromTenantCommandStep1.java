@@ -18,13 +18,4 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.UnassignGroupFromTenantResponse;
 
 public interface UnassignGroupFromTenantCommandStep1
-    extends FinalCommandStep<UnassignGroupFromTenantResponse> {
-
-  /**
-   * Specifies the group to unassign from the tenant.
-   *
-   * @param groupKey the unique key of the group
-   * @return the builder for this command
-   */
-  UnassignGroupFromTenantCommandStep1 groupKey(long groupKey);
-}
+    extends FinalCommandStep<UnassignGroupFromTenantResponse> {}

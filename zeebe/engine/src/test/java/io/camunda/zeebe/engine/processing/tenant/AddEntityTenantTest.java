@@ -106,7 +106,7 @@ public class AddEntityTenantTest {
   public void shouldAddGroupToTenant() {
     // given
     final var entityType = GROUP;
-    final var entityKey = createUser();
+    final var entityKey = createGroup();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine

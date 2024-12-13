@@ -49,13 +49,13 @@ class UnassignGroupFromTenantTest {
     groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
 
     // Assign group to tenant to set up test scenario
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantKey, groupKey).send().join();
   }
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newUnassignGroupFromTenantCommand(tenantKey, groupKey).send().join();
 
     // then
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
@@ -75,8 +75,7 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey)
-                    .groupKey(groupKey)
+                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey, groupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -95,8 +94,7 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(tenantKey)
-                    .groupKey(nonExistentGroupKey)
+                    .newUnassignGroupFromTenantCommand(tenantKey, nonExistentGroupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -112,8 +110,8 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(tenantKey)
-                    .groupKey(groupKey + 1) // Group key is not assigned
+                    // Group key is not assigned
+                    .newUnassignGroupFromTenantCommand(tenantKey, groupKey + 1)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

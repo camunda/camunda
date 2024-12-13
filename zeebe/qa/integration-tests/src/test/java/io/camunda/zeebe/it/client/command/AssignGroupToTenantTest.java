@@ -53,7 +53,7 @@ class AssignGroupToTenantTest {
   @Test
   void shouldAssignGroupToTenant() {
     // when
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantKey, groupKey).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -73,11 +73,7 @@ class AssignGroupToTenantTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client
-                    .newAssignGroupToTenantCommand(nonExistentTenantKey)
-                    .groupKey(groupKey)
-                    .send()
-                    .join())
+                client.newAssignGroupToTenantCommand(nonExistentTenantKey, groupKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
@@ -93,11 +89,7 @@ class AssignGroupToTenantTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client
-                    .newAssignGroupToTenantCommand(tenantKey)
-                    .groupKey(nonExistentGroupKey)
-                    .send()
-                    .join())
+                client.newAssignGroupToTenantCommand(tenantKey, nonExistentGroupKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
@@ -108,11 +100,11 @@ class AssignGroupToTenantTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantKey, groupKey).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join())
+            () -> client.newAssignGroupToTenantCommand(tenantKey, groupKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(
