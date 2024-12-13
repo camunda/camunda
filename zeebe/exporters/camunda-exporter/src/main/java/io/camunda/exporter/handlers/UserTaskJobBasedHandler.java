@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADE
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
@@ -54,11 +55,15 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
 
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
+  private final ExporterMetadata exporterMetadata;
 
   public UserTaskJobBasedHandler(
-      final String indexName, final ExporterEntityCache<String, CachedFormEntity> formCache) {
+      final String indexName,
+      final ExporterEntityCache<String, CachedFormEntity> formCache,
+      final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
     this.formCache = formCache;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -79,7 +84,13 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
 
   @Override
   public List<String> generateIds(final Record<JobRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    if (record.getIntent().equals(JobIntent.CREATED)) {
+      exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, record.getKey());
+    }
+    if (refersToPreviousVersionRecord(record.getKey())) {
+      return List.of(String.valueOf(record.getKey()));
+    }
+    return List.of(String.valueOf(record.getValue().getElementInstanceKey()));
   }
 
   @Override
@@ -90,6 +101,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   @Override
   public void updateEntity(final Record<JobRecordValue> record, final TaskEntity entity) {
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
+    entity.setKey(record.getKey());
     switch (record.getIntent()) {
       case JobIntent.CREATED -> createTaskEntity(entity, record);
       case JobIntent.COMPLETED, JobIntent.CANCELED ->
@@ -129,8 +141,15 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     final var updateFields = getUpdatedFields(entity);
     final var taskEntityId = entity.getId();
     final var processInstanceKey = entity.getProcessInstanceId();
+
+    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
+
     batchRequest.upsertWithRouting(
-        indexName, taskEntityId, entity, updateFields, processInstanceKey);
+        indexName,
+        previousVersionRecord ? String.valueOf(entity.getKey()) : taskEntityId,
+        entity,
+        updateFields,
+        previousVersionRecord ? String.valueOf(entity.getKey()) : processInstanceKey);
   }
 
   @Override
@@ -222,5 +241,9 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
       }
     }
     return null;
+  }
+
+  private boolean refersToPreviousVersionRecord(final long key) {
+    return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER);
   }
 }

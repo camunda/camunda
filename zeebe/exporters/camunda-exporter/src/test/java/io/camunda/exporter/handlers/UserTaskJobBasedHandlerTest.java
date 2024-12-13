@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
@@ -36,7 +37,12 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserTaskJobBasedHandlerTest {
   private static final Set<JobIntent> SUPPORTED_INTENTS =
@@ -47,11 +53,33 @@ public class UserTaskJobBasedHandlerTest {
           JobIntent.MIGRATED,
           JobIntent.RECURRED_AFTER_BACKOFF,
           JobIntent.FAILED);
+
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
+  private final ExporterMetadata exporterMetadata = new ExporterMetadata();
   private final UserTaskJobBasedHandler underTest =
-      new UserTaskJobBasedHandler(indexName, formCache);
+      new UserTaskJobBasedHandler(indexName, formCache, exporterMetadata);
+
+  @BeforeEach
+  void resetMetadata() {
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, -1);
+  }
+
+  private static Stream<Arguments> taskIdArguments() {
+    return Stream.of(
+        // First 8.7 UserTask key, Record Key, PI key, FNI key, expected id
+        Arguments.of(100, 110, 111, 211, 211), // 8.7 record
+        Arguments.of(100, 10, 111, 211, 10)); // Ref to 8.6 record
+  }
+
+  private static Stream<Arguments> taskRoutingArguments() {
+    // First 8.7 UserTask key, Record Key, PI key, FNI key, expected routing key
+    return Stream.of(
+        // First 8.7 UserTask key, Record Key, PI key, FNI key, expected routing key
+        Arguments.of(100, 110, 111, 211, 111), // 8.7 record
+        Arguments.of(100, 10, 111, 211, 10)); // Ref to 8.6 record
+  }
 
   @Test
   void testGetHandledValueType() {
@@ -115,13 +143,27 @@ public class UserTaskJobBasedHandlerTest {
         });
   }
 
-  @Test
-  void shouldGenerateIds() {
+  @ParameterizedTest
+  @MethodSource("taskIdArguments")
+  void shouldGenerateIds(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long expectedId) {
     // given
-    final long expectedId = 123;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstSeenKey);
     final Record<JobRecordValue> jobRecord =
         factory.generateRecord(
-            ValueType.JOB, r -> r.withIntent(JobIntent.CREATED).withKey(expectedId));
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withElementInstanceKey(flowNodeInstanceKey)
+                            .build()));
 
     // when
     final var idList = underTest.generateIds(jobRecord);
@@ -140,10 +182,26 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(result.getId()).isEqualTo("id");
   }
 
-  @Test
-  void shouldAddEntityOnFlush() {
+  @ParameterizedTest
+  @MethodSource("taskRoutingArguments")
+  void shouldAddEntityOnFlush(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long expectedRoutingKey) {
+
     // given
-    final TaskEntity inputEntity = new TaskEntity().setProcessInstanceId("111");
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstSeenKey);
+    final TaskEntity inputEntity =
+        new TaskEntity()
+            .setId(
+                recordKey < firstSeenKey
+                    ? String.valueOf(recordKey)
+                    : String.valueOf(flowNodeInstanceKey))
+            .setKey(recordKey)
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -155,18 +213,25 @@ public class UserTaskJobBasedHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,
-            inputEntity.getId(),
+            recordKey < firstSeenKey
+                ? String.valueOf(recordKey)
+                : String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
-            inputEntity.getProcessInstanceId());
+            String.valueOf(expectedRoutingKey));
   }
 
-  @Test
-  void shouldUpdateEntityFromRecord() {
+  @ParameterizedTest
+  @MethodSource("taskRoutingArguments")
+  void shouldUpdateEntityFromRecord(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long ignore) {
     // given
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, firstSeenKey);
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-    final long processInstanceKey = 123;
-    final long jobKey = 456;
     final var assignee = "foo";
     final var formKey = "my-local-form-key";
 
@@ -184,6 +249,7 @@ public class UserTaskJobBasedHandlerTest {
             .from(factory.generateObject(JobRecordValue.class))
             .withCustomHeaders(customerHeaders)
             .withProcessInstanceKey(processInstanceKey)
+            .withElementInstanceKey(flowNodeInstanceKey)
             .build();
 
     final Record<JobRecordValue> jobRecord =
@@ -191,18 +257,18 @@ public class UserTaskJobBasedHandlerTest {
             ValueType.JOB,
             r ->
                 r.withIntent(JobIntent.CREATED)
-                    .withKey(jobKey)
+                    .withKey(recordKey)
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     formCache.put(formKey, new CachedFormEntity("my-form", 987L));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(jobKey));
+    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));
     underTest.updateEntity(jobRecord, taskEntity);
 
     // then
-    assertThat(taskEntity.getId()).isEqualTo(String.valueOf(jobKey));
+    assertThat(taskEntity.getId()).isEqualTo(String.valueOf(recordKey));
     assertThat(taskEntity.getKey()).isEqualTo(jobRecord.getKey());
     assertThat(taskEntity.getTenantId()).isEqualTo(jobRecordValue.getTenantId());
     assertThat(taskEntity.getPartitionId()).isEqualTo(jobRecord.getPartitionId());
