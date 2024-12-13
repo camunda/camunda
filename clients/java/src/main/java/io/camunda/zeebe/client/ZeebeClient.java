@@ -48,6 +48,7 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTenantCommandStep1;
@@ -1027,6 +1028,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateGroupCommandStep1 newCreateGroupCommand();
+
+  /**
+   * Command to update a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newUpdateGroupCommand(123L)
+   *  .name(name)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UpdateGroupCommandStep1 newUpdateGroupCommand(long groupKey);
 
   /**
    * Command to create a user.

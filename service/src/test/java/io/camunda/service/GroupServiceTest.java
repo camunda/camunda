@@ -137,7 +137,7 @@ public class GroupServiceTest {
   @Test
   public void shouldUpdateGroup() {
     // given
-    final var groupKey = 100L;
+    final var groupKey = Protocol.encodePartitionId(1, 100L);
     final var name = "UpdatedName";
 
     // when
@@ -157,7 +157,7 @@ public class GroupServiceTest {
   @Test
   public void shouldDeleteGroup() {
     // given
-    final var groupKey = 123L;
+    final var groupKey = Protocol.encodePartitionId(1, 123L);
 
     // when
     services.deleteGroup(groupKey);
@@ -175,7 +175,7 @@ public class GroupServiceTest {
   @Test
   public void shouldAddMemberToGroup() {
     // given
-    final var groupKey = 123L;
+    final var groupKey = Protocol.encodePartitionId(1, 123);
     final var memberKey = 456L;
     final var memberType = EntityType.USER;
 
@@ -197,7 +197,7 @@ public class GroupServiceTest {
   @Test
   public void shouldRemoveMemberFromGroup() {
     // given
-    final var groupKey = 123L;
+    final var groupKey = Protocol.encodePartitionId(1, 123L);
     final var memberKey = 456L;
     final var memberType = EntityType.USER;
 
