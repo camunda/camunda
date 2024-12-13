@@ -12,6 +12,7 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.migration.identity.dto.UserTenants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,6 +53,14 @@ public class ManagementIdentityClient {
                     TenantMappingRule[].class,
                     MappingRuleType.TENANT,
                     pageSize)))
+        .toList();
+  }
+
+  public List<UserTenants> fetchUserTenants(final int pageSize) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_USER_TENANTS_ENDPOINT, UserTenants[].class, pageSize)))
         .toList();
   }
 
