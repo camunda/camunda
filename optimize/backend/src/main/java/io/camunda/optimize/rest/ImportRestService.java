@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
@@ -14,19 +16,17 @@ import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.Set;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path("/import")
-@Component
+@RestController
+@RequestMapping(REST_API_PATH + "/import")
 public class ImportRestService {
 
   private final SessionService sessionService;
@@ -42,12 +42,10 @@ public class ImportRestService {
     this.identityService = identityService;
   }
 
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping
   public List<EntityIdResponseDto> importEntities(
-      @QueryParam("collectionId") final String collectionId,
-      final String exportedDtoJson,
+      @RequestParam(name = "collectionId", required = false) final String collectionId,
+      @RequestBody final String exportedDtoJson,
       final HttpServletRequest request) {
     final Set<OptimizeEntityExportDto> exportDtos =
         entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);

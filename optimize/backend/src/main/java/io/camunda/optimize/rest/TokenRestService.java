@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.query.TokenDto;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import java.util.Optional;
@@ -16,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/token")
+@RequestMapping(REST_API_PATH + "/token")
 public class TokenRestService {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TokenRestService.class);
@@ -26,7 +28,7 @@ public class TokenRestService {
     this.cloudSaasMetaInfoService = cloudSaasMetaInfoService;
   }
 
-  @GetMapping()
+  @GetMapping
   public TokenDto getCurrentToken() {
     return cloudSaasMetaInfoService
         .map(

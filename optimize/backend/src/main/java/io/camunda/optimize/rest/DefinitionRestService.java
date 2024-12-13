@@ -9,6 +9,7 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isDefinitionVersionSetToAllOrLatest;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
@@ -30,13 +31,7 @@ import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -47,11 +42,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path("/definition")
-@Component
+@RestController
+@RequestMapping(REST_API_PATH + "/definition")
 public class DefinitionRestService {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionRestService.class);
@@ -68,29 +68,24 @@ public class DefinitionRestService {
     this.sessionService = sessionService;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping()
   public List<DefinitionResponseDto> getDefinitions(final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return definitionService.getFullyImportedDefinitions(userId);
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}")
+  @GetMapping("/{type}")
   public List<DefinitionOptimizeResponseDto> getDefinitions(
-      @PathParam("type") final DefinitionType type,
-      @QueryParam("includeXml") final boolean includeXml,
+      @PathVariable("type") final DefinitionType type,
+      @RequestParam(name = "includeXml", required = false) final boolean includeXml,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
   }
 
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}/_resolveTenantsForVersions")
+  @PostMapping("/{type}/_resolveTenantsForVersions")
   public List<DefinitionWithTenantsResponseDto> getDefinitionTenantsForMultipleKeys(
-      @PathParam("type") final DefinitionType type,
+      @PathVariable("type") final DefinitionType type,
       @Valid @RequestBody final MultiDefinitionTenantsRequestDto request,
       final HttpServletRequest servletRequest) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(servletRequest);
@@ -115,12 +110,10 @@ public class DefinitionRestService {
         .collect(Collectors.toList());
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}/{key}")
+  @GetMapping("/{type}/{key}")
   public DefinitionResponseDto getDefinition(
-      @PathParam("type") final DefinitionType type,
-      @PathParam("key") final String key,
+      @PathVariable("type") final DefinitionType type,
+      @PathVariable("key") final String key,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return definitionService
@@ -135,13 +128,11 @@ public class DefinitionRestService {
             });
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}/{key}/versions")
+  @GetMapping("/{type}/{key}/versions")
   public List<DefinitionVersionResponseDto> getDefinitionVersions(
-      @PathParam("type") final DefinitionType type,
-      @PathParam("key") final String key,
-      @QueryParam("filterByCollectionScope") final String collectionId,
+      @PathVariable("type") final DefinitionType type,
+      @PathVariable("key") final String key,
+      @RequestParam(value = "filterByCollectionScope", required = false) final String collectionId,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
@@ -177,12 +168,10 @@ public class DefinitionRestService {
     return definitionVersions;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/{type}/keys")
+  @GetMapping("/{type}/keys")
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
-      @PathParam("type") final DefinitionType type,
-      @QueryParam("filterByCollectionScope") final String collectionId,
+      @PathVariable(name = "type") final DefinitionType type,
+      @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
@@ -192,9 +181,7 @@ public class DefinitionRestService {
         .collect(Collectors.toList());
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/_groupByTenant")
+  @GetMapping("/_groupByTenant")
   public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant(
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
@@ -210,15 +197,13 @@ public class DefinitionRestService {
    * @param type The type of the definition (process or decision).
    * @return the definition xml requested or json error structure on failure
    */
-  @GET
-  @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
-  @Path("/{type}/xml")
+  @GetMapping("/{type}/xml")
   @CacheRequest
   public Response getDefinitionXml(
-      @PathParam("type") final DefinitionType type,
-      @QueryParam("key") final String key,
-      @QueryParam("version") final String version,
-      @QueryParam("tenantId") final String tenantId,
+      @PathVariable("type") final DefinitionType type,
+      @RequestParam(name = "key", required = false) final String key,
+      @RequestParam(name = "version", required = false) final String version,
+      @RequestParam(name = "tenantId", required = false) final String tenantId,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final Optional<DefinitionOptimizeResponseDto> definitionDto =

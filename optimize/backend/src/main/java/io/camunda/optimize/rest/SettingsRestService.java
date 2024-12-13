@@ -7,20 +7,21 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.PUT;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.MediaType;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path("/settings")
-@Component
+@RestController
+@RequestMapping(REST_API_PATH + "/settings")
 public class SettingsRestService {
 
   private final SessionService sessionService;
@@ -32,16 +33,14 @@ public class SettingsRestService {
     this.settingsService = settingsService;
   }
 
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
+  @GetMapping
   public SettingsDto getSettings() {
     return settingsService.getSettings();
   }
 
-  @PUT
-  @Produces(MediaType.APPLICATION_JSON)
+  @PutMapping
   public void setSettings(
-      @NotNull final SettingsDto settingsDto, final HttpServletRequest request) {
+      @NotNull @RequestBody final SettingsDto settingsDto, final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     settingsService.setSettings(userId, settingsDto);
   }
