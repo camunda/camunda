@@ -89,11 +89,6 @@
       <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-services</artifactId>
-    </dependency>
-
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>

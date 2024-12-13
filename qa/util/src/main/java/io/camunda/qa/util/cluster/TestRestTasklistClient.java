@@ -102,6 +102,11 @@ public class TestRestTasklistClient implements CloseableSilently {
     return sendRequest("PATCH", path, null);
   }
 
+  public HttpResponse<String> getProcessDefinition(final long processDefinitionKey) {
+    final var path = String.format("%sv1/internal/processes/%d", endpoint, processDefinitionKey);
+    return sendRequest("GET", path, null);
+  }
+
   private String mapToRequestBody(final String key, final Object value) {
     try {
       return OBJECT_MAPPER.writeValueAsString(Map.of(key, value));

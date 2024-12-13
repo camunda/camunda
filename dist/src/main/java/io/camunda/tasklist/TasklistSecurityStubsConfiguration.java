@@ -120,11 +120,6 @@ public class TasklistSecurityStubsConfiguration {
       }
 
       @Override
-      public List<String> getProcessReadFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
-      }
-
-      @Override
       public List<String> getProcessDefinitionsFromAuthorization() {
         return List.of(IdentityProperties.ALL_RESOURCES);
       }

@@ -61,11 +61,6 @@ public class IdentityAuthorizationServiceImpl implements IdentityAuthorizationSe
   }
 
   @Override
-  public List<String> getProcessReadFromAuthorization() {
-    return getFromAuthorization(IdentityAuthorization.PROCESS_PERMISSION_READ);
-  }
-
-  @Override
   public List<String> getProcessDefinitionsFromAuthorization() {
     return getFromAuthorization(IdentityAuthorization.PROCESS_PERMISSION_START);
   }
