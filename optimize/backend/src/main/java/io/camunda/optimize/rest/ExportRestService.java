@@ -34,13 +34,14 @@ import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -68,7 +69,7 @@ public class ExportRestService {
   }
 
   @GetMapping("report/json/{reportId}/{fileName}")
-  public Response getJsonReport(
+  public ResponseEntity<List<ReportDefinitionExportDto>> getJsonReport(
       @PathVariable("reportId") final String reportId,
       @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
@@ -81,7 +82,7 @@ public class ExportRestService {
   }
 
   @GetMapping("dashboard/json/{dashboardId}/{fileName}")
-  public Response getJsonDashboard(
+  public ResponseEntity<List<OptimizeEntityExportDto>> getJsonDashboard(
       @PathVariable("dashboardId") final String dashboardId,
       @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
@@ -93,9 +94,11 @@ public class ExportRestService {
     return createJsonResponse(fileName, jsonDashboards);
   }
 
-  @GetMapping("csv/{reportId}/{fileName}")
+  @GetMapping(
+      path = "csv/{reportId}/{fileName}",
+      produces = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.APPLICATION_JSON_VALUE})
   // Produces octet stream on success, json on potential error
-  public Response getCsvReport(
+  public ResponseEntity<byte[]> getCsvReport(
       @PathVariable("reportId") final String reportId,
       @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
@@ -108,7 +111,7 @@ public class ExportRestService {
 
     return csvForReport
         .map(csvBytes -> createOctetStreamResponse(fileName, csvBytes))
-        .orElse(Response.status(Response.Status.NOT_FOUND).build());
+        .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
   }
 
   /**
@@ -117,8 +120,10 @@ public class ExportRestService {
    * excluded. It is used for example to return process instance Ids in the branch analysis export.
    */
   // Produces octet stream on success, json on potential error
-  @PostMapping("csv/process/rawData/{fileName}")
-  public Response getRawDataCsv(
+  @PostMapping(
+      path = "csv/process/rawData/{fileName}",
+      produces = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  public ResponseEntity<byte[]> getRawDataCsv(
       @PathVariable("fileName") final String fileName,
       @Valid @RequestBody final ProcessRawDataCsvExportRequestDto request,
       final HttpServletRequest servletRequest) {
@@ -176,18 +181,20 @@ public class ExportRestService {
     return excludedFields;
   }
 
-  private Response createOctetStreamResponse(
+  private ResponseEntity<byte[]> createOctetStreamResponse(
       final String fileName, final byte[] csvBytesForEvaluatedReportResult) {
-    return Response.ok(csvBytesForEvaluatedReportResult, MediaType.APPLICATION_OCTET_STREAM)
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".csv"))
-        .build();
+        .body(csvBytesForEvaluatedReportResult);
   }
 
-  private Response createJsonResponse(
-      final String fileName, final List<? extends OptimizeEntityExportDto> jsonEntities) {
-    return Response.ok(jsonEntities, MediaType.APPLICATION_JSON)
+  private <A extends OptimizeEntityExportDto> ResponseEntity<List<A>> createJsonResponse(
+      final String fileName, final List<A> jsonEntities) {
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_JSON)
         .header("Content-Disposition", "attachment; filename=" + createFileName(fileName, ".json"))
-        .build();
+        .body(jsonEntities);
   }
 
   private String createFileName(final String fileName, final String extension) {

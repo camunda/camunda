@@ -26,18 +26,20 @@ import io.camunda.optimize.service.OutlierAnalysisService;
 import io.camunda.optimize.service.export.CSVUtils;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -117,12 +119,16 @@ public class AnalysisRestService {
     return outlierAnalysisService.getSignificantOutlierVariableTerms(outlierAnalysisParams);
   }
 
-  @PostMapping("/significantOutlierVariableTerms/processInstanceIdsExport")
+  @PostMapping(
+      path = "/significantOutlierVariableTerms/processInstanceIdsExport",
+      produces = {MediaType.APPLICATION_OCTET_STREAM_VALUE, MediaType.APPLICATION_JSON_VALUE})
+  @ResponseBody
   // Returns octet stream on success, json on potential error
-  public Response getSignificantOutlierVariableTermsInstanceIds(
+  public ResponseEntity<byte[]> getSignificantOutlierVariableTermsInstanceIds(
       @PathVariable("fileName") final String fileName,
       @RequestBody final FlowNodeOutlierVariableParametersDto parameters,
-      final HttpServletRequest request) {
+      final HttpServletRequest request,
+      final HttpServletResponse response) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
@@ -134,11 +140,10 @@ public class AnalysisRestService {
             outlierAnalysisService.getSignificantOutlierVariableTermsInstanceIds(
                 outlierAnalysisParams));
 
-    return Response.ok(
-            CSVUtils.mapCsvLinesToCsvBytes(processInstanceIdsCsv, ','),
-            MediaType.APPLICATION_OCTET_STREAM)
+    return ResponseEntity.ok()
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
         .header("Content-Disposition", "attachment; filename=" + resultFileName)
-        .build();
+        .body(CSVUtils.mapCsvLinesToCsvBytes(processInstanceIdsCsv, ','));
   }
 
   private void validateProvidedFilters(final List<ProcessFilterDto<?>> filters) {
