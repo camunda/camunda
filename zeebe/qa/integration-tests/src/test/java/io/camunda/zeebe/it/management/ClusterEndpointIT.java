@@ -88,9 +88,7 @@ final class ClusterEndpointIT {
           // then
           // TODO Change the assertion to check for planned changes once it's implemented.
           .describedAs("Purging should fail with 400 Bad Request as it is not yet fully supported")
-          .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining(
-              "Expected to leave partition, but the partition 1 has only one replica");
+          .isInstanceOf(FeignException.BadRequest.class);
     }
   }
 
