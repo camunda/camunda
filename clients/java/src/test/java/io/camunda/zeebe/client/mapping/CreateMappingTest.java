@@ -26,7 +26,7 @@ public class CreateMappingTest extends ClientRestTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
-  public static final String NAME = "claimValue";
+  public static final String NAME = "mappingName";
 
   @Test
   void shouldCreateMapping() {
