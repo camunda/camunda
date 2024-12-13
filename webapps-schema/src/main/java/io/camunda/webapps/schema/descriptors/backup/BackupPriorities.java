@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors.backup;
 
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -20,5 +22,36 @@ public record BackupPriorities(
 
   public Stream<BackupPriority> allPriorities() {
     return Stream.of(prio1(), prio2(), prio3(), prio4(), prio5(), prio6()).flatMap(List::stream);
+  }
+
+  public Stream<SnapshotIndexCollection> indicesSplitBySnapshot() {
+    return Stream.of(
+        fullQualifiedName(prio1()),
+        fullQualifiedName(prio2()),
+        // dated indices
+        fullQualifiedNameWithMatcher(prio2()),
+        fullQualifiedName(prio3()),
+        fullQualifiedName(prio4()),
+        // dated indices
+        fullQualifiedNameWithMatcher(prio4()),
+        fullQualifiedName(prio5()),
+        fullQualifiedName(prio6()));
+  }
+
+  private static <A extends BackupPriority> SnapshotIndexCollection fullQualifiedName(
+      final Collection<A> backups) {
+    final var indices = backups.stream().map(BackupPriority::getFullQualifiedName).toList();
+    return new SnapshotIndexCollection(indices);
+  }
+
+  private static <A extends BackupPriority> SnapshotIndexCollection fullQualifiedNameWithMatcher(
+      final Collection<A> backups) {
+    final var indices =
+        backups.stream()
+            .filter(IndexTemplateDescriptor.class::isInstance)
+            .map(BackupPriority::getFullQualifiedName)
+            .flatMap(name -> Stream.of(name + "*", "-" + name))
+            .toList();
+    return new SnapshotIndexCollection(indices);
   }
 }
