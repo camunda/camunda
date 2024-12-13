@@ -15,9 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.camunda.optimize.rest.optimize.dto.VariableDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import jakarta.ws.rs.core.MediaType;
 import java.text.SimpleDateFormat;
 import java.util.Map;
+import org.springframework.http.MediaType;
 
 public class VariablesClient {
 

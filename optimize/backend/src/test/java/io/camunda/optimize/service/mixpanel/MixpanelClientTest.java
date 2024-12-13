@@ -28,7 +28,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilde
 import io.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,6 +48,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @ExtendWith(MockitoExtension.class)
 public class MixpanelClientTest {

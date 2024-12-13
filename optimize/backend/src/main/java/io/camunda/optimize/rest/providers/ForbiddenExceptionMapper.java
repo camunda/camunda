@@ -10,11 +10,11 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {
@@ -33,7 +33,7 @@ public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenExcept
     LOG.info("Mapping ForbiddenException");
 
     return Response.status(Response.Status.FORBIDDEN)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(getErrorResponseDto(forbiddenException))
         .build();
   }

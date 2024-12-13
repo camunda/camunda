@@ -10,11 +10,11 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEvaluationException> {
@@ -31,7 +31,7 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
   public Response toResponse(final ReportEvaluationException reportEvaluationException) {
     LOG.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
     return Response.status(Response.Status.BAD_REQUEST)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(mapToEvaluationErrorResponseDto(reportEvaluationException))
         .build();
   }

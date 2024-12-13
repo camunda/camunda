@@ -14,7 +14,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -70,7 +70,7 @@ public class MixpanelClient {
             getMixpanelConfiguration().getImportUrl()
                 + "?strict=1&project_id="
                 + getMixpanelConfiguration().getProjectId());
-    importRequest.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+    importRequest.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
     importRequest.setHeader(HttpHeaders.AUTHORIZATION, getAuthHeader());
 
     try {

@@ -33,7 +33,6 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -50,6 +49,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import org.glassfish.jersey.client.ClientProperties;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 public class OptimizeRequestExecutor {
 
@@ -72,7 +72,7 @@ public class OptimizeRequestExecutor {
   private String path;
   private String method;
   private Entity<?> body;
-  private String mediaType = MediaType.APPLICATION_JSON;
+  private String mediaType = MediaType.APPLICATION_JSON_VALUE;
   private Map<String, Object> queryParams;
 
   public OptimizeRequestExecutor(
