@@ -29,7 +29,6 @@ import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.BeanParam;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
@@ -110,7 +109,7 @@ public class PublicApiRestService {
   @GetMapping(REPORT_EXPORT_DATA_SUB_PATH)
   public PaginatedDataExportDto exportReportData(
       @PathVariable("reportId") final String reportId,
-      @BeanParam @Valid final PaginationScrollableRequestDto paginationRequestDto) {
+      @Valid final PaginationScrollableRequestDto paginationRequestDto) {
     final ZoneId timezone = ZoneId.of("UTC");
     try {
       return jsonReportResultExportService.getJsonForEvaluatedReportResult(

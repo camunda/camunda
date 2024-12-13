@@ -22,7 +22,6 @@ import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import java.util.List;
@@ -67,7 +66,7 @@ public class EntitiesRestService {
   @GetMapping("/names")
   public EntityNameResponseDto getEntityNames(
       @Context final ContainerRequestContext requestContext,
-      @BeanParam final EntityNameRequestDto requestDto) {
+      final EntityNameRequestDto requestDto) {
     return entitiesService.getEntityNames(
         requestDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
