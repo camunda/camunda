@@ -254,6 +254,9 @@ public class SearchClients
     return distinctCountUsageMetricsFor("EVENT_DECISION_INSTANCE_EVALUATED", query);
   }
 
+  /*
+   * The distinct count is implemented here by using Java Stream API until aggregations are in place.
+   */
   private Long distinctCountUsageMetricsFor(final String event, final UsageMetricsQuery query) {
     final var filter =
         new UsageMetricsQuery.Builder()
