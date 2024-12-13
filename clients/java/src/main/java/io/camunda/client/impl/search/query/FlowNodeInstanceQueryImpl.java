@@ -30,6 +30,7 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.FlownodeInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -65,9 +66,8 @@ public class FlowNodeInstanceQueryImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<FlowNodeInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<FlowNodeInstance>> result =
-        new HttpCamundaFuture<>();
+  public ZeebeFuture<SearchQueryResponse<FlowNodeInstance>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<FlowNodeInstance>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/flownode-instances/search",
         jsonMapper.toJson(request),
@@ -93,7 +93,9 @@ public class FlowNodeInstanceQueryImpl
   @Override
   public FlownodeInstanceQuery sort(final FlownodeInstanceSort value) {
     final FlownodeInstanceSortImpl sorting = (FlownodeInstanceSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toFlowNodeInstanceSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 

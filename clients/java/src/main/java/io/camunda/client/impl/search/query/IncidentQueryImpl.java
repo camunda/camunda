@@ -30,6 +30,7 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -66,8 +67,8 @@ public class IncidentQueryImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<Incident>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<Incident>> result = new HttpCamundaFuture<>();
+  public ZeebeFuture<SearchQueryResponse<Incident>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<Incident>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/incidents/search",
         jsonMapper.toJson(request),
@@ -93,7 +94,7 @@ public class IncidentQueryImpl
   @Override
   public IncidentQuery sort(final IncidentSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(SearchQuerySortRequestMapper.toIncidentSearchQuerySortRequest(sorting));
     return this;
   }
 

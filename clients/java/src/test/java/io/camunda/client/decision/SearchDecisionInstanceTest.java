@@ -19,13 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
-import io.camunda.client.protocol.rest.BasicLongFilterProperty;
-import io.camunda.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
-import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryRequest;
-import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.client.protocol.rest.SortOrderEnum;
+import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -155,29 +149,41 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     final DecisionInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
     assertThat(request.getSort().size()).isEqualTo(12);
-    assertThat(request.getSort().get(0).getField()).isEqualTo("decisionDefinitionKey");
+    assertThat(request.getSort().get(0).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(1).getField()).isEqualTo("decisionDefinitionId");
+    assertThat(request.getSort().get(1).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_ID);
     assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(2).getField()).isEqualTo("decisionDefinitionName");
+    assertThat(request.getSort().get(2).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_NAME);
     assertThat(request.getSort().get(2).getOrder()).isEqualTo(SortOrderEnum.DESC);
-    assertThat(request.getSort().get(3).getField()).isEqualTo("processInstanceId");
+    assertThat(request.getSort().get(3).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.PROCESS_INSTANCE_ID);
     assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(4).getField()).isEqualTo("evaluationDate");
+    assertThat(request.getSort().get(4).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.EVALUATION_DATE);
     assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(5).getField()).isEqualTo("evaluationFailure");
+    assertThat(request.getSort().get(5).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.EVALUATION_FAILURE);
     assertThat(request.getSort().get(5).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(6).getField()).isEqualTo("decisionDefinitionVersion");
+    assertThat(request.getSort().get(6).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_VERSION);
     assertThat(request.getSort().get(6).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(7).getField()).isEqualTo("state");
+    assertThat(request.getSort().get(7).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.STATE);
     assertThat(request.getSort().get(7).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(8).getField()).isEqualTo("processDefinitionKey");
+    assertThat(request.getSort().get(8).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.PROCESS_DEFINITION_KEY);
     assertThat(request.getSort().get(8).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(9).getField()).isEqualTo("processInstanceId");
+    assertThat(request.getSort().get(9).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.PROCESS_INSTANCE_ID);
     assertThat(request.getSort().get(9).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(10).getField()).isEqualTo("decisionDefinitionType");
+    assertThat(request.getSort().get(10).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_TYPE);
     assertThat(request.getSort().get(10).getOrder()).isEqualTo(SortOrderEnum.ASC);
-    assertThat(request.getSort().get(11).getField()).isEqualTo("tenantId");
+    assertThat(request.getSort().get(11).getField())
+        .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.TENANT_ID);
     assertThat(request.getSort().get(11).getOrder()).isEqualTo(SortOrderEnum.ASC);
   }
 }
