@@ -90,6 +90,7 @@ jobs:
           commands: |
             ci-problems
             disable-cache
+            enable-cache
 
       - name: Update comment in case of failure
         if: failure()
