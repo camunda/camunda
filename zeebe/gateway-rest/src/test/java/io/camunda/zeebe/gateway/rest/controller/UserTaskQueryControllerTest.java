@@ -87,7 +87,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": [],
                   "lastSortValues": [
                       "v"
                   ]
@@ -111,7 +111,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
-          "firstSortValues": ["v"],
+          "firstSortValues": [],
           "lastSortValues": [
             "v"
           ]
