@@ -39,7 +39,6 @@ import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.SettingsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.NotAuthorizedException;
 import java.util.List;
 import java.util.function.Supplier;
@@ -105,7 +104,7 @@ public class SharingPublicReaderRestService {
   @PostMapping(SHARE_PATH + REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
       @PathVariable("shareId") final String reportShareId,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      @Valid final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->
@@ -124,7 +123,7 @@ public class SharingPublicReaderRestService {
       @PathVariable("shareId") final String dashboardShareId,
       @PathVariable("reportId") final String reportId,
       @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      @Valid final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
     return executeIfSharingEnabled(
         () ->

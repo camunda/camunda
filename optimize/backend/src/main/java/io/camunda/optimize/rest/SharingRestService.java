@@ -33,7 +33,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BeanParam;
 import java.time.ZoneId;
 import java.util.function.Supplier;
 import org.springframework.core.env.Environment;
@@ -128,7 +127,7 @@ public class SharingRestService {
   @PostMapping(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   public AuthorizedReportEvaluationResponseDto evaluateReport(
       @PathVariable("shareId") final String reportShareId,
-      @BeanParam @Valid @RequestBody final PaginationRequestDto paginationRequestDto,
+      @Valid @RequestBody final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
     final ZoneId timezone = extractTimezone(request);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
@@ -146,7 +145,7 @@ public class SharingRestService {
       @PathVariable("shareId") final String dashboardShareId,
       @PathVariable("reportId") final String reportId,
       @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
-      @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
+      @Valid final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
     final ZoneId timezone = extractTimezone(request);
     return reportRestMapper.mapToLocalizedEvaluationResponseDto(
