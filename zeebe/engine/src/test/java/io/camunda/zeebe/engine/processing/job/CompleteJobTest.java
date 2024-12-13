@@ -274,8 +274,8 @@ public final class CompleteJobTest {
     corrections.setAssignee("TestAssignee");
     corrections.setDueDate("2025-05-23T01:02:03+01:00");
     corrections.setFollowUpDate("2025-06-23T01:02:03+01:00");
-    corrections.setCandidateUsers(List.of("userA", "userB"));
-    corrections.setCandidateGroups(List.of("groupA", "groupB"));
+    corrections.setCandidateUsersList(List.of("userA", "userB"));
+    corrections.setCandidateGroupsList(List.of("groupA", "groupB"));
     corrections.setPriority(20);
 
     final List<String> correctedAttributes =

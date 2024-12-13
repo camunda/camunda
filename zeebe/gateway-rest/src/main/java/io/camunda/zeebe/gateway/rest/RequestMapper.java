@@ -738,11 +738,11 @@ public class RequestMapper {
       correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
     }
     if (jobResultCorrections.getCandidateUsers() != null) {
-      corrections.setCandidateUsers(jobResultCorrections.getCandidateUsers());
+      corrections.setCandidateUsersList(jobResultCorrections.getCandidateUsers());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
     }
     if (jobResultCorrections.getCandidateGroups() != null) {
-      corrections.setCandidateGroups(jobResultCorrections.getCandidateGroups());
+      corrections.setCandidateGroupsList(jobResultCorrections.getCandidateGroups());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
     }
     if (jobResultCorrections.getPriority() != null) {

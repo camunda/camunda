@@ -397,8 +397,8 @@ public class JobControllerTest extends RestControllerTest {
                 .setAssignee("Test")
                 .setDueDate("2025-05-23T01:02:03+01:00")
                 .setFollowUpDate("2025-05-25T01:02:03+01:00")
-                .setCandidateUsers(List.of("UserA", "UserB"))
-                .setCandidateGroups(List.of("GroupA", "GroupB"))
+                .setCandidateUsersList(List.of("UserA", "UserB"))
+                .setCandidateGroupsList(List.of("GroupA", "GroupB"))
                 .setPriority(20));
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
@@ -452,8 +452,8 @@ public class JobControllerTest extends RestControllerTest {
         .isEqualTo(
             new JobResultCorrections()
                 .setAssignee("Test")
-                .setCandidateUsers(List.of("UserA", "UserB"))
-                .setCandidateGroups(List.of("GroupA", "GroupB"))
+                .setCandidateUsersList(List.of("UserA", "UserB"))
+                .setCandidateGroupsList(List.of("GroupA", "GroupB"))
                 .setPriority(20));
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
@@ -504,12 +504,12 @@ public class JobControllerTest extends RestControllerTest {
         .isEqualTo(
             new JobResultCorrections()
                 .setDueDate("2025-05-23T01:02:03+01:00")
-                .setCandidateGroups(List.of("GroupA", "GroupB"))
+                .setCandidateGroupsList(List.of("GroupA", "GroupB"))
                 // The remaining fields have their default non-null values,
                 // as they weren't corrected
                 .setAssignee("")
                 .setFollowUpDate("")
-                .setCandidateUsers(List.of())
+                .setCandidateUsersList(List.of())
                 .setPriority(-1));
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
