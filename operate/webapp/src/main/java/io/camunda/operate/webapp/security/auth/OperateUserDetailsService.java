@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
+import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
+
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -107,11 +109,12 @@ public class OperateUserDetailsService implements UserDetailsService {
   public CamundaUser loadUserByUsername(final String userId) {
     try {
       final UserEntity userEntity = userStore.getById(userId);
-      return new CamundaUser(
-          userEntity.getDisplayName(),
-          userEntity.getUserId(),
-          userEntity.getPassword(),
-          userEntity.getRoles());
+      return aCamundaUser()
+          .withName(userEntity.getDisplayName())
+          .withUsername(userEntity.getUserId())
+          .withPassword(userEntity.getPassword())
+          .withAuthorities(userEntity.getRoles())
+          .build();
     } catch (final NotFoundException e) {
       throw new UsernameNotFoundException(
           String.format("User with userId '%s' not found.", userId), e);

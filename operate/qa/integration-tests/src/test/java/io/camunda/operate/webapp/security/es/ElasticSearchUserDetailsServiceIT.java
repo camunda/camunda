@@ -19,14 +19,15 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.security.auth.Role;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
@@ -78,7 +79,8 @@ public class ElasticSearchUserDetailsServiceIT extends OperateAbstractIT {
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(passwordEncoder.matches(TEST_PASSWORD, user.getPassword())).isTrue();
     assertThat(user.getDisplayName()).isEqualTo(TEST_USER_DISPLAYNAME);
-    assertThat(user.getRoles()).isEqualTo(List.of(Role.OWNER.toString()));
+    assertThat(user.getAuthorities())
+        .isEqualTo(Set.of(new SimpleGrantedAuthority(Role.OWNER.name())));
   }
 
   private void updateUserRealName() {
