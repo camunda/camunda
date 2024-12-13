@@ -23,6 +23,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -58,6 +59,7 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
   @Autowired private TenantService tenantService;
+  @Autowired private TasklistPermissionServices permissionServices;
 
   @Operation(
       summary = "Returns the process by ProcessDefinitionKey",
@@ -120,7 +122,7 @@ public class ProcessInternalController extends ApiErrorController {
         processStore
             .getProcesses(
                 query,
-                identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+                permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission(),
                 tenantId,
                 isStartedByForm)
             .stream()

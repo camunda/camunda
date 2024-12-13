@@ -10,14 +10,19 @@ package io.camunda.tasklist.webapp.security.permission;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TasklistPermissionServices {
 
+  private static final List<String> WILD_CARD_PERMISSION =
+      List.of(IdentityProperties.ALL_RESOURCES);
   private static final Authorization READ_PROC_DEF_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().read());
   private static final Authorization CREATE_PROC_INST_AUTH_CHECK =
@@ -27,12 +32,15 @@ public class TasklistPermissionServices {
 
   private final SecurityConfiguration securityConfiguration;
   private final SecurityContextProvider securityContextProvider;
+  private final AuthorizationChecker authorizationChecker;
 
   public TasklistPermissionServices(
       final SecurityConfiguration securityConfiguration,
-      final SecurityContextProvider securityContextProvider) {
+      final SecurityContextProvider securityContextProvider,
+      final AuthorizationChecker authorizationChecker) {
     this.securityConfiguration = securityConfiguration;
     this.securityContextProvider = securityContextProvider;
+    this.authorizationChecker = authorizationChecker;
   }
 
   public boolean hasPermissionToCreateProcessInstance(final String bpmnProcessId) {
@@ -45,6 +53,20 @@ public class TasklistPermissionServices {
 
   public boolean hasPermissionToUpdateUserTask(final TaskEntity task) {
     return isAuthorizedForResource(task.getBpmnProcessId(), UPDATE_USER_TASK_AUTH_CHECK);
+  }
+
+  public List<String> getProcessDefinitionsWithCreateProcessInstancePermission() {
+    if (isAuthorizationDisabled()) {
+      return WILD_CARD_PERMISSION;
+    }
+    final var authentication = RequestMapper.getAuthentication();
+    if (isWithoutAuthenticatedUserKey(authentication)) {
+      return WILD_CARD_PERMISSION;
+    }
+
+    final var securityContext =
+        securityContextProvider.provideSecurityContext(authentication, CREATE_PROC_INST_AUTH_CHECK);
+    return authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
   }
 
   private boolean isAuthorizedForResource(

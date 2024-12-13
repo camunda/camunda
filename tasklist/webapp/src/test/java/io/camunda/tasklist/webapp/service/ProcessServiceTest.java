@@ -21,8 +21,7 @@ import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import java.util.ArrayList;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -43,11 +41,7 @@ public class ProcessServiceTest {
   @Mock private TenantService tenantService;
 
   @Mock private TasklistServicesAdapter tasklistServicesAdapter;
-
-  @Spy
-  private IdentityAuthorizationService identityAuthorizationService =
-      new IdentityAuthorizationServiceImpl();
-
+  @Mock private TasklistPermissionServices permissionServices;
   @InjectMocks private ProcessService instance;
 
   @Test
@@ -121,8 +115,8 @@ public class ProcessServiceTest {
 
     // When
     doReturn(List.of(processDefinitionKey))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+        .when(permissionServices)
+        .getProcessDefinitionsWithCreateProcessInstancePermission();
 
     mockCreateProcessInstanceNotFound(processDefinitionKey);
 
@@ -149,8 +143,8 @@ public class ProcessServiceTest {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
     doReturn(List.of("processDefinitionKey"))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+        .when(permissionServices)
+        .getProcessDefinitionsWithCreateProcessInstancePermission();
 
     final ProcessInstanceCreationRecord processInstanceEvent =
         mockCreateProcessInstance(processDefinitionKey);
@@ -166,8 +160,8 @@ public class ProcessServiceTest {
     final String processDefinitionKey = "processDefinitionKey";
     final List<VariableInputDTO> variableInputDTOList = new ArrayList<VariableInputDTO>();
     doReturn(List.of("otherProcessDefinitionKey", "*"))
-        .when(identityAuthorizationService)
-        .getProcessDefinitionsFromAuthorization();
+        .when(permissionServices)
+        .getProcessDefinitionsWithCreateProcessInstancePermission();
 
     final ProcessInstanceCreationRecord processInstanceEvent =
         mockCreateProcessInstance(processDefinitionKey);

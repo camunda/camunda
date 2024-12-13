@@ -10,10 +10,11 @@ package io.camunda.it.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
+import io.camunda.qa.util.cluster.TestRestTasklistClient.ProcessDefinitionResponse;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
@@ -30,9 +31,11 @@ import org.junit.jupiter.api.Test;
 
 @AutoCloseResources
 @ZeebeIntegration
-public class TasklistGetProcessDefinitionAuthorizationIT {
+public class TasklistProcessDefinitionAuthorizationIT {
 
   private static final String PROCESS_ID = "foo";
+  private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
+      "PROCESS_WITH_JOB_BASED_USERTASK";
 
   private static final String ADMIN_USER_NAME = "foo";
   private static final String ADMIN_USER_PASSWORD = "foo";
@@ -42,7 +45,7 @@ public class TasklistGetProcessDefinitionAuthorizationIT {
   private static long testUserKey;
 
   @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static ZeebeClient adminCamundaClient;
+  @AutoCloseResource private static CamundaClient adminCamundaClient;
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   private static long processDefinitionKey;
@@ -86,6 +89,10 @@ public class TasklistGetProcessDefinitionAuthorizationIT {
         deployResource(adminCamundaClient, "process/process_with_assigned_user_task.bpmn");
     waitForProcessToBeDeployed(PROCESS_ID);
 
+    // deploy process with a job based user task process
+    deployResource(adminCamundaClient, "process/process_job_based_user_task.bpmn");
+    waitForProcessToBeDeployed(PROCESS_ID_WITH_JOB_BASED_USERTASK);
+
     // create new (non-admin) user
     testUserKey = adminAuthClient.createUser(TEST_USER_NAME, TEST_USER_PASSWORD);
   }
@@ -124,7 +131,66 @@ public class TasklistGetProcessDefinitionAuthorizationIT {
     assertThat(response.statusCode()).isEqualTo(200);
   }
 
-  private long deployResource(final ZeebeClient zeebeClient, final String resource) {
+  @Test
+  public void shouldReturnNoDefinitionsWithUnauthorizedUser() {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
+            .searchProcessDefinitions();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response).isEmpty();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToRetrieveDefinitionOne() {
+    // given
+    adminAuthClient.createPermissions(
+        testUserKey,
+        new Permissions(
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
+            .searchProcessDefinitions();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.stream().map(ProcessDefinitionResponse::bpmnProcessId))
+        .containsExactly(PROCESS_ID);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToRetrieveDefinitions() {
+    // given
+    adminAuthClient.createPermissions(
+        testUserKey,
+        new Permissions(
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID, PROCESS_ID_WITH_JOB_BASED_USERTASK)));
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
+            .searchProcessDefinitions();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.stream().map(ProcessDefinitionResponse::bpmnProcessId))
+        .containsExactlyInAnyOrder(PROCESS_ID, PROCESS_ID_WITH_JOB_BASED_USERTASK);
+  }
+
+  private long deployResource(final CamundaClient zeebeClient, final String resource) {
     return zeebeClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resource)

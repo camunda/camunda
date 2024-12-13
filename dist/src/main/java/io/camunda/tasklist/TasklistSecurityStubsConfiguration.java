@@ -112,18 +112,7 @@ public class TasklistSecurityStubsConfiguration {
   /** stub to IdentityAuthorizationService that provides full access to user */
   @Bean
   public IdentityAuthorizationService stubIdentityAuthorizationService() {
-    return new IdentityAuthorizationService() {
-
-      @Override
-      public List<String> getUserGroups() {
-        return List.of(IdentityProperties.FULL_GROUP_ACCESS);
-      }
-
-      @Override
-      public List<String> getProcessDefinitionsFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
-      }
-    };
+    return () -> List.of(IdentityProperties.FULL_GROUP_ACCESS);
   }
 
   @Bean
