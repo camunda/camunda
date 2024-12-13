@@ -28,10 +28,32 @@ public class UsageMetricsServices extends ApiServices<UsageMetricsServices> {
   }
 
   public UsageMetricsCount search(final UsageMetricsQuery query) {
+    if (query == null) {
+      throw new IllegalArgumentException("Query must not be null");
+    }
+    validateStartAndEndTime(query);
     final var assignees = usageMetricsSearchClient.countAssignees(query);
     final var processInstances = usageMetricsSearchClient.countProcessInstances(query);
     final var decisionInstances = usageMetricsSearchClient.countDecisionInstances(query);
     return new UsageMetricsCount(assignees, processInstances, decisionInstances);
+  }
+
+  private void validateStartAndEndTime(final UsageMetricsQuery query) {
+    final var filter = query.filter();
+    if (filter.startTime() == null
+        || filter.startTime().value() == null
+        || filter.endTime() == null
+        || filter.endTime().value() == null) {
+      throw new IllegalArgumentException("Query must have a start AND end time");
+    }
+    final var startTime = filter.startTime().value();
+    final var endTime = filter.endTime().value();
+    if (endTime.isBefore(startTime)) {
+      throw new IllegalArgumentException("End time must be after start time");
+    }
+    if (startTime.isAfter(endTime)) {
+      throw new IllegalArgumentException("Start time must be before end time");
+    }
   }
 
   @Override

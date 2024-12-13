@@ -98,13 +98,17 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
       final UsageMetricsSearchQueryRequest request) {
+    if (request == null || (request.getStartTime() == null && request.getEndTime() == null)) {
+      final var problemDetail =
+          RequestValidator.createProblemDetail(List.of("startTime and endTime must be specified"));
+      return Either.left(problemDetail.orElseThrow());
+    }
     final UsageMetricsFilter filter =
         new UsageMetricsFilter.Builder()
             .startTime(Operation.gte(toOffsetDateTime(request.getStartTime())))
             .endTime(Operation.lte(toOffsetDateTime(request.getEndTime())))
             .build();
-    final var page = new SearchQueryPage.Builder().size(0).build();
-    return Either.right(new UsageMetricsQuery.Builder().filter(filter).page(page).build());
+    return Either.right(new UsageMetricsQuery.Builder().filter(filter).build());
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(

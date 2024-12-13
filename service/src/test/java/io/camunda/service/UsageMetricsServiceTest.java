@@ -43,7 +43,7 @@ public final class UsageMetricsServiceTest {
   }
 
   @Test
-  public void shouldReturnProcessInstance() {
+  public void shouldReturnUsageMetricsCount() {
     // given
     when(client.countProcessInstances(any())).thenReturn(5L);
     when(client.countDecisionInstances(any())).thenReturn(23L);
