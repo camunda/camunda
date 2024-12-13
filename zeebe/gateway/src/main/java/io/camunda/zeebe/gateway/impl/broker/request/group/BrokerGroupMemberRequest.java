@@ -8,30 +8,36 @@
 package io.camunda.zeebe.gateway.impl.broker.request.group;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import org.agrona.DirectBuffer;
 
-public class BrokerGroupMemberAddRequest extends BrokerExecuteCommand<GroupRecord> {
+public class BrokerGroupMemberRequest extends BrokerExecuteCommand<GroupRecord> {
 
   private final GroupRecord requestDto = new GroupRecord();
 
-  public BrokerGroupMemberAddRequest(final long groupKey) {
-    super(ValueType.GROUP, GroupIntent.ADD_ENTITY);
+  public BrokerGroupMemberRequest(final long groupKey, final GroupIntent intent) {
+    super(ValueType.GROUP, intent);
     request.setKey(groupKey);
     requestDto.setGroupKey(groupKey);
-    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerGroupMemberAddRequest setMemberKey(final Long memberKey) {
+  public static BrokerGroupMemberRequest createAddRequest(final long groupKey) {
+    return new BrokerGroupMemberRequest(groupKey, GroupIntent.ADD_ENTITY);
+  }
+
+  public static BrokerGroupMemberRequest createRemoveRequest(final long groupKey) {
+    return new BrokerGroupMemberRequest(groupKey, GroupIntent.REMOVE_ENTITY);
+  }
+
+  public BrokerGroupMemberRequest setMemberKey(final Long memberKey) {
     requestDto.setEntityKey(memberKey);
     return this;
   }
 
-  public BrokerGroupMemberAddRequest setMemberType(final EntityType memberType) {
+  public BrokerGroupMemberRequest setMemberType(final EntityType memberType) {
     requestDto.setEntityType(memberType);
     return this;
   }

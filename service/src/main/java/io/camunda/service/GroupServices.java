@@ -20,8 +20,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberAddRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRemoveRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -92,7 +91,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> assignMember(
       final long groupKey, final long memberKey, final EntityType memberType) {
     return sendBrokerRequest(
-        new BrokerGroupMemberAddRequest(groupKey)
+        BrokerGroupMemberRequest.createAddRequest(groupKey)
             .setMemberKey(memberKey)
             .setMemberType(memberType));
   }
@@ -100,7 +99,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> removeMember(
       final long groupKey, final long memberKey, final EntityType memberType) {
     return sendBrokerRequest(
-        new BrokerGroupMemberRemoveRequest(groupKey)
+        BrokerGroupMemberRequest.createRemoveRequest(groupKey)
             .setMemberKey(memberKey)
             .setMemberType(memberType));
   }
