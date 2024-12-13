@@ -15,6 +15,7 @@
         "type": "keyword"
       },
       "permissions": {
+        "type": "object",
         "properties": {
           "type": {
             "type": "keyword"
