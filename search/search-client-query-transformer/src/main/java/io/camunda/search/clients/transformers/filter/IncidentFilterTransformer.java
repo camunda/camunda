@@ -21,7 +21,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTem
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.TREE_PATH;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
@@ -30,13 +29,16 @@ import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
-public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {
+public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
 
   private final ServiceTransformers transformers;
 
-  public IncidentFilterTransformer(final ServiceTransformers transformers) {
+  public IncidentFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
     this.transformers = transformers;
   }
 
@@ -54,7 +56,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     final var creationTimeQuery = getCreationTimeQuery(filter.creationTime());
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
-    final var treePathQuery = getTreePathQuery(filter.treePaths());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
 
     return and(
@@ -69,13 +70,7 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
         creationTimeQuery,
         stateQuery,
         jobKeyQuery,
-        treePathQuery,
         tenantIdQuery);
-  }
-
-  @Override
-  public List<String> toIndices(final IncidentFilter filter) {
-    return List.of("operate-incident-8.3.1_alias");
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenantIds) {
@@ -129,9 +124,5 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
 
   private SearchQuery getKeyQuery(final List<Long> keys) {
     return longTerms(KEY, keys);
-  }
-
-  private SearchQuery getTreePathQuery(final List<String> treePaths) {
-    return stringTerms(TREE_PATH, treePaths);
   }
 }

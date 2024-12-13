@@ -68,7 +68,7 @@ public class UserTaskListenersTest {
     final var action = "my_complete_action";
     final var userTaskKey =
         resourcesHelper.createSingleUserTask(
-            t -> t.zeebeTaskListener(l -> l.complete().type("my_listener")));
+            t -> t.zeebeTaskListener(l -> l.completing().type("my_listener")));
 
     final JobHandler completeJobHandler =
         (jobClient, job) -> client.newCompleteCommand(job).result().denied(false).send().join();
@@ -104,7 +104,7 @@ public class UserTaskListenersTest {
     final var action = "my_assign_action";
     final var userTaskKey =
         resourcesHelper.createSingleUserTask(
-            t -> t.zeebeTaskListener(l -> l.assignment().type("my_listener")));
+            t -> t.zeebeTaskListener(l -> l.assigning().type("my_listener")));
 
     final JobHandler completeJobHandler =
         (jobClient, job) -> client.newCompleteCommand(job).send().join();
@@ -159,7 +159,7 @@ public class UserTaskListenersTest {
                 task.zeebeTaskListener(
                     listener ->
                         listener
-                            .complete()
+                            .completing()
                             .type(listenerType)
                             .retries(String.valueOf(jobRetries))));
 
@@ -243,7 +243,7 @@ public class UserTaskListenersTest {
     final var listenerType = "my_listener";
     final var userTaskKey =
         resourcesHelper.createSingleUserTask(
-            t -> t.zeebeTaskListener(l -> l.complete().type(listenerType)));
+            t -> t.zeebeTaskListener(l -> l.completing().type(listenerType)));
 
     final JobHandler completeJobHandler =
         (jobClient, job) -> client.newCompleteCommand(job).result().denied(true).send().join();

@@ -132,7 +132,6 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
     assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(result.getTreePath()).isEqualTo("PI_" + processInstanceKey);
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo("ACTIVE");
@@ -810,7 +809,9 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
-    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isNotNull();
+    assertThat(result.items().getFirst().getProcessDefinitionId())
+        .isEqualTo(flowNodeInstance.getProcessDefinitionId());
   }
 
   @Test
@@ -985,19 +986,6 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     assertSorted(resultAsc, resultDesc, FlowNodeInstance::getType);
-  }
-
-  @Test
-  void shouldQueryFlowNodeInstanceByTreePath() {
-    // given
-    final var treePath = flowNodeInstance.getTreePath();
-    // when
-    final var result =
-        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.treePath(treePath)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getTreePath()).isEqualTo(treePath);
   }
 
   @Test

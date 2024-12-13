@@ -9,19 +9,23 @@ package io.camunda.webapps.backup.repository.elasticsearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
+import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.ElasticsearchSnapshotClient;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import co.elastic.clients.json.JsonData;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -40,7 +44,6 @@ import org.mockito.Answers;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,19 +56,19 @@ public class ElasticsearchBackupRepositoryTest {
   private final long incompleteCheckTimeoutLengthSeconds = 5 * 60L; // 5 minutes
   private final long incompleteCheckTimeoutLength = incompleteCheckTimeoutLengthSeconds * 1000;
   @Mock private ElasticsearchClient esClient;
-  @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private BackupRepositoryProps backupProps;
 
   private ElasticsearchBackupRepository backupRepository;
+  private final SnapshotNameProvider snapshotNameProvider = new TestSnapshotProvider();
 
   @BeforeEach
   public void setup() {
     backupRepository =
         Mockito.spy(
             new ElasticsearchBackupRepository(
-                esClient, objectMapper, backupProps, new TestSnapshotProvider(), executor));
+                esClient, backupProps, snapshotNameProvider, executor));
   }
 
   @Test
@@ -153,6 +156,37 @@ public class ElasticsearchBackupRepositoryTest {
   @Test
   void shouldCreateRepository() {
     assertThat(backupRepository).isNotNull();
+  }
+
+  @Test
+  public void shouldTakeSnapshot() throws IOException {
+    final var snapshotClient = Mockito.mock(ElasticsearchSnapshotClient.class);
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotClient.create((CreateSnapshotRequest) any()))
+        .then(
+            inv -> {
+              final var request = (CreateSnapshotRequest) inv.getArgument(0);
+              final var snapshotInfo =
+                  SnapshotInfo.of(
+                      b ->
+                          b.snapshot(request.snapshot())
+                              .endTimeInMillis(11223232L)
+                              .dataStreams(List.of())
+                              .uuid("uuuid")
+                              .indices(request.indices())
+                              .state("SUCCESS"));
+              return CreateSnapshotResponse.of(b -> b.snapshot(snapshotInfo).accepted(true));
+            });
+    final var metadata = new Metadata(1L, "1", 1, 1);
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo-name-1",
+            snapshotNameProvider.getSnapshotName(metadata),
+            List.of("index-1", "index-2"),
+            metadata);
+    // 1 element array to bypass closures over final fields
+    backupRepository.executeSnapshotting(
+        snapshotRequest, () -> {}, () -> fail("Snapshotting failed"));
   }
 
   @Test

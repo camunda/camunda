@@ -18,6 +18,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -37,12 +38,14 @@ public class CamundaUserDetailsServiceTest {
 
   @Mock private UserServices userService;
   @Mock private AuthorizationServices authorizationServices;
+  @Mock private TenantServices tenantServices;
   private CamundaUserDetailsService userDetailsService;
 
   @Before
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    userDetailsService = new CamundaUserDetailsService(userService, authorizationServices);
+    userDetailsService =
+        new CamundaUserDetailsService(userService, authorizationServices, tenantServices);
   }
 
   @Test

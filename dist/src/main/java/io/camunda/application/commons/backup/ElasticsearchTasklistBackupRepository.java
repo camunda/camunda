@@ -37,7 +37,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 public class ElasticsearchTasklistBackupRepository {
 
   private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupRepositoryProps;
   private final Executor threadPoolTaskExecutor;
 
@@ -47,7 +46,6 @@ public class ElasticsearchTasklistBackupRepository {
       final BackupRepositoryProps backupRepositoryProps,
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
     this.backupRepositoryProps = backupRepositoryProps;
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
   }
@@ -55,10 +53,6 @@ public class ElasticsearchTasklistBackupRepository {
   @Bean
   public BackupRepository backupRepository() {
     return new ElasticsearchBackupRepository(
-        esClient,
-        objectMapper,
-        backupRepositoryProps,
-        new WebappsSnapshotNameProvider(),
-        threadPoolTaskExecutor);
+        esClient, backupRepositoryProps, new WebappsSnapshotNameProvider(), threadPoolTaskExecutor);
   }
 }

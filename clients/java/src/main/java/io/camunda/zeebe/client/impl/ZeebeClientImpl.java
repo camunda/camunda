@@ -37,6 +37,7 @@ import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
@@ -105,6 +106,7 @@ import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateMappingCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateRoleCommandImpl;
@@ -704,6 +706,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public CreateRoleCommandStep1 newCreateRoleCommand() {
     return new CreateRoleCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public CreateGroupCommandStep1 newCreateGroupCommand() {
+    return new CreateGroupCommandImpl(httpClient, jsonMapper);
   }
 
   @Override

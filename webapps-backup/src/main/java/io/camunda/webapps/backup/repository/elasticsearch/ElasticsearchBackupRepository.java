@@ -22,8 +22,6 @@ import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotShardFailure;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotSort;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
 import io.camunda.webapps.backup.BackupException.InvalidRequestException;
@@ -57,19 +55,16 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   private final ElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
   private final BackupRepositoryProps backupProps;
   private final SnapshotNameProvider snapshotNameProvider;
   private final Executor executor;
 
   public ElasticsearchBackupRepository(
       final ElasticsearchClient esClient,
-      final ObjectMapper objectMapper,
       final BackupRepositoryProps operateProperties,
       final SnapshotNameProvider snapshotNameProvider,
       final Executor executor) {
     this.esClient = esClient;
-    this.objectMapper = objectMapper;
     backupProps = operateProperties;
     this.snapshotNameProvider = snapshotNameProvider;
     this.executor = executor;
@@ -262,8 +257,8 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                     //                    .(IndicesOptions.fromOptions(false, true, true, true))
                     .includeGlobalState(backupProps.includeGlobalState())
                     .metadata(
-                        objectMapper.convertValue(
-                            snapshotRequest.metadata(), new TypeReference<>() {}))
+                        MetadataMarshaller.asJson(
+                            snapshotRequest.metadata(), esClient._jsonpMapper()))
                     .featureStates("none")
                     .waitForCompletion(true));
     final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
@@ -271,10 +266,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     executor.execute(
         () -> {
           try {
-            esClient.snapshot().create(request);
-            listener.onSuccess.run();
+            final var response = esClient.snapshot().create(request);
+            listener.onResponse(response);
           } catch (final Exception e) {
-            listener.onFailure.run();
+            listener.onFailure(e);
           }
         });
   }

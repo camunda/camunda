@@ -348,4 +348,37 @@ public class SchemaManagerIT {
     assertThat(retrievedIndex.at("/settings/index/provided_name").asText())
         .isEqualTo(indexTemplate.getFullQualifiedName());
   }
+
+  @TestTemplate
+  void shouldAlsoUpdateCorrespondingIndexWhenIndexTemplateUpdated(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    config.setCreateSchema(true);
+
+    final var currentMappingsFile = index.getMappingsClasspathFilename();
+    final var newMappingsFile = "/mappings-added-property.json";
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config), Set.of(), Set.of(indexTemplate), config);
+
+    schemaManager.startup();
+
+    final var retrievedIndex =
+        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), currentMappingsFile)).isTrue();
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn(newMappingsFile);
+
+    schemaManager.startup();
+
+    // then
+    final var updatedIndex =
+        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+
+    assertThat(mappingsMatch(updatedIndex.get("mappings"), newMappingsFile)).isTrue();
+  }
 }

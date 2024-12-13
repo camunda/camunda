@@ -94,55 +94,6 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
 
   public TaskEntity() {}
 
-  public TaskEntity(
-      final Long key,
-      final String tenantId,
-      final Integer partitionId,
-      final String flowNodeBpmnId,
-      final String flowNodeInstanceId,
-      final OffsetDateTime completionTime,
-      final String processInstanceId,
-      final Long position,
-      final TaskState state,
-      final OffsetDateTime creationTime,
-      final String bpmnProcessId,
-      final String processDefinitionId,
-      final String assignee,
-      final String[] candidateGroups,
-      final String[] candidateUsers,
-      final String formKey,
-      final OffsetDateTime followUpDate,
-      final OffsetDateTime dueDate,
-      final String externalFormReference,
-      final Integer processDefinitionVersion,
-      final Map<String, String> customHeaders,
-      final Integer priority) {
-    super(flowNodeInstanceId, key, tenantId, partitionId);
-    this.flowNodeBpmnId = flowNodeBpmnId;
-    this.flowNodeInstanceId = flowNodeInstanceId;
-    this.completionTime = completionTime;
-    this.processInstanceId = processInstanceId;
-    this.position = position;
-    this.state = state;
-    this.creationTime = creationTime;
-    this.bpmnProcessId = bpmnProcessId;
-    this.processDefinitionId = processDefinitionId;
-    this.assignee = assignee;
-    this.candidateGroups = candidateGroups;
-    this.candidateUsers = candidateUsers;
-    this.formKey = formKey;
-    this.followUpDate = followUpDate;
-    this.dueDate = dueDate;
-    this.externalFormReference = externalFormReference;
-    this.processDefinitionVersion = processDefinitionVersion;
-    this.customHeaders = customHeaders;
-    this.priority = priority;
-    final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
-    joinRelation.setName("task");
-    joinRelation.setParent(Long.valueOf(processInstanceId));
-    setJoin(joinRelation);
-  }
-
   public String getFlowNodeBpmnId() {
     return flowNodeBpmnId;
   }

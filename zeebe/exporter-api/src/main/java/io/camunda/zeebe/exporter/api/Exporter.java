@@ -73,4 +73,15 @@ public interface Exporter {
    * @param record the record to export
    */
   void export(Record<?> record);
+
+  /**
+   * Hook to perform a data purge.
+   *
+   * <p>When this method is called, the exporter <b>deletes all data</b> that has been exported so
+   * far. It is called, when a cluster purge operation is executed.
+   *
+   * <p>This method should be blocking and only return when all data has been deleted. It may be
+   * retried and therefore <i>must</i> be idempotent.
+   */
+  default void purge() throws Exception {}
 }

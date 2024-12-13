@@ -29,12 +29,12 @@ import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.CommonUtils;
+import io.camunda.tasklist.webapp.dto.TaskDTO;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.dto.VariableDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
@@ -260,18 +260,20 @@ class TaskServiceTest {
   @Test
   void getTask() {
     // Given
-    final String taskId = "123";
-    final var providedTask = new TaskEntity().setId(taskId).setState(TaskState.CREATED);
+    final var taskId = 123L;
+    final var taskIdAsString = String.valueOf(taskId);
+    final var providedTask =
+        new TaskEntity().setId(taskIdAsString).setKey(taskId).setState(TaskState.CREATED);
     final var expectedTask =
         new TaskDTO()
-            .setId(taskId)
+            .setId(taskIdAsString)
             .setTaskState(TaskState.CREATED)
             .setTenantId(DEFAULT_TENANT_IDENTIFIER)
             .setPriority(50);
-    when(taskStore.getTask(taskId)).thenReturn(providedTask);
+    when(taskStore.getTask(taskIdAsString)).thenReturn(providedTask);
 
     // When
-    final var result = instance.getTask(taskId);
+    final var result = instance.getTask(taskIdAsString);
 
     // Then
     assertThat(result).isEqualTo(expectedTask);

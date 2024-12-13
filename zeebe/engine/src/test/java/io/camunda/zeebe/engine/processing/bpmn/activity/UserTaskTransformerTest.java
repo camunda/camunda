@@ -279,17 +279,17 @@ class UserTaskTransformerTest {
     Stream<Arguments> taskListeners() {
       return Stream.of(
           Arguments.of(
-              wrap(l -> l.create().type("myType")),
-              new ExpectedTaskListener(ZeebeTaskListenerEventType.create, "myType", "3")),
+              wrap(l -> l.creating().type("myType")),
+              new ExpectedTaskListener(ZeebeTaskListenerEventType.creating, "myType", "3")),
           Arguments.of(
-              wrap(l -> l.update().typeExpression("myTypeExp1").retries("8")),
-              new ExpectedTaskListener(ZeebeTaskListenerEventType.update, "myTypeExp1", "8")),
+              wrap(l -> l.updating().typeExpression("myTypeExp1").retries("8")),
+              new ExpectedTaskListener(ZeebeTaskListenerEventType.updating, "myTypeExp1", "8")),
           Arguments.of(
-              wrap(l -> l.assignment().type("=myTypeExp2").retries("1")),
-              new ExpectedTaskListener(ZeebeTaskListenerEventType.assignment, "myTypeExp2", "1")),
+              wrap(l -> l.assigning().type("=myTypeExp2").retries("1")),
+              new ExpectedTaskListener(ZeebeTaskListenerEventType.assigning, "myTypeExp2", "1")),
           Arguments.of(
-              wrap(l -> l.cancel().type("myType").retriesExpression("1+2")),
-              new ExpectedTaskListener(ZeebeTaskListenerEventType.cancel, "myType", "1+2")));
+              wrap(l -> l.canceling().type("myType").retriesExpression("1+2")),
+              new ExpectedTaskListener(ZeebeTaskListenerEventType.canceling, "myType", "1+2")));
     }
 
     @DisplayName("Should transform user task with task listener")
@@ -322,35 +322,73 @@ class UserTaskTransformerTest {
           transformZeebeUserTask(
               processWithUserTask(
                   b ->
-                      b.zeebeTaskListener(tl -> tl.create().type("create_1"))
-                          .zeebeTaskListener(tl -> tl.update().type("update"))
-                          .zeebeTaskListener(tl -> tl.assignment().type("assignment_2"))
-                          .zeebeTaskListener(tl -> tl.create().type("create_3"))
-                          .zeebeTaskListener(tl -> tl.cancel().type("cancel"))
-                          .zeebeTaskListener(tl -> tl.assignment().type("assignment_1"))
-                          .zeebeTaskListener(tl -> tl.create().type("create_2"))
+                      b.zeebeTaskListener(tl -> tl.creating().type("create_1"))
+                          .zeebeTaskListener(tl -> tl.updating().type("update"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("assignment_2"))
+                          .zeebeTaskListener(tl -> tl.creating().type("create_3"))
+                          .zeebeTaskListener(tl -> tl.canceling().type("cancel"))
+                          .zeebeTaskListener(tl -> tl.assigning().type("assignment_1"))
+                          .zeebeTaskListener(tl -> tl.creating().type("create_2"))
                           .zeebeUserTask()));
 
-      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.create))
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.creating))
           .extracting(this::type)
           .containsExactly("create_1", "create_3", "create_2");
-      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.assignment))
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.assigning))
           .extracting(this::type)
           .containsExactly("assignment_2", "assignment_1");
-      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.update)).hasSize(1);
-      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.cancel)).hasSize(1);
-      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.complete)).isEmpty();
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.updating)).hasSize(1);
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.canceling)).hasSize(1);
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.completing)).isEmpty();
     }
 
-    private String type(TaskListener listener) {
+    @DisplayName(
+        "Should transform user task with deprecated task listener event types and use new style")
+    @Test
+    @SuppressWarnings("deprecation")
+    void shouldTransformDeprecatedTaskListenersAndUseNewStyle() {
+      final var create = ZeebeTaskListenerEventType.create;
+      final var update = ZeebeTaskListenerEventType.update;
+      final var assignment = ZeebeTaskListenerEventType.assignment;
+      final var complete = ZeebeTaskListenerEventType.complete;
+      final var cancel = ZeebeTaskListenerEventType.cancel;
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(
+                  b ->
+                      b.zeebeTaskListener(tl -> tl.eventType(create).type("create"))
+                          .zeebeTaskListener(tl -> tl.eventType(assignment).type("assignment"))
+                          .zeebeTaskListener(tl -> tl.eventType(update).type("update"))
+                          .zeebeTaskListener(tl -> tl.eventType(complete).type("complete"))
+                          .zeebeTaskListener(tl -> tl.eventType(cancel).type("cancel"))
+                          .zeebeUserTask()));
+
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.creating))
+          .extracting(this::type)
+          .containsExactly("create");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.assigning))
+          .extracting(this::type)
+          .containsExactly("assignment");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.updating))
+          .extracting(this::type)
+          .containsExactly("update");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.completing))
+          .extracting(this::type)
+          .containsExactly("complete");
+      assertThat(userTask.getTaskListeners(ZeebeTaskListenerEventType.canceling))
+          .extracting(this::type)
+          .containsExactly("cancel");
+    }
+
+    private String type(final TaskListener listener) {
       return listener.getJobWorkerProperties().getType().getExpression();
     }
 
-    private String retries(TaskListener listener) {
+    private String retries(final TaskListener listener) {
       return listener.getJobWorkerProperties().getRetries().getExpression();
     }
 
-    private Consumer<TaskListenerBuilder> wrap(Consumer<TaskListenerBuilder> modifier) {
+    private Consumer<TaskListenerBuilder> wrap(final Consumer<TaskListenerBuilder> modifier) {
       return modifier;
     }
 

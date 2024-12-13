@@ -27,12 +27,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -78,6 +72,13 @@
       <artifactId>webapps-backup</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>

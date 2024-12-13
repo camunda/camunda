@@ -13,6 +13,8 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -28,11 +30,15 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
   private final UserServices userServices;
   private final AuthorizationServices authorizationServices;
+  private final TenantServices tenantServices;
 
   public CamundaUserDetailsService(
-      final UserServices userServices, final AuthorizationServices authorizationServices) {
+      final UserServices userServices,
+      final AuthorizationServices authorizationServices,
+      final TenantServices tenantServices) {
     this.userServices = userServices;
     this.authorizationServices = authorizationServices;
+    this.tenantServices = tenantServices;
   }
 
   @Override
@@ -63,6 +69,11 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .flatMap(Set::stream)
             .collect(Collectors.toList());
 
+    final var tenants =
+        tenantServices.getTenantsByMemberKey(storedUser.userKey()).stream()
+            .map(entity -> new TenantDTO(entity.key(), entity.tenantId(), entity.name()))
+            .toList();
+
     return aCamundaUser()
         .withUserKey(storedUser.userKey())
         .withName(storedUser.name())
@@ -70,6 +81,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
         .withAuthorizedApplications(authorizedApplications)
+        .withTenants(tenants)
         .build();
   }
 }

@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +66,10 @@ public final class CamundaRdbmsTestApplication
     }
 
     LOGGER.info("Start spring application ...");
-    return super.start();
+    super.start();
+    Awaitility.await("until spring context is started").until(this::isStarted);
+    LOGGER.info("Spring application started");
+    return this;
   }
 
   @Override

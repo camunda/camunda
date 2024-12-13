@@ -9,7 +9,7 @@ package io.camunda.tasklist;
 
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.property.IdentityProperties;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
 import io.camunda.tasklist.webapp.security.Permission;

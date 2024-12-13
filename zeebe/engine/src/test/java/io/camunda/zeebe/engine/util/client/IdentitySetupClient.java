@@ -59,7 +59,7 @@ public final class IdentitySetupClient {
     }
 
     public IdentitySetupInitializeClient withUser(final UserRecord user) {
-      record.setDefaultUser(user);
+      record.addUser(user);
       return this;
     }
 

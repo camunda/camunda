@@ -59,13 +59,14 @@ public class ZeebeTaskListenerTest extends BpmnModelElementInstanceTest {
             .userTask(
                 "my_user_task",
                 t ->
-                    t.zeebeUserTask().zeebeTaskListener(l -> l.cancel().type("rejection_listener")))
+                    t.zeebeUserTask()
+                        .zeebeTaskListener(l -> l.canceling().type("rejection_listener")))
             .endEvent()
             .done();
 
     final String modelXml =
         Bpmn.convertToString(modelInstance)
-            .replace("eventType=\"cancel\"", "eventType=\"rejection\"");
+            .replace("eventType=\"canceling\"", "eventType=\"rejection\"");
 
     // when
     final ZeebeTaskListeners taskListeners =

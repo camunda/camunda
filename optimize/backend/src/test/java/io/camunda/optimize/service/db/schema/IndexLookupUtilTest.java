@@ -72,36 +72,37 @@ public class IndexLookupUtilTest {
   @Test
   public void allNonDynamicIndicesHaveMappingsFromOpenSearchToElasticSearch() {
     // given
-    final List<String> knownOpensearchNonDynamicIndexNames =
-        OpenSearchSchemaManager.getAllNonDynamicMappings().stream()
+    final List<String> knownElasticsearchNonDynamicIndexNames =
+        ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
             .map(IndexMappingCreator::getIndexName)
             .toList();
 
     // when
     final List<String> convertedIndexNames =
-        ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
+        OpenSearchSchemaManager.getAllNonDynamicMappings().stream()
             .map(
-                esIndex ->
-                    IndexLookupUtil.convertIndexForDatabase(esIndex, DatabaseType.ELASTICSEARCH))
+                osIndex ->
+                    IndexLookupUtil.convertIndexForDatabase(osIndex, DatabaseType.ELASTICSEARCH))
             .map(IndexMappingCreator::getIndexName)
             .toList();
 
     // then
     assertThat(convertedIndexNames)
         .allSatisfy(
-            convertedIndex -> assertThat(convertedIndex).isIn(knownOpensearchNonDynamicIndexNames));
+            convertedIndex ->
+                assertThat(convertedIndex).isIn(knownElasticsearchNonDynamicIndexNames));
   }
 
   @Test
   public void allDynamicIndicesHaveMappingsFromOpenSearchToElasticSearch() {
     // given
     final String defKey = "key";
-    final List<IndexMappingCreator> dynamicESIndices =
+    final List<IndexMappingCreator> dynamicOSIndices =
         List.of(new DecisionInstanceIndexOS(defKey), new ProcessInstanceIndexOS(defKey));
 
     // when
     final List<String> convertedIndexClassNames =
-        dynamicESIndices.stream()
+        dynamicOSIndices.stream()
             .map(
                 esIndex ->
                     IndexLookupUtil.convertIndexForDatabase(esIndex, DatabaseType.ELASTICSEARCH))

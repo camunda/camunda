@@ -40,7 +40,7 @@ public class GroupSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.groupKey().asc(),
-        Comparator.comparing(GroupEntity::key));
+        Comparator.comparing(GroupEntity::groupKey));
   }
 
   @TestTemplate
@@ -48,7 +48,7 @@ public class GroupSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.groupKey().desc(),
-        Comparator.comparing(GroupEntity::key).reversed());
+        Comparator.comparing(GroupEntity::groupKey).reversed());
   }
 
   private void testSorting(

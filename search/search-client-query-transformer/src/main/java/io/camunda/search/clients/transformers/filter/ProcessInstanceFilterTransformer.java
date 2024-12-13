@@ -23,23 +23,25 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.TREE_PATH;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class ProcessInstanceFilterTransformer
-    implements FilterTransformer<ProcessInstanceFilter> {
+    extends IndexFilterTransformer<ProcessInstanceFilter> {
 
   private final ServiceTransformers transformers;
 
-  public ProcessInstanceFilterTransformer(final ServiceTransformers transformers) {
+  public ProcessInstanceFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
     this.transformers = transformers;
   }
 
@@ -68,7 +70,6 @@ public final class ProcessInstanceFilterTransformer
             longOperations(
                 PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringOperations(TREE_PATH, filter.treePathOperations())).ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(START_DATE, filter.startDateOperations()))
         .ifPresent(queries::addAll);
     ofNullable(dateTimeOperations(END_DATE, filter.endDateOperations())).ifPresent(queries::addAll);
@@ -82,11 +83,6 @@ public final class ProcessInstanceFilterTransformer
     }
 
     return and(queries);
-  }
-
-  @Override
-  public List<String> toIndices(final ProcessInstanceFilter filter) {
-    return List.of("operate-list-view-8.3.0_alias");
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

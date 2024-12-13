@@ -57,13 +57,15 @@ public class ZeebeTaskListenersTest extends BpmnModelElementInstanceTest {
                 "my_user_task",
                 t ->
                     t.zeebeUserTask()
-                        .zeebeTaskListener(l -> l.create().type("create_listener").retries("2"))
-                        .zeebeTaskListener(l -> l.update().type("update_listener"))
-                        .zeebeTaskListener(l -> l.update().type("update_listener_2").retries("33"))
+                        .zeebeTaskListener(l -> l.creating().type("create_listener").retries("2"))
+                        .zeebeTaskListener(l -> l.updating().type("update_listener"))
                         .zeebeTaskListener(
-                            l -> l.assignment().type("assignment_listener").retries("4"))
-                        .zeebeTaskListener(l -> l.complete().type("complete_listener").retries("5"))
-                        .zeebeTaskListener(l -> l.cancel().type("cancel_listener").retries("6")))
+                            l -> l.updating().type("update_listener_2").retries("33"))
+                        .zeebeTaskListener(
+                            l -> l.assigning().type("assignment_listener").retries("4"))
+                        .zeebeTaskListener(
+                            l -> l.completing().type("complete_listener").retries("5"))
+                        .zeebeTaskListener(l -> l.canceling().type("cancel_listener").retries("6")))
             .endEvent()
             .done();
 
@@ -76,12 +78,12 @@ public class ZeebeTaskListenersTest extends BpmnModelElementInstanceTest {
     assertThat(taskListeners)
         .extracting("eventType", "type", "retries")
         .containsExactly(
-            tuple(ZeebeTaskListenerEventType.create, "create_listener", "2"),
-            tuple(ZeebeTaskListenerEventType.update, "update_listener", DEFAULT_RETRIES),
-            tuple(ZeebeTaskListenerEventType.update, "update_listener_2", "33"),
-            tuple(ZeebeTaskListenerEventType.assignment, "assignment_listener", "4"),
-            tuple(ZeebeTaskListenerEventType.complete, "complete_listener", "5"),
-            tuple(ZeebeTaskListenerEventType.cancel, "cancel_listener", "6"));
+            tuple(ZeebeTaskListenerEventType.creating, "create_listener", "2"),
+            tuple(ZeebeTaskListenerEventType.updating, "update_listener", DEFAULT_RETRIES),
+            tuple(ZeebeTaskListenerEventType.updating, "update_listener_2", "33"),
+            tuple(ZeebeTaskListenerEventType.assigning, "assignment_listener", "4"),
+            tuple(ZeebeTaskListenerEventType.completing, "complete_listener", "5"),
+            tuple(ZeebeTaskListenerEventType.canceling, "cancel_listener", "6"));
   }
 
   private Collection<ZeebeTaskListener> getTaskListeners(

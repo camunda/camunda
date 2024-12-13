@@ -22,7 +22,6 @@
     <module>importer-common</module>
     <module>importer-8_6</module>
     <module>importer</module>
-    <module>archiver</module>
     <module>webapp</module>
     <module>mvc-auth-commons</module>
   </modules>

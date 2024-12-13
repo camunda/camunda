@@ -9,7 +9,6 @@ package io.camunda.operate.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.ArchiverModuleConfiguration;
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
@@ -21,7 +20,6 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
     properties = {
       OperateProperties.PREFIX + ".importerEnabled = false",
-      OperateProperties.PREFIX + ".archiverEnabled = false"
     })
 public class OnlyWebappIT extends ModuleAbstractIT {
 
@@ -34,10 +32,5 @@ public class OnlyWebappIT extends ModuleAbstractIT {
   @Test(expected = NoSuchBeanDefinitionException.class)
   public void testImportModuleIsNotPresent() {
     applicationContext.getBean(ImportModuleConfiguration.class);
-  }
-
-  @Test(expected = NoSuchBeanDefinitionException.class)
-  public void testArchiverModuleIsNotPresent() {
-    applicationContext.getBean(ArchiverModuleConfiguration.class);
   }
 }

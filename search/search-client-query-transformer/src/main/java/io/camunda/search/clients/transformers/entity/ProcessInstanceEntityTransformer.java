@@ -26,7 +26,6 @@ public class ProcessInstanceEntityTransformer
         source.getProcessDefinitionKey(),
         source.getParentProcessInstanceKey(),
         source.getParentFlowNodeInstanceKey(),
-        source.getTreePath(),
         source.getStartDate(),
         source.getEndDate(),
         toState(source.getState()),

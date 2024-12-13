@@ -28,15 +28,15 @@ public final class FlowNodeInstanceFixtures extends CommonFixtures {
             .flowNodeInstanceKey(nextKey())
             .processInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
-            .processDefinitionId("process-" + RANDOM.nextInt(10000))
-            .flowNodeId("flowNode-" + RANDOM.nextInt(10000))
+            .processDefinitionId("process-" + generateRandomString(20))
+            .flowNodeId("flowNode-" + generateRandomString(20))
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .treePath(nextStringId())
             .incidentKey(nextKey())
             .state(randomEnum(FlowNodeState.class))
             .type(randomEnum(FlowNodeType.class))
-            .tenantId("tenant-" + RANDOM.nextInt(10000));
+            .tenantId("tenant-" + generateRandomString(20));
 
     return builderFunction.apply(builder).build();
   }

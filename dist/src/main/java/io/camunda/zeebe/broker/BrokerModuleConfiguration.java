@@ -39,7 +39,6 @@ import org.springframework.context.annotation.Profile;
     basePackages = {
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
-      "io.camunda.authentication"
     })
 @Profile("broker")
 public class BrokerModuleConfiguration implements CloseableSilently {

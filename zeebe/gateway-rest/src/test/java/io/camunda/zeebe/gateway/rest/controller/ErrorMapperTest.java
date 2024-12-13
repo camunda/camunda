@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.netty.channel.ConnectTimeoutException;
@@ -49,6 +50,7 @@ public class ErrorMapperTest extends RestControllerTest {
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
   @MockBean UserTaskServices userTaskServices;
+  @MockBean ProcessCache processCache;
   @Autowired private View error;
 
   @BeforeEach

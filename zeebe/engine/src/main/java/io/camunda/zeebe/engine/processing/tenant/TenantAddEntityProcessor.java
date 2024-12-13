@@ -123,7 +123,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final String tenantId) {
     return switch (entityType) {
       case USER -> checkUserAssignment(entityKey, command, tenantId, tenantKey);
-      case MAPPING -> checkMappingAssignment(entityKey, command, tenantKey);
+      case MAPPING -> checkMappingAssignment(entityKey, command, tenantId, tenantKey);
       default ->
           throw new IllegalStateException(
               formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
@@ -154,7 +154,10 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private boolean checkMappingAssignment(
-      final long entityKey, final TypedRecord<TenantRecord> command, final long tenantKey) {
+      final long entityKey,
+      final TypedRecord<TenantRecord> command,
+      final String tenantId,
+      final long tenantKey) {
     final var mapping = mappingState.get(entityKey);
     if (mapping.isEmpty()) {
       rejectCommand(
@@ -163,7 +166,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
           formatErrorMessage(entityKey, tenantKey, "doesn't exist"));
       return false;
     }
-    if (mapping.get().getTenantKeysList().contains(tenantKey)) {
+    if (mapping.get().getTenantIdsList().contains(tenantId)) {
       rejectCommand(
           command,
           RejectionType.INVALID_ARGUMENT,

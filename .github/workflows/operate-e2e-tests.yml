@@ -130,6 +130,21 @@ jobs:
           path: operate/client/playwright-report/
           retention-days: 30
 
+      - name: Collect docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs'
+      - name: Tar logs
+        if: failure()
+        run: tar cvzf ./logs.tgz ./logs
+      - name: Upload logs to GitHub
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs.tgz
+          path: ./logs.tgz
+
       - name: Observe build status
         if: always()
         continue-on-error: true

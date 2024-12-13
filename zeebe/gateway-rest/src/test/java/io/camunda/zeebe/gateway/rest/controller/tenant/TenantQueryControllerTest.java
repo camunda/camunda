@@ -33,7 +33,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = TenantQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = TenantController.class)
 public class TenantQueryControllerTest extends RestControllerTest {
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
@@ -211,7 +211,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .bodyValue(
             """
             {
-              "sort": [{"field": "tenantId", "order": "asc"}]
+              "sort": [{"field": "tenantId", "order": "ASC"}]
             }
             """)
         .exchange()
@@ -268,9 +268,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortOrder: dsc.",
+                      "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)),
@@ -281,7 +281,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                     "sort": [
                         {
                             "field": "unknownField",
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",
@@ -301,7 +301,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 {
                     "sort": [
                         {
-                            "order": "asc"
+                            "order": "ASC"
                         }
                     ]
                 }""",

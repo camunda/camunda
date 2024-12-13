@@ -129,7 +129,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
 
     <dependency>

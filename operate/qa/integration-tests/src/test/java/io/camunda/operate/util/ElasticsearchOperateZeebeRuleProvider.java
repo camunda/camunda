@@ -10,6 +10,7 @@ package io.camunda.operate.util;
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
@@ -56,6 +57,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   protected ZeebeContainer zeebeContainer;
   @Autowired private TestContainerUtil testContainerUtil;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
   private ZeebeClient client;
 
   private String prefix;
@@ -63,9 +65,10 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   @Override
   public void starting(final Description description) {
-    prefix = TestUtil.createRandomString(10);
-    LOGGER.info("Starting Zeebe with ELS prefix: " + prefix);
+    prefix = indexPrefixHolder.createNewIndexPrefix();
+    LOGGER.info("Starting Camunda Exporter with prefix: " + prefix);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
+    operateProperties.getElasticsearch().setIndexPrefix(prefix);
 
     startZeebe();
   }
@@ -138,7 +141,12 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
     zeebeContainer =
-        testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
+        testContainerUtil.startZeebe(
+            zeebeVersion,
+            prefix,
+            2,
+            isMultitTenancyEnabled(),
+            ConnectionTypes.ELASTICSEARCH.getType());
 
     client =
         ZeebeClient.newClientBuilder()

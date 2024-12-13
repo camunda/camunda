@@ -9,7 +9,6 @@ package io.camunda.operate.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.ArchiverModuleConfiguration;
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
@@ -21,7 +20,6 @@ public class FullAppIT extends ModuleAbstractIT {
   public void testImportModuleIsPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
-    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(OperateIndexController.class)).isNotNull();
   }
 }

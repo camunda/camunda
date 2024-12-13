@@ -10,7 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.filter.FilterBase;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public interface FilterTransformer<T extends FilterBase>
     extends ServiceTransformer<T, SearchQuery> {
@@ -22,7 +22,7 @@ public interface FilterTransformer<T extends FilterBase>
 
   SearchQuery toSearchQuery(final T filter);
 
-  default List<String> toIndices(final T filter) {
+  default IndexDescriptor getIndex() {
     throw new IllegalArgumentException("Filter does not support indices");
   }
 }

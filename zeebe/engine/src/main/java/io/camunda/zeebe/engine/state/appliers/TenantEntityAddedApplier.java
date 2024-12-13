@@ -32,7 +32,7 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
     tenantState.addEntity(tenant);
     switch (tenant.getEntityType()) {
       case USER -> userState.addTenantId(tenant.getEntityKey(), tenant.getTenantId());
-      case MAPPING -> mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantKey());
+      case MAPPING -> mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
       default ->
           throw new IllegalStateException(
               String.format(

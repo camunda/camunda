@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -126,6 +127,15 @@ public final class ProcessInstanceClient {
     public long create() {
       final long position =
           writer.writeCommand(ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
+
+      final var resultingRecord = expectation.apply(position);
+      return resultingRecord.getValue().getProcessInstanceKey();
+    }
+
+    public long create(final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommand(
+              ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord, authorizations);
 
       final var resultingRecord = expectation.apply(position);
       return resultingRecord.getValue().getProcessInstanceKey();

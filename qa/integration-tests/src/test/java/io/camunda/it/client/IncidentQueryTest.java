@@ -248,20 +248,6 @@ class IncidentQueryTest {
   }
 
   @Test
-  void shouldFilterByTreePath() {
-    // given
-    final var treePath = incident.getTreePath();
-
-    // when
-    final var result =
-        zeebeClient.newIncidentQuery().filter(f -> f.treePath(treePath)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().getFirst().getTreePath()).isEqualTo(treePath);
-  }
-
-  @Test
   void shouldFilterByTenantId() {
     // given
     final var tenantId = incident.getTenantId();
