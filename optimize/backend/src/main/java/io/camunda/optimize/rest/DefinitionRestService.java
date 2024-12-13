@@ -30,11 +30,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -42,6 +38,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -197,9 +197,9 @@ public class DefinitionRestService {
    * @param type The type of the definition (process or decision).
    * @return the definition xml requested or json error structure on failure
    */
-  @GetMapping("/{type}/xml")
+  @GetMapping(path = "/{type}/xml", produces = MediaType.APPLICATION_XML_VALUE)
   @CacheRequest
-  public Response getDefinitionXml(
+  public ResponseEntity<String> getDefinitionXml(
       @PathVariable("type") final DefinitionType type,
       @RequestParam(name = "key", required = false) final String key,
       @RequestParam(name = "version", required = false) final String version,
@@ -212,26 +212,19 @@ public class DefinitionRestService {
     if (definitionDto.isEmpty()) {
       logAndThrowNotFoundException(type, key, version);
     }
-    final Response.ResponseBuilder responseBuilder = Response.ok().type(MediaType.APPLICATION_XML);
+
+    final BodyBuilder bodyBuilder = ResponseEntity.ok().contentType(MediaType.APPLICATION_XML);
     if (isDefinitionVersionSetToAllOrLatest(version)) {
-      addNoStoreCacheHeader(responseBuilder);
-    }
-    switch (type) {
-      case PROCESS:
-        final ProcessDefinitionOptimizeDto processDef =
-            (ProcessDefinitionOptimizeDto) definitionDto.get();
-        responseBuilder.entity(processDef.getBpmn20Xml());
-        break;
-      case DECISION:
-        final DecisionDefinitionOptimizeDto decisionDef =
-            (DecisionDefinitionOptimizeDto) definitionDto.get();
-        responseBuilder.entity(decisionDef.getDmn10Xml());
-        break;
-      default:
-        throw new BadRequestException("Unknown DefinitionType:" + type);
+      addNoStoreCacheHeader(bodyBuilder);
     }
 
-    return responseBuilder.build();
+    final String xml =
+        switch (type) {
+          case PROCESS -> ((ProcessDefinitionOptimizeDto) definitionDto.get()).getBpmn20Xml();
+          case DECISION -> ((DecisionDefinitionOptimizeDto) definitionDto.get()).getDmn10Xml();
+        };
+
+    return bodyBuilder.body(xml);
   }
 
   private List<TenantResponseDto> getTenantsForDefinitionVersions(
@@ -272,8 +265,8 @@ public class DefinitionRestService {
     }
   }
 
-  private void addNoStoreCacheHeader(final Response.ResponseBuilder processResponse) {
-    processResponse.header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
+  private void addNoStoreCacheHeader(final BodyBuilder bodyBuilder) {
+    bodyBuilder.header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
   }
 
   private void logAndThrowNotFoundException(

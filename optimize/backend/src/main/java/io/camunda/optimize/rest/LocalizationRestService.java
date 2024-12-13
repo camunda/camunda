@@ -12,6 +12,7 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.LocalizationService;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,7 +31,7 @@ public class LocalizationRestService {
     this.localizationService = localizationService;
   }
 
-  @GetMapping
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   @CacheRequest
   public byte[] getLocalizationFile(
       @RequestParam(name = "localeCode", required = false) final String localeCode) {

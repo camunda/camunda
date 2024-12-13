@@ -34,7 +34,6 @@ import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.BeanParam;
-import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
 import java.util.function.Supplier;
 import org.springframework.core.env.Environment;
@@ -183,12 +182,12 @@ public class SharingRestService {
    * dashboard for the id does not exist - 500: if there were problems checking the authorizations.
    */
   @GetMapping(DASHBOARD_SUB_PATH + "/{dashboardId}/isAuthorizedToShare")
-  public Response isAuthorizedToShareDashboard(
+  public String isAuthorizedToShareDashboard(
       @PathVariable("dashboardId") final String dashboardId, final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     sharingService.validateAndCheckAuthorization(dashboardId, userId);
     // if no error was thrown
-    return Response.status(Response.Status.OK).entity("OK").build();
+    return "OK";
   }
 
   @PostMapping("/status")
