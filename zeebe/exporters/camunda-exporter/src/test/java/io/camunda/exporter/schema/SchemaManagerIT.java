@@ -28,6 +28,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Collection;
@@ -388,6 +389,7 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  @RegressionTest("https://github.com/camunda/camunda/issues/26056")
   void shouldNotHaveValidationIssuesWithTheSameIndices(
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter) {
     config.setCreateSchema(true);
