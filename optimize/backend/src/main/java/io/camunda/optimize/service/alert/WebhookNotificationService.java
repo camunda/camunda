@@ -16,7 +16,6 @@ import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
@@ -36,6 +35,7 @@ import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -121,7 +121,7 @@ public class WebhookNotificationService
             composePayload(notification, webhook), resolveContentTypeFromHeaders(webhook)));
 
     if (webhook.getHeaders() != null) {
-      request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+      request.setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
       for (final Map.Entry<String, String> headerEntry : webhook.getHeaders().entrySet()) {
         request.setHeader(headerEntry.getKey(), headerEntry.getValue());
       }

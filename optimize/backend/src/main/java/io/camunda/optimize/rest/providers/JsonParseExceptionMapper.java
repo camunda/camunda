@@ -9,11 +9,11 @@ package io.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import jakarta.annotation.Priority;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 // The priority is needed to make sure it takes precedence over the default Jackson mapper
@@ -26,6 +26,6 @@ public class JsonParseExceptionMapper implements ExceptionMapper<JsonParseExcept
 
   @Override
   public Response toResponse(final JsonParseException exception) {
-    return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN).build();
+    return Response.status(Response.Status.BAD_REQUEST).type(MediaType.TEXT_PLAIN_VALUE).build();
   }
 }

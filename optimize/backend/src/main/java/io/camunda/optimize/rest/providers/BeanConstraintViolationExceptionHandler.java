@@ -12,7 +12,6 @@ import io.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
@@ -21,6 +20,7 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.springframework.http.MediaType;
 
 @Provider
 public class BeanConstraintViolationExceptionHandler
@@ -39,7 +39,7 @@ public class BeanConstraintViolationExceptionHandler
                         extractPropertyName(constraintViolation), constraintViolation.getMessage()))
             .collect(Collectors.toList());
     return Response.status(Response.Status.BAD_REQUEST)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(new ValidationErrorResponseDto(THE_REQUEST_BODY_WAS_INVALID, validationErrors))
         .build();
   }
