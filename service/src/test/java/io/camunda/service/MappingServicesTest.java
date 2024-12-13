@@ -31,7 +31,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.assertj.core.util.Arrays;
@@ -62,8 +61,7 @@ public class MappingServicesTest {
   @Test
   public void shouldCreateMapping() {
     // given
-    final var mappingDTO =
-        new MappingDTO("newClaimName", "newClaimValue", "mappingRuleName", Operator.CONTAINS);
+    final var mappingDTO = new MappingDTO("newClaimName", "newClaimValue", "mappingRuleName");
 
     // when
     services.createMapping(mappingDTO);
@@ -76,7 +74,6 @@ public class MappingServicesTest {
     assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(brokerRequestValue.getName()).isEqualTo(mappingDTO.name());
-    assertThat(brokerRequestValue.getOperator()).isEqualTo(mappingDTO.operator());
   }
 
   @Test

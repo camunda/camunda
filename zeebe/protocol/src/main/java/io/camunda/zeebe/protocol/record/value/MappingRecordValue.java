@@ -37,10 +37,4 @@ public interface MappingRecordValue extends RecordValue {
    * mapping.
    */
   String getName();
-
-  /**
-   * The operator used to evaluate the claim. This field determines the logic applied to the claim
-   * value, such as equality or containment.
-   */
-  Operator getOperator();
 }

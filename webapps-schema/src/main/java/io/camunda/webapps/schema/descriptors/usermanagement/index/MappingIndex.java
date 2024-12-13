@@ -18,7 +18,6 @@ public class MappingIndex extends UserManagementIndexDescriptor implements Prio5
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "name";
-  public static final String OPERATOR = "operator";
 
   public MappingIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

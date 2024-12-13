@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -29,8 +28,6 @@ public class CreateMappingTest {
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "Map Name";
-  public static final String OPERATOR_CONTAINS = "CONTAINS";
-  public static final String OPERATOR_EQUALS = "EQUALS";
 
   @AutoCloseResource ZeebeClient client;
 
@@ -51,7 +48,6 @@ public class CreateMappingTest {
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
             .name(NAME)
-            .operator(OPERATOR_CONTAINS)
             .send()
             .join();
 
@@ -60,10 +56,7 @@ public class CreateMappingTest {
     ZeebeAssertHelper.assertMappingCreated(
         CLAIM_NAME,
         CLAIM_VALUE,
-        (mappingRecordValue -> {
-          assertThat(mappingRecordValue.getName()).isEqualTo(NAME);
-          assertThat(mappingRecordValue.getOperator()).isEqualTo(Operator.CONTAINS);
-        }));
+        mappingRecordValue -> assertThat(mappingRecordValue.getName()).isEqualTo(NAME));
   }
 
   @Test
@@ -78,14 +71,7 @@ public class CreateMappingTest {
   void shouldRejectIfMissingClaimValue() {
     // when / then
     assertThatThrownBy(
-            () ->
-                client
-                    .newCreateMappingCommand()
-                    .claimName(CLAIM_NAME)
-                    .name(NAME)
-                    .operator(OPERATOR_CONTAINS)
-                    .send()
-                    .join())
+            () -> client.newCreateMappingCommand().claimName(CLAIM_NAME).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }
@@ -99,27 +85,10 @@ public class CreateMappingTest {
                     .newCreateMappingCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
-                    .operator(OPERATOR_EQUALS)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name");
-  }
-
-  @Test
-  void shouldRejectIfMissingOperator() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateMappingCommand()
-                    .claimName(CLAIM_NAME)
-                    .claimValue(CLAIM_VALUE)
-                    .name(NAME)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("operator");
   }
 
   @Test
@@ -130,7 +99,6 @@ public class CreateMappingTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .operator(OPERATOR_EQUALS)
         .send()
         .join();
 
@@ -142,7 +110,6 @@ public class CreateMappingTest {
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .operator(OPERATOR_EQUALS)
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)

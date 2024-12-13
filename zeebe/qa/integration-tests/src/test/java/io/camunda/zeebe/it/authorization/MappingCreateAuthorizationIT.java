@@ -18,7 +18,6 @@ import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -73,7 +72,6 @@ public class MappingCreateAuthorizationIT {
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name")
-            .operator(Operator.EQUALS.name())
             .send()
             .join();
 
@@ -99,7 +97,6 @@ public class MappingCreateAuthorizationIT {
               .claimName("claimName")
               .claimValue("claimValue")
               .name("name")
-              .operator(Operator.EQUALS.name())
               .send()
               .join();
 
@@ -123,7 +120,6 @@ public class MappingCreateAuthorizationIT {
               .claimName("claimName")
               .claimValue("claimValue")
               .name("name")
-              .operator(Operator.EQUALS.name())
               .send();
 
       // then

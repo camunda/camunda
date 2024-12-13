@@ -103,7 +103,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
@@ -361,12 +360,7 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () ->
-            new MappingDTO(
-                request.getClaimName(),
-                request.getClaimValue(),
-                request.getName(),
-                Operator.fromString(request.getOperator().getValue())));
+        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

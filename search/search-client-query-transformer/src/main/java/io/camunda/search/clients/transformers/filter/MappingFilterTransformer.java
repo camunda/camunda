@@ -13,7 +13,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_NAME;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_VALUE;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.OPERATOR;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingFilter;
@@ -31,7 +30,6 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
         stringTerms(CLAIM_NAME, filter.claimNames()),
         filter.claimName() == null ? null : term(CLAIM_NAME, filter.claimName()),
         filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()),
-        filter.name() == null ? null : term(NAME, filter.name()),
-        filter.operator() == null ? null : term(OPERATOR, filter.operator()));
+        filter.name() == null ? null : term(NAME, filter.name()));
   }
 }

@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.Mapping
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_VALUE;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.MAPPING_KEY;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.OPERATOR;
 
 public class MappingFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -22,7 +21,6 @@ public class MappingFieldSortingTransformer implements FieldSortingTransformer {
       case "claimName" -> CLAIM_NAME;
       case "claimValue" -> CLAIM_VALUE;
       case "name" -> NAME;
-      case "operator" -> OPERATOR;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

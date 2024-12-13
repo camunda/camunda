@@ -1142,7 +1142,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .claimName(claimName)
    *  .claimValue(claimValue)
    *  .name(name)
-   *  .operator(CONTAINS)
    *  .send();
    * </pre>
    *

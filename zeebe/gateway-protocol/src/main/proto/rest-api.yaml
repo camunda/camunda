@@ -3625,10 +3625,6 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        operator:
-          type: string
-          description: The operator used for the mapping comparison.
-          enum: [ EQUALS, CONTAINS ]
 
     MappingSearchQueryResponse:
       description: Mapping rule search response.
@@ -4934,10 +4930,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        operator:
-          type: string
-          description: The operator used for the mapping comparison.
-          enum: [ EQUALS, CONTAINS ]
+
     CamundaUser:
       type: "object"
       properties:
@@ -5198,15 +5191,11 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        operator:
-          type: string
-          description: The operator used for the mapping comparison.
-          enum: [EQUALS, CONTAINS]
       required:
         - claimName
         - claimValue
         - name
-        - operator
+
     MappingRuleCreateResponse:
       type: object
       properties:
@@ -5223,10 +5212,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        operator:
-          type: string
-          description: The operator used for the mapping comparison.
-          enum: [ EQUALS, CONTAINS ]
+
     MappingSearchResponse:
       type: object
       allOf:
@@ -5253,10 +5239,6 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        operator:
-          type: string
-          description: The operator used for the mapping comparison.
-          enum: [ EQUALS, CONTAINS ]
 
     TopologyResponse:
       description: The response of a topology request.

@@ -45,13 +45,4 @@ public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappin
    *     to the broker.
    */
   CreateMappingCommandStep1 name(final String name);
-
-  /**
-   * Set the operator to create mapping with.
-   *
-   * @param operator the operator value
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  CreateMappingCommandStep1 operator(final String operator);
 }

@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,8 +63,7 @@ public class MappingAppliersTest {
             .setMappingKey(mappingKey)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
-            .setName(claimName)
-            .setOperator(Operator.EQUALS);
+            .setName(claimName);
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;

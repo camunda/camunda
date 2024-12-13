@@ -16,9 +16,6 @@
       },
       "name": {
         "type": "keyword"
-      },
-      "operator": {
-        "type": "keyword"
       }
     }
   }

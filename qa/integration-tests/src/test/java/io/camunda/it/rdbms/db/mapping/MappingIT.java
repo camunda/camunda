@@ -56,7 +56,6 @@ public class MappingIT {
     final var mapping = rdbmsService.getMappingReader().findOne(mappingKey).orElse(null);
     assertThat(mapping).isNotNull();
     assertThat(mapping).usingRecursiveComparison().isEqualTo(randomizedMapping);
-    assertThat(mapping.operator()).isEqualTo(randomizedMapping.operator());
 
     // Delete the mapping
     final RdbmsWriter writer = rdbmsService.createWriter(1L);

@@ -53,7 +53,6 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
-import io.camunda.zeebe.gateway.protocol.rest.MappingItem.OperatorEnum;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
@@ -321,8 +320,7 @@ public final class SearchQueryResponseMapper {
         .mappingKey(mappingEntity.mappingKey())
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
-        .name(mappingEntity.name())
-        .operator(OperatorEnum.fromValue(mappingEntity.operator()));
+        .name(mappingEntity.name());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(

@@ -21,7 +21,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -59,8 +58,7 @@ public class MappingServices
         new BrokerMappingCreateRequest()
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
-            .setName(request.name())
-            .setOperator(request.operator()));
+            .setName(request.name()));
   }
 
   public MappingEntity getMapping(final Long mappingKey) {
@@ -83,5 +81,5 @@ public class MappingServices
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
   }
 
-  public record MappingDTO(String claimName, String claimValue, String name, Operator operator) {}
+  public record MappingDTO(String claimName, String claimValue, String name) {}
 }

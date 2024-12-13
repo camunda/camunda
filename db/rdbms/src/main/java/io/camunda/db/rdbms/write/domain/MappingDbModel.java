@@ -10,8 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public record MappingDbModel(
-    Long mappingKey, String claimName, String claimValue, String name, String operator)
+public record MappingDbModel(Long mappingKey, String claimName, String claimValue, String name)
     implements DbModel<MappingDbModel> {
 
   @Override
@@ -24,8 +23,7 @@ public record MappingDbModel(
                 .mappingKey(mappingKey)
                 .claimName(claimName)
                 .claimValue(claimValue)
-                .name(name)
-                .operator(operator))
+                .name(name))
         .build();
   }
 
@@ -35,7 +33,6 @@ public record MappingDbModel(
     private String claimName;
     private String claimValue;
     private String name;
-    private String operator;
 
     public MappingDbModelBuilder() {}
 
@@ -59,14 +56,9 @@ public record MappingDbModel(
       return this;
     }
 
-    public MappingDbModelBuilder operator(final String operator) {
-      this.operator = operator;
-      return this;
-    }
-
     @Override
     public MappingDbModel build() {
-      return new MappingDbModel(mappingKey, claimName, claimValue, name, operator);
+      return new MappingDbModel(mappingKey, claimName, claimValue, name);
     }
   }
 }

@@ -45,11 +45,6 @@ public record MappingSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder operator() {
-      currentOrdering = new FieldSorting("operator", null);
-      return this;
-    }
-
     @Override
     protected Builder self() {
       return this;

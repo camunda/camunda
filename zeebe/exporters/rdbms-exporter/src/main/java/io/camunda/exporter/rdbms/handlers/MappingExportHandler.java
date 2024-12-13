@@ -49,7 +49,6 @@ public class MappingExportHandler implements RdbmsExportHandler<MappingRecordVal
         .claimName(value.getClaimName())
         .claimValue(value.getClaimValue())
         .name(value.getName())
-        .operator(value.getOperator().name())
         .build();
   }
 }

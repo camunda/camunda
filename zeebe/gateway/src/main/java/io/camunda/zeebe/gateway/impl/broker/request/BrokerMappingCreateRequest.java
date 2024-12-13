@@ -12,7 +12,6 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.value.Operator;
 import org.agrona.DirectBuffer;
 
 public class BrokerMappingCreateRequest extends BrokerExecuteCommand<MappingRecord> {
@@ -36,11 +35,6 @@ public class BrokerMappingCreateRequest extends BrokerExecuteCommand<MappingReco
 
   public BrokerMappingCreateRequest setName(final String name) {
     requestDto.setName(name);
-    return this;
-  }
-
-  public BrokerMappingCreateRequest setOperator(final Operator operator) {
-    requestDto.setOperator(operator);
     return this;
   }
 
