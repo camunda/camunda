@@ -429,6 +429,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
         .allowNoIndices(true)
         .ignoreUnavailable(true)
         .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
+        .size(incidentIds.size())
         .build();
   }
 

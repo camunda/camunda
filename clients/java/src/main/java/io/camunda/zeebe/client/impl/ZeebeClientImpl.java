@@ -44,6 +44,7 @@ import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTenantCommandStep1;
@@ -113,6 +115,7 @@ import io.camunda.zeebe.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
+import io.camunda.zeebe.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
@@ -130,6 +133,7 @@ import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetRequestImpl;
@@ -711,6 +715,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public CreateGroupCommandStep1 newCreateGroupCommand() {
     return new CreateGroupCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UpdateGroupCommandStep1 newUpdateGroupCommand(final long groupKey) {
+    return new UpdateGroupCommandImpl(groupKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public DeleteGroupCommandStep1 newDeleteGroupCommand(final long groupKey) {
+    return new DeleteGroupCommandImpl(groupKey, httpClient);
   }
 
   @Override
