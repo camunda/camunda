@@ -14,7 +14,6 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -30,17 +29,84 @@ public class AddEntityTenantTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldAddEntitiesToTenant() {
-    // We can't use JUnit 5 parameterized tests due to JUnit 4's @Rule incompatibility, and JUnit
-    // 4's parameterized tests are not suitable for this test class    shouldAddEntityToTenant(USER,
-    //  createUser());
-    shouldAddEntityToTenant(GROUP, createGroup());
-    shouldAddEntityToTenant(MAPPING, createMapping());
-    shouldAddEntityToTenant(USER, createUser());
+  public void shouldAddMappingToTenant() {
+    // given
+    final var entityType = MAPPING;
+    final var entityKey = createMapping();
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey =
+        engine
+            .tenant()
+            .newTenant()
+            .withTenantId(tenantId)
+            .withName("Tenant 1")
+            .create()
+            .getValue()
+            .getTenantKey();
+
+    // when add user entity to tenant
+    final var updatedTenant =
+        engine
+            .tenant()
+            .addEntity(tenantKey)
+            .withEntityKey(entityKey)
+            .withEntityType(entityType)
+            .add()
+            .getValue();
+
+    // then assert that the entity was added correctly
+    Assertions.assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with key %s should be correctly added to tenant with key %s",
+            entityType, entityKey, tenantKey)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("entityKey", entityKey)
+        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("entityType", entityType);
   }
 
-  public void shouldAddEntityToTenant(final EntityType entityType, final long entityKey) {
+  @Test
+  public void shouldAddUserToTenant() {
     // given
+    final var entityType = USER;
+    final var entityKey = createUser();
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey =
+        engine
+            .tenant()
+            .newTenant()
+            .withTenantId(tenantId)
+            .withName("Tenant 1")
+            .create()
+            .getValue()
+            .getTenantKey();
+
+    // when add user entity to tenant
+    final var updatedTenant =
+        engine
+            .tenant()
+            .addEntity(tenantKey)
+            .withEntityKey(entityKey)
+            .withEntityType(entityType)
+            .add()
+            .getValue();
+
+    // then assert that the entity was added correctly
+    Assertions.assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with key %s should be correctly added to tenant with key %s",
+            entityType, entityKey, tenantKey)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("entityKey", entityKey)
+        .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("entityType", entityType);
+  }
+
+  @Test
+  public void shouldAddGroupToTenant() {
+    // given
+    final var entityType = GROUP;
+    final var entityKey = createUser();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
