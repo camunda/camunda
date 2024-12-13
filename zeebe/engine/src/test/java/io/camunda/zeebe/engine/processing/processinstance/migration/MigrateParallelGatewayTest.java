@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -157,7 +156,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -246,7 +245,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -353,7 +352,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -443,7 +442,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -530,7 +529,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -620,7 +619,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -707,7 +706,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
@@ -794,7 +793,7 @@ public class MigrateParallelGatewayTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
 
-    AssertionsForInterfaceTypes.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
