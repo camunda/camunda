@@ -296,7 +296,7 @@ public final class OAuthCredentialsProviderTest {
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(new File(cachePath));
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
-    cache.put(AUDIENCE, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE)).writeCache();
+    cache.put(CLIENT_ID, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE)).writeCache();
     builder
         .usePlaintext()
         .credentialsProvider(
@@ -671,6 +671,6 @@ public final class OAuthCredentialsProviderTest {
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(new File(cachePath)).readCache();
     final ZeebeClientCredentials credentials =
         new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE);
-    assertThat(cache.get(AUDIENCE)).contains(credentials);
+    assertThat(cache.get(CLIENT_ID)).contains(credentials);
   }
 }
