@@ -8,12 +8,15 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
@@ -61,34 +64,42 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
                       .toList();
               assertThat(rangeQueries).hasSize(2);
               assertThat(rangeQueries)
-                  .anySatisfy(
-                      q -> {
-                        assertThat(q.gte()).isEqualTo("2021-01-01T00:00:00.000+0000");
-                      });
+                  .anySatisfy(q -> assertThat(q.gte()).isEqualTo("2021-01-01T00:00:00.000+0000"));
               assertThat(rangeQueries)
-                  .anySatisfy(
-                      q -> {
-                        assertThat(q.lte()).isEqualTo("2023-01-01T00:00:00.000+0000");
-                      });
+                  .anySatisfy(q -> assertThat(q.lte()).isEqualTo("2023-01-01T00:00:00.000+0000"));
             });
   }
 
   @Test
   public void shouldQueryDifferentIndicesDependingOnEvent() {
+    // given
+    final TasklistMetricIndex tasklistMetricIndex = mock(TasklistMetricIndex.class);
+    final MetricIndex operateMetricIndex = mock(MetricIndex.class);
+    final var transformer =
+        new UsageMetricsFilterTransformer(tasklistMetricIndex, operateMetricIndex);
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     // should use Operate
     var filter =
         FilterBuilders.usageMetrics(
-            f -> f.events("EVENT_PROCESS_INSTANCE_START", "EVENT_PROCESS_INSTANCE_END"));
+            f ->
+                f.startTime(Operation.gte(startTime))
+                    .endTime(Operation.lte(endTime))
+                    .events("EVENT_PROCESS_INSTANCE_START", "EVENT_PROCESS_INSTANCE_END"));
 
     // when
-    var indices = new UsageMetricsFilterTransformer().toIndices(filter);
-    assertThat(indices).containsExactly("operate-metric-8.3.0_");
+    transformer.toSearchQuery(filter);
+    assertThat(transformer.getIndex()).isEqualTo(operateMetricIndex);
 
     // should use Tasklist
-    filter = FilterBuilders.usageMetrics(f -> f.events("task_completed_by_assignee"));
-
+    filter =
+        FilterBuilders.usageMetrics(
+            f ->
+                f.startTime(Operation.gte(startTime))
+                    .endTime(Operation.lte(endTime))
+                    .events("task_completed_by_assignee"));
     // when
-    indices = new UsageMetricsFilterTransformer().toIndices(filter);
-    assertThat(indices).containsExactly("tasklist-metric-8.3.0_");
+    transformer.toSearchQuery(filter);
+    assertThat(transformer.getIndex()).isEqualTo(tasklistMetricIndex);
   }
 }

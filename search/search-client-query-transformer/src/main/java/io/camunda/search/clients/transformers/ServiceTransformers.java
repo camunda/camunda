@@ -130,6 +130,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -137,6 +138,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
@@ -227,26 +229,9 @@ public final class ServiceTransformers {
             TenantQuery.class,
             UserTaskQuery.class,
             UserQuery.class,
-            VariableQuery.class)
+            VariableQuery.class,
+            UsageMetricsQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
-    mappers.put(ProcessInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(UserTaskQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(VariableQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(DecisionDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(DecisionRequirementsQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(DecisionInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(UserQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(RoleQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(FormQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(AuthorizationQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(IncidentQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(
-        FlowNodeInstanceQuery.class,
-        new TypedSearchQueryTransformer<FlowNodeInstanceFilter, FlowNodeInstanceSort>(mappers));
-    mappers.put(ProcessDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(TenantQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(MappingQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    mappers.put(UsageMetricsQuery.class, new TypedSearchQueryTransformer<>(mappers));
 
     // document entity -> domain entity
     mappers.put(DecisionDefinitionEntity.class, new DecisionDefinitionEntityTransformer());
@@ -335,13 +320,11 @@ public final class ServiceTransformers {
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
-    mappers.put(FlowNodeInstanceFilter.class, new FlownodeInstanceFilterTransformer());
-    mappers.put(IncidentFilter.class, new IncidentFilterTransformer(mappers));
-    mappers.put(FormFilter.class, new FormFilterTransformer(mappers));
-    mappers.put(ProcessDefinitionFilter.class, new ProcessDefinitionFilterTransformer(mappers));
-    mappers.put(TenantFilter.class, new TenantFilterTransformer());
-    mappers.put(MappingFilter.class, new MappingFilterTransformer());
-    mappers.put(UsageMetricsFilter.class, new UsageMetricsFilterTransformer());
+    mappers.put(
+        UsageMetricsFilter.class,
+        new UsageMetricsFilterTransformer(
+            indexDescriptors.get(TasklistMetricIndex.class),
+            indexDescriptors.get(MetricIndex.class)));
 
     // result config -> source config
     mappers.put(

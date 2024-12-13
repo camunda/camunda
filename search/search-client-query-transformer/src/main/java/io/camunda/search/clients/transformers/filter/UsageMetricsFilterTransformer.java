@@ -14,13 +14,26 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import java.util.ArrayList;
-import java.util.List;
 
 public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMetricsFilter> {
 
+  private final TasklistMetricIndex tasklistMetricIndex;
+  private final MetricIndex operateMetricIndex;
+  private UsageMetricsFilter filter;
+
+  public UsageMetricsFilterTransformer(
+      final TasklistMetricIndex tasklistMetricIndex, final MetricIndex metricIndex) {
+    this.tasklistMetricIndex = tasklistMetricIndex;
+    operateMetricIndex = metricIndex;
+  }
+
   @Override
   public SearchQuery toSearchQuery(final UsageMetricsFilter filter) {
+    this.filter = filter;
     final var queries = new ArrayList<SearchQuery>();
     queries.add(stringTerms("event", filter.events()));
     queries.addAll(dateTimeOperations("eventTime", Operation.gte(filter.startTime()).values()));
@@ -29,15 +42,15 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
   }
 
   @Override
-  public List<String> toIndices(final UsageMetricsFilter filter) {
+  public IndexDescriptor getIndex() {
     if (shouldUseTasklistIndex(filter)) {
-      return List.of("tasklist-metric-8.3.0_");
+      return tasklistMetricIndex;
     } else {
-      return List.of("operate-metric-8.3.0_");
+      return operateMetricIndex;
     }
   }
 
   private boolean shouldUseTasklistIndex(final UsageMetricsFilter filter) {
-    return filter.events().contains("task_completed_by_assignee");
+    return filter != null && filter.events().contains("task_completed_by_assignee");
   }
 }
