@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A generic interface for consuming API entities from an asynchronous data stream. This interface
@@ -71,6 +73,7 @@ public interface TypedApiEntityConsumer<T> {
    * Jackson's non-blocking parser to incrementally parse JSON data as it is streamed.
    */
   class JsonApiEntityConsumer<T> implements TypedApiEntityConsumer<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiEntityConsumer.class);
     private final ObjectMapper json;
     private final Class<T> type;
     private final NonBlockingByteBufferJsonParser parser;
@@ -124,11 +127,13 @@ public interface TypedApiEntityConsumer<T> {
         parser.close();
       } catch (final Exception e) {
         // log but otherwise ignore
+        LOGGER.warn("Failed to close JSON parser", e);
       }
       try {
         buffer.close();
       } catch (final IOException e) {
         // log but otherwise ignore
+        LOGGER.warn("Failed to close JSON buffer", e);
       }
       bufferedBytes = 0;
     }
