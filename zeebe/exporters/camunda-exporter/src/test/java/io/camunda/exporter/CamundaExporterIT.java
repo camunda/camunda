@@ -505,6 +505,7 @@ final class CamundaExporterIT {
     @BeforeEach
     void setup() {
       controller.resetScheduledTasks();
+      controller.resetLastRanAt();
     }
 
     @TestTemplate
@@ -517,13 +518,15 @@ final class CamundaExporterIT {
       camundaExporter.configure(context);
       camundaExporter.open(controller);
 
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
+
       // when
 
       // adds a not complete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
 
-      controller.runScheduledTasks(Duration.ofMinutes(1));
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
 
       final var record =
           factory.generateRecord(
@@ -532,7 +535,7 @@ final class CamundaExporterIT {
 
       camundaExporter.export(record);
 
-      controller.runScheduledTasks(Duration.ofMinutes(1));
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
 
       // then
       assertThat(controller.getPosition()).isEqualTo(-1);
