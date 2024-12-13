@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.LocalizationService;
 import org.slf4j.Logger;
@@ -16,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api" + LocalizationRestService.LOCALIZATION_PATH)
+@RequestMapping(REST_API_PATH + LocalizationRestService.LOCALIZATION_PATH)
 public class LocalizationRestService {
 
   public static final String LOCALIZATION_PATH = "/localization";
@@ -28,9 +30,10 @@ public class LocalizationRestService {
     this.localizationService = localizationService;
   }
 
-  @GetMapping()
+  @GetMapping
   @CacheRequest
-  public byte[] getLocalizationFile(@RequestParam(name = "localeCode") final String localeCode) {
+  public byte[] getLocalizationFile(
+      @RequestParam(name = "localeCode", required = false) final String localeCode) {
     return localizationService.getLocalizationFileBytes(localeCode);
   }
 }
