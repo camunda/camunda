@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
@@ -149,13 +150,11 @@ public class ElasticsearchTestExtension
   public void refreshTasklistIndices() {
     try {
 
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
+      final FlushRequest flush =
+          new FlushRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient
           .indices()
-          .refresh(
-              refreshRequest,
-              RequestOptions.DEFAULT.toBuilder().addParameter("wait_for", "true").build());
+          .flush(flush, RequestOptions.DEFAULT.toBuilder().addParameter("force", "true").build());
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
