@@ -446,7 +446,7 @@ public class TaskListenerTest {
         .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
         .hasErrorMessage("No more retries left.");
 
-    // resolve incident & complete failed TL job
+    // update retries & resolve incident
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -482,6 +482,61 @@ public class TaskListenerTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETED));
 
     assertThatProcessInstanceCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateIncidentOnAssigningListenerJobNoRetriesAndContinueAfterResolution() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assigning, listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("chewey").assign();
+
+    // when: fail assigning listener job with no retries
+    final var failedJob =
+        ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).withRetries(0).fail();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(incident.getValue())
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
+        .hasJobKey(failedJob.getKey())
+        .hasErrorMessage("No more retries left.");
+
+    // when: update retries and resolve incident
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withRetries(1)
+        .updateRetries();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // complete assigning listener job
+    completeJobs(processInstanceKey, listenerType);
+
+    // then
+    assertThat(records().limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs(
+            "Expected the listener job to complete after incident resolution, leading to the user task being assigned")
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNING),
+            tuple(ValueType.JOB, JobIntent.CREATED),
+            tuple(ValueType.JOB, JobIntent.FAILED),
+            tuple(ValueType.INCIDENT, IncidentIntent.CREATED),
+            tuple(ValueType.JOB, JobIntent.RETRIES_UPDATED),
+            tuple(ValueType.INCIDENT, IncidentIntent.RESOLVED),
+            // the failed listener job was retried
+            tuple(ValueType.JOB, JobIntent.COMPLETE),
+            tuple(ValueType.JOB, JobIntent.COMPLETED),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED));
   }
 
   @Test
