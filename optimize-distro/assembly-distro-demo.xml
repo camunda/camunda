@@ -73,8 +73,7 @@
     <!-- elastic config -->
     <file>
       <source>src/elastic/config/elasticsearch.yml</source>
-      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.demo.version}/config
-      </outputDirectory>
+      <outputDirectory>elasticsearch/elasticsearch-${elasticsearch.demo.version}/config</outputDirectory>
     </file>
   </files>
 
