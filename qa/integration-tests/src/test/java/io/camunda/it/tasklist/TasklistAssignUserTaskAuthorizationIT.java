@@ -17,6 +17,7 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -62,13 +63,13 @@ public class TasklistAssignUserTaskAuthorizationIT {
   @BeforeEach
   public void beforeAll() {
     final var defaultUser = "demo";
+    final var searchClients =
+        SearchClientsUtil.createSearchClients(broker.getElasticSearchHostAddress());
 
     // intermediate state, so that a user exists that has
     // access to the storage to retrieve data
-    try (final var intermediateCamundaClient =
-            AuthorizationsUtil.createClient(broker, defaultUser, defaultUser);
-        final var intermediateAuthClient =
-            broker.newAuthorizationClient(intermediateCamundaClient)) {
+    try (final var intermediateAuthClient =
+        AuthorizationsUtil.create(broker, broker.getElasticSearchHostAddress())) {
       intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
@@ -93,7 +94,7 @@ public class TasklistAssignUserTaskAuthorizationIT {
 
     adminCamundaClient =
         AuthorizationsUtil.createClient(broker, ADMIN_USER_NAME, ADMIN_USER_PASSWORD);
-    adminAuthClient = broker.newAuthorizationClient(adminCamundaClient);
+    adminAuthClient = new AuthorizationsUtil(broker, adminCamundaClient, searchClients);
     tasklistRestClient = broker.newTasklistClient();
 
     // deploy a process as admin user
@@ -241,9 +242,8 @@ public class TasklistAssignUserTaskAuthorizationIT {
     return userTaskKey.get();
   }
 
-  public static long ensureUserTaskAssigneeChanged(
+  public static void ensureUserTaskAssigneeChanged(
       final long processInstanceKey, final String newAssignee) {
-    final AtomicLong userTaskKey = new AtomicLong();
     Awaitility.await("should create an user task")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -256,8 +256,6 @@ public class TasklistAssignUserTaskAuthorizationIT {
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
-              userTaskKey.set(result.items().getFirst().getUserTaskKey());
             });
-    return userTaskKey.get();
   }
 }

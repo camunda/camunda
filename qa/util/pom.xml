@@ -16,6 +16,7 @@
   <name>Camunda QA Utilities</name>
 
   <dependencies>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>

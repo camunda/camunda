@@ -14,7 +14,6 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
-import io.camunda.client.ZeebeClient;
 import io.camunda.client.ZeebeClientBuilder;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -179,11 +177,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public TestRestTasklistClient newTasklistClient() {
-    return new TestRestTasklistClient(restAddress(), esContainer.getHttpHostAddress());
-  }
-
-  public AuthorizationsUtil newAuthorizationClient(final ZeebeClient camundaClient) {
-    return new AuthorizationsUtil(this, camundaClient, esContainer.getHttpHostAddress());
+    return new TestRestTasklistClient(restAddress());
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.qa.util.cluster;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -17,26 +18,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class TestRestTasklistClient implements AutoCloseable {
+public class TestRestTasklistClient implements CloseableSilently {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final URI endpoint;
-  private final String elasticsearchURL;
   private final HttpClient httpClient;
   private final BasicAuthentication authentication;
 
-  public TestRestTasklistClient(final URI endpoint, final String elasticsearchURL) {
-    this(endpoint, elasticsearchURL, HttpClient.newHttpClient(), null);
+  public TestRestTasklistClient(final URI endpoint) {
+    this(endpoint, HttpClient.newHttpClient(), null);
   }
 
   TestRestTasklistClient(
-      final URI endpoint,
-      final String elasticsearchURL,
-      final HttpClient httpClient,
-      final BasicAuthentication authentication) {
+      final URI endpoint, final HttpClient httpClient, final BasicAuthentication authentication) {
     this.endpoint = endpoint;
-    this.elasticsearchURL = elasticsearchURL;
     this.httpClient = httpClient;
     this.authentication = authentication;
   }
@@ -126,7 +122,7 @@ public class TestRestTasklistClient implements AutoCloseable {
 
   public TestRestTasklistClient withAuthentication(final String username, final String password) {
     return new TestRestTasklistClient(
-        endpoint, elasticsearchURL, httpClient, new BasicAuthentication(username, password));
+        endpoint, httpClient, new BasicAuthentication(username, password));
   }
 
   public record CreateProcessInstanceVariable(String name, Object value) {}

@@ -10,38 +10,38 @@ package io.camunda.zeebe.it.util;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.ZeebeClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.search.clients.SearchClients;
+import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.UserQuery;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse.BodyHandlers;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 
-public class AuthorizationsUtil implements AutoCloseable {
+public class AuthorizationsUtil implements CloseableSilently {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private final HttpClient httpClient = HttpClient.newHttpClient();
   private final TestGateway<?> gateway;
   private final ZeebeClient client;
-  private final String elasticsearchUrl;
+  private final SearchClients searchClients;
 
   public AuthorizationsUtil(
       final TestGateway<?> gateway, final ZeebeClient client, final String elasticsearchUrl) {
+    this(gateway, client, SearchClientsUtil.createSearchClients(elasticsearchUrl));
+  }
+
+  public AuthorizationsUtil(
+      final TestGateway<?> gateway, final ZeebeClient client, final SearchClients searchClients) {
     this.gateway = gateway;
     this.client = client;
-    this.elasticsearchUrl = elasticsearchUrl;
+    this.searchClients = searchClients;
   }
 
   public static AuthorizationsUtil create(
@@ -50,7 +50,7 @@ public class AuthorizationsUtil implements AutoCloseable {
         new AuthorizationsUtil(
             gateway,
             createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
-            elasticsearchUrl);
+            SearchClientsUtil.createSearchClients(elasticsearchUrl));
     authorizationUtil.awaitUserExistsInElasticsearch(DEFAULT_USER_USERNAME);
     return authorizationUtil;
   }
@@ -70,9 +70,8 @@ public class AuthorizationsUtil implements AutoCloseable {
             .email("foo@bar.com")
             .send()
             .join();
-
-    createPermissions(userCreateResponse.getUserKey(), permissions);
     awaitUserExistsInElasticsearch(username);
+    createPermissions(userCreateResponse.getUserKey(), permissions);
     return userCreateResponse.getUserKey();
   }
 
@@ -85,6 +84,9 @@ public class AuthorizationsUtil implements AutoCloseable {
           .resourceIds(permission.resourceIds())
           .send()
           .join();
+    }
+    if (permissions != null && permissions.length > 0) {
+      awaitPermissionExistsInElasticsearch(userKey, Arrays.asList(permissions).getLast());
     }
   }
 
@@ -125,40 +127,40 @@ public class AuthorizationsUtil implements AutoCloseable {
   }
 
   public void awaitUserExistsInElasticsearch(final String username) {
-    final HttpRequest request;
-    try {
-      request =
-          HttpRequest.newBuilder()
-              .POST(
-                  BodyPublishers.ofString(
-                      """
-                  {
-                    "query": {
-                      "match": {
-                        "username": "%s"
-                      }
-                    }
-                  }"""
-                          .formatted(username)))
-              .uri(
-                  new URI(
-                      "http://%s/%s/_count/"
-                          .formatted(
-                              elasticsearchUrl, new UserIndex("", true).getFullQualifiedName())))
-              .header("Content-Type", "application/json")
-              .build();
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
+    final var userQuery = UserQuery.of(b -> b.filter(f -> f.username(username)));
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .ignoreExceptions()
+        .until(
+            () -> {
+              final var response = searchClients.searchUsers(userQuery);
+              return response.total() > 0;
+            });
+  }
+
+  public void awaitPermissionExistsInElasticsearch(
+      final long userKey, final Permissions permissions) {
+    final var resourceType = permissions.resourceType().getValue();
+    final var permissionType = PermissionType.valueOf(permissions.permissionType().getValue());
+    final var resourceIds = permissions.resourceIds();
+
+    final var permissionQuery =
+        AuthorizationQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.ownerKeys(userKey)
+                            .resourceType(resourceType)
+                            .permissionType(permissionType)
+                            .resourceIds(resourceIds)));
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions()
         .until(
             () -> {
-              final var response = httpClient.send(request, BodyHandlers.ofString());
-              final var userExistsResponse =
-                  OBJECT_MAPPER.readValue(response.body(), UserExistsResponse.class);
-              return userExistsResponse.count > 0;
+              final var response = searchClients.searchAuthorizations(permissionQuery);
+              return response.total() > 0;
             });
   }
 
@@ -168,12 +170,10 @@ public class AuthorizationsUtil implements AutoCloseable {
 
   @Override
   public void close() {
-    httpClient.close();
+    client.close();
+    searchClients.close();
   }
 
   public record Permissions(
       ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private record UserExistsResponse(int count) {}
 }
