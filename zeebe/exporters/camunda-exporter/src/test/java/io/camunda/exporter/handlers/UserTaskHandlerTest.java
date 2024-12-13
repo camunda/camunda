@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
@@ -24,7 +25,6 @@ import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -37,7 +37,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserTaskHandlerTest {
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
@@ -48,10 +53,29 @@ public class UserTaskHandlerTest {
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATED);
+
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
-  private final UserTaskHandler underTest = new UserTaskHandler(indexName, formCache);
+  private final ExporterMetadata exporterMetadata = new ExporterMetadata();
+  private final UserTaskHandler underTest =
+      new UserTaskHandler(indexName, formCache, exporterMetadata);
+
+  @BeforeEach
+  void resetMetadata() {
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, -1);
+  }
+
+  private static Stream<Arguments> taskIdArguments() {
+    return Stream.of(
+        // First 8.7 UserTask key, Record Key, PI key, FNI key, expected id
+        Arguments.of(100, 110, 111, 211, 211), Arguments.of(100, 10, 111, 211, 10));
+  }
+
+  private static Stream<Arguments> taskRoutingArguments() {
+    // First 8.7 UserTask key, Record Key, PI key, FNI key, expected routing key
+    return Stream.of(Arguments.of(100, 110, 111, 211, 111), Arguments.of(100, 10, 111, 211, 10));
+  }
 
   @Test
   void testGetHandledValueType() {
@@ -68,10 +92,10 @@ public class UserTaskHandlerTest {
     // given
     SUPPORTED_INTENTS.forEach(
         intent -> {
-          final Record<UserTaskRecordValue> variableRecord =
+          final Record<UserTaskRecordValue> userTaskRecord =
               factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
           // when - then
-          assertThat(underTest.handlesRecord(variableRecord)).isTrue();
+          assertThat(underTest.handlesRecord(userTaskRecord)).isTrue();
         });
   }
 
@@ -89,22 +113,31 @@ public class UserTaskHandlerTest {
             });
   }
 
-  @Test
-  void shouldGenerateIds() {
+  @ParameterizedTest
+  @MethodSource("taskIdArguments")
+  void shouldGenerateIds(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long expectedId) {
     // given
-    final long expectedId = 123;
-    final Record<UserTaskRecordValue> processInstanceRecord =
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, firstSeenKey);
+    final Record<UserTaskRecordValue> userTaskRecord =
         factory.generateRecord(
             ValueType.USER_TASK,
             r ->
-                r.withIntent(VariableIntent.CREATED)
+                r.withIntent(UserTaskIntent.CREATED)
+                    .withKey(recordKey)
                     .withValue(
                         ImmutableUserTaskRecordValue.builder()
-                            .withElementInstanceKey(expectedId)
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withUserTaskKey(recordKey)
+                            .withElementInstanceKey(flowNodeInstanceKey)
                             .build()));
 
     // when
-    final var idList = underTest.generateIds(processInstanceRecord);
+    final var idList = underTest.generateIds(userTaskRecord);
 
     // then
     assertThat(idList).containsExactly(String.valueOf(expectedId));
@@ -120,10 +153,25 @@ public class UserTaskHandlerTest {
     assertThat(result.getId()).isEqualTo("id");
   }
 
-  @Test
-  void shouldAddEntityOnFlush() {
+  @ParameterizedTest
+  @MethodSource("taskRoutingArguments")
+  void shouldAddEntityOnFlush(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long expectedRoutingKey) {
     // given
-    final TaskEntity inputEntity = new TaskEntity().setProcessInstanceId("111");
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, firstSeenKey);
+    final TaskEntity inputEntity =
+        new TaskEntity()
+            .setId(
+                recordKey < firstSeenKey
+                    ? String.valueOf(recordKey)
+                    : String.valueOf(flowNodeInstanceKey))
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setKey(recordKey)
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -135,17 +183,25 @@ public class UserTaskHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,
-            inputEntity.getId(),
+            recordKey < firstSeenKey
+                ? String.valueOf(recordKey)
+                : String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
-            inputEntity.getProcessInstanceId());
+            String.valueOf(expectedRoutingKey));
   }
 
-  @Test
-  void shouldUpdateEntityFromRecord() {
+  @ParameterizedTest
+  @MethodSource("taskRoutingArguments")
+  void shouldUpdateEntityFromRecord(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long ignore) {
     // given
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, firstSeenKey);
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-    final var processInstanceKey = 123L;
     final var formKey = 456L;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
@@ -155,6 +211,7 @@ public class UserTaskHandlerTest {
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
             .withCandidateUsersList(Arrays.asList("user1", "user2"))
             .withProcessInstanceKey(processInstanceKey)
+            .withElementInstanceKey(flowNodeInstanceKey)
             .withFormKey(formKey)
             .build();
 
@@ -163,13 +220,15 @@ public class UserTaskHandlerTest {
             ValueType.USER_TASK,
             r ->
                 r.withIntent(UserTaskIntent.CREATED)
+                    .withKey(recordKey)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity =
+        new TaskEntity().setId(String.valueOf(taskRecordValue.getElementInstanceKey()));
     underTest.updateEntity(taskRecord, taskEntity);
 
     // then
@@ -202,7 +261,7 @@ public class UserTaskHandlerTest {
         .isEqualTo(taskRecordValue.getCandidateUsersList());
     assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
     assertThat(taskEntity.getJoin()).isNotNull();
-    assertThat(taskEntity.getJoin().getParent()).isEqualTo(taskRecordValue.getProcessInstanceKey());
+    assertThat(taskEntity.getJoin().getParent()).isEqualTo(processInstanceKey);
     assertThat(taskEntity.getJoin().getName()).isEqualTo(TaskJoinRelationshipType.TASK.getType());
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
     assertThat(taskEntity.getCreationTime())
@@ -312,7 +371,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(123L));
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -357,7 +416,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -396,7 +455,8 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = underTest.createNewEntity("id").setAssignee("test-assignee");
+    final TaskEntity taskEntity =
+        underTest.createNewEntity(String.valueOf(123)).setAssignee("test-assignee");
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -430,10 +490,11 @@ public class UserTaskHandlerTest {
             r ->
                 r.withIntent(UserTaskIntent.COMPLETED)
                     .withValue(taskRecordValue)
-                    .withTimestamp(System.currentTimeMillis()));
+                    .withTimestamp(System.currentTimeMillis())
+                    .withKey(123));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -453,11 +514,17 @@ public class UserTaskHandlerTest {
             taskEntity.getProcessInstanceId());
   }
 
-  @Test
-  void flushedEntityShouldContainUpdates() {
+  @ParameterizedTest
+  @MethodSource("taskRoutingArguments")
+  void flushedEntityShouldContainUpdates(
+      final long firstSeenKey,
+      final long recordKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey,
+      final long expectedRoutingKey) {
     // given
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, firstSeenKey);
     final var dateTime = OffsetDateTime.now();
-    final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
             .withChangedAttributes(
@@ -473,6 +540,7 @@ public class UserTaskHandlerTest {
             .withFollowUpDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
             .withCandidateUsersList(Arrays.asList("user1", "user2"))
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
+            .withElementInstanceKey(flowNodeInstanceKey)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -481,10 +549,15 @@ public class UserTaskHandlerTest {
             r ->
                 r.withIntent(UserTaskIntent.UPDATED)
                     .withValue(taskRecordValue)
+                    .withKey(recordKey)
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    final TaskEntity taskEntity =
+        underTest.createNewEntity(
+            recordKey < firstSeenKey
+                ? String.valueOf(recordKey)
+                : String.valueOf(flowNodeInstanceKey));
     underTest.updateEntity(taskRecord, taskEntity);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -512,15 +585,16 @@ public class UserTaskHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,
-            taskEntity.getId(),
+            recordKey < firstSeenKey
+                ? String.valueOf(recordKey)
+                : String.valueOf(flowNodeInstanceKey),
             taskEntity,
             expectedUpdates,
-            taskEntity.getProcessInstanceId());
+            String.valueOf(expectedRoutingKey));
   }
 
   @Test
   void flushedEntityShouldContainSequentialUpdatesInTheSameBatch() {
-
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
@@ -552,7 +626,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
     underTest.updateEntity(assignTaskRecord, taskEntity);
 
