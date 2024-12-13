@@ -547,6 +547,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
             createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
 
+    final boolean isZeebeVersionSnapshotForHigherThan870 =
+        isZeebeVersion87OrLater() || isZeebeVersionSnapshot();
     if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
       // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
       // `assingee`
@@ -584,7 +586,9 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                   createRunningUserTaskInstance(instance, exportedEvents);
               runningUserTaskInstance.setIdleDurationInMs(0L);
               runningUserTaskInstance.setWorkDurationInMs(
-                  getDurationInMsBetweenStartAndLastAssignOperation(exportedEvents));
+                  isZeebeVersionSnapshotForHigherThan870
+                      ? getDurationInMsBetweenStartAndLastAssignOperation(exportedEvents)
+                      : getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
               runningUserTaskInstance.setAssigneeOperations(
                   List.of(
                       createAssigneeOperationDto(
@@ -657,7 +661,9 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
                 getExpectedIdFromRecords(exportedEvents, ASSIGNED),
                 UNCLAIM_OPERATION_TYPE,
                 null,
-                getTimestampForZeebeLastUnassignEvent(exportedEvents))));
+                isZeebeVersionSnapshotForHigherThan870
+                    ? getTimestampForZeebeLastUnassignEvent(exportedEvents)
+                    : getTimestampForZeebeUnassignEvent(exportedEvents))));
 
     assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
         .singleElement()
