@@ -29,12 +29,15 @@ public class MigrationRunner implements Migrator {
 
   private final AuthorizationMigrationHandler authorizationMigrationHandler;
   private final TenantMigrationHandler tenantMigrationHandler;
+  private final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler;
 
   public MigrationRunner(
       final AuthorizationMigrationHandler authorizationMigrationHandler,
-      final TenantMigrationHandler tenantMigrationHandler) {
+      final TenantMigrationHandler tenantMigrationHandler,
+      final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
     this.tenantMigrationHandler = tenantMigrationHandler;
+    this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
   }
 
   @Override
@@ -55,6 +58,7 @@ public class MigrationRunner implements Migrator {
     while (true) {
       try {
         tenantMigrationHandler.migrate();
+        tenantMappingRuleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
         break;
       } catch (final Exception e) {

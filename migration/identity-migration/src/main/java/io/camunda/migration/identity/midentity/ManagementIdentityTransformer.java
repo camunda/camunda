@@ -7,17 +7,29 @@
  */
 package io.camunda.migration.identity.midentity;
 
+import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ManagementIdentityTransformer {
+
   public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Tenant tenant, final Exception e) {
     return new MigrationStatusUpdateRequest(
         tenant.tenantId(),
         MigrationEntityType.TENANT,
+        null,
+        e == null,
+        e == null ? null : e.getMessage());
+  }
+
+  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+      final MappingRule mappingRule, final Exception e) {
+    return new MigrationStatusUpdateRequest(
+        mappingRule.getName(),
+        MigrationEntityType.MAPPING_RULE,
         null,
         e == null,
         e == null ? null : e.getMessage());
