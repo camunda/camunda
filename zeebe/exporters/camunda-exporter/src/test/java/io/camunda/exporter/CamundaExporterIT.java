@@ -532,6 +532,8 @@ final class CamundaExporterIT {
 
       camundaExporter.export(record);
 
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
       // then
       assertThat(controller.getPosition()).isEqualTo(-1);
       verify(controller, never()).updateLastExportedRecordPosition(eq(record.getPosition()), any());

@@ -243,6 +243,10 @@ public class CamundaExporter implements Exporter {
   }
 
   private void flushAndReschedule() {
+    if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
+      scheduleDelayedFlush();
+      return;
+    }
     try {
       flush();
       updateLastExportedPosition(lastPosition);
