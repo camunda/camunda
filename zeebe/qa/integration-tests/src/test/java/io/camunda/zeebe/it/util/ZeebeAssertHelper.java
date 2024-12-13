@@ -422,6 +422,19 @@ public final class ZeebeAssertHelper {
     consumer.accept(groupRecordValue);
   }
 
+  public static void assertGroupDeleted(
+      final long groupKey, final Consumer<GroupRecordValue> consumer) {
+    final GroupRecordValue groupRecordValue =
+        RecordingExporter.groupRecords()
+            .withIntent(GroupIntent.DELETED)
+            .withGroupKey(groupKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(groupRecordValue).isNotNull();
+    consumer.accept(groupRecordValue);
+  }
+
   public static void assertUserCreated(final String username) {
     assertUserCreated(username, u -> {});
   }

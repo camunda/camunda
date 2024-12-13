@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -1046,6 +1047,23 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateGroupCommandStep1 newUpdateGroupCommand(long groupKey);
+
+  /**
+   * Command to delete a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newDeleteGroupCommand(123L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
 
   /**
    * Command to create a user.
