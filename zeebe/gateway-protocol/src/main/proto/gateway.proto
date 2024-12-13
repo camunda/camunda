@@ -120,8 +120,6 @@ message JobResult{
   //   * `candidateGroups` - reset by providing an empty list
   //   * `candidateUsers` - reset by providing an empty list
   //   * `priority` - minimum 0, maximum 100, default 50
-  //  Providing any of those attributes with a `null` value or omitting it preserves
-  //  the persisted attribute's value.
   optional JobResultCorrections corrections = 2;
 }
 
