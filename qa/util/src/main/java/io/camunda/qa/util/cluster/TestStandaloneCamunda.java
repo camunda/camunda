@@ -165,7 +165,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
 
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
-    withProperty("camunda.rest.query.enabled", true);
     withProperty("camunda.database.url", esURL);
     return super.createSpringBuilder();
   }

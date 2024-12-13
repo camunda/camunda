@@ -14,7 +14,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.controller.CamundaRestQueryController;
+import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,13 +22,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestQueryController
+@CamundaRestController
 @RequestMapping("/v2/users/{userKey}/roles")
-public class UserRolesQueryController {
+public class UserRolesController {
 
   private final RoleServices roleServices;
 
-  public UserRolesQueryController(final RoleServices roleServices) {
+  public UserRolesController(final RoleServices roleServices) {
     this.roleServices = roleServices;
   }
 

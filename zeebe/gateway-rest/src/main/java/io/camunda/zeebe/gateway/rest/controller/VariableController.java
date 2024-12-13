@@ -24,13 +24,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestQueryController
+@CamundaRestController
 @RequestMapping("/v2/variables")
-public class VariableQueryController {
+public class VariableController {
 
   private final VariableServices variableServices;
 
-  public VariableQueryController(final VariableServices variableServices) {
+  public VariableController(final VariableServices variableServices) {
     this.variableServices = variableServices;
   }
 

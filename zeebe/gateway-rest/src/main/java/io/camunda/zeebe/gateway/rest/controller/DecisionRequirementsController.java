@@ -26,13 +26,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@CamundaRestQueryController
+@CamundaRestController
 @RequestMapping("/v2/decision-requirements")
-public class DecisionRequirementsQueryController {
+public class DecisionRequirementsController {
 
   private final DecisionRequirementsServices decisionRequirementsServices;
 
-  public DecisionRequirementsQueryController(
+  public DecisionRequirementsController(
       final DecisionRequirementsServices decisionRequirementsServices) {
     this.decisionRequirementsServices = decisionRequirementsServices;
   }

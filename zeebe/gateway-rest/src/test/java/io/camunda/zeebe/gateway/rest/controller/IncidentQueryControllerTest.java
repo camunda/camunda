@@ -34,7 +34,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = IncidentQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = IncidentController.class)
 public class IncidentQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =

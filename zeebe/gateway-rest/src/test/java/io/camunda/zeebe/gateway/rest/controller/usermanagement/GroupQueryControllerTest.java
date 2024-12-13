@@ -34,7 +34,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = GroupQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
