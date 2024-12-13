@@ -90,9 +90,10 @@ runs:
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+
     - name: Restore maven cache
-      # Restore cache (but don't save it) if we're not on main or stable/* branches or ci:no-cache
-      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' || steps.is-cached-disabled.outputs.is-cache-disabled == 'true' ) }}
+      # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is not disabled
+      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') && steps.is-cache-disabled.outputs.is-cache-disabled == 'false' }}
       uses: actions/cache/restore@v4
       with:
         # This has to match the 'Cache local Maven repository' step above
