@@ -414,14 +414,11 @@ class UserTaskQueryTest {
         .isLessThan(result.items().get(2).getCreationDate());
 
     // Assert First and Last Sort Value matches the first and last item
-
-    // FIXME - https://github.com/camunda/camunda/issues/26080
-    /*assertThat(result.page().firstSortValues())
-    .isEqualTo(
-        List.of(
-            OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
-            firstItem.getUserTaskKey()));
-    */
+    assertThat(result.page().firstSortValues())
+        .isEqualTo(
+            List.of(
+                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
+                firstItem.getUserTaskKey()));
     assertThat(result.page().lastSortValues())
         .isEqualTo(
             List.of(

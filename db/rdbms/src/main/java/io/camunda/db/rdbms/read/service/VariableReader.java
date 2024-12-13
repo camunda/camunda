@@ -49,7 +49,7 @@ public class VariableReader extends AbstractEntityReader<VariableEntity> {
     LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
     final var totalHits = variableMapper.count(dbQuery);
     final var hits = variableMapper.search(dbQuery);
-    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   public record SearchResult(List<VariableEntity> hits, Integer total) {}

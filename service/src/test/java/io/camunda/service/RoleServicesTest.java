@@ -70,7 +70,7 @@ public class RoleServicesTest {
   public void shouldReturnSingleVariable() {
     // given
     final var entity = mock(RoleEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchRoles(any())).thenReturn(result);
   }
 
@@ -78,7 +78,7 @@ public class RoleServicesTest {
   public void shouldReturnSingleVariableForGet() {
     // given
     final var entity = mock(RoleEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchRoles(any())).thenReturn(result);
 
     // when
@@ -92,7 +92,7 @@ public class RoleServicesTest {
   public void shouldThrownExceptionIfNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+    when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
     assertThat(services.findRole(key)).isEmpty();

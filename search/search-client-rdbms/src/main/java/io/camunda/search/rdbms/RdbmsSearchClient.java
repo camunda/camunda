@@ -196,7 +196,7 @@ public class RdbmsSearchClient
                 UserTaskDbQuery.of(
                     b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
 
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null, null);
   }
 
   @Override

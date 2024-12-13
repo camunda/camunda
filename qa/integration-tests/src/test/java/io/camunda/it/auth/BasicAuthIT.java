@@ -78,6 +78,7 @@ public class BasicAuthIT {
             new SearchQueryResult<>(
                 1,
                 List.of(new UserEntity(1L, USERNAME, "name", "", passwordEncoder.encode(PASSWORD))),
+                null,
                 null));
     when(tenantServices.getTenantsByMemberKey(anyLong()))
         .thenReturn(List.of(new TenantEntity(9L, "T1", "Tenant 1", Set.of())));

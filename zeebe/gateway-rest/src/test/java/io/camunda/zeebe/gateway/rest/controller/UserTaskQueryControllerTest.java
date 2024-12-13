@@ -87,7 +87,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -111,7 +111,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
-          "firstSortValues": [],
+          "firstSortValues": ["f"],
           "lastSortValues": [
             "v"
           ]
@@ -186,7 +186,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       Collections.emptyMap(), // customHeaders
                       50 // priority
                       )))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
@@ -196,7 +197,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               List.of(
                   new VariableEntity(
                       0L, "name", "value", "test", false, 1L, 2L, "bpid", "<default>")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   @MockBean UserTaskServices userTaskServices;

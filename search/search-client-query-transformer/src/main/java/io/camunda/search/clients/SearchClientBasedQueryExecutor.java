@@ -51,7 +51,10 @@ public final class SearchClientBasedQueryExecutor {
     final SearchQueryResultTransformer<T, R> responseTransformer =
         (SearchQueryResultTransformer<T, R>) getSearchResultTransformer(documentClass);
     return executeSearch(
-        query, q -> responseTransformer.apply(searchClient.search(q, documentClass)));
+        query,
+        q ->
+            responseTransformer.apply(
+                searchClient.search(q, documentClass), !query.page().isNextPage()));
   }
 
   public <F extends FilterBase, S extends SortOption, T, R> List<R> findAll(

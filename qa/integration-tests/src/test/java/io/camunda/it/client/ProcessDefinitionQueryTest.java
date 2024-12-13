@@ -137,7 +137,7 @@ public class ProcessDefinitionQueryTest {
         zeebeClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(1))
+            .page(p -> p.limit(2))
             .send()
             .join();
     final var secondPage =
@@ -149,12 +149,44 @@ public class ProcessDefinitionQueryTest {
             .join();
 
     // then
-    assertThat(firstPage.items().size()).isEqualTo(1);
+    assertThat(firstPage.items().size()).isEqualTo(2);
     assertThat(firstPage.items().getFirst().getProcessDefinitionKey())
         .isEqualTo(resultAll.items().get(0).getProcessDefinitionKey());
+    assertThat(firstPage.items().getLast().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(1).getProcessDefinitionKey());
     assertThat(secondPage.items().size()).isEqualTo(1);
     assertThat(secondPage.items().getFirst().getProcessDefinitionKey())
-        .isEqualTo(resultAll.items().get(1).getProcessDefinitionKey());
+        .isEqualTo(resultAll.items().get(2).getProcessDefinitionKey());
+  }
+
+  @Test
+  void shouldGetPreviousPageWithSortingByProcessDefinitionId() {
+    // given
+    final var firstPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(2))
+            .send()
+            .join();
+    final var secondPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .send()
+            .join();
+    // when
+    final var firstPageAgain =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(2).searchBefore(secondPage.page().firstSortValues()))
+            .send()
+            .join();
+
+    // then
+    assertThat(firstPageAgain.items()).isEqualTo(firstPage.items());
   }
 
   @Test

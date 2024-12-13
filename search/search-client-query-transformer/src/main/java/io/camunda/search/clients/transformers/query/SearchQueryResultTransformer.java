@@ -16,30 +16,31 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class SearchQueryResultTransformer<T, R>
-    implements ServiceTransformer<SearchQueryResponse<T>, SearchQueryResult<R>> {
+public final class SearchQueryResultTransformer<T, R> {
   final ServiceTransformer<T, R> documentToEntityMapper;
 
   public SearchQueryResultTransformer(final ServiceTransformer<T, R> documentToEntityMapper) {
     this.documentToEntityMapper = documentToEntityMapper;
   }
 
-  @Override
-  public SearchQueryResult<R> apply(final SearchQueryResponse<T> value) {
-    final var hits = value.hits();
+  public SearchQueryResult<R> apply(final SearchQueryResponse<T> value, final boolean reverse) {
+    final var hits = reverse ? value.hits().reversed() : value.hits();
     final var items = of(hits);
     final var size = hits.size();
-    final Object[] sortValues;
+    final Object[] firstSortValues;
+    final Object[] lastSortValues;
     if (size > 0) {
-      final var lastItem = hits.get(size - 1);
-      sortValues = lastItem.sortValues();
+      firstSortValues = hits.getFirst().sortValues();
+      lastSortValues = hits.getLast().sortValues();
     } else {
-      sortValues = null;
+      firstSortValues = null;
+      lastSortValues = null;
     }
 
     return new Builder<R>()
         .total(value.totalHits())
-        .sortValues(sortValues)
+        .firstSortValues(firstSortValues)
+        .lastSortValues(lastSortValues)
         .items(items.stream().map(documentToEntityMapper::apply).toList())
         .build();
   }
