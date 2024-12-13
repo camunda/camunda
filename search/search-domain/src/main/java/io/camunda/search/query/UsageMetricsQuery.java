@@ -50,6 +50,16 @@ public record UsageMetricsQuery(
       return this;
     }
 
+    public UsageMetricsQuery.Builder filter(
+        final Function<UsageMetricsFilter.Builder, ObjectBuilder<UsageMetricsFilter>> fn) {
+      return filter(FilterBuilders.usageMetrics(fn));
+    }
+
+    public UsageMetricsQuery.Builder sort(
+        final Function<UsageMetricsSort.Builder, ObjectBuilder<UsageMetricsSort>> fn) {
+      return sort(SortOptionBuilders.usageMetrics(fn));
+    }
+
     @Override
     public UsageMetricsQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
