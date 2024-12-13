@@ -14,7 +14,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 
-public class UsageMetricsServices extends ApiServices<UsageMetricsServices> {
+public final class UsageMetricsServices extends ApiServices<UsageMetricsServices> {
 
   private final UsageMetricsSearchClient usageMetricsSearchClient;
 

@@ -22,6 +22,7 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -55,6 +56,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -79,7 +81,8 @@ public class RdbmsSearchClient
         RoleSearchClient,
         TenantSearchClient,
         MappingSearchClient,
-        GroupSearchClient {
+        GroupSearchClient,
+        UsageMetricsSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -124,6 +127,24 @@ public class RdbmsSearchClient
   @Override
   public RdbmsSearchClient withSecurityContext(final SecurityContext securityContext) {
     return this;
+  }
+
+  @Override
+  public Long countAssignees(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient countAssignees not implemented yet.");
+  }
+
+  @Override
+  public Long countProcessInstances(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient countProcessInstances not implemented yet.");
+  }
+
+  @Override
+  public Long countDecisionInstances(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient countDecisionInstances not implemented yet.");
   }
 
   @Override
