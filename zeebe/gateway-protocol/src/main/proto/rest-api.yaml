@@ -47,9 +47,9 @@ tags:
   - name: Signal
   - name: Tenant
   - name: User
+  - name: Usage metrics
   - name: User task
   - name: Variable
-  - name: Usage metrics
 
 paths:
   /topology:
@@ -3605,15 +3605,9 @@ paths:
       tags:
         - Usage metrics
       operationId: searchUsageMetrics
-      summary: Query usage metrics (alpha)
+      summary: Query usage metrics
       description: |
         Search for usage metrics by given start date and end date
-
-        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        The Camunda 8 API (REST) Overview page provides further details.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
       requestBody:
         required: true
         content:
