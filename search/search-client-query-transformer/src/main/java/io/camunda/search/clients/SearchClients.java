@@ -48,9 +48,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.CloseableSilently;
-import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class SearchClients
     implements AuthorizationSearchClient,

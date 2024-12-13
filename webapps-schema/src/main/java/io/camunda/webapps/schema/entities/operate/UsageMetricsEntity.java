@@ -28,18 +28,27 @@ public class UsageMetricsEntity {
       return false;
     }
     final UsageMetricsEntity that = (UsageMetricsEntity) o;
-    return Objects.equals(id, that.id) && Objects.equals(eventTime, that.eventTime)
-        && Objects.equals(event, that.event) && Objects.equals(value, that.value);
+    return Objects.equals(id, that.id)
+        && Objects.equals(eventTime, that.eventTime)
+        && Objects.equals(event, that.event)
+        && Objects.equals(value, that.value);
   }
 
   @Override
   public String toString() {
-    return "UsageMetricsEntity{" +
-        "id='" + id + '\'' +
-        ", eventTime=" + eventTime +
-        ", event='" + event + '\'' +
-        ", value='" + value + '\'' +
-        '}';
+    return "UsageMetricsEntity{"
+        + "id='"
+        + id
+        + '\''
+        + ", eventTime="
+        + eventTime
+        + ", event='"
+        + event
+        + '\''
+        + ", value='"
+        + value
+        + '\''
+        + '}';
   }
 
   public String getId() {
