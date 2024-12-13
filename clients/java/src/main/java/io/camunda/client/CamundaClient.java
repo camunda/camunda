@@ -1087,6 +1087,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long userKey, long groupKey);
 
   /**
+   * Command to unassign a user from a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newUnassignUserFromGroupCommand(123L, 456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long userKey, long groupKey);
+
+  /**
    * Command to create a user.
    *
    * <pre>
