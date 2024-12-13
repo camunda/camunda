@@ -44,8 +44,8 @@ public class AuthenticationRestService {
   }
 
   @GetMapping(path = TEST)
-  public void testAuthentication() {
-    authenticationService.testAuthentication();
+  public String testAuthentication() {
+    return authenticationService.testAuthentication();
   }
 
   @GetMapping(path = CALLBACK)
