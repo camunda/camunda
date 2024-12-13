@@ -125,7 +125,6 @@ public class CamundaExporter implements Exporter {
 
     writer = createBatchWriter();
 
-    scheduleDelayedFlush();
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
     taskManager.start();
@@ -243,10 +242,6 @@ public class CamundaExporter implements Exporter {
   }
 
   private void flushAndReschedule() {
-    if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
-      scheduleDelayedFlush();
-      return;
-    }
     try {
       flush();
       updateLastExportedPosition(lastPosition);
@@ -276,6 +271,10 @@ public class CamundaExporter implements Exporter {
           searchEngineClient.importersCompleted(partitionId, importPositionIndices);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
+    }
+
+    if (importersCompleted) {
+      scheduleDelayedFlush();
     }
   }
 
