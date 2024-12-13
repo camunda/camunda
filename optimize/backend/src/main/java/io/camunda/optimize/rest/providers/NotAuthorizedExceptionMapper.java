@@ -11,11 +11,11 @@ import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.security.AuthCookieService;
 import jakarta.ws.rs.NotAuthorizedException;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthorizedException> {
@@ -37,7 +37,7 @@ public class NotAuthorizedExceptionMapper implements ExceptionMapper<NotAuthoriz
     LOG.debug("Mapping NotAuthorizedException");
 
     return Response.status(Response.Status.UNAUTHORIZED)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         // TODO migrate to Spring MVC
         //        .cookie(cookieService.createDeleteOptimizeAuthNewCookie(true))
         .entity(getErrorResponseDto(notAuthorizedException))

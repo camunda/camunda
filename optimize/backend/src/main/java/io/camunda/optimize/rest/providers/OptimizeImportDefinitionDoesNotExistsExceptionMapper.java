@@ -10,11 +10,11 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeImportDefinitionDoesNotExistException;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class OptimizeImportDefinitionDoesNotExistsExceptionMapper
@@ -36,7 +36,7 @@ public class OptimizeImportDefinitionDoesNotExistsExceptionMapper
     LOG.info("Mapping OptimizeImportDefinitionDoesNotExistException");
 
     return Response.status(Response.Status.BAD_REQUEST)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(getMissingDefinitionResponseDto(exception))
         .build();
   }
