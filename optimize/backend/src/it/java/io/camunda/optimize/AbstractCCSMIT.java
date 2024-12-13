@@ -362,7 +362,7 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         Instant.ofEpochMilli(startOfElement.getTimestamp()), ZoneId.systemDefault());
   }
 
-  protected OffsetDateTime getTimestampForZeebeLastAssignEvents(
+  protected OffsetDateTime getTimestampForZeebeLastAssignedEvents(
       final List<? extends ZeebeRecordDto> eventsForElement, final String assigneeId) {
     final ZeebeRecordDto startOfElement =
         eventsForElement.stream()
@@ -383,11 +383,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected OffsetDateTime getTimestampForZeebeUnassignEvent(
       final List<? extends ZeebeRecordDto> eventsForElement) {
     return getTimestampForZeebeAssignEvents(eventsForElement, "");
-  }
-
-  protected OffsetDateTime getTimestampForZeebeLastUnassignEvent(
-      final List<? extends ZeebeRecordDto> eventsForElement) {
-    return getTimestampForZeebeLastAssignEvents(eventsForElement, "");
   }
 
   private <T> List<T> getZeebeExportedProcessableEvents(
