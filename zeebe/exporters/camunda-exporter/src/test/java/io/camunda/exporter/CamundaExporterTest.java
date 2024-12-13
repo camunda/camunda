@@ -118,7 +118,9 @@ final class CamundaExporterTest {
       final var metadata = new ExporterMetadata();
       exporter = new CamundaExporter(resourceProvider, metadata);
       expected.setLastIncidentUpdatePosition(3);
+      expected.setFirstUserTaskKey(5);
       metadata.setLastIncidentUpdatePosition(-1);
+      metadata.setFirstUserTaskKey(-1);
       testController.updateLastExportedRecordPosition(-1, expected.serialize());
 
       // when
@@ -127,6 +129,7 @@ final class CamundaExporterTest {
 
       // then
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(3);
+      assertThat(metadata.getFirstUserTaskKey()).isEqualTo(5);
     }
   }
 
@@ -142,6 +145,7 @@ final class CamundaExporterTest {
       when(exporterEngineClient.importersCompleted(anyInt(), any())).thenReturn(true);
 
       expected.setLastIncidentUpdatePosition(5);
+      expected.setFirstUserTaskKey(10);
 
       // when
       exporter.configure(testContext);
@@ -152,6 +156,7 @@ final class CamundaExporterTest {
       final var actual = new ExporterMetadata();
       testController.readMetadata().ifPresent(actual::deserialize);
       assertThat(actual.getLastIncidentUpdatePosition()).isEqualTo(5);
+      assertThat(actual.getFirstUserTaskKey()).isEqualTo(10);
     }
   }
 }
