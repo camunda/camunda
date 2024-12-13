@@ -482,11 +482,20 @@ public class ProcessInstanceMigrationMigrateProcessor
               final String targetGatewayId =
                   sourceElementIdToTargetElementId.get(
                       BufferUtil.bufferAsString(sourceGateway.getId()));
-
               requireValidGatewayMapping(
                   sourceGateway,
                   Optional.ofNullable(targetGatewayId),
                   targetProcessDefinition,
+                  elementInstance.getValue().getProcessInstanceKey());
+
+              final ExecutableFlowNode targetGateway =
+                  targetProcessDefinition
+                      .getProcess()
+                      .getElementById(targetGatewayId, ExecutableFlowNode.class);
+              requireSequenceFlowExistsInTarget(
+                  activeFlowId,
+                  sourceGateway,
+                  targetGateway,
                   elementInstance.getValue().getProcessInstanceKey());
 
               return activeFlow;
