@@ -132,14 +132,13 @@ public class BackupPriorityConfiguration {
         List.of(
             // OPERATE
             new BatchOperationTemplate(indexPrefix, isElasticsearch),
-            new OperationTemplate(indexPrefix, isElasticsearch),
-            new UserTaskTemplate(indexPrefix, isElasticsearch));
+            new OperationTemplate(indexPrefix, isElasticsearch));
 
     final List<Prio4Backup> prio4 =
         List.of(
             // OPERATE
+            new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
-            new EventTemplate(indexPrefix, isElasticsearch),
             new EventTemplate(indexPrefix, isElasticsearch),
             new FlowNodeInstanceTemplate(indexPrefix, isElasticsearch),
             new IncidentTemplate(indexPrefix, isElasticsearch),
@@ -147,6 +146,7 @@ public class BackupPriorityConfiguration {
             new MessageTemplate(indexPrefix, isElasticsearch),
             new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
             new SequenceFlowTemplate(indexPrefix, isElasticsearch),
+            new UserTaskTemplate(indexPrefix, isElasticsearch),
             new VariableTemplate(indexPrefix, isElasticsearch),
             // TASKLIST
             new DraftTaskVariableTemplate(indexPrefix, isElasticsearch),
@@ -155,7 +155,6 @@ public class BackupPriorityConfiguration {
     final List<Prio5Backup> prio5 =
         List.of(
             // OPERATE
-            new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
             new MetricIndex(indexPrefix, isElasticsearch),
             new ProcessIndex(indexPrefix, isElasticsearch),

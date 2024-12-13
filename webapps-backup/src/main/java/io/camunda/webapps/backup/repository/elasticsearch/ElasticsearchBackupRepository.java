@@ -247,7 +247,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             b ->
                 b.repository(snapshotRequest.repositoryName())
                     .snapshot(snapshotRequest.snapshotName())
-                    .indices(snapshotRequest.indices())
+                    .indices(snapshotRequest.indices().indices())
                     // ignoreUnavailable = false - indices defined by their exact name MUST be
                     // present
                     // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
