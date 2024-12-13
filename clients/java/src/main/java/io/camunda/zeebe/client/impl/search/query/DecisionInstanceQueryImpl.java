@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import java.time.Duration;
@@ -74,7 +75,7 @@ public class DecisionInstanceQueryImpl
   @Override
   public DecisionInstanceQuery sort(final DecisionInstanceSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(SearchQuerySortRequestMapper.toDecisionInstanceSearchQuerySortRequest(sorting));
     return this;
   }
 

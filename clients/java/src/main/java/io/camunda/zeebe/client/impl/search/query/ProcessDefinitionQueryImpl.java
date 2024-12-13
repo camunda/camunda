@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import java.time.Duration;
@@ -93,7 +94,8 @@ public class ProcessDefinitionQueryImpl
   @Override
   public ProcessDefinitionQuery sort(final ProcessDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(
+        SearchQuerySortRequestMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
     return this;
   }
 

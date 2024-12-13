@@ -26,9 +26,11 @@ import io.camunda.client.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 public class SearchIncidentTest extends ClientRestTest {
@@ -128,7 +130,9 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQueryRequest request =
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
-    final List<SearchQuerySortRequest> sorts = request.getSort();
+    final List<SearchQuerySortRequest> sorts =
+        SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(
+            Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(10);
     assertSort(sorts.get(0), "incidentKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "errorType", SortOrderEnum.ASC);

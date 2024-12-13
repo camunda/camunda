@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -92,7 +93,9 @@ public class UserTaskQueryImpl
   @Override
   public UserTaskQuery sort(final UserTaskSort value) {
     final UserTaskSortImpl sorting = (UserTaskSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toUserTaskSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 
