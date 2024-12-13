@@ -706,10 +706,7 @@ public class ProtoBufSerializer
 
   @Override
   public byte[] encodePurgeRequest(final PurgeRequest req) {
-    return Requests.PurgeRequest.newBuilder()
-        .setDryRun(req.dryRun())
-        .build()
-        .toByteArray();
+    return Requests.PurgeRequest.newBuilder().setDryRun(req.dryRun()).build().toByteArray();
   }
 
   @Override
@@ -970,8 +967,7 @@ public class ProtoBufSerializer
   @Override
   public PurgeRequest decodePurgeRequest(final byte[] encodedRequest) {
     try {
-      final var purgeRequest =
-          Requests.PurgeRequest.parseFrom(encodedRequest);
+      final var purgeRequest = Requests.PurgeRequest.parseFrom(encodedRequest);
       return new PurgeRequest(purgeRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

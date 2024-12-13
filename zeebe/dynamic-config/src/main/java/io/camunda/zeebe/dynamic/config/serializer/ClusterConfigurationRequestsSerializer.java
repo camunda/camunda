@@ -86,8 +86,7 @@ public interface ClusterConfigurationRequestsSerializer {
   ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest decodeForceRemoveBrokersRequest(
       byte[] encodedRequest);
 
-  ClusterConfigurationManagementRequest.PurgeRequest decodePurgeRequest(
-      byte[] encodedRequest);
+  ClusterConfigurationManagementRequest.PurgeRequest decodePurgeRequest(byte[] encodedRequest);
 
   byte[] encodeResponse(ClusterConfigurationChangeResponse response);
 

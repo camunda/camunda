@@ -175,12 +175,9 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> purge(
-      final PurgeRequest purgeRequest) {
+  public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
 
-    return handleRequest(
-        purgeRequest.dryRun(),
-        new PurgeRequestTransformer());
+    return handleRequest(purgeRequest.dryRun(), new PurgeRequestTransformer());
   }
 
   @Override

@@ -57,8 +57,7 @@ public interface ClusterConfigurationManagementApi {
   ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       ClusterPatchRequest clusterPatchRequest);
 
-  ActorFuture<ClusterConfigurationChangeResponse> purge(
-      PurgeRequest purgeRequest);
+  ActorFuture<ClusterConfigurationChangeResponse> purge(PurgeRequest purgeRequest);
 
   ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
       ForceRemoveBrokersRequest forceRemoveBrokersRequest);
