@@ -37,7 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIf;
-import org.slf4j.Logger;
 
 @DisabledIf("isZeebeVersionPre86")
 public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
@@ -46,8 +45,6 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
   private static final String DUE_DATE = "2024-07-24T00:00Z[GMT]";
   private static final OffsetDateTime EXPECTED_DUE_DATE = OffsetDateTime.parse("2024-07-24T00:00Z");
   private static final String ASSIGNEE_ID = "assigneeId";
-
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskImportIT.class);
 
   @Test
   public void importRunningZeebeUserTaskData() {
@@ -550,12 +547,17 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
             createSimpleNativeUserTaskProcessWithAssignee(TEST_PROCESS, null, ASSIGNEE_ID));
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
 
-    // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
-    waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
-    zeebeExtension.unassignUserTask(
-        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
-    // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
-    waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+      // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
+      // `assingee`
+      waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
+      zeebeExtension.unassignUserTask(
+          getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
+      // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
+      waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+    } else {
+      waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    }
 
     // remove all zeebe records except userTask ones to test userTask import only
     removeAllZeebeExportRecordsExceptUserTaskRecords();
@@ -618,12 +620,17 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
 
-    // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined `assingee`
-    waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
-    zeebeExtension.unassignUserTask(
-        getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
-    // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
-    waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+      // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
+      // `assingee`
+      waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
+      zeebeExtension.unassignUserTask(
+          getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
+      // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
+      waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
+    } else {
+      waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
+    }
 
     // when
     importAllZeebeEntitiesFromLastIndex();
