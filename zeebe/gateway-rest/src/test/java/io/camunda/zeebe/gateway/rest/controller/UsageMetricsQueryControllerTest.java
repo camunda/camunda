@@ -26,9 +26,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = UsageMetricsQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(UsageMetricsQueryController.class)
 public class UsageMetricsQueryControllerTest extends RestControllerTest {
   static final String USAGE_METRICS_URL = "/v2/usage-metrics/";
   static final String USAGE_METRICS_SEARCH_URL = USAGE_METRICS_URL + "search";
