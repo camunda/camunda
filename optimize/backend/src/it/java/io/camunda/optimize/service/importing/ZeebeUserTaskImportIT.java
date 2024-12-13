@@ -558,6 +558,8 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
       // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
       waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
     } else {
+      zeebeExtension.unassignUserTask(
+          getExpectedUserTaskInstanceIdFromRecords(getZeebeExportedUserTaskEvents()));
       waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
     }
 
@@ -635,6 +637,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
       // wait for the 2nd `ASSIGNED` event triggered by UT unassign operation
       waitUntilUserTaskRecordWithIntentExported(2, ASSIGNED);
     } else {
+      zeebeExtension.unassignUserTask(getExpectedUserTaskInstanceIdFromRecords(exportedEvents));
       waitUntilUserTaskRecordWithIntentExported(ASSIGNED);
     }
 
