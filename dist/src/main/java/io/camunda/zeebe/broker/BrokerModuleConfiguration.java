@@ -70,7 +70,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerShutdownHelper shutdownHelper,
       final PrometheusMeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
-      final UserServices userServices) {
+      // The UserServices class is not available if you want to start-up the Standalone Broker
+      @Autowired(required = false) final UserServices userServices) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
