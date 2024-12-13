@@ -64,7 +64,7 @@ public class ReportRestService {
     this.reportRestMapper = reportRestMapper;
   }
 
-  @PostMapping(path = "/process/single/")
+  @PostMapping("/process/single/")
   public IdResponseDto createNewSingleProcessReport(
       @Valid @RequestBody final SingleProcessReportDefinitionRequestDto definition,
       final HttpServletRequest request) {
@@ -81,7 +81,7 @@ public class ReportRestService {
         Optional.ofNullable(definition).orElseGet(SingleProcessReportDefinitionRequestDto::new));
   }
 
-  @PostMapping(path = "/decision/single/")
+  @PostMapping("/decision/single/")
   public IdResponseDto createNewSingleDecisionReport(
       @Valid @RequestBody
           final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto,
@@ -93,7 +93,7 @@ public class ReportRestService {
             .orElseGet(SingleDecisionReportDefinitionRequestDto::new));
   }
 
-  @PostMapping(path = "/process/combined/")
+  @PostMapping("/process/combined/")
   public IdResponseDto createNewCombinedProcessReport(
       @RequestBody final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
       final HttpServletRequest request) {
@@ -104,11 +104,11 @@ public class ReportRestService {
             .orElseGet(CombinedReportDefinitionRequestDto::new));
   }
 
-  @PostMapping(path = "/{id}/copy")
+  @PostMapping("/{id}/copy")
   public IdResponseDto copyReport(
       @PathVariable("id") final String id,
-      @RequestParam("collectionId") String collectionId,
-      @RequestParam("name") final String newReportName,
+      @RequestParam(name = "collectionId", required = false) String collectionId,
+      @RequestParam(name = "name", required = false) final String newReportName,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     if (collectionId == null) {
@@ -120,7 +120,7 @@ public class ReportRestService {
     }
   }
 
-  @GetMapping()
+  @GetMapping
   public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
@@ -133,7 +133,7 @@ public class ReportRestService {
     return reportDefinitions;
   }
 
-  @GetMapping(path = "/{id}")
+  @GetMapping("/{id}")
   public AuthorizedReportDefinitionResponseDto getReport(
       @PathVariable("id") final String reportId, final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
@@ -144,7 +144,7 @@ public class ReportRestService {
     return reportDefinition;
   }
 
-  @PostMapping(path = "/{id}/evaluate")
+  @PostMapping("/{id}/evaluate")
   public AuthorizedReportEvaluationResponseDto evaluateReportByIdWithFilters(
       @PathVariable("id") final String reportId,
       @Valid final PaginationRequestDto paginationRequestDto,
@@ -163,7 +163,7 @@ public class ReportRestService {
         reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
-  @PostMapping(path = "/evaluate")
+  @PostMapping("/evaluate")
   public AuthorizedReportEvaluationResponseDto evaluateProvidedReport(
       @Valid @RequestBody final ReportDefinitionDto reportDefinitionDto,
       @Valid final PaginationRequestDto paginationRequestDto,
@@ -186,10 +186,10 @@ public class ReportRestService {
         reportEvaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
-  @PutMapping(path = "/process/single/{id}")
+  @PutMapping("/process/single/{id}")
   public void updateSingleProcessReport(
       @PathVariable("id") final String reportId,
-      @RequestParam("force") final boolean force,
+      @RequestParam(name = "force", required = false) final boolean force,
       @RequestBody @Valid final SingleProcessReportDefinitionRequestDto updatedReport,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
@@ -205,10 +205,10 @@ public class ReportRestService {
     reportService.updateSingleProcessReport(reportId, updatedReport, userId, force);
   }
 
-  @PutMapping(path = "/decision/single/{id}")
+  @PutMapping("/decision/single/{id}")
   public void updateSingleDecisionReport(
       @PathVariable("id") final String reportId,
-      @RequestParam("force") final boolean force,
+      @RequestParam(name = "force", required = false) final boolean force,
       @RequestBody @Valid final SingleDecisionReportDefinitionRequestDto updatedReport,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
@@ -218,10 +218,10 @@ public class ReportRestService {
     reportService.updateSingleDecisionReport(reportId, updatedReport, userId, force);
   }
 
-  @PutMapping(path = "/process/combined/{id}")
+  @PutMapping("/process/combined/{id}")
   public void updateCombinedProcessReport(
       @PathVariable("id") final String reportId,
-      @RequestParam("force") final boolean force,
+      @RequestParam(name = "force", required = false) final boolean force,
       @RequestBody final CombinedReportDefinitionRequestDto updatedReport,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
@@ -231,17 +231,17 @@ public class ReportRestService {
     reportService.updateCombinedProcessReport(userId, reportId, updatedReport);
   }
 
-  @GetMapping(path = "/{id}/delete-conflicts")
+  @GetMapping("/{id}/delete-conflicts")
   public ConflictResponseDto getDeleteConflicts(
       @PathVariable("id") final String reportId, final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return reportService.getReportDeleteConflictingItems(userId, reportId);
   }
 
-  @DeleteMapping(path = "/{id}")
+  @DeleteMapping("/{id}")
   public void deleteReport(
       @PathVariable("id") final String reportId,
-      @RequestParam("force") final boolean force,
+      @RequestParam(name = "force", required = false) final boolean force,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     reportService.deleteReportAsUser(userId, reportId, force);

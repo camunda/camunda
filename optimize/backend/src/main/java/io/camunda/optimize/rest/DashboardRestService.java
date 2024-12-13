@@ -9,6 +9,7 @@ package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -41,7 +42,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api" + DashboardRestService.DASHBOARD_PATH)
+@RequestMapping(REST_API_PATH + DashboardRestService.DASHBOARD_PATH)
 public class DashboardRestService {
 
   public static final String DASHBOARD_PATH = "/dashboard";
@@ -83,8 +84,8 @@ public class DashboardRestService {
   @PostMapping(path = "/{id}/copy")
   public IdResponseDto copyDashboard(
       @PathVariable("id") final String dashboardId,
-      @RequestParam("collectionId") String collectionId,
-      @RequestParam("name") final String newDashboardName,
+      @RequestParam(name = "collectionId", required = false) String collectionId,
+      @RequestParam(name = "name", required = false) final String newDashboardName,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
@@ -100,7 +101,8 @@ public class DashboardRestService {
 
   @GetMapping(path = "/{id}")
   public AuthorizedDashboardDefinitionResponseDto getDashboard(
-      @RequestParam("id") final String dashboardId, final HttpServletRequest request) {
+      @RequestParam(name = "id", required = false) final String dashboardId,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId);
@@ -112,7 +114,7 @@ public class DashboardRestService {
   @GetMapping(path = INSTANT_PREVIEW_PATH + "/{procDefKey}")
   public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(
       @PathVariable("procDefKey") final String processDefinitionKey,
-      @RequestParam("template") final String dashboardJsonTemplateFilename,
+      @RequestParam(name = "template", required = false) final String dashboardJsonTemplateFilename,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition;

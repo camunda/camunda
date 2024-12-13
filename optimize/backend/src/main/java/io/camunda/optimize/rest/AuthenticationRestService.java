@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.service.security.authentication.AbstractAuthenticationService;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api" + AuthenticationRestService.AUTHENTICATION_PATH)
+@RequestMapping(REST_API_PATH + AuthenticationRestService.AUTHENTICATION_PATH)
 public class AuthenticationRestService {
 
   public static final String AUTHENTICATION_PATH = "/authentication";
@@ -48,8 +50,8 @@ public class AuthenticationRestService {
 
   @GetMapping(path = CALLBACK)
   public void loginCallback(
-      final @RequestParam("code") String code,
-      final @RequestParam("state") String state,
+      final @RequestParam(name = "code", required = false) String code,
+      final @RequestParam(name = "state", required = false) String state,
       final @RequestParam(name = "error", required = false) String error,
       final HttpServletRequest request,
       final HttpServletResponse response)

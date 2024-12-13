@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
@@ -24,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api" + IdentityRestService.IDENTITY_RESOURCE_PATH)
+@RequestMapping(REST_API_PATH + IdentityRestService.IDENTITY_RESOURCE_PATH)
 public class IdentityRestService {
   public static final String IDENTITY_RESOURCE_PATH = "/identity";
   public static final String IDENTITY_SEARCH_SUB_PATH = "/search";
@@ -42,9 +44,9 @@ public class IdentityRestService {
 
   @GetMapping(path = IDENTITY_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchIdentity(
-      @RequestParam("terms") final String searchTerms,
+      @RequestParam(value = "terms", required = false) final String searchTerms,
       @RequestParam(value = "limit", defaultValue = "25") final int limit,
-      @RequestParam("excludeUserGroups") final boolean excludeUserGroups,
+      @RequestParam(value = "excludeUserGroups", required = false) final boolean excludeUserGroups,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return identityService.searchForIdentitiesAsUser(

@@ -45,7 +45,7 @@ public class ProcessOverviewRestService {
     this.sessionService = sessionService;
   }
 
-  @GetMapping(path = "/overview")
+  @GetMapping("/overview")
   public List<ProcessOverviewResponseDto> getProcessOverviews(
       final @RequestParam(name = SORT_BY, required = false) String sortBy,
       final @RequestParam(name = SORT_ORDER, required = false) SortOrder sortOrder,

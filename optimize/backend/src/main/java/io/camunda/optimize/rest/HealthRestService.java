@@ -8,15 +8,16 @@
 package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.service.status.StatusCheckingService;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Component
-@Path(READYZ_PATH)
+@RestController
+@RequestMapping(REST_API_PATH + READYZ_PATH)
 public class HealthRestService {
 
   public static final String READYZ_PATH = "/readyz";
@@ -27,7 +28,7 @@ public class HealthRestService {
     this.statusCheckingService = statusCheckingService;
   }
 
-  @GET
+  @GetMapping
   public Response getConnectionStatus() {
     if (statusCheckingService.isConnectedToDatabase()) {
       return Response.ok().build();

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -19,18 +21,14 @@ import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import java.util.List;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Path(ProcessVariableRestService.PROCESS_VARIABLES_PATH)
-@Component
+@RestController
+@RequestMapping(REST_API_PATH + ProcessVariableRestService.PROCESS_VARIABLES_PATH)
 public class ProcessVariableRestService {
 
   public static final String PROCESS_VARIABLES_PATH = "/variables";
@@ -48,54 +46,42 @@ public class ProcessVariableRestService {
     this.processVariableLabelService = processVariableLabelService;
   }
 
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping
   public List<ProcessVariableNameResponseDto> getVariableNames(
-      @Valid final ProcessVariableNameRequestDto variableRequestDto,
+      @Valid @RequestBody final ProcessVariableNameRequestDto variableRequestDto,
       final HttpServletRequest request) {
     variableRequestDto.setTimezone(TimeZoneUtil.extractTimezone(request));
     return processVariableService.getVariableNames(variableRequestDto);
   }
 
-  @POST
-  @Path("/reports")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/reports")
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(
-      final GetVariableNamesForReportsRequestDto requestDto, final HttpServletRequest request) {
+      @RequestBody final GetVariableNamesForReportsRequestDto requestDto,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return processVariableService.getVariableNamesForAuthorizedReports(
         userId, requestDto.getReportIds());
   }
 
-  @POST
-  @Path("/values")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/values")
   public List<String> getVariableValues(
-      final ProcessVariableValueRequestDto variableValueRequestDto,
+      @RequestBody final ProcessVariableValueRequestDto variableValueRequestDto,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return processVariableService.getVariableValues(userId, variableValueRequestDto);
   }
 
-  @POST
-  @Path("/values/reports")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/values/reports")
   public List<String> getVariableValuesForReports(
-      final ProcessVariableReportValuesRequestDto requestDto, final HttpServletRequest request) {
+      @RequestBody final ProcessVariableReportValuesRequestDto requestDto,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     return processVariableService.getVariableValuesForReports(userId, requestDto);
   }
 
-  @POST
-  @Path("/labels")
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/labels")
   public void modifyVariableLabels(
-      @Context final ContainerRequestContext requestContext,
-      @Valid final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+      @Valid @RequestBody final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
     processVariableLabelService.storeVariableLabels(definitionVariableLabelsDto);
   }
 }

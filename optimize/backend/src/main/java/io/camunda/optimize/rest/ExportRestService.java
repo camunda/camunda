@@ -10,6 +10,7 @@ package io.camunda.optimize.rest;
 import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 import static io.camunda.optimize.service.export.CSVUtils.extractAllPrefixedCountKeys;
 import static io.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import com.google.common.collect.Sets;
 import io.camunda.optimize.dto.optimize.ReportType;
@@ -33,13 +34,6 @@ import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
@@ -47,11 +41,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/export")
+@RequestMapping(REST_API_PATH + "/export")
 public class ExportRestService {
   private final CsvExportService csvExportService;
   private final EntityExportService entityExportService;
@@ -69,12 +67,10 @@ public class ExportRestService {
     this.identityService = identityService;
   }
 
-  @GET
-  @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("report/json/{reportId}/{fileName}")
+  @GetMapping("report/json/{reportId}/{fileName}")
   public Response getJsonReport(
-      @PathParam("reportId") final String reportId,
-      @PathParam("fileName") final String fileName,
+      @PathVariable("reportId") final String reportId,
+      @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
@@ -84,13 +80,10 @@ public class ExportRestService {
     return createJsonResponse(fileName, jsonReports);
   }
 
-  @GET
-  @Produces(value = {MediaType.APPLICATION_JSON})
-  @Path("dashboard/json/{dashboardId}/{fileName}")
+  @GetMapping("dashboard/json/{dashboardId}/{fileName}")
   public Response getJsonDashboard(
-      @Context final ContainerRequestContext requestContext,
-      @PathParam("dashboardId") final String dashboardId,
-      @PathParam("fileName") final String fileName,
+      @PathVariable("dashboardId") final String dashboardId,
+      @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
 
@@ -100,13 +93,11 @@ public class ExportRestService {
     return createJsonResponse(fileName, jsonDashboards);
   }
 
-  @GET
-  // octet stream on success, json on potential error
-  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
-  @Path("csv/{reportId}/{fileName}")
+  @GetMapping("csv/{reportId}/{fileName}")
+  // Produces octet stream on success, json on potential error
   public Response getCsvReport(
-      @PathParam("reportId") final String reportId,
-      @PathParam("fileName") final String fileName,
+      @PathVariable("reportId") final String reportId,
+      @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateAuthorization();
@@ -125,13 +116,11 @@ public class ExportRestService {
    * All other columns (dto fields, new and existing variables not in includedColumns) are to be
    * excluded. It is used for example to return process instance Ids in the branch analysis export.
    */
-  @POST
-  // octet stream on success, json on potential error
-  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
-  @Path("csv/process/rawData/{fileName}")
+  // Produces octet stream on success, json on potential error
+  @PostMapping("csv/process/rawData/{fileName}")
   public Response getRawDataCsv(
-      @PathParam("fileName") final String fileName,
-      @Valid final ProcessRawDataCsvExportRequestDto request,
+      @PathVariable("fileName") final String fileName,
+      @Valid @RequestBody final ProcessRawDataCsvExportRequestDto request,
       final HttpServletRequest servletRequest) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(servletRequest);
     validateAuthorization();

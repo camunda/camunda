@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisRequestDto;
 import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto;
@@ -26,11 +27,6 @@ import io.camunda.optimize.service.export.CSVUtils;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.ZoneId;
@@ -38,10 +34,14 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Component
-@Path("/analysis")
+@RestController
+@RequestMapping(REST_API_PATH + "/analysis")
 public class AnalysisRestService {
 
   private final BranchAnalysisService branchAnalysisService;
@@ -57,22 +57,19 @@ public class AnalysisRestService {
     this.sessionService = sessionService;
   }
 
-  @POST
-  @Path("/correlation")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @PostMapping("/correlation")
   public BranchAnalysisResponseDto getBranchAnalysis(
-      final BranchAnalysisRequestDto branchAnalysisDto, final HttpServletRequest request) {
+      @RequestBody final BranchAnalysisRequestDto branchAnalysisDto,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final ZoneId timezone = extractTimezone(request);
     return branchAnalysisService.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
 
-  @POST
-  @Path("/flowNodeOutliers")
-  @Produces(MediaType.APPLICATION_JSON)
+  @PostMapping("/flowNodeOutliers")
   public Map<String, FindingsDto> getFlowNodeOutlierMap(
-      final ProcessDefinitionParametersDto parameters, final HttpServletRequest request) {
+      @RequestBody final ProcessDefinitionParametersDto parameters,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams =
@@ -98,11 +95,10 @@ public class AnalysisRestService {
     return descendingFindings;
   }
 
-  @POST
-  @Path("/durationChart")
-  @Produces(MediaType.APPLICATION_JSON)
+  @PostMapping("/durationChart")
   public List<DurationChartEntryDto> getCountByDurationChart(
-      final FlowNodeOutlierParametersDto parameters, final HttpServletRequest request) {
+      @RequestBody final FlowNodeOutlierParametersDto parameters,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
@@ -110,11 +106,10 @@ public class AnalysisRestService {
     return outlierAnalysisService.getCountByDurationChart(outlierAnalysisParams);
   }
 
-  @POST
-  @Path("/significantOutlierVariableTerms")
-  @Produces(MediaType.APPLICATION_JSON)
+  @PostMapping("/significantOutlierVariableTerms")
   public List<VariableTermDto> getSignificantOutlierVariableTerms(
-      final FlowNodeOutlierParametersDto parameters, final HttpServletRequest request) {
+      @RequestBody final FlowNodeOutlierParametersDto parameters,
+      final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
@@ -122,13 +117,11 @@ public class AnalysisRestService {
     return outlierAnalysisService.getSignificantOutlierVariableTerms(outlierAnalysisParams);
   }
 
-  @POST
-  @Path("/significantOutlierVariableTerms/processInstanceIdsExport")
-  // octet stream on success, json on potential error
-  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
+  @PostMapping("/significantOutlierVariableTerms/processInstanceIdsExport")
+  // Returns octet stream on success, json on potential error
   public Response getSignificantOutlierVariableTermsInstanceIds(
-      @PathParam("fileName") final String fileName,
-      final FlowNodeOutlierVariableParametersDto parameters,
+      @PathVariable("fileName") final String fileName,
+      @RequestBody final FlowNodeOutlierVariableParametersDto parameters,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     validateProvidedFilters(parameters.getFilters());

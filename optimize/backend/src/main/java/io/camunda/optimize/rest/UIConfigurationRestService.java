@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest;
 
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import io.camunda.optimize.service.UIConfigurationService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api" + UIConfigurationRestService.UI_CONFIGURATION_PATH)
+@RequestMapping(REST_API_PATH + UIConfigurationRestService.UI_CONFIGURATION_PATH)
 public class UIConfigurationRestService {
 
   public static final String UI_CONFIGURATION_PATH = "/ui-configuration";
@@ -25,7 +27,7 @@ public class UIConfigurationRestService {
     this.uiConfigurationService = uiConfigurationService;
   }
 
-  @GetMapping()
+  @GetMapping
   public UIConfigurationResponseDto getUIConfiguration() {
     return uiConfigurationService.getUIConfiguration();
   }
