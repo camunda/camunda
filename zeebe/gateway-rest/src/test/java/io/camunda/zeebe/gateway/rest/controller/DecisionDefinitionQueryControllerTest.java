@@ -271,9 +271,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "type": "about:blank",
-              "title": "INVALID_ARGUMENT",
+              "title": "Bad Request",
               "status": 400,
-              "detail": "Unknown sortBy: unknownField.",
+              "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [decisionDefinitionKey, decisionDefinitionId, name, version, decisionRequirementsId, decisionRequirementsKey, tenantId]",
               "instance": "%s"
             }"""
             .formatted(DECISION_DEFINITIONS_SEARCH_URL);

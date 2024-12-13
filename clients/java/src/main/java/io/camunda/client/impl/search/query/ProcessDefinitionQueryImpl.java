@@ -30,6 +30,7 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
@@ -94,7 +95,8 @@ public class ProcessDefinitionQueryImpl
   @Override
   public ProcessDefinitionQuery sort(final ProcessDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(
+        SearchQuerySortRequestMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
     return this;
   }
 
