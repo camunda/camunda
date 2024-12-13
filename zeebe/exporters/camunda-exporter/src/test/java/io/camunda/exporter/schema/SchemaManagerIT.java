@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.exporter.DefaultExporterResourceProvider;
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -394,7 +395,11 @@ public class SchemaManagerIT {
     config.setCreateSchema(true);
 
     final var provider = new DefaultExporterResourceProvider();
-    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     final var schemaManager =
         new SchemaManager(
