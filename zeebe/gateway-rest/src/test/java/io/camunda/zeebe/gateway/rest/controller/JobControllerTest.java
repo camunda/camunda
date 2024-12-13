@@ -367,8 +367,8 @@ public class JobControllerTest extends RestControllerTest {
                 "assignee": "Test",
                 "dueDate": "2025-05-23T01:02:03+01:00",
                 "followUpDate": "2025-05-25T01:02:03+01:00",
-                "candidateUsersList": ["UserA", "UserB"],
-                "candidateGroupsList": ["GroupA", "GroupB"],
+                "candidateUsers": ["UserA", "UserB"],
+                "candidateGroups": ["GroupA", "GroupB"],
                 "priority": 20
               }
             }
@@ -424,8 +424,8 @@ public class JobControllerTest extends RestControllerTest {
               "denied": false,
               "corrections": {
                 "assignee": "Test",
-                "candidateUsersList": ["UserA", "UserB"],
-                "candidateGroupsList": ["GroupA", "GroupB"],
+                "candidateUsers": ["UserA", "UserB"],
+                "candidateGroups": ["GroupA", "GroupB"],
                 "priority": 20
               }
             }
@@ -478,7 +478,7 @@ public class JobControllerTest extends RestControllerTest {
               "corrections": {
                 "assignee": null,
                 "dueDate": "2025-05-23T01:02:03+01:00",
-                "candidateGroupsList": ["GroupA", "GroupB"],
+                "candidateGroups": ["GroupA", "GroupB"],
                 "priority": null
               }
             }

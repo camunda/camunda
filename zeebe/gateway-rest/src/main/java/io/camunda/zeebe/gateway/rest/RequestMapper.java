@@ -737,12 +737,12 @@ public class RequestMapper {
       corrections.setFollowUpDate(jobResultCorrections.getFollowUpDate());
       correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
     }
-    if (jobResultCorrections.getCandidateUsersList() != null) {
-      corrections.setCandidateUsers(jobResultCorrections.getCandidateUsersList());
+    if (jobResultCorrections.getCandidateUsers() != null) {
+      corrections.setCandidateUsers(jobResultCorrections.getCandidateUsers());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
     }
-    if (jobResultCorrections.getCandidateGroupsList() != null) {
-      corrections.setCandidateGroups(jobResultCorrections.getCandidateGroupsList());
+    if (jobResultCorrections.getCandidateGroups() != null) {
+      corrections.setCandidateGroups(jobResultCorrections.getCandidateGroups());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
     }
     if (jobResultCorrections.getPriority() != null) {
