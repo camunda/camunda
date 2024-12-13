@@ -33,6 +33,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String DUE_DATE = "dueDate";
   public static final String FORM_ID = "formId";
   public static final String FORM_KEY = "formKey";
+  public static final String FORM_VERSION = "formVersion";
   public static final String FOLLOW_UP_DATE = "followUpDate";
   public static final String TENANT_ID = "tenantId";
   public static final String IMPLEMENTATION = "implementation";
