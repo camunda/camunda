@@ -620,7 +620,9 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
 
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
 
-    if (isZeebeVersion87OrLater() || isZeebeVersionSnapshot()) {
+    final boolean isZeebeVersionSnapshotForHigherThan870 =
+        isZeebeVersion87OrLater() || isZeebeVersionSnapshot();
+    if (isZeebeVersionSnapshotForHigherThan870) {
       // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
       // `assingee`
       waitUntilUserTaskRecordWithIntentExported(1, ASSIGNED);
@@ -641,7 +643,9 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
         createRunningUserTaskInstance(instance, exportedEvents);
     expectedUserTask.setIdleDurationInMs(0L);
     expectedUserTask.setWorkDurationInMs(
-        getDurationInMsBetweenStartAndLastAssignOperation(exportedEvents));
+        isZeebeVersionSnapshotForHigherThan870
+            ? getDurationInMsBetweenStartAndLastAssignOperation(exportedEvents)
+            : getDurationInMsBetweenStartAndFirstAssignOperation(exportedEvents));
     expectedUserTask.setAssigneeOperations(
         List.of(
             createAssigneeOperationDto(
