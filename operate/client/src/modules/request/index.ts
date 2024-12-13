@@ -9,7 +9,7 @@
 import {logger} from 'modules/logger';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from './mergePathname';
-import {CSRF_REQUEST_HEADER, getCsrfToken} from './csrf';
+import {captureCsrfToken, getCsrfHeaders} from './csrf';
 
 type RequestParams = {
   url: string;
@@ -20,12 +20,6 @@ type RequestParams = {
 };
 
 async function request({url, method, body, headers, signal}: RequestParams) {
-  const csrfToken = getCsrfToken();
-  const hasCsrfToken =
-    csrfToken !== null &&
-    method !== undefined &&
-    ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
-
   const response = await fetch(
     mergePathname(window.clientConfig?.contextPath ?? '/', url),
     {
@@ -34,13 +28,15 @@ async function request({url, method, body, headers, signal}: RequestParams) {
       body: typeof body === 'string' ? body : JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
-        ...(hasCsrfToken ? {[CSRF_REQUEST_HEADER]: csrfToken} : {}),
+        ...getCsrfHeaders(),
         ...headers,
       },
       mode: 'cors',
       signal,
     },
   );
+
+  captureCsrfToken(response);
 
   if (response.status === 401) {
     authenticationStore.expireSession();

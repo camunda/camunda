@@ -8,7 +8,7 @@
 
 import {reactQueryClient} from './react-query/reactQueryClient';
 import {authenticationStore} from './stores/authentication';
-import {CSRF_REQUEST_HEADER, getCsrfToken} from './csrf';
+import {captureCsrfToken, getCsrfHeaders} from './csrf';
 
 type RequestError =
   | {
@@ -36,20 +36,15 @@ async function request(
     }
 > {
   try {
-    const csrfToken = getCsrfToken();
     if (input instanceof Request) {
-      const method = input.method;
-
-      if (
-        csrfToken &&
-        method &&
-        ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase())
-      ) {
-        input.headers.append(CSRF_REQUEST_HEADER, csrfToken);
-      }
+      Object.entries(getCsrfHeaders()).forEach(([name, value]) =>
+        input.headers.set(name, value),
+      );
     }
 
     const response = await fetch(input);
+
+    captureCsrfToken(response);
 
     if (response.ok) {
       authenticationStore.activateSession();

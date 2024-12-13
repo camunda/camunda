@@ -9,6 +9,8 @@ package io.camunda.authentication.config;
 
 import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
+import io.camunda.authentication.csrf.CsrfTokenResponseHeaderFilter;
+import io.camunda.authentication.csrf.ResponseHeaderCsrfTokenRepository;
 import io.camunda.authentication.csrf.SpaCsrfTokenRequestHandler;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
@@ -19,13 +21,9 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +47,8 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -76,7 +74,7 @@ public class WebSecurityConfig {
           // license information is displayed on the login form
           "/v2/license",
           // configuration is used for login
-          "/v2/authentication/config",
+          "/v2/authentication/**",
           // endpoint for failure forwarding
           "/error",
           // all actuator endpoints
@@ -86,7 +84,9 @@ public class WebSecurityConfig {
           "/health",
           "/startup");
   public static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
+  // This is both a request and response header.
   public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
+  public static final String CSRF_COOKIE_NAME = "csrf-token";
   public static final String SESSION_COOKIE_NAME = "camunda-session";
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
@@ -173,7 +173,7 @@ public class WebSecurityConfig {
     // Require a valid session cookie when present. This allows the frontend clients to use
     // login authentication.
     return buildLoginAuthSecurityFilterChain(
-        withSecurityMatcher(httpSecurity, this::hasSessionCookie), authFailureHandler);
+        withSecurityMatcher(httpSecurity, this::hasCsrfHeader), authFailureHandler);
   }
 
   @Bean
@@ -189,24 +189,36 @@ public class WebSecurityConfig {
         .build();
   }
 
+  private CsrfTokenRepository buildCsrfTokenRepository() {
+    final var cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
+    cookieCsrfTokenRepository.setCookieName(CSRF_COOKIE_NAME);
+    cookieCsrfTokenRepository.setHeaderName(CSRF_TOKEN_HEADER);
+    return new ResponseHeaderCsrfTokenRepository(cookieCsrfTokenRepository, CSRF_TOKEN_HEADER);
+  }
+
   public SecurityFilterChain buildLoginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
     LOG.info("Configuring login auth");
-    final var cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
-    cookieCsrfTokenRepository.setHeaderName(CSRF_TOKEN_HEADER);
-    cookieCsrfTokenRepository.setCookieCustomizer(
-        responseCookieBuilder -> responseCookieBuilder.httpOnly(false));
+    final var csrfTokenRepository = buildCsrfTokenRepository();
     return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
         .formLogin(
             formLogin ->
                 formLogin
                     .loginProcessingUrl(LOGIN_URL)
                     .failureHandler(authFailureHandler)
-                    .successHandler(this::genericSuccessHandler))
+                    .successHandler(
+                        (request, response, authentication) -> {
+                          csrfTokenRepository.saveToken(
+                              csrfTokenRepository.generateToken(request), request, response);
+                          response.setStatus(HttpStatus.NO_CONTENT.value());
+                        }))
         .logout(
             (logout) ->
-                logout.logoutUrl(LOGOUT_URL).logoutSuccessHandler(this::genericSuccessHandler))
+                logout
+                    .logoutUrl(LOGOUT_URL)
+                    .logoutSuccessHandler(this::genericSuccessHandler)
+                    .deleteCookies(SESSION_COOKIE_NAME, CSRF_COOKIE_NAME))
         .exceptionHandling(
             exceptionHandling ->
                 exceptionHandling
@@ -215,10 +227,18 @@ public class WebSecurityConfig {
         .csrf(
             csrfConfigurer ->
                 csrfConfigurer
-                    .csrfTokenRepository(cookieCsrfTokenRepository)
+                    .csrfTokenRepository(csrfTokenRepository)
+                    .requireCsrfProtectionMatcher(this::needsCsrfProtection)
                     .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
-        .addFilterAfter(new CsrfTokenCookieFilter(cookieCsrfTokenRepository), CsrfFilter.class)
+        .addFilterAfter(
+            new CsrfTokenResponseHeaderFilter(csrfTokenRepository, CSRF_TOKEN_HEADER),
+            CsrfFilter.class)
         .build();
+  }
+
+  private boolean needsCsrfProtection(final HttpServletRequest request) {
+    return CsrfFilter.DEFAULT_CSRF_MATCHER.matches(request)
+        && !request.getRequestURI().equals(LOGIN_URL);
   }
 
   private void genericSuccessHandler(
@@ -233,20 +253,7 @@ public class WebSecurityConfig {
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
   }
 
-  private boolean isApiRequest(final HttpServletRequest request) {
-    final String requestURI = request.getRequestURI();
-    return requestURI.startsWith("/v1") || requestURI.startsWith("/v2");
-  }
-
-  private boolean hasSessionCookie(final HttpServletRequest request) {
-    if (request.getCookies() == null) {
-      return false;
-    }
-    return Arrays.stream(request.getCookies())
-        .anyMatch(cookie -> cookie.getName().equals(SESSION_COOKIE_NAME));
-  }
-
-  private boolean hasCsrfToken(final HttpServletRequest request) {
+  private boolean hasCsrfHeader(final HttpServletRequest request) {
     return request.getHeader(CSRF_TOKEN_HEADER) != null;
   }
 
@@ -291,28 +298,5 @@ public class WebSecurityConfig {
   private static HttpSecurity withSecurityMatcher(
       final HttpSecurity httpSecurity, final RequestMatcher requestMatcher) {
     return httpSecurity.securityMatchers(matchers -> matchers.requestMatchers(requestMatcher));
-  }
-
-  private static class CsrfTokenCookieFilter extends OncePerRequestFilter {
-
-    private final CookieCsrfTokenRepository tokenRepository;
-
-    public CsrfTokenCookieFilter(final CookieCsrfTokenRepository tokenRepository) {
-      this.tokenRepository = tokenRepository;
-    }
-
-    @Override
-    protected void doFilterInternal(
-        final HttpServletRequest request,
-        final HttpServletResponse response,
-        final FilterChain filterChain)
-        throws ServletException, IOException {
-      final var existingToken = tokenRepository.loadToken(request);
-      if (existingToken == null) {
-        final var token = tokenRepository.generateToken(request);
-        tokenRepository.saveToken(token, request, response);
-      }
-      filterChain.doFilter(request, response);
-    }
   }
 }

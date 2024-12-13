@@ -6,12 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Cookies from 'js-cookie';
+const CSRF_REQUEST_HEADER = 'X-CSRF-Token';
+const CSRF_RESPONSE_HEADER = 'X-CSRF-Token';
 
-export const CSRF_REQUEST_PARAMETER = '_csrf';
-export const CSRF_REQUEST_HEADER = 'X-CSRF-Token';
-const CSRF_TOKEN_COOKIE = 'XSRF-TOKEN';
+const csrfTokenRepository: {token: string | null} = {
+  token: null,
+};
 
-export function getCsrfToken(): string {
-  return Cookies.get(CSRF_TOKEN_COOKIE) ?? '';
+export function captureCsrfToken(response: Response) {
+  const token = response.headers.get(CSRF_RESPONSE_HEADER);
+  if (token != null) {
+    csrfTokenRepository.token = token;
+  }
+}
+
+export function getCsrfToken(): string | null {
+  return csrfTokenRepository.token;
+}
+
+export function getCsrfHeaders(): {[key: string]: string} {
+  // It's important to include the CSRF header even when we don't have a token yet as it's used to
+  // select the security filter chain for the auth-basic-with-unprotected-api profile.
+  return {[CSRF_REQUEST_HEADER]: getCsrfToken() ?? ''};
 }

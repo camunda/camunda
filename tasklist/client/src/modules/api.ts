@@ -120,14 +120,6 @@ const api = {
         },
       );
     },
-    getCurrentUser: () =>
-      new Request(getFullURL('/v2/authentication/me'), {
-        ...BASE_REQUEST_OPTIONS,
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }),
     getEmbeddedForm: ({
       id,
       processDefinitionKey,
@@ -306,6 +298,14 @@ const api = {
     },
   },
   v2: {
+    getCurrentUser: () =>
+      new Request(getFullURL('/v2/authentication/me'), {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
     getLicense: () => {
       return new Request(getFullURL('/v2/license'), {
         ...BASE_REQUEST_OPTIONS,

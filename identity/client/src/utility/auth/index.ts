@@ -1,8 +1,4 @@
-import {
-  CSRF_REQUEST_HEADER,
-  CSRF_REQUEST_PARAMETER,
-  getCsrfToken,
-} from "src/utility/csrf.ts";
+import {getCsrfHeaders,} from "src/utility/csrf.ts";
 import {baseUrl} from "src/configuration";
 
 export const LOGIN_PATH = `${baseUrl}/login`;
@@ -19,13 +15,10 @@ export function login(username: string, password: string): Promise<boolean> {
   const data = new FormData();
   data.set("username", username);
   data.set("password", password);
-  data.set(CSRF_REQUEST_PARAMETER, getCsrfToken());
   return fetch("/login", {
     method: "post",
     body: data,
-    headers: {
-      [CSRF_REQUEST_HEADER]: getCsrfToken(),
-    },
+    headers: getCsrfHeaders(),
   })
     .then((response: Response) => {
       if (response.status < 400) {
@@ -41,13 +34,10 @@ export function login(username: string, password: string): Promise<boolean> {
 
 export function logout() {
   const data = new FormData();
-  data.set(CSRF_REQUEST_PARAMETER, getCsrfToken());
   return fetch("/logout", {
     method: "post",
     body: data,
-    headers: {
-      [CSRF_REQUEST_HEADER]: getCsrfToken(),
-    },
+    headers: getCsrfHeaders(),
   })
     .then((response: Response) => {
       if (response.status < 400) {
