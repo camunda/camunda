@@ -107,6 +107,9 @@ public class CredentialsProviderSelfManagedTest {
                             .put("expires_in", 300))));
 
     credentialsProvider.applyCredentials(headers::put);
-    assertThat(headers).isEqualTo(Map.of("Authorization", "Bearer " + ACCESS_TOKEN));
+    credentialsProvider.applyCredentials(headers::put);
+    assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
+    assertThat(headers).containsEntry("Authorization", "Bearer " + ACCESS_TOKEN);
+    assertThat(headers).hasSize(1);
   }
 }
