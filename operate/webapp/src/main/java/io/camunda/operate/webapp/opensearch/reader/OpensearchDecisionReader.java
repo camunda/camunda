@@ -20,7 +20,7 @@ import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -48,7 +48,7 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   @Autowired private PermissionsService permissionsService;
 
-  @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
@@ -179,7 +179,7 @@ public class OpensearchDecisionReader implements DecisionReader {
       }
     }
     Query tenantIdQuery = null;
-    if (multiTenancyConfiguration.isEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       tenantIdQuery = tenantId != null ? term(DecisionIndex.TENANT_ID, tenantId) : null;
     }
     final var query = and(decisionIdQuery, tenantIdQuery);

@@ -12,7 +12,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,13 +29,13 @@ public class ElasticsearchZeebeManager extends ZeebeContainerManager {
 
   public ElasticsearchZeebeManager(
       final OperateProperties operateProperties,
-      final MultiTenancyConfiguration multiTenancyConfiguration,
+      final SecurityConfiguration securityConfiguration,
       final TestContainerUtil testContainerUtil,
       @Qualifier("zeebeEsClient") final RestHighLevelClient zeebeEsClient,
       final IndexPrefixHolder indexPrefixHolder) {
     super(
         operateProperties,
-        multiTenancyConfiguration,
+        securityConfiguration,
         testContainerUtil,
         indexPrefixHolder.createNewIndexPrefix());
     this.zeebeEsClient = zeebeEsClient;

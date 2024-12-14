@@ -17,7 +17,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
@@ -47,7 +47,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Autowired public OperateProperties operateProperties;
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
-  @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
+  @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
   private ZeebeClient client;
@@ -162,7 +162,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Override
   public boolean isMultitTenancyEnabled() {
-    return multiTenancyConfiguration.isEnabled();
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 
   private void testZeebeIsReady() {

@@ -13,7 +13,7 @@ import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -29,13 +29,13 @@ public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
 
   public OpensearchZeebeContainerManager(
       final OperateProperties operateProperties,
-      final MultiTenancyConfiguration multiTenancyConfiguration,
+      final SecurityConfiguration securityConfiguration,
       final TestContainerUtil testContainerUtil,
       final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient,
       final IndexPrefixHolder indexPrefixHolder) {
     super(
         operateProperties,
-        multiTenancyConfiguration,
+        securityConfiguration,
         testContainerUtil,
         indexPrefixHolder.createNewIndexPrefix());
     this.zeebeRichOpenSearchClient = zeebeRichOpenSearchClient;

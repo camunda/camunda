@@ -11,7 +11,7 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,7 +26,7 @@ public class TenantService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TenantService.class);
 
-  @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   public List<String> tenantIds() {
     return TenantAttributeHolder.getTenantIds();
@@ -91,7 +91,7 @@ public class TenantService {
   }
 
   private boolean isMultiTenancyEnabled() {
-    return multiTenancyConfiguration.isEnabled();
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 
   private boolean securityContextPresent() {

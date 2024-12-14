@@ -21,7 +21,7 @@ import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
@@ -59,7 +59,7 @@ public class DecisionReader extends AbstractReader
 
   @Autowired private PermissionsService permissionsService;
 
-  @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   private DecisionDefinitionEntity fromSearchHit(final String processString) {
     return ElasticsearchUtil.fromSearchHit(
@@ -238,7 +238,7 @@ public class DecisionReader extends AbstractReader
       }
     }
     QueryBuilder tenantIdQ = null;
-    if (multiTenancyConfiguration.isEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       tenantIdQ = tenantId != null ? termQuery(DecisionIndex.TENANT_ID, tenantId) : null;
     }
     QueryBuilder q = joinWithAnd(decisionIdQ, tenantIdQ);

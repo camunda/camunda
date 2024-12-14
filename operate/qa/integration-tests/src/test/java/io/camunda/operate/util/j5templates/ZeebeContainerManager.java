@@ -13,7 +13,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
@@ -28,15 +28,15 @@ public abstract class ZeebeContainerManager {
   protected String prefix;
   protected ZeebeContainer zeebeContainer;
   protected ZeebeClient client;
-  private final MultiTenancyConfiguration multiTenancyConfiguration;
+  private final SecurityConfiguration securityConfiguration;
 
   public ZeebeContainerManager(
       final OperateProperties operateProperties,
-      final MultiTenancyConfiguration multiTenancyConfiguration,
+      final SecurityConfiguration securityConfiguration,
       final TestContainerUtil testContainerUtil,
       final String indexPrefix) {
     this.operateProperties = operateProperties;
-    this.multiTenancyConfiguration = multiTenancyConfiguration;
+    this.securityConfiguration = securityConfiguration;
     this.testContainerUtil = testContainerUtil;
     prefix = indexPrefix;
   }
@@ -56,7 +56,7 @@ public abstract class ZeebeContainerManager {
             zeebeVersion,
             prefix,
             2,
-            multiTenancyConfiguration.isEnabled(),
+            securityConfiguration.getMultiTenancy().isEnabled(),
             ConnectionTypes.ELASTICSEARCH.getType());
 
     client =

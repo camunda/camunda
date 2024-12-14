@@ -11,7 +11,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -62,11 +62,11 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
     return SpringContextHolder.getBean(Identity.class);
   }
 
-  private MultiTenancyConfiguration getMultiTenancyConfiguration() {
-    return SpringContextHolder.getBean(MultiTenancyConfiguration.class);
+  private SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 
   private boolean isMultiTenancyEnabled() {
-    return getMultiTenancyConfiguration().isEnabled();
+    return getSecurityConfiguration().getMultiTenancy().isEnabled();
   }
 }

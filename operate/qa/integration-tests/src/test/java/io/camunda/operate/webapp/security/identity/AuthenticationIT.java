@@ -69,8 +69,6 @@ public class AuthenticationIT {
 
   @Autowired @InjectMocks private IdentityAuthentication identityAuthentication;
 
-  @SpyBean private MultiTenancyConfiguration multiTenancyConfiguration;
-
   @SpyBean private SecurityConfiguration securityConfiguration;
 
   @Autowired private ApplicationContext applicationContext;
@@ -165,7 +163,9 @@ public class AuthenticationIT {
 
   @Test
   public void shouldReturnTenantsWhenMultiTenancyIsEnabled() throws IOException {
-    doReturn(true).when(multiTenancyConfiguration).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final List<Tenant> tenants =
         new ObjectMapper()
@@ -193,7 +193,9 @@ public class AuthenticationIT {
 
   @Test
   public void shouldReturnNullAsTenantsWhenMultiTenancyIsDisabled() {
-    doReturn(false).when(multiTenancyConfiguration).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(false);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     // then no Identity is called
     assertThat(identityAuthentication.getTenants()).isNull();
@@ -203,7 +205,9 @@ public class AuthenticationIT {
 
   @Test
   public void shouldReturnEmptyListOfTenantsWhenIdentityThrowsException() {
-    doReturn(true).when(multiTenancyConfiguration).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
     doThrow(new RestException("smth went wrong")).when(tenants).forToken(any());
 
     assertThat(identityAuthentication.getTenants()).hasSize(0);

@@ -30,6 +30,7 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Before;
@@ -67,7 +68,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
 
   @Mock private Authentication authentication;
 
-  @SpyBean private MultiTenancyConfiguration multiTenancyConfiguration;
+  @SpyBean private SecurityConfiguration securityConfiguration;
 
   @Autowired private ApplicationContext applicationContext;
 
@@ -110,7 +111,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(authentication.verifyToken(any())).thenReturn(null);
     doReturn(tenants).when(identity).tenants();
 
-    doReturn(true).when(multiTenancyConfiguration).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final List<Tenant> tenants =
         new ObjectMapper()
@@ -147,8 +150,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.authentication()).thenReturn(authentication);
     when(authentication.verifyToken(any())).thenReturn(null);
     doReturn(tenants).when(identity).tenants();
-
-    doReturn(false).when(multiTenancyConfiguration).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(false);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);
@@ -165,8 +169,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.authentication()).thenReturn(authentication);
     when(authentication.verifyToken(any())).thenReturn(null);
     doReturn(tenants).when(identity).tenants();
-
-    doReturn(true).when(multiTenancyConfiguration).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);
