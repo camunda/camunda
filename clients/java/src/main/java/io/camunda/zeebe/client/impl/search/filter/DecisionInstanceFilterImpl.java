@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
+import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
@@ -23,9 +26,6 @@ import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.DateTimePropertyImpl;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 

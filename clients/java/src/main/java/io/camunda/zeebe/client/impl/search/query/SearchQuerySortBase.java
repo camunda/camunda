@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.query;
 
+import io.camunda.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
-import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -25,7 +25,7 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
   private final DocumentMetadata metadata;
 
   public DocumentReferenceResponseImpl(
-      final io.camunda.zeebe.client.protocol.rest.DocumentReference documentReference) {
+      final io.camunda.client.protocol.rest.DocumentReference documentReference) {
     documentId = documentReference.getDocumentId();
     storeId = documentReference.getStoreId();
     metadata = new DocumentMetadataImpl(documentReference.getMetadata());

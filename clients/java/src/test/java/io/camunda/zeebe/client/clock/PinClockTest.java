@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import io.camunda.zeebe.client.protocol.rest.ClockPinRequest;
+import io.camunda.client.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.camunda.zeebe.client.util.RestGatewayService;
@@ -64,7 +64,7 @@ public final class PinClockTest extends ClientRestTest {
 
   @ParameterizedTest
   @MethodSource("validInstantValues")
-  void shouldPinClockToInstant(Instant validInstant) {
+  void shouldPinClockToInstant(final Instant validInstant) {
     // when
     client.newClockPinCommand().time(validInstant).send().join();
 
@@ -87,7 +87,7 @@ public final class PinClockTest extends ClientRestTest {
   @ParameterizedTest
   @MethodSource("invalidInstantValues")
   void shouldRaiseIllegalArgumentExceptionWhenInvalidInstantProvided(
-      final Instant invalidInstant, String expectedMessage) {
+      final Instant invalidInstant, final String expectedMessage) {
     // when / then
     assertThatThrownBy(() -> client.newClockPinCommand().time(invalidInstant).send().join())
         .isInstanceOf(IllegalArgumentException.class)

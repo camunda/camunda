@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.filter.builder;
 
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.client.protocol.rest.IntegerFilterProperty;
 
 public interface IntegerProperty
     extends ComparisonProperty<Integer, IntegerFilterProperty, IntegerProperty> {}

@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.DecisionRequirementsFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilterRequest;
 
 public class DecisionRequirementsFilterImpl
     extends TypedSearchRequestPropertyProvider<DecisionRequirementsFilterRequest>

@@ -16,10 +16,10 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
-import io.camunda.zeebe.client.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;

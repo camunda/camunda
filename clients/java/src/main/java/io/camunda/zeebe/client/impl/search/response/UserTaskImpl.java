@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.client.api.search.response.UserTask;
-import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
 import java.util.List;
 import java.util.Map;
 

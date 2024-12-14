@@ -7,11 +7,11 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_USER_TASK;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_USER_TASK;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

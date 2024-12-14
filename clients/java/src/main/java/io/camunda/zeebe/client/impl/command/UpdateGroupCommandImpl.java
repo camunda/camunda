@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.GroupChangeset;
+import io.camunda.client.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -22,8 +24,6 @@ import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.response.UpdateGroupResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.GroupChangeset;
-import io.camunda.zeebe.client.protocol.rest.GroupUpdateRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;

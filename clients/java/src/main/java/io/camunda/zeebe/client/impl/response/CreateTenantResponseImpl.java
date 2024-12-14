@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.TenantCreateResponse;
 import io.camunda.zeebe.client.api.response.CreateTenantResponse;
-import io.camunda.zeebe.client.protocol.rest.TenantCreateResponse;
 
 public class CreateTenantResponseImpl implements CreateTenantResponse {
   private long tenantKey;

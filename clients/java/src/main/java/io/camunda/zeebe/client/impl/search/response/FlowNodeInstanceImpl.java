@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceItem;
 import java.util.Objects;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {

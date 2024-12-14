@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.MigrateProcessInstanceResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MigrateProcessInstanceRequest;
@@ -51,8 +51,7 @@ public final class MigrateProcessInstanceCommandImpl
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceRequest
-      httpRequestObject;
+  private final io.camunda.client.protocol.rest.MigrateProcessInstanceRequest httpRequestObject;
   private boolean useRest;
   private final long processInstanceKey;
   private final JsonMapper jsonMapper;
@@ -70,7 +69,7 @@ public final class MigrateProcessInstanceCommandImpl
     this.retryPredicate = retryPredicate;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.MigrateProcessInstanceRequest();
     useRest = config.preferRestOverGrpc();
     this.processInstanceKey = processInstanceKey;
     this.jsonMapper = jsonMapper;

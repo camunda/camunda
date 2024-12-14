@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
 public interface AddPermissionsCommandStep1 {

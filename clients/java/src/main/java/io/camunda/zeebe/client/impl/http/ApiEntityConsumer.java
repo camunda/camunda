@@ -16,9 +16,9 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
 import io.camunda.zeebe.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;

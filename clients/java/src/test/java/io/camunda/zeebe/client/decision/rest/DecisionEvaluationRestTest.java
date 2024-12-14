@@ -19,18 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.camunda.client.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.client.protocol.rest.EvaluatedDecisionInputItem;
+import io.camunda.client.protocol.rest.EvaluatedDecisionItem;
+import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
+import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
-import io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionInputItem;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionItem;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.client.protocol.rest.MatchedDecisionRuleItem;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.io.ByteArrayInputStream;
@@ -71,9 +71,9 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .tenantId(TENANT_ID)
           .addEvaluatedInputsItem(EVALUATED_INPUT)
           .addMatchedRulesItem(MATCHED_RULE);
-  private static final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse
+  private static final io.camunda.client.protocol.rest.EvaluateDecisionResponse
       EVALUATE_DECISION_RESPONSE =
-          new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse()
+          new io.camunda.client.protocol.rest.EvaluateDecisionResponse()
               .decisionDefinitionKey(DECISION_KEY)
               .decisionDefinitionId("my-decision")
               .decisionDefinitionName("My Decision")

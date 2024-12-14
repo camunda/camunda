@@ -17,15 +17,15 @@ package io.camunda.zeebe.client.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.client.protocol.rest.DateTimeFilterProperty;
+import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
+import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryRequest;
+import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
-import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.Arrays;

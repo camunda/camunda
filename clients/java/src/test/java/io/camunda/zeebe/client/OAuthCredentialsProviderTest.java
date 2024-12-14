@@ -30,6 +30,8 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
+import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.response.Topology;
@@ -37,8 +39,6 @@ import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.client.util.RecordingGatewayService;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.grpc.Metadata;
@@ -112,7 +112,6 @@ public final class OAuthCredentialsProviderTest {
 
   private static final String TRUSTSTORE_PASSWORD = "password";
   private static final String KEYSTORE_PASSWORD = "password";
-  private static final String KEYSTORE_MATERIAL_PASSWORD = "password";
 
   @RegisterExtension
   static WireMockExtension httpsWiremock =
@@ -128,6 +127,7 @@ public final class OAuthCredentialsProviderTest {
                   .keystorePassword(KEYSTORE_PASSWORD))
           .build();
 
+  private static final String KEYSTORE_MATERIAL_PASSWORD = "password";
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Key<String> AUTH_KEY =
       Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
