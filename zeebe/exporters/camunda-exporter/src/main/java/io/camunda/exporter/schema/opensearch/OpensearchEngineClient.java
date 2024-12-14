@@ -72,11 +72,27 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
-    } catch (final IOException | OpenSearchException e) {
+    } catch (final IOException ioe) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
-      LOG.error(errMsg, e);
-      throw new OpensearchExporterException(errMsg, e);
+      LOG.error(errMsg, ioe);
+      throw new OpensearchExporterException(errMsg, ioe);
+    } catch (final OpenSearchException ose) {
+      if ("resource_already_exists_exception".equals(ose.error().type())) {
+        // we can ignore already exists exceptions
+        // as this means the index was created by another exporter on a different partition
+        final var warnMsg =
+            String.format(
+                "Expected to create index [%s], but already exist. Will continue, likely was created by different partition (exporter).",
+                indexDescriptor.getFullQualifiedName());
+        LOG.debug(warnMsg, ose);
+        return;
+      }
+
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, ose);
+      throw new OpensearchExporterException(errMsg, ose);
     }
   }
 
