@@ -12,8 +12,8 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.IDENTITY_CALLBACK
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
+import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import jakarta.servlet.http.HttpServletRequest;
