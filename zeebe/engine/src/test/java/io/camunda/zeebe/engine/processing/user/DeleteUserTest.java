@@ -11,8 +11,14 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +46,64 @@ public class DeleteUserTest {
         ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete().getValue();
 
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
+  }
+
+  @Test
+  public void shouldCleanupMembership() {
+    final var username = UUID.randomUUID().toString();
+    final var userRecord =
+        ENGINE
+            .user()
+            .newUser(username)
+            .withName("Foo Bar")
+            .withEmail("foo@bar.com")
+            .withPassword("password")
+            .create();
+    final var group = ENGINE.group().newGroup("group").create();
+    final var role = ENGINE.role().newRole("role").create();
+    final var tenant = ENGINE.tenant().newTenant().withTenantId("tenant").create();
+
+    ENGINE
+        .group()
+        .addEntity(group.getKey())
+        .withEntityKey(userRecord.getKey())
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .role()
+        .addEntity(role.getKey())
+        .withEntityKey(userRecord.getKey())
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .tenant()
+        .addEntity(tenant.getKey())
+        .withEntityKey(userRecord.getKey())
+        .withEntityType(EntityType.USER)
+        .add();
+
+    // when
+    ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
+                .withGroupKey(group.getKey())
+                .withEntityKey(userRecord.getKey())
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
+                .withRoleKey(role.getKey())
+                .withEntityKey(userRecord.getKey())
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantKey(tenant.getKey())
+                .withEntityKey(userRecord.getKey())
+                .exists())
+        .isTrue();
   }
 
   @Test

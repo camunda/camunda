@@ -39,14 +39,7 @@
       <artifactId>elasticsearch-java</artifactId>
     </dependency>
     <!--    Jackson -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
+
     <!--    OpenSearch -->
     <dependency>
       <groupId>org.opensearch.client</groupId>

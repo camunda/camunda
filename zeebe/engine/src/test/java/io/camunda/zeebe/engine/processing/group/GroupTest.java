@@ -181,6 +181,41 @@ public class GroupTest {
   }
 
   @Test
+  public void shouldRejectIfEntityIsAlreadyAssigned() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupKey = groupRecord.getValue().getGroupKey();
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .group()
+            .addEntity(groupKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
+                .formatted(userKey, groupKey));
+  }
+
+  @Test
   public void shouldRemoveEntityToGroup() {
     // given
     final var userKey =

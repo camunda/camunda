@@ -23,9 +23,6 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
@@ -96,9 +93,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
-    if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCyclesIfNotExist();
-    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -280,66 +274,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final JsonParser jsonParser =
         JsonProvider.provider().createParser(new StringReader(mappingsAsJSON.toPrettyString()));
     return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
-  }
-
-  public void createIndexLifeCyclesIfNotExist() {
-    if (retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES).isPresent()) {
-      LOGGER.info("{} ISM policy already exists", TASKLIST_DELETE_ARCHIVED_INDICES);
-      return;
-    }
-    LOGGER.info("Creating ISM Policy for deleting archived indices");
-
-    final Request request =
-        new Request("PUT", "/_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
-
-    final JsonObject deleteJson =
-        Json.createObjectBuilder().add("delete", Json.createObjectBuilder().build()).build();
-    final JsonArray actionsDelete = Json.createArrayBuilder().add(deleteJson).build();
-    final JsonObject deleteState =
-        Json.createObjectBuilder()
-            .add("name", Json.createValue("delete"))
-            .add("actions", actionsDelete)
-            .build();
-    final JsonObject openCondition =
-        Json.createObjectBuilder()
-            .add(
-                "min_index_age",
-                Json.createValue(
-                    tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices()))
-            .build();
-    final JsonObject openTransition =
-        Json.createObjectBuilder()
-            .add("state_name", Json.createValue("delete"))
-            .add("conditions", openCondition)
-            .build();
-    final JsonArray transitionOpenActions = Json.createArrayBuilder().add(openTransition).build();
-    final JsonObject openActionJson =
-        Json.createObjectBuilder().add("open", Json.createObjectBuilder().build()).build();
-    final JsonArray openActions = Json.createArrayBuilder().add(openActionJson).build();
-    final JsonObject openState =
-        Json.createObjectBuilder()
-            .add("name", Json.createValue("open"))
-            .add("actions", openActions)
-            .add("transitions", transitionOpenActions)
-            .build();
-    final JsonArray statesJson = Json.createArrayBuilder().add(openState).add(deleteState).build();
-    final JsonObject policyJson =
-        Json.createObjectBuilder()
-            .add("policy_id", Json.createValue(TASKLIST_DELETE_ARCHIVED_INDICES))
-            .add(
-                "description",
-                Json.createValue("Policy to delete archived indices older than configuration"))
-            .add("default_state", Json.createValue("open"))
-            .add("states", statesJson)
-            .build();
-    final JsonObject requestJson = Json.createObjectBuilder().add("policy", policyJson).build();
-
-    request.setJsonEntity(requestJson.toString());
-    try {
-      final Response response = opensearchRestClient.performRequest(request);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
   }
 
   private void createDefaults() {

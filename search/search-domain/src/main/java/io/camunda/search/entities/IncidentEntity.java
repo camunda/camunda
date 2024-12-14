@@ -23,7 +23,6 @@ public record IncidentEntity(
     OffsetDateTime creationTime,
     IncidentState state,
     Long jobKey,
-    String treePath,
     String tenantId) {
 
   public enum IncidentState {

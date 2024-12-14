@@ -8,6 +8,8 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
@@ -15,24 +17,27 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantI
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
-import java.util.List;
 
-public class TenantFilterTransformer implements FilterTransformer<TenantFilter> {
+public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter> {
+
+  public TenantFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final TenantFilter filter) {
-
     return and(
         term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType()),
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
-        filter.name() == null ? null : term(NAME, filter.name()));
-  }
-
-  @Override
-  public List<String> toIndices(final TenantFilter filter) {
-    return List.of("camunda-tenant-8.7.0_alias");
+        filter.name() == null ? null : term(NAME, filter.name()),
+        filter.memberKeys() == null
+            ? null
+            : hasChildQuery(
+                IdentityJoinRelationshipType.MEMBER.getType(),
+                longTerms(TenantIndex.MEMBER_KEY, filter.memberKeys())));
   }
 }

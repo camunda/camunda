@@ -23,6 +23,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
 
   private final Long flowNodeInstanceKey;
   private final Long processDefinitionKey;
+  private final String processDefinitionId;
   private final Long processInstanceKey;
   private final String flowNodeId;
   private final String flowNodeName;
@@ -32,12 +33,12 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final Long incidentKey;
   private final FlowNodeInstanceItem.StateEnum state;
   private final String tenantId;
-  private final String treePath;
   private final FlowNodeInstanceItem.TypeEnum type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
     flowNodeInstanceKey = item.getFlowNodeInstanceKey();
     processDefinitionKey = item.getProcessDefinitionKey();
+    processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = item.getProcessInstanceKey();
     flowNodeId = item.getFlowNodeId();
     flowNodeName = item.getFlowNodeName();
@@ -47,7 +48,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     incidentKey = item.getIncidentKey();
     state = item.getState();
     tenantId = item.getTenantId();
-    treePath = item.getTreePath();
     type = item.getType();
   }
 
@@ -59,6 +59,11 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   @Override
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
+  }
+
+  @Override
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
   }
 
   @Override
@@ -107,11 +112,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public String getTreePath() {
-    return treePath;
-  }
-
-  @Override
   public String getType() {
     return type.getValue();
   }
@@ -122,6 +122,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
         flowNodeInstanceKey,
         processDefinitionKey,
         processInstanceKey,
+        processDefinitionId,
         flowNodeId,
         startDate,
         endDate,
@@ -129,7 +130,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
         incidentKey,
         state,
         tenantId,
-        treePath,
         type);
   }
 
@@ -145,6 +145,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     return Objects.equals(flowNodeInstanceKey, that.flowNodeInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(flowNodeName, that.flowNodeName)
         && Objects.equals(startDate, that.startDate)
@@ -153,7 +154,6 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
         && Objects.equals(incidentKey, that.incidentKey)
         && state == that.state
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(treePath, that.treePath)
         && type == that.type;
   }
 }

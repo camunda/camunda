@@ -15,7 +15,9 @@ public class IndexPrefixHolder {
   private String indexPrefix;
 
   public String createNewIndexPrefix() {
-    indexPrefix = TestUtil.createRandomString(10);
+    if (indexPrefix == null) {
+      indexPrefix = TestUtil.createRandomString(10);
+    }
     return indexPrefix;
   }
 

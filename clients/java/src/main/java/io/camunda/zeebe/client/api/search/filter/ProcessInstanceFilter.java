@@ -76,12 +76,6 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by parentFlowNodeInstanceKey using {@link LongProperty} consumer */
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<LongProperty> fn);
 
-  /** Filter by treePath */
-  ProcessInstanceFilter treePath(final String treePath);
-
-  /** Filter by treePath using {@link StringProperty} consumer */
-  ProcessInstanceFilter treePath(final Consumer<StringProperty> fn);
-
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final OffsetDateTime startDate);
 

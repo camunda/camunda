@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -405,16 +407,26 @@ class UserTaskQueryTest {
     assertThat(result.items().size()).isEqualTo(8);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
-    assertThat(result.items().get(0).getCreationDate())
-        .isLessThan(result.items().get(1).getCreationDate());
+    final UserTask firstItem = result.items().get(0);
+    final UserTask lastItem = result.items().get(7);
+    assertThat(firstItem.getCreationDate()).isLessThan(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
         .isLessThan(result.items().get(2).getCreationDate());
 
     // Assert First and Last Sort Value matches the first and last item
-    assertThat(
-        result.page().firstSortValues().get(0).equals(result.items().get(0).getCreationDate()));
-    assertThat(
-        result.page().lastSortValues().get(0).equals(result.items().get(6).getUserTaskKey()));
+
+    // FIXME - https://github.com/camunda/camunda/issues/26080
+    /*assertThat(result.page().firstSortValues())
+    .isEqualTo(
+        List.of(
+            OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
+            firstItem.getUserTaskKey()));
+    */
+    assertThat(result.page().lastSortValues())
+        .isEqualTo(
+            List.of(
+                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli(),
+                lastItem.getUserTaskKey()));
   }
 
   @Test

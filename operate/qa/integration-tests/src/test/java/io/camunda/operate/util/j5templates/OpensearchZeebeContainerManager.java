@@ -11,6 +11,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
+import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import org.slf4j.Logger;
@@ -30,8 +31,13 @@ public class OpensearchZeebeContainerManager extends ZeebeContainerManager {
       final OperateProperties operateProperties,
       final MultiTenancyConfiguration multiTenancyConfiguration,
       final TestContainerUtil testContainerUtil,
-      final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient) {
-    super(operateProperties, multiTenancyConfiguration, testContainerUtil);
+      final ZeebeRichOpenSearchClient zeebeRichOpenSearchClient,
+      final IndexPrefixHolder indexPrefixHolder) {
+    super(
+        operateProperties,
+        multiTenancyConfiguration,
+        testContainerUtil,
+        indexPrefixHolder.createNewIndexPrefix());
     this.zeebeRichOpenSearchClient = zeebeRichOpenSearchClient;
   }
 

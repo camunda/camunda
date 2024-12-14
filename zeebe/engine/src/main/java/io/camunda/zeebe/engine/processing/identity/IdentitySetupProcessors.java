@@ -31,6 +31,6 @@ public final class IdentitySetupProcessors {
             IdentitySetupIntent.INITIALIZE,
             new IdentitySetupInitializeProcessor(
                 processingState, writers, keyGenerator, distributionBehavior))
-        .withListener(new IdentitySetupInitializer(securityConfig, processingState));
+        .withListener(new IdentitySetupInitializer(securityConfig));
   }
 }

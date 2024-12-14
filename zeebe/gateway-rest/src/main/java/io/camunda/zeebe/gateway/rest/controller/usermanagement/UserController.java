@@ -7,15 +7,22 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
+import io.camunda.search.query.UserQuery;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -112,5 +119,25 @@ public class UserController {
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .removeMember(roleKey, EntityType.USER, userKey));
+  }
+
+  @PostMapping(
+      path = "/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserSearchResponse> searchUsers(
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
+    try {
+      final var result =
+          userServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 }

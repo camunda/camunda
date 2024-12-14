@@ -22,8 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.archiver.ArchiveBatch;
-import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
@@ -703,19 +701,6 @@ public class OperateTester {
   public OperateTester enableOperationExecutor() throws Exception {
     operationExecutorEnabled = true;
     return executeOperations();
-  }
-
-  public OperateTester archive() {
-    try {
-      final ArchiveBatch finishedAtDateIds =
-          new ArchiveBatch("_test_archived", Arrays.asList(processInstanceKey));
-      final io.camunda.operate.archiver.ProcessInstancesArchiverJob archiverJob =
-          beanFactory.getBean(ProcessInstancesArchiverJob.class);
-      archiverJob.archiveBatch(finishedAtDateIds).join();
-    } catch (final Exception e) {
-      return this;
-    }
-    return this;
   }
 
   public OperateTester executeOperations() throws Exception {

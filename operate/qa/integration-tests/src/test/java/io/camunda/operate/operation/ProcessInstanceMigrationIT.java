@@ -20,7 +20,7 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -32,7 +32,7 @@ class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
 
   @Autowired private MigrateProcessInstanceHandler migrateProcessInstanceHandler;
 
-  @Test
+  @Disabled("To be re-enabled with the fix in https://github.com/camunda/camunda/issues/24084")
   void shouldMigrateSubprocessToSubprocess() throws Exception {
     // given
     // process instances that are running

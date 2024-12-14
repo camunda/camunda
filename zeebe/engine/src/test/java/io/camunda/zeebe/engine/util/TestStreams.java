@@ -32,6 +32,7 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -413,18 +414,20 @@ public final class TestStreams {
     }
 
     public FluentLogWriter authorizations(final String... tenantIds) {
-      metadata.authorization(AuthorizationUtil.getAuthInfo(tenantIds));
-      return this;
+      return authorizations(AuthorizationUtil.getAuthInfo(tenantIds));
     }
 
     public FluentLogWriter authorizations(final long userKey) {
-      metadata.authorization(AuthorizationUtil.getAuthInfo(userKey));
-      return this;
+      return authorizations(AuthorizationUtil.getAuthInfo(userKey));
     }
 
     public FluentLogWriter authorizationsWithUserKey(
         final long userKey, final String... tenantIds) {
-      metadata.authorization(AuthorizationUtil.getAuthInfo(userKey, tenantIds));
+      return authorizations(AuthorizationUtil.getAuthInfo(userKey, tenantIds));
+    }
+
+    public FluentLogWriter authorizations(final AuthInfo authorizations) {
+      metadata.authorization(authorizations);
       return this;
     }
 

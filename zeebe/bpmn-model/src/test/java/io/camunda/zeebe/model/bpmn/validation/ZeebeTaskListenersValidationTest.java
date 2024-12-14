@@ -39,7 +39,7 @@ public class ZeebeTaskListenersValidationTest {
             .startEvent()
             .userTask(
                 "my_user_task",
-                ut -> ut.zeebeUserTask().zeebeTaskListener(TaskListenerBuilder::complete))
+                ut -> ut.zeebeUserTask().zeebeTaskListener(TaskListenerBuilder::completing))
             .endEvent()
             .done();
 
@@ -69,7 +69,7 @@ public class ZeebeTaskListenersValidationTest {
       value = ZeebeTaskListenerEventType.class,
       mode = EnumSource.Mode.EXCLUDE,
       // supported event types
-      names = {"assignment", "complete"})
+      names = {"assigning", "assignment", "completing", "complete"})
   void testEventTypeNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
     // given
     final BpmnModelInstance process =
@@ -91,7 +91,8 @@ public class ZeebeTaskListenersValidationTest {
             ZeebeTaskListener.class,
             String.format(
                 "Task listener event type '%s' is not supported. "
-                    + "Currently, only assignment, complete event types are supported.",
+                    + "Currently, only 'assigning', 'completing' event types "
+                    + "and 'assignment', 'complete' deprecated event types are supported.",
                 unsupportedEventType)));
   }
 }

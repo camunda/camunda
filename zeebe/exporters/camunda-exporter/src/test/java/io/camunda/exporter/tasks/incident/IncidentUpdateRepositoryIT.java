@@ -49,11 +49,14 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -286,6 +289,30 @@ abstract sealed class IncidentUpdateRepositoryIT {
           .hasSize(1)
           .containsEntry(
               "1", new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
+    }
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/25968")
+    void shouldReturnMoreThanOnePage() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final List<String> ids = new ArrayList<>();
+      final Map<String, IncidentDocument> expected = new HashMap<>();
+      for (int i = 0; i < 20; i++) {
+        final var id = String.valueOf(i);
+        final var entity = createIncident(i);
+        ids.add(id);
+        expected.put(id, new IncidentDocument(id, incidentTemplate.getFullQualifiedName(), entity));
+      }
+
+      // when
+      final var documents = repository.getIncidentDocuments(ids);
+
+      // then
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.map(String.class, IncidentDocument.class))
+          .hasSize(20)
+          .containsExactlyEntriesOf(expected);
     }
 
     private IncidentEntity createIncident(final long key) throws PersistenceException {

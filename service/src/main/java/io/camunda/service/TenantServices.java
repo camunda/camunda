@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 public class TenantServices extends SearchQueryService<TenantServices, TenantQuery, TenantEntity> {
@@ -95,6 +97,18 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantKey(tenantKey)
             .setEntity(entityType, entityKey));
+  }
+
+  public Collection<TenantEntity> getTenantsByMemberKey(final long memberKey) {
+    return search(
+            TenantQuery.of(
+                queryBuilder ->
+                    queryBuilder
+                        .filter(filterBuilder -> filterBuilder.memberKey(memberKey))
+                        // FIXME: we don't have an easy way to fetch all results, so we use a large
+                        //        limit – 10k tenants ought to be enough for anybody …
+                        .page(SearchQueryPage.of(b -> b.size(10_000)))))
+        .items();
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}

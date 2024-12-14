@@ -84,6 +84,9 @@ zeebe:
     exporters:
       rdbms:
         className: io.camunda.exporter.rdbms.RdbmsExporter
+        args:
+          flushInterval: 500
+          maxQueueSize: 1000
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:
@@ -144,9 +147,6 @@ camunda:
       url: http://localhost:9200
       # Index prefix, configured in Zeebe Elasticsearch exporter
       prefix: zeebe-record
-  rest:
-    query:
-      enabled: true
 logging:
   level:
     io:

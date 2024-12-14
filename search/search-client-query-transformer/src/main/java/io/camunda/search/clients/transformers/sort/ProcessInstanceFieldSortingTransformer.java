@@ -20,7 +20,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.TREE_PATH;
 
 public class ProcessInstanceFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -35,7 +34,6 @@ public class ProcessInstanceFieldSortingTransformer implements FieldSortingTrans
       case "processDefinitionKey" -> PROCESS_KEY;
       case "parentProcessInstanceKey" -> PARENT_PROCESS_INSTANCE_KEY;
       case "parentFlowNodeInstanceKey" -> PARENT_FLOW_NODE_INSTANCE_KEY;
-      case "treePath" -> TREE_PATH;
       case "startDate" -> START_DATE;
       case "endDate" -> END_DATE;
       case "state" -> STATE;

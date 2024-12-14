@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public final record SearchQueryResult<T>(long total, List<T> items, Object[] sortValues) {
+public record SearchQueryResult<T>(long total, List<T> items, Object[] sortValues) {
 
   public static final class Builder<T> implements ObjectBuilder<SearchQueryResult<T>> {
 

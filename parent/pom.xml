@@ -52,7 +52,7 @@
     <version.zstd-jni>1.5.6-8</version.zstd-jni>
     <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.4.0</version.docker-java-api>
+    <version.docker-java-api>3.4.1</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
     <version.grpc>1.69.0</version.grpc>
@@ -98,7 +98,7 @@
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
-    <version.feel-scala>1.18.1</version.feel-scala>
+    <version.feel-scala>1.19.0</version.feel-scala>
     <version.dmn-scala>1.10.0</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.1.14</version.spring>
@@ -129,13 +129,13 @@
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.51.0</version.google-sdk>
     <version.azure-sdk>1.2.30</version.azure-sdk>
-    <version.awssdk>2.29.31</version.awssdk>
+    <version.awssdk>2.29.32</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.2</version.jackson-annotations>
-    <version.swagger-annotations>2.2.26</version.swagger-annotations>
+    <version.swagger-annotations>2.2.27</version.swagger-annotations>
     <version.checker-qual>3.48.3</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
@@ -149,6 +149,7 @@
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.15.0</version.jna-platform>
     <version.liquibase>4.30.0</version.liquibase>
+    <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.1.8</version.caffeine>
 
     <version.commons-io>2.18.0</version.commons-io>
@@ -187,17 +188,6 @@
     <version.keycloak>25.0.6</version.keycloak>
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
-
-    <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
-    <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
-    <version.graphql-java>21.5</version.graphql-java>
-    <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
-    <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
-    <version.graphql-java-annotations>21.5</version.graphql-java-annotations>
-
-    <version.javassist>3.30.2-GA</version.javassist>
-
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
     <version.mybatis>3.5.17</version.mybatis>
     <version.mybatis-spring-boot-starter>3.0.4</version.mybatis-spring-boot-starter>
@@ -233,7 +223,7 @@
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
-    <plugin.version.google-java-format>1.25.1</plugin.version.google-java-format>
+    <plugin.version.google-java-format>1.25.2</plugin.version.google-java-format>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
@@ -597,12 +587,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-archiver</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-importer</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -849,6 +833,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-db-rdbms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db-rdbms-schema</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1162,6 +1152,12 @@
         <groupId>org.liquibase</groupId>
         <artifactId>liquibase-core</artifactId>
         <version>${version.liquibase}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.vertical-blank</groupId>
+        <artifactId>sql-formatter</artifactId>
+        <version>${version.sqlformatter}</version>
       </dependency>
 
       <dependency>
@@ -2157,89 +2153,6 @@
         <groupId>net.sf.jopt-simple</groupId>
         <artifactId>jopt-simple</artifactId>
         <version>${version.jopt-simple}</version>
-      </dependency>
-
-      <!-- between graphql-spring-boot and thymeleaf -->
-      <dependency>
-        <groupId>org.javassist</groupId>
-        <artifactId>javassist</artifactId>
-        <version>${version.javassist}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>graphql-java-tools</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webflux</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-kickstart</artifactId>
-        <version>${version.graphql-kickstart}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-servlet</artifactId>
-        <version>${version.graphql-kickstart}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java</artifactId>
-        <version>${version.graphql-java}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.github.graphql-java</groupId>
-        <artifactId>graphql-java-annotations</artifactId>
-        <version>${version.graphql-java-annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java-extended-scalars</artifactId>
-        <version>${version.graphql-java.scalars}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>java-dataloader</artifactId>
-        <version>${version.graphql-java.dataloader}</version>
       </dependency>
 
       <dependency>

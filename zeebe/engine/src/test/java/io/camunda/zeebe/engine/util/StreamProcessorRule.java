@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -234,6 +235,12 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   @Override
   public long writeCommand(
+      final Intent intent, final UnifiedRecordValue recordValue, final AuthInfo authorizations) {
+    return streamProcessingComposite.writeCommand(intent, recordValue, authorizations);
+  }
+
+  @Override
+  public long writeCommand(
       final long key,
       final Intent intent,
       final UnifiedRecordValue recordValue,
@@ -281,6 +288,17 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
+  }
+
+  @Override
+  public long writeCommandOnPartition(
+      final int partition,
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final AuthInfo authorizations) {
+    return streamProcessingComposite.writeCommandOnPartition(
+        partition, key, intent, value, authorizations);
   }
 
   @Override

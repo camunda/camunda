@@ -35,7 +35,8 @@ export async function login(t, userHandle = 'user1') {
     .maximizeWindow()
     .typeText('input[name="username"]', user.username)
     .typeText('input[name="password"]', user.username)
-    .click('[type="submit"]');
+    .click('[type="submit"]')
+    .wait(1000);
 }
 
 export function getUser(t, userHandle) {

@@ -34,24 +34,64 @@ public class TaskListenerBuilder {
     return this;
   }
 
+  /**
+   * @deprecated use {@link #creating()} instead
+   */
+  @Deprecated
   public TaskListenerBuilder create() {
     return eventType(ZeebeTaskListenerEventType.create);
   }
 
+  public TaskListenerBuilder creating() {
+    return eventType(ZeebeTaskListenerEventType.creating);
+  }
+
+  /**
+   * @deprecated use {@link #updating()} instead
+   */
+  @Deprecated
   public TaskListenerBuilder update() {
     return eventType(ZeebeTaskListenerEventType.update);
   }
 
+  public TaskListenerBuilder updating() {
+    return eventType(ZeebeTaskListenerEventType.updating);
+  }
+
+  /**
+   * @deprecated use {@link #assigning()} instead
+   */
+  @Deprecated
   public TaskListenerBuilder assignment() {
     return eventType(ZeebeTaskListenerEventType.assignment);
   }
 
+  public TaskListenerBuilder assigning() {
+    return eventType(ZeebeTaskListenerEventType.assigning);
+  }
+
+  /**
+   * @deprecated use {@link #completing()} instead
+   */
+  @Deprecated
   public TaskListenerBuilder complete() {
     return eventType(ZeebeTaskListenerEventType.complete);
   }
 
+  public TaskListenerBuilder completing() {
+    return eventType(ZeebeTaskListenerEventType.completing);
+  }
+
+  /**
+   * @deprecated use {@link #canceling()} instead
+   */
+  @Deprecated
   public TaskListenerBuilder cancel() {
     return eventType(ZeebeTaskListenerEventType.cancel);
+  }
+
+  public TaskListenerBuilder canceling() {
+    return eventType(ZeebeTaskListenerEventType.canceling);
   }
 
   public TaskListenerBuilder type(final String type) {

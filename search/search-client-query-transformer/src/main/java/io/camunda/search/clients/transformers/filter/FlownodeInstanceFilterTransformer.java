@@ -27,10 +27,15 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
 public class FlownodeInstanceFilterTransformer
-    implements FilterTransformer<FlowNodeInstanceFilter> {
+    extends IndexFilterTransformer<FlowNodeInstanceFilter> {
+
+  public FlownodeInstanceFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
@@ -46,11 +51,6 @@ public class FlownodeInstanceFilterTransformer
         filter.hasIncident() != null ? term(INCIDENT, filter.hasIncident()) : null,
         longTerms(INCIDENT_KEY, filter.incidentKeys()),
         stringTerms(TENANT_ID, filter.tenantIds()));
-  }
-
-  @Override
-  public List<String> toIndices(final FlowNodeInstanceFilter filter) {
-    return List.of("operate-flownode-instance-8.3.1_alias");
   }
 
   private SearchQuery getStateQuery(final List<FlowNodeState> states) {

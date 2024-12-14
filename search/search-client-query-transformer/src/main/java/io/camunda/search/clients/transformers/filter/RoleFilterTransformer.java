@@ -13,11 +13,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
-import java.util.List;
 
-public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
+public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
+  public RoleFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final RoleFilter filter) {
@@ -30,10 +33,5 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
                 term(RoleIndex.MEMBER_KEY, filter.memberKey())));
-  }
-
-  @Override
-  public List<String> toIndices(final RoleFilter filter) {
-    return List.of("camunda-role-8.7.0_alias");
   }
 }

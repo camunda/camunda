@@ -2,7 +2,7 @@
 
 Operate stores its data over multiple indices in Elasticsearch. Data backup happens as the series of Elasticsearch
 snapshots for single indices or groups of indices. Different Operate modules and processes put limitations
-on backup process. Importer, post importer and archiver define the order in which snapshot of different indices should happen.
+on backup process. Importer and post importer define the order in which snapshot of different indices should happen.
 All indices that store some kind of state should be backed up before all dependent indices. E.g. in case of importer
 snapshot of the operate-import-position index that stores import progress should be taken earlier than snapshots of all
 indices that store imported data.

@@ -148,7 +148,6 @@ public final class TestOperateWithExporter extends TestSpringApplication<TestOpe
 
     withProperty("zeebe.broker.gateway.enable", true);
     withProperty("camunda.rest.enabled", true);
-    withProperty("camunda.rest.query.enabled", true);
     withProperty("camunda.security.authorizations.enabled", true);
     withProperty("camunda.database.url", esURL);
     withProperty("camunda.operate.importerEnabled", false);

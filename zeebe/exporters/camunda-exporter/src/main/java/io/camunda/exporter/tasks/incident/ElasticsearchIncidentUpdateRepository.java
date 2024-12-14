@@ -374,6 +374,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
         .allowNoIndices(true)
         .ignoreUnavailable(true)
         .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
+        .size(incidentIds.size())
         .build();
   }
 

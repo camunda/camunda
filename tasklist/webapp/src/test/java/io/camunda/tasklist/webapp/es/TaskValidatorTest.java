@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
@@ -38,7 +38,8 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToPersistDraftTaskVariablesIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToPersistDraftTaskVariablesIfTaskIsNotActive(
+      final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 
@@ -107,7 +108,7 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToCompleteIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToCompleteIfTaskIsNotActive(final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 
@@ -225,7 +226,7 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToClaimTaskIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToClaimTaskIfTaskIsNotActive(final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
 
@@ -280,7 +281,7 @@ public class TaskValidatorTest {
   @EnumSource(
       value = TaskState.class,
       names = {"COMPLETED", "CANCELED"})
-  public void userShouldNotBeAbleToUnassignTaskIfTaskIsNotActive(TaskState taskState) {
+  public void userShouldNotBeAbleToUnassignTaskIfTaskIsNotActive(final TaskState taskState) {
     // given
     final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
 

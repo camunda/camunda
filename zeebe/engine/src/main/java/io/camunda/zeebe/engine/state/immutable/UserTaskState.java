@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import java.util.List;
 import java.util.Optional;
 
 public interface UserTaskState {
@@ -19,7 +19,7 @@ public interface UserTaskState {
 
   UserTaskRecord getUserTask(final long userTaskKey);
 
-  UserTaskRecord getUserTask(final long userTaskKey, final List<String> authorizations);
+  UserTaskRecord getUserTask(final long userTaskKey, final AuthorizedTenants authorizations);
 
   UserTaskIntermediateStateValue getIntermediateState(final long userTaskKey);
 

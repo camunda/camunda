@@ -22,11 +22,14 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -36,6 +39,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
+  public static final String ASSIGNEE = "assignee";
   public static final String CANDIDATE_GROUPS = "candidateGroupsList";
   public static final String CANDIDATE_USERS = "candidateUsersList";
   public static final String DUE_DATE = "dueDate";
@@ -43,6 +47,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String PRIORITY = "priority";
 
   private static final String EMPTY_STRING = "";
+  private static final StringValue ASSIGNEE_VALUE = new StringValue(ASSIGNEE);
   private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
   private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
@@ -50,7 +55,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
-  private final StringProperty assigneeProp = new StringProperty("assignee", EMPTY_STRING);
+  private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);
   private final ArrayProperty<StringValue> candidateGroupsListProp =
       new ArrayProperty<>(CANDIDATE_GROUPS, StringValue::new);
   private final ArrayProperty<StringValue> candidateUsersListProp =
@@ -107,6 +112,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(priorityProp);
   }
 
+  /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
   public void wrapWithoutVariables(final UserTaskRecord record) {
     userTaskKeyProp.setValue(record.getUserTaskKey());
     assigneeProp.setValue(record.getAssigneeBuffer());
@@ -131,9 +137,22 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     priorityProp.setValue(record.getPriority());
   }
 
+  /**
+   * Wraps the given record's properties, typically used to quickly set the same properties.
+   *
+   * @implNote This method uses variable assignment. So changing a non-primitive in one record also
+   *     affects the other. If you need to separate the records, use {@link #copy()} instead.
+   */
   public void wrap(final UserTaskRecord record) {
     wrapWithoutVariables(record);
     variableProp.setValue(record.getVariablesBuffer());
+  }
+
+  /** Returns a full copy of the record. */
+  public UserTaskRecord copy() {
+    final UserTaskRecord copy = new UserTaskRecord();
+    copy.copyFrom(this);
+    return copy;
   }
 
   public void wrapChangedAttributes(
@@ -147,6 +166,9 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
     switch (bufferAsString(attribute.getValue())) {
+      case ASSIGNEE:
+        setAssignee(record.getAssigneeBuffer());
+        break;
       case CANDIDATE_GROUPS:
         setCandidateGroupsList(record.getCandidateGroupsList());
         break;
@@ -165,6 +187,32 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       default:
         break;
     }
+  }
+
+  /**
+   * Corrects those attributes of the user task record provided in the list of corrected attributes
+   * with the values from the given corrections. Corrected attributes are tracked as changed
+   * attributes.
+   *
+   * @param correctedAttributes the attributes to correct
+   * @param corrections the corrections to apply
+   */
+  public void correctAttributes(
+      final List<String> correctedAttributes, final JobResultCorrections corrections) {
+    correctedAttributes.forEach(
+        attribute -> {
+          switch (attribute) {
+            case ASSIGNEE -> setAssignee(corrections.getAssignee());
+            case CANDIDATE_GROUPS -> setCandidateGroupsList(corrections.getCandidateGroupsList());
+            case CANDIDATE_USERS -> setCandidateUsersList(corrections.getCandidateUsersList());
+            case DUE_DATE -> setDueDate(corrections.getDueDate());
+            case FOLLOW_UP_DATE -> setFollowUpDate(corrections.getFollowUpDate());
+            case PRIORITY -> setPriority(corrections.getPriority());
+            default ->
+                throw new IllegalArgumentException("Unknown corrected attribute: " + attribute);
+          }
+          addChangedAttribute(attribute);
+        });
   }
 
   @Override
@@ -338,8 +386,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
     changedAttributesProp.reset();
-    changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+    changedAttributes.forEach(this::addChangedAttribute);
     return this;
   }
 
@@ -394,6 +441,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setUserTaskKey(final long userTaskKey) {
     userTaskKeyProp.setValue(userTaskKey);
+    return this;
+  }
+
+  public UserTaskRecord setAssigneeChanged() {
+    changedAttributesProp.add().wrap(ASSIGNEE_VALUE);
     return this;
   }
 
@@ -457,6 +509,32 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     changedAttributesProp.reset();
     changedAttributes.forEach(attribute -> changedAttributesProp.add().wrap(attribute));
     return this;
+  }
+
+  public UserTaskRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    return this;
+  }
+
+  public void setDiffAsChangedAttributes(final UserTaskRecord other) {
+    changedAttributesProp.reset();
+    addIfAttributeChanged(ASSIGNEE, UserTaskRecord::getAssigneeBuffer, other);
+    addIfAttributeChanged(CANDIDATE_GROUPS, UserTaskRecord::getCandidateGroupsList, other);
+    addIfAttributeChanged(CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList, other);
+    addIfAttributeChanged(DUE_DATE, UserTaskRecord::getDueDateBuffer, other);
+    addIfAttributeChanged(FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer, other);
+    addIfAttributeChanged(PRIORITY, UserTaskRecord::getPriority, other);
+  }
+
+  private <T> void addIfAttributeChanged(
+      final String attribute,
+      final Function<UserTaskRecord, T> attributeGetter,
+      final UserTaskRecord other) {
+    final T thisAttribute = attributeGetter.apply(this);
+    final T otherAttribute = attributeGetter.apply(other);
+    if (!Objects.equals(thisAttribute, otherAttribute)) {
+      addChangedAttribute(attribute);
+    }
   }
 
   @JsonIgnore

@@ -35,7 +35,7 @@ import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.stereotype.Component;
 
 @Component
-@WebEndpoint(id = "backup-history")
+@WebEndpoint(id = "backupHistory")
 @ProfileOperateTasklist
 public class BackupController {
 

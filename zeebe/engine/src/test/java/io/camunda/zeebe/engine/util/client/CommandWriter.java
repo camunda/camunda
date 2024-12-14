@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
@@ -24,6 +25,9 @@ public interface CommandWriter {
       String... authorizedTenants);
 
   long writeCommand(long key, Intent intent, UnifiedRecordValue recordValue);
+
+  long writeCommand(
+      final Intent intent, UnifiedRecordValue recordValue, final AuthInfo authorizations);
 
   long writeCommand(
       final long key,
@@ -55,6 +59,13 @@ public interface CommandWriter {
 
   long writeCommandOnPartition(
       int partitionId, long key, Intent intent, UnifiedRecordValue recordValue);
+
+  long writeCommandOnPartition(
+      int partitionId,
+      long key,
+      Intent intent,
+      UnifiedRecordValue recordValue,
+      final AuthInfo authorizations);
 
   long writeCommandOnPartition(
       int partitionId,

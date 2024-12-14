@@ -44,9 +44,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = DecisionInstanceQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = DecisionInstanceController.class)
 @Import(JacksonConfig.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
@@ -71,7 +69,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                ],
                "page": {
                    "totalItems": 1,
-                   "firstSortValues": ["v"],
+                   "firstSortValues": [],
                    "lastSortValues": [
                        "v"
                    ]
@@ -148,7 +146,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           "sort": [
                 {
                     "field": "decisionDefinitionName",
-                    "order": "desc"
+                    "order": "DESC"
                 }
           ]
       }""",

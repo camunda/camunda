@@ -29,7 +29,7 @@ public class TenantService {
   @Autowired private MultiTenancyConfiguration multiTenancyConfiguration;
 
   public List<String> tenantIds() {
-    return TenantAttributeHolder.tenantIds();
+    return TenantAttributeHolder.getTenantIds();
   }
 
   public AuthenticatedTenants getAuthenticatedTenants() {

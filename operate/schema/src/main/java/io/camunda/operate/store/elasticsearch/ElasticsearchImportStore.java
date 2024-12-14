@@ -96,16 +96,8 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      final List<ImportPositionEntity> positions,
-      final List<ImportPositionEntity> postImportPositions) {
-    var preparedBulkRequest = prepareBulkRequest(positions);
-
-    if (preparedBulkRequest.isLeft()) {
-      final var e = preparedBulkRequest.getLeft();
-      return Either.left(e);
-    }
-
-    preparedBulkRequest = addPostImportRequests(preparedBulkRequest.get(), postImportPositions);
+      final List<ImportPositionEntity> positions) {
+    final var preparedBulkRequest = prepareBulkRequest(positions);
 
     if (preparedBulkRequest.isLeft()) {
       final var e = preparedBulkRequest.getLeft();
@@ -172,55 +164,6 @@ public class ElasticsearchImportStore implements ImportStore {
     }
 
     return Either.right(bulkRequest);
-  }
-
-  private Either<Exception, BulkRequest> addPostImportRequests(
-      final BulkRequest bulkRequest, final List<ImportPositionEntity> positions) {
-
-    if (positions.size() > 0) {
-      final var preparedUpdateRequests =
-          positions.stream()
-              .map(this::preparePostImportUpdateRequest)
-              .collect(Either.collectorFoldingLeft());
-
-      if (preparedUpdateRequests.isLeft()) {
-        final var e = preparedUpdateRequests.getLeft();
-        return Either.left(e);
-      }
-
-      preparedUpdateRequests.get().forEach(bulkRequest::add);
-    }
-
-    return Either.right(bulkRequest);
-  }
-
-  private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(
-      final ImportPositionEntity position) {
-    try {
-      final var index = importPositionType.getFullQualifiedName();
-      final var source = objectMapper.writeValueAsString(position);
-      final var updateFields = new HashMap<String, Object>();
-
-      updateFields.put(
-          ImportPositionIndex.POST_IMPORTER_POSITION, position.getPostImporterPosition());
-
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(index)
-              .id(position.getId())
-              .upsert(source, XContentType.JSON)
-              .doc(updateFields);
-
-      return Either.right(updateRequest);
-
-    } catch (final Exception e) {
-      LOGGER.error(
-          String.format(
-              "Error occurred while preparing request to update processed position for %s",
-              position.getAliasName()),
-          e);
-      return Either.left(e);
-    }
   }
 
   private Either<Exception, UpdateRequest> prepareUpdateRequest(

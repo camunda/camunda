@@ -10,7 +10,6 @@ package io.camunda.tasklist.store.opensearch;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
-import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
 import static java.util.stream.Collectors.toList;
 
@@ -107,8 +106,8 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public TaskEntity getTask(final String id) {
     try {
-      return getRawResponseWithTenantCheck(
-          id, taskTemplate, QueryType.ALL, tenantAwareClient, TaskEntity.class);
+      final var rawTask = getTaskRawResponse(id);
+      return rawTask.source();
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -124,7 +123,7 @@ public class TaskStoreOpenSearch implements TaskStore {
                         term ->
                             term.field(TaskTemplate.PROCESS_INSTANCE_ID)
                                 .value(FieldValue.of(processInstanceId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(TaskTemplate.KEY));
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
@@ -144,7 +143,7 @@ public class TaskStoreOpenSearch implements TaskStore {
                         term ->
                             term.field(TaskTemplate.PROCESS_DEFINITION_ID)
                                 .value(FieldValue.of(processDefinitionId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(TaskTemplate.KEY));
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
@@ -178,7 +177,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
     final Hit taskBeforeSearchHit;
     try {
-      taskBeforeSearchHit = getTaskRawResponse(taskBefore.getId());
+      taskBeforeSearchHit = getTaskRawResponse(String.valueOf(taskBefore.getKey()));
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -204,7 +203,8 @@ public class TaskStoreOpenSearch implements TaskStore {
           .doc(jsonMap)
           .refresh(Refresh.WaitFor)
           .ifSeqNo(taskBeforeSearchHit.seqNo())
-          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm())
+          .routing(taskBeforeSearchHit.routing());
       OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
     } catch (final Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
@@ -217,7 +217,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
     final Hit taskBeforeSearchHit;
     try {
-      taskBeforeSearchHit = getTaskRawResponse(taskBefore.getId());
+      taskBeforeSearchHit = getTaskRawResponse(String.valueOf(taskBefore.getKey()));
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -240,7 +240,8 @@ public class TaskStoreOpenSearch implements TaskStore {
           .doc(jsonMap)
           .refresh(Refresh.WaitFor)
           .ifSeqNo(taskBeforeSearchHit.seqNo())
-          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm())
+          .routing(taskBeforeSearchHit.routing());
       OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
     } catch (final Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
@@ -252,14 +253,14 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
 
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+    updateTask(String.valueOf(taskBefore.getKey()), asMap(TaskTemplate.ASSIGNEE, assignee));
 
     return makeCopyOf(taskBefore).setAssignee(assignee);
   }
 
   @Override
   public TaskEntity persistTaskUnclaim(final TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    updateTask(String.valueOf(task.getKey()), asMap(TaskTemplate.ASSIGNEE, null));
     return makeCopyOf(task).setAssignee(null);
   }
 
@@ -277,7 +278,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   public void updateTaskLinkedForm(
       final TaskEntity task, final String formBpmnId, final long formVersion) {
     updateTask(
-        task.getId(),
+        String.valueOf(task.getKey()),
         asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
@@ -360,21 +361,12 @@ public class TaskStoreOpenSearch implements TaskStore {
     applySorting(sourceBuilder, query);
 
     try {
-      final SearchResponse<TaskSearchView> response =
+      final SearchResponse<TaskEntity> response =
           query.getTenantIds() == null
-              ? tenantAwareClient.search(sourceBuilder, TaskSearchView.class)
+              ? tenantAwareClient.search(sourceBuilder, TaskEntity.class)
               : tenantAwareClient.searchByTenantIds(
-                  sourceBuilder, TaskSearchView.class, Set.of(query.getTenantIds()));
-
-      final List<TaskSearchView> tasks =
-          response.hits().hits().stream()
-              .map(
-                  m -> {
-                    m.source()
-                        .setSortValues(Arrays.asList(m.sort().toArray()).toArray(new String[0]));
-                    return m.source();
-                  })
-              .collect(Collectors.toList());
+                  sourceBuilder, TaskEntity.class, Set.of(query.getTenantIds()));
+      final List<TaskSearchView> tasks = mapTasksFromEntity(response);
 
       if (tasks.size() > 0) {
         if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
@@ -396,6 +388,12 @@ public class TaskStoreOpenSearch implements TaskStore {
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
+  }
+
+  private List<TaskSearchView> mapTasksFromEntity(final SearchResponse<TaskEntity> response) {
+    return response.hits().hits().stream()
+        .map(sh -> TaskSearchView.createFrom(sh.source(), sh.sort().toArray(new String[0])))
+        .toList();
   }
 
   private List<String> getTasksContainsVarNameAndValue(
@@ -482,10 +480,11 @@ public class TaskStoreOpenSearch implements TaskStore {
                                   .toList())));
     }
 
-    Query.Builder idsQuery = null;
+    Query.Builder taskIdsQuery = null;
     if (taskIds != null) {
-      idsQuery = new Query.Builder();
-      idsQuery.ids(i -> i.values(taskIds));
+      final var terms = taskIds.stream().map(FieldValue::of).toList();
+      taskIdsQuery = new Query.Builder();
+      taskIdsQuery.terms(t -> t.field(TaskTemplate.KEY).terms(v -> v.value(terms)));
     }
 
     Query.Builder taskDefinitionQ = null;
@@ -605,7 +604,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             assignedQ,
             assigneeQ,
             assigneesQ,
-            idsQuery,
+            taskIdsQuery,
             taskDefinitionQ,
             candidateGroupQ,
             candidateGroupsQ,
@@ -816,36 +815,39 @@ public class TaskStoreOpenSearch implements TaskStore {
       final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
       updateRequest
           .index(taskTemplate.getFullQualifiedName())
-          .id(taskId)
+          .id(searchHit.id())
           .doc(jsonMap)
           .refresh(Refresh.WaitFor)
           .ifSeqNo(searchHit.seqNo())
-          .ifPrimaryTerm(searchHit.primaryTerm());
+          .ifPrimaryTerm(searchHit.primaryTerm())
+          .routing(searchHit.routing());
       OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
     } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  private Hit getTaskRawResponse(final String id) throws IOException {
+  private Hit<TaskEntity> getTaskRawResponse(final String id) throws IOException {
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate).query(q -> q.ids(ids -> ids.values(id)));
+        OpenSearchUtil.createSearchRequest(taskTemplate)
+            .query(q -> q.term(t -> t.field(TaskTemplate.KEY).value(FieldValue.of(id))));
 
-    final SearchResponse<TaskEntity> response = osClient.search(request.build(), TaskEntity.class);
+    final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
 
     if (response.hits().total().value() == 1L) {
       return response.hits().hits().get(0);
     } else if (response.hits().total().value() > 1L) {
       throw new NotFoundException(String.format("Unique task with id %s was not found", id));
     } else {
-      throw new NotFoundException(String.format("Task with id %s was not found", id));
+      throw new NotFoundException(String.format("task with id %s was not found", id));
     }
   }
 
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
+    final var idTerms = ids.stream().map(FieldValue::of).toList();
     final SearchRequest.Builder request =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .source(s -> s.filter(f -> f.includes(ids)));
+            .query(s -> s.terms(f -> f.field(TaskTemplate.KEY).terms(t -> t.value(idTerms))));
 
     final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
     if (response.hits().total().value() > 0L) {

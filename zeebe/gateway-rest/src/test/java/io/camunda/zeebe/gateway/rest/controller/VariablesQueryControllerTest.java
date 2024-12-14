@@ -38,7 +38,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = VariableController.class)
 @Import(JacksonConfig.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
@@ -74,7 +74,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": [],
                   "lastSortValues": [
                       "v"
                   ]
@@ -157,7 +157,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "value",
@@ -205,9 +205,9 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);
@@ -237,7 +237,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

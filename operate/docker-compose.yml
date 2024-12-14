@@ -44,23 +44,6 @@ services:
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
 
-  zeebe-e2e:
-    container_name: zeebe-e2e
-    image: camunda/zeebe:SNAPSHOT
-    environment:
-      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
-      - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2e
-      - ZEEBE_BROKER_BACKPRESSURE_ENABLED=false
-      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
-    ports:
-      - 26503:26500
-      - 8001:8000
-      - 8086:8080
-    restart: always
-    volumes:
-      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
-
   ldap-test-server:
     container_name: ldap-test-server
     image: rroemhild/test-openldap

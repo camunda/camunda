@@ -61,15 +61,6 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
               AuthorizationQueryTransformers.getTransformer(queryClass)
                   .toSearchQuery(resourceType, permissionType, resourceKeys));
     }
-    // create a copy of the original search query request with the authorized query
-    return SearchQueryRequest.of(
-        r ->
-            r.index(searchQueryRequest.index())
-                .query(authorizedQuery)
-                .sort(searchQueryRequest.sort())
-                .searchAfter(searchQueryRequest.searchAfter())
-                .from(searchQueryRequest.from())
-                .size(searchQueryRequest.size())
-                .source(searchQueryRequest.source()));
+    return searchQueryRequest.toBuilder().query(authorizedQuery).build();
   }
 }

@@ -88,6 +88,76 @@ public class ProcessDefinitionQueryTest {
   }
 
   @Test
+  void shouldPaginateWithSortingByProcessDefinitionKey() {
+    // given
+    final var resultAll =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionKey().desc())
+            .send()
+            .join();
+
+    // when
+    final var firstPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionKey().desc())
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+    final var secondPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionKey().desc())
+            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .send()
+            .join();
+
+    // then
+    assertThat(firstPage.items().size()).isEqualTo(1);
+    assertThat(firstPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(0).getProcessDefinitionKey());
+    assertThat(secondPage.items().size()).isEqualTo(1);
+    assertThat(secondPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(1).getProcessDefinitionKey());
+  }
+
+  @Test
+  void shouldPaginateWithSortingByProcessDefinitionId() {
+    // given
+    final var resultAll =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .send()
+            .join();
+
+    // when
+    final var firstPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+    final var secondPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .send()
+            .join();
+
+    // then
+    assertThat(firstPage.items().size()).isEqualTo(1);
+    assertThat(firstPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(0).getProcessDefinitionKey());
+    assertThat(secondPage.items().size()).isEqualTo(1);
+    assertThat(secondPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(1).getProcessDefinitionKey());
+  }
+
+  @Test
   void shouldThrownExceptionIfProcessDefinitionNotFoundByKey() {
     // given
     final long invalidProcessDefinitionKey = 0xC00L;

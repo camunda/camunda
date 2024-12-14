@@ -90,7 +90,8 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
           .id(entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
+          .retryOnConflict(UPDATE_RETRY_COUNT)
+          .routing(entity.getProcessInstanceId());
 
     } catch (final IOException e) {
       throw new PersistenceException(

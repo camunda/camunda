@@ -85,7 +85,7 @@ public class FormStoreOpenSearch implements FormStore {
                         term ->
                             term.field(FormIndex.PROCESS_DEFINITION_ID)
                                 .value(FieldValue.of(processDefinitionId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(FormIndex.ID));
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
     } catch (final IOException e) {

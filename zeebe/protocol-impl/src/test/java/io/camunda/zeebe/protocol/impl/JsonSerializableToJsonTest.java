@@ -700,16 +700,16 @@ final class JsonSerializableToJsonTest {
                               .setAssignee("frodo")
                               .setDueDate("today")
                               .setFollowUpDate("tomorrow")
-                              .setCandidateGroups(List.of("fellowship", "eagles"))
-                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setCandidateGroupsList(List.of("fellowship", "eagles"))
+                              .setCandidateUsersList(List.of("frodo", "sam", "gollum"))
                               .setPriority(1))
                       .setCorrectedAttributes(
                           List.of(
                               "assignee",
                               "dueDate",
                               "followUpDate",
-                              "candidateGroups",
-                              "candidateUsers",
+                              "candidateGroupsList",
+                              "candidateUsersList",
                               "priority"));
 
               jobRecord
@@ -773,16 +773,16 @@ final class JsonSerializableToJsonTest {
                   "assignee",
                   "dueDate",
                   "followUpDate",
-                  "candidateGroups",
-                  "candidateUsers",
+                  "candidateGroupsList",
+                  "candidateUsersList",
                   "priority"
                 ],
                 "corrections": {
                   "assignee": "frodo",
                   "dueDate": "today",
                   "followUpDate": "tomorrow",
-                  "candidateGroups": ["fellowship", "eagles"],
-                  "candidateUsers": ["frodo", "sam", "gollum"],
+                  "candidateGroupsList": ["fellowship", "eagles"],
+                  "candidateUsersList": ["frodo", "sam", "gollum"],
                   "priority": 1
                 }
               }
@@ -844,16 +844,16 @@ final class JsonSerializableToJsonTest {
                               .setAssignee("frodo")
                               .setDueDate("today")
                               .setFollowUpDate("tomorrow")
-                              .setCandidateGroups(List.of("fellowship", "eagles"))
-                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setCandidateGroupsList(List.of("fellowship", "eagles"))
+                              .setCandidateUsersList(List.of("frodo", "sam", "gollum"))
                               .setPriority(1))
                       .setCorrectedAttributes(
                           List.of(
                               "assignee",
                               "dueDate",
                               "followUpDate",
-                              "candidateGroups",
-                              "candidateUsers",
+                              "candidateGroupsList",
+                              "candidateUsersList",
                               "priority"));
 
               final Map<String, String> customHeaders =
@@ -916,16 +916,16 @@ final class JsonSerializableToJsonTest {
               "assignee",
               "dueDate",
               "followUpDate",
-              "candidateGroups",
-              "candidateUsers",
+              "candidateGroupsList",
+              "candidateUsersList",
               "priority"
             ],
             "corrections": {
               "assignee": "frodo",
               "dueDate": "today",
               "followUpDate": "tomorrow",
-              "candidateGroups": ["fellowship", "eagles"],
-              "candidateUsers": ["frodo", "sam", "gollum"],
+              "candidateGroupsList": ["fellowship", "eagles"],
+              "candidateUsersList": ["frodo", "sam", "gollum"],
               "priority": 1
             }
           }
@@ -969,8 +969,8 @@ final class JsonSerializableToJsonTest {
               "assignee": "",
               "dueDate": "",
               "followUpDate": "",
-              "candidateGroups": [],
-              "candidateUsers": [],
+              "candidateGroupsList": [],
+              "candidateUsersList": [],
               "priority": -1
             }
           }
@@ -1019,8 +1019,8 @@ final class JsonSerializableToJsonTest {
               "assignee": "",
               "dueDate": "",
               "followUpDate": "",
-              "candidateGroups": [],
-              "candidateUsers": [],
+              "candidateGroupsList": [],
+              "candidateUsersList": [],
               "priority": -1
             }
           }
@@ -3000,7 +3000,7 @@ final class JsonSerializableToJsonTest {
                             .setName("roleName")
                             .setEntityKey(2)
                             .setEntityType(EntityType.USER))
-                    .setDefaultUser(
+                    .addUser(
                         new UserRecord()
                             .setUserKey(3L)
                             .setUsername("username")
@@ -3008,8 +3008,16 @@ final class JsonSerializableToJsonTest {
                             .setEmail("email")
                             .setPassword("password")
                             .setUserType(UserType.REGULAR))
+                    .addUser(
+                        new UserRecord()
+                            .setUserKey(4L)
+                            .setUsername("foo")
+                            .setName("bar")
+                            .setEmail("baz")
+                            .setPassword("qux")
+                            .setUserType(UserType.REGULAR))
                     .setDefaultTenant(
-                        new TenantRecord().setTenantKey(4).setTenantId("id").setName("name")),
+                        new TenantRecord().setTenantKey(5).setTenantId("id").setName("name")),
         """
       {
         "defaultRole": {
@@ -3018,16 +3026,26 @@ final class JsonSerializableToJsonTest {
           "entityKey": 2,
           "entityType": "USER"
         },
-        "defaultUser": {
-          "userKey": 3,
-          "username": "username",
-          "name": "name",
-          "email": "email",
-          "password": "password",
-          "userType": "REGULAR"
-        },
+        "users": [
+          {
+            "userKey": 3,
+            "username": "username",
+            "name": "name",
+            "email": "email",
+            "password": "password",
+            "userType": "REGULAR"
+          },
+          {
+            "userKey": 4,
+            "username": "foo",
+            "name": "bar",
+            "email": "baz",
+            "password": "qux",
+            "userType": "REGULAR"
+          }
+        ],
         "defaultTenant": {
-          "tenantKey": 4,
+          "tenantKey": 5,
           "tenantId": "id",
           "name": "name",
           "entityKey": -1,
@@ -3050,14 +3068,7 @@ final class JsonSerializableToJsonTest {
               "entityKey": -1,
               "entityType": "UNSPECIFIED"
           },
-          "defaultUser": {
-              "userKey": -1,
-              "name": "",
-              "username": "",
-              "password": "",
-              "email": "",
-              "userType": "REGULAR"
-          },
+          "users": [],
           "defaultTenant": {
               "tenantKey": -1,
               "tenantId": "",

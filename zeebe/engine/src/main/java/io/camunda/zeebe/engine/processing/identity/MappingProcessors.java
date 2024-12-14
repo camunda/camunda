@@ -36,7 +36,7 @@ public class MappingProcessors {
         ValueType.MAPPING,
         MappingIntent.DELETE,
         new MappingDeleteProcessor(
-            processingState.getMappingState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,

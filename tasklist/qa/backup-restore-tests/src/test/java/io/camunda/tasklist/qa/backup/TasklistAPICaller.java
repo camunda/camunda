@@ -16,21 +16,19 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.graphql.spring.boot.test.GraphQLResponse;
-import com.graphql.spring.boot.test.GraphQLTestTemplate;
-import com.jayway.jsonpath.PathNotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import org.elasticsearch.client.RequestOptions;
@@ -44,8 +42,14 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
@@ -59,8 +63,6 @@ import org.springframework.web.client.HttpClientErrorException;
 public class TasklistAPICaller {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistAPICaller.class);
-  private static final String COMPLETE_TASK_MUTATION_PATTERN =
-      "mutation {completeTask(taskId: \"%s\", variables: [%s]){id name assignee taskState completionTime}}";
   private static final String USERNAME = "demo";
   private static final String PASSWORD = "demo";
 
@@ -70,45 +72,64 @@ public class TasklistAPICaller {
 
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
-  private GraphQLTestTemplate graphQLTestTemplate;
   private StatefulRestTemplate statefulRestTemplate;
   private StatefulRestTemplate mgmtRestTemplate;
 
-  public GraphQLResponse getAllTasks() throws IOException {
-    final GraphQLResponse graphQLResponse =
-        graphQLTestTemplate.postForResource("get-all-tasks.graphql");
-    try {
-      final Object errors = graphQLResponse.getRaw("$.errors");
-      if (errors != null && ((List) errors).size() > 0) {
-        throw new TasklistRuntimeException("Error occurred when getting the tasks: " + errors);
-      }
-    } catch (final PathNotFoundException ex) {
-      // ignore
-    }
-    return graphQLResponse;
+  public List<TaskSearchResponse> getAllTasks() throws IOException {
+    final TaskSearchRequest searchRequest = new TaskSearchRequest();
+    final HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    final HttpEntity<TaskSearchRequest> requestEntity = new HttpEntity<>(searchRequest, headers);
+
+    final ResponseEntity<List<TaskSearchResponse>> response =
+        statefulRestTemplate.exchange(
+            statefulRestTemplate.getURL("v1/tasks/search"),
+            HttpMethod.POST,
+            requestEntity,
+            new ParameterizedTypeReference<List<TaskSearchResponse>>() {});
+
+    return response.getBody();
   }
 
-  public List<TaskDTO> getTasks(final String taskBpmnId) throws IOException {
-    final ObjectNode query = objectMapper.createObjectNode();
-    query.putObject("query").put("taskDefinitionId", taskBpmnId);
+  public List<TaskSearchResponse> getTasks(final String taskBpmnId) throws IOException {
+    final TaskSearchRequest searchRequest = new TaskSearchRequest();
+    searchRequest.setTaskDefinitionId(taskBpmnId);
+    final HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
 
-    final GraphQLResponse graphQLResponse =
-        graphQLTestTemplate.perform("get-tasks-by-query.graphql", query, new ArrayList<>());
-    return graphQLResponse.getList("$.data.tasks", TaskDTO.class);
+    final HttpEntity<TaskSearchRequest> requestEntity = new HttpEntity<>(searchRequest, headers);
+
+    final ResponseEntity<List<TaskSearchResponse>> response =
+        statefulRestTemplate.exchange(
+            statefulRestTemplate.getURL("v1/tasks/search"),
+            HttpMethod.POST,
+            requestEntity,
+            new ParameterizedTypeReference<List<TaskSearchResponse>>() {});
+
+    return response.getBody();
   }
 
-  public void completeTask(final String id, final String variablesJson) {
-    final GraphQLResponse response =
-        graphQLTestTemplate.postMultipart(
-            String.format(COMPLETE_TASK_MUTATION_PATTERN, id, variablesJson), "{}");
-    assertThat(response.isOk()).isTrue();
+  public void completeTask(final String id, final List<VariableInputDTO> variables) {
+    final TaskCompleteRequest request = new TaskCompleteRequest();
+    request.setVariables(variables);
+
+    final HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    final HttpEntity<TaskCompleteRequest> requestEntity = new HttpEntity<>(request, headers);
+
+    final var response =
+        statefulRestTemplate.exchange(
+            statefulRestTemplate.getURL(String.format("v1/tasks/%s/complete", id)),
+            HttpMethod.PATCH,
+            requestEntity,
+            Void.class);
+
+    assertThat(response.getStatusCode().is2xxSuccessful());
   }
 
-  public List<TaskDTO> getTasksByPath(final GraphQLResponse graphQLResponse, final String path) {
-    return graphQLResponse.getList(path, TaskDTO.class);
-  }
-
-  public GraphQLTestTemplate createGraphQLTestTemplate(final TestContext testContext) {
+  public void createRestContext(final TestContext testContext) {
     final RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
     final TestRestTemplate testRestTemplate = new TestRestTemplate(restTemplateBuilder);
     final Field restTemplateField;
@@ -126,15 +147,6 @@ public class TasklistAPICaller {
     } catch (final NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-    graphQLTestTemplate =
-        new GraphQLTestTemplate(
-            resourceLoader,
-            testRestTemplate,
-            String.format(
-                "http://%s:%s/graphql",
-                testContext.getExternalTasklistHost(), testContext.getExternalTasklistPort()),
-            objectMapper);
-    return graphQLTestTemplate;
   }
 
   public void saveDraftTaskVariables(

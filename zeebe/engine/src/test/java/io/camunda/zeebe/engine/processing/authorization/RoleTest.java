@@ -189,6 +189,41 @@ public class RoleTest {
   }
 
   @Test
+  public void shouldRejectIfEntityIsAlreadyAssigned() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleRecord = engine.role().newRole(name).create();
+    final var roleKey = roleRecord.getValue().getRoleKey();
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .role()
+            .addEntity(roleKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with key '%d' to role with key '%d', but the entity is already assigned to this role."
+                .formatted(userKey, roleKey));
+  }
+
+  @Test
   public void shouldRemoveEntityToRole() {
     final var userKey =
         engine

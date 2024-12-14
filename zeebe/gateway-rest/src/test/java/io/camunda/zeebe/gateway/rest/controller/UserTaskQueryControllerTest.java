@@ -50,7 +50,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = UserTaskController.class)
 @Import(JacksonConfig.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
@@ -87,7 +87,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": [],
                   "lastSortValues": [
                       "v"
                   ]
@@ -111,7 +111,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
-          "firstSortValues": ["v"],
+          "firstSortValues": [],
           "lastSortValues": [
             "v"
           ]
@@ -348,9 +348,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
@@ -382,7 +382,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -424,7 +424,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

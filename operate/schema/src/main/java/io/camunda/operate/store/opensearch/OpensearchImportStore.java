@@ -83,17 +83,12 @@ public class OpensearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      final List<ImportPositionEntity> positions,
-      final List<ImportPositionEntity> postImportPositions) {
-    if (positions.isEmpty() && postImportPositions.isEmpty()) {
+      final List<ImportPositionEntity> positions) {
+    if (positions.isEmpty()) {
       return Either.right(true);
     } else {
       final var bulkRequestBuilder = new BulkRequest.Builder();
       addPositions(bulkRequestBuilder, positions, ImportPositionUpdate::fromImportPositionEntity);
-      addPositions(
-          bulkRequestBuilder,
-          postImportPositions,
-          PostImportPositionUpdate::fromImportPositionEntity);
 
       try {
         withImportPositionTimer(
@@ -162,7 +157,6 @@ public class OpensearchImportStore implements ImportStore {
       String indexName,
       int partitionId,
       long position,
-      Long postImporterPosition,
       long sequence,
       boolean completed) {
     public static ImportPositionUpdate fromImportPositionEntity(
@@ -173,16 +167,8 @@ public class OpensearchImportStore implements ImportStore {
           position.getIndexName(),
           position.getPartitionId(),
           position.getPosition(),
-          position.getPostImporterPosition(),
           position.getSequence(),
           position.getCompleted());
-    }
-  }
-
-  record PostImportPositionUpdate(Long postImporterPosition) {
-    public static PostImportPositionUpdate fromImportPositionEntity(
-        final ImportPositionEntity position) {
-      return new PostImportPositionUpdate(position.getPostImporterPosition());
     }
   }
 }

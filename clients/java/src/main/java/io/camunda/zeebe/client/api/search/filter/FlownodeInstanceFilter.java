@@ -92,14 +92,6 @@ public interface FlownodeInstanceFilter extends SearchRequestFilter {
   FlownodeInstanceFilter incidentKey(final long value);
 
   /**
-   * Filters flow node instances by tree path.
-   *
-   * @param value the tree path of flow node instance
-   * @return the updated filter
-   */
-  FlownodeInstanceFilter treePath(final String value);
-
-  /**
    * Filters flow node instances by tenant id.
    *
    * @param value the tenant id for flow node instance

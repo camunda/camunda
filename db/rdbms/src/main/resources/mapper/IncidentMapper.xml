@@ -31,8 +31,7 @@
     i.STATE,
     i.CREATION_DATE,
     i.JOB_KEY,
-    i.TENANT_ID,
-    NULL as TREE_PATH
+    i.TENANT_ID
     FROM INCIDENT i
     <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
     ) t
@@ -112,7 +111,6 @@
       <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="STATE" javaType="io.camunda.search.entities.IncidentEntity$IncidentState"/>
       <arg column="JOB_KEY" javaType="java.lang.Long"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
 

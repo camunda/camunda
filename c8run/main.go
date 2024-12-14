@@ -133,6 +133,7 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
 	}
+	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	return javaOpts
 }
@@ -183,7 +184,6 @@ func main() {
 	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
 	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-	os.Setenv("SPRING_PROFILES_ACTIVE", "operate,tasklist,broker,identity")
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
