@@ -45,7 +45,7 @@
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-mvc-auth-commons</artifactId>
+      <artifactId>camunda-mvc-auth-commons</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

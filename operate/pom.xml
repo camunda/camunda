@@ -23,7 +23,6 @@
     <module>importer-8_7</module>
     <module>importer</module>
     <module>webapp</module>
-    <module>mvc-auth-commons</module>
   </modules>
 
   <properties>

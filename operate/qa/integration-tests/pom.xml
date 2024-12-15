@@ -204,7 +204,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-mvc-auth-commons</artifactId>
+      <artifactId>camunda-mvc-auth-commons</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -555,11 +555,8 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:operate-mvc-auth-commons</dependency>
+            <dependency>io.camunda:camunda-mvc-auth-commons</dependency>
           </usedDependencies>
-          <ignoredDependencies>
-            <dependency>io.camunda:tasklist-mvc-auth-commons</dependency>
-          </ignoredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
