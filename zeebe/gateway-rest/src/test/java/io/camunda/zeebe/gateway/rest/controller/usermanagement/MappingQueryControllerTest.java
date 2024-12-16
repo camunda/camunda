@@ -57,7 +57,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .json(
             """
                           {
-                            "mappingKey": 100,
+                            "mappingKey": "100",
                             "claimName": "Claim Name",
                             "claimValue": "Claim Value",
                             "name": "Map Name"
@@ -133,19 +133,19 @@ public class MappingQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "mappingKey": 100,
+                 "mappingKey": "100",
                  "claimName": "Claim Name1",
                  "claimValue": "Claim Value1",
                  "name": "Map Name1"
                },
                {
-                 "mappingKey": 200,
+                 "mappingKey": "200",
                  "claimName": "Claim Name2",
                  "claimValue": "Claim Value2",
                  "name": "Map Name2"
                },
                {
-                 "mappingKey": 300,
+                 "mappingKey": "300",
                  "claimName": "Claim Name3",
                  "claimValue": "Claim Value3",
                  "name": "Map Name3"

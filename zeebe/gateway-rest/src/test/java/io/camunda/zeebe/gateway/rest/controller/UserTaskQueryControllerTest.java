@@ -30,7 +30,6 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -47,11 +46,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = UserTaskController.class)
-@Import(JacksonConfig.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_USER_TASK_KEY = 0L;
@@ -63,16 +60,16 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "items": [
                   {
                       "tenantId": "t",
-                      "userTaskKey": 0,
-                      "processInstanceKey": 1,
-                      "processDefinitionKey": 2,
-                      "elementInstanceKey": 3,
+                      "userTaskKey": "0",
+                      "processInstanceKey": "1",
+                      "processDefinitionKey": "2",
+                      "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
                       "assignee": "a",
                       "candidateUsers": [],
                       "candidateGroups": [],
-                      "formKey": 0,
+                      "formKey": "0",
                       "elementId": "e",
                       "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
@@ -99,12 +96,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       {
         "items": [
           {
-              "variableKey":0,
+              "variableKey":"0",
               "name":"name",
               "value":"value",
               "fullValue":"test",
-              "scopeKey":1,
-              "processInstanceKey":2,
+              "scopeKey":"1",
+              "processInstanceKey":"2",
               "tenantId":"<default>",
               "isTruncated":false
           }
@@ -123,16 +120,16 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       """
           {
                       "tenantId": "t",
-                      "userTaskKey": 0,
-                      "processInstanceKey": 1,
-                      "processDefinitionKey": 2,
-                      "elementInstanceKey": 3,
+                      "userTaskKey": "0",
+                      "processInstanceKey": "1",
+                      "processDefinitionKey": "2",
+                      "elementInstanceKey": "3",
                       "processDefinitionId": "b",
                       "state": "CREATED",
                       "assignee": "a",
                       "candidateUsers": [],
                       "candidateGroups": [],
-                      "formKey": 0,
+                      "formKey": "0",
                       "elementId": "e",
                       "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
@@ -151,7 +148,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   private static final String FORM_ITEM_JSON =
       """
       {
-        "formKey": 0,
+        "formKey": "0",
         "tenantId": "tenant-1",
         "bpmnId": "bpmn-1",
         "schema": "schema",

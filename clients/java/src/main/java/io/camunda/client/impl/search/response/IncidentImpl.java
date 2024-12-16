@@ -37,17 +37,17 @@ public class IncidentImpl implements Incident {
   private final String tenantId;
 
   public IncidentImpl(final IncidentItem item) {
-    incidentKey = item.getIncidentKey();
-    processDefinitionKey = item.getProcessDefinitionKey();
+    incidentKey = Long.parseLong(item.getIncidentKey());
+    processDefinitionKey = Long.parseLong(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
-    processInstanceKey = item.getProcessInstanceKey();
+    processInstanceKey = Long.parseLong(item.getProcessInstanceKey());
     errorType = item.getErrorType();
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
-    flowNodeInstanceKey = item.getFlowNodeInstanceKey();
+    flowNodeInstanceKey = Long.parseLong(item.getFlowNodeInstanceKey());
     creationTime = item.getCreationTime();
     state = item.getState();
-    jobKey = item.getJobKey();
+    jobKey = Long.parseLong(item.getJobKey());
     tenantId = item.getTenantId();
   }
 

@@ -25,7 +25,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -38,11 +37,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = ProcessInstanceController.class)
-@Import(JacksonConfig.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   private static final String PROCESS_INSTANCES_SEARCH_URL = "/v2/process-instances/search";
@@ -68,14 +65,14 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
-            "processInstanceKey": 123,
+            "processInstanceKey": "123",
             "processDefinitionId": "demoProcess",
             "processDefinitionName": "Demo Process",
             "processDefinitionVersion": 5,
             "processDefinitionVersionTag": "v5",
-            "processDefinitionKey": 789,
-            "parentProcessInstanceKey": 333,
-            "parentFlowNodeInstanceKey": 777,
+            "processDefinitionKey": "789",
+            "parentProcessInstanceKey": "333",
+            "parentFlowNodeInstanceKey": "777",
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
@@ -88,14 +85,14 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           {
               "items": [
                 {
-                  "processInstanceKey": 123,
+                  "processInstanceKey": "123",
                   "processDefinitionId": "demoProcess",
                   "processDefinitionName": "Demo Process",
                   "processDefinitionVersion": 5,
                   "processDefinitionVersionTag": "v5",
-                  "processDefinitionKey": 789,
-                  "parentProcessInstanceKey": 333,
-                  "parentFlowNodeInstanceKey": 777,
+                  "processDefinitionKey": "789",
+                  "parentProcessInstanceKey": "333",
+                  "parentFlowNodeInstanceKey": "777",
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,

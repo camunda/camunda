@@ -45,18 +45,18 @@ public class UserTaskImpl implements UserTask {
   private final Integer priority;
 
   public UserTaskImpl(final UserTaskItem item) {
-    userTaskKey = item.getUserTaskKey();
+    userTaskKey = Long.parseLong(item.getUserTaskKey());
     name = item.getName();
     state = item.getState().getValue();
     assignee = item.getAssignee();
     elementId = item.getElementId();
-    elementInstanceKey = item.getElementInstanceKey();
+    elementInstanceKey = Long.parseLong(item.getElementInstanceKey());
     candidateGroup = item.getCandidateGroups();
     candidateUser = item.getCandidateUsers();
     bpmnProcessId = item.getProcessDefinitionId();
-    processDefinitionKey = item.getProcessDefinitionKey();
-    processInstanceKey = item.getProcessInstanceKey();
-    formKey = item.getFormKey();
+    processDefinitionKey = Long.parseLong(item.getProcessDefinitionKey());
+    processInstanceKey = Long.parseLong(item.getProcessInstanceKey());
+    formKey = Long.parseLong(item.getFormKey());
     creationDate = item.getCreationDate();
     completionDate = item.getCompletionDate();
     followUpDate = item.getFollowUpDate();

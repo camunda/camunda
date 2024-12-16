@@ -30,12 +30,12 @@ public class VariableImpl implements Variable {
   private final Boolean isTruncated;
 
   public VariableImpl(final VariableItem item) {
-    variableKey = item.getVariableKey();
+    variableKey = Long.parseLong(item.getVariableKey());
     name = item.getName();
     value = item.getValue();
     fullValue = item.getFullValue();
-    scopeKey = item.getScopeKey();
-    processInstanceKey = item.getProcessInstanceKey();
+    scopeKey = Long.parseLong(item.getScopeKey());
+    processInstanceKey = Long.parseLong(item.getProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
   }

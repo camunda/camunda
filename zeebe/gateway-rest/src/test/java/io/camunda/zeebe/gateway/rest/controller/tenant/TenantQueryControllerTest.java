@@ -23,6 +23,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,19 +50,19 @@ public class TenantQueryControllerTest extends RestControllerTest {
       {
          "items": [
            {
-             "tenantKey": %d,
+             "tenantKey": "%d",
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
-             "tenantKey": %d,
+             "tenantKey": "%d",
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
-             "tenantKey": %d,
+             "tenantKey": "%d",
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
@@ -92,7 +93,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @MockBean private TenantServices tenantServices;
 
   private static String formatSet(final Set<Long> set) {
-    return set.isEmpty() ? "[]" : set.toString();
+    return set.isEmpty()
+        ? "[]"
+        : set.stream().map("\"%s\""::formatted).collect(Collectors.toSet()).toString();
   }
 
   @BeforeEach
@@ -120,7 +123,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "tenantKey": %d,
+              "tenantKey": "%d",
               "name": "%s",
               "tenantId": "%s",
               "assignedMemberKeys": []
