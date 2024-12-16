@@ -896,7 +896,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-java</artifactId>
+        <artifactId>camunda-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -3082,7 +3082,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
-                <dep>io.camunda:zeebe-client-java</dep>
+                <dep>io.camunda:camunda-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>
