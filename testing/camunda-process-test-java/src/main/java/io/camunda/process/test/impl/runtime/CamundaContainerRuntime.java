@@ -20,8 +20,12 @@ import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -117,15 +121,21 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   public void start() {
-    LOGGER.info("Starting Camunda container runtime");
+    final List<GenericContainer<?>> containers = new ArrayList<>();
+    containers.add(elasticsearchContainer);
+    containers.add(camundaContainer);
+    if (connectorsEnabled) {
+      containers.add(connectorsContainer);
+    }
+
+    LOGGER.info(
+        "Starting Camunda container runtime [{}]",
+        containers.stream()
+            .map(GenericContainer::getDockerImageName)
+            .collect(Collectors.joining(", ")));
     final Instant startTime = Instant.now();
 
-    elasticsearchContainer.start();
-    camundaContainer.start();
-
-    if (connectorsEnabled) {
-      connectorsContainer.start();
-    }
+    containers.forEach(GenericContainer::start);
 
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
