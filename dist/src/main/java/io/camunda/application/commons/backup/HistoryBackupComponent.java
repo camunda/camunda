@@ -10,6 +10,7 @@ package io.camunda.application.commons.backup;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
+import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileOperateTasklist;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
@@ -43,6 +44,11 @@ public class HistoryBackupComponent {
   @Bean
   public BackupService backupService() {
     return new BackupServiceImpl(
-        threadPoolTaskExecutor, backupPriorities, backupRepositoryProps, backupRepository);
+        threadPoolTaskExecutor,
+        backupPriorities,
+        backupRepositoryProps,
+        backupRepository,
+        // TODO use real implementation
+        DynamicIndicesProvider.noop());
   }
 }
