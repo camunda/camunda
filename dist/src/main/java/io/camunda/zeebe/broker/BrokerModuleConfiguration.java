@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -53,6 +54,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
+  private final UserServices userServices;
 
   private Broker broker;
 
@@ -66,7 +68,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
       final PrometheusMeterRegistry meterRegistry,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      // The UserServices class is not available if you want to start-up the Standalone Broker
+      @Autowired(required = false) final UserServices userServices) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -76,6 +80,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
     this.securityConfiguration = securityConfiguration;
+    this.userServices = userServices;
   }
 
   @Bean
@@ -100,7 +105,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             cluster,
             brokerClient,
             meterRegistry,
-            securityConfiguration);
+            securityConfiguration,
+            userServices);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

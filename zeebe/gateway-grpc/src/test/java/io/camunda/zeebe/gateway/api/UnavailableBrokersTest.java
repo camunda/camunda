@@ -9,9 +9,11 @@ package io.camunda.zeebe.gateway.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -91,7 +93,8 @@ class UnavailableBrokersTest {
             new SecurityConfiguration(),
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            mock(UserServices.class));
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
