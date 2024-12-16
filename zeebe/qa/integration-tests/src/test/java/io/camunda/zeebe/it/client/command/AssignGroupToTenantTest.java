@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 @AutoCloseResources
 class AssignGroupToTenantTest {
 
+  private static final String TENANT_ID = "tenant-id";
+
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
@@ -41,7 +43,7 @@ class AssignGroupToTenantTest {
     tenantKey =
         client
             .newCreateTenantCommand()
-            .tenantId("tenant-id")
+            .tenantId(TENANT_ID)
             .name("Tenant Name")
             .send()
             .join()
@@ -93,8 +95,8 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
-                .formatted(nonExistentGroupKey, tenantKey));
+            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity doesn't exist."
+                .formatted(nonExistentGroupKey, TENANT_ID));
   }
 
   @Test
@@ -108,7 +110,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with key '%d', but the entity is already assigned to the tenant."
-                .formatted(groupKey, tenantKey));
+            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity is already assigned to the tenant."
+                .formatted(groupKey, TENANT_ID));
   }
 }

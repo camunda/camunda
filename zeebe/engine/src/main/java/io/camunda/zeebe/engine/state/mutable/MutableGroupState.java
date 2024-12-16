@@ -22,7 +22,7 @@ public interface MutableGroupState extends GroupState {
 
   void delete(final long groupKey);
 
-  void addTenant(final long groupKey, final long tenantKey);
+  void addTenant(final long groupKey, final String tenantId);
 
-  void removeTenant(final long groupKey, final long tenantKey);
+  void removeTenant(final long groupKey, final String tenantId);
 }

@@ -211,17 +211,17 @@ public class GroupStateTest {
     // given
     final var groupKey = 1L;
     final var groupName = "group";
-    final var tenantKey = 100L;
+    final var tenantId = "tenant1";
     final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
     groupState.create(groupKey, groupRecord);
 
     // when
-    groupState.addTenant(groupKey, tenantKey);
+    groupState.addTenant(groupKey, tenantId);
 
     // then
     final var group = groupState.get(groupKey);
     assertThat(group.isPresent()).isTrue();
-    assertThat(group.get().getTenantKeys()).containsExactly(tenantKey);
+    assertThat(group.get().getTenantIdsList()).containsExactly(tenantId);
   }
 
   @Test
@@ -229,27 +229,26 @@ public class GroupStateTest {
     // given
     final var groupKey = 1L;
     final var groupName = "group";
-    final var tenantKey1 = 100L;
-    final var tenantKey2 = 200L;
+    final var tenantId1 = "tenant1";
+    final var tenantId2 = "tenant2";
 
     // Create a group and add tenants
     final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
     groupState.create(groupKey, groupRecord);
-    groupState.addTenant(groupKey, tenantKey1);
-    groupState.addTenant(groupKey, tenantKey2);
+    groupState.addTenant(groupKey, tenantId1);
+    groupState.addTenant(groupKey, tenantId2);
 
     // Ensure tenants are added correctly
     final var groupBeforeRemove = groupState.get(groupKey);
     assertThat(groupBeforeRemove.isPresent()).isTrue();
-    assertThat(groupBeforeRemove.get().getTenantKeys())
-        .containsExactlyInAnyOrder(tenantKey1, tenantKey2);
+    assertThat(groupBeforeRemove.get().getTenantIdsList()).containsExactly(tenantId1, tenantId2);
 
     // when
-    groupState.removeTenant(groupKey, tenantKey1);
+    groupState.removeTenant(groupKey, tenantId1);
 
     // then
     final var groupAfterRemove = groupState.get(groupKey);
     assertThat(groupAfterRemove.isPresent()).isTrue();
-    assertThat(groupAfterRemove.get().getTenantKeys()).containsExactly(tenantKey2);
+    assertThat(groupAfterRemove.get().getTenantIdsList()).containsExactly(tenantId2);
   }
 }
