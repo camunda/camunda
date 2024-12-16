@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -153,18 +152,15 @@ public final class ProcessInstanceCreationCreateProcessor
       return Either.right(deployedProcess);
     }
 
-    final var rejectionType = isAuthorized.getLeft();
+    final var rejection = isAuthorized.getLeft();
     final String errorMessage =
-        RejectionType.UNAUTHORIZED.equals(rejectionType)
-            ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                request.getPermissionType(),
-                request.getResourceType(),
-                "BPMN process id '%s'".formatted(processId))
-            : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+        RejectionType.NOT_FOUND.equals(rejection.type())
+            ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
                 "create an instance of process",
                 command.getValue().getProcessDefinitionKey(),
-                "such process");
-    return Either.left(new Rejection(rejectionType, errorMessage));
+                "such process")
+            : rejection.reason();
+    return Either.left(new Rejection(rejection.type(), errorMessage));
   }
 
   private void createProcessInstance(

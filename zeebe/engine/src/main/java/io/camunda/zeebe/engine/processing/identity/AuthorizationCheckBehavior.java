@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
@@ -35,7 +36,7 @@ public final class AuthorizationCheckBehavior {
   public static final String UNAUTHORIZED_ERROR_MESSAGE =
       "Unauthorized to perform operation '%s' on resource '%s'";
   public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
-      UNAUTHORIZED_ERROR_MESSAGE + " with %s";
+      UNAUTHORIZED_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
   public static final String WILDCARD_PERMISSION = "*";
@@ -66,7 +67,7 @@ public final class AuthorizationCheckBehavior {
    * @return a {@link Either} containing a {@link RejectionType} if the user is not authorized or
    *     {@link Void} if the user is authorized
    */
-  public Either<RejectionType, Void> isAuthorized(final AuthorizationRequest request) {
+  public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
       return Either.right(null);
     }
@@ -85,11 +86,13 @@ public final class AuthorizationCheckBehavior {
     if (userKey.isPresent()) {
       final var userOptional = userState.getUser(userKey.get());
       if (userOptional.isEmpty()) {
-        return Either.left(RejectionType.UNAUTHORIZED);
+        return Either.left(
+            new Rejection(RejectionType.UNAUTHORIZED, request.getUnauthorizedMessage()));
       }
       // verify if the user is authorized for the tenant
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-        return Either.left(RejectionType.NOT_FOUND);
+        return Either.left(
+            new Rejection(RejectionType.NOT_FOUND, request.getUnauthorizedMessage()));
       }
 
       authorizedResourceIdentifiers =
@@ -104,7 +107,8 @@ public final class AuthorizationCheckBehavior {
     if (hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers)) {
       return Either.right(null);
     } else {
-      return Either.left(RejectionType.UNAUTHORIZED);
+      return Either.left(
+          new Rejection(RejectionType.UNAUTHORIZED, request.getUnauthorizedMessage()));
     }
   }
 
@@ -304,6 +308,7 @@ public final class AuthorizationCheckBehavior {
     private final PermissionType permissionType;
     private final Set<String> resourceIds;
     private final String tenantId;
+    private boolean hasAddedResourceIds = false;
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
@@ -339,6 +344,7 @@ public final class AuthorizationCheckBehavior {
 
     public AuthorizationRequest addResourceId(final String resourceId) {
       resourceIds.add(resourceId);
+      hasAddedResourceIds = true;
       return this;
     }
 
@@ -349,22 +355,26 @@ public final class AuthorizationCheckBehavior {
     public String getTenantId() {
       return tenantId;
     }
+
+    public String getUnauthorizedMessage() {
+      return hasAddedResourceIds
+          ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              permissionType, resourceType, resourceIds)
+          : UNAUTHORIZED_ERROR_MESSAGE.formatted(permissionType, resourceType);
+    }
   }
 
   public static class UnauthorizedException extends RuntimeException {
 
-    public UnauthorizedException(
-        final AuthorizationRequest authRequest, final String resourceMessage) {
-      super(
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType(), resourceMessage));
+    public UnauthorizedException(final AuthorizationRequest authRequest) {
+      super(authRequest.getUnauthorizedMessage());
     }
   }
 
   public static class NotFoundException extends RuntimeException {
 
-    public NotFoundException(final AuthorizationRequest authRequest, final String resourceMessage) {
-      super(NOT_FOUND_ERROR_MESSAGE.formatted(resourceMessage, authRequest.getTenantId()));
+    public NotFoundException(final String message) {
+      super(message);
     }
   }
 

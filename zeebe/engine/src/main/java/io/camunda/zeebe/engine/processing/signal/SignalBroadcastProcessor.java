@@ -139,14 +139,13 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
-      if (RejectionType.UNAUTHORIZED.equals(rejectionType)) {
-        throw new UnauthorizedException(
-            authRequest, "BPMN process id '%s'".formatted(subscriptionRecord.getBpmnProcessId()));
+      final var rejection = isAuthorized.getLeft();
+      if (RejectionType.NOT_FOUND.equals(rejection.type())) {
+        throw new NotFoundException(
+            "Expected to broadcast signal with name '%s', but no such signal was found"
+                .formatted(command.getValue().getSignalName()));
       }
-      throw new NotFoundException(
-          authRequest,
-          "broadcast signal with name '%s'".formatted(command.getValue().getSignalName()));
+      throw new UnauthorizedException(authRequest);
     }
   }
 

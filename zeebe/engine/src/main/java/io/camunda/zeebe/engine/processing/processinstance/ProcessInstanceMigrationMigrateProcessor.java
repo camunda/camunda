@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
@@ -128,19 +127,16 @@ public class ProcessInstanceMigrationMigrateProcessor
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
+      final var rejection = isAuthorized.getLeft();
       final String errorMessage =
-          RejectionType.UNAUTHORIZED.equals(rejectionType)
-              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                  authorizationRequest.getPermissionType(),
-                  authorizationRequest.getResourceType(),
-                  "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
-              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
                   "migrate a process instance",
                   processInstance.getValue().getProcessInstanceKey(),
-                  "such process instance");
-      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+                  "such process instance")
+              : rejection.reason();
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
       return;
     }
 

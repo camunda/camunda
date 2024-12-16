@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -33,7 +32,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -207,17 +205,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
-
-    if (authCheckBehavior.isAuthorized(request).isRight()) {
-      return Either.right(job);
-    }
-
-    return Either.left(
-        new Rejection(
-            RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                request.getPermissionType(),
-                request.getResourceType(),
-                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
+    return authCheckBehavior.isAuthorized(request).map(unused -> job);
   }
 }
