@@ -14,6 +14,7 @@ import io.camunda.operate.webapp.security.AbstractUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,7 +39,10 @@ public class AuthUserService extends AbstractUserService<UsernamePasswordAuthent
         .setCanLogout(true)
         .setPermissions(
             rolePermissionService.getPermissions(
-                user.getRoles().stream().map(Role::fromString).toList()));
+                user.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(Role::fromString)
+                    .toList()));
   }
 
   @Override

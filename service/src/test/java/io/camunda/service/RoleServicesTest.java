@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -31,7 +32,7 @@ import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class RoleServiceTest {
+public class RoleServicesTest {
 
   private RoleServices services;
   private RoleSearchClient client;
@@ -151,5 +152,20 @@ public class RoleServiceTest {
     assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
     assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
+  }
+
+  @Test
+  public void shouldGetAllRolesByMemberKey() {
+    // given
+    final var memberKey = 100L;
+    final var roleEntity = mock(RoleEntity.class);
+    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey)))))
+        .thenReturn(List.of(roleEntity));
+
+    // when
+    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey))));
+
+    // then
+    assertThat(result).isEqualTo(List.of(roleEntity));
   }
 }
