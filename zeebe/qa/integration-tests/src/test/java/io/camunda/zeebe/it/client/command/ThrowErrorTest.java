@@ -11,11 +11,11 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;

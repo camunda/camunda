@@ -17,8 +17,8 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
 import java.time.Duration;
 import org.apache.hc.client5.http.classic.methods.HttpPost;

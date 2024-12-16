@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
-import io.camunda.zeebe.client.api.response.SetVariablesResponse;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;

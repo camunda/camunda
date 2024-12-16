@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering.network;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import java.time.Duration;

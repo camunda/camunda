@@ -10,12 +10,12 @@ package io.camunda.operate.data;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.worker.JobWorker;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;

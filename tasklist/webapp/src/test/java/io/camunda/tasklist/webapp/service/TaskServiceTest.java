@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,6 +21,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -43,13 +50,6 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
-import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;

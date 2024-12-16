@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -25,7 +26,6 @@ import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
