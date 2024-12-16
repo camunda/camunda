@@ -14,7 +14,7 @@ import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 public final class TermsAggregationTransformer
-    extends AggregationOptionTransformer<SearchTermsAggregator, Aggregation> {
+    extends AggregationTransformer<SearchTermsAggregator, Aggregation> {
 
   public TermsAggregationTransformer(final ElasticsearchTransformers transformers) {
     super(transformers);

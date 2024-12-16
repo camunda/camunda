@@ -7,6 +7,8 @@
  */
 package io.camunda.search.es.transformers;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
@@ -37,7 +39,10 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.UsageMetricsCount;
+import io.camunda.search.es.transformers.aggregator.SearchFilterAggregationTransformer;
 import io.camunda.search.es.transformers.aggregator.TermsAggregationTransformer;
+import io.camunda.search.es.transformers.aggregator.UsageMetricsResponseTransformer;
 import io.camunda.search.es.transformers.index.IndexAliasRequestTransformer;
 import io.camunda.search.es.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.es.transformers.query.BoolQueryTransformer;
@@ -81,6 +86,11 @@ public final class ElasticsearchTransformers {
     initializeTransformers(this);
   }
 
+  public <T, R extends Aggregation> SearchTransfomer<T, R> getSearchAggregationTransformer(
+      final Class<?> cls) {
+    return (SearchTransfomer<T, R>) transformers.get(cls);
+  }
+
   public <T, R> SearchTransfomer<T, R> getTransformer(final Class<?> cls) {
     return (SearchTransfomer<T, R>) transformers.get(cls);
   }
@@ -94,6 +104,7 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchQueryRequest.class, new SearchRequestTransformer(mappers));
     mappers.put(SearchQueryResponse.class, new SearchResponseTransformer(mappers));
     mappers.put(SearchQueryHit.class, new SearchRequestTransformer(mappers));
+    mappers.put(UsageMetricsCount.class, new UsageMetricsResponseTransformer());
 
     // get request/response
     mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
@@ -120,7 +131,10 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchTermsQuery.class, new TermsQueryTransformer(mappers));
     mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
     mappers.put(SearchHasParentQuery.class, new HasParentQueryTransformer(mappers));
+
+    // aggregations
     mappers.put(SearchTermsAggregator.class, new TermsAggregationTransformer(mappers));
+    mappers.put(SearchFilterAggregator.class, new SearchFilterAggregationTransformer(mappers));
 
     // index
     mappers.put(IndexAliasResponse.class, new IndexAliasResponseTransformer(mappers));

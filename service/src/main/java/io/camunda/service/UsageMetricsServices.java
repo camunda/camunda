@@ -32,10 +32,7 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
       throw new IllegalArgumentException("Query must not be null");
     }
     validateStartAndEndTime(query);
-    final var assignees = usageMetricsSearchClient.countAssignees(query);
-    final var processInstances = usageMetricsSearchClient.countProcessInstances(query);
-    final var decisionInstances = usageMetricsSearchClient.countDecisionInstances(query);
-    return new UsageMetricsCount(assignees, processInstances, decisionInstances);
+    return usageMetricsSearchClient.searchUsageMetrics(query);
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {

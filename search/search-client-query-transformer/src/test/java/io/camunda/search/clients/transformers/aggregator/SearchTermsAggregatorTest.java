@@ -19,7 +19,12 @@ public class SearchTermsAggregatorTest {
   public void shouldBuildAggregatorWithValidValues() {
     // given
     final var aggregator =
-        new SearchTermsAggregator.Builder().field("testField").size(10).minDocCount(1).build();
+        new SearchTermsAggregator.Builder()
+            .name("A")
+            .field("testField")
+            .size(10)
+            .minDocCount(1)
+            .build();
 
     // then
     assertThat(aggregator.field()).isEqualTo("testField");
@@ -28,9 +33,18 @@ public class SearchTermsAggregatorTest {
   }
 
   @Test
+  public void shouldThrowExceptionWhenNameIsNull() {
+    // when - then
+    assertThatThrownBy(() -> new SearchTermsAggregator.Builder().build())
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("Expected non-null name for terms aggregation.");
+  }
+
+  @Test
   public void shouldThrowExceptionWhenFieldIsNull() {
     // when - then
-    assertThatThrownBy(() -> new SearchTermsAggregator.Builder().size(10).minDocCount(1).build())
+    assertThatThrownBy(
+            () -> new SearchTermsAggregator.Builder().name("A").size(10).minDocCount(1).build())
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("Expected non-null field for terms aggregation.");
   }
@@ -39,7 +53,7 @@ public class SearchTermsAggregatorTest {
   public void shouldThrowExceptionWhenSizeIsInvalid() {
     // when - then
     assertThatThrownBy(
-            () -> new SearchTermsAggregator.Builder().field("testField").size(-1).build())
+            () -> new SearchTermsAggregator.Builder().name("A").field("testField").size(-1).build())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Size must be a positive integer.");
   }
@@ -48,7 +62,7 @@ public class SearchTermsAggregatorTest {
   public void shouldBuildWithDefaultSizeAndMinDocCount() {
     // given
     final var aggregator =
-        new SearchTermsAggregator.Builder().field("testField").build(); // Use defaults
+        new SearchTermsAggregator.Builder().name("A").field("testField").build(); // Use defaults
 
     // then
     assertThat(aggregator.size()).isEqualTo(10); // Default size
@@ -59,7 +73,12 @@ public class SearchTermsAggregatorTest {
   public void shouldBuildWithCustomSizeAndMinDocCount() {
     // given
     final var aggregator =
-        new SearchTermsAggregator.Builder().field("testField").size(20).minDocCount(5).build();
+        new SearchTermsAggregator.Builder()
+            .name("A")
+            .field("testField")
+            .size(20)
+            .minDocCount(5)
+            .build();
 
     // then
     assertThat(aggregator.size()).isEqualTo(20);

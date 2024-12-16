@@ -20,6 +20,7 @@ import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
@@ -67,6 +68,11 @@ public final class SearchClientBasedQueryExecutor {
             searchClient.findAll(q, documentClass).stream()
                 .map(documentTransformer::apply)
                 .toList());
+  }
+
+  public <T extends FilterBase, R> R aggregate(
+      final TypedSearchAggregationQuery<T> query, final Class<R> documentClass) {
+    return executeSearch(query, q -> searchClient.aggregate(q, documentClass));
   }
 
   @VisibleForTesting

@@ -48,13 +48,28 @@ public class TermsAggregationTransformerTest {
   private static Stream<Arguments> provideAggregations() {
     return Stream.of(
         Arguments.arguments(
-            new SearchTermsAggregator.Builder().field("name").size(10).minDocCount(1).build(),
+            new SearchTermsAggregator.Builder()
+                .name("A")
+                .field("name")
+                .size(10)
+                .minDocCount(1)
+                .build(),
             "{'terms':{'field':'name','min_doc_count':1,'size':10}}"),
         Arguments.arguments(
-            new SearchTermsAggregator.Builder().field("category").size(5).minDocCount(0).build(),
+            new SearchTermsAggregator.Builder()
+                .name("A")
+                .field("category")
+                .size(5)
+                .minDocCount(0)
+                .build(),
             "{'terms':{'field':'category','min_doc_count':0,'size':5}}"),
         Arguments.arguments(
-            new SearchTermsAggregator.Builder().field("status").size(20).minDocCount(3).build(),
+            new SearchTermsAggregator.Builder()
+                .name("A")
+                .field("status")
+                .size(20)
+                .minDocCount(3)
+                .build(),
             "{'terms':{'field':'status','min_doc_count':3,'size':20}}"));
   }
 
@@ -74,11 +89,21 @@ public class TermsAggregationTransformerTest {
   }
 
   @Test
-  public void shouldThrowErrorOnNullField() {
+  public void shouldThrowErrorOnNullName() {
     // given
 
     // when - throw
     assertThatThrownBy(() -> new SearchTermsAggregator.Builder().size(10).build())
+        .hasMessageContaining("Expected non-null name for terms aggregation.")
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  public void shouldThrowErrorOnNullField() {
+    // given
+
+    // when - throw
+    assertThatThrownBy(() -> new SearchTermsAggregator.Builder().name("A").size(10).build())
         .hasMessageContaining("Expected non-null field for terms aggregation.")
         .isInstanceOf(NullPointerException.class);
   }

@@ -39,6 +39,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -127,24 +128,6 @@ public class RdbmsSearchClient
   @Override
   public RdbmsSearchClient withSecurityContext(final SecurityContext securityContext) {
     return this;
-  }
-
-  @Override
-  public Long countAssignees(final UsageMetricsQuery query) {
-    throw new UnsupportedOperationException(
-        "UsageMetricsClient countAssignees not implemented yet.");
-  }
-
-  @Override
-  public Long countProcessInstances(final UsageMetricsQuery query) {
-    throw new UnsupportedOperationException(
-        "UsageMetricsClient countProcessInstances not implemented yet.");
-  }
-
-  @Override
-  public Long countDecisionInstances(final UsageMetricsQuery query) {
-    throw new UnsupportedOperationException(
-        "UsageMetricsClient countDecisionInstances not implemented yet.");
   }
 
   @Override
@@ -252,5 +235,11 @@ public class RdbmsSearchClient
     LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
 
     return rdbmsService.getProcessDefinitionReader().search(query);
+  }
+
+  @Override
+  public UsageMetricsCount searchUsageMetrics(final UsageMetricsQuery query) {
+    throw new UnsupportedOperationException(
+        "UsageMetricsClient searchMetrics is not implemented yet.");
   }
 }

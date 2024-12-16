@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import co.elastic.clients.json.JsonData;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
@@ -19,6 +20,7 @@ import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.sort.SearchSortOptions;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchRequestTransformer
@@ -37,6 +39,7 @@ public final class SearchRequestTransformer
     final var sort = value.sort();
     final var searchAfter = value.searchAfter();
     final var searchQuery = value.query();
+    final List<SearchAggregator> aggregations = value.aggregations();
 
     final var builder =
         new SearchRequest.Builder().index(value.index()).from(value.from()).size(value.size());
@@ -58,6 +61,20 @@ public final class SearchRequestTransformer
     if (value.source() != null) {
       builder.source(of(value.source()));
     }
+
+    if (aggregations != null && !aggregations.isEmpty()) {
+      builder.aggregations(
+          aggregations.stream()
+              .map(
+                  aggregation ->
+                      Map.entry(
+                          aggregation.getName(),
+                          transformers
+                              .getSearchAggregationTransformer(aggregation.getClass())
+                              .apply(aggregation)))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
     return builder;
   }
 

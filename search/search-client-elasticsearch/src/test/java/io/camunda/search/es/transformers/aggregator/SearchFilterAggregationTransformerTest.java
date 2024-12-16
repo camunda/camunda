@@ -5,8 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.search.es.transformers.aggregator;
 
-import java.time.OffsetDateTime;
-
-public record UsageMetricsEntity(String id, OffsetDateTime eventTime, String event, String value) {}
+public class SearchFilterAggregationTransformerTest {
+  // FIXME
+}

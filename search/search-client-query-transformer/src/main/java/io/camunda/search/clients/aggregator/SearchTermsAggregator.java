@@ -10,9 +10,17 @@ package io.camunda.search.clients.aggregator;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 
-public record SearchTermsAggregator(String field, Integer size, Integer minDocCount) {
+public record SearchTermsAggregator(String name, String field, Integer size, Integer minDocCount)
+    implements SearchAggregator {
 
-  public static final class Builder implements ObjectBuilder<SearchTermsAggregator> {
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  public static final class Builder
+      extends SearchAggregator.AbstractBuilder<SearchTermsAggregator.Builder>
+      implements ObjectBuilder<SearchTermsAggregator> {
 
     private String field;
     private Integer size = 10; // Default to 10 buckets
@@ -38,8 +46,14 @@ public record SearchTermsAggregator(String field, Integer size, Integer minDocCo
     }
 
     @Override
+    protected SearchTermsAggregator.Builder self() {
+      return this;
+    }
+
+    @Override
     public SearchTermsAggregator build() {
       return new SearchTermsAggregator(
+          Objects.requireNonNull(name, "Expected non-null name for terms aggregation."),
           Objects.requireNonNull(field, "Expected non-null field for terms aggregation."),
           size,
           minDocCount);

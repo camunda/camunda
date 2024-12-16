@@ -18,11 +18,6 @@ public final class SearchQueryBuilders {
     return new UsageMetricsQuery.Builder();
   }
 
-  public static UsageMetricsQuery usageMetricsSearchQuery(
-      final Function<UsageMetricsQuery.Builder, ObjectBuilder<UsageMetricsQuery>> fn) {
-    return fn.apply(usageMetricsSearchQuery()).build();
-  }
-
   public static ProcessDefinitionQuery.Builder processDefinitionSearchQuery() {
     return new ProcessDefinitionQuery.Builder();
   }
