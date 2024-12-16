@@ -141,9 +141,14 @@ public class GroupController {
   public ResponseEntity<UserSearchResponse> searchUsersInGroup(
       @PathVariable final long groupKey,
       @RequestBody(required = false) final UserSearchQueryRequest query) {
-    final var groupKeys = groupServices.getUserKeysByGroupKey(groupKey);
-    return SearchQueryRequestMapper.toUserQuery(query, groupKeys)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchUsersInGroup);
+
+    try {
+      final var userKeys = groupServices.getUserKeysByGroupKey(groupKey);
+      return SearchQueryRequestMapper.toUserQuery(query, userKeys)
+          .fold(RestErrorMapper::mapProblemToResponse, this::searchUsersInGroup);
+    } catch (final Exception e) {
+      return RestErrorMapper.mapErrorToResponse(e);
+    }
   }
 
   private CompletableFuture<ResponseEntity<Object>> createGroup(
@@ -166,11 +171,7 @@ public class GroupController {
   }
 
   private ResponseEntity<UserSearchResponse> searchUsersInGroup(final UserQuery query) {
-    try {
-      final var result = groupServices.getUsersByGroupKey(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return RestErrorMapper.mapErrorToResponse(e);
-    }
+    final var result = groupServices.getUsersByGroupKey(query);
+    return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
   }
 }

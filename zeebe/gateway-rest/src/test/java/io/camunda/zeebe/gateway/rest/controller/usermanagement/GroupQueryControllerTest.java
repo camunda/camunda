@@ -289,16 +289,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .total(2)
                 .items(List.of(groupUser1, groupUser2))
                 .build());
-    when(userServices.search(any()))
-        .thenReturn(
-            new SearchQueryResult.Builder<UserEntity>()
-                .total(2)
-                .items(
-                    List.of(
-                        new UserEntity(userKey1, "user1", "user1", "", ""),
-                        new UserEntity(userKey2, "user2", "user2", "", "")))
-                .build());
-    when(userServices.search(any()))
+    when(groupServices.getUsersByGroupKey(any()))
         .thenReturn(
             new SearchQueryResult.Builder<UserEntity>()
                 .total(2)
@@ -327,8 +318,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_USER_SEARCH_RESPONSE);
 
-    verify(groupServices).search(any());
-    verify(userServices).search(any());
+    verify(groupServices).getUserKeysByGroupKey(groupKey);
+    verify(groupServices).getUsersByGroupKey(any());
   }
 
   @ParameterizedTest
