@@ -32,7 +32,7 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
   private final BinaryProperty resourceProp =
-      new BinaryProperty("resourceProp", new UnsafeBuffer());
+      new BinaryProperty("resource", new UnsafeBuffer());
 
   public ResourceRecord() {
     super(9);
