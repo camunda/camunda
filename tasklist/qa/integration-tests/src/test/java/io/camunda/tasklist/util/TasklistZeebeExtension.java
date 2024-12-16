@@ -135,9 +135,13 @@ public abstract class TasklistZeebeExtension
             .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
             .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
             .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
-            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+            .withEnv(
+                "JAVA_OPTS",
+                "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");
     zContainer.withLogConsumer(new Slf4jLogConsumer(LOGGER));
     zContainer.addExposedPort(8080);
+    zContainer.addExposedPort(5005);
     return zContainer;
   }
 
