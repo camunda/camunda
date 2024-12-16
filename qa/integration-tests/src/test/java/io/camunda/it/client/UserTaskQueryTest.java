@@ -60,6 +60,7 @@ class UserTaskQueryTest {
 
     deployForm("form/form.form");
     delpoyProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
+    delpoyProcessFromResourcePath("/process/job_worker_process.bpmn", "job_worker_process.bpmn");
 
     startProcessInstance("process");
     startProcessInstance("process-2");
@@ -68,6 +69,9 @@ class UserTaskQueryTest {
     startProcessInstance("bpmProcessVariable");
     startProcessInstance("processWithForm");
     startProcessInstance("processWithSubProcess");
+    startProcessInstance(
+        "jobWorkerProcess"); // Start a Job Worker instance in order to validate if User Tasks
+    // queries has the same result
 
     waitForTasksBeingExported();
   }
