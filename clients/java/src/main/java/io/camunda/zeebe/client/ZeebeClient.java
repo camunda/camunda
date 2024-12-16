@@ -45,6 +45,7 @@ import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
@@ -1495,4 +1496,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the assign user to tenant command
    */
   AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(long tenantKey);
+
+  /**
+   * Command to remove a user from a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newRemoveUserFromTenantCommand(tenantKey)
+   *   .userKey(userKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>This command sends an HTTP DELETE request to remove the specified user from the given
+   * tenant.
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder for the remove user from tenant command
+   */
+  RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(long tenantKey);
 }

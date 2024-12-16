@@ -26,22 +26,22 @@ import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class AssignUserToTenantTest extends ClientRestTest {
+public class RemoveUserFromTenantTest extends ClientRestTest {
 
   private static final long TENANT_KEY = 123L;
   private static final long USER_KEY = 456L;
 
   @Test
-  void shouldAssignUserToTenant() {
+  void shouldRemoveUserFromTenant() {
     // when
-    client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join();
+    client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     final RequestMethod method = RestGatewayService.getLastRequest().getMethod();
     assertThat(requestPath)
         .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY);
-    assertThat(method).isEqualTo(RequestMethod.PUT);
+    assertThat(method).isEqualTo(RequestMethod.DELETE);
   }
 
   @Test
@@ -53,7 +53,7 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -67,7 +67,7 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -81,7 +81,7 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -95,7 +95,7 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
+            () -> client.newRemoveUserFromTenantCommand(TENANT_KEY).userKey(USER_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

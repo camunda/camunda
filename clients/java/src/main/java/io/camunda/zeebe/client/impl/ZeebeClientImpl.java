@@ -55,6 +55,7 @@ import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
@@ -128,6 +129,7 @@ import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.RemovePermissionsCommandImpl;
+import io.camunda.zeebe.client.impl.command.RemoveUserFromTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
@@ -852,6 +854,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final long tenantKey) {
     return new AssignUserToTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final long tenantKey) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {
