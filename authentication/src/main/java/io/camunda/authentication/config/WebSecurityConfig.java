@@ -55,18 +55,15 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @EnableMethodSecurity
 @Profile("auth-basic|auth-basic-with-unprotected-api|auth-oidc")
 public class WebSecurityConfig {
-  public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI =
-      "spring.security.oauth2.resourceserver.jwt.issuer-uri";
-  public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI =
-      "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
-
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
 
   public static final Set<String> UNAUTHENTICATED_PATHS =
       Set.of(
+          // these are redirected on GET and handled by filters on POST.
           LOGIN_URL,
           LOGOUT_URL,
+          "/",
           // these are handled by the frontend
           "/identity/**",
           "/tasklist/**",
@@ -237,6 +234,7 @@ public class WebSecurityConfig {
   }
 
   private boolean needsCsrfProtection(final HttpServletRequest request) {
+    // FIXME: login needs CSRF protection too. See https://github.com/camunda/camunda/issues/26199
     return CsrfFilter.DEFAULT_CSRF_MATCHER.matches(request)
         && !request.getRequestURI().equals(LOGIN_URL);
   }

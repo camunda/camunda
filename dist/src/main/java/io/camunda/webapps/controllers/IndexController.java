@@ -20,7 +20,7 @@ public class IndexController {
 
   @Autowired private WebappsProperties webappsProperties;
 
-  @GetMapping("/index.html")
+  @GetMapping({"/", "/index.html"})
   public String index() {
     return "redirect:/" + webappsProperties.defaultApp();
   }
@@ -29,7 +29,7 @@ public class IndexController {
    * Redirects the old frontend routes (common tasklist and operate routes) to the default-app
    * sub-path. This can be removed after the creation of the auto-discovery service.
    */
-  @GetMapping({"/processes"})
+  @GetMapping({"/processes", "/login"})
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/" + webappsProperties.defaultApp() + getRequestedUrl(request);
   }
