@@ -264,7 +264,7 @@ jobs:
       - calculate-image-tag
       - build-zeebe-image
       - build-benchmark-images
-    uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
+    uses: camunda/zeebe-performance-test/.github/workflows/measure.yaml@main
     secrets: inherit
     if: inputs.measure
     with:
