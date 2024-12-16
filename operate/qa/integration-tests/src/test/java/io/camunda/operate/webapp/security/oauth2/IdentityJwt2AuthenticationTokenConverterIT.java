@@ -12,24 +12,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.exceptions.InvalidClaimException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.identity.sdk.tenants.Tenants;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.operate.property.MultiTenancyProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.io.IOException;
 import java.util.List;
 import org.junit.Before;
@@ -53,7 +54,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       TestApplicationWithNoBeans.class,
       IdentityJwt2AuthenticationTokenConverter.class,
-      OperateProperties.class
+      CamundaSecurityProperties.class
     },
     properties = {OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"})
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
@@ -67,7 +68,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
 
   @Mock private Authentication authentication;
 
-  @SpyBean private OperateProperties operateProperties;
+  @SpyBean private SecurityConfiguration securityConfiguration;
 
   @Autowired private ApplicationContext applicationContext;
 
@@ -110,14 +111,14 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(authentication.verifyToken(any())).thenReturn(null);
     doReturn(tenants).when(identity).tenants();
 
-    final var multiTenancyProperties = mock(MultiTenancyProperties.class);
-    doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
-    doReturn(true).when(multiTenancyProperties).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final List<Tenant> tenants =
         new ObjectMapper()
             .readValue(
-                this.getClass().getResource("/security/identity/tenants.json"),
+                getClass().getResource("/security/identity/tenants.json"),
                 new TypeReference<>() {});
     doReturn(tenants).when(this.tenants).forToken(any());
 
@@ -149,10 +150,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.authentication()).thenReturn(authentication);
     when(authentication.verifyToken(any())).thenReturn(null);
     doReturn(tenants).when(identity).tenants();
-
-    final var multiTenancyProperties = mock(MultiTenancyProperties.class);
-    doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
-    doReturn(false).when(multiTenancyProperties).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(false);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);
@@ -169,10 +169,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.authentication()).thenReturn(authentication);
     when(authentication.verifyToken(any())).thenReturn(null);
     doReturn(tenants).when(identity).tenants();
-
-    final var multiTenancyProperties = mock(MultiTenancyProperties.class);
-    doReturn(multiTenancyProperties).when(operateProperties).getMultiTenancy();
-    doReturn(true).when(multiTenancyProperties).isEnabled();
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    doReturn(multiTenancyConfiguration).when(securityConfiguration).getMultiTenancy();
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);

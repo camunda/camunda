@@ -14,13 +14,13 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -48,7 +48,7 @@ public class OpensearchDecisionReader implements DecisionReader {
 
   @Autowired private PermissionsService permissionsService;
 
-  @Autowired private OperateProperties operateProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
@@ -179,7 +179,7 @@ public class OpensearchDecisionReader implements DecisionReader {
       }
     }
     Query tenantIdQuery = null;
-    if (operateProperties.getMultiTenancy().isEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       tenantIdQuery = tenantId != null ? term(DecisionIndex.TENANT_ID, tenantId) : null;
     }
     final var query = and(decisionIdQuery, tenantIdQuery);
