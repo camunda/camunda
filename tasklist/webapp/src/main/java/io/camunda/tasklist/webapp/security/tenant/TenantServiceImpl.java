@@ -12,7 +12,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -55,7 +54,6 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   public boolean isMultiTenancyEnabled() {
-    return tasklistProperties.getMultiTenancy().isEnabled()
-        && SecurityContextHolder.getContext().getAuthentication() != null;
+    return tasklistProperties.getMultiTenancy().isEnabled();
   }
 }
