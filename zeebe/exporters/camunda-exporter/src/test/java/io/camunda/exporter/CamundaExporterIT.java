@@ -513,21 +513,17 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      createSchemas(config, clientAdapter);
+      // adds a not complete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
       final var context = spy(getContextFromConfig(config));
       doReturn(partitionId).when(context).getPartitionId();
       camundaExporter.configure(context);
       camundaExporter.open(controller);
 
-      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
-
       // when
-
-      // adds a not complete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
-
-      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
-
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
@@ -535,6 +531,8 @@ final class CamundaExporterIT {
 
       camundaExporter.export(record);
 
+      // if importers completed this would trigger scheduled flush which would result in the
+      // record being visible in ES/OS
       controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
 
       // then
@@ -643,6 +641,15 @@ final class CamundaExporterIT {
               .setCompleted(completed);
 
       client.index(entity.getId(), importPositionIndexName, entity);
+    }
+
+    private void createSchemas(
+        final ExporterConfiguration config, final SearchClientAdapter adapter) throws IOException {
+      final var exporter = new CamundaExporter();
+      exporter.configure(getContextFromConfig(config));
+      exporter.open(new ExporterTestController());
+
+      adapter.refresh();
     }
   }
 }
