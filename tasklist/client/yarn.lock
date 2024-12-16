@@ -225,10 +225,10 @@
   resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.13.1.tgz#62354731a6e7db547306245f29384ca1dceda352"
   integrity sha512-K7+aXag8P8pOtM8zSJY5bwGsyw20VKUgI6MMDpmsZ1TVW9ZwXv220IpyaNVvXPghCgHhBJBnoFjkISfY34H+yQ==
 
-"@bpmn-io/form-js-viewer@1.12.0":
-  version "1.12.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.12.0.tgz#bf7a9e24c96c3c2ef65de35fca18d30a252810e5"
-  integrity sha512-31jwd3gjcfFlzA3yEKE+Mfo9EtYkCPST1kAHe8Ifv6aRXb08oMxgZQmDfWYdtcIayAD1n6IAaEKTr0RnDf4BOQ==
+"@bpmn-io/form-js-viewer@1.13.1":
+  version "1.13.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.13.1.tgz#20e3631b3cf21bf40b5d5f5feac29f8514074375"
+  integrity sha512-EBj6dQBeEnKMgA2zImZXCZyMi4OGyA5OYB7YX7W6TTGo/PKRlYAGPkbktascVTg0erSZmHjO37KJalGleBQcfw==
   dependencies:
     "@carbon/grid" "^11.29.0"
     big.js "^6.2.2"
