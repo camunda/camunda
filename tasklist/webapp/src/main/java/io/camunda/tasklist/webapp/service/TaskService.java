@@ -30,6 +30,7 @@ import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -159,14 +160,14 @@ public class TaskService {
       allowOverrideAssignment = true;
     }
 
-    final UserDTO currentUser = getCurrentUser();
-    if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
+    final var isApiUser = TasklistAuthenticationUtil.isApiUser();
+    if (StringUtils.isEmpty(assignee) && isApiUser) {
       throw new InvalidRequestException("Assignee must be specified");
     }
 
     if (StringUtils.isNotEmpty(assignee)
-        && !currentUser.isApiUser()
-        && !assignee.equals(currentUser.getUserId())) {
+        && !isApiUser
+        && !assignee.equals(getCurrentUser().getUserId())) {
       throw new ForbiddenActionException(
           "User doesn't have the permission to assign another user to this task");
     }
@@ -195,9 +196,8 @@ public class TaskService {
   }
 
   private String determineTaskAssignee(final String assignee) {
-    final UserDTO currentUser = getCurrentUser();
-    return StringUtils.isEmpty(assignee) && !currentUser.isApiUser()
-        ? currentUser.getUserId()
+    return StringUtils.isEmpty(assignee) && !TasklistAuthenticationUtil.isApiUser()
+        ? getCurrentUser().getUserId()
         : assignee;
   }
 
@@ -347,7 +347,7 @@ public class TaskService {
   private String[] getTaskMetricLabels(final TaskEntity task) {
     final String keyUserId;
 
-    if (getCurrentUser().isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser()) {
       if (task.getAssignee() != null) {
         keyUserId = task.getAssignee();
       } else {

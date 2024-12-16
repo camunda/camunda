@@ -24,5 +24,4 @@ public record CamundaUserDTO(
     List<String> roles,
     String salesPlanType,
     Map<ClusterMetadata.AppName, String> c8Links,
-    boolean canLogout,
-    boolean apiUser) {}
+    boolean canLogout) {}

@@ -29,7 +29,6 @@ public final class CamundaUser extends User {
   private final String salesPlanType;
   private final Map<ClusterMetadata.AppName, String> c8Links;
   private final boolean canLogout;
-  private final boolean apiUser;
   private final String email;
 
   private CamundaUser(
@@ -45,8 +44,7 @@ public final class CamundaUser extends User {
       final List<String> groups,
       final String salesPlanType,
       final Map<ClusterMetadata.AppName, String> c8Links,
-      final boolean canLogout,
-      final boolean apiUser) {
+      final boolean canLogout) {
     super(username, password, authorities);
     this.roles = roles;
     this.userKey = userKey;
@@ -57,7 +55,6 @@ public final class CamundaUser extends User {
     this.salesPlanType = salesPlanType;
     this.c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
     this.canLogout = canLogout;
-    this.apiUser = apiUser;
     this.email = email;
   }
 
@@ -105,10 +102,6 @@ public final class CamundaUser extends User {
     return canLogout;
   }
 
-  public boolean isApiUser() {
-    return apiUser;
-  }
-
   private static List<? extends GrantedAuthority> prepareAuthorities(
       final List<String> authorities) {
     return authorities.stream().map(SimpleGrantedAuthority::new).toList();
@@ -132,7 +125,6 @@ public final class CamundaUser extends User {
     private String salesPlanType;
     private Map<ClusterMetadata.AppName, String> c8Links = Map.of();
     private boolean canLogout;
-    private boolean apiUser;
 
     private CamundaUserBuilder() {}
 
@@ -206,11 +198,6 @@ public final class CamundaUser extends User {
       return this;
     }
 
-    public CamundaUserBuilder withApiUser(final boolean apiUser) {
-      this.apiUser = apiUser;
-      return this;
-    }
-
     public CamundaUser build() {
       return new CamundaUser(
           userKey,
@@ -225,8 +212,7 @@ public final class CamundaUser extends User {
           groups,
           salesPlanType,
           c8Links,
-          canLogout,
-          apiUser);
+          canLogout);
     }
   }
 }
