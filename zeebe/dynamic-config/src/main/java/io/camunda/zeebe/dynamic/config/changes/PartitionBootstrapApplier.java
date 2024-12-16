@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.Map.Entry;
 import java.util.function.UnaryOperator;
 
 public class PartitionBootstrapApplier implements MemberOperationApplier {
@@ -80,14 +81,16 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
                   .formatted(partitionId)));
     }
 
-    // Let's assume Partition 1 always exists
     partitionConfig =
         currentClusterConfiguration.members().values().stream()
             .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
+            .toList()
+            .stream()
             .findFirst()
-            .get()
-            .getValue()
-            .config();
+            .map(Entry::getValue)
+            .map(PartitionState::config)
+            // TODO Maybe use unInitialized instead of init, or change uninitialized
+            .orElse(DynamicPartitionConfig.init());
     return Either.right(
         memberState ->
             memberState.addPartition(

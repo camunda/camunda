@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -50,13 +51,15 @@ final class ClusterPurgeRequestTransformerTest {
         .right()
         .satisfies(
             operations -> {
-              assertThat(operations).hasSize(8);
+              assertThat(operations).hasSize(10);
               assertThat(operations)
                   .containsExactlyInAnyOrder(
                       new PartitionLeaveOperation(id0, 0),
                       new PartitionLeaveOperation(id0, 1),
                       new PartitionLeaveOperation(id1, 0),
                       new PartitionLeaveOperation(id1, 1),
+                      new DeleteHistoryOperation(id0),
+                      new DeleteHistoryOperation(id1),
                       new PartitionBootstrapOperation(id0, 0, 2),
                       new PartitionBootstrapOperation(id1, 1, 2),
                       new PartitionJoinOperation(id0, 1, 1),
@@ -89,7 +92,7 @@ final class ClusterPurgeRequestTransformerTest {
         .right()
         .satisfies(
             operations -> {
-              assertThat(operations).hasSize(12);
+              assertThat(operations).hasSize(14);
               assertThat(operations)
                   .containsExactlyInAnyOrder(
                       new PartitionLeaveOperation(id0, 0),
@@ -98,6 +101,8 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 0),
                       new PartitionLeaveOperation(id1, 1),
                       new PartitionLeaveOperation(id1, 2),
+                      new DeleteHistoryOperation(id0),
+                      new DeleteHistoryOperation(id1),
                       new PartitionBootstrapOperation(id0, 0, 2),
                       new PartitionBootstrapOperation(id0, 2, 2),
                       new PartitionBootstrapOperation(id1, 1, 2),

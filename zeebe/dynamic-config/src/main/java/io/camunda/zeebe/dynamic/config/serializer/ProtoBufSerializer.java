@@ -42,6 +42,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -429,6 +430,8 @@ public class ProtoBufSerializer
                   .setPartitionId(bootstrapOperation.partitionId())
                   .setPriority(bootstrapOperation.priority())
                   .build());
+      case final DeleteHistoryOperation deleteHistoryOperation ->
+          builder.setDeleteHistory(Topology.DeleteHistoryOperation.newBuilder().build());
       case StartPartitionScaleUpOperation(
               final var ignoredMemberId,
               final var desiredPartitionCount) ->

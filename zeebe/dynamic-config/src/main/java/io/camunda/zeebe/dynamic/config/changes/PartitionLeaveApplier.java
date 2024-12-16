@@ -10,11 +10,14 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.function.UnaryOperator;
 
 /**
@@ -54,6 +57,13 @@ record PartitionLeaveApplier(
     final boolean partitionIsLeaving =
         currentClusterConfiguration.getMember(localMemberId).getPartition(partitionId).state()
             == PartitionState.State.LEAVING;
+
+    final boolean isPurgeOperation =
+        currentClusterConfiguration
+            .pendingChanges()
+            .map(p -> containsHistoryDeleteOperation(p.pendingOperations()))
+            .orElse(false);
+
     if (partitionIsLeaving) {
       // If partition state is already set to leaving, then we don't need to set it again. This can
       // happen if the node was restarted while applying the leave operation. To ensure that the
@@ -64,7 +74,7 @@ record PartitionLeaveApplier(
           currentClusterConfiguration.members().values().stream()
               .filter(m -> m.hasPartition(partitionId))
               .count();
-      if (partitionReplicaCount <= 1) {
+      if (partitionReplicaCount <= 1 && !isPurgeOperation) {
         return Either.left(
             new IllegalStateException(
                 String.format(
@@ -93,5 +103,10 @@ record PartitionLeaveApplier(
             });
 
     return result;
+  }
+
+  private boolean containsHistoryDeleteOperation(
+      final List<ClusterConfigurationChangeOperation> operations) {
+    return operations.stream().anyMatch(DeleteHistoryOperation.class::isInstance);
   }
 }

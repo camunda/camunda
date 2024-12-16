@@ -127,5 +127,13 @@ public sealed interface ClusterConfigurationChangeOperation {
      */
     record PartitionBootstrapOperation(MemberId memberId, int partitionId, int priority)
         implements PartitionChangeOperation {}
+
+    /**
+     * Operation to delete the history of the given member.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     */
+    record DeleteHistoryOperation(MemberId memberId)
+        implements ClusterConfigurationChangeOperation {}
   }
 }

@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -54,7 +55,9 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
       }
     }
 
-    // TODO Delete history (only coordinator node)
+    clusterConfiguration
+        .members()
+        .forEach((key, value) -> operations.add(new DeleteHistoryOperation(key)));
 
     primaries.forEach(
         (partitionId, bootstrapOperation) -> {

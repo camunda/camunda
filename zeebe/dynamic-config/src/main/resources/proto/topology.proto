@@ -106,6 +106,7 @@ message TopologyChangeOperation {
     PartitionEnableExporterOperation partitionEnableExporter = 10;
     PartitionBootstrapOperation partitionBootstrap = 11;
     StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
+    DeleteHistoryOperation deleteHistory = 13;
   }
 }
 
@@ -151,6 +152,10 @@ message PartitionBootstrapOperation {
 
 message StartPartitionScaleUpOperation {
   int32 desiredPartitionCount = 2;
+}
+
+message DeleteHistoryOperation {
+  int32 memberId = 1;
 }
 
 message MemberJoinOperation {}
