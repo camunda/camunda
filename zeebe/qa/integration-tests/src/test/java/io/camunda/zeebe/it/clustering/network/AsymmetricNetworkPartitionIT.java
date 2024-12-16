@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering.network;
 
+import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -97,7 +98,7 @@ final class AsymmetricNetworkPartitionIT {
 
   @BeforeEach
   void beforeEach() {
-    client = CLUSTER.newClientBuilder().build();
+    client = newClientBuilder(CLUSTER).build();
     CLUSTER.getBrokers().forEach((id, broker) -> clearUnreachableRoutes(broker));
   }
 

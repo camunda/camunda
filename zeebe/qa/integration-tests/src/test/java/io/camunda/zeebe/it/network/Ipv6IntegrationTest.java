@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.network;
 
+import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
+
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.Network.Ipam;
@@ -86,7 +88,7 @@ final class Ipv6IntegrationTest {
     cluster.start();
 
     // when
-    try (final var client = cluster.newClientBuilder().build(); ) {
+    try (final var client = newClientBuilder(cluster).build(); ) {
       final Topology topology = client.newTopologyRequest().send().join(5, TimeUnit.SECONDS);
       // then - can find each other
       TopologyAssert.assertThat(topology).isComplete(1, 1, 1);

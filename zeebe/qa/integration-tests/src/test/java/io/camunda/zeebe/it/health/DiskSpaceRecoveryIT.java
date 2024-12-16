@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.health;
 
+import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -97,7 +98,7 @@ final class DiskSpaceRecoveryIT {
 
     @BeforeEach
     void beforeEach() {
-      client = engine.createClient();
+      client = newClientBuilder(engine).build();
     }
 
     @Test
@@ -152,7 +153,7 @@ final class DiskSpaceRecoveryIT {
 
     @BeforeEach
     void beforeEach() {
-      client = engine.createClient();
+      client = newClientBuilder(engine).build();
     }
 
     @Test
