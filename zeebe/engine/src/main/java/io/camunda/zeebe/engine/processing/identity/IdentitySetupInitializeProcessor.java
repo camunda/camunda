@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -48,7 +47,6 @@ public final class IdentitySetupInitializeProcessor
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final TypedRejectionWriter rejectionWriter;
 
   public IdentitySetupInitializeProcessor(
       final ProcessingState processingState,
@@ -59,7 +57,6 @@ public final class IdentitySetupInitializeProcessor
     userState = processingState.getUserState();
     tenantState = processingState.getTenantState();
     stateWriter = writers.state();
-    rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
