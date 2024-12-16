@@ -73,7 +73,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient,
-      final UserServices userServices) {
+      @Autowired(required = false) final UserServices userServices) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.securityConfiguration = securityConfiguration;
