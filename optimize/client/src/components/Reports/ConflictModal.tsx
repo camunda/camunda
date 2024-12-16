@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Stack} from '@carbon/react';
 
 import {Modal} from 'components';
 import {t} from 'translation';
@@ -36,7 +36,7 @@ export default function ConflictModal({
       <Modal.Header title={t('report.saveConflict.header')} />
       <Modal.Content>
         {conflicts && conflicts?.length !== 0 && (
-          <>
+          <Stack gap={4}>
             <p>{t(`report.saveConflict.alert.header`)}</p>
             <ul>
               {conflicts?.map(({id, name}: {id: string; name: string}) => (
@@ -46,7 +46,7 @@ export default function ConflictModal({
             <p className="conflictMessage">
               <b>{t(`report.saveConflict.alert.message`)}</b>
             </p>
-          </>
+          </Stack>
         )}
       </Modal.Content>
       <Modal.Footer>

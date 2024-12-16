@@ -7,4 +7,4 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
-public record AuthorizationKey(Long ownerKey, String resourceType, String permissionType) {}
+public record AuthorizationKey(Long ownerKey, String resourceType) {}

@@ -8,9 +8,12 @@
 package io.camunda.zeebe.gateway.security;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.utils.net.Address;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
@@ -179,6 +182,12 @@ final class SecurityTest {
     brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
     atomix.getMembershipService().addListener(topologyManager);
-    return new Gateway(gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer());
+    return new Gateway(
+        gatewayCfg,
+        new SecurityConfiguration(),
+        brokerClient,
+        actorScheduler,
+        jobStreamClient.streamer(),
+        mock(UserServices.class));
   }
 }

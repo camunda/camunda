@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -82,7 +83,11 @@ final class TestClient implements CloseableSilently {
   Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType) {
     try {
       final var request =
-          new Request("GET", "/_index_template/" + indexRouter.indexPrefixForValueType(valueType));
+          new Request(
+              "GET",
+              "/_index_template/"
+                  + indexRouter.indexPrefixForValueType(
+                      valueType, VersionUtil.getVersionLowerCase()));
       final var response = restClient.performRequest(request);
       final var templates =
           MAPPER.readValue(response.getEntity().getContent(), IndexTemplatesDto.class);

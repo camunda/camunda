@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.tasks;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface BackgroundTask {
-  CompletableFuture<Integer> execute();
+  CompletionStage<Integer> execute();
 }

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -88,7 +88,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
+            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -175,8 +175,8 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
     final var treePathProperties =
         new ElementTreePathBuilder()
-            .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(value.getElementInstanceKey())
             .build();
 
@@ -203,17 +203,21 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var request =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    if (authCheckBehavior.isAuthorized(request).isRight()) {
       return Either.right(job);
     }
 
     return Either.left(
         new Rejection(
             RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                request.getPermissionType(), request.getResourceType())));
+            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
   }
 }

@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.util.Either;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.List;
 
@@ -17,10 +17,9 @@ public interface ImportStore {
   ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
       throws IOException;
 
-  Either<Throwable, Boolean> updateImportPositions(
-      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositionUpdates);
-
-  void setConcurrencyMode(boolean concurrencyMode);
+  Either<Throwable, Boolean> updateImportPositions(List<ImportPositionEntity> positions);
 
   boolean getConcurrencyMode();
+
+  void setConcurrencyMode(boolean concurrencyMode);
 }

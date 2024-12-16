@@ -41,7 +41,7 @@ public final record VariableSort(List<FieldSorting> orderings) implements SortOp
     }
 
     public Builder variableKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("variableKey", null);
       return this;
     }
 

@@ -18,7 +18,6 @@ public class IdentityProperties {
   private String clientId;
   private String clientSecret;
   private String audience;
-  private boolean resourcePermissionsEnabled = false;
 
   private long resourcePermissionsUpdatePeriod = DEFAULT_RESOURCE_PERMISSIONS_UPDATE_PERIOD;
 
@@ -77,15 +76,6 @@ public class IdentityProperties {
 
   public void setAudience(final String audience) {
     this.audience = audience;
-  }
-
-  public boolean isResourcePermissionsEnabled() {
-    return resourcePermissionsEnabled;
-  }
-
-  public IdentityProperties setResourcePermissionsEnabled(boolean resourcePermissionsEnabled) {
-    this.resourcePermissionsEnabled = resourcePermissionsEnabled;
-    return this;
   }
 
   public long getResourcePermissionsUpdatePeriod() {

@@ -6,21 +6,48 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {addDays} from 'date-fns';
 import type {License} from 'modules/types';
 
 const validLicense: License = {
   validLicense: true,
   licenseType: 'production',
+  isCommercial: false,
+  expiresAt: new Date().toISOString(),
 };
 
 const saasLicense: License = {
   validLicense: true,
   licenseType: 'saas',
+  isCommercial: false,
+  expiresAt: new Date().toISOString(),
 };
 
 const invalidLicense: License = {
   validLicense: false,
   licenseType: 'production',
+  isCommercial: false,
+  expiresAt: null,
 };
 
-export {validLicense, invalidLicense, saasLicense};
+const commercialExpired: License = {
+  validLicense: true,
+  licenseType: 'production',
+  isCommercial: true,
+  expiresAt: new Date().toISOString(),
+};
+
+const validNonCommercial = {
+  validLicense: true,
+  licenseType: 'production',
+  isCommercial: false,
+  expiresAt: addDays(new Date(), 1).toISOString(),
+};
+
+export {
+  validLicense,
+  invalidLicense,
+  saasLicense,
+  commercialExpired,
+  validNonCommercial,
+};

@@ -11,11 +11,11 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.FormRecordImpl;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import java.nio.charset.StandardCharsets;
@@ -80,7 +80,15 @@ public class FormZeebeRecordProcessorElasticSearch {
       final BulkRequest bulkRequest)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(null, formId, schema, version, tenantId, formKey, false, false);
+        new FormEntity()
+            .setId(String.valueOf(formKey))
+            .setKey(formKey)
+            .setFormId(formId)
+            .setSchema(schema)
+            .setVersion(version)
+            .setTenantId(tenantId)
+            .setEmbedded(false)
+            .setIsDeleted(isDelete);
 
     try {
       if (isDelete) {

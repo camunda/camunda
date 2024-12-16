@@ -9,6 +9,7 @@ package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -52,7 +53,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldResetLastFlushedIndexOnDeleteAfter() {
+  void shouldResetLastFlushedIndexOnDeleteAfter() throws FlushException {
     // given
     writer.append(1, journalFactory.entry());
     writer.append(2, journalFactory.entry());
@@ -69,7 +70,7 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
-  void shouldResetLastFlushedIndexOnReset() {
+  void shouldResetLastFlushedIndexOnReset() throws FlushException {
     // given
     writer.append(1, journalFactory.entry());
     writer.append(2, journalFactory.entry());

@@ -33,7 +33,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
 
   return (
     <div className="FiltersView">
-      <h3>{t('dashboard.filter.viewLabel')}</h3>
+      <h3 className="subtitle">{t('dashboard.filter.viewLabel')}</h3>
       <div className="filtersContainer">
         {availableFilters.map(({type, data}, idx) => {
           switch (type) {

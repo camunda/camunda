@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -204,10 +205,11 @@ final class ElasticsearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
 
       // then
-      verify(client, times(1)).putIndexTemplate(valueType);
+      verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
     }
 
     @ParameterizedTest(name = "{0}")

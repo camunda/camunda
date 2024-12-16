@@ -7,20 +7,20 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.indices.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -63,8 +63,8 @@ public class ElasticsearchImportStore implements ImportStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
-      throws IOException {
+  public ImportPositionEntity getImportPositionByAliasAndPartitionId(
+      final String alias, final int partitionId) throws IOException {
     final QueryBuilder queryBuilder =
         joinWithAnd(
             termQuery(ImportPositionIndex.ALIAS_NAME, alias),
@@ -96,15 +96,8 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositions) {
-    var preparedBulkRequest = prepareBulkRequest(positions);
-
-    if (preparedBulkRequest.isLeft()) {
-      final var e = preparedBulkRequest.getLeft();
-      return Either.left(e);
-    }
-
-    preparedBulkRequest = addPostImportRequests(preparedBulkRequest.get(), postImportPositions);
+      final List<ImportPositionEntity> positions) {
+    final var preparedBulkRequest = prepareBulkRequest(positions);
 
     if (preparedBulkRequest.isLeft()) {
       final var e = preparedBulkRequest.getLeft();
@@ -131,12 +124,6 @@ public class ElasticsearchImportStore implements ImportStore {
   }
 
   @Override
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    retryElasticsearchClient.updateMetaField(
-        importPositionType, META_CONCURRENCY_MODE, concurrencyMode);
-  }
-
-  @Override
   public boolean getConcurrencyMode() {
     final String indexName = importPositionType.getFullQualifiedName();
     final Map<String, IndexMapping> indexMappings =
@@ -148,6 +135,12 @@ public class ElasticsearchImportStore implements ImportStore {
           indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
       return concurrencyMode == null ? false : (boolean) concurrencyMode;
     }
+  }
+
+  @Override
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    retryElasticsearchClient.updateMetaField(
+        importPositionType, META_CONCURRENCY_MODE, concurrencyMode);
   }
 
   private void withImportPositionTimer(final Callable<Void> action) throws Exception {
@@ -173,55 +166,6 @@ public class ElasticsearchImportStore implements ImportStore {
     return Either.right(bulkRequest);
   }
 
-  private Either<Exception, BulkRequest> addPostImportRequests(
-      final BulkRequest bulkRequest, final List<ImportPositionEntity> positions) {
-
-    if (positions.size() > 0) {
-      final var preparedUpdateRequests =
-          positions.stream()
-              .map(this::preparePostImportUpdateRequest)
-              .collect(Either.collectorFoldingLeft());
-
-      if (preparedUpdateRequests.isLeft()) {
-        final var e = preparedUpdateRequests.getLeft();
-        return Either.left(e);
-      }
-
-      preparedUpdateRequests.get().forEach(bulkRequest::add);
-    }
-
-    return Either.right(bulkRequest);
-  }
-
-  private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(
-      final ImportPositionEntity position) {
-    try {
-      final var index = importPositionType.getFullQualifiedName();
-      final var source = objectMapper.writeValueAsString(position);
-      final var updateFields = new HashMap<String, Object>();
-
-      updateFields.put(
-          ImportPositionIndex.POST_IMPORTER_POSITION, position.getPostImporterPosition());
-
-      final UpdateRequest updateRequest =
-          new UpdateRequest()
-              .index(index)
-              .id(position.getId())
-              .upsert(source, XContentType.JSON)
-              .doc(updateFields);
-
-      return Either.right(updateRequest);
-
-    } catch (final Exception e) {
-      LOGGER.error(
-          String.format(
-              "Error occurred while preparing request to update processed position for %s",
-              position.getAliasName()),
-          e);
-      return Either.left(e);
-    }
-  }
-
   private Either<Exception, UpdateRequest> prepareUpdateRequest(
       final ImportPositionEntity position) {
     try {
@@ -232,6 +176,7 @@ public class ElasticsearchImportStore implements ImportStore {
       updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
       updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
+      updateFields.put(ImportPositionIndex.COMPLETED, position.getCompleted());
 
       final UpdateRequest updateRequest =
           new UpdateRequest()

@@ -45,7 +45,7 @@ public record HealthReport(
       final HealthStatus status,
       final HealthIssue issue,
       final Map<String, HealthReport> children) {
-    this(component.getName(), status, issue, children);
+    this(component.componentName(), status, issue, children);
   }
 
   public static Optional<HealthReport> fromChildrenStatus(
@@ -74,6 +74,16 @@ public record HealthReport(
 
   public static HealthReport dead(final HealthMonitorable component) {
     return new HealthReport(component, HealthStatus.DEAD, null, Map.of());
+  }
+
+  public static HealthReport fromStatus(
+      final HealthStatus status, final HealthMonitorable component) {
+    return switch (status) {
+      case HEALTHY -> HealthReport.healthy(component);
+      case UNHEALTHY -> HealthReport.unhealthy(component);
+      case DEAD -> HealthReport.dead(component);
+      case null -> HealthReport.unknown(component.componentName());
+    };
   }
 
   public boolean isHealthy() {
@@ -114,5 +124,9 @@ public record HealthReport(
 
   public HealthReport withIssue(final Throwable e, final Instant since) {
     return new HealthReport(componentName, status, HealthIssue.of(e, since), children);
+  }
+
+  public HealthReport withName(final String name) {
+    return new HealthReport(name, status, issue, children);
   }
 }

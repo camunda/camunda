@@ -34,6 +34,7 @@ import useTranslate from "../../utility/localization";
 import { DocumentationLink } from "src/components/documentation";
 import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
+import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
 
 const ToolbarMultiSelect = styled(MultiSelect)`
   grid-gap: 0;
@@ -45,7 +46,7 @@ const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
 
 type HandleExpand = (event: unknown, shouldExpand: boolean) => void;
 
-export type EntityData = { [key: string]: string | object | boolean } & {
+export type EntityData = { [p: string]: string | object | boolean | number } & {
   id?: string | never;
 };
 
@@ -397,12 +398,10 @@ const EntityList = <D extends EntityData>({
                                     disabled,
                                   } = menuItem as MenuItem<D>;
 
-                                  const kind =
+                                  const kind: ButtonKind =
                                     !icon && isDangerous
                                       ? "danger--ghost"
-                                      : isDangerous
-                                        ? "danger"
-                                        : "ghost";
+                                      : "ghost";
 
                                   return (
                                     <Button

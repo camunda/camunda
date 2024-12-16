@@ -19,13 +19,12 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +32,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,7 +42,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class TaskStoreElasticSearchTest {
@@ -53,22 +50,17 @@ class TaskStoreElasticSearchTest {
 
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Spy private TaskTemplate taskTemplate = new TaskTemplate();
+  @Spy private TaskTemplate taskTemplate = new TaskTemplate("test", true);
 
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
   @InjectMocks private TaskStoreElasticSearch instance;
 
-  @BeforeEach
-  public void setUp() {
-    ReflectionTestUtils.setField(taskTemplate, "tasklistProperties", new TasklistProperties());
-  }
-
   @ParameterizedTest
   @CsvSource({
-    "CREATED,tasklist-task-,_",
-    "COMPLETED,tasklist-task-,_alias",
-    "CANCELED,tasklist-task-,_alias"
+    "CREATED,test-tasklist-task-,_",
+    "COMPLETED,test-tasklist-task-,_alias",
+    "CANCELED,test-tasklist-task-,_alias"
   })
   void getTasksForDifferentStates(
       TaskState taskState, String expectedIndexPrefix, String expectedIndexSuffix)

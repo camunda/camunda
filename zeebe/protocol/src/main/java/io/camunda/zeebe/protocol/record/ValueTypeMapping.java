@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -58,6 +60,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
@@ -69,6 +72,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -100,7 +104,9 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.RedistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -231,6 +237,7 @@ public final class ValueTypeMapping {
         ValueType.PROCESS_INSTANCE_BATCH,
         new Mapping<>(ProcessInstanceBatchRecordValue.class, ProcessInstanceBatchIntent.class));
     mapping.put(ValueType.FORM, new Mapping<>(Form.class, FormIntent.class));
+    mapping.put(ValueType.RESOURCE, new Mapping<>(Resource.class, ResourceIntent.class));
     mapping.put(
         ValueType.USER_TASK, new Mapping<>(UserTaskRecordValue.class, UserTaskIntent.class));
     mapping.put(
@@ -252,8 +259,14 @@ public final class ValueTypeMapping {
     mapping.put(ValueType.ROLE, new Mapping<>(RoleRecordValue.class, RoleIntent.class));
     mapping.put(ValueType.TENANT, new Mapping<>(TenantRecordValue.class, TenantIntent.class));
     mapping.put(ValueType.SCALE, new Mapping<>(ScaleRecordValue.class, ScaleIntent.class));
+    mapping.put(
+        ValueType.REDISTRIBUTION,
+        new Mapping<>(RedistributionRecordValue.class, RedistributionIntent.class));
     mapping.put(ValueType.GROUP, new Mapping<>(GroupRecordValue.class, GroupIntent.class));
     mapping.put(ValueType.MAPPING, new Mapping<>(MappingRecordValue.class, MappingIntent.class));
+    mapping.put(
+        ValueType.IDENTITY_SETUP,
+        new Mapping<>(IdentitySetupRecordValue.class, IdentitySetupIntent.class));
     return mapping;
   }
 

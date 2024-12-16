@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -17,9 +16,9 @@ import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestVal
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateMappingRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
@@ -30,9 +29,13 @@ import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.val
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
+import com.google.monitoring.v3.UpdateGroupRequest;
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
@@ -41,6 +44,7 @@ import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
+import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
@@ -49,6 +53,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
@@ -61,23 +66,37 @@ import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -91,6 +110,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +124,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -152,6 +171,16 @@ public class RequestMapper {
                 userTaskKey,
                 getRecordWithChangedAttributes(updateRequest),
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
+  }
+
+  public static Either<ProblemDetail, UpdateUserRequest> toUserUpdateRequest(
+      final UserUpdateRequest updateRequest, final long userKey) {
+    final UserChangeset changeset = updateRequest.getChangeset();
+    return getResult(
+        validateUserUpdateRequest(updateRequest),
+        () ->
+            new UpdateUserRequest(
+                userKey, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -205,11 +234,6 @@ public class RequestMapper {
         validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Correlate Message")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
-            .flatMap(
-                tenantId ->
                     validateMessageCorrelationRequest(correlationRequest)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
@@ -225,9 +249,10 @@ public class RequestMapper {
 
   public static CompleteJobRequest toJobCompletionRequest(
       final JobCompletionRequest completionRequest, final long jobKey) {
-
     return new CompleteJobRequest(
-        jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
+        jobKey,
+        getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
+        getJobResultOrDefault(completionRequest));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -241,6 +266,34 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
+  }
+
+  public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
+      final RoleUpdateRequest roleUpdateRequest, final long roleKey) {
+    return getResult(
+        RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
+        () -> new UpdateRoleRequest(roleKey, roleUpdateRequest.getChangeset().getName()));
+  }
+
+  public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
+      final RoleCreateRequest roleCreateRequest) {
+    return getResult(
+        RoleRequestValidator.validateCreateRequest(roleCreateRequest),
+        () -> new CreateRoleRequest(roleCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
+      final GroupCreateRequest groupCreateRequest) {
+    return getResult(
+        GroupRequestValidator.validateCreateRequest(groupCreateRequest),
+        () -> new CreateGroupRequest(groupCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
+      final GroupUpdateRequest groupUpdateRequest, final long groupKey) {
+    return getResult(
+        GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
+        () -> new UpdateGroupRequest(groupKey, groupUpdateRequest.getChangeset().getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -291,7 +344,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UserDTO> toUserDTO(
-      final Long userKey, final UserRequest request, final PasswordEncoder passwordEncoder) {
+      final Long userKey, final UserRequest request) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
@@ -300,7 +353,14 @@ public class RequestMapper {
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
-                passwordEncoder.encode(request.getPassword())));
+                request.getPassword()));
+  }
+
+  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+      final MappingRuleCreateRequest request) {
+    return getResult(
+        validateMappingRequest(request),
+        () -> new MappingDTO(request.getClaimName(), request.getClaimValue()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -321,18 +381,19 @@ public class RequestMapper {
         method, ignored -> ResponseEntity.noContent().build());
   }
 
+  public static <BrokerResponseT>
+      CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithAcceptedResult(
+          final Supplier<CompletableFuture<BrokerResponseT>> method) {
+    return RequestMapper.executeServiceMethod(method, ignored -> ResponseEntity.accepted().build());
+  }
+
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
       final List<MultipartFile> resources,
       final String tenantId,
       final boolean multiTenancyEnabled) {
     try {
       final Either<ProblemDetail, String> validationResponse =
-          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources")
-              .flatMap(
-                  tenant ->
-                      validateAuthorization(tenant, multiTenancyEnabled, "Deploy Resources")
-                          .map(Either::<ProblemDetail, String>left)
-                          .orElseGet(() -> Either.right(tenant)));
+          validateTenantId(tenantId, multiTenancyEnabled, "Deploy Resources");
       if (validationResponse.isLeft()) {
         return Either.left(validationResponse.getLeft());
       }
@@ -360,11 +421,6 @@ public class RequestMapper {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(
                 messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
-            .flatMap(
-                tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Publish Message")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
             .flatMap(
                 tenantId ->
                     validateMessagePublicationRequest(messagePublicationRequest)
@@ -398,11 +454,6 @@ public class RequestMapper {
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Broadcast Signal")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Broadcast Signal")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
-            .flatMap(
-                tenantId ->
                     validateSignalBroadcastRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
@@ -413,7 +464,8 @@ public class RequestMapper {
 
   public static Authentication getAuthentication() {
     Long authenticatedUserKey = null;
-    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
+    final List<Long> authenticatedRoleKeys = new ArrayList<>();
+    final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
     final var token =
         Authorization.jwtEncoder()
@@ -429,19 +481,24 @@ public class RequestMapper {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaUser authenticatedPrincipal) {
         authenticatedUserKey = authenticatedPrincipal.getUserKey();
+        authenticatedRoleKeys.addAll(
+            authenticatedPrincipal.getRoles().stream().map(RoleEntity::roleKey).toList());
         token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
       }
 
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
         jwtAuthenticationToken
             .getTokenAttributes()
-            .forEach((key, value) -> token.withClaim(USER_TOKEN_CLAIM_PREFIX + key, value));
+            .forEach(
+                (key, value) ->
+                    token.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
       }
     }
 
     return new Builder()
         .token(token.build())
         .user(authenticatedUserKey)
+        .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();
   }
@@ -521,11 +578,6 @@ public class RequestMapper {
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
             .flatMap(
                 tenant ->
-                    validateAuthorization(tenant, multiTenancyEnabled, "Create Process Instance")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)))
-            .flatMap(
-                tenant ->
                     validateCreateProcessInstanceRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenant)));
@@ -603,11 +655,6 @@ public class RequestMapper {
         validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
             .flatMap(
                 tenantId ->
-                    validateAuthorization(tenantId, multiTenancyEnabled, "Evaluate Decision")
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)))
-            .flatMap(
-                tenantId ->
                     validateEvaluateDecisionRequest(request)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
@@ -618,6 +665,21 @@ public class RequestMapper {
                 getLongOrDefault(request, EvaluateDecisionRequest::getDecisionDefinitionKey, -1L),
                 getMapOrEmpty(request, EvaluateDecisionRequest::getVariables),
                 tenantId));
+  }
+
+  public static Either<ProblemDetail, TenantDTO> toTenantCreateDto(
+      final TenantCreateRequest tenantCreateRequest) {
+    return getResult(
+        TenantRequestValidator.validateTenantCreateRequest(tenantCreateRequest),
+        () ->
+            new TenantDTO(null, tenantCreateRequest.getTenantId(), tenantCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
+      final Long tenantKey, final TenantUpdateRequest tenantUpdateRequest) {
+    return getResult(
+        TenantRequestValidator.validateTenantUpdateRequest(tenantUpdateRequest),
+        () -> new TenantDTO(tenantKey, null, tenantUpdateRequest.getName()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>
@@ -646,7 +708,62 @@ public class RequestMapper {
 
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
-    return request == null ? Map.of() : mapExtractor.apply(request);
+    final Map<String, Object> value = request == null ? null : mapExtractor.apply(request);
+    return value == null ? Map.of() : value;
+  }
+
+  private static JobResult getJobResultOrDefault(final JobCompletionRequest request) {
+    if (request == null || request.getResult() == null) {
+      return new JobResult();
+    }
+
+    final JobResult jobResult = new JobResult();
+    jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+
+    final var jobResultCorrections = request.getResult().getCorrections();
+    if (jobResultCorrections == null) {
+      return jobResult;
+    }
+
+    final JobResultCorrections corrections = new JobResultCorrections();
+    final List<String> correctedAttributes = new ArrayList<>();
+
+    if (jobResultCorrections.getAssignee() != null) {
+      corrections.setAssignee(jobResultCorrections.getAssignee());
+      // `UserTaskRecord.ASSIGNEE` will be available after merging
+      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
+      correctedAttributes.add("assignee");
+    }
+    if (jobResultCorrections.getDueDate() != null) {
+      corrections.setDueDate(jobResultCorrections.getDueDate());
+      correctedAttributes.add(UserTaskRecord.DUE_DATE);
+    }
+    if (jobResultCorrections.getFollowUpDate() != null) {
+      corrections.setFollowUpDate(jobResultCorrections.getFollowUpDate());
+      correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
+    }
+    if (jobResultCorrections.getCandidateUsers() != null) {
+      corrections.setCandidateUsersList(jobResultCorrections.getCandidateUsers());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
+    }
+    if (jobResultCorrections.getCandidateGroups() != null) {
+      corrections.setCandidateGroupsList(jobResultCorrections.getCandidateGroups());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
+    }
+    if (jobResultCorrections.getPriority() != null) {
+      corrections.setPriority(jobResultCorrections.getPriority());
+      correctedAttributes.add(UserTaskRecord.PRIORITY);
+    }
+
+    jobResult.setCorrections(corrections);
+    jobResult.setCorrectedAttributes(correctedAttributes);
+    return jobResult;
+  }
+
+  private static <R> boolean getBooleanOrDefault(
+      final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
+    final Boolean value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? defaultValue : value;
   }
 
   private static <R> String getStringOrEmpty(
@@ -686,6 +803,8 @@ public class RequestMapper {
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
+  public record UpdateUserRequest(long userKey, String name, String email, String password) {}
+
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
 
@@ -699,7 +818,7 @@ public class RequestMapper {
   public record ErrorJobRequest(
       long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 
-  public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
 
   public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
 
@@ -708,4 +827,14 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  public record CreateRoleRequest(String name) {}
+
+  public record UpdateRoleRequest(long roleKey, String name) {}
+
+  public record CreateTenantRequest(String tenantId, String name) {}
+
+  public record CreateGroupRequest(String name) {}
+
+  public record UpdateGroupRequest(long groupKey, String name) {}
 }

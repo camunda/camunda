@@ -32,7 +32,7 @@ public final class VariableFixtures extends CommonFixtures {
       final Function<VariableDbModelBuilder, VariableDbModelBuilder> builderFunction) {
     final var builder =
         new VariableDbModelBuilder()
-            .key(nextKey())
+            .variableKey(nextKey())
             .processInstanceKey(nextKey())
             .scopeKey(nextKey())
             .name(

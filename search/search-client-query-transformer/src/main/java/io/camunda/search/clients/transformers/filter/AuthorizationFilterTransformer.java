@@ -11,28 +11,34 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_TYPE;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_RESOURCEIDS;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_TYPE;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class AuthorizationFilterTransformer
-    implements FilterTransformer<AuthorizationFilter> {
+    extends IndexFilterTransformer<AuthorizationFilter> {
+
+  public AuthorizationFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
     return and(
-        longTerms("ownerKey", filter.ownerKeys()),
-        filter.ownerType() == null ? null : term("ownerType", filter.ownerType()),
-        stringTerms("permissions.resourceIds", filter.resourceKeys()),
-        filter.resourceType() == null ? null : term("resourceType", filter.resourceType()),
+        longTerms(OWNER_KEY, filter.ownerKeys()),
+        filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
+        stringTerms("%s.%s".formatted(PERMISSIONS, PERMISSIONS_RESOURCEIDS), filter.resourceIds()),
+        filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
         filter.permissionType() == null
             ? null
-            : term("permissions.type", filter.permissionType().name()));
-  }
-
-  @Override
-  public List<String> toIndices(final AuthorizationFilter filter) {
-    return List.of("identity-authorizations-8.7.0_alias");
+            : term(
+                "%s.%s".formatted(PERMISSIONS, PERMISSIONS_TYPE), filter.permissionType().name()));
   }
 }

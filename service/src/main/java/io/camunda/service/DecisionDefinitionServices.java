@@ -99,7 +99,7 @@ public final class DecisionDefinitionServices
         getSingleResultOrThrow(result, decisionKey, "Decision definition");
     final var authorization = Authorization.of(a -> a.decisionDefinition().read());
     if (!securityContextProvider.isAuthorized(
-        decisionDefinitionEntity.decisionId(), authentication, authorization)) {
+        decisionDefinitionEntity.decisionDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return decisionDefinitionEntity;

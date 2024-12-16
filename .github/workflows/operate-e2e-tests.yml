@@ -14,6 +14,7 @@ on:
       - "distro/**"
       - "operate.Dockerfile"
       - "operate/**"
+      - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
   pull_request:
@@ -25,6 +26,7 @@ on:
       - "distro/**"
       - "operate.Dockerfile"
       - "operate/**"
+      - "zeebe/exporters/camunda-exporter/**"
       - "parent/*"
       - "pom.xml"
 
@@ -39,7 +41,7 @@ jobs:
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.16.1
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -53,12 +55,13 @@ jobs:
         image: camunda/zeebe:SNAPSHOT
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
-          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
-          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL: http://elasticsearch:9200
-          ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE: 1
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 1
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
         ports:
           - 26500:26500
+          - 8086:8080
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -97,7 +100,7 @@ jobs:
           set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@v3.1.0
         with:
           githubServer: false
           servers: |
@@ -126,6 +129,21 @@ jobs:
           name: Playwright report
           path: operate/client/playwright-report/
           retention-days: 30
+
+      - name: Collect docker logs on failure
+        if: failure()
+        uses: jwalton/gh-docker-logs@v2
+        with:
+          dest: './logs'
+      - name: Tar logs
+        if: failure()
+        run: tar cvzf ./logs.tgz ./logs
+      - name: Upload logs to GitHub
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs.tgz
+          path: ./logs.tgz
 
       - name: Observe build status
         if: always()

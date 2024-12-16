@@ -8,7 +8,6 @@
 package io.camunda.tasklist.util.apps.modules;
 
 import io.camunda.tasklist.TasklistModuleConfiguration;
-import io.camunda.tasklist.archiver.security.ArchiverSecurityModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
@@ -30,7 +29,7 @@ import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @ComponentScan(
-    basePackages = "io.camunda.tasklist",
+    basePackages = {"io.camunda.tasklist", "io.camunda.application.commons"},
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
@@ -57,7 +56,6 @@ import org.springframework.context.annotation.Profile;
 @Import({
   WebappsModuleConfiguration.class,
   WebappSecurityModuleConfiguration.class,
-  ArchiverSecurityModuleConfiguration.class,
   ImporterSecurityModuleConfiguration.class,
   WebappManagementModuleConfiguration.class,
 })

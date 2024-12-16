@@ -25,7 +25,6 @@ jest.mock('services', () => {
 jest.mock('tracking', () => ({track: jest.fn()}));
 
 jest.mock('hooks', () => ({
-  ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   }),

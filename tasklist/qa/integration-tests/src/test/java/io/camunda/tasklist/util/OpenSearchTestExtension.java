@@ -14,6 +14,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
@@ -80,12 +81,13 @@ public class OpenSearchTestExtension
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TestImportListener testImportListener;
+  @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
     if (tasklistProperties.getOpenSearch().isCreateSchema()) {

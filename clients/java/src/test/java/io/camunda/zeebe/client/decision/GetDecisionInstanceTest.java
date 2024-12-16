@@ -27,12 +27,12 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
   @Test
   void shouldGetDecisionInstance() {
     // when
-    final long decisionInstanceKey = 1L;
-    client.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
+    final String decisionInstanceId = "1-1";
+    client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/decision-instances/" + decisionInstanceKey);
+    assertThat(request.getUrl()).isEqualTo("/v2/decision-instances/" + decisionInstanceId);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 }

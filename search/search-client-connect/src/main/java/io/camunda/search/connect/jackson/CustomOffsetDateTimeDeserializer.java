@@ -19,9 +19,12 @@ import java.time.format.DateTimeParseException;
 
 public final class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
-  private DateTimeFormatter formatter;
+  private static final DateTimeFormatter OFFSET_DATE_TIME_FORMATTER_NO_COLON =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXXX");
 
-  public CustomOffsetDateTimeDeserializer(DateTimeFormatter formatter) {
+  private final DateTimeFormatter formatter;
+
+  public CustomOffsetDateTimeDeserializer(final DateTimeFormatter formatter) {
     this.formatter = formatter;
   }
 
@@ -31,14 +34,26 @@ public final class CustomOffsetDateTimeDeserializer extends JsonDeserializer<Off
 
     OffsetDateTime parsedDate;
     try {
+      // parse with the defined formatter, covering ~90% of all data reads
       parsedDate = OffsetDateTime.parse(parser.getText(), formatter);
-    } catch (final DateTimeParseException exception) {
-      parsedDate =
-          ZonedDateTime.parse(
-                  parser.getText(),
-                  DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-                      .withZone(ZoneId.systemDefault()))
-              .toOffsetDateTime();
+    } catch (final DateTimeParseException dtpe1) {
+      try {
+        // try with the default colon-based formatter, full seconds offset and 'Z' allowed
+        // this can be introduced by data writers that don't use the ConnectConfiguration
+        parsedDate = OffsetDateTime.parse(parser.getText());
+      } catch (final DateTimeParseException dtpe2) {
+        try {
+          // try with no colon offset, full seconds offset allowed, e.g. '...-083015'
+          parsedDate = OffsetDateTime.parse(parser.getText(), OFFSET_DATE_TIME_FORMATTER_NO_COLON);
+        } catch (final DateTimeParseException dtpe3) {
+          parsedDate =
+              ZonedDateTime.parse(
+                      parser.getText(),
+                      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
+                          .withZone(ZoneId.systemDefault()))
+                  .toOffsetDateTime();
+        }
+      }
     }
     return parsedDate;
   }

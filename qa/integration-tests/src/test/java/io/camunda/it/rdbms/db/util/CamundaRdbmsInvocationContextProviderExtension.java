@@ -9,9 +9,9 @@ package io.camunda.it.rdbms.db.util;
 
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.Extension;
@@ -31,24 +31,47 @@ public class CamundaRdbmsInvocationContextProviderExtension
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaRdbmsInvocationContextProviderExtension.class);
 
-  private final Map<String, CamundaRdbmsTestApplication> testApplications;
+  private static final Map<String, CamundaRdbmsTestApplication> SUPPORTED_TEST_APPLICATIONS =
+      Map.of(
+          "camundaWithH2",
+              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class).withRdbms().withH2(),
+          "camundaWithPostgresSQL",
+              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+                  .withRdbms()
+                  .withDatabaseContainer(
+                      new PostgreSQLContainer<>("postgres:16-alpine")
+                          .withUsername("user")
+                          .withPassword("password")),
+          "camundaWithMariaDB",
+              new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+                  .withRdbms()
+                  .withDatabaseContainer(
+                      new MariaDBContainer<>("mariadb:11.4")
+                          .withUsername("user")
+                          .withPassword("password")));
+
+  private final Set<String> useTestApplications;
 
   public CamundaRdbmsInvocationContextProviderExtension() {
-    testApplications = new HashMap<>();
-    testApplications.put(
-        "camundaWithPostgresSQL",
-        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-            .withDatabaseContainer(
-                new PostgreSQLContainer<>("postgres:16-alpine")
-                    .withUsername("user")
-                    .withPassword("password")));
-    testApplications.put(
-        "camundaWithMariaDB",
-        new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
-            .withDatabaseContainer(
-                new MariaDBContainer<>("mariadb:11.4")
-                    .withUsername("user")
-                    .withPassword("password")));
+    useTestApplications = SUPPORTED_TEST_APPLICATIONS.keySet();
+  }
+
+  /**
+   * This can be used to configure which test applications should be used:
+   *
+   * <pre>{@code
+   * @RegisterExtension
+   * static final CamundaRdbmsInvocationContextProviderExtension testApplication =
+   *     new CamundaRdbmsInvocationContextProviderExtension("camundaWithH2");
+   * }</pre>
+   *
+   * This can make sense for e.g. development phase where you want to run only a subset of the
+   * databases
+   *
+   * @param useTestApplications the test applications to use
+   */
+  public CamundaRdbmsInvocationContextProviderExtension(final String... useTestApplications) {
+    this.useTestApplications = Set.of(useTestApplications);
   }
 
   @Override
@@ -59,19 +82,20 @@ public class CamundaRdbmsInvocationContextProviderExtension
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext extensionContext) {
-    return testApplications.keySet().stream().map(this::invocationContext);
+    return useTestApplications.stream().map(this::invocationContext);
   }
 
   @Override
   public void beforeAll(final ExtensionContext context) {
     if (!started) {
-      testApplications.entrySet().parallelStream()
+      useTestApplications.parallelStream()
           .forEach(
-              entry -> {
-                LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", entry.getKey());
-                entry.getValue().start();
-                LOGGER.info(
-                    "Start up of CamundaDatabaseTestApplication '{}' finished.", entry.getKey());
+              key -> {
+                final CamundaRdbmsTestApplication testApplication =
+                    SUPPORTED_TEST_APPLICATIONS.get(key);
+                LOGGER.info("Start up CamundaDatabaseTestApplication '{}'...", key);
+                testApplication.start();
+                LOGGER.info("Start up of CamundaDatabaseTestApplication '{}' finished.", key);
               });
 
       started = true;
@@ -92,9 +116,10 @@ public class CamundaRdbmsInvocationContextProviderExtension
 
       @Override
       public List<Extension> getAdditionalExtensions() {
+
         return List.of(
             new CamundaDatabaseTestApplicationParameterResolver(
-                standaloneCamundaKey, testApplications.get(standaloneCamundaKey)));
+                standaloneCamundaKey, SUPPORTED_TEST_APPLICATIONS.get(standaloneCamundaKey)));
       }
     };
   }

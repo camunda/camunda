@@ -7,11 +7,10 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.tasklist.schema.backup.Prio4Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
-@Component
-public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
+public class UserIndex extends TasklistIndexDescriptor implements Prio5Backup {
 
   public static final String ID = "id";
   public static final String USER_ID = "userId";
@@ -21,6 +20,10 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public static final String ROLES = "roles";
   private static final String INDEX_NAME = "user";
   private static final String INDEX_VERSION = "1.4.0";
+
+  public UserIndex(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

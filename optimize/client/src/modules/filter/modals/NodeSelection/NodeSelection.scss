@@ -1,5 +1,3 @@
-@use '@carbon/styles/scss/spacing';
-
 .NodeSelection {
   .cds--modal-container {
     height: 100%;
@@ -9,8 +7,9 @@
     display: flex;
     flex-direction: column;
 
+    .instructions,
     .diagramActions {
-      margin-bottom: spacing.$spacing-06;
+      margin-bottom: var(--cds-spacing-04);
     }
 
     .diagramContainer {

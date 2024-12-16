@@ -34,6 +34,7 @@ import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ public class UpgradeProcedureTest {
   private static final String FROM_VERSION = PreviousVersion.PREVIOUS_VERSION;
   private static MockedStatic<IndexLookupUtil> indexLookupUtil;
   @Spy private final CreateIndexStep createIndexStep = new CreateIndexStep(USER_TEST_INDEX);
-  @Mock private SchemaUpgradeClient<?, ?> schemaUpgradeClient;
+  @Mock private SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient;
   @Mock private UpgradeValidationService validationService;
   @Mock private UpgradeStepLogService upgradeStepLogService;
 
@@ -82,6 +83,11 @@ public class UpgradeProcedureTest {
                 IndexLookupUtil.convertIndexForDatabase(
                     any(UserTestIndex.class), any(DatabaseType.class)))
         .thenReturn(USER_TEST_INDEX);
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    indexLookupUtil.close();
   }
 
   @Test

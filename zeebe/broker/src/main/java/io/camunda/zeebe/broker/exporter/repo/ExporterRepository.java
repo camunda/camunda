@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
 public final class ExporterRepository {
@@ -108,7 +109,14 @@ public final class ExporterRepository {
         ThreadContextUtil.runCheckedWithClassLoader(
             () -> instance.configure(context), instance.getClass().getClassLoader());
       } finally {
-        instance.close();
+        CloseHelper.close(
+            error ->
+                LOG.warn(
+                    """
+                      Failed to close exporter instance during validation; will ignore for now, \
+                      but it may fail later during runtime""",
+                    error),
+            instance::close);
       }
     } catch (final Exception ex) {
       throw new ExporterLoadException(descriptor.getId(), "failed validation", ex);

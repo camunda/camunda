@@ -18,10 +18,14 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import java.util.Set;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
@@ -46,30 +50,63 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .searchRoles(query);
   }
 
+  public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+    return search(
+        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+  }
+
+  public List<RoleEntity> findAll(final RoleQuery query) {
+    return roleSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.role().read())))
+        .findAllRoles(query);
+  }
+
   @Override
   public RoleServices withAuthentication(final Authentication authentication) {
     return new RoleServices(
         brokerClient, securityContextProvider, roleSearchClient, authentication);
   }
 
-  public CompletableFuture<RoleRecord> createRole(final RoleDTO request) {
-    return sendBrokerRequest(new BrokerRoleCreateRequest().setName(request.name()));
+  public CompletableFuture<RoleRecord> createRole(final String name) {
+    return sendBrokerRequest(new BrokerRoleCreateRequest().setName(name));
   }
 
-  public CompletableFuture<RoleRecord> updateRole(final RoleDTO request) {
+  public CompletableFuture<RoleRecord> updateRole(final long roleKey, final String name) {
+    return sendBrokerRequest(new BrokerRoleUpdateRequest(roleKey).setName(name));
+  }
+
+  public RoleEntity getRole(final Long roleKey) {
+    return findRole(roleKey)
+        .orElseThrow(
+            () -> new NotFoundException("Role with roleKey %d not found".formatted(roleKey)));
+  }
+
+  public Optional<RoleEntity> findRole(final Long roleKey) {
+    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
+  public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
+    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
+  }
+
+  public CompletableFuture<?> addMember(
+      final Long roleKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
-        new BrokerRoleUpdateRequest(request.roleKey()).setName(request.name()));
+        BrokerRoleEntityRequest.createAddRequest()
+            .setRoleKey(roleKey)
+            .setEntity(entityType, entityKey));
   }
 
-  public RoleEntity getByRoleKey(final Long roleKey) {
-    final SearchQueryResult<RoleEntity> result =
-        search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Role with roleKey %d not found", roleKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
-    }
+  public CompletableFuture<?> removeMember(
+      final Long roleKey, final EntityType entityType, final long entityKey) {
+    return sendBrokerRequest(
+        BrokerRoleEntityRequest.createRemoveRequest()
+            .setRoleKey(roleKey)
+            .setEntity(entityType, entityKey));
   }
-
-  public record RoleDTO(long roleKey, String name, Set<Long> assignedMemberKeys) {}
 }

@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +34,7 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
       final OpensearchQueryDSLWrapper queryDSLWrapper,
       final OpensearchRequestDSLWrapper requestDSLWrapper,
       final RichOpenSearchClient richOpenSearchClient,
-      final VariableTemplate variableIndex) {
+      final @Qualifier("operateVariableTemplate") VariableTemplate variableIndex) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.variableIndex = variableIndex;
   }

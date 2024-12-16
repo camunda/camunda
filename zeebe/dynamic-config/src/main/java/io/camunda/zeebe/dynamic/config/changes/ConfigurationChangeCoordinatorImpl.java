@@ -107,7 +107,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                         // the default coordinator
                         failFuture(
                             future,
-                            new InternalError(
+                            new ClusterConfigurationRequestFailedException.InternalError(
                                 String.format(
                                     "Cannot process request to change the configuration. The broker '%s' is not the coordinator.",
                                     localMemberId)));

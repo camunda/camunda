@@ -15,15 +15,16 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.TimestampBasedImportIndexDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
+import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
 public abstract class TimestampBasedImportIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> {
+    extends DefaultIndexMappingCreator<TBuilder> implements Prio6Backup {
 
   public static final int VERSION = 5;
 
   public static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   public static final String DB_TYPE_INDEX_REFERS_TO =
-      TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+      TimestampBasedImportIndexDto.Fields.dbTypeIndexRefersTo;
   public static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
   private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
       ImportIndexDto.Fields.lastImportExecutionTimestamp;

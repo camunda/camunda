@@ -19,7 +19,7 @@ import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
-import io.camunda.optimize.util.jetty.LoggingConfigurationReader;
+import io.camunda.optimize.util.tomcat.LoggingConfigurationReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -40,7 +40,7 @@ public class UpgradeMain {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradeMain.class);
 
   static {
-    new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
+    new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
   }
 
   public static void main(final String... args) {

@@ -15,7 +15,6 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -24,7 +23,6 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
-import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -58,8 +56,6 @@ import org.testcontainers.containers.GenericContainer;
       LDAPUserService.class,
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
-      SessionService.class,
-      OperateWebSessionIndex.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
       JacksonConfig.class,
@@ -128,7 +124,8 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   static class Initializer
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-    public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
+    @Override
+    public void initialize(final ConfigurableApplicationContext configurableApplicationContext) {
       TestPropertyValues.of(
               "server.servlet.session.cookie.name = " + OperateURIs.COOKIE_JSESSIONID,
               String.format(

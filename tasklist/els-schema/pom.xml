@@ -25,12 +25,12 @@
       <artifactId>webapps-schema</artifactId>
     </dependency>
 
-    <!-- SPRING -->
-
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
     </dependency>
+
+    <!-- SPRING -->
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -182,12 +182,6 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
 

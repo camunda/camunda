@@ -7,10 +7,11 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.index;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
+import java.util.Optional;
 
-public class ProcessIndex extends OperateIndexDescriptor implements Prio4Backup {
+public class ProcessIndex extends OperateIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "process";
   public static final String ID = "id";
@@ -24,6 +25,10 @@ public class ProcessIndex extends OperateIndexDescriptor implements Prio4Backup 
   public static final String FLOWNODES = "flowNodes";
   public static final String FLOWNODE_ID = "id";
   public static final String FLOWNODE_NAME = "name";
+  public static final String FORM_ID = "formId";
+  public static final String FORM_KEY = "formKey";
+  public static final String IS_FORM_EMBEDDED = "isFormEmbedded";
+  public static final String IS_PUBLIC = "isPublic";
 
   public ProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
@@ -32,6 +37,11 @@ public class ProcessIndex extends OperateIndexDescriptor implements Prio4Backup 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

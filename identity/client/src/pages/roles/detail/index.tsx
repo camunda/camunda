@@ -19,13 +19,13 @@ import RolePermissions from "src/pages/roles/detail/RolePermissions";
 const Details: FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslate();
-  const { id = "", tab = "details" } = useParams<{
+  const { id, tab = "details" } = useParams<{
     id: string;
     tab: string;
   }>();
 
   const { data: role, loading } = useApi(getRole, {
-    id,
+    key: id ? parseInt(id, 10) : -1,
   });
 
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>

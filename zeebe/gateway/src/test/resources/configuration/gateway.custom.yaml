@@ -37,9 +37,6 @@ zeebe:
     longPolling:
       enabled: false
 
-    multiTenancy:
-      enabled: true
-
     interceptors:
       - id: example
         className: io.camunda.zeebe.example.Interceptor

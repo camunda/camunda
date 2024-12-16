@@ -200,7 +200,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public JobResultValueImpl getResult() {
+  public JobResultValue getResult() {
     // Not used by importer, dummy implementation for compiler
     return null;
   }
@@ -314,13 +314,5 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + ", changedAttributes="
         + changedAttributes
         + '}';
-  }
-
-  public static class JobResultValueImpl implements JobResultValue {
-    @Override
-    public boolean isDenied() {
-      // Not used by importer, dummy implementation for compiler
-      return false;
-    }
   }
 }

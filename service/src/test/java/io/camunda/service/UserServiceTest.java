@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserServiceTest {
 
@@ -42,9 +43,15 @@ public class UserServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     brokerClient = mock(BrokerClient.class);
     authentication = mock(Authentication.class);
+    final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     userDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerUserDeleteRequest.class);
     services =
-        new UserServices(brokerClient, mock(SecurityContextProvider.class), client, authentication);
+        new UserServices(
+            brokerClient,
+            mock(SecurityContextProvider.class),
+            client,
+            authentication,
+            passwordEncoder);
   }
 
   @Test

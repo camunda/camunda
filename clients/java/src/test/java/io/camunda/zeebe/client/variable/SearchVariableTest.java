@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public class SearchVariableTest extends ClientRestTest {
@@ -44,7 +45,7 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getValue()).isEqualTo("demo");
+    assertThat(request.getFilter().getValue().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -55,7 +56,18 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("demo");
+    assertThat(request.getFilter().getName().get$Eq()).isEqualTo("demo");
+  }
+
+  @Test
+  void shouldSearchVariablesByNameStringFilter() {
+    // when
+    client.newVariableQuery().filter(f -> f.name(b -> b.in("this", "that"))).send().join();
+
+    // then
+    final VariableSearchQueryRequest request =
+        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getName().get$In()).isEqualTo(Arrays.asList("this", "that"));
   }
 
   @Test
@@ -83,10 +95,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByProcessInstanceKeyLongFilter() {
     // when
-    final LongFilterProperty filterProperty = new LongFilterProperty();
-    filterProperty.$gt(1L);
-    filterProperty.$lt(10L);
-    client.newVariableQuery().filter(f -> f.processInstanceKey(filterProperty)).send().join();
+    client
+        .newVariableQuery()
+        .sort(s -> s.processInstanceKey().asc().variableKey())
+        .filter(f -> f.processInstanceKey(b -> b.gt(1L).lt(10L)))
+        .send()
+        .join();
 
     // then
     final VariableSearchQueryRequest request =
@@ -129,6 +143,6 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getVariableKey()).isEqualTo(1);
+    assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo(1);
   }
 }

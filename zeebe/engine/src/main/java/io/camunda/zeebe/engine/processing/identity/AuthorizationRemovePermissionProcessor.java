@@ -49,6 +49,7 @@ public final class AuthorizationRemovePermissionProcessor
     permissionsBehavior
         .isAuthorized(command)
         .flatMap(permissionsBehavior::ownerExists)
+        .flatMap(permissionsBehavior::permissionDoesNotExist)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -59,8 +60,15 @@ public final class AuthorizationRemovePermissionProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), AuthorizationIntent.PERMISSION_REMOVED, command.getValue());
+    permissionsBehavior
+        .permissionDoesNotExist(command.getValue())
+        .ifRightOrLeft(
+            ignored ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), AuthorizationIntent.PERMISSION_REMOVED, command.getValue()),
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
+
     distributionBehavior.acknowledgeCommand(command);
   }
 

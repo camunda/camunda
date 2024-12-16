@@ -17,12 +17,18 @@ import {EntityListEntity} from 'types';
 
 interface MoveCopyProps {
   parentCollection: string;
-  entity: Partial<EntityListEntity<{subEntityCounts: {report: number}}>>;
+  entity: EntityListEntity;
   moving: boolean;
-  collection?: Partial<EntityListEntity> | null;
+  collection?: EntityListEntity | null;
   setMoving: (moving: boolean) => void;
-  setCollection: (collection: Partial<EntityListEntity> | null) => void;
+  setCollection: (collection: EntityListEntity | CollectionsHome | null) => void;
 }
+
+export type CollectionsHome = {
+  id: null;
+  entityType: 'collection';
+  name: string;
+};
 
 export default function MoveCopy({
   parentCollection,
@@ -32,18 +38,27 @@ export default function MoveCopy({
   setCollection,
 }: MoveCopyProps) {
   const {mightFail} = useErrorHandling();
-  const [availableCollections, setAvailableCollections] = useState<Partial<EntityListEntity>[]>([]);
+  const [availableCollections, setAvailableCollections] = useState<
+    (EntityListEntity | CollectionsHome)[]
+  >([]);
 
   useEffect(() => {
+    // We allow moving the copy to the collections homepage
+    const collectionHome: CollectionsHome = {
+      id: null,
+      entityType: 'collection',
+      name: t('navigation.collections').toString(),
+    };
+
     mightFail(
       loadEntities(),
       (entities) =>
-        setAvailableCollections(
-          [
-            {id: null, entityType: 'collection', name: t('navigation.collections').toString()},
-            ...entities,
-          ].filter(({entityType, id}) => entityType === 'collection' && id !== parentCollection)
-        ),
+        setAvailableCollections([
+          collectionHome,
+          ...entities.filter(
+            ({entityType, id}) => entityType === 'collection' && id !== parentCollection
+          ),
+        ]),
       showError
     );
   }, [mightFail, parentCollection]);
@@ -85,7 +100,7 @@ export default function MoveCopy({
       />
       {moving && (
         <>
-          <ComboBox<Partial<EntityListEntity>>
+          <ComboBox<Partial<EntityListEntity> | CollectionsHome>
             id="collectionSelection"
             items={availableCollections}
             itemToString={(collection) => (collection as EntityListEntity)?.name}

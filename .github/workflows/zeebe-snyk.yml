@@ -82,6 +82,7 @@ defaults:
 jobs:
   scan:
     name: Snyk Scan
+    timeout-minutes: 15
     # Run on self-hosted to make building Zeebe much faster
     runs-on: gcp-perf-core-8-default
     permissions:

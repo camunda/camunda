@@ -23,6 +23,8 @@ import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -39,6 +41,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -68,12 +71,28 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().create(request);
-      LOG.debug("Index [{}] was successfully created", indexDescriptor.getIndexName());
-    } catch (final IOException | OpenSearchException e) {
+      LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
+    } catch (final IOException ioe) {
       final var errMsg =
-          String.format("Index [%s] was not created", indexDescriptor.getIndexName());
-      LOG.error(errMsg, e);
-      throw new OpensearchExporterException(errMsg, e);
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, ioe);
+      throw new OpensearchExporterException(errMsg, ioe);
+    } catch (final OpenSearchException ose) {
+      if ("resource_already_exists_exception".equals(ose.error().type())) {
+        // we can ignore already exists exceptions
+        // as this means the index was created by another exporter on a different partition
+        final var warnMsg =
+            String.format(
+                "Expected to create index [%s], but already exist. Will continue, likely was created by different partition (exporter).",
+                indexDescriptor.getFullQualifiedName());
+        LOG.debug(warnMsg, ose);
+        return;
+      }
+
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, ose);
+      throw new OpensearchExporterException(errMsg, ose);
     }
   }
 
@@ -117,10 +136,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
     try {
       client.indices().putMapping(request);
-      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getIndexName());
+      LOG.debug("Mapping in [{}] was successfully updated", indexDescriptor.getFullQualifiedName());
     } catch (final IOException | OpenSearchException e) {
       final var errMsg =
-          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getIndexName());
+          String.format("Mapping in [%s] was NOT updated", indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new OpensearchExporterException(errMsg, e);
     }
@@ -187,6 +206,47 @@ public class OpensearchEngineClient implements SearchEngineClient {
       LOG.error(errMsg, e);
       throw new OpensearchExporterException(errMsg, e);
     }
+  }
+
+  @Override
+  public boolean importersCompleted(
+      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
+    final var allImportPositionDocuments =
+        allImportPositionDocuments(partitionId, importPositionIndices);
+    try {
+      final var allRecordReaderStatuses =
+          client.search(allImportPositionDocuments, ImportPositionEntity.class).hits().hits();
+
+      // brand new install no need to wait for importers to complete
+      if (allRecordReaderStatuses.isEmpty()) {
+        return true;
+      }
+
+      return allRecordReaderStatuses.stream().allMatch(status -> status.source().getCompleted());
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "Failed to search documents in the import position index for partition [%s]",
+              partitionId);
+      LOG.error(errMsg, e);
+      return false;
+    }
+  }
+
+  private SearchRequest allImportPositionDocuments(
+      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
+    final var importPositionIndicesNames =
+        importPositionIndices.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    return new SearchRequest.Builder()
+        .index(importPositionIndicesNames)
+        .size(100)
+        .query(
+            q ->
+                q.term(
+                    t ->
+                        t.field(ImportPositionIndex.PARTITION_ID)
+                            .value(v -> v.longValue(partitionId))))
+        .build();
   }
 
   public Request createIndexStateManagementPolicy(

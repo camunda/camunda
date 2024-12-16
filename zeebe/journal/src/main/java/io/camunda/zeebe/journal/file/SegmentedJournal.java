@@ -19,6 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
@@ -154,7 +155,7 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
-  public void flush() {
+  public void flush() throws FlushException {
     if (!isOpen() || isEmpty()) {
       LOGGER.debug("Skipped journal flush as it is either closed or empty");
       return;
@@ -210,7 +211,11 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void close() {
-    flush();
+    try {
+      flush();
+    } catch (final FlushException e) {
+      LOGGER.warn("Failed to flush when closing", e);
+    }
     segments.close();
     open = false;
   }

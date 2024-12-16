@@ -36,6 +36,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -63,10 +64,13 @@ import io.netty.handler.codec.compression.ZlibWrapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import java.io.File;
@@ -125,15 +129,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final ChannelPool channelPool;
   private final Set<CompletableFuture<?>> openFutures = Sets.newConcurrentHashSet();
   private final MessagingConfig config;
-
   private EventLoopGroup serverGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends SocketChannel> clientChannelClass;
   private Class<? extends DatagramChannel> clientDataGramChannelClass;
-
   private Channel serverChannel;
-
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
   private ScheduledExecutorService timeoutExecutor;
   private volatile LocalClientConnection localConnection;
@@ -165,7 +166,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
-    this.config = config;
+    this.config = verifyHeartbeatConfig(config);
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
     this.actorSchedulerName = actorSchedulerName;
 
@@ -173,22 +174,27 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   @VisibleForTesting
-  // duplicated for tests - to inject channel pool
-  NettyMessagingService(
-      final String cluster,
-      final Address advertisedAddress,
-      final MessagingConfig config,
-      final ProtocolVersion protocolVersion,
-      final Function<Function<Address, CompletableFuture<Channel>>, ChannelPool> channelPoolFactor,
-      final String actorSchedulerName) {
-    preamble = cluster.hashCode();
-    this.advertisedAddress = advertisedAddress;
-    this.protocolVersion = protocolVersion;
-    this.config = config;
-    channelPool = channelPoolFactor.apply(this::openChannel);
-    this.actorSchedulerName = actorSchedulerName;
+  public ChannelPool getChannelPool() {
+    return channelPool;
+  }
 
-    initAddresses(config);
+  private static MessagingConfig verifyHeartbeatConfig(final MessagingConfig config) {
+    if (config.getHeartbeatInterval().isZero() && config.getHeartbeatTimeout().isZero()) {
+      // Setting both to zero essentially disables the heartbeat mechanism which is valid.
+      return config;
+    }
+
+    if (config.getHeartbeatInterval().isNegative() || config.getHeartbeatTimeout().isNegative()) {
+      throw new IllegalArgumentException(
+          "Heartbeat interval and timeout must not be negative. Use 0s to disable heartbeats.");
+    }
+
+    if (config.getHeartbeatInterval().compareTo(config.getHeartbeatTimeout()) >= 0) {
+      throw new IllegalArgumentException(
+          "Heartbeat interval %s must be less than heartbeat timeout %s"
+              .formatted(config.getHeartbeatInterval(), config.getHeartbeatTimeout()));
+    }
+    return config;
   }
 
   private void initAddresses(final MessagingConfig config) {
@@ -666,18 +672,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
-                responseFuture.whenComplete(
-                    (response, error) -> {
-                      if (error instanceof TimeoutException) {
-                        // response future has been completed exceptionally by our
-                        // timeout check, we will not receive any response on this channel
-                        // if we talk with the wrong IP or node
-                        // See https://github.com/zeebe-io/zeebe-chaos/issues/294
-                        // In order to no longer reuse a maybe broken/outdated channel we close it
-                        // On next request a new channel will be created
-                        channel.close();
-                      }
-                    });
                 final ClientConnection connection = getOrCreateClientConnection(channel);
                 callback
                     .apply(connection)
@@ -813,8 +807,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.option(
         ChannelOption.WRITE_BUFFER_WATER_MARK,
         new WriteBufferWaterMark(10 * 32 * 1024, 10 * 64 * 1024));
-    bootstrap.option(ChannelOption.SO_RCVBUF, 1024 * 1024);
-    bootstrap.option(ChannelOption.SO_SNDBUF, 1024 * 1024);
+    bootstrap.option(ChannelOption.SO_RCVBUF, config.getSocketReceiveBuffer());
+    bootstrap.option(ChannelOption.SO_SNDBUF, config.getSocketSendBuffer());
     bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
     bootstrap.option(ChannelOption.TCP_NODELAY, true);
     bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
@@ -871,8 +865,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
     b.option(ChannelOption.SO_BACKLOG, 128);
     b.childOption(
         ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024));
-    b.childOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
-    b.childOption(ChannelOption.SO_SNDBUF, 1024 * 1024);
+    b.childOption(ChannelOption.SO_RCVBUF, config.getSocketReceiveBuffer());
+    b.childOption(ChannelOption.SO_SNDBUF, config.getSocketSendBuffer());
     b.childOption(ChannelOption.SO_KEEPALIVE, true);
     b.childOption(ChannelOption.TCP_NODELAY, true);
     b.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
@@ -930,6 +924,55 @@ public final class NettyMessagingService implements ManagedMessagingService {
     }
   }
 
+  private final class HeartBeatHandler extends ChannelDuplexHandler {
+    private static final String HEARTBEAT_SUBJECT = "internal-heartbeat";
+    private static final byte[] HEARTBEAT_PAYLOAD = new byte[0];
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+      if (msg instanceof final ProtocolRequest request
+          && request.subject().equals(HEARTBEAT_SUBJECT)) {
+
+        if (!Arrays.equals(request.payload(), HEARTBEAT_PAYLOAD)) {
+          log.warn(
+              "Received unexpected heartbeat payload from {}, perhaps the message subject {} is accidentally reused",
+              request.sender(),
+              request.subject());
+        }
+
+        // Swallow the heartbeat message by releasing it and not passing it to the next handler
+        ReferenceCountUtil.release(msg);
+        return;
+      }
+
+      // Pass the message to the next handler, it wasn't a heartbeat
+      ctx.fireChannelRead(msg);
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+      if (!(evt instanceof final IdleStateEvent idleStateEvent)) {
+        return;
+      }
+      switch (idleStateEvent.state()) {
+        case READER_IDLE -> {
+          log.warn("Connection {} timed out, closing channel", ctx.channel());
+          ctx.close();
+        }
+        case WRITER_IDLE -> ctx.writeAndFlush(createHeartBeat());
+        default -> {}
+      }
+    }
+
+    private ProtocolRequest createHeartBeat() {
+      return new ProtocolRequest(
+          messageIdGenerator.incrementAndGet(),
+          advertisedAddress,
+          HEARTBEAT_SUBJECT,
+          HEARTBEAT_PAYLOAD);
+    }
+  }
+
   /** Channel initializer for basic connections. */
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -946,6 +989,15 @@ public final class NettyMessagingService implements ManagedMessagingService {
         channel.pipeline().addLast("tls", sslHandler);
       }
 
+      channel
+          .pipeline()
+          .addLast(
+              "idle",
+              new IdleStateHandler(
+                  config.getHeartbeatTimeout().toMillis(),
+                  config.getHeartbeatInterval().toMillis(),
+                  0,
+                  TimeUnit.MILLISECONDS));
       channel.pipeline().addLast("handshake", new ClientHandshakeHandlerAdapter(future));
 
       switch (config.getCompressionAlgorithm()) {
@@ -982,6 +1034,15 @@ public final class NettyMessagingService implements ManagedMessagingService {
         channel.pipeline().addLast("tls", sslHandler);
       }
 
+      channel
+          .pipeline()
+          .addLast(
+              "idle",
+              new IdleStateHandler(
+                  config.getHeartbeatTimeout().toMillis(),
+                  config.getHeartbeatInterval().toMillis(),
+                  0,
+                  TimeUnit.MILLISECONDS));
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
 
       switch (config.getCompressionAlgorithm()) {
@@ -1054,6 +1115,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
       context.pipeline().remove(this);
       context.pipeline().addLast("encoder", protocol.newEncoder());
       context.pipeline().addLast("decoder", protocol.newDecoder());
+      context.pipeline().addLast("heartbeat", new HeartBeatHandler());
       context.pipeline().addLast("handler", new MessageDispatcher<>(connection));
     }
   }

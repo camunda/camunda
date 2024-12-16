@@ -16,6 +16,7 @@
 
   <modules>
     <module>rdbms</module>
+    <module>rdbms-schema</module>
   </modules>
 
 </project>

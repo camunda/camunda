@@ -9,6 +9,7 @@
 import React from 'react';
 import equal from 'fast-deep-equal';
 import {Chart as ChartRenderer} from 'chart.js';
+import {Stack} from '@carbon/react';
 
 import {t} from 'translation';
 import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
@@ -56,7 +57,7 @@ export default class Statistics extends React.Component {
       }
 
       return (
-        <div className="Statistics" ref={this.rootRef}>
+        <Stack gap={4} className="Statistics" ref={this.rootRef}>
           <p>{t('analysis.gatewayInstances', {totalGateway})}</p>
           <ul className="branchDistribution">
             {Object.keys(this.state.data.followingNodes).map((key) => {
@@ -83,7 +84,7 @@ export default class Statistics extends React.Component {
           <div className="diagram-container">
             <canvas ref={(node) => (this.relativeChartRef = node)} />
           </div>
-        </div>
+        </Stack>
       );
     }
 

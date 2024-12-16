@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -74,6 +75,36 @@ public class ModifyProcessInstanceTerminationTest {
     // then
     assertThatElementIsTerminated(processInstanceKey, "A");
     assertThatJobIsCancelled(processInstanceKey, "A");
+  }
+
+  @Test
+  public void shouldTerminateUserTaskElementInRootScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long elementInstanceKey = getElementInstanceKeyOfElement(processInstanceKey, "A");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementInstanceKey)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, "A");
+    assertThatUserTaskIsCancelled(processInstanceKey, "A");
   }
 
   @Test
@@ -1165,6 +1196,16 @@ public class ModifyProcessInstanceTerminationTest {
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .exists())
+        .isTrue();
+  }
+
+  private void assertThatUserTaskIsCancelled(
+      final long processInstanceKey, final String elementId) {
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
                 .exists())

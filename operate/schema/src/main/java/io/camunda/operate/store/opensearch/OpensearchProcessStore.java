@@ -28,7 +28,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.TreePath;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -51,6 +51,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -62,7 +63,9 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private ListViewTemplate listViewTemplate;
 

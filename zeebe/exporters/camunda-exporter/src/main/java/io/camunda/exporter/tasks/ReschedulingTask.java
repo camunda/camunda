@@ -71,7 +71,10 @@ public final class ReschedulingTask implements Runnable {
   private long onError(final Throwable error) {
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
 
-    logger.error(
+    // TODO: it's likely in some cases, we do want to log things as errors, but we need to
+    //  distinguish this from "normal" cases (e.g. missing data in ES, or ES temporarily
+    //  unavailable, etc.)
+    logger.warn(
         "Error occurred while performing a background task; operation will be retried", error);
     return errorDelayMs;
   }

@@ -34,6 +34,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
@@ -172,7 +173,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldDeleteAfter() {
+  void shouldDeleteAfter() throws CheckedJournalException {
     // given
     raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
     final var secondEntry =
@@ -249,7 +250,7 @@ class RaftLogTest {
   @Nested
   final class FlushTest {
     @Test
-    void shouldUseFlusher() {
+    void shouldUseFlusher() throws CheckedJournalException {
       // given
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
@@ -263,7 +264,7 @@ class RaftLogTest {
     }
 
     @Test
-    void shouldForceFlush() {
+    void shouldForceFlush() throws CheckedJournalException {
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
       final var log = new RaftLog(journal, flusher);
@@ -277,7 +278,7 @@ class RaftLogTest {
     }
 
     @Test
-    void shouldFlushDirectly() {
+    void shouldFlushDirectly() throws CheckedJournalException {
       // given
       final var journal = mock(Journal.class);
       final var log = new RaftLog(journal, new DirectFlusher());
@@ -291,7 +292,7 @@ class RaftLogTest {
     }
 
     @Test
-    void shouldDisableFlush() {
+    void shouldDisableFlush() throws CheckedJournalException {
       // given
       final var journal = mock(Journal.class);
       final var flusher = spy(new NoopFlusher());

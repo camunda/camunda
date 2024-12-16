@@ -161,22 +161,21 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
         new HashMap<>();
     final Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
     final List<ProcessInstanceDto> rawDataProcessInstanceDtos;
+    final List<Hit<RawResult>> hits = new ArrayList<>();
     if (context.isCsvExport()) {
       final int limit = context.getPagination().orElse(new PaginationDto()).getLimit();
-      final List<Hit<RawResult>> hits = new ArrayList<>();
       osClient.scrollWith(response, hits::addAll, RawResult.class, limit);
-      rawDataProcessInstanceDtos = transformHits(hits);
     } else {
-      rawDataProcessInstanceDtos =
-          response.hits().hits().stream()
-              .map(
-                  mappingFunction(
-                      processInstanceIdsToFlowNodeIdsAndDurations,
-                      instanceIdsToUserTaskCount,
-                      context))
-              .toList();
+      hits.addAll(response.hits().hits());
     }
-
+    rawDataProcessInstanceDtos =
+        hits.stream()
+            .map(
+                mappingFunction(
+                    processInstanceIdsToFlowNodeIdsAndDurations,
+                    instanceIdsToUserTaskCount,
+                    context))
+            .toList();
     final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
         new RawProcessDataResultDtoMapper();
     final Map<String, String> flowNodeIdsToFlowNodeNames =
@@ -262,10 +261,6 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
         .map(QueryDSL::transformSortOrder)
         .map(order -> SortOrder.valueOf(order.name()))
         .orElse(SortOrder.Desc);
-  }
-
-  private List<ProcessInstanceDto> transformHits(final List<Hit<RawResult>> rawResult) {
-    return rawResult.stream().map(this::transformHit).toList();
   }
 
   private ProcessInstanceDto transformHit(final Hit<RawResult> hit) {

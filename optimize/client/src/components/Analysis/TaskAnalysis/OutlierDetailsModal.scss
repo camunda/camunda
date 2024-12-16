@@ -1,3 +1,5 @@
+@use '@carbon/styles/scss/spacing';
+
 .OutlierDetailsModal {
   .cds--modal-container {
     min-height: 90%;
@@ -6,11 +8,11 @@
   .cds--modal-content {
     display: flex;
     flex-direction: column;
-  }
 
-  h2 {
-    margin-bottom: 1rem;
-    font-weight: bold;
+    h4 {
+      margin-bottom: spacing.$spacing-04;
+      font-weight: bold;
+    }
   }
 
   .description {

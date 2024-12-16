@@ -12,19 +12,24 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "assign";
 
+  private final UserTaskState userTaskState;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
@@ -33,6 +38,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       final ProcessingState state,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
+    userTaskState = state.getUserTaskState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     preconditionChecker =
@@ -55,8 +61,37 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeEventOnCommand(
-        userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
+  }
+
+  @Override
+  public void onFinalizeCommand(
+      final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = command.getKey();
+    final String action =
+        Objects.requireNonNullElse(
+            StringUtils.firstNonEmpty(command.getValue().getAction(), userTaskRecord.getAction()),
+            StringUtils.EMPTY);
+
+    userTaskRecord.setAssignee(command.getValue().getAssignee());
+    userTaskRecord.setAction(action);
+
+    if (command.hasRequestMetadata()) {
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
+      responseWriter.writeEventOnCommand(
+          userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
+    } else {
+      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
+
+      recordRequestMetadata.ifPresent(
+          metadata ->
+              responseWriter.writeResponse(
+                  userTaskKey,
+                  UserTaskIntent.ASSIGNED,
+                  userTaskRecord,
+                  ValueType.USER_TASK,
+                  metadata.getRequestId(),
+                  metadata.getRequestStreamId()));
+    }
   }
 }

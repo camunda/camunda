@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -96,6 +97,26 @@ public final class BpmnStateTransitionBehavior {
           context.copy(newElementInstanceKey, context.getRecordValue(), context.getIntent());
     }
 
+    // Create intra tree path - potential spanning over multiple process instances (via call
+    // activities)
+    //
+    // Be aware that the ELEMENT INSTANCE doesn't exist yet. It is created in the applier.
+    // This is the reason why we have to pass in the flow scope and record value directly to the
+    // tree path builder.
+    //
+    // For the process instance in ACTIVATING then the flow scope is -1.
+    final ElementTreePathProperties elementTreePath =
+        stateBehavior.getElementTreePath(
+            transitionContext.getElementInstanceKey(),
+            transitionContext.getFlowScopeKey(),
+            transitionContext.getRecordValue());
+    // We only set the tree path properties on the ACTIVATING event
+    transitionContext
+        .getRecordValue()
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
@@ -104,6 +125,8 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToActivated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    resetTreePathProperties(context);
+
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
     metrics.elementInstanceActivated(context, eventType);
@@ -114,6 +137,8 @@ public final class BpmnStateTransitionBehavior {
    * @return context with updated intent
    */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
     final var elementInstance = stateBehavior.getElementInstance(context);
     if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
       verifyIncidentResolving(context, "#transitionToCompleting");
@@ -127,6 +152,21 @@ public final class BpmnStateTransitionBehavior {
     }
 
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
+  }
+
+  /**
+   * In several places we need to reset the treePath properties, this is especially useful when we
+   * directly transition from ACTIVATING to COMPLETING or TERMINATING.
+   *
+   * @param context the current element context
+   */
+  private static void resetTreePathProperties(final BpmnElementContext context) {
+    // reset the tree path, so we are not writing this always (optimization)
+    context
+        .getRecordValue()
+        .resetCallingElementPath()
+        .resetElementInstancePath()
+        .resetProcessDefinitionPath();
   }
 
   /**
@@ -157,6 +197,8 @@ public final class BpmnStateTransitionBehavior {
    */
   public <T extends ExecutableFlowNode> Either<Failure, BpmnElementContext> transitionToCompleted(
       final T element, final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
     final boolean endOfExecutionPath;
     if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
       // a completing child process is not considered here.
@@ -195,6 +237,8 @@ public final class BpmnStateTransitionBehavior {
    * @return context with updated intent
    */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
     if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
       throw new IllegalStateException(
           String.format(
@@ -210,6 +254,8 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToTerminated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    resetTreePathProperties(context);
+
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
     metrics.elementInstanceTerminated(context, eventType);
     return transitionedContext;

@@ -50,7 +50,7 @@ public class UpdateIndexStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.updateIndex(index, mappingScript, parameters, additionalReadAliases);
   }
 }

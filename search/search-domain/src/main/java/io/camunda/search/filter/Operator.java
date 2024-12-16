@@ -8,14 +8,28 @@
 package io.camunda.search.filter;
 
 public enum Operator {
-  EQUALS,
-  NOT_EQUALS,
-  EXISTS,
+  EQUALS("eq"),
+  NOT_EQUALS("neq"),
+  EXISTS("exists"),
   NOT_EXISTS,
-  GREATER_THAN,
-  GREATER_THAN_EQUALS,
-  LOWER_THAN,
-  LOWER_THAN_EQUALS,
-  IN,
-  LIKE,
+  GREATER_THAN("gt"),
+  GREATER_THAN_EQUALS("gte"),
+  LOWER_THAN("lt"),
+  LOWER_THAN_EQUALS("lte"),
+  IN("in"),
+  LIKE("like");
+
+  private final String value;
+
+  Operator() {
+    value = null;
+  }
+
+  Operator(final String value) {
+    this.value = value;
+  }
+
+  public String getValue() {
+    return value;
+  }
 }

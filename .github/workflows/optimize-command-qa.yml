@@ -110,7 +110,7 @@ jobs:
             # Check if the issue has the 'kind/epic', 'kind/task' or 'kind/bug' label
             if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" != true ] &&
                [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/task') }}" != true ] &&
-               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" != true ]; then
+               [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/bug') }}" != true ]; then
               echo "Issue has no 'kind/epic', 'kind/task' or 'kind/bug' label"
               exit 1
             fi

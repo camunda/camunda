@@ -9,8 +9,8 @@
 import {ZBClient, type IProcessVariables, type JSONDoc} from 'zeebe-node';
 const zbc = new ZBClient(); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
-const deploy: typeof zbc.deployProcess = (processNames) => {
-  return zbc.deployProcess(processNames);
+const deploy = (resourceNames: string[] | string) => {
+  return zbc.deployProcess(resourceNames);
 };
 
 const createInstances = <Variables extends JSONDoc = IProcessVariables>(

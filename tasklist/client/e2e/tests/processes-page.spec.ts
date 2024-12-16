@@ -16,9 +16,11 @@ test.afterAll(async ({resetData}) => {
 });
 
 test.beforeAll(async () => {
-  await deploy('./e2e/resources/user_process.bpmn');
-  await deploy('./e2e/resources/processWithStartNodeFormDeployed.bpmn');
-  await deploy('./e2e/resources/create-invoice_8-5.form');
+  await deploy([
+    './e2e/resources/user_process.bpmn',
+    './e2e/resources/processWithStartNodeFormDeployed.bpmn',
+    './e2e/resources/create_invoice.form',
+  ]);
 
   await sleep(2000);
 });

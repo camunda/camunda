@@ -16,10 +16,13 @@ import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class MultiProcessZeebeImportIT extends OperateZeebeSearchAbstractIT {
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
 
   @Test
   public void shouldReadFromMultiProcessDiagram() throws IOException {

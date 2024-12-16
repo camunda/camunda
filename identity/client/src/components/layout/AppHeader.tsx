@@ -2,18 +2,12 @@ import { C3Navigation } from "@camunda/camunda-composite-components";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { useNavigate } from "react-router";
 import { useApi } from "src/utility/api";
-import { checkLicense } from "src/utility/api/headers";
+import { checkLicense, License } from "src/utility/api/headers";
 
 const AppHeader = () => {
   const routes = useGlobalRoutes();
   const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
-  const showLicense: boolean =
-    license == null
-      ? true
-      : license.licenseType === undefined || license.licenseType != "saas";
-  const isProductionLicense: boolean =
-    license == null ? false : license.validLicense;
 
   return (
     <C3Navigation
@@ -35,13 +29,27 @@ const AppHeader = () => {
             onClick: () => navigate(route.key),
           },
         })),
-        licenseTag: {
-          show: showLicense,
-          isProductionLicense: isProductionLicense,
-        },
+        licenseTag: getLicenseTag(license),
       }}
     />
   );
 };
+
+function getLicenseTag(license: License | null) {
+  if (license === null) {
+    return {
+      show: true,
+      isProductionLicense: false,
+      isCommercial: false,
+    };
+  }
+
+  return {
+    show: license.licenseType === undefined || license.licenseType != "saas",
+    isProductionLicense: license.validLicense,
+    isCommercial: license.isCommercial,
+    expiresAt: license.expiresAt ?? undefined,
+  };
+}
 
 export default AppHeader;

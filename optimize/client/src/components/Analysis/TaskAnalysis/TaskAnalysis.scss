@@ -6,9 +6,13 @@
   flex-grow: 1;
   height: 100%;
 
-  h2,
+  .subtitle,
   .TaskAnalysis__diagram {
     margin-bottom: 1rem;
+  }
+
+  .subtitle {
+    font-weight: bold;
   }
 
   .noOutliers {

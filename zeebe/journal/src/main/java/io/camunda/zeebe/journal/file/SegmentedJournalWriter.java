@@ -16,6 +16,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalRecord;
@@ -118,7 +119,7 @@ final class SegmentedJournalWriter {
     currentWriter.truncate(index);
   }
 
-  void flush() {
+  void flush() throws FlushException {
     // even if the next flush index has not been written, this will always flush at least the last
     // segment if only to cover cases such as truncating the log, where the next flush index may not
     // have been written yet but we still want to flush that segment after modifying it

@@ -11,35 +11,34 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.RESOURCE_NAME;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION_TAG;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessDefinitionFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class ProcessDefinitionFilterTransformer
-    implements FilterTransformer<ProcessDefinitionFilter> {
+    extends IndexFilterTransformer<ProcessDefinitionFilter> {
 
-  private final ServiceTransformers transformers;
-
-  public ProcessDefinitionFilterTransformer(final ServiceTransformers transformers) {
-    this.transformers = transformers;
+  public ProcessDefinitionFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
   }
 
   @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
     return and(
-        longTerms("key", filter.processDefinitionKeys()),
-        stringTerms("name", filter.names()),
-        stringTerms("bpmnProcessId", filter.processDefinitionIds()),
-        stringTerms("resourceName", filter.resourceNames()),
-        intTerms("version", filter.versions()),
-        stringTerms("versionTag", filter.versionTags()),
-        stringTerms("tenantId", filter.tenantIds()));
-  }
-
-  @Override
-  public List<String> toIndices(final ProcessDefinitionFilter filter) {
-    return List.of("operate-process-8.3.0_alias");
+        longTerms(KEY, filter.processDefinitionKeys()),
+        stringTerms(NAME, filter.names()),
+        stringTerms(BPMN_PROCESS_ID, filter.processDefinitionIds()),
+        stringTerms(RESOURCE_NAME, filter.resourceNames()),
+        intTerms(VERSION, filter.versions()),
+        stringTerms(VERSION_TAG, filter.versionTags()),
+        stringTerms(TENANT_ID, filter.tenantIds()));
   }
 }

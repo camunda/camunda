@@ -186,6 +186,55 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     assertEquals("11", resultListeners3.get(2).getListenerKey());
   }
 
+  @Test
+  public void testListenerReaderWithTypeFilters() throws Exception {
+    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
+
+    // request only Execution Listeners
+    final ListenerRequestDto elRequest =
+        new ListenerRequestDto()
+            .setPageSize(20)
+            .setFlowNodeId("test_task")
+            .setListenerTypeFilter(ListenerType.EXECUTION_LISTENER);
+    final ListenerResponseDto elResponse = postListenerRequest("111", elRequest);
+    final List<ListenerDto> elResultListeners = elResponse.getListeners();
+
+    assertEquals(2L, elResponse.getTotalCount());
+    assertEquals(2, elResultListeners.size());
+
+    final ListenerDto actual0 = elResultListeners.get(0);
+    assertEquals("12", actual0.getListenerKey());
+    assertEquals(ListenerType.EXECUTION_LISTENER, actual0.getListenerType());
+
+    final ListenerDto actual1 = elResultListeners.get(1);
+    assertEquals("11", actual1.getListenerKey());
+    assertEquals(ListenerType.EXECUTION_LISTENER, actual1.getListenerType());
+
+    // Request only Task Listeners
+    final ListenerRequestDto tlRequest =
+        new ListenerRequestDto()
+            .setPageSize(20)
+            .setFlowNodeId("test_task")
+            .setListenerTypeFilter(ListenerType.TASK_LISTENER);
+    final ListenerResponseDto tlResponse = postListenerRequest("111", tlRequest);
+    final List<ListenerDto> tlResultListeners = tlResponse.getListeners();
+
+    assertEquals(3L, tlResponse.getTotalCount());
+    assertEquals(3, tlResultListeners.size());
+
+    final ListenerDto actual4 = tlResultListeners.get(0);
+    assertEquals("22", actual4.getListenerKey());
+    assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
+
+    final ListenerDto actual3 = tlResultListeners.get(1);
+    assertEquals("21", actual3.getListenerKey());
+    assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
+
+    final ListenerDto actual2 = tlResultListeners.get(2);
+    assertEquals("31", actual2.getListenerKey());
+    assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
+  }
+
   private void createData() throws IOException {
 
     final JobEntity e1 =

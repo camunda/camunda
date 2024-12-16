@@ -16,11 +16,14 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class VariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -38,14 +41,28 @@ public class VariableHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(VariableEntity.class);
   }
 
-  @Test
-  void shouldHandleRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"MIGRATED"},
+      mode = Mode.EXCLUDE)
+  void shouldHandleRecord(final VariableIntent intent) {
     // given
     final Record<VariableRecordValue> decisionRecord =
-        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(ProcessIntent.CREATED));
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
 
     // when - then
     assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
+  }
+
+  @Test
+  void shouldNotHandleRecord() {
+    // given
+    final Record<VariableRecordValue> decisionRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(VariableIntent.MIGRATED));
+
+    // when - then
+    assertThat(underTest.handlesRecord(decisionRecord)).isFalse();
   }
 
   @Test
@@ -59,7 +76,7 @@ public class VariableHandlerTest {
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
             ValueType.VARIABLE,
-            r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
+            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
 
     // when
     final var idList = underTest.generateIds(variableRecord);
@@ -82,7 +99,30 @@ public class VariableHandlerTest {
   @Test
   void shouldAddEntityOnFlush() {
     // given
-    final VariableEntity inputEntity = new VariableEntity();
+    final VariableEntity inputEntity =
+        new VariableEntity()
+            .setId("id")
+            .setValue("value")
+            .setBpmnProcessId("procId")
+            .setProcessDefinitionKey(123L);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1)).add(indexName, inputEntity);
+  }
+
+  @Test
+  void shouldAddMigratedEntityOnFlush() {
+    // given
+    final VariableEntity inputEntity =
+        new VariableEntity()
+            .setId("id")
+            .setValue("null")
+            .setBpmnProcessId("procId")
+            .setProcessDefinitionKey(123L);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -105,7 +145,7 @@ public class VariableHandlerTest {
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
             ValueType.VARIABLE,
-            r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
+            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
 
     // when
     final VariableEntity variableEntity = new VariableEntity();
@@ -141,7 +181,7 @@ public class VariableHandlerTest {
     final Record<VariableRecordValue> variableRecord =
         factory.generateRecord(
             ValueType.VARIABLE,
-            r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
+            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
 
     // when
     final VariableEntity variableEntity = new VariableEntity();

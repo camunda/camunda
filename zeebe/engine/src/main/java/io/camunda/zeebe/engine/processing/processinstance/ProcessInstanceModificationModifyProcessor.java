@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static java.util.function.Predicate.not;
 
-import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.ActivatedElementKeys;
@@ -149,6 +149,7 @@ public final class ProcessInstanceModificationModifyProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public ProcessInstanceModificationModifyProcessor(
@@ -167,6 +168,7 @@ public final class ProcessInstanceModificationModifyProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -190,22 +192,26 @@ public final class ProcessInstanceModificationModifyProcessor
 
     final var authRequest =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      final String reason =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
-      return;
-    }
-
-    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
-        .isAuthorized(processInstance.getValue().getTenantId())) {
-      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authRequest.getPermissionType(),
+                  authRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "modify a process instance",
+                  processInstance.getValue().getProcessInstanceKey(),
+                  "such process instance");
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       return;
     }
 
@@ -721,6 +727,7 @@ public final class ProcessInstanceModificationModifyProcessor
       elementInstancesToTerminate.push(currentElement);
 
       jobBehavior.cancelJob(currentElement);
+      userTaskBehavior.cancelUserTask(currentElement);
       incidentBehavior.resolveIncidents(elementInstanceKey);
       catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
 

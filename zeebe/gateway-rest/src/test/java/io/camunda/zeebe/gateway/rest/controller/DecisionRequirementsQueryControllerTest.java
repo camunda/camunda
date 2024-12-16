@@ -38,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = DecisionRequirementsQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -58,7 +56,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -67,8 +65,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
-          .items(List.of(new DecisionRequirementsEntity("t", 0L, "id", "name", 1, "rN", null)))
-          .sortValues(new Object[] {"v"})
+          .items(List.of(new DecisionRequirementsEntity(0L, "id", "name", 1, "rN", null, "t")))
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
@@ -97,7 +96,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .thenReturn(decisionRequirementsServices);
 
     when(decisionRequirementsServices.getByKey(VALID_DECISION_REQUIREMENTS_KEY))
-        .thenReturn(new DecisionRequirementsEntity("t", 1L, "id", "name", 1, "rN", null));
+        .thenReturn(new DecisionRequirementsEntity(1L, "id", "name", 1, "rN", null, "t"));
 
     when(decisionRequirementsServices.getByKey(INVALID_DECISION_REQUIREMENTS_KEY))
         .thenThrow(
@@ -208,23 +207,23 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "version",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "name",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "tenantId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "decisionRequirementsKey",
-                        "order": "asc"
+                        "order": "ASC"
                     },
                     {
                         "field": "decisionRequirementsId",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -271,7 +270,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";

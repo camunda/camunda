@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
@@ -35,7 +34,7 @@ import org.springframework.web.filter.CompositeFilter;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(BrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
-public final class BrokerBasedConfiguration {
+public class BrokerBasedConfiguration {
 
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
@@ -92,11 +91,6 @@ public final class BrokerBasedConfiguration {
         "ActivateJobsHandlerRest-Broker",
         properties.getGateway().getLongPolling(),
         properties.getGateway().getNetwork().getMaxMessageSize());
-  }
-
-  @Bean
-  public MultiTenancyCfg multiTenancyCfg() {
-    return properties.getGateway().getMultiTenancy();
   }
 
   public Duration shutdownTimeout() {

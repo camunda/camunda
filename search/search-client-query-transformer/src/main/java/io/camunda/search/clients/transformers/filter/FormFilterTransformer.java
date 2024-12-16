@@ -8,44 +8,23 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.BPMN_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FormFilter;
-import java.util.Arrays;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class FormFilterTransformer implements FilterTransformer<FormFilter> {
+public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
 
-  private final ServiceTransformers serviceTransformers;
-
-  public FormFilterTransformer(final ServiceTransformers transformers) {
-    serviceTransformers = transformers;
+  public FormFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
   }
 
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
-    final var formKeyQuery = getFormByKeysQuery(filter.formKey());
-    final var formIdQuery = getFormByIdQuery(filter.formId());
-
-    return and(formKeyQuery, formIdQuery);
-  }
-
-  @Override
-  public List<String> toIndices(final FormFilter filter) {
-    return Arrays.asList("tasklist-form-8.4.0_");
-  }
-
-  private SearchQuery getFormByKeysQuery(final List<Long> formKey) {
-    final List<String> formKeyAsString = formKey.stream().map(String::valueOf).toList();
-
-    return stringTerms("id", formKeyAsString);
-  }
-
-  private SearchQuery getFormByIdQuery(final List<String> formId) {
-    final List<String> formKeyAsString = formId.stream().map(String::valueOf).toList();
-
-    return stringTerms("bpmnId", formKeyAsString);
+    return and(longTerms(KEY, filter.formKeys()), stringTerms(BPMN_ID, filter.formIds()));
   }
 }

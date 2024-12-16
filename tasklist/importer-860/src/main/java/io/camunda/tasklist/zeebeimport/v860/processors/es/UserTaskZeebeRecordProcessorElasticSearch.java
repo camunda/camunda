@@ -11,16 +11,13 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
-import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.io.IOException;
@@ -53,10 +50,11 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
-  @Autowired private TaskVariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistSnapshotTaskVariableTemplate")
+  private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
-  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processUserTaskRecord(
       final Record<UserTaskRecordValue> record, final BulkRequest bulkRequest)
@@ -65,12 +63,11 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       bulkRequest.add(getTaskQuery(taskEntity.get(), record));
-      bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
-        final List<TaskVariableEntity> variables =
+        final List<SnapshotTaskVariableEntity> variables =
             userTaskRecordToVariableEntityMapper.mapVariables(record);
-        for (final TaskVariableEntity variable : variables) {
+        for (final SnapshotTaskVariableEntity variable : variables) {
           bulkRequest.add(getVariableQuery(variable));
         }
       }
@@ -102,14 +99,14 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest getVariableQuery(final TaskVariableEntity variable)
+  private UpdateRequest getVariableQuery(final SnapshotTaskVariableEntity variable)
       throws PersistenceException {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
-      updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
-      updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+      updateFields.put(SnapshotTaskVariableTemplate.VALUE, variable.getValue());
+      updateFields.put(SnapshotTaskVariableTemplate.FULL_VALUE, variable.getFullValue());
+      updateFields.put(SnapshotTaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new UpdateRequest()
           .index(variableIndex.getFullQualifiedName())
@@ -123,30 +120,6 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
               "Error preparing the query to upsert variable instance [%s]  for list view",
               variable.getId()),
           e);
-    }
-  }
-
-  private UpdateRequest persistUserTaskToListView(final TaskEntity taskEntity, final Record record)
-      throws PersistenceException {
-    try {
-      final UserTaskListViewEntity userTaskListViewEntity = new UserTaskListViewEntity(taskEntity);
-
-      final Map<String, Object> updateFields =
-          userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(
-              userTaskListViewEntity, record);
-
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return new UpdateRequest()
-          .index(tasklistListViewTemplate.getFullQualifiedName())
-          .id(userTaskListViewEntity.getId())
-          .upsert(objectMapper.writeValueAsString(userTaskListViewEntity), XContentType.JSON)
-          .routing(userTaskListViewEntity.getProcessInstanceId())
-          .doc(jsonMap)
-          .retryOnConflict(ElasticsearchUtil.UPDATE_RETRY_COUNT);
-    } catch (final IOException e) {
-      throw new PersistenceException("Error preparing the query to upsert snapshot entity", e);
     }
   }
 }

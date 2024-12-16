@@ -15,6 +15,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.*;
@@ -27,8 +28,7 @@ public class ListViewFlowNodeFromJobHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromJobHandler.class);
 
-  private static final Set<String> FAILED_JOB_EVENTS =
-      Set.of(JobIntent.FAIL.name(), JobIntent.FAILED.name());
+  private static final Set<Intent> FAILED_JOB_EVENTS = Set.of(JobIntent.FAIL, JobIntent.FAILED);
 
   private final String indexName;
   private final boolean concurrencyMode;
@@ -68,7 +68,7 @@ public class ListViewFlowNodeFromJobHandler
       final Record<JobRecordValue> record, final FlowNodeInstanceForListViewEntity entity) {
 
     final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
+    final var intent = record.getIntent();
 
     entity
         .setId(String.valueOf(record.getValue().getElementInstanceKey()))
@@ -81,7 +81,7 @@ public class ListViewFlowNodeFromJobHandler
         .getJoinRelation()
         .setParent(recordValue.getProcessInstanceKey());
 
-    if (FAILED_JOB_EVENTS.contains(intentStr) && recordValue.getRetries() > 0) {
+    if (FAILED_JOB_EVENTS.contains(intent) && recordValue.getRetries() > 0) {
       entity.setJobFailedWithRetriesLeft(true);
     } else {
       entity.setJobFailedWithRetriesLeft(false);

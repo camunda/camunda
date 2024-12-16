@@ -14,6 +14,7 @@ import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.scrollRequ
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
+import static io.camunda.optimize.service.exceptions.ExceptionHelper.safeOS;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static java.lang.String.format;
 
@@ -62,7 +63,6 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
@@ -127,6 +127,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private RichOpenSearchClient richOpenSearchClient;
   private RestClient restClient;
   private TransportOptionsProvider transportOptionsProvider;
+  private IndexNameServiceOS indexNameServiceOS;
+
+  public OptimizeOpenSearchClient(
+      final ExtendedOpenSearchClient openSearchClient,
+      final OpenSearchAsyncClient openSearchAsyncClient,
+      final OptimizeIndexNameService indexNameService) {
+    this(openSearchClient, openSearchAsyncClient, indexNameService, new TransportOptionsProvider());
+  }
 
   public OptimizeOpenSearchClient(
       final RestClient restClient,
@@ -141,17 +149,21 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     this.restClient = restClient;
+    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService) {
+      final OptimizeIndexNameService indexNameService,
+      final TransportOptionsProvider transportOptionsProvider) {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
+    this.transportOptionsProvider = transportOptionsProvider;
     this.openSearchAsyncClient = openSearchAsyncClient;
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
+    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
   public RestClient getRestClient() {
@@ -246,6 +258,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
+    restClient = OpenSearchClientBuilder.restClient(configurationService);
+    transportOptionsProvider = new TransportOptionsProvider(configurationService);
+    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
   public final <T> GetResponse<T> get(
@@ -421,8 +436,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     getRichOpenSearchClient().index().refresh(indexPattern);
   }
 
-  @Override
-  public <T> long count(final String[] indexNames, final T query) throws IOException {
+  public long count(final String[] indexNames, final Query query) throws IOException {
     return count(
         indexNames, query, "Could not execute count request for " + Arrays.toString(indexNames));
   }
@@ -600,43 +614,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return openSearchClient.indices().getAlias(getAliasesRequest);
   }
 
-  public <T> long count(final String[] indexNames, final T query, final String errorMessage) {
-    if (query instanceof QueryVariant || query instanceof Query) {
-      final Query osQuery;
-      if (query instanceof final QueryVariant vettedQuery) {
-        osQuery = vettedQuery.toQuery();
-      } else {
-        osQuery = (Query) query;
-      }
-      final CountRequest.Builder countReqBuilder =
-          new CountRequest.Builder().index(List.of(indexNames)).query(osQuery);
-      return richOpenSearchClient.doc().count(countReqBuilder, e -> errorMessage).count();
-    } else {
-      // TODO this is a temporary implementation, here we are extracting the json query from the
-      // search request and performing a low-level request to OpenSearch
-      if (query instanceof co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder) {
-        final String jsonQuery = "{\"query\":" + query + "}";
-        return Arrays.stream(indexNames)
-            .mapToLong(
-                indexName -> {
-                  try {
-                    return getOpenSearchClient()
-                        .countFromJson(
-                            "GET",
-                            indexNameService.getOptimizeIndexAliasForIndex(indexName) + "/_count",
-                            jsonQuery)
-                        .count();
-                  } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                  }
-                })
-            .sum();
-      } else {
-        throw new IllegalArgumentException(
-            "The count method requires a valid query object, instead got "
-                + query.getClass().getSimpleName());
-      }
-    }
+  public long count(final String[] indexNames, final Query query, final String errorMessage) {
+    final CountRequest.Builder countReqBuilder =
+        new CountRequest.Builder().index(List.of(indexNames)).query(query);
+    return richOpenSearchClient.doc().count(countReqBuilder, e -> errorMessage).count();
   }
 
   public long count(final String indexName, final String errorMessage) {
@@ -688,6 +669,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Class<T> responseType,
       final String errorMessage) {
     return richOpenSearchClient.doc().search(requestBuilder, responseType, e -> errorMessage);
+  }
+
+  public <T> SearchResponse<T> searchWithFixedAggregations(
+      final SearchRequest.Builder requestBuilder,
+      final Class<T> responseType,
+      final String errorMessage) {
+    final SearchRequest searchRequest = indexNameServiceOS.applyIndexPrefix(requestBuilder).build();
+    return safeOS(
+        () -> openSearchClient.searchWithFixedAggregations(searchRequest, responseType),
+        e -> errorMessage,
+        LOG);
   }
 
   public <T> SearchResponse<T> searchUnsafe(

@@ -97,12 +97,6 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  public IncidentFilter treePath(final String treePath) {
-    filter.setTreePath(treePath);
-    return this;
-  }
-
-  @Override
   public IncidentFilter tenantId(final String value) {
     filter.setTenantId(value);
     return this;

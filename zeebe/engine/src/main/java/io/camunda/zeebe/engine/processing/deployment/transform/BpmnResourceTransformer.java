@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.StraightThroughProcessingLoopValidator;
@@ -34,7 +35,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.camunda.bpm.model.xml.ModelParseException;
@@ -45,7 +45,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<byte[], DirectBuffer> checksumGenerator;
+  private final ChecksumGenerator checksumGenerator;
 
   private final BpmnValidator validator;
   private final ProcessState processState;
@@ -54,7 +54,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   public BpmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<byte[], DirectBuffer> checksumGenerator,
+      final ChecksumGenerator checksumGenerator,
       final ProcessState processState,
       final ExpressionProcessor expressionProcessor,
       final boolean enableStraightThroughProcessingLoopDetector,
@@ -119,7 +119,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     if (deployment.hasDuplicatesOnly()) {
       return;
     }
-    final var checksum = checksumGenerator.apply(resource.getResource());
+    final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
     deployment.processesMetadata().stream()
         .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
         .forEach(
@@ -196,7 +196,8 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
 
       final DirectBuffer lastDigest =
           processState.getLatestVersionDigest(wrapString(bpmnProcessId), tenantId);
-      final DirectBuffer resourceDigest = checksumGenerator.apply(deploymentResource.getResource());
+      final DirectBuffer resourceDigest =
+          checksumGenerator.checksum(deploymentResource.getResourceBuffer());
 
       // adds process record to deployment record
       final var processMetadata = deploymentEvent.processesMetadata().add();

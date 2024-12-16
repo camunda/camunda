@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,6 +77,40 @@ public final class AssignUserTaskTest {
         .hasUserTaskKey(userTaskKey)
         .hasAction("assign")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldEmitAssignEventsForUserTaskWhenItWasCreatedWithTheDefinedAssigneeProperty() {
+    // given
+    final var assignee = "merry";
+    final var action = StringUtils.EMPTY;
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssignee(assignee))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(userTaskKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .as(
+            "Verify the sequence of intents and `assignee`, `action` properties emitted for the user task")
+        .extracting(
+            Record::getIntent, r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action),
+            // The `assignee` property isn't yet available during the `CREATED` event
+            // as it becomes effective only during the assignment phase.
+            tuple(UserTaskIntent.ASSIGNING, assignee, action),
+            tuple(UserTaskIntent.ASSIGNED, assignee, action));
   }
 
   @Test

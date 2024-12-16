@@ -117,7 +117,7 @@ public class AuthorizedCollectionService {
 
     if (collectionDefinition.isEmpty()) {
       LOG.error(
-          "Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
+          "Was not able to retrieve collection with id [{}] from the database.", collectionId);
       throw new NotFoundException(
           "Collection does not exist! Tried to retrieve collection with id " + collectionId);
     }

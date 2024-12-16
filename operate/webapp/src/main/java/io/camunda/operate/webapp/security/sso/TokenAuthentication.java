@@ -22,6 +22,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.identity.IdentityAuthorization;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -163,8 +164,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   }
 
   private void updateResourcePermissions() {
-    if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()
-        && getIdentity() != null) {
+    if (getSecurityConfiguration().getAuthorizations().isEnabled() && getIdentity() != null) {
       try {
         final List<IdentityAuthorization> identityAuthorizations =
             IdentityAuthorization.createFrom(
@@ -319,5 +319,9 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   private OperateProperties getOperateProperties() {
     return SpringContextHolder.getBean(OperateProperties.class);
+  }
+
+  private SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 }

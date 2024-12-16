@@ -12,7 +12,6 @@ import {CollectionModal} from './CollectionModal';
 import SourcesModal from './SourcesModal';
 
 jest.mock('hooks', () => ({
-  ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   }),

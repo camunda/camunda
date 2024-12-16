@@ -29,8 +29,10 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.Mockito;
 
 final class EventFromProcessMessageSubscriptionHandlerTest {
@@ -50,22 +52,30 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(EventEntity.class);
   }
 
-  @Test
-  void shouldHandleRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessMessageSubscriptionIntent.class,
+      names = {"CREATED", "MIGRATED"},
+      mode = Mode.INCLUDE)
+  void shouldHandleRecord(final Intent intent) {
     // given
-    final Record<ProcessMessageSubscriptionRecordValue> record =
-        generateRecord(ProcessMessageSubscriptionIntent.CREATED);
+    final Record<ProcessMessageSubscriptionRecordValue> record = generateRecord(intent);
 
     // when - then
     assertThat(underTest.handlesRecord(record)).isTrue();
   }
 
-  @Test
-  void shouldNotHandleRecord() {
-    Stream.of(ProcessMessageSubscriptionIntent.values())
-        .filter(intent -> intent != ProcessMessageSubscriptionIntent.CREATED)
-        .map(this::generateRecord)
-        .forEach(this::assertShouldNotHandleRecord);
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessMessageSubscriptionIntent.class,
+      names = {"CREATED", "MIGRATED"},
+      mode = Mode.EXCLUDE)
+  void shouldNotHandleRecord(final Intent intent) {
+    // given
+    final Record<ProcessMessageSubscriptionRecordValue> record = generateRecord(intent);
+
+    // when - then
+    assertThat(underTest.handlesRecord(record)).isFalse();
   }
 
   @Test
@@ -112,10 +122,10 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     final int elementInstanceKey = 456;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
-    final String errorMessage = "errorMessage";
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final Intent intent = ProcessMessageSubscriptionIntent.CREATED;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
@@ -130,7 +140,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             r ->
-                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                r.withIntent(intent)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withPosition(position)
@@ -146,7 +156,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
-    assertThat(entity.getEventType()).isEqualTo(EventType.CREATED);
+    assertThat(entity.getEventType()).isEqualTo(EventType.fromZeebeIntent(intent.name()));
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
@@ -197,11 +207,6 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
 
     // then
     verify(mockRequest, times(1)).upsert(expectedIndexName, id, inputEntity, expectedUpdateFields);
-  }
-
-  private void assertShouldNotHandleRecord(
-      final Record<ProcessMessageSubscriptionRecordValue> record) {
-    assertThat(underTest.handlesRecord(record)).isFalse();
   }
 
   private Record<ProcessMessageSubscriptionRecordValue> generateRecord(final Intent intent) {

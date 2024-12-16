@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
@@ -17,12 +18,28 @@ public interface CommandWriter {
   long writeCommand(
       final Intent intent, final UnifiedRecordValue recordValue, String... authorizedTenants);
 
+  long writeCommand(
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey,
+      String... authorizedTenants);
+
   long writeCommand(long key, Intent intent, UnifiedRecordValue recordValue);
+
+  long writeCommand(
+      final Intent intent, UnifiedRecordValue recordValue, final AuthInfo authorizations);
 
   long writeCommand(
       final long key,
       final Intent intent,
       final UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
+
+  long writeCommand(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey,
       final String... authorizedTenants);
 
   long writeCommand(
@@ -35,6 +52,12 @@ public interface CommandWriter {
       final int partitionId, final Intent intent, final UnifiedRecordValue recordValue);
 
   long writeCommandOnPartition(
+      final int partitionId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey);
+
+  long writeCommandOnPartition(
       int partitionId, long key, Intent intent, UnifiedRecordValue recordValue);
 
   long writeCommandOnPartition(
@@ -42,5 +65,20 @@ public interface CommandWriter {
       long key,
       Intent intent,
       UnifiedRecordValue recordValue,
+      final AuthInfo authorizations);
+
+  long writeCommandOnPartition(
+      int partitionId,
+      long key,
+      Intent intent,
+      UnifiedRecordValue recordValue,
+      final String... authorizedTenants);
+
+  long writeCommandOnPartition(
+      int partitionId,
+      long key,
+      Intent intent,
+      UnifiedRecordValue recordValue,
+      final long userKey,
       final String... authorizedTenants);
 }

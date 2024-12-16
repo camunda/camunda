@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
@@ -361,7 +363,12 @@ final class SystemContextTest {
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
     return new SystemContext(
-        brokerCfg, mock(ActorScheduler.class), mock(AtomixCluster.class), mock(BrokerClient.class));
+        brokerCfg,
+        mock(ActorScheduler.class),
+        mock(AtomixCluster.class),
+        mock(BrokerClient.class),
+        new SecurityConfiguration(),
+        mock(UserServices.class));
   }
 
   @Test

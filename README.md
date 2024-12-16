@@ -87,7 +87,7 @@ Available under the [Apache License, Version 2.0](/licenses/APACHE-2.0.txt):
 ### Clarification on gRPC Code Generation
 
 The Zeebe Gateway Protocol (API) as published in the
-[gateway-protocol](/gateway-protocol/src/main/proto/gateway.proto) is licensed
+[gateway-protocol](/zeebe/gateway-protocol/src/main/proto/gateway.proto) is licensed
 under the [Camunda License 1.0](/licenses/CAMUNDA-LICENSE-1.0.txt). Using gRPC tooling to generate stubs for
 the protocol does not constitute creating a derivative work under the Camunda License 1.0 and no licensing restrictions are imposed on the
 resulting stub code by the Camunda License 1.0.

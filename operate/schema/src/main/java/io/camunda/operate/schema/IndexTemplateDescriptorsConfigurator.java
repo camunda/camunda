@@ -11,6 +11,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -24,8 +25,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -59,6 +61,14 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
+  public ImportPositionIndex getImportPositionIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new ImportPositionIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("operateProcessIndex")
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex(
@@ -82,7 +92,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate(
@@ -131,11 +141,8 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public UserTaskTemplate getUserTaskTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new UserTaskTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb());
+  public TaskTemplate getTaskTemplate(final DatabaseInfo databaseInfo) {
+    return new TaskTemplate("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
@@ -146,7 +153,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateVariableTemplate")
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(
@@ -166,6 +173,14 @@ public class IndexTemplateDescriptorsConfigurator {
   public BatchOperationTemplate getBatchOperationTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new BatchOperationTemplate(
+        operateProperties.getIndexPrefix(DatabaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("operateSnapshotTaskVariableTemplate")
+  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new SnapshotTaskVariableTemplate(
         operateProperties.getIndexPrefix(DatabaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb());
   }

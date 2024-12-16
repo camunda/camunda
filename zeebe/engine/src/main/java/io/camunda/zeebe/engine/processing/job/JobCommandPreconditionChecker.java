@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -27,27 +28,34 @@ public class JobCommandPreconditionChecker {
   private final JobState jobState;
   private final String intent;
   private final List<JobCommandCheck> customChecks;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public JobCommandPreconditionChecker(
-      final JobState jobState, final String intent, final List<State> validStates) {
-    this(jobState, intent, validStates, List.of());
+      final JobState jobState,
+      final String intent,
+      final List<State> validStates,
+      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+    this(jobState, intent, validStates, List.of(), authorizationCheckBehavior);
   }
 
   public JobCommandPreconditionChecker(
       final JobState jobState,
       final String intent,
       final List<State> validStates,
-      final List<JobCommandCheck> customChecks) {
+      final List<JobCommandCheck> customChecks,
+      final AuthorizationCheckBehavior authorizationCheckBehavior) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
     this.customChecks = customChecks;
+    this.authorizationCheckBehavior = authorizationCheckBehavior;
   }
 
   protected Either<Rejection, JobRecord> check(
       final State state, final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
-    final var storedJob = jobState.getJob(jobKey, command.getAuthorizations());
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    final var storedJob = jobState.getJob(jobKey, authorizedTenantIds);
 
     if (state == State.NOT_FOUND || storedJob == null) {
       return Either.left(

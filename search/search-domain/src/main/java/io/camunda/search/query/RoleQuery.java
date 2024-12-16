@@ -22,6 +22,10 @@ public record RoleQuery(RoleFilter filter, RoleSort sort, SearchQueryPage page)
     return fn.apply(new RoleQuery.Builder()).build();
   }
 
+  public Builder toBuilder() {
+    return new Builder().filter(filter).sort(sort).page(page);
+  }
+
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<RoleQuery.Builder>
       implements TypedSearchQueryBuilder<RoleQuery, RoleQuery.Builder, RoleFilter, RoleSort> {
     private static final RoleFilter EMPTY_FILTER = FilterBuilders.role().build();

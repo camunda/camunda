@@ -1,37 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="9d79354" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="7aabe175-d57d-4dc4-ab75-3fc3690f4444">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="7aabe175-d57d-4dc4-ab75-3fc3690f4444">
   <bpmn:process id="Radio_Button_User_Task" name="Radio Button Task" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="userTaskForm_1toik4l">{
-  "components": [
-    {
-      "values": [
-        {
-          "label": "Value",
-          "value": "value"
-        }
-      ],
-      "label": "Radio",
-      "type": "radio",
-      "layout": {
-        "row": "Row_1tcnaek",
-        "columns": null
-      },
-      "id": "Field_0r84gaq",
-      "key": "field_0koka0e"
-    }
-  ],
-  "schemaVersion": 9,
-  "exporter": {
-    "name": "Camunda Web Modeler",
-    "version": "9d79354"
-  },
-  "type": "default",
-  "id": "Form_03ni3oq",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0"
-}</zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0870r7r</bpmn:outgoing>
     </bpmn:startEvent>
@@ -42,7 +11,8 @@
     <bpmn:sequenceFlow id="Flow_1k9nx3a" sourceRef="Radio_Button_Task" targetRef="Event_1qsnfvb" />
     <bpmn:userTask id="Radio_Button_Task" name="Radio Button Task">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1toik4l" />
+        <zeebe:formDefinition formId="form_with_radio_button" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0870r7r</bpmn:incoming>
       <bpmn:outgoing>Flow_1k9nx3a</bpmn:outgoing>

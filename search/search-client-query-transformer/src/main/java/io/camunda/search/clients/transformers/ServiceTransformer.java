@@ -10,4 +10,8 @@ package io.camunda.search.clients.transformers;
 public interface ServiceTransformer<T, R> {
 
   R apply(final T value);
+
+  static <T> ServiceTransformer<T, T> identity() {
+    return t -> t;
+  }
 }

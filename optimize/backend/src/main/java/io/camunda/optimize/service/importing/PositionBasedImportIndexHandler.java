@@ -78,7 +78,7 @@ public abstract class PositionBasedImportIndexHandler
     indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
     indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
     indexToStore.setHasSeenSequenceField(hasSeenSequenceField);
-    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
+    indexToStore.setDbTypeIndexRefersTo(getDatabaseDocID());
     return indexToStore;
   }
 

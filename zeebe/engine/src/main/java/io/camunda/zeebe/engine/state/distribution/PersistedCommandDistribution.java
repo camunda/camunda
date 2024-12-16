@@ -63,6 +63,11 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     return value.isEmpty() ? Optional.empty() : Optional.of(value);
   }
 
+  public PersistedCommandDistribution setQueueId(final String queueId) {
+    queueIdProperty.setValue(queueId);
+    return this;
+  }
+
   public ValueType getValueType() {
     return valueTypeProperty.getValue();
   }

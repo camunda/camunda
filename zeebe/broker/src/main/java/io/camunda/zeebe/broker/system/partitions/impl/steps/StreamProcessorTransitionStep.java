@@ -65,7 +65,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     if (streamprocessor != null
         && (shouldInstallOnTransition(targetRole, currentRole) || targetRole == Role.INACTIVE)) {
-      context.getComponentHealthMonitor().removeComponent(streamprocessor.getName());
+      context.getComponentHealthMonitor().removeComponent(streamprocessor);
       final ActorFuture<Void> future = streamprocessor.closeAsync();
       future.onComplete(
           (success, error) -> {
@@ -103,9 +103,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
                 streamProcessor.resumeProcessing();
               }
 
-              context
-                  .getComponentHealthMonitor()
-                  .registerComponent(streamProcessor.getName(), streamProcessor);
+              context.getComponentHealthMonitor().registerComponent(streamProcessor);
               future.complete(null);
             } else {
               future.completeExceptionally(err);
@@ -137,7 +135,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var experimentalCfg = context.getBrokerCfg().getExperimental();
     final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
 
-    final var engine = new Engine(context.getTypedRecordProcessorFactory(), engineCfg);
+    final var engine =
+        new Engine(
+            context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
     final var scheduledCommandCache =

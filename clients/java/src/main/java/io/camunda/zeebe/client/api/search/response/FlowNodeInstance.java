@@ -23,11 +23,17 @@ public interface FlowNodeInstance {
   /** process definition key for flow node instance */
   Long getProcessDefinitionKey();
 
+  /** process definition id for flow node instance */
+  String getProcessDefinitionId();
+
   /** process instance key for flow node instance */
   Long getProcessInstanceKey();
 
   /** flow node id for flow node instance */
   String getFlowNodeId();
+
+  /** flow node name for flow node instance */
+  String getFlowNodeName();
 
   /** start date of flow node instance */
   String getStartDate();
@@ -46,9 +52,6 @@ public interface FlowNodeInstance {
 
   /** tenant id for flow node instance */
   String getTenantId();
-
-  /** tree path of flow node instance */
-  String getTreePath();
 
   /** type of flow node instance */
   String getType();

@@ -16,19 +16,18 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.VariableFilter;
+import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.FilterUtil;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
+import java.util.function.Consumer;
 
 public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<VariableFilterRequest>
     implements VariableFilter {
 
   private final VariableFilterRequest filter;
-
-  public VariableFilterImpl(final VariableFilterRequest filter) {
-    this.filter = filter;
-  }
 
   public VariableFilterImpl() {
     filter = new VariableFilterRequest();
@@ -36,43 +35,71 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
 
   @Override
   public VariableFilter variableKey(final Long key) {
-    filter.setVariableKey(key);
+    variableKey(b -> b.eq(key));
+    return this;
+  }
+
+  @Override
+  public VariableFilter variableKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setVariableKey(property.build());
     return this;
   }
 
   @Override
   public VariableFilter value(final String value) {
-    filter.setValue(value);
+    value(b -> b.eq(value));
+    return this;
+  }
+
+  @Override
+  public VariableFilter value(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setValue(property.build());
     return this;
   }
 
   @Override
   public VariableFilter name(final String name) {
-    filter.setName(name);
+    name(b -> b.eq(name));
+    return this;
+  }
+
+  @Override
+  public VariableFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(property.build());
     return this;
   }
 
   @Override
   public VariableFilter scopeKey(final Long scopeKey) {
-    filter.setScopeKey(FilterUtil.longFilterProperty(scopeKey));
+    scopeKey(b -> b.eq(scopeKey));
     return this;
   }
 
   @Override
-  public VariableFilter scopeKey(final LongFilterProperty scopeKey) {
-    filter.setScopeKey(scopeKey);
+  public VariableFilter scopeKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setScopeKey(property.build());
     return this;
   }
 
   @Override
   public VariableFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(FilterUtil.longFilterProperty(processInstanceKey));
+    processInstanceKey(b -> b.eq(processInstanceKey));
     return this;
   }
 
   @Override
-  public VariableFilter processInstanceKey(final LongFilterProperty processInstanceKey) {
-    filter.setProcessInstanceKey(processInstanceKey);
+  public VariableFilter processInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(property.build());
     return this;
   }
 

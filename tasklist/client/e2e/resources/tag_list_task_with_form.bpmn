@@ -1,41 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="9019ea6" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="b5fdae33-fb32-4186-b333-96d041e25ba4">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="b5fdae33-fb32-4186-b333-96d041e25ba4">
   <bpmn:process id="Tag_List_Task" name="Tag list Task" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="userTaskForm_3gu3vo8">{
-  "components": [
-    {
-      "values": [
-        {
-          "label": "Value",
-          "value": "value"
-        },
-        {
-          "label": "Value 2",
-          "value": "value2"
-        }
-      ],
-      "label": "Tag list",
-      "type": "taglist",
-      "layout": {
-        "row": "Row_1ygbwjl",
-        "columns": null
-      },
-      "id": "Field_03604cb",
-      "key": "field_05jv3ul"
-    }
-  ],
-  "schemaVersion": 9,
-  "exporter": {
-    "name": "Camunda Web Modeler",
-    "version": "9019ea6"
-  },
-  "type": "default",
-  "id": "Form_0barmk7",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0"
-}</zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0hr7qpq</bpmn:outgoing>
     </bpmn:startEvent>
@@ -46,7 +11,8 @@
     <bpmn:sequenceFlow id="Flow_1hd4bjx" sourceRef="Tag_List_User_Task" targetRef="Event_129vtie" />
     <bpmn:userTask id="Tag_List_User_Task" name="Tag list Task">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_3gu3vo8" />
+        <zeebe:formDefinition formId="form_with_tag_list" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0hr7qpq</bpmn:incoming>
       <bpmn:outgoing>Flow_1hd4bjx</bpmn:outgoing>

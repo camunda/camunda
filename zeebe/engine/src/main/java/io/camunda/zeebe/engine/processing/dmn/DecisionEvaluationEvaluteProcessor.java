@@ -65,17 +65,28 @@ public class DecisionEvaluationEvaluteProcessor
 
     if (decisionOrFailure.isRight()) {
       final var decision = decisionOrFailure.get();
+      final var decisionId = bufferAsString(decision.getDecisionId());
       final var authRequest =
           new AuthorizationRequest(
-                  command, AuthorizationResourceType.DECISION_DEFINITION, PermissionType.CREATE)
-              .addResourceId(bufferAsString(decision.getDecisionId()));
+                  command,
+                  AuthorizationResourceType.DECISION_DEFINITION,
+                  PermissionType.CREATE_DECISION_INSTANCE,
+                  record.getTenantId())
+              .addResourceId(decisionId);
 
-      if (!authCheckBehavior.isAuthorized(authRequest)) {
-        final var reason =
-            AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                authRequest.getPermissionType(), authRequest.getResourceType());
-        responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
-        rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
+      final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+      if (isAuthorized.isLeft()) {
+        final var rejectionType = isAuthorized.getLeft();
+        final String errorMessage =
+            RejectionType.UNAUTHORIZED.equals(rejectionType)
+                ? AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                    authRequest.getPermissionType(),
+                    authRequest.getResourceType(),
+                    "decision id '%s'".formatted(decisionId))
+                : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                    "evaluate a decision", record.getDecisionKey(), "such decision");
+        responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+        rejectionWriter.appendRejection(command, rejectionType, errorMessage);
         return;
       }
     }

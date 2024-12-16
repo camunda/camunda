@@ -7,16 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
@@ -26,20 +24,21 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.FlowNodeInstanceServices;
-import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.VariableServices;
-import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
+import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = UserTaskQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = UserTaskController.class)
 @Import(JacksonConfig.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
 
@@ -75,6 +74,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
+                      "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
                       "dueDate": "2020-11-11T00:00:00.000Z",
@@ -87,7 +87,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -111,7 +111,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
-          "firstSortValues": [],
+          "firstSortValues": ["f"],
           "lastSortValues": [
             "v"
           ]
@@ -134,6 +134,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
+                      "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
                       "dueDate": "2020-11-11T00:00:00.000Z",
@@ -185,41 +186,28 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       Collections.emptyMap(), // customHeaders
                       50 // priority
                       )))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
       new Builder<VariableEntity>()
           .total(1L)
           .items(
-              List.of(new VariableEntity(0L, "name", "value", "test", false, 1L, 2L, "<default>")))
-          .sortValues(new Object[] {"v"})
+              List.of(
+                  new VariableEntity(
+                      0L, "name", "value", "test", false, 1L, 2L, "bpid", "<default>")))
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   @MockBean UserTaskServices userTaskServices;
-
-  @MockBean private FormServices formServices;
-
-  @MockBean private VariableServices variableServices;
-
-  @MockBean private FlowNodeInstanceServices flowNodeInstanceServices;
+  @MockBean ProcessCache processCache;
 
   @BeforeEach
-  void setupServices() {
-
-    when(formServices.getByKey(VALID_FORM_KEY))
-        .thenReturn(new FormEntity("0", "tenant-1", "bpmn-1", "schema", 1L));
-
-    when(formServices.getByKey(INVALID_FORM_KEY))
-        .thenThrow(new NotFoundException("Form not found"));
-
+  void setupServices() throws IOException {
     when(userTaskServices.withAuthentication(any(Authentication.class)))
         .thenReturn(userTaskServices);
-
-    when(formServices.withAuthentication(any(Authentication.class))).thenReturn(formServices);
-
-    when(variableServices.withAuthentication(any(Authentication.class)))
-        .thenReturn(variableServices);
 
     // Mock the behavior of userTaskServices for a valid key
     when(userTaskServices.getByKey(VALID_USER_TASK_KEY))
@@ -250,27 +238,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .thenThrow(
             new NotFoundException(
                 String.format("User Task with key %d not found", INVALID_USER_TASK_KEY)));
-
-    when(flowNodeInstanceServices.getByKey(any()))
-        .thenReturn(
-            new FlowNodeInstanceEntity(
-                0L,
-                1L,
-                2L,
-                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
-                OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
-                "a",
-                "1/2/3",
-                FlowNodeType.TASK,
-                FlowNodeState.ACTIVE,
-                true,
-                1L,
-                2L,
-                "test",
-                "<default>"));
-
-    // Mock Variable
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_VAR_QUERY_RESULT);
+    when(processCache.getUserTaskName(any())).thenReturn("name");
+    final var processCacheItem = mock(ProcessCacheItem.class);
+    when(processCacheItem.getFlowNodeName(any())).thenReturn("name");
+    final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
+    when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
+    when(processCache.getUserTaskNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -290,6 +263,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
+    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -313,6 +287,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
+    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -354,6 +329,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 .sort(
                     new UserTaskSort.Builder().creationDate().desc().completionDate().asc().build())
                 .build());
+    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -374,9 +350,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
@@ -396,6 +372,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -407,7 +384,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -438,6 +415,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -448,7 +426,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -479,6 +457,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -519,6 +498,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -536,6 +516,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
+    verify(processCache).getUserTaskName(any());
   }
 
   @Test
@@ -561,10 +542,14 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(INVALID_USER_TASK_KEY);
+    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
-  public void shouldReturnFormItemForValidFormKey() throws Exception {
+  public void shouldReturnFormItemForValidFormKey() {
+    when(userTaskServices.getUserTaskForm(VALID_FORM_KEY))
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "bpmn-1", "schema", 1L)));
+
     webClient
         .get()
         .uri("/v2/user-tasks/{userTaskKey}/form", VALID_USER_TASK_KEY)
@@ -575,11 +560,13 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(FORM_ITEM_JSON);
 
-    verify(formServices, times(1)).getByKey(VALID_FORM_KEY);
+    verify(userTaskServices).getUserTaskForm(VALID_FORM_KEY);
   }
 
   @Test
-  public void shouldReturn404ForFormInvalidUserTaskKey() throws Exception {
+  public void shouldReturn404ForFormInvalidUserTaskKey() {
+    when(userTaskServices.getUserTaskForm(INVALID_USER_TASK_KEY))
+        .thenThrow(new NotFoundException("User Task with key 999 not found"));
     webClient
         .get()
         .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)
@@ -597,13 +584,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "detail": "User Task with key 999 not found"
             }
             """);
-
-    verify(formServices, times(0)).getByKey(INVALID_USER_TASK_KEY);
   }
 
   @Test
   public void shouldReturn500OnUnexpectedException() throws Exception {
-    when(formServices.getByKey(VALID_FORM_KEY)).thenThrow(new RuntimeException("Unexpected error"));
+    when(userTaskServices.getUserTaskForm(VALID_FORM_KEY))
+        .thenThrow(new RuntimeException("Unexpected error"));
 
     webClient
         .get()
@@ -627,10 +613,13 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturnVariableForValidUserTaskKey() {
+    when(userTaskServices.searchUserTaskVariables(
+            VALID_USER_TASK_KEY, variableSearchQuery().build()))
+        .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
     webClient
         .post()
-        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables")
+        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables/search")
         .accept(APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -638,8 +627,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_VARIABLE_RESULT_JSON);
 
-    // Verify that the service was called with the invalid userTaskKey
-    verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
+    verify(userTaskServices)
+        .searchUserTaskVariables(VALID_USER_TASK_KEY, variableSearchQuery().build());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -649,6 +638,18 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "priority",
         ops -> new UserTaskFilter.Builder().priorityOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "candidateGroup",
+        ops -> new UserTaskFilter.Builder().candidateGroupOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "candidateUser",
+        ops -> new UserTaskFilter.Builder().candidateUserOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "assignee",
+        ops -> new UserTaskFilter.Builder().assigneeOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -683,5 +684,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
+    verify(processCache).getUserTaskNames(any());
   }
 }

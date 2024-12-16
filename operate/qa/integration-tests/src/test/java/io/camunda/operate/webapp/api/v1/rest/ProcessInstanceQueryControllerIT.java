@@ -31,6 +31,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Before;
@@ -61,6 +62,8 @@ public class ProcessInstanceQueryControllerIT {
   @MockBean private SequenceFlowDao sequenceFlowDao;
 
   @MockBean private FlowNodeStatisticsDao flowNodeStatisticsDao;
+
+  @MockBean private PermissionsService permissionsService;
 
   @Before
   public void setupMockMvc() {

@@ -20,6 +20,7 @@ public enum Profile {
   GATEWAY("gateway"),
   RESTORE("restore"),
   OPERATE("operate"),
+  OPTIMIZE("optimize"),
   TASKLIST("tasklist"),
   IDENTITY("identity"),
 
@@ -36,6 +37,10 @@ public enum Profile {
   DEFAULT_AUTH_PROFILE("auth"),
   LDAP_AUTH_PROFILE("ldap-auth"),
 
+  // migration profiles
+  MIGRATION("migration"),
+  IDENTITY_MIGRATION("identity-migration"),
+  PROCESS_MIGRATION("process-migration"),
   // indicating legacy standalone application
   STANDALONE("standalone");
 

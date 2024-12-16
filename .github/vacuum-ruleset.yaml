@@ -621,4 +621,14 @@ rules:
             functionOptions:
                 notMatch: ^.*\.$
         type: validation
-  
+    require-property-descriptions:
+        category:
+            description: Documentation is really important, in OpenAPI, just about everything can and should have a description. This set of rules checks for absent descriptions, poor quality descriptions (copy/paste), or short descriptions.
+            id: descriptions
+            name: Descriptions
+        description: Schema properties must have a description.
+        given: $.components.schemas[*].properties[*]
+        then:
+            field: description
+            function: truthy
+        severity: error

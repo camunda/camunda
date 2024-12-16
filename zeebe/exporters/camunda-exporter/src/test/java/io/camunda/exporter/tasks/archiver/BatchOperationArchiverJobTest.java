@@ -79,7 +79,9 @@ final class BatchOperationArchiverJobTest {
     repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
 
     // when
-    final var count = job.archiveNextBatch().join() + job.archiveNextBatch().join();
+    final var count =
+        job.archiveNextBatch().toCompletableFuture().join()
+            + job.archiveNextBatch().toCompletableFuture().join();
 
     // then
     assertThat(meterRegistry.counter("zeebe.camunda.exporter.archived.batch.operations").count())

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.index;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import java.time.Instant;
@@ -20,13 +21,16 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
   protected OffsetDateTime timestampOfLastEntity =
       OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
   protected T dataSource;
+  protected String dbTypeIndexRefersTo;
 
   public ImportIndexDto(
       final OffsetDateTime lastImportExecutionTimestamp,
       final OffsetDateTime timestampOfLastEntity,
+      final String dbTypeIndexRefersTo,
       final T dataSource) {
     this.lastImportExecutionTimestamp = lastImportExecutionTimestamp;
     this.timestampOfLastEntity = timestampOfLastEntity;
+    this.dbTypeIndexRefersTo = dbTypeIndexRefersTo;
     this.dataSource = dataSource;
   }
 
@@ -46,6 +50,15 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
 
   public void setTimestampOfLastEntity(final OffsetDateTime timestampOfLastEntity) {
     this.timestampOfLastEntity = timestampOfLastEntity;
+  }
+
+  @JsonProperty("esTypeIndexRefersTo")
+  public String getDbTypeIndexRefersTo() {
+    return dbTypeIndexRefersTo;
+  }
+
+  public void setDbTypeIndexRefersTo(final String dbTypeIndexRefersTo) {
+    this.dbTypeIndexRefersTo = dbTypeIndexRefersTo;
   }
 
   public T getDataSource() {

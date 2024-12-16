@@ -43,13 +43,13 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
-import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.util.RawProcessDataResultDtoMapper;
 import io.camunda.optimize.service.db.report.interpreter.view.process.AbstractProcessViewRawDataInterpreter;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessView;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
+import io.camunda.optimize.service.db.repository.es.VariableRepositoryES;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
@@ -81,24 +81,30 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final DefinitionService definitionService;
-  private final ProcessVariableReader processVariableReader;
+  private final VariableRepositoryES variableRepository;
 
   public ProcessViewRawDataInterpreterES(
       final ConfigurationService configurationService,
       final ObjectMapper objectMapper,
       final OptimizeElasticsearchClient esClient,
       final DefinitionService definitionService,
-      final ProcessVariableReader processVariableReader) {
+      final VariableRepositoryES variableRepository) {
     this.configurationService = configurationService;
     this.objectMapper = objectMapper;
     this.esClient = esClient;
     this.definitionService = definitionService;
-    this.processVariableReader = processVariableReader;
+    this.variableRepository = variableRepository;
   }
 
   @Override
   public Set<ProcessView> getSupportedViews() {
     return Set.of(PROCESS_VIEW_RAW_DATA);
+  }
+
+  @Override
+  public CompositeCommandResult.ViewResult createEmptyResult(
+      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
+    return CompositeCommandResult.ViewResult.builder().rawData(new ArrayList<>()).build();
   }
 
   @Override
@@ -122,7 +128,7 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
           return variableQuery;
         };
     final Set<String> allVariableNamesForMatchingInstances =
-        processVariableReader
+        variableRepository
             .getVariableNamesForInstancesMatchingQuery(
                 defKeysToTarget, builderSupplier, Collections.emptyMap())
             .stream()
@@ -293,12 +299,6 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
 
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);
     return CompositeCommandResult.ViewResult.builder().rawData(rawData).build();
-  }
-
-  @Override
-  public CompositeCommandResult.ViewResult createEmptyResult(
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    return CompositeCommandResult.ViewResult.builder().rawData(new ArrayList<>()).build();
   }
 
   private void addSorting(

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -30,7 +30,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
-
+  private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
+      "Expected to remove entity with key '%s' from group with key '%s', but the entity is not assigned to this group.";
   private final GroupState groupState;
   private final UserState userState;
   private final MappingState mappingState;
@@ -77,10 +78,12 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
             .addResourceId(persistedRecord.get().getName());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "group name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
@@ -109,8 +112,21 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue());
+    final var record = command.getValue();
+
+    groupState
+        .getEntityType(record.getGroupKey(), record.getEntityKey())
+        .ifPresentOrElse(
+            entityType ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue()),
+            () -> {
+              final var errorMessage =
+                  ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(
+                      record.getEntityKey(), record.getGroupKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

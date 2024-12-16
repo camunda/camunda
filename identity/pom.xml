@@ -13,7 +13,6 @@
   <name>Identity Parent</name>
   <modules>
     <module>client</module>
-    <module>migration</module>
   </modules>
 
   <properties>

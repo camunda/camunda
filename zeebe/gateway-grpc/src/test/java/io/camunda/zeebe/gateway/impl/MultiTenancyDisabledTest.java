@@ -11,13 +11,8 @@ import static io.camunda.zeebe.gateway.api.util.GatewayAssertions.statusRuntimeE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assumptions.assumeThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.api.decision.EvaluateDecisionStub;
 import io.camunda.zeebe.gateway.api.deployment.DeployResourceStub;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
@@ -45,7 +40,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
 import java.time.Duration;
 import java.util.Iterator;
-import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -56,7 +50,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   private final ActivateJobsStub activateJobsStub = new ActivateJobsStub();
 
   public MultiTenancyDisabledTest() {
-    super(cfg -> cfg.getMultiTenancy().setEnabled(false));
+    super(cfg -> {}, cfg -> cfg.getMultiTenancy().setEnabled(false));
   }
 
   @Before
@@ -66,15 +60,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     new EvaluateDecisionStub().registerWith(brokerClient);
     new BroadcastSignalStub().registerWith(brokerClient);
     activateJobsStub.registerWith(brokerClient);
-  }
-
-  private void assertThatDefaultTenantIdSetAsAuthorizedTenant() {
-    final var brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().toDecodedMap())
-        .describedAs("The broker request should contain the <default> tenant as authorized tenant")
-        .hasEntrySatisfying(
-            Authorization.AUTHORIZED_TENANTS,
-            v -> assertThat(v).asList().contains(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   private void assertThatDefaultTenantIdSet() {
@@ -105,7 +90,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertThatDefaultTenantIdSetAsAuthorizedTenant();
     assertThatDefaultTenantIdSet();
   }
 
@@ -120,10 +104,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
   @Test
   public void deployResourceResponseHasTenantId() {
-    // given
-    when(gateway.getIdentityMock().tenants().forToken(anyString()))
-        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
-
     // when
     final Builder requestBuilder = DeployResourceRequest.newBuilder();
     requestBuilder
@@ -163,7 +143,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertThatDefaultTenantIdSetAsAuthorizedTenant();
     assertThatDefaultTenantIdSet();
   }
 
@@ -178,10 +157,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
   @Test
   public void createProcessInstanceResponseHasTenantId() {
-    // given
-    when(gateway.getIdentityMock().tenants().forToken(anyString()))
-        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
-
     // when
     final CreateProcessInstanceResponse response =
         client.createProcessInstance(CreateProcessInstanceRequest.newBuilder().build());
@@ -215,10 +190,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
   @Test
   public void evaluateDecisionResponseHasTenantId() {
-    // given
-    when(gateway.getIdentityMock().tenants().forToken(anyString()))
-        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
-
     final var request = EvaluateDecisionRequest.newBuilder().build();
 
     // when
@@ -227,28 +198,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
     // then
     assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  @Test
-  public void activateJobsRequestShouldContainDefaultTenantAsAuthorizedTenants() {
-    // given
-    final String jobType = "testType";
-    final String jobWorker = "testWorker";
-    final int maxJobsToActivate = 1;
-    activateJobsStub.addAvailableJobs(jobType, maxJobsToActivate);
-    final var request =
-        ActivateJobsRequest.newBuilder()
-            .setType(jobType)
-            .setWorker(jobWorker)
-            .setMaxJobsToActivate(maxJobsToActivate)
-            .build();
-
-    // when
-    final var response = client.activateJobs(request);
-    assertThat(response.hasNext()).isTrue();
-
-    // then
-    assertThatDefaultTenantIdSetAsAuthorizedTenant();
   }
 
   @Test
@@ -276,8 +225,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   @Test
   public void activateJobsResponseHasTenantId() {
     // given
-    when(gateway.getIdentityMock().tenants().forToken(anyString()))
-        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
     final String jobType = "testType";
     final String jobWorker = "testWorker";
     final int maxJobsToActivate = 1;
@@ -336,7 +283,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
     assertThat(response).isNotNull();
 
     // then
-    assertThatDefaultTenantIdSetAsAuthorizedTenant();
     assertThatDefaultTenantIdSet();
   }
 
@@ -351,10 +297,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
 
   @Test
   public void broadcastSignalResponseHasTenantId() {
-    // given
-    when(gateway.getIdentityMock().tenants().forToken(anyString()))
-        .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")));
-
     // when
     final BroadcastSignalResponse response =
         client.broadcastSignal(BroadcastSignalRequest.newBuilder().build());

@@ -10,10 +10,12 @@ package io.camunda.db.rdbms.write.domain;
 import static io.camunda.util.ValueTypeUtil.mapBoolean;
 
 import io.camunda.search.entities.ValueTypeEnum;
+import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.util.function.Function;
 
 public record VariableDbModel(
-    Long key,
+    Long variableKey,
     String name,
     ValueTypeEnum type,
     Double doubleValue,
@@ -23,25 +25,41 @@ public record VariableDbModel(
     boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    String processDefinitionId,
     String tenantId) {
 
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191; // TODO make configurable
 
-  public static class VariableDbModelBuilder {
+  public VariableDbModel copy(
+      final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
+          builderFunction) {
+    return builderFunction
+        .apply(
+            new VariableDbModelBuilder()
+                .variableKey(this.variableKey)
+                .value(this.value)
+                .name(this.name)
+                .scopeKey(this.scopeKey)
+                .processInstanceKey(this.processInstanceKey)
+                .processDefinitionId(this.processDefinitionId)
+                .tenantId(this.tenantId))
+        .build();
+  }
 
-    private Long key;
+  public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
+
+    private Long variableKey;
     private String name;
     private String value;
     private Long scopeKey;
     private Long processInstanceKey;
+    private String processDefinitionId;
     private String tenantId;
 
-    // Public constructor to initialize the builder
     public VariableDbModelBuilder() {}
 
-    // Builder methods for each field
-    public VariableDbModelBuilder key(final Long key) {
-      this.key = key;
+    public VariableDbModelBuilder variableKey(final Long variableKey) {
+      this.variableKey = variableKey;
       return this;
     }
 
@@ -62,6 +80,11 @@ public record VariableDbModel(
 
     public VariableDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public VariableDbModelBuilder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
       return this;
     }
 
@@ -86,7 +109,7 @@ public record VariableDbModel(
 
     private VariableDbModel getModel(final String value) {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.STRING,
           null,
@@ -96,12 +119,13 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
 
     private VariableDbModel getModelWithPreview() {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.STRING,
           null,
@@ -111,12 +135,13 @@ public record VariableDbModel(
           true,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
 
     private VariableDbModel getLongModel() {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.LONG,
           null,
@@ -126,12 +151,13 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
 
     private VariableDbModel getDoubleModel() {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.DOUBLE,
           Double.parseDouble(value),
@@ -141,6 +167,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
   }

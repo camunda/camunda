@@ -26,7 +26,7 @@ public record UserSort(List<FieldSorting> orderings) implements SortOption {
       implements ObjectBuilder<UserSort> {
 
     public Builder key() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("userKey", null);
       return this;
     }
 

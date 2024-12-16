@@ -140,7 +140,10 @@ public class JobController {
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .completeJob(completeJobRequest.jobKey(), completeJobRequest.variables()));
+                .completeJob(
+                    completeJobRequest.jobKey(),
+                    completeJobRequest.variables(),
+                    completeJobRequest.result()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(

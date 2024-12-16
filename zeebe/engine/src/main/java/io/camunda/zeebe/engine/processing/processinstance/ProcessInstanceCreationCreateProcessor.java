@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -139,19 +139,32 @@ public final class ProcessInstanceCreationCreateProcessor
   private Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
+    final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
     final var request =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
-            .addResourceId(bufferAsString(deployedProcess.getBpmnProcessId()));
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.CREATE_PROCESS_INSTANCE,
+                command.getValue().getTenantId())
+            .addResourceId(processId);
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    final var isAuthorized = authCheckBehavior.isAuthorized(request);
+    if (isAuthorized.isRight()) {
       return Either.right(deployedProcess);
     }
 
-    final var errorMessage =
-        UNAUTHORIZED_ERROR_MESSAGE.formatted(
-            request.getPermissionType(), request.getResourceType());
-    return Either.left(new Rejection(RejectionType.UNAUTHORIZED, errorMessage));
+    final var rejectionType = isAuthorized.getLeft();
+    final String errorMessage =
+        RejectionType.UNAUTHORIZED.equals(rejectionType)
+            ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(processId))
+            : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                "create an instance of process",
+                command.getValue().getProcessDefinitionKey(),
+                "such process");
+    return Either.left(new Rejection(rejectionType, errorMessage));
   }
 
   private void createProcessInstance(

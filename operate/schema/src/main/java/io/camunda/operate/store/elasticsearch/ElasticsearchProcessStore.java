@@ -42,7 +42,7 @@ import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.util.TreePath;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -122,7 +122,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   private final OperateProperties operateProperties;
 
   public ElasticsearchProcessStore(
-      final ProcessIndex processIndex,
+      final @Qualifier("operateProcessIndex") ProcessIndex processIndex,
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,

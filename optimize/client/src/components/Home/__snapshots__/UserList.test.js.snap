@@ -75,7 +75,7 @@ exports[`should match snapshot 1`] = `
       ]
     }
   />
-  <DeleterErrorHandler
+  <Deleter
     deleteEntity={[Function]}
     descriptionText="The '' null will be removed from the collection."
     onClose={[Function]}

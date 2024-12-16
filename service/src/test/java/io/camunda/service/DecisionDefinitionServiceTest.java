@@ -81,14 +81,14 @@ public final class DecisionDefinitionServiceTest {
     // given
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
-    when(definitionEntity.decisionId()).thenReturn("decId");
+    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(definitionEntity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(definitionEntity), null, null));
 
     final var requirementEntity = mock(DecisionRequirementsEntity.class);
     when(requirementEntity.xml()).thenReturn("<foo>bar</foo>");
     when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(requirementEntity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(requirementEntity), null, null));
     when(securityContextProvider.isAuthorized(
             "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
         .thenReturn(true);
@@ -104,7 +104,7 @@ public final class DecisionDefinitionServiceTest {
   public void shouldThrowNotFoundExceptionOnUnmatchedDecisionKey() {
     // given
     when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(0, List.of(), null));
+        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // then
     final var exception =
@@ -120,13 +120,13 @@ public final class DecisionDefinitionServiceTest {
     // given
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
     when(definitionEntity.decisionRequirementsKey()).thenReturn(1L);
-    when(definitionEntity.decisionId()).thenReturn("decId");
+    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
     when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(definitionEntity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(definitionEntity), null, null));
     when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult<>(0, List.of(), null));
+        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
     when(securityContextProvider.isAuthorized(
             "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
         .thenReturn(true);
@@ -141,12 +141,12 @@ public final class DecisionDefinitionServiceTest {
   public void shouldGetDecisionDefinitionByKey() {
     // given
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
-    when(definitionEntity.key()).thenReturn(42L);
-    when(definitionEntity.decisionId()).thenReturn("decId");
+    when(definitionEntity.decisionDefinitionKey()).thenReturn(42L);
+    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
     when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null));
+        .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null, null));
     when(securityContextProvider.isAuthorized(
             "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
         .thenReturn(true);
@@ -155,18 +155,18 @@ public final class DecisionDefinitionServiceTest {
     final DecisionDefinitionEntity decisionDefinition = services.getByKey(42L);
 
     // then
-    assertThat(decisionDefinition.key()).isEqualTo(42L);
+    assertThat(decisionDefinition.decisionDefinitionKey()).isEqualTo(42L);
   }
 
   @Test
   void shouldGetByKeyThrowForbiddenExceptionOnUnauthorizedDecisionKey() {
     // given
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
-    when(definitionEntity.decisionId()).thenReturn("decId");
+    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
     when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null));
+        .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null, null));
     when(securityContextProvider.isAuthorized(
             "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
         .thenReturn(false);
@@ -184,11 +184,11 @@ public final class DecisionDefinitionServiceTest {
   void shouldGetXmlThrowForbiddenExceptionOnUnauthorizedDecisionKey() {
     // given
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
-    when(definitionEntity.decisionId()).thenReturn("decId");
+    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
     when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null));
+        .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null, null));
     when(securityContextProvider.isAuthorized(
             "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
         .thenReturn(false);

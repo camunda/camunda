@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.*;
@@ -33,9 +34,9 @@ public class ListViewFlowNodeFromProcessInstanceHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromProcessInstanceHandler.class);
 
-  private static final Set<String> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-  private static final Set<String> PI_AND_AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
+  private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
+  private static final Set<Intent> PI_AND_AI_FINISH_STATES =
+      Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
   private final String indexName;
   private final boolean concurrencyMode;
@@ -58,11 +59,11 @@ public class ListViewFlowNodeFromProcessInstanceHandler
 
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
-    final var intent = record.getIntent().name();
+    final var intent = record.getIntent();
     if (!isProcessEvent(record.getValue())) {
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
-          || ELEMENT_MIGRATED.name().equals(intent);
+          || ELEMENT_MIGRATED.equals(intent);
     }
     return false;
   }
@@ -83,7 +84,7 @@ public class ListViewFlowNodeFromProcessInstanceHandler
       final FlowNodeInstanceForListViewEntity entity) {
 
     final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
+    final var intent = record.getIntent();
 
     entity.setKey(record.getKey());
     entity.setId(String.valueOf(record.getKey()));
@@ -93,15 +94,15 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    if (PI_AND_AI_FINISH_STATES.contains(intentStr)) {
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+    if (PI_AND_AI_FINISH_STATES.contains(intent)) {
+      if (intent.equals(ELEMENT_TERMINATED)) {
         entity.setActivityState(FlowNodeState.TERMINATED);
       } else {
         entity.setActivityState(FlowNodeState.COMPLETED);
       }
     } else {
       entity.setActivityState(FlowNodeState.ACTIVE);
-      if (PI_AND_AI_START_STATES.contains(intentStr)) {
+      if (PI_AND_AI_START_STATES.contains(intent)) {
         entity.setStartTime(record.getTimestamp());
       }
     }

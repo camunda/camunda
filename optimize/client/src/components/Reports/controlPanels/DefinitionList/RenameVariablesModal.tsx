@@ -9,6 +9,7 @@
 import {ChangeEvent, useEffect, useState} from 'react';
 import {
   Button,
+  Stack,
   TableToolbar,
   TableToolbarContent,
   TableToolbarSearch,
@@ -100,9 +101,9 @@ export default function RenameVariablesModal({
   return (
     <Modal open={open} size="lg" onClose={onClose} className="RenameVariablesModal">
       <Modal.Header title={t('report.definition.variables.rename')} />
-      <Modal.Content>
+      <Modal.Content className="modalContainer">
         <div className="header">
-          <div className="info">
+          <Stack gap={4} className="info">
             {t('report.definition.variables.renameInfo')}
             <p>
               <b>{t('report.definition.variables.important')} </b>
@@ -112,7 +113,7 @@ export default function RenameVariablesModal({
               <li>{t('report.definition.variables.globalChanges')}</li>
               <li>{t('report.definition.variables.useSameVariable')}</li>
             </ul>
-          </div>
+          </Stack>
         </div>
         <Table
           toolbar={

@@ -22,7 +22,6 @@ import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
 import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
-import io.camunda.optimize.service.db.os.util.AggregateHelperOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.groupby.ProcessGroupByProcessInstanceDateInterpreter;
@@ -125,10 +124,8 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
       final CompositeCommandResult result,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Map<String, Aggregate> fixedAggregations =
-        AggregateHelperOS.withNullValues(response.hits().total().value(), response.aggregations());
     ProcessGroupByProcessInstanceDateInterpreter.addQueryResult(
-        processAggregations(response, fixedAggregations, context),
+        processAggregations(response, response.aggregations(), context),
         getDistributedByInterpreter().isKeyOfNumericType(context),
         result,
         context);

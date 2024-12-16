@@ -35,6 +35,10 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
+  private int socketSendBuffer = 1024 * 1024;
+  private int socketReceiveBuffer = 1024 * 1024;
+  private Duration heartbeatTimeout = Duration.ofSeconds(15);
+  private Duration heartbeatInterval = Duration.ofSeconds(5);
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -248,6 +252,60 @@ public class MessagingConfig implements Config {
 
   public String getKeyStorePassword() {
     return keyStorePassword;
+  }
+
+  /**
+   * @return the configured size in bytes for SO_SNDBUF
+   */
+  public int getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  /**
+   * Sets the size of SO_SNDBUF.GatewayCfgT
+   *
+   * @param socketSendBuffer the data size in bytes to use for SO_SNDBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSocketSendBuffer(final int socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+    return this;
+  }
+
+  /**
+   * @return the configured size in bytes for SO_RCVBUF
+   */
+  public int getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  /**
+   * Sets the size of SO_RCVBUF.
+   *
+   * @param socketReceiveBuffer the data size in bytes to use for SO_RCVBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSocketReceiveBuffer(final int socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+    return this;
+  }
+
+  public Duration getHeartbeatTimeout() {
+    return heartbeatTimeout;
+  }
+
+  public MessagingConfig setHeartbeatTimeout(final Duration heartbeatTimeout) {
+    this.heartbeatTimeout = heartbeatTimeout;
+    return this;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public MessagingConfig setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+    return this;
   }
 
   public enum CompressionAlgorithm {

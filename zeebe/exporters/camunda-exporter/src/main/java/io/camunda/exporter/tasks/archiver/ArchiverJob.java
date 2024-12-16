@@ -8,13 +8,13 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.BackgroundTask;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface ArchiverJob extends BackgroundTask {
-  CompletableFuture<Integer> archiveNextBatch();
+  CompletionStage<Integer> archiveNextBatch();
 
   @Override
-  default CompletableFuture<Integer> execute() {
+  default CompletionStage<Integer> execute() {
     return archiveNextBatch();
   }
 }

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
@@ -49,6 +50,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobMetrics jobMetrics;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -60,6 +62,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    authorizationCheckBehavior = authCheckBehavior;
     jobBatchCollector =
         new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior);
 
@@ -71,18 +74,47 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
-    final JobBatchRecord value = record.getValue();
-    if (isValid(value)) {
+    final var validationResult = isValid(record);
+    if (validationResult.isRight()) {
       activateJobs(record);
     } else {
-      rejectCommand(record);
+      rejectCommand(record, validationResult.getLeft());
     }
   }
 
-  private boolean isValid(final JobBatchRecord record) {
-    return record.getMaxJobsToActivate() > 0
-        && record.getTimeout() > 0
-        && record.getTypeBuffer().capacity() > 0;
+  private Either<Rejection, Void> isValid(final TypedRecord<JobBatchRecord> command) {
+    final var record = command.getValue();
+    final var tenantIds = record.getTenantIds();
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    if (!authorizedTenantIds.isAuthorizedForTenantIds(tenantIds)) {
+      return Either.left(
+          new Rejection(
+              RejectionType.UNAUTHORIZED,
+              "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
+                  .formatted(tenantIds, authorizedTenantIds.getAuthorizedTenantIds())));
+    }
+    if (record.getMaxJobsToActivate() <= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to activate job batch with max jobs to activate to be greater than zero, but it was '%d'"
+                  .formatted(record.getMaxJobsToActivate())));
+    }
+    if (record.getTimeout() <= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to activate job batch with timeout to be greater than zero, but it was '%d'"
+                  .formatted(record.getTimeout())));
+    }
+    if (record.getTypeBuffer().capacity() <= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Expected to activate job batch with type to be present, but it was blank"));
+    }
+    return Either.right(null);
   }
 
   private void activateJobs(final TypedRecord<JobBatchRecord> record) {
@@ -99,35 +131,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     activateJobBatch(record, value, jobBatchKey, activatedJobCountPerJobKind);
   }
 
-  private void rejectCommand(final TypedRecord<JobBatchRecord> record) {
-    final RejectionType rejectionType;
-    final String rejectionReason;
-    final JobBatchRecord value = record.getValue();
-    final var format = "Expected to activate job batch with %s to be %s, but it was %s";
-
-    if (value.getMaxJobsToActivate() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason =
-          String.format(
-              format,
-              "max jobs to activate",
-              "greater than zero",
-              String.format("'%d'", value.getMaxJobsToActivate()));
-    } else if (value.getTimeout() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason =
-          String.format(
-              format, "timeout", "greater than zero", String.format("'%d'", value.getTimeout()));
-    } else if (value.getTypeBuffer().capacity() < 1) {
-      rejectionType = RejectionType.INVALID_ARGUMENT;
-      rejectionReason = String.format(format, "type", "present", "blank");
-    } else {
-      throw new IllegalStateException(
-          "Expected to reject an invalid activate job batch command, but it appears to be valid");
-    }
-
-    rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
+  private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
+    rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
+    responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
   }
 
   private void activateJobBatch(
@@ -153,8 +159,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     final var treePathProperties =
         new ElementTreePathBuilder()
-            .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(job.getElementInstanceKey())
             .build();
 

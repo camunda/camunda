@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -24,7 +25,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 
 public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
@@ -53,15 +54,12 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
-    if (!isAuthorizedToUpdate(command)) {
-      return;
-    }
 
     final var record = command.getValue();
     final var tenantKey = record.getTenantKey();
 
-    final var persistedRecord = tenantState.getTenantByKey(tenantKey);
-    if (persistedRecord.isEmpty()) {
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    if (persistedTenant.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
@@ -70,17 +68,21 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
       return;
     }
 
-    if (tenantIdConflict(record)) {
+    if (!StringUtils.isEmpty(record.getTenantId())) {
       rejectCommand(
           command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to update tenant with ID '%s', but a tenant with this ID already exists."
+          RejectionType.INVALID_ARGUMENT,
+          "Tenant ID cannot be updated. Expected no tenant ID, but received '%s'."
               .formatted(record.getTenantId()));
       return;
     }
 
-    updateExistingTenant(persistedRecord.get(), record);
-    updateStateAndDistribute(command, persistedRecord.get());
+    if (!isAuthorizedToUpdate(command, persistedTenant.get())) {
+      return;
+    }
+
+    updateExistingTenant(persistedTenant.get(), record);
+    updateStateAndDistribute(command, persistedTenant.get());
   }
 
   @Override
@@ -90,38 +92,39 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isAuthorizedToUpdate(final TypedRecord<TenantRecord> command) {
+  private boolean isAuthorizedToUpdate(
+      final TypedRecord<TenantRecord> command, final PersistedTenant persistedTenant) {
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(command.getValue().getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest);
+            .addResourceId(persistedTenant.getTenantId());
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
+      rejectCommandWithUnauthorizedError(
+          command, authorizationRequest, persistedTenant.getTenantId());
       return false;
     }
     return true;
   }
 
-  private boolean tenantIdConflict(final TenantRecord record) {
-    final Optional<Long> tenantKeyById = tenantState.getTenantKeyById(record.getTenantId());
-    return tenantKeyById.isPresent() && !tenantKeyById.get().equals(record.getTenantKey());
-  }
-
   private void updateExistingTenant(
-      final TenantRecord existingTenant, final TenantRecord updateRecord) {
-    if (!updateRecord.getTenantId().isEmpty()) {
-      existingTenant.setTenantId(updateRecord.getTenantId());
-    }
-    if (!updateRecord.getName().isEmpty()) {
-      existingTenant.setName(updateRecord.getName());
+      final PersistedTenant existingTenant, final TenantRecord updateRecord) {
+    final var updatedName = updateRecord.getName();
+    if (!updatedName.isEmpty()) {
+      existingTenant.setName(updatedName);
     }
   }
 
   private void updateStateAndDistribute(
-      final TypedRecord<TenantRecord> command, final TenantRecord tenantRecord) {
+      final TypedRecord<TenantRecord> command, final PersistedTenant persistedTenant) {
+    final var updatedRecord =
+        new TenantRecord()
+            .setTenantKey(persistedTenant.getTenantKey())
+            .setTenantId(persistedTenant.getTenantId())
+            .setName(persistedTenant.getName());
+
     stateWriter.appendFollowUpEvent(
-        tenantRecord.getTenantKey(), TenantIntent.UPDATED, tenantRecord);
+        persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
     responseWriter.writeEventOnCommand(
-        tenantRecord.getTenantKey(), TenantIntent.UPDATED, tenantRecord, command);
+        persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
     distributeCommand(command);
   }
 
@@ -134,10 +137,14 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command, final AuthorizationRequest authorizationRequest) {
+      final TypedRecord<TenantRecord> command,
+      final AuthorizationRequest authorizationRequest,
+      final String tenantId) {
     final var errorMessage =
-        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-            authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+            authorizationRequest.getPermissionType(),
+            authorizationRequest.getResourceType(),
+            "tenant id '%s'".formatted(tenantId));
     rejectCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
   }
 

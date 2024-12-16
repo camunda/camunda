@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import io.camunda.it.utils.BrokerWithCamundaExporterITInvocationProvider;
+import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.search.filter.VariableFilter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -20,7 +20,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(BrokerWithCamundaExporterITInvocationProvider.class)
+@ExtendWith(BrokerITInvocationProvider.class)
 public class VariableHandlerIT {
 
   private static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;

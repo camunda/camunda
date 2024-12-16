@@ -14,17 +14,17 @@ import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final record UserTaskEntity(
-    Long key,
-    String flowNodeBpmnId,
-    String bpmnProcessId,
-    OffsetDateTime creationTime,
-    OffsetDateTime completionTime,
+    Long userTaskKey,
+    String elementId,
+    String processDefinitionId,
+    OffsetDateTime creationDate,
+    OffsetDateTime completionDate,
     String assignee,
     UserTaskState state,
     Long formKey,
-    Long processDefinitionId, // equivalent to processKey
-    Long processInstanceId, // equivalent to processInstanceKey
-    Long flowNodeInstanceId,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    Long elementInstanceKey,
     String tenantId,
     OffsetDateTime dueDate,
     OffsetDateTime followUpDate,

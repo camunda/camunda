@@ -53,7 +53,7 @@ public class MappingCreatedHandler implements ExportHandler<MappingEntity, Mappi
   public void updateEntity(final Record<MappingRecordValue> record, final MappingEntity entity) {
     final MappingRecordValue value = record.getValue();
     entity
-        .setMappingKey(value.getMappingKey())
+        .setKey(value.getMappingKey())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue());
   }

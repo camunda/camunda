@@ -10,10 +10,14 @@ package io.camunda.exporter.schema;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.exporter.DefaultExporterResourceProvider;
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
@@ -24,6 +28,8 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -347,5 +353,57 @@ public class SchemaManagerIT {
 
     assertThat(retrievedIndex.at("/settings/index/provided_name").asText())
         .isEqualTo(indexTemplate.getFullQualifiedName());
+  }
+
+  @TestTemplate
+  void shouldAlsoUpdateCorrespondingIndexWhenIndexTemplateUpdated(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    config.setCreateSchema(true);
+
+    final var currentMappingsFile = index.getMappingsClasspathFilename();
+    final var newMappingsFile = "/mappings-added-property.json";
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config), Set.of(), Set.of(indexTemplate), config);
+
+    schemaManager.startup();
+
+    final var retrievedIndex =
+        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), currentMappingsFile)).isTrue();
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn(newMappingsFile);
+
+    schemaManager.startup();
+
+    // then
+    final var updatedIndex =
+        searchClientAdapter.getIndexAsNode(indexTemplate.getFullQualifiedName());
+
+    assertThat(mappingsMatch(updatedIndex.get("mappings"), newMappingsFile)).isTrue();
+  }
+
+  @RegressionTestTemplate("https://github.com/camunda/camunda/issues/26056")
+  void shouldNotHaveValidationIssuesWithTheSameIndices(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter) {
+    config.setCreateSchema(true);
+
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            provider.getIndexDescriptors(),
+            provider.getIndexTemplateDescriptors(),
+            config);
+
+    schemaManager.startup();
+    assertThatNoException().isThrownBy(schemaManager::startup);
   }
 }

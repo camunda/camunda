@@ -30,7 +30,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
@@ -59,8 +59,7 @@ public class QueryHelper {
 
   @Autowired private DateTimeFormatter dateTimeFormatter;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   @Autowired private ListViewTemplate listViewTemplate;
 
@@ -111,7 +110,7 @@ public class QueryHelper {
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if (permissionsService == null) {
+    if (!permissionsService.permissionsEnabled()) {
       return null;
     }
     final var allowed = permissionsService.getProcessesWithPermission(IdentityPermission.READ);

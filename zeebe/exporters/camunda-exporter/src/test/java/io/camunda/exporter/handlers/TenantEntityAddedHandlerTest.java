@@ -1,0 +1,90 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter.handlers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
+import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import org.junit.jupiter.api.Test;
+
+public class TenantEntityAddedHandlerTest {
+
+  private final ProtocolFactory factory = new ProtocolFactory();
+  private final String indexName = "test-tenant";
+  private final TenantEntityAddedHandler underTest = new TenantEntityAddedHandler(indexName);
+
+  @Test
+  void testGetHandledValueType() {
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.TENANT);
+  }
+
+  @Test
+  void testGetEntityType() {
+    assertThat(underTest.getEntityType()).isEqualTo(TenantEntity.class);
+  }
+
+  @Test
+  void shouldHandleRecord() {
+    // given
+    final Record<TenantRecordValue> tenantAddedRecord =
+        factory.generateRecordWithIntent(ValueType.TENANT, TenantIntent.ENTITY_ADDED);
+
+    // when - then
+    assertThat(underTest.handlesRecord(tenantAddedRecord)).isTrue();
+  }
+
+  @Test
+  void shouldGenerateIds() {
+    // given
+    final Record<TenantRecordValue> tenantRecord =
+        factory.generateRecordWithIntent(ValueType.TENANT, TenantIntent.ENTITY_ADDED);
+
+    // when
+    final var idList = underTest.generateIds(tenantRecord);
+
+    // then
+    final var value = tenantRecord.getValue();
+    assertThat(idList)
+        .containsExactly(TenantEntity.getChildKey(value.getTenantKey(), value.getEntityKey()));
+  }
+
+  @Test
+  void shouldCreateNewEntity() {
+    // when
+    final var result = underTest.createNewEntity("id");
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isEqualTo("id");
+  }
+
+  @Test
+  void shouldUpdateTenantEntityOnFlush() throws PersistenceException {
+    // given
+    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild(111L);
+    final TenantEntity inputEntity =
+        new TenantEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .addWithRouting(indexName, inputEntity, String.valueOf(joinRelation.parent()));
+  }
+}

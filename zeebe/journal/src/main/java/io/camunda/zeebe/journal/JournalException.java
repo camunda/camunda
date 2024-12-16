@@ -17,7 +17,7 @@
 package io.camunda.zeebe.journal;
 
 /** Defines exceptions thrown by the Journal */
-public class JournalException extends RuntimeException {
+public sealed class JournalException extends RuntimeException {
 
   public JournalException(final String message) {
     super(message);
@@ -32,21 +32,21 @@ public class JournalException extends RuntimeException {
   }
 
   /** Exception thrown when storage runs out of disk space. */
-  public static class OutOfDiskSpace extends JournalException {
+  public static final class OutOfDiskSpace extends JournalException {
     public OutOfDiskSpace(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when an entry has an invalid checksum. */
-  public static class InvalidChecksum extends JournalException {
+  public static final class InvalidChecksum extends JournalException {
     public InvalidChecksum(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when an entry's index is not the expected one. */
-  public static class InvalidIndex extends JournalException {
+  public static final class InvalidIndex extends JournalException {
     public InvalidIndex(final String message) {
       super(message);
     }
@@ -55,21 +55,21 @@ public class JournalException extends RuntimeException {
   /**
    * Exception thrown when an entry's application sequence number lower than the previous record.
    */
-  public static class InvalidAsqn extends JournalException {
+  public static final class InvalidAsqn extends JournalException {
     public InvalidAsqn(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when the segment is full and no records can be appended */
-  public static class SegmentFull extends JournalException {
+  public static final class SegmentFull extends JournalException {
     public SegmentFull(final String message) {
       super(message);
     }
   }
 
   /** Exception thrown when the segment is too small to fit even one record */
-  public static class SegmentSizeTooSmall extends JournalException {
+  public static final class SegmentSizeTooSmall extends JournalException {
     public SegmentSizeTooSmall(final String message) {
       super(message);
     }

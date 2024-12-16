@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.9.1">
+  <bpmn:process id="eventSubprocessProcess" name="Event Subprocess Process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1vnazga">
+      <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_03acvim">
+      <bpmn:incoming>SequenceFlow_0ogmd2w</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_0b1strv" sourceRef="StartEvent_1vnazga" targetRef="parentProcessTask" />
+    <bpmn:userTask id="parentProcessTask" name="Parent process task">
+      <bpmn:incoming>SequenceFlow_0b1strv</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1aytoqp</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1aytoqp" sourceRef="parentProcessTask" targetRef="ServiceTask_0ruokei" />
+    <bpmn:subProcess id="ServiceTask_0ruokei">
+      <bpmn:incoming>SequenceFlow_1aytoqp</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0ogmd2w</bpmn:outgoing>
+      <bpmn:startEvent id="StartEvent_1dgs6mf">
+        <bpmn:outgoing>SequenceFlow_03jyud1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="subprocessTask" name="Subprocess task">
+        <bpmn:incoming>SequenceFlow_03jyud1</bpmn:incoming>
+        <bpmn:outgoing>SequenceFlow_1ey1yvq</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="SequenceFlow_03jyud1" sourceRef="StartEvent_1dgs6mf" targetRef="subprocessTask" />
+      <bpmn:endEvent id="EndEvent_171a64z">
+        <bpmn:incoming>SequenceFlow_1ey1yvq</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SequenceFlow_1ey1yvq" sourceRef="subprocessTask" targetRef="EndEvent_171a64z" />
+      <bpmn:subProcess id="SubProcess_006dg16" name="Event Subprocess inside Subprocess" triggeredByEvent="true">
+        <bpmn:endEvent id="EndEvent_0dq3i8l">
+          <bpmn:incoming>SequenceFlow_0vkqogh</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:userTask id="taskInSubprocess" name="Task in sub-subprocess">
+          <bpmn:incoming>SequenceFlow_1c82aad</bpmn:incoming>
+          <bpmn:outgoing>SequenceFlow_0vkqogh</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:sequenceFlow id="SequenceFlow_1c82aad" sourceRef="StartEvent_0kpitfv" targetRef="taskInSubprocess" />
+        <bpmn:sequenceFlow id="SequenceFlow_0vkqogh" sourceRef="taskInSubprocess" targetRef="EndEvent_0dq3i8l" />
+        <bpmn:startEvent id="StartEvent_0kpitfv" name="Timer in sub-subprocess" isInterrupting="false">
+          <bpmn:outgoing>SequenceFlow_1c82aad</bpmn:outgoing>
+          <bpmn:timerEventDefinition>
+            <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R1/PT2S</bpmn:timeCycle>
+          </bpmn:timerEventDefinition>
+        </bpmn:startEvent>
+      </bpmn:subProcess>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="SequenceFlow_0ogmd2w" sourceRef="ServiceTask_0ruokei" targetRef="EndEvent_03acvim" />
+    <bpmn:boundaryEvent id="cancelTimerEvent" attachedToRef="ServiceTask_0ruokei">
+      <bpmn:outgoing>Flow_1h1lp70</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_0ky4clc">
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT6S</bpmn:timeDuration>
+      </bpmn:timerEventDefinition>
+    </bpmn:boundaryEvent>
+    <bpmn:endEvent id="Canceled">
+      <bpmn:incoming>Flow_1h1lp70</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1h1lp70" sourceRef="cancelTimerEvent" targetRef="Canceled" />
+  </bpmn:process>
+  <bpmn:message id="Message_03ggk3d" name="interruptProcess">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=clientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_1nvz8ri" name="continueProcess">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=clientId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+</bpmn:definitions>

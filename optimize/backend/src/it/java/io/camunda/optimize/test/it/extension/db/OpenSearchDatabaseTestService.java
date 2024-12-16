@@ -463,7 +463,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
       final TermsQueryContainer queryContainer, final String expectedIndex) {
     try {
       return getOptimizeOpenSearchClient()
-          .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery());
+          .count(new String[] {expectedIndex}, queryContainer.toOpenSearchQuery().toQuery());
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
     }
@@ -841,7 +841,7 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public boolean indexExists(final String indexOrAliasName, Boolean addMappingFeatures) {
+  public boolean indexExists(final String indexOrAliasName, final Boolean addMappingFeatures) {
     return indexExists(indexOrAliasName);
   }
 

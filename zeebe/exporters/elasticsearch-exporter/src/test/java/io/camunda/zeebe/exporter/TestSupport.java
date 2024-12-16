@@ -102,11 +102,14 @@ final class TestSupport {
             ValueType.PROCESS_INSTANCE_RESULT,
             ValueType.CLOCK,
             ValueType.SCALE,
+            ValueType.REDISTRIBUTION,
             // these are not yet supported
             ValueType.ROLE,
             ValueType.TENANT,
             ValueType.GROUP,
-            ValueType.MAPPING);
+            ValueType.MAPPING,
+            ValueType.IDENTITY_SETUP,
+            ValueType.RESOURCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

@@ -23,14 +23,15 @@ import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -100,7 +101,8 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
     assertThat(passwordEncoder.matches(TEST_PASSWORD, testUser.getPassword())).isTrue();
     assertThat(testUser.getUserId()).isEqualTo("user1");
     assertThat(testUser.getDisplayName()).isEqualTo(TEST_FIRSTNAME + " " + TEST_LASTNAME);
-    assertThat(testUser.getRoles()).isEqualTo(List.of(Role.OWNER.name()));
+    assertThat(testUser.getAuthorities())
+        .isEqualTo(Set.of(new SimpleGrantedAuthority(Role.OWNER.name())));
   }
 
   private void updateUserRealName() {

@@ -9,7 +9,7 @@ package io.camunda.search.clients.transformers.auth;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -24,7 +24,7 @@ public class FlowNodeInstanceAuthorizationQueryTransformer
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceKeys) {
-    if (resourceType == PROCESS_DEFINITION && permissionType == READ_INSTANCE) {
+    if (resourceType == PROCESS_DEFINITION && permissionType == READ_PROCESS_INSTANCE) {
       return stringTerms("bpmnProcessId", resourceKeys);
     }
     throw new IllegalArgumentException(

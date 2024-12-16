@@ -14,9 +14,6 @@ import static org.junit.Assert.assertTrue;
 
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
-import io.camunda.operate.schema.indices.OperateWebSessionIndex;
-import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -28,12 +25,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 @ExtendWith(MockitoExtension.class)
 public class SchemaCreationIT extends OperateSearchAbstractIT {
@@ -58,7 +55,11 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
 
   @Autowired private EventTemplate eventTemplate;
   @Autowired private ListViewTemplate listViewTemplate;
-  @Autowired private ProcessIndex processIndex;
+
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
+
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private IndicesCheck indicesCheck;
@@ -112,45 +113,9 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
     assertEquals(Integer.valueOf(0), settings.replicas());
   }
 
-  @Test // OPE-1310
-  public void testMigrationStepsRepositoryFields() throws IOException {
-    final IndexDescriptor migrationStepsIndexDescriptor =
-        getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
-    assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
-    assertThat(
-            testSearchRepository.getFieldNames(
-                migrationStepsIndexDescriptor.getFullQualifiedName()))
-        .containsExactlyInAnyOrder(
-            ProcessorStep.VERSION,
-            "@type",
-            "description",
-            ProcessorStep.APPLIED,
-            ProcessorStep.APPLIED_DATE,
-            ProcessorStep.CREATED_DATE,
-            ProcessorStep.CONTENT,
-            ProcessorStep.INDEX_NAME,
-            ProcessorStep.ORDER);
-  }
-
   @Test // OPE-1308
   public void testDynamicMappingsOfIndices() throws Exception {
-    final IndexDescriptor sessionIndex =
-        indexDescriptors.stream()
-            .filter(
-                indexDescriptor ->
-                    indexDescriptor.getIndexName().equals(OperateWebSessionIndex.INDEX_NAME))
-            .findFirst()
-            .orElseThrow();
-    assertThatIndexHasDynamicMappingOf(sessionIndex, TestSearchRepository.DynamicMappingType.True);
-
-    final List<IndexDescriptor> strictMappingIndices =
-        indexDescriptors.stream()
-            .filter(
-                indexDescriptor ->
-                    !indexDescriptor.getIndexName().equals(OperateWebSessionIndex.INDEX_NAME))
-            .collect(Collectors.toList());
-
-    for (final IndexDescriptor indexDescriptor : strictMappingIndices) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThatIndexHasDynamicMappingOf(
           indexDescriptor, TestSearchRepository.DynamicMappingType.Strict);
     }

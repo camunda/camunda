@@ -7,48 +7,43 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.query.SearchQueryBase;
-import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
 public record FlowNodeInstanceDbQuery(
-    FlowNodeInstanceFilter filter, FlowNodeInstanceSort sort, SearchQueryPage page) {
-
-  public FlowNodeInstanceDbQuery {
-    // There should be a default in the SearchQueryPage, so this should never happen
-    Objects.requireNonNull(page);
-  }
+    FlowNodeInstanceFilter filter, DbQuerySorting<FlowNodeInstanceEntity> sort, DbQueryPage page) {
 
   public static FlowNodeInstanceDbQuery of(
       final Function<FlowNodeInstanceDbQuery.Builder, ObjectBuilder<FlowNodeInstanceDbQuery>> fn) {
     return fn.apply(new FlowNodeInstanceDbQuery.Builder()).build();
   }
 
-  public static final class Builder
-      extends SearchQueryBase.AbstractQueryBuilder<FlowNodeInstanceDbQuery.Builder>
-      implements ObjectBuilder<FlowNodeInstanceDbQuery> {
+  public static final class Builder implements ObjectBuilder<FlowNodeInstanceDbQuery> {
 
     private static final FlowNodeInstanceFilter EMPTY_FILTER =
         FilterBuilders.flowNodeInstance().build();
-    private static final FlowNodeInstanceSort EMPTY_SORT =
-        SortOptionBuilders.flowNodeInstance().build();
 
     private FlowNodeInstanceFilter filter;
-    private FlowNodeInstanceSort sort;
+    private DbQuerySorting<FlowNodeInstanceEntity> sort;
+    private DbQueryPage page;
 
     public Builder filter(final FlowNodeInstanceFilter value) {
       filter = value;
       return this;
     }
 
-    public Builder sort(final FlowNodeInstanceSort value) {
+    public Builder sort(final DbQuerySorting<FlowNodeInstanceEntity> value) {
       sort = value;
+      return this;
+    }
+
+    public Builder page(final DbQueryPage value) {
+      page = value;
       return this;
     }
 
@@ -58,20 +53,18 @@ public record FlowNodeInstanceDbQuery(
     }
 
     public Builder sort(
-        final Function<FlowNodeInstanceSort.Builder, ObjectBuilder<FlowNodeInstanceSort>> fn) {
-      return sort(SortOptionBuilders.flowNodeInstance(fn));
-    }
-
-    @Override
-    protected Builder self() {
-      return this;
+        final Function<
+                DbQuerySorting.Builder<FlowNodeInstanceEntity>,
+                ObjectBuilder<DbQuerySorting<FlowNodeInstanceEntity>>>
+            fn) {
+      return sort(DbQuerySorting.of(fn));
     }
 
     @Override
     public FlowNodeInstanceDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
-      sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      return new FlowNodeInstanceDbQuery(filter, sort, page().sanitize());
+      sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
+      return new FlowNodeInstanceDbQuery(filter, sort, page);
     }
   }
 }

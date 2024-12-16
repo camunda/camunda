@@ -13,15 +13,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
 import io.camunda.tasklist.zeebeimport.v860.record.value.JobRecordValueImpl;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import java.time.Instant;
@@ -106,7 +106,7 @@ public class JobZeebeRecordProcessorOpenSearch {
     entity.setFormKey(formKey);
 
     Optional.ofNullable(formKey)
-        .flatMap(formStore::getHighestVersionFormByKey)
+        .flatMap(formStore::getFormByKey)
         .ifPresentOrElse(
             linkedForm -> {
               entity.setFormVersion(linkedForm.version());

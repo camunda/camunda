@@ -11,53 +11,148 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
 @AutoCloseResources
 final class BackgroundTaskManagerTest {
-  @AutoCloseResource // ensures we always reap the thread no matter what
-  private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+  @AutoCloseResource(closeMethod = "shutdownNow")
+  private final ScheduledThreadPoolExecutor executor =
+      Mockito.spy(new ScheduledThreadPoolExecutor(1));
+
+  @Nested
+  final class StartTest {
+    private final BackgroundTaskManager archiver =
+        new BackgroundTaskManager(
+            1,
+            new NoopArchiverRepository(),
+            new NoopIncidentUpdateRepository(),
+            LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
+            executor,
+            // return unfinished futures to have a deterministic count of submitted tasks
+            List.of(CompletableFuture::new, CompletableFuture::new));
+
+    @Test
+    void shouldNotResubmitTasksOnStart() {
+      // given
+      archiver.start();
+
+      // when
+      archiver.start();
+
+      // then - we can't use `getTaskCount()` because that's an approximation of the number of tasks
+      // and it may be wrong at times, as per the docs
+      Mockito.verify(executor, Mockito.times(2)).submit(Mockito.any(Runnable.class));
+    }
+
+    @Test
+    void shouldResubmitUnsubmittedTasksOnStart() {
+      // given
+      final var count = new MutableInteger();
+      Mockito.doAnswer(
+              inv -> {
+                final var invocation = count.getAndIncrement();
+                // fail on the second call
+                if (invocation == 1) {
+                  throw new RuntimeException("fail");
+                }
+
+                return inv.callRealMethod();
+              })
+          .when(executor)
+          .submit(Mockito.any(Runnable.class));
+      assertThatCode(archiver::start)
+          .as("throws on the second task submission")
+          .isInstanceOf(RuntimeException.class);
+      Mockito.verify(executor, Mockito.times(2)).submit(Mockito.any(Runnable.class));
+
+      // when
+      archiver.start();
+
+      // we can't use `getTaskCount()` because that's an approximation of the number of tasks
+      // and it may be wrong at times, as per the docs
+      // then - we actually expect 3 submit calls, since the second one initially failed, and we're
+      // now re-submitting it again
+      Mockito.verify(executor, Mockito.times(3)).submit(Mockito.any(Runnable.class));
+    }
+  }
 
   @Nested
   final class CloseTest {
-    private final CloseableRepository repository = new CloseableRepository();
-    private final BackgroundTaskManager archiver =
+    private final CloseableArchiverRepository archiverRepository =
+        new CloseableArchiverRepository();
+    private final CloseableIncidentRepository incidentRepository =
+        new CloseableIncidentRepository();
+    private final BackgroundTaskManager taskManager =
         new BackgroundTaskManager(
-            1, repository, LoggerFactory.getLogger(BackgroundTaskManagerTest.class), executor);
+            1,
+            archiverRepository,
+            incidentRepository,
+            LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
+            executor,
+            List.of());
 
     @Test
     void shouldCloseExecutorOnClose() {
       // when
-      archiver.close();
+      taskManager.close();
 
       // then
       assertThat(executor.isTerminated()).isTrue();
     }
 
     @Test
-    void shouldCloseRepositoryOnClose() {
+    void shouldCloseRepositoriesOnClose() {
       // when
-      archiver.close();
+      taskManager.close();
 
       // then
-      assertThat(repository.isClosed).isTrue();
+      assertThat(archiverRepository.isClosed).isTrue();
+      assertThat(incidentRepository.isClosed).isTrue();
     }
 
     @Test
-    void shouldNotThrowOnRepositoryCloseError() {
+    void shouldNotThrowOnArchiverRepositoryCloseError() {
       // given
-      repository.exception = new RuntimeException("foo");
+      archiverRepository.exception = new RuntimeException("foo");
 
       // when
-      assertThatCode(archiver::close).doesNotThrowAnyException();
+      assertThatCode(taskManager::close).doesNotThrowAnyException();
     }
 
-    private static final class CloseableRepository extends NoopArchiverRepository {
+    @Test
+    void shouldNotThrowOnIncidentRepositoryCloseError() {
+      // given
+      incidentRepository.exception = new RuntimeException("foo");
+
+      // when
+      assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    private static final class CloseableArchiverRepository extends NoopArchiverRepository {
+      private boolean isClosed;
+      private Exception exception;
+
+      @Override
+      public void close() throws Exception {
+        if (exception != null) {
+          throw exception;
+        }
+
+        isClosed = true;
+      }
+    }
+
+    private static final class CloseableIncidentRepository extends NoopIncidentUpdateRepository {
       private boolean isClosed;
       private Exception exception;
 

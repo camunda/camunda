@@ -20,6 +20,7 @@ import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
 import {useDocs, useErrorHandling, useUiConfig} from 'hooks';
+import {UiConfig} from 'config';
 
 import {getUserToken} from './service';
 import useUserMenu from './useUserMenu';
@@ -33,17 +34,21 @@ export default function Header({noActions}: {noActions?: boolean}) {
   const location = useLocation();
   const {mightFail} = useErrorHandling();
   const {getBaseDocsUrl} = useDocs();
-  const userSideBar = useUserMenu();
   const {
     optimizeProfile,
     enterpriseMode,
     webappsLinks,
-    optimizeDatabase,
+    optimizeVersion,
     onboarding,
     notificationsUrl,
     validLicense,
     licenseType,
+    commercial,
+    expiresAt,
   } = useUiConfig();
+  const timezoneInfo =
+    t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userSideBar = useUserMenu(optimizeVersion, timezoneInfo);
 
   useEffect(() => {
     mightFail(getUserToken(), setUserToken, showError);
@@ -58,10 +63,8 @@ export default function Header({noActions}: {noActions?: boolean}) {
 
   if (!noActions) {
     props.navbar = createNavBarProps(
-      validLicense,
-      licenseType,
-      location.pathname,
-      optimizeDatabase
+      {validLicense, licenseType, commercial, expiresAt},
+      location.pathname
     );
     props.infoSideBar = createInfoSideBarProps(getBaseDocsUrl(), enterpriseMode);
     props.userSideBar = userSideBar;
@@ -130,10 +133,8 @@ function createWebappLinks(webappLinks: Record<string, string> | null): C3Naviga
 }
 
 function createNavBarProps(
-  validLicense: boolean,
-  licenseType: 'production' | 'saas' | 'unknown',
-  pathname: string,
-  optimizeDatabase?: string
+  license: Pick<UiConfig, 'validLicense' | 'licenseType' | 'commercial' | 'expiresAt'>,
+  pathname: string
 ): C3NavigationNavBarProps {
   const elements: C3NavigationNavBarProps['elements'] = [
     {
@@ -161,28 +162,15 @@ function createNavBarProps(
     },
   ];
 
-  const tags: C3NavigationNavBarProps['tags'] = [];
-
-  if (optimizeDatabase === 'opensearch') {
-    tags.push({
-      key: 'opensearchWarning',
-      label: t('navigation.opensearchPreview').toString(),
-      tooltip: {
-        content: t('navigation.opensearchWarningText').toString(),
-        buttonLabel: t('navigation.opensearchPreview').toString(),
-      },
-      color: 'red',
-    });
-  }
-
   const licenseTag: C3NavigationNavBarProps['licenseTag'] = {
-    show: licenseType !== 'saas',
-    isProductionLicense: validLicense,
+    show: license.licenseType !== 'saas',
+    isProductionLicense: license.validLicense,
+    isCommercial: license.commercial,
+    expiresAt: license.expiresAt ?? undefined,
   };
 
   return {
     elements,
-    tags,
     licenseTag,
   };
 }

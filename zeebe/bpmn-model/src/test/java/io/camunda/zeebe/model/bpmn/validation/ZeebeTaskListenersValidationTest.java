@@ -21,9 +21,12 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.TaskListenerBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeTaskListenersValidationTest {
 
@@ -36,7 +39,7 @@ public class ZeebeTaskListenersValidationTest {
             .startEvent()
             .userTask(
                 "my_user_task",
-                ut -> ut.zeebeUserTask().zeebeTaskListener(TaskListenerBuilder::complete))
+                ut -> ut.zeebeUserTask().zeebeTaskListener(TaskListenerBuilder::completing))
             .endEvent()
             .done();
 
@@ -58,5 +61,38 @@ public class ZeebeTaskListenersValidationTest {
     ProcessValidationUtil.assertThatProcessHasViolations(
         process,
         expect(ZeebeTaskListener.class, "Attribute 'eventType' must be present and not empty"));
+  }
+
+  @DisplayName("task listener with unsupported `eventType` property")
+  @ParameterizedTest(name = "unsupported event type: ''{0}''")
+  @EnumSource(
+      value = ZeebeTaskListenerEventType.class,
+      mode = EnumSource.Mode.EXCLUDE,
+      // supported event types
+      names = {"assigning", "assignment", "completing", "complete"})
+  void testEventTypeNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "user_task",
+                ut ->
+                    ut.zeebeUserTask()
+                        .zeebeTaskListener(
+                            l -> l.eventType(unsupportedEventType).type("not_supported_listener")))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeTaskListener.class,
+            String.format(
+                "Task listener event type '%s' is not supported. "
+                    + "Currently, only 'assigning', 'completing' event types "
+                    + "and 'assignment', 'complete' deprecated event types are supported.",
+                unsupportedEventType)));
   }
 }

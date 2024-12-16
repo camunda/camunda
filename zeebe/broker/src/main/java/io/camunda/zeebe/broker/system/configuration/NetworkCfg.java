@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
+import java.time.Duration;
 import org.springframework.util.unit.DataSize;
 
 public final class NetworkCfg implements ConfigurationEntry {
@@ -20,12 +21,18 @@ public final class NetworkCfg implements ConfigurationEntry {
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final String DEFAULT_ADVERTISED_HOST =
       Address.defaultAdvertisedHost().getHostAddress();
+  private static final DataSize DEFAULT_BROKER_SOCKET_SEND_BUFFER = DataSize.ofMegabytes(1);
+  private static final DataSize DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER = DataSize.ofMegabytes(1);
 
   // leave host and advertised host to null, so we can distinguish if they are set explicitly or not
   private String host = null;
   private String advertisedHost = null;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+  private DataSize socketSendBuffer = DEFAULT_BROKER_SOCKET_SEND_BUFFER;
+  private DataSize socketReceiveBuffer = DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER;
+  private Duration heartbeatTimeout = Duration.ofSeconds(15);
+  private Duration heartbeatInterval = Duration.ofSeconds(5);
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -86,6 +93,38 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
+  public DataSize getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  public void setSocketSendBuffer(final DataSize socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+  }
+
+  public DataSize getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  public void setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+  }
+
+  public Duration getHeartbeatTimeout() {
+    return heartbeatTimeout;
+  }
+
+  public void setHeartbeatTimeout(final Duration heartbeatTimeout) {
+    this.heartbeatTimeout = heartbeatTimeout;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public void setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+  }
+
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -117,6 +156,14 @@ public final class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", maxMessageSize="
         + maxMessageSize
+        + ", socketReceiveBuffer="
+        + socketReceiveBuffer
+        + ", socketSendBuffer="
+        + socketSendBuffer
+        + ", heartbeatTimeout="
+        + heartbeatTimeout
+        + ", heartbeatInterval="
+        + heartbeatInterval
         + ", commandApi="
         + commandApi
         + ", internalApi="

@@ -38,9 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = ProcessDefinitionQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
@@ -83,7 +81,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           ],
           "page": {
               "totalItems": 1,
-              "firstSortValues": [],
+              "firstSortValues": ["f"],
               "lastSortValues": [
                   "v"
               ]
@@ -104,7 +102,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "alpha",
                       "<default>",
                       "formId")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
   private static final String FORM_ITEM_JSON =
       """
@@ -279,7 +278,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             new ProcessDefinitionEntity(
                 1L, "name", "id", "xml", "resource", 1, "tag", "tenant", "formId"));
     when(formServices.getLatestVersionByFormId("formId"))
-        .thenReturn(Optional.of(new FormEntity("0", "tenant-1", "formId", "schema", 1L)));
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
     webClient
         .get()

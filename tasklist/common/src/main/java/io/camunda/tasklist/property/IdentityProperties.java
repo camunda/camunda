@@ -11,7 +11,6 @@ public class IdentityProperties {
   public static final String ALL_RESOURCES = "*";
   public static final String FULL_GROUP_ACCESS = "";
   private String redirectRootUrl;
-  private boolean resourcePermissionsEnabled = false;
   private boolean userAccessRestrictionsEnabled = true;
 
   public String getRedirectRootUrl() {
@@ -29,16 +28,6 @@ public class IdentityProperties {
   public IdentityProperties setUserAccessRestrictionsEnabled(
       final boolean userAccessRestrictionsEnabled) {
     this.userAccessRestrictionsEnabled = userAccessRestrictionsEnabled;
-    return this;
-  }
-
-  public boolean isResourcePermissionsEnabled() {
-    return resourcePermissionsEnabled;
-  }
-
-  public IdentityProperties setResourcePermissionsEnabled(
-      final boolean resourcePermissionsEnabled) {
-    this.resourcePermissionsEnabled = resourcePermissionsEnabled;
     return this;
   }
 }

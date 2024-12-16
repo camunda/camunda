@@ -68,7 +68,7 @@ public class SchemaUpgradeClientOSReindexTest {
   @Mock private OptimizeIndexNameService indexNameService;
   @Mock private OpenSearchMetadataService metadataService;
   @Mock private Info taskInfo;
-  private SchemaUpgradeClient<?, ?> underTest;
+  private SchemaUpgradeClient<?, ?, ?> underTest;
 
   @BeforeEach
   public void init() {

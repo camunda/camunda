@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -35,14 +36,15 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperateProperties.class
+      OperateProperties.class,
+      CamundaSecurityProperties.class
     },
     properties = {
       OperateProperties.PREFIX + ".enterprise=true",
       OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
       OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
       OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
-      OperateProperties.PREFIX + ".multiTenancy.enabled=true",
+      "camunda.security.multiTenancy.enabled=true",
       // CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
     })
 public class ClientConfigRestServiceEnterpriseIT extends OperateAbstractIT {

@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -31,10 +31,10 @@ import org.springframework.web.multipart.MultipartFile;
 public class ResourceController {
 
   private final ResourceServices resourceServices;
-  private final MultiTenancyCfg multiTenancyCfg;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   public ResourceController(
-      final ResourceServices resourceServices, final MultiTenancyCfg multiTenancyCfg) {
+      final ResourceServices resourceServices, final MultiTenancyConfiguration multiTenancyCfg) {
     this.resourceServices = resourceServices;
     this.multiTenancyCfg = multiTenancyCfg;
   }

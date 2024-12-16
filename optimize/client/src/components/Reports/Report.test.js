@@ -86,18 +86,6 @@ it('should pass the error to report view and edit mode if evaluation fails', asy
   expect(node.find(ReportView).prop('error')).toEqual(testError);
 });
 
-it("should show an error page if report doesn't exist", () => {
-  const node = shallow(<Report {...props} />);
-  node.setState({
-    report: undefined,
-    serverError: {status: 500, detailedMessage: 'No interpreter registered for...'},
-  });
-
-  expect(node.find('ErrorPage').prop('text')).toBe(
-    'This type of report is currently not supported for OpenSearch.'
-  );
-});
-
 it('should initially evaluate the report', () => {
   shallow(<Report {...props} />);
 

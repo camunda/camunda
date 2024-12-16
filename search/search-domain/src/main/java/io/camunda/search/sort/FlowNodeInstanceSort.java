@@ -27,7 +27,7 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
       implements ObjectBuilder<FlowNodeInstanceSort> {
 
     public Builder flowNodeInstanceKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("flowNodeInstanceKey", null);
       return this;
     }
 
@@ -42,7 +42,7 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
     }
 
     public Builder processDefinitionId() {
-      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      currentOrdering = new FieldSorting("processDefinitionId", null);
       return this;
     }
 

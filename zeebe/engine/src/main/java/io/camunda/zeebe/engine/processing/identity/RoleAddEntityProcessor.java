@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -30,6 +30,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
+      "Expected to add entity with key '%s' to role with key '%s', but the entity is already assigned to this role.";
 
   private final RoleState roleState;
   private final UserState userState;
@@ -76,10 +78,12 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE)
             .addResourceId(persistedRecord.get().getName());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "role name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
@@ -96,6 +100,15 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return;
     }
 
+    if (isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+              record.getEntityKey(), record.getRoleKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_ADDED, record, command);
@@ -109,7 +122,16 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, command.getValue());
+    final var record = command.getValue();
+    if (isEntityAssigned(record)) {
+      final var errorMessage =
+          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+              record.getEntityKey(), record.getRoleKey());
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+    } else {
+      stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record);
+    }
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -121,5 +143,9 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return mappingState.get(entityKey).isPresent();
     }
     return false;
+  }
+
+  private boolean isEntityAssigned(final RoleRecord record) {
+    return roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
   }
 }

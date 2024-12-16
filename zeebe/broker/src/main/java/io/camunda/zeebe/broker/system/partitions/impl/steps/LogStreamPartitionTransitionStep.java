@@ -40,7 +40,6 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       context.setStreamClock(null);
-      context.getComponentHealthMonitor().removeComponent(logStream.getLogName());
       logStream.close();
       context.setLogStream(null);
     }

@@ -66,10 +66,17 @@ public class UserTaskJobBasedHandlerTest {
   @Test
   void shouldHandleRecord() {
     // given
+    final JobRecordValue jobRecordValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType(Protocol.USER_TASK_JOB_TYPE)
+            .build();
+
     SUPPORTED_INTENTS.forEach(
         intent -> {
           final Record<JobRecordValue> jobRecord =
-              factory.generateRecord(ValueType.JOB, r -> r.withIntent(intent));
+              factory.generateRecord(
+                  ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
           // when - then
           assertThat(underTest.handlesRecord(jobRecord)).isTrue();
         });
@@ -87,6 +94,25 @@ public class UserTaskJobBasedHandlerTest {
               // when - then
               assertThat(underTest.handlesRecord(jobRecord)).isFalse();
             });
+  }
+
+  @Test
+  void shouldNotHandleNoneUserTaskJobBased() {
+    // given
+    final JobRecordValue jobRecordValue =
+        ImmutableJobRecordValue.builder()
+            .from(factory.generateObject(JobRecordValue.class))
+            .withType("not-user-task-job-based")
+            .build();
+
+    SUPPORTED_INTENTS.forEach(
+        intent -> {
+          final Record<JobRecordValue> jobRecord =
+              factory.generateRecord(
+                  ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
+          // when - then
+          assertThat(underTest.handlesRecord(jobRecord)).isFalse();
+        });
   }
 
   @Test

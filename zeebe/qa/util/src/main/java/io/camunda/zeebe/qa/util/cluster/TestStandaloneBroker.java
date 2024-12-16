@@ -13,6 +13,9 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -36,6 +39,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
+  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
     super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
@@ -57,6 +61,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     //noinspection resource
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
+
+    securityConfig = new CamundaSecurityProperties();
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 
   @Override
@@ -154,6 +170,16 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   /**
+   * Modifies the security configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  public TestStandaloneBroker withSecurityConfig(
+      final Consumer<CamundaSecurityProperties> modifier) {
+    modifier.accept(securityConfig);
+    return this;
+  }
+
+  /**
    * Returns the health actuator for this broker. You can use this to check for liveness, readiness,
    * and startup.
    */
@@ -218,6 +244,23 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     final var searchClient = new SearchClientProperties();
     searchClient.setUrl(elasticSearchUrl);
     withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
+    return this;
+  }
+
+  public TestStandaloneBroker withRdbmsExporter() {
+    withProperty("camunda.database.type", "rdbms");
+    withProperty("spring.datasource.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
+    withProperty("spring.datasource.username", "sa");
+    withProperty("spring.datasource.password", "");
+    withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
+    withProperty("logging.level.org.mybatis", "DEBUG");
+    withExporter(
+        "rdbms",
+        cfg -> {
+          cfg.setClassName("-");
+          cfg.setArgs(Map.of("flushInterval", "0"));
+        });
     return this;
   }
 }

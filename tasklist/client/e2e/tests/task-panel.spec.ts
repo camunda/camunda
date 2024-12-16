@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {deploy, createInstances} from '@/utils/zeebeClient';
 import {test} from '@/test-fixtures';
+import {sleep} from '@/utils/sleep';
 
 test.beforeAll(async () => {
   await Promise.all([
@@ -17,6 +18,9 @@ test.beforeAll(async () => {
     deploy('./e2e/resources/usertask_for_scrolling_2.bpmn'),
     deploy('./e2e/resources/usertask_for_scrolling_3.bpmn'),
   ]);
+
+  await sleep(100);
+
   await createInstances('usertask_for_scrolling_3', 1, 1);
   await createInstances('usertask_for_scrolling_2', 1, 50);
   await createInstances('usertask_for_scrolling_2', 1, 50);

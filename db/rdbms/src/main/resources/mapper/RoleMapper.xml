@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.RoleMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
+    SELECT COUNT(*)
+    FROM ROLES r
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.RoleMapper.roleResultMap">
+    SELECT * FROM (
+    SELECT
+    r.ROLE_KEY,
+    r.NAME,
+    rm.ROLE_KEY AS MEMBER_ROLE_KEY,
+    rm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
+    rm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    FROM ROLES r
+    LEFT JOIN ROLE_MEMBER rm ON r.ROLE_KEY = rm.ROLE_KEY
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.roleKey != null">AND r.ROLE_KEY = #{filter.roleKey}</if>
+    <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
+  </sql>
+
+  <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
+    <id column="ROLE_KEY" property="roleKey" />
+    <result column="NAME" property="name"/>
+    <collection property="members" ofType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
+      javaType="java.util.List">
+      <constructor>
+        <idArg column="MEMBER_ROLE_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
+        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
+      </constructor>
+    </collection>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
+    flushCache="true">
+    INSERT INTO ROLES (ROLE_KEY, NAME)
+    VALUES (#{roleKey}, #{name})
+  </insert>
+
+  <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
+    flushCache="true">
+    UPDATE ROLES
+    SET NAME = #{name}
+    WHERE ROLE_KEY = #{roleKey}
+  </update>
+
+  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+    DELETE
+    FROM ROLES
+    WHERE ROLE_KEY = #{roleKey}
+  </delete>
+
+  <insert
+    id="insertMember"
+    parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
+    flushCache="true">
+    INSERT INTO ROLE_MEMBER (ROLE_KEY, ENTITY_KEY, ENTITY_TYPE)
+    VALUES (#{roleKey}, #{entityKey}, #{entityType})
+  </insert>
+
+  <delete
+    id="deleteMember"
+    parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
+    flushCache="true">
+    DELETE
+    FROM ROLE_MEMBER
+    WHERE ROLE_KEY = #{roleKey}
+      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_TYPE = #{entityType}
+  </delete>
+
+  <delete
+    id="deleteAllMembers"
+    parameterType="java.lang.Long"
+    flushCache="true">
+    DELETE
+    FROM ROLE_MEMBER
+    WHERE ROLE_KEY = #{roleKey}
+  </delete>
+
+</mapper>

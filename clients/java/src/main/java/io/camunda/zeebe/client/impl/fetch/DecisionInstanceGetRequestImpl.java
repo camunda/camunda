@@ -33,14 +33,14 @@ public class DecisionInstanceGetRequestImpl implements DecisionInstanceGetReques
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long decisionInstanceKey;
+  private final String decisionInstanceId;
 
   public DecisionInstanceGetRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long decisionInstanceKey) {
+      final HttpClient httpClient, final JsonMapper jsonMapper, final String decisionInstanceId) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.decisionInstanceKey = decisionInstanceKey;
+    this.decisionInstanceId = decisionInstanceId;
   }
 
   @Override
@@ -53,7 +53,7 @@ public class DecisionInstanceGetRequestImpl implements DecisionInstanceGetReques
   public ZeebeFuture<DecisionInstance> send() {
     final HttpZeebeFuture<DecisionInstance> result = new HttpZeebeFuture<>();
     httpClient.get(
-        String.format("/decision-instances/%d", decisionInstanceKey),
+        String.format("/decision-instances/%s", decisionInstanceId),
         httpRequestConfig.build(),
         DecisionInstanceGetQueryResponse.class,
         resp -> new DecisionInstanceImpl(resp, jsonMapper),

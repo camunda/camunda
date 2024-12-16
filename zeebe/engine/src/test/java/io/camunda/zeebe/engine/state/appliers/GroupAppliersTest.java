@@ -220,28 +220,6 @@ public class GroupAppliersTest {
     final var groupName = "group";
     final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
     groupCreatedApplier.applyState(groupKey, groupRecord);
-    // a mapping entry
-    final var mappingKey = 2L;
-    final var mappingRecord =
-        new MappingRecord()
-            .setMappingKey(mappingKey)
-            .setClaimName("claimName")
-            .setClaimValue("claimValue");
-    mappingState.create(mappingRecord);
-    groupEntityAddedApplier.applyState(
-        groupKey, groupRecord.setEntityKey(mappingKey).setEntityType(EntityType.MAPPING));
-    // a user entry
-    final var userKey = 3L;
-    final var userRecord =
-        new UserRecord()
-            .setUserKey(userKey)
-            .setName("test")
-            .setUsername("username")
-            .setPassword("password")
-            .setEmail("test@example.com");
-    userState.create(userRecord);
-    groupEntityAddedApplier.applyState(
-        groupKey, groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER));
 
     // when
     groupDeletedApplier.applyState(groupKey, groupRecord);
@@ -254,11 +232,5 @@ public class GroupAppliersTest {
     assertThat(groupKeyByName.isPresent()).isFalse();
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();
-    // the mapping state is cleaned up
-    final var groupKeysByMapping = mappingState.get(mappingKey).get().getGroupKeysList();
-    assertThat(groupKeysByMapping).isEmpty();
-    // the user state is cleaned up
-    final var groupKeysByUser = userState.getUser(userKey).get().getGroupKeysList();
-    assertThat(groupKeysByUser).isEmpty();
   }
 }

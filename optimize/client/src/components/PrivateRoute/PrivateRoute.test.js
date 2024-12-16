@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 
 import {addHandler, removeHandler} from 'request';
 
-import {Header, Footer} from '..';
+import {Header} from '..';
 
 import {PrivateRoute} from './PrivateRoute';
 
@@ -83,11 +83,10 @@ it('should unregister the response handler when it is destroyed', async () => {
   expect(removeHandler).toHaveBeenCalled();
 });
 
-it('should include a header and footer page', () => {
+it('should include a header', () => {
   const node = shallow(<PrivateRoute component={TestComponent} />);
 
   const content = node.find('Route').renderProp('render')();
 
   expect(content.find(Header)).toExist();
-  expect(content.find(Footer)).toExist();
 });

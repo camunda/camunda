@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -43,9 +44,9 @@ public class PostImporterQueueFromIncidentHandler
 
   @Override
   public List<String> generateIds(final Record<IncidentRecordValue> record) {
-    String intent = record.getIntent().name();
-    if (intent.equals(IncidentIntent.MIGRATED.name())) {
-      intent = IncidentIntent.CREATED.name();
+    Intent intent = record.getIntent();
+    if (intent.equals(IncidentIntent.MIGRATED)) {
+      intent = IncidentIntent.CREATED;
     }
     return List.of(String.format("%d-%s", record.getKey(), intent));
   }
@@ -59,14 +60,14 @@ public class PostImporterQueueFromIncidentHandler
   public void updateEntity(
       final Record<IncidentRecordValue> record, final PostImporterQueueEntity entity) {
     final IncidentRecordValue recordValue = record.getValue();
-    String intent = record.getIntent().name();
-    if (intent.equals(IncidentIntent.MIGRATED.name())) {
-      intent = IncidentIntent.CREATED.name();
+    Intent intent = record.getIntent();
+    if (intent.equals(IncidentIntent.MIGRATED)) {
+      intent = IncidentIntent.CREATED;
     }
     entity
         .setId(String.format("%d-%s", record.getKey(), intent))
         .setActionType(PostImporterActionType.INCIDENT)
-        .setIntent(intent)
+        .setIntent(intent.name())
         .setKey(record.getKey())
         .setPosition(record.getPosition())
         .setCreationTime(OffsetDateTime.now())

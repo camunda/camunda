@@ -25,9 +25,10 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments("key", SortOrder.ASC, s -> s.decisionInstanceKey().asc()),
-        new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionDefinitionKey().asc()),
+        new TestArguments("id", SortOrder.ASC, s -> s.decisionInstanceId().asc()),
+        new TestArguments("decisionId", SortOrder.ASC, s -> s.decisionDefinitionId().asc()),
         new TestArguments(
-            "decisionDefinitionId", SortOrder.DESC, s -> s.decisionDefinitionId().desc()),
+            "decisionDefinitionId", SortOrder.DESC, s -> s.decisionDefinitionKey().desc()),
         new TestArguments("decisionName", SortOrder.DESC, s -> s.decisionDefinitionName().desc()),
         new TestArguments("decisionType", SortOrder.DESC, s -> s.decisionDefinitionType().desc()),
         new TestArguments(
@@ -36,7 +37,7 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
         new TestArguments("tenantId", SortOrder.ASC, s -> s.tenantId().asc()),
         new TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
-        new TestArguments("processInstanceId", SortOrder.ASC, s -> s.processInstanceId().asc()));
+        new TestArguments("processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()));
   }
 
   @ParameterizedTest
@@ -62,7 +63,7 @@ class DecisionInstanceSortTest extends AbstractSortTransformerTest {
         .isInstanceOfSatisfying(
             SearchSortOptions.class,
             t -> {
-              assertThat(t.field().field()).isEqualTo("key");
+              assertThat(t.field().field()).isEqualTo("id");
               assertThat(t.field().order()).isEqualTo(SortOrder.ASC);
             });
   }

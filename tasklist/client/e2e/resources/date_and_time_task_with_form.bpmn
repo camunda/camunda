@@ -1,36 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="6dba9b0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="7f61c05a-ceda-4bf0-8f13-f48bb25008b7">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="7f61c05a-ceda-4bf0-8f13-f48bb25008b7">
   <bpmn:process id="Date_and_Time_Task" name="Date and Time Task" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="userTaskForm_2djprl8">{
-  "components": [
-    {
-      "subtype": "datetime",
-      "dateLabel": "Date",
-      "label": "Date time",
-      "type": "datetime",
-      "layout": {
-        "row": "Row_0d3trez",
-        "columns": null
-      },
-      "id": "Field_124m3oh",
-      "key": "field_0sccnu9",
-      "timeLabel": "Time",
-      "timeSerializingFormat": "utc_offset",
-      "timeInterval": 15
-    }
-  ],
-  "schemaVersion": 9,
-  "exporter": {
-    "name": "Camunda Web Modeler",
-    "version": "6dba9b0"
-  },
-  "type": "default",
-  "id": "Form_1l36uar",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0"
-}</zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0jd2ks5</bpmn:outgoing>
     </bpmn:startEvent>
@@ -41,7 +11,8 @@
     <bpmn:sequenceFlow id="Flow_18fhpz1" sourceRef="Date_and_Time_" targetRef="Event_017cgng" />
     <bpmn:userTask id="Date_and_Time_" name="Date and Time Task">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_2djprl8" />
+        <zeebe:formDefinition formId="form_with_date_and_time" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0jd2ks5</bpmn:incoming>
       <bpmn:outgoing>Flow_18fhpz1</bpmn:outgoing>

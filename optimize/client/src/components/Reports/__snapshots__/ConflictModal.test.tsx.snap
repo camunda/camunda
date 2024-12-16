@@ -10,25 +10,29 @@ exports[`should match snapshot 1`] = `
     title="Destructive changes"
   />
   <ForwardRef>
-    <p>
-      These changes are incompatible with the alert(s):
-    </p>
-    <ul>
-      <li
-        key="1"
-      >
-        '
-        alert
-        '
-      </li>
-    </ul>
-    <p
-      className="conflictMessage"
+    <ForwardRef(Stack)
+      gap={4}
     >
-      <b>
-        Warning: Saving will delete the alert(s).
-      </b>
-    </p>
+      <p>
+        These changes are incompatible with the alert(s):
+      </p>
+      <ul>
+        <li
+          key="1"
+        >
+          '
+          alert
+          '
+        </li>
+      </ul>
+      <p
+        className="conflictMessage"
+      >
+        <b>
+          Warning: Saving will delete the alert(s).
+        </b>
+      </p>
+    </ForwardRef(Stack)>
   </ForwardRef>
   <ForwardRef(ModalFooter)>
     <Button

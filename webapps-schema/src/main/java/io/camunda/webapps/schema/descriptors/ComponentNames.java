@@ -10,7 +10,7 @@ package io.camunda.webapps.schema.descriptors;
 public enum ComponentNames {
   TASK_LIST("tasklist"),
   OPERATE("operate"),
-  IDENTITY("identity");
+  CAMUNDA("camunda");
 
   private final String value;
 

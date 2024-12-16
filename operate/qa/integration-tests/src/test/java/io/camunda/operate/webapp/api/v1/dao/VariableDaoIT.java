@@ -20,11 +20,14 @@ import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class VariableDaoIT extends OperateSearchAbstractIT {
   @Autowired private VariableDao dao;
 
-  @Autowired private VariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableIndex;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {

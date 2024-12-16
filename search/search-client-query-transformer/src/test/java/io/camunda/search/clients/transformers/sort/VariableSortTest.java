@@ -20,7 +20,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByValueASC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable("foo"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("foo"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.value().asc()));
@@ -43,7 +43,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByNameDESC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable("bar"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("bar"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.name().desc()));
@@ -66,7 +66,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByTenantIdASC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable("tenant"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("tenant"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.tenantId().asc()));
@@ -91,7 +91,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByVariableKeyDESC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable("varKey"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("varKey"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.variableKey().desc()));
@@ -114,7 +114,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByScopeKeyASC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable("scope"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("scope"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.scopeKey().asc()));
@@ -139,7 +139,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByProcessInstanceKeyDESC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.variable("processInstance"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("processInstance"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.processInstanceKey().desc()));

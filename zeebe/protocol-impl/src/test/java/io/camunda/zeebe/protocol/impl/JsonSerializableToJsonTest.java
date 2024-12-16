@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -57,6 +59,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgress;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -688,7 +692,25 @@ final class JsonSerializableToJsonTest {
               final String activityId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
-              final JobResult result = new JobResult().setDenied(true);
+              final JobResult result =
+                  new JobResult()
+                      .setDenied(true)
+                      .setCorrections(
+                          new JobResultCorrections()
+                              .setAssignee("frodo")
+                              .setDueDate("today")
+                              .setFollowUpDate("tomorrow")
+                              .setCandidateGroupsList(List.of("fellowship", "eagles"))
+                              .setCandidateUsersList(List.of("frodo", "sam", "gollum"))
+                              .setPriority(1))
+                      .setCorrectedAttributes(
+                          List.of(
+                              "assignee",
+                              "dueDate",
+                              "followUpDate",
+                              "candidateGroupsList",
+                              "candidateUsersList",
+                              "priority"));
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -746,7 +768,23 @@ final class JsonSerializableToJsonTest {
               "tenantId": "<default>",
               "changedAttributes": ["bar", "foo"],
               "result": {
-                "denied": true
+                "denied": true,
+                "correctedAttributes": [
+                  "assignee",
+                  "dueDate",
+                  "followUpDate",
+                  "candidateGroupsList",
+                  "candidateUsersList",
+                  "priority"
+                ],
+                "corrections": {
+                  "assignee": "frodo",
+                  "dueDate": "today",
+                  "followUpDate": "tomorrow",
+                  "candidateGroupsList": ["fellowship", "eagles"],
+                  "candidateUsersList": ["frodo", "sam", "gollum"],
+                  "priority": 1
+                }
               }
             }
           ],
@@ -798,7 +836,25 @@ final class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
-              final JobResult result = new JobResult().setDenied(true);
+              final JobResult result =
+                  new JobResult()
+                      .setDenied(true)
+                      .setCorrections(
+                          new JobResultCorrections()
+                              .setAssignee("frodo")
+                              .setDueDate("today")
+                              .setFollowUpDate("tomorrow")
+                              .setCandidateGroupsList(List.of("fellowship", "eagles"))
+                              .setCandidateUsersList(List.of("frodo", "sam", "gollum"))
+                              .setPriority(1))
+                      .setCorrectedAttributes(
+                          List.of(
+                              "assignee",
+                              "dueDate",
+                              "followUpDate",
+                              "candidateGroupsList",
+                              "candidateUsersList",
+                              "priority"));
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -855,8 +911,24 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": ["bar", "foo"],
           "result": {
-            "denied": true
-           }
+            "denied": true,
+            "correctedAttributes": [
+              "assignee",
+              "dueDate",
+              "followUpDate",
+              "candidateGroupsList",
+              "candidateUsersList",
+              "priority"
+            ],
+            "corrections": {
+              "assignee": "frodo",
+              "dueDate": "today",
+              "followUpDate": "tomorrow",
+              "candidateGroupsList": ["fellowship", "eagles"],
+              "candidateUsersList": ["frodo", "sam", "gollum"],
+              "priority": 1
+            }
+          }
         }
         """
       },
@@ -891,7 +963,16 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": [],
           "result": {
-            "denied": false
+            "denied": false,
+            "correctedAttributes": [],
+            "corrections": {
+              "assignee": "",
+              "dueDate": "",
+              "followUpDate": "",
+              "candidateGroupsList": [],
+              "candidateUsersList": [],
+              "priority": -1
+            }
           }
         }
         """
@@ -932,7 +1013,16 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": [],
           "result": {
-            "denied": false
+            "denied": false,
+            "correctedAttributes": [],
+            "corrections": {
+              "assignee": "",
+              "dueDate": "",
+              "followUpDate": "",
+              "candidateGroupsList": [],
+              "candidateUsersList": [],
+              "priority": -1
+            }
           }
         }
         """
@@ -1549,6 +1639,9 @@ final class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int flowScopeKey = 123;
               final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
+              final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
+              final var processDefinitionPath = List.of(101L, 102L);
+              final var callingElementPath = List.of(12345, 67890);
 
               return new ProcessInstanceRecord()
                   .setElementId(elementId)
@@ -1560,7 +1653,10 @@ final class JsonSerializableToJsonTest {
                   .setFlowScopeKey(flowScopeKey)
                   .setParentProcessInstanceKey(11)
                   .setParentElementInstanceKey(22)
-                  .setBpmnEventType(BpmnEventType.UNSPECIFIED);
+                  .setBpmnEventType(BpmnEventType.UNSPECIFIED)
+                  .setElementInstancePath(elementInstancePath)
+                  .setProcessDefinitionPath(processDefinitionPath)
+                  .setCallingElementPath(callingElementPath);
             },
         """
         {
@@ -1574,7 +1670,10 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": 11,
           "parentElementInstanceKey": 22,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[[101, 102], [103, 104]],
+          "processDefinitionPath": [101, 102],
+          "callingElementPath": [12345, 67890]
         }
         """
       },
@@ -1597,7 +1696,10 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": -1,
           "parentElementInstanceKey": -1,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[],
+          "processDefinitionPath": [],
+          "callingElementPath": []
         }
         """
       },
@@ -2783,6 +2885,38 @@ final class JsonSerializableToJsonTest {
         }
         """
       },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// RedistributionRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "RedistributionRecord (empty)",
+        (Supplier<RedistributionRecord>) RedistributionRecord::new,
+        """
+        {
+          "stage": -1,
+          "progress": {
+            "deploymentKey": -1
+          }
+        }
+        """
+      },
+      {
+        "RedistributionRecord",
+        (Supplier<RedistributionRecord>)
+            () ->
+                new RedistributionRecord()
+                    .setStage(2)
+                    .setProgress(new RedistributionProgress().claimDeploymentKey(123)),
+        """
+        {
+          "stage": 2,
+          "progress": {
+            "deploymentKey": 123
+          }
+        }
+        """
+      },
       /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////////// GroupRecord /////////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -2849,6 +2983,99 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": ""
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// IdentitySetupRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "IdentitySetup record",
+        (Supplier<IdentitySetupRecord>)
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(
+                        new RoleRecord()
+                            .setRoleKey(1)
+                            .setName("roleName")
+                            .setEntityKey(2)
+                            .setEntityType(EntityType.USER))
+                    .addUser(
+                        new UserRecord()
+                            .setUserKey(3L)
+                            .setUsername("username")
+                            .setName("name")
+                            .setEmail("email")
+                            .setPassword("password")
+                            .setUserType(UserType.REGULAR))
+                    .addUser(
+                        new UserRecord()
+                            .setUserKey(4L)
+                            .setUsername("foo")
+                            .setName("bar")
+                            .setEmail("baz")
+                            .setPassword("qux")
+                            .setUserType(UserType.REGULAR))
+                    .setDefaultTenant(
+                        new TenantRecord().setTenantKey(5).setTenantId("id").setName("name")),
+        """
+      {
+        "defaultRole": {
+          "roleKey": 1,
+          "name": "roleName",
+          "entityKey": 2,
+          "entityType": "USER"
+        },
+        "users": [
+          {
+            "userKey": 3,
+            "username": "username",
+            "name": "name",
+            "email": "email",
+            "password": "password",
+            "userType": "REGULAR"
+          },
+          {
+            "userKey": 4,
+            "username": "foo",
+            "name": "bar",
+            "email": "baz",
+            "password": "qux",
+            "userType": "REGULAR"
+          }
+        ],
+        "defaultTenant": {
+          "tenantKey": 5,
+          "tenantId": "id",
+          "name": "name",
+          "entityKey": -1,
+          "entityType": "UNSPECIFIED"
+        }
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty IdentitySetupRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty IdentitySetupRecord",
+        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        """
+      {
+          "defaultRole": {
+              "roleKey": -1,
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
+          },
+          "users": [],
+          "defaultTenant": {
+              "tenantKey": -1,
+              "tenantId": "",
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
+          }
       }
       """
       },

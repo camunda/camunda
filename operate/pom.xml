@@ -21,9 +21,7 @@
     <module>data-generator</module>
     <module>importer-common</module>
     <module>importer-8_6</module>
-    <module>importer-8_7</module>
     <module>importer</module>
-    <module>archiver</module>
     <module>webapp</module>
     <module>mvc-auth-commons</module>
   </modules>
@@ -175,7 +173,7 @@
     <profile>
       <id>operateItOpensearch</id>
       <properties>
-        <includeITNames>**/api/v1/**/*IT.java</includeITNames>
+        <includeITNames>**/api/v1/**/*IT.java, **/OpensearchFinishedImportingIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
       </properties>

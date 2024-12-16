@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
@@ -22,6 +21,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -78,14 +78,14 @@ public class FlowNodeInstanceSpecificFilterIT {
 
     final var searchResult =
         flowNodeInstanceReader.search(
-            new FlowNodeInstanceDbQuery(
+            new FlowNodeInstanceQuery(
                 filter,
                 FlowNodeInstanceSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().flowNodeInstanceKey()).isEqualTo(42L);
   }
 
   static List<FlowNodeInstanceFilter> shouldFindFlowNodeInstanceWithSpecificFilterParameters() {

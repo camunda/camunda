@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -85,7 +86,7 @@ class RaftLogUncommittedReaderTest {
   }
 
   @Test
-  void shouldSeekToIndexAfterTruncate() {
+  void shouldSeekToIndexAfterTruncate() throws CheckedJournalException {
     // given
     appendEntries(6);
     uncommittedReader.seek(5);

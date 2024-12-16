@@ -10,14 +10,13 @@ package io.camunda.operate.webapp.reader;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,7 +30,7 @@ public class ProcessReader {
   private final PermissionsService permissionsService;
 
   public ProcessReader(
-      final ProcessStore processStore, @Nullable final PermissionsService permissionsService) {
+      final ProcessStore processStore, final PermissionsService permissionsService) {
     this.processStore = processStore;
     this.permissionsService = permissionsService;
   }
@@ -88,7 +87,7 @@ public class ProcessReader {
   }
 
   private Set<String> getAllowedProcessIdsOrNullForAll() {
-    if (permissionsService == null) {
+    if (!permissionsService.permissionsEnabled()) {
       return null;
     }
 

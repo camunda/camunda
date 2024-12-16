@@ -34,6 +34,9 @@ import io.grpc.ClientInterceptor;
 import jakarta.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -336,15 +339,38 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   private CredentialsProvider credentialsProvider() {
     final ClientMode clientMode = camundaClientProperties.getMode();
     if (ClientMode.selfManaged.equals(clientMode) || ClientMode.saas.equals(clientMode)) {
-      return CredentialsProvider.newCredentialsProviderBuilder()
-          .clientId(camundaClientProperties.getAuth().getClientId())
-          .clientSecret(camundaClientProperties.getAuth().getClientSecret())
-          .audience(camundaClientProperties.getZeebe().getAudience())
-          .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
-          .scope(camundaClientProperties.getZeebe().getScope())
-          .build();
+      final OAuthCredentialsProviderBuilder credBuilder =
+          CredentialsProvider.newCredentialsProviderBuilder()
+              .clientId(camundaClientProperties.getAuth().getClientId())
+              .clientSecret(camundaClientProperties.getAuth().getClientSecret())
+              .audience(camundaClientProperties.getZeebe().getAudience())
+              .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
+              .scope(camundaClientProperties.getZeebe().getScope());
+
+      maybeConfigureIdentityProviderSSLConfig(credBuilder);
+
+      return credBuilder.build();
     }
     return new NoopCredentialsProvider();
+  }
+
+  private void maybeConfigureIdentityProviderSSLConfig(OAuthCredentialsProviderBuilder builder) {
+    if (camundaClientProperties.getAuth().getKeystorePath() != null) {
+      final Path keyStore = Paths.get(camundaClientProperties.getAuth().getKeystorePath());
+      if (Files.exists(keyStore)) {
+        builder.keystorePath(keyStore);
+        builder.keystorePassword(camundaClientProperties.getAuth().getKeystorePassword());
+        builder.keystoreKeyPassword(camundaClientProperties.getAuth().getKeystoreKeyPassword());
+      }
+    }
+
+    if (camundaClientProperties.getAuth().getTruststorePath() != null) {
+      final Path trustStore = Paths.get(camundaClientProperties.getAuth().getTruststorePath());
+      if (Files.exists(trustStore)) {
+        builder.truststorePath(trustStore);
+        builder.truststorePassword(camundaClientProperties.getAuth().getTruststorePassword());
+      }
+    }
   }
 
   private String composeGatewayAddress() {

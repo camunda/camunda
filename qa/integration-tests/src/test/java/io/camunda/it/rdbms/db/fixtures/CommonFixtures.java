@@ -16,7 +16,7 @@ public class CommonFixtures {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
   protected static final Random RANDOM = new Random(System.nanoTime());
-  private static final AtomicLong ID_COUNTER = new AtomicLong();
+  private static final AtomicLong ID_COUNTER = new AtomicLong(54321L);
 
   public static Long nextKey() {
     return ID_COUNTER.incrementAndGet();

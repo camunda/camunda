@@ -83,41 +83,43 @@ export default class DurationFilter extends Component<
             applyTo={applyTo}
             setApplyTo={(applyTo) => this.setState({applyTo})}
           />
-          <p className="description">{t('common.filter.durationModal.includeInstance')} </p>
-          <Form>
-            <Stack gap={4} orientation="horizontal">
-              <Select
-                size="md"
-                id="more-less-selector"
-                value={operator}
-                onChange={this.setOperator}
-              >
-                <Select.Option value=">" label={t('common.filter.durationModal.moreThan')} />
-                <Select.Option value="<" label={t('common.filter.durationModal.lessThan')} />
-              </Select>
-              <TextInput
-                size="md"
-                labelText={t('common.value')}
-                hideLabel
-                id="duration-value-input"
-                invalid={!isValidInput}
-                value={value}
-                onChange={this.setValue}
-                maxLength={8}
-                invalidText={t('common.errors.positiveInt')}
-              />
-              <Select size="md" id="duration-units-selector" value={unit} onChange={this.setUnit}>
-                <Select.Option value="millis" label={t('common.unit.milli.label-plural')} />
-                <Select.Option value="seconds" label={t('common.unit.second.label-plural')} />
-                <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
-                <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
-                <Select.Option value="days" label={t('common.unit.day.label-plural')} />
-                <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
-                <Select.Option value="months" label={t('common.unit.month.label-plural')} />
-                <Select.Option value="years" label={t('common.unit.year.label-plural')} />
-              </Select>
-            </Stack>
-          </Form>
+          <Stack gap={4}>
+            <p className="description">{t('common.filter.durationModal.includeInstance')} </p>
+            <Form>
+              <Stack gap={4} orientation="horizontal">
+                <Select
+                  size="md"
+                  id="more-less-selector"
+                  value={operator}
+                  onChange={this.setOperator}
+                >
+                  <Select.Option value=">" label={t('common.filter.durationModal.moreThan')} />
+                  <Select.Option value="<" label={t('common.filter.durationModal.lessThan')} />
+                </Select>
+                <TextInput
+                  size="md"
+                  labelText={t('common.value')}
+                  hideLabel
+                  id="duration-value-input"
+                  invalid={!isValidInput}
+                  value={value}
+                  onChange={this.setValue}
+                  maxLength={8}
+                  invalidText={t('common.errors.positiveInt')}
+                />
+                <Select size="md" id="duration-units-selector" value={unit} onChange={this.setUnit}>
+                  <Select.Option value="millis" label={t('common.unit.milli.label-plural')} />
+                  <Select.Option value="seconds" label={t('common.unit.second.label-plural')} />
+                  <Select.Option value="minutes" label={t('common.unit.minute.label-plural')} />
+                  <Select.Option value="hours" label={t('common.unit.hour.label-plural')} />
+                  <Select.Option value="days" label={t('common.unit.day.label-plural')} />
+                  <Select.Option value="weeks" label={t('common.unit.week.label-plural')} />
+                  <Select.Option value="months" label={t('common.unit.month.label-plural')} />
+                  <Select.Option value="years" label={t('common.unit.year.label-plural')} />
+                </Select>
+              </Stack>
+            </Form>
+          </Stack>
         </Modal.Content>
         <Modal.Footer>
           <Button kind="secondary" className="cancel" onClick={this.props.close}>

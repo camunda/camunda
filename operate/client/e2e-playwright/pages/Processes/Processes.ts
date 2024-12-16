@@ -14,6 +14,7 @@ import MigrationModal from '../components/MigrationModal';
 import MoveModificationModal from '../components/MoveModificationModal';
 import {Diagram} from '../components/Diagram';
 import {FiltersPanel} from './FiltersPanel';
+import {relativizePath} from '../utils/relativizePath';
 
 export class Processes {
   private page: Page;
@@ -63,12 +64,14 @@ export class Processes {
     options?: Parameters<Page['goto']>[1];
   }) {
     if (searchParams === undefined) {
-      await this.page.goto(Paths.processes());
+      await this.page.goto(relativizePath(Paths.processes()));
       return;
     }
 
     await this.page.goto(
-      `${Paths.processes()}?${convertToQueryString(searchParams)}`,
+      relativizePath(
+        `${Paths.processes()}?${convertToQueryString(searchParams)}`,
+      ),
       options,
     );
   }

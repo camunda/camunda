@@ -23,6 +23,6 @@ public class UserUpdatedApplier implements TypedEventApplier<UserIntent, UserRec
 
   @Override
   public void applyState(final long key, final UserRecord value) {
-    userState.updateUser(value);
+    userState.update(value);
   }
 }

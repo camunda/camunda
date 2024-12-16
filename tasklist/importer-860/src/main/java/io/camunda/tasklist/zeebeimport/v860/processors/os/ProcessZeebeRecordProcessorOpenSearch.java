@@ -9,15 +9,15 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FormEntity;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FormIndex;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.DeployedProcessImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -51,7 +51,9 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 
@@ -99,7 +101,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       final List<BulkOperation> operations,
       final BiConsumer<String, String> userTaskFormCollector) {
 
-    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
+    final var processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     operations.add(
@@ -134,7 +136,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
         userTaskFormCollector,
         processEntity::setFormKey,
         processEntity::setFormId,
-        processEntity::setStartedByForm);
+        processEntity::setIsPublic);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));
@@ -152,7 +154,16 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       final String tenantId,
       final List<BulkOperation> operations)
       throws PersistenceException {
-    final FormEntity formEntity = new FormEntity(processDefinitionKey, formKey, schema, tenantId);
+    final var id = String.format("%s_%s", processDefinitionKey, formKey);
+    final FormEntity formEntity =
+        new FormEntity()
+            .setId(id)
+            .setTenantId(tenantId)
+            .setFormId(formKey)
+            .setProcessDefinitionId(processDefinitionKey)
+            .setSchema(schema)
+            .setEmbedded(true)
+            .setIsDeleted(false);
     LOGGER.debug("Form: key {}", formKey);
 
     operations.add(

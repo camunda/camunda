@@ -18,6 +18,7 @@ import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
 import {loadCollectionEntities} from './service';
 import UserList from './UserList';
+import {C3Page} from '@camunda/camunda-composite-components';
 
 jest.mock('config', () => ({
   isUserSearchAvailable: jest.fn().mockReturnValue(true),
@@ -165,7 +166,11 @@ it('should render content depending on the selected tab', async () => {
 it('should show the copy modal when clicking the copy button', () => {
   const node = shallow(<Collection {...props} />);
 
-  node.find('CollectionHeader').prop('onCopy')();
+  node
+    .find(C3Page)
+    .prop('header')
+    .menuItems.find(({key}) => key === 'copy')
+    .onClick();
 
   expect(node.find(Copier)).toExist();
 });

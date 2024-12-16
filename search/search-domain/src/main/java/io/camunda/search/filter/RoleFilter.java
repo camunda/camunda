@@ -9,10 +9,15 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 
-public record RoleFilter(Long roleKey, String name) implements FilterBase {
+public record RoleFilter(Long roleKey, String name, Long memberKey) implements FilterBase {
+  public Builder toBuilder() {
+    return new Builder().roleKey(roleKey).name(name).memberKey(memberKey);
+  }
+
   public static final class Builder implements ObjectBuilder<RoleFilter> {
     private Long roleKey;
     private String name;
+    private Long memberKey;
 
     public Builder roleKey(final Long value) {
       roleKey = value;
@@ -24,9 +29,14 @@ public record RoleFilter(Long roleKey, String name) implements FilterBase {
       return this;
     }
 
+    public Builder memberKey(final Long value) {
+      memberKey = value;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
-      return new RoleFilter(roleKey, name);
+      return new RoleFilter(roleKey, name, memberKey);
     }
   }
 }

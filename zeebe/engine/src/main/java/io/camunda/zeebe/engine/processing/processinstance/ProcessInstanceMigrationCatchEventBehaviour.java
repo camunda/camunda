@@ -12,8 +12,11 @@ import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstance
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -40,14 +43,29 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
 public class ProcessInstanceMigrationCatchEventBehaviour {
+
+  private static final String ERROR_BOUNDARY_HAS_WRONG_EVENT_TYPE =
+      """
+      Expected to migrate process instance with id '%s' \
+      but compensation boundary event '%s' is mapped to a target boundary event '%s' \
+      that has event type '%s' different than compensation boundary event type.""";
+  private static final String ERROR_COMPENSATION_SUBSCRIPTION_FLOW_SCOPE_CHANGED =
+      """
+      Expected to migrate process instance with id '%s' \
+      but the flow scope of compensation boundary event is changed. \
+      Flow scope '%s' is not in the same level as '%s'. \
+      The flow scope of a compensation boundary event cannot be changed during migration yet.""";
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final CatchEventBehavior catchEventBehavior;
@@ -148,24 +166,27 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final DeployedProcess sourceProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final BpmnElementContextImpl context) {
+    final Map<String, String> mappings =
+        getCompensationSubscriptionMappings(
+            sourceElementIdToTargetElementId,
+            sourceProcessDefinition,
+            targetProcessDefinition,
+            context);
     final List<CompensationSubscription> compensationSubscriptionsToMigrate =
-        unsubscribeFromCompensationEvents(
-            sourceProcessDefinition, sourceElementIdToTargetElementId, context);
+        unsubscribeFromCompensationEvents(mappings, context);
     // DO NOT SUBSCRIBE TO UNMAPPED COMPENSATION EVENTS AS THEY ARE CREATED ON ELEMENT COMPLETION
     migrateCompensationEvents(
-        targetProcessDefinition,
-        sourceElementIdToTargetElementId,
-        compensationSubscriptionsToMigrate);
+        targetProcessDefinition, mappings, compensationSubscriptionsToMigrate);
   }
 
   private void migrateCompensationEvents(
       final DeployedProcess targetProcessDefinition,
-      final Map<String, String> sourceElementIdToTargetElementId,
+      final Map<String, String> mappings,
       final List<CompensationSubscription> compensationSubscriptionsToMigrate) {
     compensationSubscriptionsToMigrate.forEach(
         subscription -> {
           final var sourceActivityId = subscription.getRecord().getCompensableActivityId();
-          final var targetActivityId = sourceElementIdToTargetElementId.get(sourceActivityId);
+          final var targetActivityId = mappings.get(sourceActivityId);
 
           final var compensationSubscriptionRecord = subscription.getRecord();
           final var recordCopy = new CompensationSubscriptionRecord();
@@ -174,12 +195,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           recordCopy.setCompensableActivityId(targetActivityId);
 
           // set the compensation handler id if subscription belongs to an activity with a boundary
-          final ExecutableActivity targetElement =
-              targetProcessDefinition
-                  .getProcess()
-                  .getElementById(targetActivityId, ExecutableActivity.class);
-          compensationSubscriptionBehaviour
-              .getCompensationHandlerId(targetElement)
+          getCompensableActivity(targetProcessDefinition, targetActivityId)
+              .flatMap(compensationSubscriptionBehaviour::getCompensationHandlerId)
               .ifPresent(recordCopy::setCompensationHandlerId);
 
           stateWriter.appendFollowUpEvent(
@@ -188,23 +205,15 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
   }
 
   private List<CompensationSubscription> unsubscribeFromCompensationEvents(
-      final DeployedProcess sourceProcessDefinition,
-      final Map<String, String> sourceElementIdToTargetElementId,
-      final BpmnElementContextImpl context) {
+      final Map<String, String> mappings, final BpmnElementContextImpl context) {
     final List<CompensationSubscription> compensationSubscriptionsToMigrate = new ArrayList<>();
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstanceFilter(
         context,
         compensationSubscription -> {
           final String compensableActivityId =
               compensationSubscription.getRecord().getCompensableActivityId();
-          final ExecutableActivity compensableActivity =
-              sourceProcessDefinition
-                  .getProcess()
-                  .getElementById(compensableActivityId, ExecutableActivity.class);
 
-          final boolean shouldBeMigrated =
-              sourceElementIdToTargetElementId.containsKey(
-                  BufferUtil.bufferAsString(compensableActivity.getId()));
+          final boolean shouldBeMigrated = mappings.containsKey(compensableActivityId);
 
           if (shouldBeMigrated) {
             // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
@@ -486,5 +495,190 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
             elementInstance.getKey(), messageName, tenantId);
     ProcessInstanceMigrationPreconditions.requireNoSubscriptionForMessage(
         existSubscriptionForMessageName, elementInstance, messageName, targetCatchEventId);
+  }
+
+  private Map<String, String> getCompensationSubscriptionMappings(
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final DeployedProcess sourceProcessDefinition,
+      final DeployedProcess targetProcessDefinition,
+      final BpmnElementContextImpl context) {
+    final var subscriptions =
+        compensationSubscriptionBehaviour.getSubscriptionsByProcessInstanceKey(context);
+
+    return subscriptions.stream()
+        .flatMap(s -> getCompensableActivity(sourceProcessDefinition, s).stream())
+        // we filter for tasks to get mapping from bottom to top flow scope (from tasks with
+        // compensation boundary event attached to root process scope)
+        .filter(activity -> activity.getElementType() != BpmnElementType.SUB_PROCESS) // only tasks
+        .flatMap(
+            sourceActivity ->
+                getCompensableElementMappingIfPresent(
+                    sourceProcessDefinition,
+                    sourceActivity,
+                    targetProcessDefinition,
+                    sourceElementIdToTargetElementId))
+        .flatMap(
+            elementMapping ->
+                getCompensableElementMappings(
+                    elementMapping,
+                    sourceProcessDefinition.getBpmnProcessId(),
+                    targetProcessDefinition.getBpmnProcessId()))
+        .collect(
+            HashMap::new,
+            (map, mapping) -> map.put(mapping.sourceElementId(), mapping.targetElementId()),
+            HashMap::putAll);
+  }
+
+  private Stream<CompensableElementMapping> getCompensableElementMappingIfPresent(
+      final DeployedProcess sourceProcessDefinition,
+      final ExecutableActivity sourceActivity,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId) {
+    final var maybeMappedBoundary =
+        getMappedCompensationBoundary(
+            sourceActivity, sourceProcessDefinition, sourceElementIdToTargetElementId);
+
+    if (maybeMappedBoundary.isEmpty()) {
+      // no migration needed
+      return Stream.empty();
+    }
+
+    final String sourceBoundaryId = BufferUtil.bufferAsString(maybeMappedBoundary.get().getId());
+    final String targetBoundaryId = sourceElementIdToTargetElementId.get(sourceBoundaryId);
+    final ExecutableActivity targetActivity =
+        getCompensableTaskForBoundaryId(
+            targetProcessDefinition, targetBoundaryId, sourceProcessDefinition, sourceBoundaryId);
+
+    return Stream.of(new CompensableElementMapping(sourceActivity, targetActivity));
+  }
+
+  private ExecutableActivity getCompensableTaskForBoundaryId(
+      final DeployedProcess targetProcessDefinition,
+      final String targetBoundaryId,
+      final DeployedProcess sourceProcessDefinition,
+      final String sourceBoundaryId) {
+
+    final ExecutableActivity targetCompensable =
+        targetProcessDefinition.getProcess().getFlowElements().stream()
+            .filter(ExecutableActivity.class::isInstance)
+            .map(ExecutableActivity.class::cast)
+            .filter(
+                activity ->
+                    activity
+                        .getBoundaryElementIds()
+                        .contains(BufferUtil.wrapString(targetBoundaryId)))
+            .findFirst()
+            // existence of target element already checked in
+            // ProcessInstanceMigrationPreconditions#requireReferredElementsExist
+            .get();
+
+    final BpmnEventType targetBoundaryEventType =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetBoundaryId, ExecutableBoundaryEvent.class)
+            .getEventType();
+    if (targetBoundaryEventType != BpmnEventType.COMPENSATION) {
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          ERROR_BOUNDARY_HAS_WRONG_EVENT_TYPE.formatted(
+              BufferUtil.bufferAsString(sourceProcessDefinition.getBpmnProcessId()),
+              sourceBoundaryId,
+              targetBoundaryId,
+              targetBoundaryEventType),
+          RejectionType.INVALID_ARGUMENT);
+    }
+
+    return targetCompensable;
+  }
+
+  /**
+   * The method starts from the compensable activity that has a compensation boundary event attached
+   * to it. It then traverses the flow scope hierarchy until the root flow scope. The method is
+   * recursive and stops when the source and target flow scopes are the root flow scopes.
+   *
+   * <p>If the flow scope of the compensation boundary event is changed during migration, an
+   * exception is thrown. This is because the flow scope of migration elements cannot be changed
+   * during migration.
+   *
+   * <p>The method returns a stream of compensable element mappings. The stream is used to collect
+   * the mappings into a map. Then, the map is used to migrate the compensation subscriptions.
+   *
+   * @param mapping the compensable element mapping
+   * @param sourceProcessId the source process id
+   * @param targetProcessId the target process id
+   * @return a stream of compensable element mappings
+   */
+  private Stream<CompensableElementMapping> getCompensableElementMappings(
+      final CompensableElementMapping mapping,
+      final DirectBuffer sourceProcessId,
+      final DirectBuffer targetProcessId) {
+    final boolean isSourceRoot = BufferUtil.equals(mapping.sourceElement.getId(), sourceProcessId);
+    final boolean isTargetRoot = BufferUtil.equals(mapping.targetElement.getId(), targetProcessId);
+
+    if (isSourceRoot && isTargetRoot) {
+      // we are at the root flow scope
+      return Stream.of(mapping);
+    }
+
+    if (!isSourceRoot && !isTargetRoot) {
+      return Stream.concat(
+          Stream.of(mapping),
+          getCompensableElementMappings(
+              new CompensableElementMapping(
+                  mapping.sourceElement.getFlowScope(), mapping.targetElement.getFlowScope()),
+              sourceProcessId,
+              targetProcessId));
+    }
+
+    throw new ProcessInstanceMigrationPreconditionFailedException(
+        ERROR_COMPENSATION_SUBSCRIPTION_FLOW_SCOPE_CHANGED.formatted(
+            BufferUtil.bufferAsString(sourceProcessId),
+            BufferUtil.bufferAsString(mapping.sourceElement.getId()),
+            BufferUtil.bufferAsString(mapping.targetElement.getId())),
+        RejectionType.INVALID_STATE);
+  }
+
+  private static Optional<ExecutableBoundaryEvent> getMappedCompensationBoundary(
+      final ExecutableActivity activitiy,
+      final DeployedProcess processDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId) {
+    final var compensableTaskId = BufferUtil.bufferAsString(activitiy.getId());
+    return getCompensableActivity(processDefinition, compensableTaskId).stream()
+        .flatMap(a -> a.getBoundaryEvents().stream())
+        .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
+        .filter(
+            boundary ->
+                sourceElementIdToTargetElementId.containsKey(
+                    BufferUtil.bufferAsString(boundary.getId())))
+        .findFirst();
+  }
+
+  private static Optional<ExecutableActivity> getCompensableActivity(
+      final DeployedProcess processDefinition, final CompensationSubscription record) {
+    return getCompensableActivity(processDefinition, record.getRecord().getCompensableActivityId());
+  }
+
+  private static Optional<ExecutableActivity> getCompensableActivity(
+      final DeployedProcess processDefinition, final String elementId) {
+    final AbstractFlowElement compensableElement =
+        processDefinition.getProcess().getElementById(elementId);
+    // We had to do manual casting because of MULTI_INSTANCE_BODY.
+    // If we call getElementById with the expected type, it will return the inner instance of the
+    // multi-instance body, which is wrong.
+    if (compensableElement instanceof final ExecutableActivity compensableActivity) {
+      return Optional.of(compensableActivity);
+    }
+
+    return Optional.empty();
+  }
+
+  private record CompensableElementMapping(
+      ExecutableFlowElement sourceElement, ExecutableFlowElement targetElement) {
+    public String sourceElementId() {
+      return BufferUtil.bufferAsString(sourceElement.getId());
+    }
+
+    public String targetElementId() {
+      return BufferUtil.bufferAsString(targetElement.getId());
+    }
   }
 }

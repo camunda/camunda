@@ -16,6 +16,7 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
+import io.camunda.webapps.schema.entities.operate.ListenerType;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,5 +107,24 @@ public class ProcessInstanceRestServiceIT {
     final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
     assertThat(mvcResult.getResolvedException().getMessage())
         .contains("Only one of 'flowNodeId' or 'flowNodeInstanceId'");
+  }
+
+  @Test
+  public void testListenersRequestWithListenerFilterInvalid() throws Exception {
+    final String url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/1/listeners";
+    final ListenerRequestDto request =
+        new ListenerRequestDto()
+            .setPageSize(20)
+            .setFlowNodeId("testid")
+            .setListenerTypeFilter(ListenerType.UNKNOWN);
+    final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
+    assertThat(mvcResult.getResolvedException().getMessage())
+        .contains(
+            "'listenerTypeFilter' only allows for values: ["
+                + "null, "
+                + ListenerType.EXECUTION_LISTENER
+                + ", "
+                + ListenerType.TASK_LISTENER
+                + "]");
   }
 }

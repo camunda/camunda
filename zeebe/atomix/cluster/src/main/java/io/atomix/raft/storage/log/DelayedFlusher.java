@@ -9,6 +9,7 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
 import java.io.UncheckedIOException;
@@ -89,7 +90,7 @@ public final class DelayedFlusher implements RaftLogFlusher {
 
     try {
       journal.flush();
-    } catch (final JournalException | UncheckedIOException e) {
+    } catch (final CheckedJournalException | JournalException | UncheckedIOException e) {
       LOGGER.warn("Failed to flush journal, operation will be retried after {}", delayTime, e);
       scheduleFlush(journal);
     }

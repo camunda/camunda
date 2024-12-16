@@ -62,8 +62,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
 
   public abstract void refresh(final String indexPattern);
 
-  public abstract <T> long count(final String[] indexNames, final T query) throws IOException;
-
   public abstract List<String> getAllIndexNames() throws IOException;
 
   public abstract List<String> addPrefixesToIndices(String... indexes);

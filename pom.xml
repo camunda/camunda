@@ -26,6 +26,7 @@
     <module>identity</module>
     <module>webapps-common</module>
     <module>webapps-schema</module>
+    <module>webapps-backup</module>
     <module>authentication</module>
     <module>db</module>
     <module>search</module>
@@ -37,6 +38,7 @@
     <module>testing/camunda-process-test-example</module>
     <module>document</module>
     <module>security</module>
+    <module>migration</module>
   </modules>
 
   <scm>

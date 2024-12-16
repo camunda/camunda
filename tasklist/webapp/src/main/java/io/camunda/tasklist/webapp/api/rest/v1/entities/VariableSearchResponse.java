@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -105,7 +105,10 @@ public class VariableSearchResponse {
     return new VariableSearchResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
-        .setValue(variableEntity.getFullValue())
+        .setValue(
+            variableEntity.getIsPreview()
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
         .setPreviewValue(variableEntity.getValue());
   }
@@ -131,7 +134,7 @@ public class VariableSearchResponse {
                 .setPreviewValue(draftTaskVariable.getValue()));
   }
 
-  public static VariableSearchResponse createFrom(TaskVariableEntity variableEntity) {
+  public static VariableSearchResponse createFrom(SnapshotTaskVariableEntity variableEntity) {
     return new VariableSearchResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())

@@ -1,0 +1,202 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.write.domain;
+
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
+import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.function.Function;
+
+public record DecisionInstanceDbModel(
+    String decisionInstanceId,
+    Long decisionInstanceKey,
+    DecisionInstanceState state,
+    OffsetDateTime evaluationDate,
+    String evaluationFailure,
+    String result,
+    Long flowNodeInstanceKey,
+    String flowNodeId,
+    Long processInstanceKey,
+    Long processDefinitionKey,
+    String processDefinitionId,
+    Long decisionDefinitionKey,
+    String decisionDefinitionId,
+    Long decisionRequirementsKey,
+    String decisionRequirementsId,
+    Long rootDecisionDefinitionKey,
+    DecisionDefinitionType decisionType,
+    String tenantId,
+    List<EvaluatedInput> evaluatedInputs,
+    List<EvaluatedOutput> evaluatedOutputs) {
+
+  public static DecisionInstanceDbModel of(
+      final Function<Builder, ObjectBuilder<DecisionInstanceDbModel>> fn) {
+    return fn.apply(new Builder()).build();
+  }
+
+  public static final class Builder implements ObjectBuilder<DecisionInstanceDbModel> {
+
+    private String decisionInstanceId;
+    private Long decisionInstanceKey;
+    private DecisionInstanceState state;
+    private OffsetDateTime evaluationDate;
+    private String evaluationFailure;
+    private String result;
+    private Long flowNodeInstanceKey;
+    private String flowNodeId;
+    private Long processInstanceKey;
+    private Long processDefinitionKey;
+    private String processDefinitionId;
+    private Long decisionDefinitionKey;
+    private String decisionDefinitionId;
+    private Long decisionRequirementsKey;
+    private String decisionRequirementsId;
+    private Long rootDecisionDefinitionKey;
+    private DecisionDefinitionType decisionType;
+    private String tenantId;
+    private List<EvaluatedInput> evaluatedInputs;
+    private List<EvaluatedOutput> evaluatedOutputs;
+
+    public Builder decisionInstanceId(final String value) {
+      decisionInstanceId = value;
+      return this;
+    }
+
+    public Builder decisionInstanceKey(final Long value) {
+      decisionInstanceKey = value;
+      return this;
+    }
+
+    public Builder state(final DecisionInstanceState value) {
+      state = value;
+      return this;
+    }
+
+    public Builder evaluationDate(final OffsetDateTime value) {
+      evaluationDate = value;
+      return this;
+    }
+
+    public Builder evaluationFailure(final String value) {
+      evaluationFailure = value;
+      return this;
+    }
+
+    public Builder result(final String value) {
+      result = value;
+      return this;
+    }
+
+    public Builder flowNodeInstanceKey(final Long value) {
+      flowNodeInstanceKey = value;
+      return this;
+    }
+
+    public Builder flowNodeId(final String value) {
+      flowNodeId = value;
+      return this;
+    }
+
+    public Builder processInstanceKey(final Long value) {
+      processInstanceKey = value;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long value) {
+      processDefinitionKey = value;
+      return this;
+    }
+
+    public Builder processDefinitionId(final String value) {
+      processDefinitionId = value;
+      return this;
+    }
+
+    public Builder decisionDefinitionKey(final Long value) {
+      decisionDefinitionKey = value;
+      return this;
+    }
+
+    public Builder decisionDefinitionId(final String value) {
+      decisionDefinitionId = value;
+      return this;
+    }
+
+    public Builder decisionRequirementsKey(final Long value) {
+      decisionRequirementsKey = value;
+      return this;
+    }
+
+    public Builder decisionRequirementsId(final String value) {
+      decisionRequirementsId = value;
+      return this;
+    }
+
+    public Builder rootDecisionDefinitionKey(final Long value) {
+      rootDecisionDefinitionKey = value;
+      return this;
+    }
+
+    public Builder decisionType(final DecisionDefinitionType value) {
+      decisionType = value;
+      return this;
+    }
+
+    public Builder tenantId(final String value) {
+      tenantId = value;
+      return this;
+    }
+
+    public Builder evaluatedInputs(final List<EvaluatedInput> value) {
+      evaluatedInputs = value;
+      return this;
+    }
+
+    public Builder evaluatedOutputs(final List<EvaluatedOutput> value) {
+      evaluatedOutputs = value;
+      return this;
+    }
+
+    @Override
+    public DecisionInstanceDbModel build() {
+      return new DecisionInstanceDbModel(
+          decisionInstanceId,
+          decisionInstanceKey,
+          state,
+          evaluationDate,
+          evaluationFailure,
+          result,
+          flowNodeInstanceKey,
+          flowNodeId,
+          processInstanceKey,
+          processDefinitionKey,
+          processDefinitionId,
+          decisionDefinitionKey,
+          decisionDefinitionId,
+          decisionRequirementsKey,
+          decisionRequirementsId,
+          rootDecisionDefinitionKey,
+          decisionType,
+          tenantId,
+          evaluatedInputs,
+          evaluatedOutputs);
+    }
+  }
+
+  public record EvaluatedInput(String decisionInstanceId, String id, String name, String value) {}
+
+  public record EvaluatedOutput(
+      String decisionInstanceId,
+      String id,
+      String name,
+      String value,
+      String ruleId,
+      Integer ruleIndex) {}
+}

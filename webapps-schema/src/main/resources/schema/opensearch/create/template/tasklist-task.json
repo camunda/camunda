@@ -4,13 +4,12 @@
     "properties": {
       "join": {
         "type": "join",
-        "eager_global_ordinals": true,
         "relations": {
           "task": [
-            "taskVariable"
+            "localVariable"
           ],
           "process": [
-            "processVariable",
+            "variable",
             "task"
           ]
         }
@@ -96,7 +95,7 @@
       },
       "customHeaders": {
         "type": "object",
-        "dynamic": true
+        "dynamic": "true"
       },
       "priority": {
         "type": "integer"

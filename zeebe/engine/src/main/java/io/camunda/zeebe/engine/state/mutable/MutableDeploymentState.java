@@ -19,4 +19,10 @@ public interface MutableDeploymentState extends DeploymentState {
   void storeDeploymentRecord(long key, DeploymentRecord value);
 
   void removeDeploymentRecord(long key);
+
+  /**
+   * Marks all deployments as stored. After this has been called, {@link
+   * DeploymentState#hasStoredAllDeployments()} returns true.
+   */
+  void markAllDeploymentsAsStored();
 }

@@ -61,4 +61,8 @@ public final class DeployedDrg {
   public String getTenantId() {
     return persistedDecisionRequirements.getTenantId();
   }
+
+  public PersistedDecisionRequirements getPersistedDecisionRequirements() {
+    return persistedDecisionRequirements;
+  }
 }

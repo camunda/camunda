@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
@@ -41,11 +42,11 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
   }
 
   @Override
-  public CompletableFuture<Integer> archiveNextBatch() {
+  public CompletionStage<Integer> archiveNextBatch() {
     return repository.getProcessInstancesNextBatch().thenComposeAsync(this::archiveBatch, executor);
   }
 
-  private CompletableFuture<Integer> archiveBatch(final ArchiveBatch batch) {
+  private CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
     if (batch != null && !(batch.ids() == null || batch.ids().isEmpty())) {
       logger.trace("Following process instances are found for archiving: {}", batch);
 

@@ -97,16 +97,18 @@ public class RoleTest {
     // given
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getKey();
+    final var anotherName = UUID.randomUUID().toString();
+    engine.role().newRole(anotherName).create();
 
     // when
     final var notPresentUpdateRecord =
-        engine.role().updateRole(roleKey).withName(name).expectRejection().update();
+        engine.role().updateRole(roleKey).withName(anotherName).expectRejection().update();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to update role with name '%s', but a role with this name already exists."
-                .formatted(name));
+                .formatted(anotherName));
   }
 
   @Test
@@ -184,6 +186,41 @@ public class RoleTest {
         .hasRejectionReason(
             "Expected to add an entity with key '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
                 .formatted(1L, EntityType.USER, roleKey));
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsAlreadyAssigned() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var roleRecord = engine.role().newRole(name).create();
+    final var roleKey = roleRecord.getValue().getRoleKey();
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .role()
+            .addEntity(roleKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with key '%d' to role with key '%d', but the entity is already assigned to this role."
+                .formatted(userKey, roleKey));
   }
 
   @Test

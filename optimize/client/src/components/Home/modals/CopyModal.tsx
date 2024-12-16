@@ -13,11 +13,11 @@ import {Modal} from 'components';
 import {t} from 'translation';
 import {EntityListEntity} from 'types';
 
-import MoveCopy from './MoveCopy';
+import MoveCopy, {CollectionsHome} from './MoveCopy';
 
 interface CopyModaProps {
   onConfirm: (name: string, shouldMove: boolean, value?: string | boolean | null) => void;
-  entity: Partial<EntityListEntity<{subEntityCounts: {report: number}}>>;
+  entity: EntityListEntity;
   jumpToEntity?: boolean;
   onClose: (event: MouseEvent) => boolean | void;
   collection: string;
@@ -32,7 +32,7 @@ export default function CopyModal({
 }: CopyModaProps) {
   const [name, setName] = useState(`${entity.name} (${t('common.copyLabel')})`);
   const [moving, setMoving] = useState(false);
-  const [collection, setCollection] = useState<Partial<EntityListEntity> | null>(null);
+  const [collection, setCollection] = useState<EntityListEntity | CollectionsHome | null>(null);
   const [gotoNew, setGotoNew] = useState(true);
 
   const handleConfirm = () => {

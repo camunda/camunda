@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -84,8 +85,9 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
   }
 
   public CompletableFuture<JobRecord> completeJob(
-      final long jobKey, final Map<String, Object> variables) {
-    return sendBrokerRequest(new BrokerCompleteJobRequest(jobKey, getDocumentOrEmpty(variables)));
+      final long jobKey, final Map<String, Object> variables, final JobResult result) {
+    return sendBrokerRequest(
+        new BrokerCompleteJobRequest(jobKey, getDocumentOrEmpty(variables), result));
   }
 
   public CompletableFuture<JobRecord> updateJob(

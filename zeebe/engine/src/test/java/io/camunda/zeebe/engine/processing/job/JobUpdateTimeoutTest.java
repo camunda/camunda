@@ -17,26 +17,63 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class JobUpdateTimeoutTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+
   private static final String PROCESS_ID = "process";
   private static String jobType;
+  private static long userKey;
+  private static String tenantId;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @BeforeClass
+  public static void setUp() {
+    tenantId = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
+    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
+    ENGINE
+        .authorization()
+        .permission()
+        .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withOwnerKey(userKey)
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .add();
+  }
 
   @Before
   public void setup() {
@@ -48,7 +85,11 @@ public class JobUpdateTimeoutTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final var batchRecord =
-        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(5).toMillis()).activate();
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .activate(userKey);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();
@@ -65,7 +106,11 @@ public class JobUpdateTimeoutTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final var batchRecord =
-        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(15).toMillis()).activate();
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(15).toMillis())
+            .activate(userKey);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();
@@ -117,7 +162,11 @@ public class JobUpdateTimeoutTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final var batchRecord =
-        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(5).toMillis()).activate();
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .activate(userKey);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long firstTimeout = Duration.ofMinutes(10).toMillis();
@@ -137,7 +186,11 @@ public class JobUpdateTimeoutTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final var batchRecord =
-        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(10).toMillis()).activate();
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(10).toMillis())
+            .activate(userKey);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(5).toMillis();
 
@@ -161,7 +214,11 @@ public class JobUpdateTimeoutTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final var batchRecord =
-        ENGINE.jobs().withType(jobType).withTimeout(Duration.ofMinutes(10).toMillis()).activate();
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withTimeout(Duration.ofMinutes(10).toMillis())
+            .activate(userKey);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(15).toMillis();
 
@@ -183,7 +240,6 @@ public class JobUpdateTimeoutTest {
   @Test
   public void shouldUpdateJobTimeoutForCustomTenant() {
     // given
-    final String tenantId = "acme";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     final var batchRecord =
@@ -192,7 +248,7 @@ public class JobUpdateTimeoutTest {
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(5).toMillis())
             .withTenantId(tenantId)
-            .activate();
+            .activate(userKey);
 
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
@@ -215,7 +271,6 @@ public class JobUpdateTimeoutTest {
   @Test
   public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
     // given
-    final String tenantId = "acme";
     final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
@@ -225,7 +280,7 @@ public class JobUpdateTimeoutTest {
             .withType(jobType)
             .withTimeout(Duration.ofMinutes(5).toMillis())
             .withTenantId(tenantId)
-            .activate();
+            .activate(userKey);
 
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
     final long timeout = Duration.ofMinutes(10).toMillis();

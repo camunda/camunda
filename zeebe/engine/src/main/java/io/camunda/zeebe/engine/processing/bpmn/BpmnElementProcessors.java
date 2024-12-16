@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.container.AdHocSubProcessProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.CallActivityProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.EventSubProcessProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.container.MultiInstanceBodyProcessor;
@@ -96,6 +97,9 @@ public final class BpmnElementProcessors {
     processors.put(
         BpmnElementType.CALL_ACTIVITY,
         new CallActivityProcessor(bpmnBehaviors, stateTransitionBehavior));
+    processors.put(
+        BpmnElementType.AD_HOC_SUB_PROCESS,
+        new AdHocSubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));
 
     // events
     processors.put(

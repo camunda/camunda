@@ -15,15 +15,17 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
@@ -32,14 +34,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(
-    value = ProcessInstanceQueryController.class,
-    properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = ProcessInstanceController.class)
 @Import(JacksonConfig.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
@@ -57,7 +59,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           789L,
           333L,
           777L,
-          "PI_1/PI_2",
           OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
           ProcessInstanceState.ACTIVE,
@@ -75,7 +76,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionKey": 789,
             "parentProcessInstanceKey": 333,
             "parentFlowNodeInstanceKey": 777,
-            "treePath": "PI_1/PI_2",
             "startDate": "2024-01-01T00:00:00.000Z",
             "state": "ACTIVE",
             "hasIncident": false,
@@ -96,7 +96,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionKey": 789,
                   "parentProcessInstanceKey": 333,
                   "parentFlowNodeInstanceKey": 777,
-                  "treePath": "PI_1/PI_2",
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "state": "ACTIVE",
                   "hasIncident": false,
@@ -105,7 +104,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -117,10 +116,13 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       new Builder<ProcessInstanceEntity>()
           .total(1L)
           .items(List.of(PROCESS_INSTANCE_ENTITY))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   @MockBean ProcessInstanceServices processInstanceServices;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -183,11 +185,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "bpmnProcessId",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "processDefinitionKey",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -237,9 +239,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -270,7 +272,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "unknownField",
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -311,7 +313,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -461,6 +463,44 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "processDefinitionVersion",
         ops -> new ProcessInstanceFilter.Builder().processDefinitionVersionOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionId",
+        ops -> new ProcessInstanceFilter.Builder().processDefinitionIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionName",
+        ops -> new ProcessInstanceFilter.Builder().processDefinitionNameOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionVersionTag",
+        ops ->
+            new ProcessInstanceFilter.Builder().processDefinitionVersionTagOperations(ops).build());
+    customOperationTestCases(
+        streamBuilder,
+        "state",
+        ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(ProcessInstanceState.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(ProcessInstanceState.CANCELED))),
+            List.of(
+                Operation.in(
+                    String.valueOf(ProcessInstanceState.COMPLETED),
+                    String.valueOf(ProcessInstanceState.ACTIVE)),
+                Operation.like("act"))),
+        true);
+    stringOperationTestCases(
+        streamBuilder,
+        "tenantId",
+        ops -> new ProcessInstanceFilter.Builder().tenantIdOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "startDate",
+        ops -> new ProcessInstanceFilter.Builder().startDateOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "endDate",
+        ops -> new ProcessInstanceFilter.Builder().endDateOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -477,8 +517,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.FormMapper">
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.FormEntity">
+    <constructor>
+      <idArg column="FORM_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="FORM_ID" javaType="java.lang.String"/>
+      <arg column="SCHEMA" javaType="java.lang.String"/>
+      <arg column="VERSION" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FormDbModel">
+    INSERT INTO FORM (FORM_ID, FORM_KEY, TENANT_ID, SCHEMA, VERSION, IS_DELETED)
+    VALUES (#{formId}, #{formKey}, #{tenantId}, #{schema}, #{version}, #{isDeleted})
+  </insert>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FormDbModel">
+    UPDATE FORM
+    SET FORM_ID = #{formId},
+        TENANT_ID  = #{tenantId},
+        SCHEMA     = #{schema},
+        VERSION    = #{version},
+        IS_DELETED = #{isDeleted}
+    WHERE FORM_KEY = #{formKey}
+  </update>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.FormDbQuery" resultType="long">
+    SELECT COUNT(*)
+    FROM FORM
+    <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.FormDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.FormMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    FORM_KEY,
+    TENANT_ID,
+    FORM_ID,
+    SCHEMA,
+    VERSION
+    FROM FORM
+    <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.formIds != null and !filter.formIds.isEmpty()">
+      AND FORM_ID IN
+      <foreach close=")" collection="filter.formIds" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.formKeys != null and !filter.formKeys.isEmpty()">
+      AND FORM_KEY IN
+      <foreach close=")" collection="filter.formKeys" item="value" open="("
+        separator=", ">#{value}
+      </foreach>
+    </if>
+  </sql>
+
+</mapper>

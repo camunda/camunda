@@ -462,6 +462,12 @@ public class BpmnCompensationSubscriptionBehaviour {
             });
   }
 
+  public List<CompensationSubscription> getSubscriptionsByProcessInstanceKey(
+      final BpmnElementContext context) {
+    return compensationSubscriptionState.findSubscriptionsByProcessInstanceKey(
+        context.getTenantId(), context.getProcessInstanceKey());
+  }
+
   private void appendCompensationSubscriptionDeleteEvent(
       final CompensationSubscription subscription) {
     stateWriter.appendFollowUpEvent(

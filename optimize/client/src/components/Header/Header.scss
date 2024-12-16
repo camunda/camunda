@@ -34,4 +34,13 @@
       }
     }
   }
+
+  .timezone {
+    padding: var(--cds-spacing-05);
+    color: var(--cds-text-secondary);
+    font-size: var(--cds-label-01-font-size);
+    font-weight: var(--cds-label-01-font-weight);
+    line-height: var(--cds-label-01-line-height);
+    letter-spacing: var(--cds-label-01-letter-spacing);
+  }
 }

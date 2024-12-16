@@ -26,7 +26,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
+        uses: hashicorp/vault-action@c46b8b88227585d3999accc9441c5810fe186a84
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -58,7 +58,7 @@ jobs:
 
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@v3.1.0
         with:
           githubServer: false
           servers: |
@@ -77,12 +77,12 @@ jobs:
       # Tests: run backup and restore tests
       - name: Run backup and restore tests
         run: |
-          ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P -skipTests verify
+          ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P-skipTests verify
 
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v1.27.1
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
         with:

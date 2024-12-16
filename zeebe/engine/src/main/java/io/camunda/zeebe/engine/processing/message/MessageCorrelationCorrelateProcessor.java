@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -113,7 +113,8 @@ public final class MessageCorrelationCorrelateProcessor
     correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
 
     final var authorizationRejectionOptional =
-        isAuthorizedForAllSubscriptions(command, correlatingSubscriptions);
+        isAuthorizedForAllSubscriptions(
+            command, correlatingSubscriptions, messageCorrelationRecord.getTenantId());
     if (authorizationRejectionOptional.isPresent()) {
       final var rejection = authorizationRejectionOptional.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -163,31 +164,40 @@ public final class MessageCorrelationCorrelateProcessor
 
   private Optional<Rejection> isAuthorizedForAllSubscriptions(
       final TypedRecord<MessageCorrelationRecord> command,
-      final Subscriptions correlatingSubscriptions) {
+      final Subscriptions correlatingSubscriptions,
+      final String tenantId) {
     final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
+    final AtomicReference<String> processId = new AtomicReference<>();
 
     final var isAuthorized =
         correlatingSubscriptions.visitSubscriptions(
             subscription -> {
               final PermissionType permissionType =
                   subscription.isStartEventSubscription()
-                      ? PermissionType.CREATE
-                      : PermissionType.UPDATE;
+                      ? PermissionType.CREATE_PROCESS_INSTANCE
+                      : PermissionType.UPDATE_PROCESS_INSTANCE;
 
               request.set(
                   new AuthorizationRequest(
-                      command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType));
+                      command,
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      permissionType,
+                      tenantId));
 
-              request.get().addResourceId(bufferAsString(subscription.getBpmnProcessId()));
-              return authCheckBehavior.isAuthorized(request.get());
+              final var processIdString = bufferAsString(subscription.getBpmnProcessId());
+              request.get().addResourceId(processIdString);
+              processId.set(processIdString);
+              return authCheckBehavior.isAuthorized(request.get()).isRight();
             },
             true);
 
     if (!isAuthorized) {
       final var authorizationRequest = request.get();
       final var error =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "BPMN process id '%s'".formatted(processId.get()));
       return Optional.of(new Rejection(RejectionType.UNAUTHORIZED, error));
     }
 

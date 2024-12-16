@@ -12,13 +12,13 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;

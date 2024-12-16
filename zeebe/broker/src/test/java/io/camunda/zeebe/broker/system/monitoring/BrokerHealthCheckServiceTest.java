@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.Test;
 
 public class BrokerHealthCheckServiceTest {
@@ -20,7 +21,8 @@ public class BrokerHealthCheckServiceTest {
   public void shouldNotBeReadyHealthyOrStartedBeforePartitionManagerIsRegistered() {
     // given
     final var brokerInfo = mock(BrokerInfo.class);
-    final var healthCheckService = new BrokerHealthCheckService(brokerInfo);
+    final var healthCheckService =
+        new BrokerHealthCheckService(brokerInfo, new HealthTreeMetrics(new SimpleMeterRegistry()));
 
     // when
 
@@ -41,7 +43,8 @@ public class BrokerHealthCheckServiceTest {
   public void shouldThrowIllegalStateExceptionIfStatusIsUpdatedBeforePartitionsAreKnown() {
     // given
     final var brokerInfo = mock(BrokerInfo.class);
-    final var healthCheckService = new BrokerHealthCheckService(brokerInfo);
+    final var healthCheckService =
+        new BrokerHealthCheckService(brokerInfo, new HealthTreeMetrics(new SimpleMeterRegistry()));
 
     // when + then
 

@@ -28,7 +28,7 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
@@ -577,6 +577,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
 
@@ -598,6 +599,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
 
@@ -621,6 +623,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     createData();
 
     // when
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(IdentityPermission.READ))
         .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of(decisionId)));
 

@@ -23,6 +23,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -71,7 +72,7 @@ final class OpensearchClientTest {
     final Template expectedTemplate =
         templateReader.readIndexTemplate(
             valueType,
-            indexRouter.searchPatternForValueType(valueType),
+            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
             indexRouter.aliasNameForValueType(valueType));
     final ArgumentCaptor<Request> requestCaptor =
         mockClientResponse(new PutIndexTemplateResponse(true));

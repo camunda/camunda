@@ -152,7 +152,7 @@ public interface QueryDSL {
   }
 
   static <A> Query lt(final String field, final A lt) {
-    return RangeQuery.of(q -> q.field(field).lte(json(lt))).toQuery();
+    return RangeQuery.of(q -> q.field(field).lt(json(lt))).toQuery();
   }
 
   static <A> Query lte(final String field, final A lte) {

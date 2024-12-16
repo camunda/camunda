@@ -50,7 +50,7 @@ public class ZeebeImportDeleteProcessIT extends TasklistZeebeIntegrationTest {
         .taskIsCreated(flowNodeBpmnId)
         .claimAndCompleteHumanTask(flowNodeBpmnId, "creditor", "\"someone\"")
         .waitUntil()
-        .processInstanceIsCompleted();
+        .taskIsCompleted(flowNodeBpmnId);
     final String processDefinitionId = tester.getProcessDefinitionKey();
     final String taskId = tester.getTaskId();
     final String strVarVariableId = taskId.concat("-creditor");

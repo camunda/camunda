@@ -300,6 +300,10 @@ public final class CommandDistributionBehavior {
     }
 
     ContinuationRequestBuilder afterQueue(String queue);
+
+    default ContinuationRequestBuilder afterQueue(final DistributionQueue queue) {
+      return afterQueue(queue.getQueueId());
+    }
   }
 
   public interface DistributionRequestBuilder {

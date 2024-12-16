@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.controllers;
 
-import static io.camunda.webapps.controllers.WebappsRequestForwardManager.getRequestedUrl;
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;

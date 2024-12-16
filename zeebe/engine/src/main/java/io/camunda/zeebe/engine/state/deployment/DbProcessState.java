@@ -521,6 +521,28 @@ public final class DbProcessState implements MutableProcessState {
     versionManager.clear();
   }
 
+  @Override
+  public void forEachProcess(
+      final ProcessIdentifier previousProcess, final PersistedProcessVisitor visitor) {
+
+    if (previousProcess == null) {
+      processColumnFamily.whileTrue((key, value) -> visitor.visit(value));
+      return;
+    }
+
+    tenantIdKey.wrapString(previousProcess.tenantId());
+    processDefinitionKey.wrapLong(previousProcess.processDefinitionKey());
+    processColumnFamily.whileTrue(
+        tenantAwareProcessDefinitionKey,
+        (key, value) -> {
+          if (key.tenantKey().toString().equals(previousProcess.tenantId())
+              && key.wrappedKey().getValue() == previousProcess.processDefinitionKey()) {
+            return true;
+          }
+          return visitor.visit(value);
+        });
+  }
+
   private DeployedProcess lookupProcessByIdAndPersistedVersion(
       final long latestVersion, final String tenantId) {
     tenantIdKey.wrapString(tenantId);

@@ -62,13 +62,131 @@ public class ProcessDefinitionQueryTest {
             "manual_process.bpmn",
             "parent_process_v1.bpmn",
             "child_process_v1.bpmn",
-            "process_start_form.bpmn");
+            "process_start_form.bpmn",
+            "processWithVersionTag.bpmn");
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
                 deployResource(String.format("process/%s", process)).getProcesses()));
 
     waitForProcessesToBeDeployed();
+  }
+
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = zeebeClient.newProcessDefinitionQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getProcessDefinitionKey())
+        .isEqualTo(thirdKey);
+  }
+
+  @Test
+  void shouldPaginateWithSortingByProcessDefinitionKey() {
+    // given
+    final var resultAll =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionKey().desc())
+            .send()
+            .join();
+
+    // when
+    final var firstPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionKey().desc())
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+    final var secondPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionKey().desc())
+            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .send()
+            .join();
+
+    // then
+    assertThat(firstPage.items().size()).isEqualTo(1);
+    assertThat(firstPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(0).getProcessDefinitionKey());
+    assertThat(secondPage.items().size()).isEqualTo(1);
+    assertThat(secondPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(1).getProcessDefinitionKey());
+  }
+
+  @Test
+  void shouldPaginateWithSortingByProcessDefinitionId() {
+    // given
+    final var resultAll =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .send()
+            .join();
+
+    // when
+    final var firstPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(2))
+            .send()
+            .join();
+    final var secondPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .send()
+            .join();
+
+    // then
+    assertThat(firstPage.items().size()).isEqualTo(2);
+    assertThat(firstPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(0).getProcessDefinitionKey());
+    assertThat(firstPage.items().getLast().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(1).getProcessDefinitionKey());
+    assertThat(secondPage.items().size()).isEqualTo(1);
+    assertThat(secondPage.items().getFirst().getProcessDefinitionKey())
+        .isEqualTo(resultAll.items().get(2).getProcessDefinitionKey());
+  }
+
+  @Test
+  void shouldGetPreviousPageWithSortingByProcessDefinitionId() {
+    // given
+    final var firstPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(2))
+            .send()
+            .join();
+    final var secondPage =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .send()
+            .join();
+    // when
+    final var firstPageAgain =
+        zeebeClient
+            .newProcessDefinitionQuery()
+            .sort(s -> s.processDefinitionId().desc())
+            .page(p -> p.limit(2).searchBefore(secondPage.page().firstSortValues()))
+            .send()
+            .join();
+
+    // then
+    assertThat(firstPageAgain.items()).isEqualTo(firstPage.items());
   }
 
   @Test
@@ -176,7 +294,7 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionQuery().filter(f -> f.version(version)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
     assertThat(result.items().getFirst().getVersion()).isEqualTo(version);
   }
 
@@ -208,12 +326,12 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
     assertThat(result.items().getFirst().getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
-  void shouldRetrieveProcessDefinitionsByVersionTag() {
+  void shouldRetrieveProcessDefinitionsByNullVersionTag() {
     // given
     final String versionTag = null;
 
@@ -222,7 +340,21 @@ public class ProcessDefinitionQueryTest {
         zeebeClient.newProcessDefinitionQuery().filter(f -> f.versionTag(versionTag)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items().getFirst().getVersionTag()).isEqualTo(versionTag);
+  }
+
+  @Test
+  void shouldRetrieveProcessDefinitionsByVersionTag() {
+    // given
+    final String versionTag = "1.1.0";
+
+    // when
+    final var result =
+        zeebeClient.newProcessDefinitionQuery().filter(f -> f.versionTag(versionTag)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getVersionTag()).isEqualTo(versionTag);
   }
 
@@ -244,7 +376,7 @@ public class ProcessDefinitionQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
     assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedProcessDefinitionIds);
   }
@@ -394,7 +526,7 @@ public class ProcessDefinitionQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(6);
+    assertThat(resultAfter.items().size()).isEqualTo(7);
     final var keyAfter = resultAfter.items().getFirst().getProcessDefinitionKey();
     // apply searchBefore
     final var resultBefore =

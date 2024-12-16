@@ -13,7 +13,7 @@ export const emptyStateComponent = Selector('.EmptyState');
 export const blankDashboardButton = Selector('button').withText('Blank dashboard');
 export const noDataNotice = Selector('.NoDataNotice');
 export const dashboardReportLink = Selector('.OptimizeReportTile .EntityName a');
-export const breadcrumb = (text) => Selector('.cds--header__menu-bar a').withText(text);
+export const breadcrumb = (text) => Selector('.cds--breadcrumb-item a').withText(text);
 export const dashboardView = Selector('.DashboardView');
 export const searchField = Selector('input.cds--search-input');
 export const copyTargetsInput = Selector('.CopyModal .cds--combo-box .cds--text-input');

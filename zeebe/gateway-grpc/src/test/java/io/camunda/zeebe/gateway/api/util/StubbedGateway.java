@@ -7,22 +7,24 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.identity.sdk.Identity;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.GatewayGrpcService;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
-import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -47,6 +49,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import java.io.IOException;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,19 +69,22 @@ public final class StubbedGateway {
   private final StubbedJobStreamer jobStreamer;
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
+  private final SecurityConfiguration securityConfiguration;
   private Server server;
-  private final Identity identity;
+  private final UserServices services;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
-      final GatewayCfg config) {
+      final GatewayCfg config,
+      final SecurityConfiguration securityConfiguration) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
-    identity = mock(Identity.class, RETURNS_DEEP_STUBS);
+    this.securityConfiguration = securityConfiguration;
+    services = mock(UserServices.class);
   }
 
   public void start() throws IOException {
@@ -87,16 +93,15 @@ public final class StubbedGateway {
     final var clientStreamAdapter = new StreamJobsHandler(jobStreamer);
     actorScheduler.submitActor(clientStreamAdapter).join();
 
-    final MultiTenancyCfg multiTenancy = config.getMultiTenancy();
+    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
     final EndpointManager endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
-
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
-                    gatewayGrpcService, new IdentityInterceptor(identity, multiTenancy)));
+                    gatewayGrpcService, new AuthenticationInterceptor(services)));
     server = serverBuilder.build();
     server.start();
   }
@@ -157,17 +162,6 @@ public final class StubbedGateway {
         .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .build();
-  }
-
-  /**
-   * This can be used to adjust how the Identity sdk behaves in tests. For example, to simulate
-   * specific authorized tenants for the {@link IdentityInterceptor}. This mock is deeply stubbed
-   * using mockito.
-   *
-   * @return mock of Identity
-   */
-  public Identity getIdentityMock() {
-    return identity;
   }
 
   public static final class StubbedJobStreamer implements ClientStreamer<JobActivationProperties> {
@@ -259,8 +253,22 @@ public final class StubbedGateway {
         final RequestInfo requestInfo, final Executor appExecutor, final MetadataApplier applier) {
       final Metadata headers = new Metadata();
       final Key<String> key = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
-      headers.put(key, "Bearer " + token);
+      headers.put(key, generateToken());
       applier.apply(headers);
+    }
+
+    private String generateToken() {
+      final Algorithm algorithm = Algorithm.HMAC256("secret-key");
+
+      return JWT.create()
+          .withIssuer("test-issuer")
+          .withSubject("test-user")
+          .withAudience("test-audience")
+          .withClaim("role", "admin")
+          .withClaim("foo", "bar")
+          .withClaim("baz", "qux")
+          .withExpiresAt(new Date(System.currentTimeMillis() + 60 * 60 * 1000)) // Expires in 1 hour
+          .sign(algorithm);
     }
   }
 }

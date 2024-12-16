@@ -15,11 +15,11 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,7 +66,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     super(partitionId, importValueType, queueSize);
   }
 
-  private Hit[] withTimerSearchHits(final Callable<Hit[]> callable) throws Exception {
+  private <A> A withTimer(final Callable<A> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -205,13 +205,15 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
                 s ->
                     s.field(
                         FieldSort.of(
-                            f -> f.field(ImportPositionIndex.SEQUENCE).order(SortOrder.Asc))))
+                            f ->
+                                f.field(TasklistImportPositionIndex.SEQUENCE)
+                                    .order(SortOrder.Asc))))
             .query(
                 q ->
                     q.range(
                         range ->
                             range
-                                .field(ImportPositionIndex.SEQUENCE)
+                                .field(TasklistImportPositionIndex.SEQUENCE)
                                 .gt(JsonData.of(fromSequence))
                                 .lte(JsonData.of(lessThanEqualsSequence))))
             .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits)
@@ -220,8 +222,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
             .index(aliasName);
 
     try {
-      final Hit[] hits =
-          withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+      final Hit[] hits = withTimer(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
       if (hits.length == 0) {
         countEmptyRuns++;
       } else {
@@ -246,14 +247,10 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     }
   }
 
-  private SearchResponse withTimer(final Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
-  }
-
   private SearchRequest createSearchQuery(
       final String aliasName, final Long positionFrom, final Long positionTo) {
     final RangeQuery.Builder rangeQuery = new RangeQuery.Builder();
-    rangeQuery.field(ImportPositionIndex.POSITION).gt(JsonData.of(positionFrom));
+    rangeQuery.field(TasklistImportPositionIndex.POSITION).gt(JsonData.of(positionFrom));
     if (positionTo != null) {
       rangeQuery.lte(JsonData.of(positionTo));
     }
@@ -269,7 +266,8 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     searchRequestBuilder
         .query(query)
         .index(aliasName)
-        .sort(s -> s.field(f -> f.field(ImportPositionIndex.POSITION).order(SortOrder.Asc)));
+        .sort(
+            s -> s.field(f -> f.field(TasklistImportPositionIndex.POSITION).order(SortOrder.Asc)));
 
     if (positionTo == null) {
       searchRequestBuilder.size(tasklistProperties.getZeebeOpenSearch().getBatchSize());

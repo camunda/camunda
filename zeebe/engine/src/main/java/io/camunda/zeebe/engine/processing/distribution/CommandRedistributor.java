@@ -84,6 +84,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
           final var retriable = new RetriableDistribution(distributionKey, record.getPartitionId());
           retriableDistributions.add(retriable);
           retryDistribution(retriable, record);
+          return true;
         });
 
     // Remove retry cycle tracking for completed distributions, i.e. those not visited in this cycle

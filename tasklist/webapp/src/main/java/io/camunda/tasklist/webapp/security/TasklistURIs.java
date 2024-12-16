@@ -19,7 +19,6 @@ public final class TasklistURIs {
   public static final String ROOT_URL = "/tasklist";
   public static final String ROOT = ROOT_URL;
   public static final String ERROR_URL = "/error";
-  public static final String GRAPHQL_URL = "/graphql";
   public static final String REST_V1_API = "/v1/";
   public static final String REST_V1_EXTERNAL_API = "/v1/external/**";
   public static final String NEW_FORM = "/new/**";
@@ -37,7 +36,6 @@ public final class TasklistURIs {
   public static final String SSO_CALLBACK = "/sso-callback";
   public static final String NO_PERMISSION = "/noPermission";
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
-  public static final String REQUESTED_URL = "requestedUrl";
   public static final String COOKIE_JSESSIONID = "TASKLIST-SESSION";
   public static final String START_PUBLIC_PROCESS = ROOT_URL + "/new/";
   public static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";

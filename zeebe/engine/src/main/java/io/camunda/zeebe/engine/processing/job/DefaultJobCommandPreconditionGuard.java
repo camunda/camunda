@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -50,10 +50,14 @@ public final class DefaultJobCommandPreconditionGuard {
       final List<JobCommandCheck> customChecks) {
     this.state = state;
     this.acceptCommand = acceptCommand;
+    this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            state, intent, List.of(State.ACTIVATABLE, State.ACTIVATED), customChecks);
-    this.authCheckBehavior = authCheckBehavior;
+            state,
+            intent,
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            customChecks,
+            authCheckBehavior);
   }
 
   public boolean onCommand(
@@ -75,17 +79,21 @@ public final class DefaultJobCommandPreconditionGuard {
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var request =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    if (authCheckBehavior.isAuthorized(request).isRight()) {
       return Either.right(job);
     }
 
     return Either.left(
         new Rejection(
             RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                request.getPermissionType(), request.getResourceType())));
+            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
   }
 }

@@ -15,6 +15,7 @@ import com.google.common.collect.Maps;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.operate.schema.migration.SemanticVersion;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -93,23 +94,26 @@ public class IndexSchemaValidator {
       return;
     }
     final Set<String> errors = new HashSet<>();
-    indexDescriptors.forEach(
-        indexDescriptor -> {
-          final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
-          final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
-          if (oldVersions.size() > 1) {
-            errors.add(
-                String.format(
-                    "More than one older version for %s (%s) found: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
-          }
-          if (!newerVersions.isEmpty()) {
-            errors.add(
-                String.format(
-                    "Newer version(s) for %s (%s) already exists: %s",
-                    indexDescriptor.getIndexName(), indexDescriptor.getVersion(), newerVersions));
-          }
-        });
+    getOperateIndexDescriptors()
+        .forEach(
+            indexDescriptor -> {
+              final Set<String> oldVersions = olderVersionsForIndex(indexDescriptor);
+              final Set<String> newerVersions = newerVersionsForIndex(indexDescriptor);
+              if (oldVersions.size() > 1) {
+                errors.add(
+                    String.format(
+                        "More than one older version for %s (%s) found: %s",
+                        indexDescriptor.getIndexName(), indexDescriptor.getVersion(), oldVersions));
+              }
+              if (!newerVersions.isEmpty()) {
+                errors.add(
+                    String.format(
+                        "Newer version(s) for %s (%s) already exists: %s",
+                        indexDescriptor.getIndexName(),
+                        indexDescriptor.getVersion(),
+                        newerVersions));
+              }
+            });
     if (!errors.isEmpty()) {
       throw new OperateRuntimeException("Error(s) in index schema: " + String.join(";", errors));
     }
@@ -123,11 +127,12 @@ public class IndexSchemaValidator {
   public boolean schemaExists() {
     try {
       final Set<String> indices = schemaManager.getIndexNames(getOperateIndexPattern());
+      final var operateIndexDescriptors = getOperateIndexDescriptors();
       final List<String> allIndexNames =
-          map(indexDescriptors, IndexDescriptor::getFullQualifiedName);
+          map(operateIndexDescriptors, IndexDescriptor::getFullQualifiedName);
 
       final Set<String> aliases = schemaManager.getAliasesNames(getOperateIndexPattern());
-      final List<String> allAliasesNames = map(indexDescriptors, IndexDescriptor::getAlias);
+      final List<String> allAliasesNames = map(operateIndexDescriptors, IndexDescriptor::getAlias);
 
       return indices.containsAll(allIndexNames) && aliases.containsAll(allAliasesNames);
     } catch (final Exception e) {
@@ -147,7 +152,7 @@ public class IndexSchemaValidator {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
         schemaManager.getIndexMappings(getOperateIndexPattern());
-    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : getOperateIndexDescriptors()) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(indexMappings, indexDescriptor);
       // we don't check indices that were not yet created
@@ -280,5 +285,13 @@ public class IndexSchemaValidator {
       LOGGER.error(errorMsg);
       throw new OperateRuntimeException(errorMsg);
     }
+  }
+
+  private List<IndexDescriptor> getOperateIndexDescriptors() {
+    return indexDescriptors.stream()
+        .filter(AbstractIndexDescriptor.class::isInstance)
+        .map(AbstractIndexDescriptor.class::cast)
+        .filter(a -> a.getComponentName().equals(OPERATE.toString()))
+        .collect(Collectors.toList());
   }
 }

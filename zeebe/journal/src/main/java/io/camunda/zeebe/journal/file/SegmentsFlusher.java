@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import java.util.Collection;
 import java.util.Objects;
@@ -42,7 +43,7 @@ final class SegmentsFlusher {
    *
    * @param dirtySegments the list of segments which need to be flushed
    */
-  void flush(final Collection<? extends FlushableSegment> dirtySegments) {
+  void flush(final Collection<? extends FlushableSegment> dirtySegments) throws FlushException {
     final var segmentsCount = dirtySegments.size();
     long flushedIndex = -1;
 
@@ -55,9 +56,8 @@ final class SegmentsFlusher {
     try {
       for (final var segment : dirtySegments) {
         final long lastSegmentIndex = segment.lastIndex();
-        if (segment.flush()) {
-          flushedIndex = lastSegmentIndex;
-        }
+        segment.flush(); // throws FlushException
+        flushedIndex = lastSegmentIndex;
       }
     } finally {
       // store whatever we managed to flush to avoid doing it again

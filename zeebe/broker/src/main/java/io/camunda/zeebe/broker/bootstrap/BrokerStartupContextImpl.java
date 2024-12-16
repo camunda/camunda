@@ -12,6 +12,8 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -56,6 +58,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
+  private final SecurityConfiguration securityConfiguration;
+  private final UserServices userServices;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -82,7 +86,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final SecurityConfiguration securityConfiguration,
+      final UserServices userServices) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -95,6 +101,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
+    this.securityConfiguration = requireNonNull(securityConfiguration);
+    this.userServices = userServices;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -109,7 +117,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
-      final Duration shutdownTimeout) {
+      final Duration shutdownTimeout,
+      final SecurityConfiguration securityConfiguration,
+      final UserServices userServices) {
 
     this(
         brokerInfo,
@@ -123,7 +133,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         brokerClient,
         additionalPartitionListeners,
         shutdownTimeout,
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(),
+        securityConfiguration,
+        userServices);
   }
 
   @Override
@@ -334,5 +346,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  @Override
+  public SecurityConfiguration getSecurityConfiguration() {
+    return securityConfiguration;
+  }
+
+  @Override
+  public UserServices getUserServices() {
+    return userServices;
   }
 }

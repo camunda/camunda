@@ -27,10 +27,6 @@ public final class FilterBuilders {
     return new ProcessInstanceFilter.Builder();
   }
 
-  public static ProcessInstanceVariableFilter.Builder processInstanceVariable() {
-    return new ProcessInstanceVariableFilter.Builder();
-  }
-
   public static UserTaskFilter.Builder userTask() {
     return new UserTaskFilter.Builder();
   }
@@ -60,12 +56,20 @@ public final class FilterBuilders {
     return new UserFilter.Builder();
   }
 
+  public static MappingFilter.Builder mapping() {
+    return new MappingFilter.Builder();
+  }
+
   public static RoleFilter.Builder role() {
     return new RoleFilter.Builder();
   }
 
   public static TenantFilter.Builder tenant() {
     return new TenantFilter.Builder();
+  }
+
+  public static GroupFilter.Builder group() {
+    return new GroupFilter.Builder();
   }
 
   public static AuthorizationFilter.Builder authorization() {
@@ -75,13 +79,6 @@ public final class FilterBuilders {
   public static ProcessInstanceFilter processInstance(
       final Function<ProcessInstanceFilter.Builder, ObjectBuilder<ProcessInstanceFilter>> fn) {
     return fn.apply(processInstance()).build();
-  }
-
-  public static ProcessInstanceVariableFilter processInstanceVariable(
-      final Function<
-              ProcessInstanceVariableFilter.Builder, ObjectBuilder<ProcessInstanceVariableFilter>>
-          fn) {
-    return fn.apply(processInstanceVariable()).build();
   }
 
   public static UserTaskFilter userTask(
@@ -110,6 +107,11 @@ public final class FilterBuilders {
     return fn.apply(new UserFilter.Builder()).build();
   }
 
+  public static MappingFilter mapping(
+      final Function<MappingFilter.Builder, ObjectBuilder<MappingFilter>> fn) {
+    return fn.apply(new MappingFilter.Builder()).build();
+  }
+
   public static RoleFilter role(final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
     return fn.apply(new RoleFilter.Builder()).build();
   }
@@ -117,6 +119,11 @@ public final class FilterBuilders {
   public static TenantFilter tenant(
       final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
     return fn.apply(new TenantFilter.Builder()).build();
+  }
+
+  public static GroupFilter group(
+      final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
+    return fn.apply(new GroupFilter.Builder()).build();
   }
 
   public static AuthorizationFilter authorization(

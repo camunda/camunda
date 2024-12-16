@@ -60,12 +60,20 @@ public final class SortOptionBuilders {
     return new UserSort.Builder();
   }
 
+  public static MappingSort.Builder mapping() {
+    return new MappingSort.Builder();
+  }
+
   public static RoleSort.Builder role() {
     return new RoleSort.Builder();
   }
 
   public static TenantSort.Builder tenant() {
     return new TenantSort.Builder();
+  }
+
+  public static GroupSort.Builder group() {
+    return new GroupSort.Builder();
   }
 
   public static AuthorizationSort.Builder authorization() {
@@ -107,6 +115,11 @@ public final class SortOptionBuilders {
     return fn.apply(user()).build();
   }
 
+  public static MappingSort mapping(
+      final Function<MappingSort.Builder, ObjectBuilder<MappingSort>> fn) {
+    return fn.apply(mapping()).build();
+  }
+
   public static RoleSort role(final Function<RoleSort.Builder, ObjectBuilder<RoleSort>> fn) {
     return fn.apply(role()).build();
   }
@@ -114,6 +127,10 @@ public final class SortOptionBuilders {
   public static TenantSort tenant(
       final Function<TenantSort.Builder, ObjectBuilder<TenantSort>> fn) {
     return fn.apply(tenant()).build();
+  }
+
+  public static GroupSort group(final Function<GroupSort.Builder, ObjectBuilder<GroupSort>> fn) {
+    return fn.apply(group()).build();
   }
 
   public static FormSort.Builder form() {

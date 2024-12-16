@@ -23,7 +23,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("123456")
             .scopeKey(2L)
@@ -32,7 +32,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.LONG);
     assertThat(model.doubleValue()).isNull();
@@ -54,7 +54,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("-123456")
             .scopeKey(2L)
@@ -63,7 +63,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.LONG);
     assertThat(model.doubleValue()).isNull();
@@ -85,7 +85,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("123.456")
             .scopeKey(2L)
@@ -94,7 +94,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.DOUBLE);
     assertThat(model.doubleValue()).isEqualTo(123.456);
@@ -116,7 +116,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("-123.456")
             .scopeKey(2L)
@@ -125,7 +125,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.DOUBLE);
     assertThat(model.doubleValue()).isEqualTo(-123.456);
@@ -147,7 +147,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value("non-numeric")
             .scopeKey(2L)
@@ -156,7 +156,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();
@@ -179,7 +179,7 @@ public class VariableDbModelTest {
     // when
     final VariableDbModel model =
         builder
-            .key(1L)
+            .variableKey(1L)
             .name("test")
             .value(largeValue)
             .scopeKey(2L)
@@ -188,7 +188,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();

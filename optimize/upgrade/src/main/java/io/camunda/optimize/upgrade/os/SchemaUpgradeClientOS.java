@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -69,7 +68,8 @@ import org.opensearch.client.opensearch.tasks.State;
 import org.opensearch.client.opensearch.tasks.TaskExecutingNode;
 import org.slf4j.Logger;
 
-public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearchClient, Builder> {
+public class SchemaUpgradeClientOS
+    extends SchemaUpgradeClient<OptimizeOpenSearchClient, Builder, IndexAliases> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(SchemaUpgradeClientOS.class);
   private final ObjectMapper objectMapper;
@@ -363,20 +363,7 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
   }
 
   @Override
-  public void updateIndex(
-      final IndexMappingCreator<IndexSettings.Builder> indexMapping,
-      final String mappingScript,
-      final Map<String, Object> parameters,
-      final Set<String> additionalReadAliases) {
-    if (indexMapping.isCreateFromTemplate()) {
-      updateIndexTemplateAndAssociatedIndexes(
-          indexMapping, mappingScript, parameters, additionalReadAliases);
-    } else {
-      migrateSingleIndex(indexMapping, mappingScript, parameters, additionalReadAliases);
-    }
-  }
-
-  public IndexAliases getAllAliasesForIndex(final String indexName) {
+  protected IndexAliases getAllAliasesForIndex(final String indexName) {
     try {
       return databaseClient
           .getOpenSearchClient()
@@ -387,6 +374,45 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           String.format("Could not retrieve existing aliases for {%s}.", indexName), e);
+    }
+  }
+
+  @Override
+  protected void setAllAliasesToReadOnly(final String indexName, final IndexAliases aliases) {
+    LOG.debug("Setting all aliases pointing to {} to readonly.", indexName);
+
+    final List<String> list = aliases.aliases().keySet().stream().toList();
+    try {
+      if (!list.isEmpty()) {
+        final UpdateAliasesRequest indicesAliasesRequest =
+            UpdateAliasesRequest.of(
+                u ->
+                    u.actions(Action.of(a -> a.remove(r -> r.index(indexName).aliases(list))))
+                        .actions(
+                            Action.of(
+                                a ->
+                                    a.add(
+                                        q ->
+                                            q.index(indexName)
+                                                .isWriteIndex(false)
+                                                .aliases(list)))));
+        databaseClient.getOpenSearchClient().indices().updateAliases(indicesAliasesRequest);
+      }
+    } catch (final Exception e) {
+      final String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  @Override
+  protected void applyAliasesToIndex(final String indexName, final IndexAliases aliases) {
+    for (final Map.Entry<String, AliasDefinition> alias : aliases.aliases().entrySet()) {
+      addAlias(
+          alias.getKey(),
+          indexName,
+          // defaulting to true if this flag is not set but only one index exists
+          Optional.ofNullable(alias.getValue().isWriteIndex())
+              .orElse(aliases.aliases().size() == 1));
     }
   }
 
@@ -420,8 +446,6 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
     waitUntilTaskIsFinished(taskId, identifier);
   }
 
-  // TODO #12813 the getPending... methods below can be promoted to the parent class with some
-  //  mild refactoring
   private Optional<Info> getPendingReindexTask(final ReindexRequest reindexRequest) {
     return getPendingTask(reindexRequest, "indices:data/write/reindex");
   }
@@ -510,131 +534,6 @@ public class SchemaUpgradeClientOS extends SchemaUpgradeClient<OptimizeOpenSearc
       return databaseClient.submitDeleteTask(request).task();
     } catch (final IOException ex) {
       throw new UpgradeRuntimeException("Could not submit delete task");
-    }
-  }
-
-  // TODO #12813 this method and the methods below can be promoted to the parent class with some
-  //  mild refactoring
-  private void updateIndexTemplateAndAssociatedIndexes(
-      final IndexMappingCreator<IndexSettings.Builder> index,
-      final String mappingScript,
-      final Map<String, Object> parameters,
-      final Set<String> additionalReadAliases) {
-    final String indexAlias = getIndexAlias(index);
-    final String sourceTemplateName = getSourceIndexOrTemplateName(index, indexAlias);
-    // create new template & indices and reindex data to it
-    createOrUpdateTemplateWithoutAliases(index);
-    final Set<String> indexAliases = getAliases(indexAlias);
-    // this ensures the migration happens in a consistent order
-    final List<String> sortedIndices =
-        indexAliases.stream()
-            // we are only interested in indices based on the source template
-            // in resumed update scenarios this could also contain indices based on the
-            // targetTemplateName already
-            // which we don't need to care about
-            .filter(indexName -> indexName.contains(sourceTemplateName))
-            .sorted()
-            .toList();
-    for (final String sourceIndex : sortedIndices) {
-      final String suffix;
-      final Matcher suffixMatcher = indexSuffixPattern.matcher(sourceIndex);
-      if (suffixMatcher.find()) {
-        // sourceIndex is already suffixed
-        suffix = sourceIndex.substring(sourceIndex.lastIndexOf("-"));
-      } else {
-        // sourceIndex is not yet suffixed, use default suffix
-        suffix = index.getIndexNameInitialSuffix();
-      }
-
-      final String targetIndexName =
-          getIndexNameService().getOptimizeIndexTemplateNameWithVersion(index) + suffix;
-
-      final IndexAliases existingAliases = getAllAliasesForIndex(sourceIndex);
-      setAllAliasesToReadOnly(sourceIndex, existingAliases);
-      createIndexFromTemplate(targetIndexName);
-      reindex(sourceIndex, targetIndexName, mappingScript, parameters);
-      applyAliasesToIndex(targetIndexName, existingAliases);
-      applyAdditionalReadOnlyAliasesToIndex(additionalReadAliases, targetIndexName);
-      // for rolled over indices only the last one is eligible as writeIndex
-      if (sortedIndices.indexOf(sourceIndex) == sortedIndices.size() - 1) {
-        // in case of retries it might happen that the default write index flag is overwritten as
-        // the source index
-        // was already set to be a read-only index for all associated indices
-        addAlias(indexAlias, targetIndexName, true);
-      }
-      deleteIndexIfExists(sourceIndex);
-      deleteTemplateIfExists(sourceTemplateName);
-    }
-  }
-
-  private void migrateSingleIndex(
-      final IndexMappingCreator<IndexSettings.Builder> index,
-      final String mappingScript,
-      final Map<String, Object> parameters,
-      final Set<String> additionalReadAliases) {
-    final String indexAlias = getIndexAlias(index);
-    final String sourceIndexName = getSourceIndexOrTemplateName(index, indexAlias);
-    final String targetIndexName = getIndexNameService().getOptimizeIndexNameWithVersion(index);
-    if (!indexExists(sourceIndexName)) {
-      // if the expected source index is not available anymore there are only two possibilities:
-      // 1. it never existed (unexpected edge-case)
-      // 2. a previous upgrade run completed this step already
-      // in both cases we can try to create/update the target index in a fail-safe way
-      LOG.info(
-          "Source index {} was not found, will just create/update the new index {}.",
-          sourceIndexName,
-          targetIndexName);
-      createOrUpdateIndex(index);
-    } else {
-      // create new index and reindex data to it
-      final IndexAliases existingAliases = getAllAliasesForIndex(sourceIndexName);
-      setAllAliasesToReadOnly(sourceIndexName, existingAliases);
-      createOrUpdateIndex(index);
-      reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
-      applyAliasesToIndex(targetIndexName, existingAliases);
-      applyAdditionalReadOnlyAliasesToIndex(additionalReadAliases, targetIndexName);
-      // in case of retries it might happen that the default write index flag is overwritten as the
-      // source index
-      // was already set to be a read-only index for all associated indices
-      addAlias(indexAlias, targetIndexName, true);
-      deleteIndexIfExists(sourceIndexName);
-    }
-  }
-
-  private void applyAliasesToIndex(final String indexName, final IndexAliases aliases) {
-    for (final Map.Entry<String, AliasDefinition> alias : aliases.aliases().entrySet()) {
-      addAlias(
-          alias.getKey(),
-          indexName,
-          // defaulting to true if this flag is not set but only one index exists
-          Optional.ofNullable(alias.getValue().isWriteIndex())
-              .orElse(aliases.aliases().size() == 1));
-    }
-  }
-
-  private void setAllAliasesToReadOnly(final String indexName, final IndexAliases aliases) {
-    LOG.debug("Setting all aliases pointing to {} to readonly.", indexName);
-
-    final List<String> list = aliases.aliases().keySet().stream().toList();
-    try {
-      if (!list.isEmpty()) {
-        final UpdateAliasesRequest indicesAliasesRequest =
-            UpdateAliasesRequest.of(
-                u ->
-                    u.actions(Action.of(a -> a.remove(r -> r.index(indexName).aliases(list))))
-                        .actions(
-                            Action.of(
-                                a ->
-                                    a.add(
-                                        q ->
-                                            q.index(indexName)
-                                                .isWriteIndex(false)
-                                                .aliases(list)))));
-        databaseClient.getOpenSearchClient().indices().updateAliases(indicesAliasesRequest);
-      }
-    } catch (final Exception e) {
-      final String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
-      throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
 

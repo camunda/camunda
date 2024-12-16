@@ -8,12 +8,16 @@
 package io.camunda.zeebe.engine.processing.group;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -86,22 +90,23 @@ public class GroupTest {
   }
 
   @Test
-  public void shouldRejectUpdatedIfSameGroupExists() {
+  public void shouldRejectUpdatedIfSameNameGroupExists() {
     // given
     final var groupName = "yolo";
     final var groupKey = engine.group().newGroup(groupName).create().getKey();
+    final var anotherGroupName = "yolo2";
+    engine.group().newGroup(anotherGroupName).create();
 
     // when
-    final var updatedName = "yolo";
     final var updatedGroupRecord =
-        engine.group().updateGroup(groupKey).withName(updatedName).expectRejection().update();
+        engine.group().updateGroup(groupKey).withName(anotherGroupName).expectRejection().update();
 
     // then
     assertThat(updatedGroupRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to update group with name '%s', but a group with this name already exists."
-                .formatted(updatedName));
+                .formatted(anotherGroupName));
   }
 
   @Test
@@ -173,6 +178,41 @@ public class GroupTest {
         .hasRejectionReason(
             "Expected to add an entity with key '%s' and type '%s' to group with key '%s', but the entity does not exist."
                 .formatted(1L, EntityType.USER, groupKey));
+  }
+
+  @Test
+  public void shouldRejectIfEntityIsAlreadyAssigned() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupKey = groupRecord.getValue().getGroupKey();
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var notPresentUpdateRecord =
+        engine
+            .group()
+            .addEntity(groupKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
+                .formatted(userKey, groupKey));
   }
 
   @Test
@@ -268,6 +308,38 @@ public class GroupTest {
 
     // then
     assertThat(deletedGroup).hasGroupKey(groupKey);
+  }
+
+  @Test
+  public void shouldDeleteGroupWithAssignedEntities() {
+    // given
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var name = UUID.randomUUID().toString();
+    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
+
+    // then
+    final var groupRecords =
+        RecordingExporter.groupRecords()
+            .withIntents(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED)
+            .withGroupKey(groupKey)
+            .asList();
+    assertThat(deletedGroup).hasGroupKey(groupKey);
+    assertThat(groupRecords).hasSize(2);
+    assertThat(groupRecords)
+        .extracting(Record::getIntent)
+        .containsExactly(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED);
   }
 
   @Test

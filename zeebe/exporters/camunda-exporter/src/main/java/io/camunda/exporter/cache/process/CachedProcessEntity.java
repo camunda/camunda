@@ -7,4 +7,6 @@
  */
 package io.camunda.exporter.cache.process;
 
-public record CachedProcessEntity(String name, String versionTag) {}
+import java.util.List;
+
+public record CachedProcessEntity(String name, String versionTag, List<String> callElementIds) {}

@@ -1,0 +1,25 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "memberKey": {
+        "type": "long"
+      },
+      "join": {
+        "type": "join",
+        "relations": {
+          "role": ["member"]
+        }
+      }
+    }
+  }
+}

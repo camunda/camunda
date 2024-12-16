@@ -10,6 +10,17 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.CREATION_TIME;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.ERROR_TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.JOB_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
@@ -18,13 +29,16 @@ import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
-public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {
+public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
 
   private final ServiceTransformers transformers;
 
-  public IncidentFilterTransformer(final ServiceTransformers transformers) {
+  public IncidentFilterTransformer(
+      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
     this.transformers = transformers;
   }
 
@@ -42,7 +56,6 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
     final var creationTimeQuery = getCreationTimeQuery(filter.creationTime());
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
-    final var treePathQuery = getTreePathQuery(filter.treePaths());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
 
     return and(
@@ -57,21 +70,15 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
         creationTimeQuery,
         stateQuery,
         jobKeyQuery,
-        treePathQuery,
         tenantIdQuery);
   }
 
-  @Override
-  public List<String> toIndices(final IncidentFilter filter) {
-    return List.of("operate-incident-8.3.1_alias");
-  }
-
   private SearchQuery getTenantIdQuery(final List<String> tenantIds) {
-    return stringTerms("tenantId", tenantIds);
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   private SearchQuery getJobKeyQuery(final List<Long> jobKeys) {
-    return longTerms("jobKey", jobKeys);
+    return longTerms(JOB_KEY, jobKeys);
   }
 
   private SearchQuery getStateQuery(final List<IncidentState> states) {
@@ -81,45 +88,41 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
   private SearchQuery getCreationTimeQuery(final DateValueFilter filter) {
     if (filter != null) {
       final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
-      return transformer.apply(new DateFieldFilter("creationTime", filter));
+      return transformer.apply(new DateFieldFilter(CREATION_TIME, filter));
     }
     return null;
   }
 
   private SearchQuery getProcessDefinitionIds(final List<String> bpmnProcessIds) {
-    return stringTerms("bpmnProcessId", bpmnProcessIds);
+    return stringTerms(BPMN_PROCESS_ID, bpmnProcessIds);
   }
 
   private SearchQuery getFlowNodeInstanceKeyQuery(final List<Long> flowNodeInstanceKeys) {
-    return longTerms("flowNodeInstanceKey", flowNodeInstanceKeys);
+    return longTerms(FLOW_NODE_INSTANCE_KEY, flowNodeInstanceKeys);
   }
 
   private SearchQuery getFlowNodeIdQuery(final List<String> flowNodeIds) {
-    return stringTerms("flowNodeId", flowNodeIds);
+    return stringTerms(FLOW_NODE_ID, flowNodeIds);
   }
 
   private SearchQuery getErrorTypeQuery(final List<ErrorType> errorTypes) {
     return stringTerms(
-        "errorType", errorTypes != null ? errorTypes.stream().map(Enum::name).toList() : null);
+        ERROR_TYPE, errorTypes != null ? errorTypes.stream().map(Enum::name).toList() : null);
   }
 
   private SearchQuery getProcessInstanceKeyQuery(final List<Long> processInstanceKeys) {
-    return longTerms("processInstanceKey", processInstanceKeys);
+    return longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys);
   }
 
   private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionKeys) {
-    return longTerms("processDefinitionKey", processDefinitionKeys);
+    return longTerms(PROCESS_DEFINITION_KEY, processDefinitionKeys);
   }
 
   private SearchQuery getErrorMessageQuery(final List<String> errorMessages) {
-    return stringTerms("errorMessage", errorMessages);
+    return stringTerms(ERROR_MSG, errorMessages);
   }
 
   private SearchQuery getKeyQuery(final List<Long> keys) {
-    return longTerms("key", keys);
-  }
-
-  private SearchQuery getTreePathQuery(final List<String> treePaths) {
-    return stringTerms("treePath", treePaths);
+    return longTerms(KEY, keys);
   }
 }

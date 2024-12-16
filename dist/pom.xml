@@ -132,8 +132,36 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>process-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>identity-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -194,7 +222,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
     </dependency>
 
     <dependency>
@@ -209,17 +241,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-migration</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-archiver</artifactId>
     </dependency>
 
     <dependency>
@@ -239,11 +261,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-archiver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
     </dependency>
 
@@ -255,6 +272,15 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-backup</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -393,8 +419,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-core</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-transport</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
     </dependency>
 
     <dependency>
@@ -565,11 +601,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -646,6 +677,30 @@
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- optimize -->
+
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-commons</artifactId>
+      <version>8.7.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>8.7.0-SNAPSHOT</version>
+    </dependency>
 
   </dependencies>
 
@@ -683,6 +738,10 @@
             <program>
               <id>operate</id>
               <mainClass>io.camunda.application.StandaloneOperate</mainClass>
+            </program>
+            <program>
+              <id>optimize</id>
+              <mainClass>io.camunda.application.StandaloneOptimize</mainClass>
             </program>
             <program>
               <id>migrate</id>
@@ -752,7 +811,6 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
-            <dependency>io.camunda:camunda-exporter</dependency>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
@@ -760,17 +818,18 @@
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
             <dependency>io.camunda:identity-webjar</dependency>
 
             <dependency>io.camunda:operate-data-generator</dependency>
-            <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-importer</dependency>
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
+
+            <!-- used as resource but no classes -->
+            <dependency>io.camunda:camunda-db-rdbms-schema</dependency>
 
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
@@ -778,6 +837,9 @@
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
+            <dep>io.camunda.migration:identity-migration</dep>
+            <dep>io.camunda.migration:process-migration</dep>
+            <dep>io.camunda.optimize:optimize-backend</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
@@ -794,7 +856,7 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
-              <modelPackage>io.camunda.zeebe.management.backups</modelPackage>
+              <modelPackage>io.camunda.management.backups</modelPackage>
             </configuration>
           </execution>
           <execution>

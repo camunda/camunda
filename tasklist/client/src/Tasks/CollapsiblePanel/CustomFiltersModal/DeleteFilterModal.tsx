@@ -8,7 +8,7 @@
 
 import {Modal} from 'modules/components/Modal';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {useTranslation} from 'react-i18next';
+import {useTranslation, Trans} from 'react-i18next';
 
 type Props = {
   isOpen: boolean;
@@ -33,7 +33,6 @@ const DeleteFilterModal: React.FC<Props> = ({
       danger
       open={isOpen}
       size="sm"
-      modalLabel={isOpen ? t('customFiltersModalDeleteModalLabel') : undefined}
       modalHeading={
         isOpen ? t('customFiltersModalDeleteModalHeading') : undefined
       }
@@ -53,7 +52,19 @@ const DeleteFilterModal: React.FC<Props> = ({
 
         onDelete();
       }}
-    />
+    >
+      <p>
+        <Trans
+          i18nKey="customFiltersModalDeleteModalBody"
+          values={{
+            name: getStateLocally('customFilters')?.[filterName]?.name,
+          }}
+          components={{
+            strong: <strong />,
+          }}
+        ></Trans>
+      </p>
+    </Modal>
   );
 };
 

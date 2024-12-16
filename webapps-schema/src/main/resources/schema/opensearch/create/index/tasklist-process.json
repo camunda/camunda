@@ -1,0 +1,63 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "flowNodes": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          }
+        }
+      },
+      "userTaskForms": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "definition": {
+            "type": "text"
+          }
+        }
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
+      "startedByForm": {
+        "type": "boolean"
+      },
+      "formKey": {
+        "type": "keyword"
+      },
+      "formId": {
+        "type": "keyword"
+      },
+      "isFormEmbedded": {
+        "type": "boolean"
+      },
+      "version": {
+        "type": "integer"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "bpmnXml": {
+        "type": "text"
+      }
+    }
+  }
+}

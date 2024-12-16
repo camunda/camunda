@@ -114,7 +114,7 @@ exports[`should match snapshot 1`] = `
       ]
     }
   />
-  <DeleterErrorHandler
+  <Deleter
     checkConflicts={[Function]}
     deleteEntity={[Function]}
     deleteText="Remove Data source"

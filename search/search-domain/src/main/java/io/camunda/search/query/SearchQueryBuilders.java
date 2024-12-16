@@ -105,6 +105,15 @@ public final class SearchQueryBuilders {
     return fn.apply(userSearchQuery()).build();
   }
 
+  public static MappingQuery.Builder mappingSearchQuery() {
+    return new MappingQuery.Builder();
+  }
+
+  public static MappingQuery mappingSearchQuery(
+      final Function<MappingQuery.Builder, ObjectBuilder<MappingQuery>> fn) {
+    return fn.apply(mappingSearchQuery()).build();
+  }
+
   public static RoleQuery.Builder roleSearchQuery() {
     return new RoleQuery.Builder();
   }
@@ -121,6 +130,15 @@ public final class SearchQueryBuilders {
   public static TenantQuery tenantSearchQuery(
       final Function<TenantQuery.Builder, ObjectBuilder<TenantQuery>> fn) {
     return fn.apply(tenantSearchQuery()).build();
+  }
+
+  public static GroupQuery.Builder groupSearchQuery() {
+    return new GroupQuery.Builder();
+  }
+
+  public static GroupQuery groupSearchQuery(
+      final Function<GroupQuery.Builder, ObjectBuilder<GroupQuery>> fn) {
+    return fn.apply(groupSearchQuery()).build();
   }
 
   public static AuthorizationQuery.Builder authorizationSearchQuery() {

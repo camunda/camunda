@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -71,6 +73,7 @@ public final class FlowElementInstantiationTransformer
     ELEMENT_FACTORIES = new HashMap<>();
 
     ELEMENT_FACTORIES.put(Activity.class, ExecutableActivity::new);
+    ELEMENT_FACTORIES.put(AdHocSubProcess.class, ExecutableAdHocSubProcess::new);
     ELEMENT_FACTORIES.put(BusinessRuleTask.class, ExecutableBusinessRuleTask::new);
     ELEMENT_FACTORIES.put(BoundaryEvent.class, ExecutableBoundaryEvent::new);
     ELEMENT_FACTORIES.put(CallActivity.class, ExecutableCallActivity::new);

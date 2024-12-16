@@ -29,12 +29,14 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   public abstract SearchQueryResult<D> search(final Q query);
 
   protected <E> E getSingleResultOrThrow(
-      final SearchQueryResult<E> searchQueryResult, final long key, final String entityTypeLabel) {
+      final SearchQueryResult<E> searchQueryResult,
+      final Object key,
+      final String entityTypeLabel) {
     if (searchQueryResult.total() < 1) {
-      throw new NotFoundException(String.format("%s with key %d not found", entityTypeLabel, key));
+      throw new NotFoundException(String.format("%s with key %s not found", entityTypeLabel, key));
     } else if (searchQueryResult.total() > 1) {
       throw new CamundaSearchException(
-          String.format("Found %s with key %d more than once", entityTypeLabel, key));
+          String.format("Found %s with key %s more than once", entityTypeLabel, key));
     } else {
       return searchQueryResult.items().stream().findFirst().orElseThrow();
     }

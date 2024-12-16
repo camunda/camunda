@@ -41,7 +41,7 @@ public class CamundaExporterITInvocationProvider
         BeforeAllCallback,
         AfterEachCallback {
 
-  public static final String CONFIG_PREFIX = "camunda-record";
+  public static final String CONFIG_PREFIX = "custom-prefix";
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
@@ -59,9 +59,11 @@ public class CamundaExporterITInvocationProvider
     config.getBulk().setSize(1); // force flushing on the first record
     if (connectionType == ELASTICSEARCH) {
       config.getConnect().setUrl(elsContainer.getHttpHostAddress());
+
     } else if (connectionType == OPENSEARCH) {
       config.getConnect().setUrl(osContainer.getHttpHostAddress());
     }
+    config.getConnect().setClusterName(connectionType.name());
     config.getConnect().setType(connectionType.getType());
     return config;
   }

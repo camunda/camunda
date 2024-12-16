@@ -9,6 +9,7 @@
 import {Page, Locator} from '@playwright/test';
 import {Paths} from 'modules/Routes';
 import {Diagram} from './components/Diagram';
+import {relativizePath} from './utils/relativizePath';
 
 export class ProcessInstance {
   private page: Page;
@@ -31,6 +32,7 @@ export class ProcessInstance {
   readonly listenersTabButton: Locator;
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
+  readonly listenerTypeFilter: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -59,6 +61,7 @@ export class ProcessInstance {
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
     this.metadataModal = this.page.getByRole('dialog', {name: /metadata/i});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
+    this.listenerTypeFilter = page.getByTestId('listener-type-filter');
   }
 
   getEditVariableFieldSelector(variableName: string) {
@@ -81,6 +84,12 @@ export class ProcessInstance {
       .getByTestId('new-variable-value');
   };
 
+  getListenerTypeFilterOption = (
+    option: 'Execution listeners' | 'User task listeners' | 'All listeners',
+  ) => {
+    return this.listenerTypeFilter.getByText(option, {exact: true});
+  };
+
   async undoModification() {
     await this.page
       .getByRole('button', {
@@ -96,7 +105,7 @@ export class ProcessInstance {
     id: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(Paths.processInstance(id), options);
+    await this.page.goto(relativizePath(Paths.processInstance(id)), options);
   }
 
   async getNthTreeNodeTestId(n: number) {

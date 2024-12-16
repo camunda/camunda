@@ -30,4 +30,8 @@ public class MappingRecordStream
   public MappingRecordStream withClaimName(final String claimName) {
     return valueFilter(v -> v.getClaimName().equals(claimName));
   }
+
+  public MappingRecordStream withClaimValue(final String claimValue) {
+    return valueFilter(v -> v.getClaimValue().equals(claimValue));
+  }
 }

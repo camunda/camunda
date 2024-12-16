@@ -21,19 +21,15 @@ import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.UserStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.elasticsearch.ElasticsearchSessionRepository;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
-import io.camunda.operate.webapp.security.SessionRepositoryConfig;
-import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.auth.AuthUserService;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
@@ -83,12 +79,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateUserDetailsService.class,
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
-      SessionRepositoryConfig.class,
-      SessionService.class,
-      OperateWebSessionIndex.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
-      ElasticsearchSessionRepository.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class

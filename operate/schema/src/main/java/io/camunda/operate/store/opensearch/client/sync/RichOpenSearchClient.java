@@ -32,7 +32,6 @@ public class RichOpenSearchClient {
   final OpenSearchDocumentOperations openSearchDocumentOperations;
   final OpenSearchIndexOperations openSearchIndexOperations;
   final OpenSearchPipelineOperations openSearchPipelineOperations;
-  final OpenSearchSnapshotOperations openSearchSnapshotOperations;
   final OpenSearchTaskOperations openSearchTaskOperations;
   final OpenSearchTemplateOperations openSearchTemplateOperations;
   final OpenSearchISMOperations openSearchISMOperations;
@@ -54,7 +53,6 @@ public class RichOpenSearchClient {
     openSearchIndexOperations =
         new OpenSearchIndexOperations(LOGGER, openSearchClient, objectMapper);
     openSearchPipelineOperations = new OpenSearchPipelineOperations(LOGGER, openSearchClient);
-    openSearchSnapshotOperations = new OpenSearchSnapshotOperations(LOGGER, openSearchClient);
     openSearchTaskOperations = new OpenSearchTaskOperations(LOGGER, openSearchClient);
     openSearchTemplateOperations = new OpenSearchTemplateOperations(LOGGER, openSearchClient);
     openSearchISMOperations = new OpenSearchISMOperations(LOGGER, openSearchClient);
@@ -86,10 +84,6 @@ public class RichOpenSearchClient {
 
   public OpenSearchPipelineOperations pipeline() {
     return openSearchPipelineOperations;
-  }
-
-  public OpenSearchSnapshotOperations snapshot() {
-    return openSearchSnapshotOperations;
   }
 
   public OpenSearchTaskOperations task() {

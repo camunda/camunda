@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.DecisionDefinitionMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery">
+    SELECT COUNT(*)
+    FROM DECISION_DEFINITION
+    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT DECISION_DEFINITION_KEY,
+    DECISION_DEFINITION_ID,
+    NAME,
+    TENANT_ID,
+    VERSION,
+    DECISION_REQUIREMENTS_KEY,
+    DECISION_REQUIREMENTS_ID
+    FROM DECISION_DEFINITION
+    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.decisionDefinitionKeys != null and !filter.decisionDefinitionKeys.isEmpty()">
+      AND DECISION_DEFINITION_KEY IN
+      <foreach collection="filter.decisionDefinitionKeys" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.decisionDefinitionIds != null and !filter.decisionDefinitionIds.isEmpty()">
+      AND DECISION_DEFINITION_ID IN
+      <foreach collection="filter.decisionDefinitionIds" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.names != null and !filter.names.isEmpty()">
+      AND name IN
+      <foreach collection="filter.names" item="value" open="(" separator=", " close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.versions != null and !filter.versions.isEmpty()">
+      AND VERSION IN
+      <foreach collection="filter.versions" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.decisionRequirementsIds != null and !filter.decisionRequirementsIds.isEmpty()">
+      AND DECISION_REQUIREMENTS_ID IN
+      <foreach collection="filter.decisionRequirementsIds" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.decisionRequirementsKeys != null and !filter.decisionRequirementsKeys.isEmpty()">
+      AND DECISION_REQUIREMENTS_KEY IN
+      <foreach collection="filter.decisionRequirementsKeys" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionDefinitionEntity">
+    <constructor>
+      <idArg column="DECISION_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="DECISION_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="NAME" javaType="java.lang.String"/>
+      <arg column="VERSION" javaType="java.lang.Integer"/>
+      <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"/>
+      <arg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel"
+    flushCache="true">
+    INSERT INTO DECISION_DEFINITION (DECISION_DEFINITION_KEY, DECISION_DEFINITION_ID, NAME, TENANT_ID, VERSION, DECISION_REQUIREMENTS_ID, DECISION_REQUIREMENTS_KEY)
+    VALUES (#{decisionDefinitionKey}, #{decisionDefinitionId}, #{name},
+            #{tenantId}, #{version}, #{decisionRequirementsId}, #{decisionRequirementsKey})
+  </insert>
+</mapper>

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -34,11 +35,13 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final ControllableStreamClock clock;
+  private final SecurityConfiguration securityConfig;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
       final Writers writers,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final SecurityConfiguration securityConfig) {
     partitionId = context.getPartitionId();
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
@@ -58,6 +61,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
+    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -103,7 +107,17 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
+  public SecurityConfiguration getSecurityConfig() {
+    return securityConfig;
+  }
+
+  @Override
   public ControllableStreamClock getClock() {
     return clock;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
   }
 }

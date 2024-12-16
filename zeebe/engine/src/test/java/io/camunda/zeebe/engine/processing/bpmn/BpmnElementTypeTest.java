@@ -393,6 +393,16 @@ public final class BpmnElementTypeTest {
                   .endEvent()
                   .done();
             }
+          },
+          new BpmnElementTypeScenario("Ad-hoc subprocess", BpmnElementType.AD_HOC_SUB_PROCESS) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .adHocSubProcess(elementId(), adHocSubProcess -> adHocSubProcess.task("task"))
+                  .endEvent()
+                  .done();
+            }
           });
 
   @Rule

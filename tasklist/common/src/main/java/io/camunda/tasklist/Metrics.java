@@ -7,8 +7,10 @@
  */
 package io.camunda.tasklist;
 
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +31,6 @@ public class Metrics {
       TASKLIST_NAMESPACE + "import.job.scheduled";
   public static final String TIMER_NAME_IMPORT_POSITION_UPDATE =
       TASKLIST_NAMESPACE + "import.position.update";
-  public static final String TIMER_NAME_ARCHIVER_QUERY = TASKLIST_NAMESPACE + "archiver.query";
-  public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY =
-      TASKLIST_NAMESPACE + "archiver.reindex.query";
-  public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
-      TASKLIST_NAMESPACE + "archiver.delete.query";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
@@ -43,11 +40,15 @@ public class Metrics {
 
   public static final String COUNTER_NAME_CLAIMED_TASKS = "claimed.tasks";
   public static final String COUNTER_NAME_COMPLETED_TASKS = "completed.tasks";
+
+  public static final String GAUGE_NAME_IMPORT_POSITION_COMPLETED =
+      TASKLIST_NAMESPACE + "import.completed";
   // Tags
   // -----
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
       TAG_KEY_TYPE = "type",
+      TAG_KEY_IMPORT_POS_ALIAS = "importPositionAlias",
       TAG_KEY_PARTITION = "partition",
       TAG_KEY_STATUS = "status",
       TAG_KEY_BPMN_PROCESS_ID = "bpmnProcessId",
@@ -73,11 +74,25 @@ public class Metrics {
    * @param count - Number to count
    * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
-  public void recordCounts(String name, long count, String... tags) {
+  public void recordCounts(final String name, final long count, final String... tags) {
     registry.counter(TASKLIST_NAMESPACE + name, tags).increment(count);
   }
 
-  public Timer getTimer(String name, String... tags) {
+  public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public <T> Gauge registerGauge(
+      final String name,
+      final T stateObject,
+      final ToDoubleFunction<T> valueFunction,
+      final String... tags) {
+    return Gauge.builder(name, () -> valueFunction.applyAsDouble(stateObject))
+        .tags(tags)
+        .register(registry);
+  }
+
+  public Gauge getGauge(final String name, final String... tags) {
+    return registry.get(name).tags(tags).gauge();
   }
 }

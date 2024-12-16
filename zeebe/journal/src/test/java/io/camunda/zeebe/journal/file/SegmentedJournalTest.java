@@ -27,6 +27,7 @@ import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
@@ -888,7 +889,7 @@ class SegmentedJournalTest {
               barrier.arriveAndAwaitAdvance();
               barrier.arriveAndAwaitAdvance();
             });
-    final var flushed = CompletableFuture.runAsync(journal::flush);
+    final var flushed = CompletableFuture.runAsync(CheckedRunnable.toUnchecked(journal::flush));
 
     // then
     barrier.arriveAndAwaitAdvance();

@@ -114,6 +114,8 @@ const AppHeader: React.FC = observer(() => {
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,
           isProductionLicense: licenseTagStore.state.isProductionLicense,
+          isCommercial: licenseTagStore.state.isCommercial,
+          expiresAt: licenseTagStore.state.expiresAt,
         },
       }}
       appBar={{

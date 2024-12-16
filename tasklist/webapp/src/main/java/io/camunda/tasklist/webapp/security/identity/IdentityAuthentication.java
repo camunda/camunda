@@ -13,9 +13,9 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
@@ -38,6 +38,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     implements OldUsernameAware, TenantAwareAuthentication {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
+  private static final String POLLING_HEADER = "x-is-polling";
   private Tokens tokens;
   private String id;
   private String name;
@@ -91,7 +92,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         } else {
           tenants = List.of();
         }
-      } catch (RestException ex) {
+      } catch (final RestException ex) {
         LOGGER.warn("Unable to retrieve tenants from Identity. Error: " + ex.getMessage(), ex);
         tenants = List.of();
       }
@@ -138,7 +139,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         try {
           LOGGER.info("Get a new access token by using refresh token");
           renewAccessToken();
-        } catch (Exception e) {
+        } catch (final Exception e) {
           LOGGER.error("Renewing access token failed with exception", e);
           setAuthenticated(false);
         }
@@ -157,6 +158,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         .collect(Collectors.toList());
   }
 
+  public IdentityAuthentication setPermissions(final List<String> permissions) {
+    this.permissions = permissions;
+    return this;
+  }
+
   public void authenticate(final Tokens tokens) {
     if (tokens != null) {
       this.tokens = tokens;
@@ -173,16 +179,15 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     }
 
     try {
-      final TasklistProperties props = getTasklistProperties();
-      if (props.getIdentity().isResourcePermissionsEnabled()) {
+      if (getSecurityConfiguration().getAuthorizations().isEnabled()) {
         authorization =
             new IdentityAuthorization(
                 getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
       }
-    } catch (io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
+    } catch (final io.camunda.identity.sdk.exception.InvalidConfigurationException ice) {
       LOGGER.debug(
           "Base URL is not provided so it's not possible to get authorizations from Identity");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.debug("Identity and Tasklist misconfiguration.");
     }
     subject = accessToken.getToken().getSubject();
@@ -192,7 +197,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
       try {
         refreshTokenExpiresAt =
             getIdentity().authentication().decodeJWT(this.tokens.getRefreshToken()).getExpiresAt();
-      } catch (TokenDecodeException e) {
+      } catch (final TokenDecodeException e) {
         LOGGER.error(
             "Unable to decode refresh token {} with exception: {}",
             this.tokens.getRefreshToken(),
@@ -209,6 +214,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @NotNull
   private static TasklistProperties getTasklistProperties() {
     return SpringContextHolder.getBean(TasklistProperties.class);
+  }
+
+  @NotNull
+  private static SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 
   private String retrieveName(final UserDetails userDetails) {
@@ -233,27 +243,22 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return this;
   }
 
-  public IdentityAuthentication setPermissions(final List<String> permissions) {
-    this.permissions = permissions;
-    return this;
-  }
-
   public String getUserDisplayName() {
     return userDisplayName;
+  }
+
+  public IdentityAuthentication setUserDisplayName(final String userDisplayName) {
+    this.userDisplayName = userDisplayName;
+    return this;
   }
 
   private String retrieveUserDisplayName() {
     return getIdentity()
         .authentication()
-        .verifyToken(this.tokens.getAccessToken())
+        .verifyToken(tokens.getAccessToken())
         .getUserDetails()
         .getName()
-        .orElse(this.name);
-  }
-
-  public IdentityAuthentication setUserDisplayName(String userDisplayName) {
-    this.userDisplayName = userDisplayName;
-    return this;
+        .orElse(name);
   }
 
   @Override
@@ -265,7 +270,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return authorization;
   }
 
-  public IdentityAuthentication setAuthorizations(IdentityAuthorization authorization) {
+  public IdentityAuthentication setAuthorizations(final IdentityAuthorization authorization) {
     this.authorization = authorization;
     return this;
   }
@@ -274,7 +279,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return groups;
   }
 
-  public IdentityAuthentication setGroups(List<String> groups) {
+  public IdentityAuthentication setGroups(final List<String> groups) {
     this.groups = groups;
     return this;
   }
@@ -287,7 +292,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
               Boolean.parseBoolean(
                   ((ServletRequestAttributes) requestAttributes)
                       .getRequest()
-                      .getHeader(ElasticsearchSessionRepository.POLLING_HEADER)));
+                      .getHeader(POLLING_HEADER)));
     } else {
       return false;
     }

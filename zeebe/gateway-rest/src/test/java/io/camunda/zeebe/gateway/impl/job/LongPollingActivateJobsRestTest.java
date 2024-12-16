@@ -21,6 +21,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -39,7 +40,6 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
-import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -124,7 +124,7 @@ public class LongPollingActivateJobsRestTest {
     failJobStub.registerWith(brokerClient);
 
     tenantAttributeHolderMock = mockStatic(TenantAttributeHolder.class);
-    tenantAttributeHolderMock.when(TenantAttributeHolder::tenantIds).thenReturn(List.of());
+    tenantAttributeHolderMock.when(TenantAttributeHolder::getTenantIds).thenReturn(List.of());
   }
 
   @AfterEach

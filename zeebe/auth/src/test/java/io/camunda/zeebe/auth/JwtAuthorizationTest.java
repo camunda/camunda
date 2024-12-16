@@ -10,7 +10,7 @@ package io.camunda.zeebe.auth;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_AUDIENCE;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_ISSUER;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_SUBJECT;
-import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.impl.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -176,27 +176,6 @@ public class JwtAuthorizationTest {
     final List<String> authorizedTenantClaim =
         claims.get(Authorization.AUTHORIZED_TENANTS).as(List.class);
     assertThat(authorizedTenantClaim).containsExactlyElementsOf(authorizedTenants);
-  }
-
-  @Test
-  public void shouldFailJwtTokenValidationWithNoAuthorizedTenants() {
-    // given
-    final String jwtToken =
-        JWT.create()
-            .withIssuer(DEFAULT_ISSUER)
-            .withAudience(DEFAULT_AUDIENCE)
-            .withSubject(DEFAULT_SUBJECT)
-            .sign(Algorithm.none());
-
-    // when
-    final JwtAuthorizationDecoder decoder =
-        Authorization.jwtDecoder(jwtToken).withClaim(Authorization.AUTHORIZED_TENANTS);
-
-    // then
-    assertThatThrownBy(() -> decoder.decode())
-        .isInstanceOf(UnrecoverableException.class)
-        .hasMessage(
-            "Authorization data unavailable: The Claim 'authorized_tenants' is not present in the JWT.");
   }
 
   @Test

@@ -19,7 +19,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private OffsetDateTime endDate;
   private FlowNodeState state;
   private FlowNodeType type;
-  private Long incidentKey;
+  @Deprecated private Long incidentKey;
   private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
@@ -33,6 +33,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private Long position;
   private boolean incident;
   private String tenantId = DEFAULT_TENANT_ID;
+  private Long scopeKey;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -81,10 +82,12 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     return this;
   }
 
+  @Deprecated
   public Long getIncidentKey() {
     return incidentKey;
   }
 
+  @Deprecated
   public FlowNodeInstanceEntity setIncidentKey(final Long incidentKey) {
     this.incidentKey = incidentKey;
     return this;
@@ -171,6 +174,15 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     return this;
   }
 
+  public Long getScopeKey() {
+    return scopeKey;
+  }
+
+  public FlowNodeInstanceEntity setScopeKey(final Long scopeKey) {
+    this.scopeKey = scopeKey;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -189,7 +201,8 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
             level,
             position,
             incident,
-            tenantId);
+            tenantId,
+            scopeKey);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -220,6 +233,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
         && Objects.equals(treePath, that.treePath)
         && Objects.equals(position, that.position)
         && Objects.equals(tenantId, that.tenantId)
-        && Arrays.equals(sortValues, that.sortValues);
+        && Arrays.equals(sortValues, that.sortValues)
+        && Objects.equals(scopeKey, that.scopeKey);
   }
 }

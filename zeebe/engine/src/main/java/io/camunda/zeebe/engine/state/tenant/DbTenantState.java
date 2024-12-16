@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public class DbTenantState implements MutableTenantState {
 
@@ -63,7 +64,7 @@ public class DbTenantState implements MutableTenantState {
   public void createTenant(final TenantRecord tenantRecord) {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
-    persistedTenant.wrap(tenantRecord);
+    persistedTenant.from(tenantRecord);
     tenantsColumnFamily.insert(tenantKey, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
@@ -71,23 +72,9 @@ public class DbTenantState implements MutableTenantState {
   @Override
   public void updateTenant(final TenantRecord updatedTenantRecord) {
     tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
-    final PersistedTenant persistedTenant = tenantsColumnFamily.get(tenantKey);
-
-    if (persistedTenant != null) {
-      final String oldTenantId = persistedTenant.getTenantId();
-      final String newTenantId = updatedTenantRecord.getTenantId();
-
-      if (!oldTenantId.equals(newTenantId)) {
-        tenantId.wrapString(oldTenantId);
-        tenantByIdColumnFamily.deleteExisting(tenantId);
-
-        tenantId.wrapString(newTenantId);
-        tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
-      }
-
-      persistedTenant.wrap(updatedTenantRecord);
-      tenantsColumnFamily.update(tenantKey, persistedTenant);
-    }
+    final var persistedTenant = tenantsColumnFamily.get(tenantKey);
+    persistedTenant.setName(updatedTenantRecord.getName());
+    tenantsColumnFamily.update(tenantKey, persistedTenant);
   }
 
   @Override
@@ -122,29 +109,10 @@ public class DbTenantState implements MutableTenantState {
   }
 
   @Override
-  public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
+  public Optional<PersistedTenant> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
     final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
-
-    if (persistedTenant != null) {
-      final TenantRecord tenantRecord = new TenantRecord();
-      tenantRecord
-          .setTenantKey(persistedTenant.getTenantKey())
-          .setTenantId(persistedTenant.getTenantId())
-          .setName(persistedTenant.getName());
-
-      // Retrieve entityKey if it exists for the tenant
-      final EntityTypeValue entityTypeValue =
-          entityByTenantColumnFamily.get(new DbCompositeKey<>(fkTenantKey, entityKey));
-
-      if (entityTypeValue != null) {
-        tenantRecord.setEntityKey(entityKey.getValue());
-      }
-
-      return Optional.of(tenantRecord);
-    }
-
-    return Optional.empty();
+    return Optional.ofNullable(persistedTenant);
   }
 
   @Override
@@ -190,5 +158,10 @@ public class DbTenantState implements MutableTenantState {
         });
 
     return entitiesMap;
+  }
+
+  @Override
+  public void forEachTenant(final Function<String, Boolean> callback) {
+    tenantsColumnFamily.whileTrue((k, p) -> callback.apply(p.getTenantId()));
   }
 }

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.MappingMapper">
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingEntity">
+    <constructor>
+      <idArg column="MAPPING_KEY" javaType="long"/>
+      <arg column="CLAIM_NAME" javaType="string"/>
+      <arg column="CLAIM_VALUE" javaType="string"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
+    INSERT INTO MAPPINGS (MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE)
+    VALUES (#{mappingKey}, #{claimName}, #{claimValue})
+  </insert>
+
+  <delete id="delete" parameterType="long">
+    DELETE
+    FROM MAPPINGS
+    WHERE MAPPING_KEY = #{mappingKey}
+  </delete>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
+    resultType="long">
+    SELECT COUNT(*)
+    FROM MAPPINGS
+    <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.MappingMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    MAPPING_KEY,
+    CLAIM_NAME,
+    CLAIM_VALUE
+    FROM MAPPINGS
+    <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.mappingKey != null">
+      AND MAPPING_KEY = #{filter.mappingKey}
+    </if>
+    <if test="filter.claimName != null">
+      AND CLAIM_NAME = #{filter.claimName}
+    </if>
+    <if test="filter.claimValue">
+      AND CLAIM_VALUE = #{filter.claimValue}
+    </if>
+  </sql>
+
+</mapper>

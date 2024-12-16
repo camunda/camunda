@@ -22,8 +22,8 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.VariableServices;
-import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,12 +31,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
+@WebMvcTest(value = VariableController.class)
 @Import(JacksonConfig.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
@@ -72,7 +74,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -83,10 +85,12 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static final SearchQueryResult<VariableEntity> SEARCH_QUERY_RESULT =
       new Builder<VariableEntity>()
           .total(1L)
-          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>")))
-          .sortValues(new Object[] {"v"})
+          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>")))
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
   @MockBean VariableServices variableServices;
+  @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -94,7 +98,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))
-        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>"));
+        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>"));
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(
@@ -154,7 +158,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 "sort": [
                     {
                         "field": "name",
-                        "order": "desc"
+                        "order": "DESC"
                     },
                     {
                         "field": "value",
@@ -202,9 +206,9 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortOrder: dsc.",
+                  "detail": "Unexpected value 'dsc' for enum field 'order'. Use any of the following values: [ASC, DESC]",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);
@@ -234,7 +238,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "order": "asc"
+                        "order": "ASC"
                     }
                 ]
             }""";
@@ -360,6 +364,10 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "processInstanceKey",
         ops -> new VariableFilter.Builder().processInstanceKeyOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder, "name", ops -> new VariableFilter.Builder().nameOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder, "value", ops -> new VariableFilter.Builder().valueOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -376,7 +384,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(variableServices.search(variableQueryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient

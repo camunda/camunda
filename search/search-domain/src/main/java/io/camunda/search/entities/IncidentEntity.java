@@ -12,9 +12,9 @@ import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentEntity(
-    Long key,
+    Long incidentKey,
     Long processDefinitionKey,
-    String bpmnProcessId,
+    String processDefinitionId,
     Long processInstanceKey,
     ErrorType errorType,
     String errorMessage,
@@ -23,7 +23,6 @@ public record IncidentEntity(
     OffsetDateTime creationTime,
     IncidentState state,
     Long jobKey,
-    String treePath,
     String tenantId) {
 
   public enum IncidentState {
@@ -38,6 +37,7 @@ public record IncidentEntity(
     UNKNOWN,
     IO_MAPPING_ERROR,
     JOB_NO_RETRIES,
+    EXECUTION_LISTENER_NO_RETRIES,
     CONDITION_ERROR,
     EXTRACT_VALUE_ERROR,
     CALLED_ELEMENT_ERROR,

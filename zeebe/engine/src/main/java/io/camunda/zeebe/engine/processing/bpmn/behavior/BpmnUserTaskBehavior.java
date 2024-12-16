@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_LOWER_BOUND;
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -37,6 +36,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,8 +46,6 @@ public final class BpmnUserTaskBehavior {
       LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
   private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
       EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
-  private final UserTaskRecord userTaskRecord =
-      new UserTaskRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
 
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
@@ -123,25 +121,27 @@ public final class BpmnUserTaskBehavior {
     final var encodedHeaders =
         headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
 
-    userTaskRecord
-        .setUserTaskKey(userTaskKey)
-        .setAssignee(userTaskProperties.getAssignee())
-        .setCandidateGroupsList(userTaskProperties.getCandidateGroups())
-        .setCandidateUsersList(userTaskProperties.getCandidateUsers())
-        .setDueDate(userTaskProperties.getDueDate())
-        .setFollowUpDate(userTaskProperties.getFollowUpDate())
-        .setFormKey(userTaskProperties.getFormKey())
-        .setExternalFormReference(userTaskProperties.getExternalFormReference())
-        .setCustomHeaders(encodedHeaders)
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(element.getId())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId())
-        .setPriority(userTaskProperties.getPriority())
-        .setCreationTimestamp(clock.millis());
+    final var userTaskRecord =
+        new UserTaskRecord()
+            .setVariables(DocumentValue.EMPTY_DOCUMENT)
+            .setUserTaskKey(userTaskKey)
+            .setAssignee(StringUtils.EMPTY)
+            .setCandidateGroupsList(userTaskProperties.getCandidateGroups())
+            .setCandidateUsersList(userTaskProperties.getCandidateUsers())
+            .setDueDate(userTaskProperties.getDueDate())
+            .setFollowUpDate(userTaskProperties.getFollowUpDate())
+            .setFormKey(userTaskProperties.getFormKey())
+            .setExternalFormReference(userTaskProperties.getExternalFormReference())
+            .setCustomHeaders(encodedHeaders)
+            .setBpmnProcessId(context.getBpmnProcessId())
+            .setProcessDefinitionVersion(context.getProcessVersion())
+            .setProcessDefinitionKey(context.getProcessDefinitionKey())
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setElementId(element.getId())
+            .setElementInstanceKey(context.getElementInstanceKey())
+            .setTenantId(context.getTenantId())
+            .setPriority(userTaskProperties.getPriority())
+            .setCreationTimestamp(clock.millis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
@@ -220,8 +220,7 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             deploymentKey ->
                 formState
-                    .findFormByIdAndDeploymentKey(
-                        wrapString(formId), deploymentKey, context.getTenantId())
+                    .findFormByIdAndDeploymentKey(formId, deploymentKey, context.getTenantId())
                     .<Either<Failure, PersistedForm>>map(Either::right)
                     .orElseGet(
                         () ->
@@ -242,7 +241,7 @@ public final class BpmnUserTaskBehavior {
   private Either<Failure, PersistedForm> findLatestFormById(
       final String formId, final String tenantId, final long scopeKey) {
     return formState
-        .findLatestFormById(wrapString(formId), tenantId)
+        .findLatestFormById(formId, tenantId)
         .<Either<Failure, PersistedForm>>map(Either::right)
         .orElseGet(
             () ->
@@ -261,7 +260,7 @@ public final class BpmnUserTaskBehavior {
   private Either<Failure, PersistedForm> findFormByIdAndVersionTag(
       final String formId, final String versionTag, final String tenantId, final long scopeKey) {
     return formState
-        .findFormByIdAndVersionTag(wrapString(formId), versionTag, tenantId)
+        .findFormByIdAndVersionTag(formId, versionTag, tenantId)
         .<Either<Failure, PersistedForm>>map(Either::right)
         .orElseGet(
             () ->
@@ -326,6 +325,18 @@ public final class BpmnUserTaskBehavior {
   public void userTaskCreated(final UserTaskRecord userTaskRecord) {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
+  }
+
+  public void userTaskAssigning(final UserTaskRecord userTaskRecord, final String assignee) {
+    final long userTaskKey = userTaskRecord.getUserTaskKey();
+    userTaskRecord.setAssignee(assignee);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+  }
+
+  public void userTaskAssigned(final UserTaskRecord userTaskRecord, final String assignee) {
+    final long userTaskKey = userTaskRecord.getUserTaskKey();
+    userTaskRecord.setAssignee(assignee);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
   }
 
   public static final class UserTaskProperties {

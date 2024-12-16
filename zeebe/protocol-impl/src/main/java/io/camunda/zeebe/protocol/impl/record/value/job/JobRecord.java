@@ -276,7 +276,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public JobRecord setResult(final JobResult result) {
-    resultProp.getValue().wrap(result);
+    if (result != null) {
+      resultProp.getValue().wrap(result);
+    }
     return this;
   }
 

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -22,7 +23,10 @@ import org.junit.rules.TestWatcher;
 
 public class TenantAwareCancelProcessInstanceTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -64,6 +68,22 @@ public class TenantAwareCancelProcessInstanceTest {
   @Test
   public void shouldRejectCancelInstanceForUnauthorizedTenant() {
     // given
+    final var userKey = ENGINE.user().newUser("username").create().getValue().getUserKey();
+    final var tenantKey =
+        ENGINE
+            .tenant()
+            .newTenant()
+            .withTenantId("another-tenant")
+            .create()
+            .getValue()
+            .getTenantKey();
+    ENGINE
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityType(EntityType.USER)
+        .withEntityKey(userKey)
+        .add();
+
     ENGINE
         .deployment()
         .withXmlResource(
@@ -83,9 +103,8 @@ public class TenantAwareCancelProcessInstanceTest {
         ENGINE
             .processInstance()
             .withInstanceKey(processInstanceKey)
-            .forAuthorizedTenants("another-tenant")
             .expectRejection()
-            .cancel();
+            .cancel(userKey);
 
     // then
     assertThat(rejection)

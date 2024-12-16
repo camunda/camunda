@@ -17,14 +17,14 @@ import java.util.List;
 public record AuthorizationFilter(
     List<Long> ownerKeys,
     String ownerType,
-    List<String> resourceKeys,
+    List<String> resourceIds,
     String resourceType,
     PermissionType permissionType)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
     private List<Long> ownerKeys;
     private String ownerType;
-    private List<String> resourceKeys;
+    private List<String> resourceIds;
     private String resourceType;
     private PermissionType permissionType;
 
@@ -42,13 +42,13 @@ public record AuthorizationFilter(
       return this;
     }
 
-    public Builder resourceKeys(final List<String> value) {
-      resourceKeys = value;
+    public Builder resourceIds(final List<String> value) {
+      resourceIds = value;
       return this;
     }
 
-    public Builder resourceKeys(final String... values) {
-      return resourceKeys(collectValuesAsList(values));
+    public Builder resourceIds(final String... values) {
+      return resourceIds(collectValuesAsList(values));
     }
 
     public Builder resourceType(final String value) {
@@ -64,7 +64,7 @@ public record AuthorizationFilter(
     @Override
     public AuthorizationFilter build() {
       return new AuthorizationFilter(
-          ownerKeys, ownerType, resourceKeys, resourceType, permissionType);
+          ownerKeys, ownerType, resourceIds, resourceType, permissionType);
     }
   }
 }

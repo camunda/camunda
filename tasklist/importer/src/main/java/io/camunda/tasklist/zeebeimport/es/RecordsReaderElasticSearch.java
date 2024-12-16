@@ -16,10 +16,10 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,7 +66,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
     super(partitionId, importValueType, queueSize);
   }
 
-  private SearchHit[] withTimerSearchHits(final Callable<SearchHit[]> callable) throws Exception {
+  private <A> A withTimer(final Callable<A> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -202,9 +202,9 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
 
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
-            .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
+            .sort(TasklistImportPositionIndex.SEQUENCE, SortOrder.ASC)
             .query(
-                rangeQuery(ImportPositionIndex.SEQUENCE)
+                rangeQuery(TasklistImportPositionIndex.SEQUENCE)
                     .gt(fromSequence)
                     .lte(lessThanEqualsSequence))
             .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits);
@@ -217,7 +217,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
 
     try {
       final SearchHit[] hits =
-          withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+          withTimer(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
       if (hits.length == 0) {
         countEmptyRuns++;
       } else {
@@ -242,13 +242,9 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
     }
   }
 
-  private SearchResponse withTimer(final Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
-  }
-
   private SearchRequest createSearchQuery(
       final String aliasName, final long positionFrom, final Long positionTo) {
-    RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
+    RangeQueryBuilder positionQ = rangeQuery(TasklistImportPositionIndex.POSITION).gt(positionFrom);
     if (positionTo != null) {
       positionQ = positionQ.lte(positionTo);
     }
@@ -258,7 +254,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
     SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(queryBuilder)
-            .sort(ImportPositionIndex.POSITION, SortOrder.ASC);
+            .sort(TasklistImportPositionIndex.POSITION, SortOrder.ASC);
     if (positionTo == null) {
       searchSourceBuilder =
           searchSourceBuilder.size(tasklistProperties.getZeebeElasticsearch().getBatchSize());

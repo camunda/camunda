@@ -78,31 +78,34 @@ public class UpdateTenantTest {
   }
 
   @Test
-  public void shouldRejectIfTenantWithSameIdExists() {
+  public void shouldRejectIfTryToUpdateTenantId() {
     // given
-    final var tenantId1 = "tenant-123";
-    final var tenantId2 = "tenant-456";
+    final var tenantId = "tenant-original-id";
+    final var updatedTenant = "tenant-updated-id";
     final var tenantKey =
         ENGINE
             .tenant()
             .newTenant()
-            .withTenantId(tenantId1)
-            .withName("First Tenant")
+            .withTenantId(tenantId)
+            .withName("Tenant Name")
             .create()
             .getValue()
             .getTenantKey();
-    ENGINE.tenant().newTenant().withTenantId(tenantId2).withName("Second Tenant").create();
 
     // when
     final var updateRecord =
-        ENGINE.tenant().updateTenant(tenantKey).withTenantId(tenantId2).expectRejection().update();
+        ENGINE
+            .tenant()
+            .updateTenant(tenantKey)
+            .withTenantId(updatedTenant)
+            .expectRejection()
+            .update();
 
     // then
     assertThat(updateRecord)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "Expected to update tenant with ID '"
-                + tenantId2
-                + "', but a tenant with this ID already exists.");
+            "Tenant ID cannot be updated. Expected no tenant ID, but received '%s'."
+                .formatted(updatedTenant));
   }
 }

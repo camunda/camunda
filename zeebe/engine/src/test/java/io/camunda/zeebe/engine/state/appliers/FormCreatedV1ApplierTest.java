@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
@@ -38,8 +36,8 @@ public class FormCreatedV1ApplierTest extends AbstractFormCreatedApplierTest {
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
 
-    form1 = formState.findLatestFormById(wrapString(formId), TENANT_1).orElseThrow();
-    form2 = formState.findLatestFormById(wrapString(formId), TENANT_2).orElseThrow();
+    form1 = formState.findLatestFormById(formId, TENANT_1).orElseThrow();
+    form2 = formState.findLatestFormById(formId, TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
   }

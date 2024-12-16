@@ -25,7 +25,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -76,8 +76,7 @@ public class IncidentStatisticsReader extends AbstractReader
 
   @Autowired private ProcessReader processReader;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
@@ -114,7 +113,7 @@ public class IncidentStatisticsReader extends AbstractReader
                             .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
 
     var query = ACTIVE_INCIDENT_QUERY;
-    if (permissionsService != null) {
+    if (permissionsService.permissionsEnabled()) {
       query =
           joinWithAnd(
               ACTIVE_INCIDENT_QUERY, createQueryForProcessesByPermission(IdentityPermission.READ));

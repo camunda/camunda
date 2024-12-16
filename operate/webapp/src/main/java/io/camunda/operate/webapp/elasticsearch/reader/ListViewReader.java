@@ -24,7 +24,7 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -72,8 +72,7 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   /**
    * Queries process instances by different criteria (with pagination).
@@ -98,7 +97,10 @@ public class ListViewReader implements io.camunda.operate.webapp.reader.ListView
 
     final List<ListViewProcessInstanceDto> processInstanceDtoList =
         ListViewProcessInstanceDto.createFrom(
-            processInstanceEntities, operationsPerProcessInstance, objectMapper);
+            processInstanceEntities,
+            operationsPerProcessInstance,
+            permissionsService,
+            objectMapper);
     result.setProcessInstances(processInstanceDtoList);
     return result;
   }

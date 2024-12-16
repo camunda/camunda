@@ -14,12 +14,11 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.SessionRepository;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -39,7 +38,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @Serial private static final long serialVersionUID = 1L;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
-
+  private static final String POLLING_HEADER = "x-is-polling";
   private Tokens tokens;
   private String id;
   private String name;
@@ -189,7 +188,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private void retrieveResourcePermissions() {
-    if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()) {
+    if (getSecurityConfiguration().getAuthorizations().isEnabled()) {
       try {
         authorizations =
             IdentityAuthorization.createFrom(
@@ -204,7 +203,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private void retrieveTenants() {
-    if (getOperateProperties().getMultiTenancy().isEnabled()) {
+    if (getSecurityConfiguration().getMultiTenancy().isEnabled()) {
       try {
         final var accessToken = tokens.getAccessToken();
         final var identityTenants = getIdentity().tenants().forToken(accessToken);
@@ -264,8 +263,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
       return Boolean.TRUE.equals(
-          Boolean.parseBoolean(
-              requestAttributes.getRequest().getHeader(SessionRepository.POLLING_HEADER)));
+          Boolean.parseBoolean(requestAttributes.getRequest().getHeader(POLLING_HEADER)));
     } else {
       return false;
     }
@@ -298,15 +296,15 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     return SpringContextHolder.getBean(Identity.class);
   }
 
-  private OperateProperties getOperateProperties() {
-    return SpringContextHolder.getBean(OperateProperties.class);
-  }
-
   private IdentityRetryService getIdentityRetryService() {
     return SpringContextHolder.getBean(IdentityRetryService.class);
   }
 
   private PermissionConverter getPermissionConverter() {
     return SpringContextHolder.getBean(PermissionConverter.class);
+  }
+
+  private SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 }

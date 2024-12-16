@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,12 +20,9 @@ import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.templates.TemplateDescriptor;
-import jakarta.json.Json;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonObject;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
@@ -80,9 +80,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Qualifier("tasklistOsRestClient")
   private RestClient opensearchRestClient;
 
-  @Autowired private List<TemplateDescriptor> templateDescriptors;
-
   @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
+  @Autowired private List<IndexTemplateDescriptor> templateDescriptors;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -94,9 +93,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
-    if (tasklistProperties.getArchiver().isIlmEnabled()) {
-      createIndexLifeCyclesIfNotExist();
-    }
     createDefaults();
     createTemplates();
     createIndices();
@@ -111,11 +107,10 @@ public class OpenSearchSchemaManager implements SchemaManager {
       final String currentVersionSchema =
           StreamUtils.copyToString(description, StandardCharsets.UTF_8);
       final TypeReference<HashMap<String, Object>> type = new TypeReference<>() {};
-      final Map<String, Object> properties =
-          (Map<String, Object>)
-              objectMapper.readValue(currentVersionSchema, type).get("properties");
-      final String dynamic =
-          (String) objectMapper.readValue(currentVersionSchema, type).get("dynamic");
+      final Map<String, Object> mappings =
+          (Map<String, Object>) objectMapper.readValue(currentVersionSchema, type).get("mappings");
+      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
+      final String dynamic = (String) mappings.get("dynamic");
       return new IndexMapping()
           .setIndexName(indexDescriptor.getIndexName())
           .setDynamic(dynamic)
@@ -191,10 +186,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
-      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
-        LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
-        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
+      if (indexNewFields.getKey() instanceof final IndexTemplateDescriptor templateDescriptor) {
+        LOGGER.info("Update template: " + templateDescriptor.getTemplateName());
         final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
         final PutIndexTemplateRequest indexTemplateRequest =
             prepareIndexTemplateRequest(templateDescriptor, json);
@@ -237,7 +230,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
     final CreateIndexRequest request =
         new CreateIndexRequest.Builder()
-            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+            .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
             .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
             .settings(getIndexSettings())
             .index(indexDescriptor.getFullQualifiedName())
@@ -247,7 +240,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private PutIndexTemplateRequest prepareIndexTemplateRequest(
-      final TemplateDescriptor templateDescriptor, final String json) {
+      final IndexTemplateDescriptor templateDescriptor, final String json) {
     final var templateSettings = templateSettings(templateDescriptor);
     final var templateBuilder =
         new IndexTemplateMapping.Builder()
@@ -283,66 +276,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
     return TypeMapping._DESERIALIZER.deserialize(jsonParser, jsonpMapper);
   }
 
-  public void createIndexLifeCyclesIfNotExist() {
-    if (retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES).isPresent()) {
-      LOGGER.info("{} ISM policy already exists", TASKLIST_DELETE_ARCHIVED_INDICES);
-      return;
-    }
-    LOGGER.info("Creating ISM Policy for deleting archived indices");
-
-    final Request request =
-        new Request("PUT", "/_plugins/_ism/policies/" + TASKLIST_DELETE_ARCHIVED_INDICES);
-
-    final JsonObject deleteJson =
-        Json.createObjectBuilder().add("delete", Json.createObjectBuilder().build()).build();
-    final JsonArray actionsDelete = Json.createArrayBuilder().add(deleteJson).build();
-    final JsonObject deleteState =
-        Json.createObjectBuilder()
-            .add("name", Json.createValue("delete"))
-            .add("actions", actionsDelete)
-            .build();
-    final JsonObject openCondition =
-        Json.createObjectBuilder()
-            .add(
-                "min_index_age",
-                Json.createValue(
-                    tasklistProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices()))
-            .build();
-    final JsonObject openTransition =
-        Json.createObjectBuilder()
-            .add("state_name", Json.createValue("delete"))
-            .add("conditions", openCondition)
-            .build();
-    final JsonArray transitionOpenActions = Json.createArrayBuilder().add(openTransition).build();
-    final JsonObject openActionJson =
-        Json.createObjectBuilder().add("open", Json.createObjectBuilder().build()).build();
-    final JsonArray openActions = Json.createArrayBuilder().add(openActionJson).build();
-    final JsonObject openState =
-        Json.createObjectBuilder()
-            .add("name", Json.createValue("open"))
-            .add("actions", openActions)
-            .add("transitions", transitionOpenActions)
-            .build();
-    final JsonArray statesJson = Json.createArrayBuilder().add(openState).add(deleteState).build();
-    final JsonObject policyJson =
-        Json.createObjectBuilder()
-            .add("policy_id", Json.createValue(TASKLIST_DELETE_ARCHIVED_INDICES))
-            .add(
-                "description",
-                Json.createValue("Policy to delete archived indices older than configuration"))
-            .add("default_state", Json.createValue("open"))
-            .add("states", statesJson)
-            .build();
-    final JsonObject requestJson = Json.createObjectBuilder().add("policy", policyJson).build();
-
-    request.setJsonEntity(requestJson.toString());
-    try {
-      final Response response = opensearchRestClient.performRequest(request);
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
-  }
-
   private void createDefaults() {
     final TasklistOpenSearchProperties elsConfig = tasklistProperties.getOpenSearch();
 
@@ -372,14 +305,14 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private String settingsTemplateName() {
     final TasklistOpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
-    return String.format("%s_template", osConfig.getIndexPrefix());
+    return String.format("%s%s_template", formatIndexPrefix(osConfig.getIndexPrefix()), TASK_LIST);
   }
 
   private void createTemplates() {
     templateDescriptors.forEach(this::createTemplate);
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
     final IndexTemplateMapping template = getTemplateFrom(templateDescriptor);
 
     putIndexTemplate(
@@ -413,10 +346,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private IndexTemplateMapping getTemplateFrom(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename =
-        String.format(
-            "/schema/os/create/template/tasklist-%s.json", templateDescriptor.getIndexName());
+  private IndexTemplateMapping getTemplateFrom(final IndexTemplateDescriptor templateDescriptor) {
+    final String templateFilename = templateDescriptor.getSchemaClasspathFilename();
 
     final InputStream templateConfig =
         OpenSearchSchemaManager.class.getResourceAsStream(templateFilename);
@@ -425,23 +356,9 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
 
     return new IndexTemplateMapping.Builder()
-        .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+        .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
         .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
         .build();
-  }
-
-  private InputStream readJSONFile(final String filename) {
-    final Map<String, Object> result;
-    try (final InputStream inputStream =
-        OpenSearchSchemaManager.class.getResourceAsStream(filename)) {
-      if (inputStream != null) {
-        return inputStream;
-      } else {
-        throw new TasklistRuntimeException("Failed to find " + filename + " in classpath ");
-      }
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException("Failed to load file " + filename + " from classpath ", e);
-    }
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
@@ -457,7 +374,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     indexDescriptors.forEach(this::createIndex);
   }
 
-  private IndexSettings templateSettings(final TemplateDescriptor indexDescriptor) {
+  private IndexSettings templateSettings(final IndexTemplateDescriptor indexDescriptor) {
     final var shards =
         tasklistProperties
             .getOpenSearch()

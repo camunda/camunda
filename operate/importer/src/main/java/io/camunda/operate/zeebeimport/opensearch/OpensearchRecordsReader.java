@@ -24,11 +24,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.HitEntity;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -39,6 +37,9 @@ import io.camunda.operate.zeebeimport.ImportJob;
 import io.camunda.operate.zeebeimport.ImportListener;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.operate.zeebeimport.RecordsReader;
+import io.camunda.operate.zeebeimport.RecordsReaderHolder;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -74,6 +75,8 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class OpensearchRecordsReader implements RecordsReader {
 
+  private static final String READ_BATCH_ERROR_MESSAGE =
+      "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchRecordsReader.class);
 
   /** Partition id. */
@@ -121,6 +124,8 @@ public class OpensearchRecordsReader implements RecordsReader {
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
+
   public OpensearchRecordsReader(
       final int partitionId, final ImportValueType importValueType, final int queueSize) {
     this.partitionId = partitionId;
@@ -130,7 +135,7 @@ public class OpensearchRecordsReader implements RecordsReader {
   }
 
   @PostConstruct
-  private void postConstruct() {
+  public void postConstruct() {
     batchSizeThrottle =
         new NumberThrottleable.DivideNumberThrottle(
             operateProperties.getZeebeOpensearch().getBatchSize());
@@ -139,6 +144,20 @@ public class OpensearchRecordsReader implements RecordsReader {
     countEmptyRuns = 0;
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
+
+    try {
+      final var latestPosition =
+          importPositionHolder.getLatestLoadedPosition(
+              importValueType.getAliasTemplate(), partitionId);
+
+      importPositionHolder.recordLatestLoadedPosition(latestPosition);
+    } catch (final IOException e) {
+      LOGGER.error(
+          "Failed to write initial import position index document for value type [{}] and partition [{}]",
+          importValueType,
+          partitionId,
+          e);
+    }
   }
 
   @Override
@@ -180,6 +199,7 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (importBatch == null
           || importBatch.getHits() == null
           || importBatch.getHits().size() == 0) {
+        markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);
@@ -198,6 +218,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         rescheduleReader(nextRunDelay);
       }
     } catch (final NoSuchIndexException ex) {
+      markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
@@ -272,11 +293,8 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, ex.getMessage());
-        throw new OperateRuntimeException(message, ex);
+        throw new OperateRuntimeException(
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
@@ -288,11 +306,8 @@ public class OpensearchRecordsReader implements RecordsReader {
         batchSizeThrottle.throttle();
         return readNextBatchBySequence(sequence, lastSequence);
       } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, e.getMessage());
-        throw new OperateRuntimeException(message, e);
+        throw new OperateRuntimeException(
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, e.getMessage()), e);
       }
     }
   }
@@ -348,22 +363,16 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, ex.getMessage());
-        throw new OperateRuntimeException(message, ex);
+        throw new OperateRuntimeException(
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         batchSizeThrottle.throttle();
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
       } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, e.getMessage());
-        throw new OperateRuntimeException(message, e);
+        throw new OperateRuntimeException(
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, e.getMessage()), e);
       }
     }
   }
@@ -535,6 +544,25 @@ public class OpensearchRecordsReader implements RecordsReader {
         return false;
       }
     };
+  }
+
+  private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
+    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+      recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+    }
+
+    if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+      try {
+        recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+            importPositionHolder, importValueType.getAliasTemplate(), partitionId);
+      } catch (final IOException e) {
+        LOGGER.error(
+            "Failed when trying to mark record reader [{}-{}] as completed",
+            importValueType.getAliasTemplate(),
+            partitionId,
+            e);
+      }
+    }
   }
 
   private void executeNext() {
