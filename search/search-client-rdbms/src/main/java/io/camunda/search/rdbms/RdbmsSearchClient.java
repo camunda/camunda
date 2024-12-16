@@ -196,7 +196,7 @@ public class RdbmsSearchClient
                 UserTaskDbQuery.of(
                     b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
 
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null, null);
   }
 
   @Override
@@ -211,6 +211,11 @@ public class RdbmsSearchClient
     LOG.debug("[RDBMS Search Client] Search for roles: {}", query);
 
     return rdbmsService.getRoleReader().search(query);
+  }
+
+  @Override
+  public List<RoleEntity> findAllRoles(final RoleQuery filter) {
+    return List.of();
   }
 
   @Override

@@ -409,6 +409,32 @@ public final class ZeebeAssertHelper {
     consumer.accept(groupRecordValue);
   }
 
+  public static void assertGroupUpdated(
+      final String groupName, final Consumer<GroupRecordValue> consumer) {
+    final GroupRecordValue groupRecordValue =
+        RecordingExporter.groupRecords()
+            .withIntent(GroupIntent.UPDATED)
+            .withName(groupName)
+            .getFirst()
+            .getValue();
+
+    assertThat(groupRecordValue).isNotNull();
+    consumer.accept(groupRecordValue);
+  }
+
+  public static void assertGroupDeleted(
+      final long groupKey, final Consumer<GroupRecordValue> consumer) {
+    final GroupRecordValue groupRecordValue =
+        RecordingExporter.groupRecords()
+            .withIntent(GroupIntent.DELETED)
+            .withGroupKey(groupKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(groupRecordValue).isNotNull();
+    consumer.accept(groupRecordValue);
+  }
+
   public static void assertUserCreated(final String username) {
     assertUserCreated(username, u -> {});
   }
@@ -470,6 +496,20 @@ public final class ZeebeAssertHelper {
     final TenantRecordValue tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_ADDED)
+            .withTenantKey(tenantKey)
+            .withEntityKey(entityKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(tenantRecordValue).isNotNull();
+    consumer.accept(tenantRecordValue);
+  }
+
+  public static void assertEntityRemovedFromTenant(
+      final long tenantKey, final long entityKey, final Consumer<TenantRecordValue> consumer) {
+    final TenantRecordValue tenantRecordValue =
+        RecordingExporter.tenantRecords()
+            .withIntent(TenantIntent.ENTITY_REMOVED)
             .withTenantKey(tenantKey)
             .withEntityKey(entityKey)
             .getFirst()

@@ -34,6 +34,7 @@ import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
+import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -51,10 +52,12 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
+  private static final String INDEX_WILDCARD = "-.*-\\d+\\.\\d+\\.\\d+_.+$";
 
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
+  private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final OpenSearchAsyncClient client;
@@ -68,6 +71,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
+      final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
@@ -77,6 +81,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
+    this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.client = client;
@@ -113,39 +118,29 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   }
 
   @Override
-  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+  public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-
-    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
-    final var request =
-        Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + destinationIndexName);
-
-    return sendRequestAsync(
-            () ->
-                genericClient.executeAsync(
-                    request.json(value, genericClient._transport().jsonpMapper()).build()))
-        .thenComposeAsync(
-            response -> {
-              if (response.getStatus() >= 400) {
-                return CompletableFuture.failedFuture(
-                    new ExporterException(
-                        "Failed to set index lifecycle policy for index: "
-                            + destinationIndexName
-                            + ".\n"
-                            + "Status: "
-                            + response.getStatus()
-                            + ", Reason: "
-                            + response.getReason()));
-              }
-              return CompletableFuture.completedFuture(null);
-            });
+    return CompletableFuture.allOf(
+        Arrays.stream(destinationIndexName)
+            .map(this::applyPolicyToIndex)
+            .toArray(CompletableFuture[]::new));
   }
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-    return CompletableFuture.completedFuture(null);
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final String indexWildCard = "^" + indexPrefix + INDEX_WILDCARD;
+
+    try {
+      return fetchIndexMatchingIndexes(indexWildCard)
+          .thenComposeAsync(indices -> setIndexLifeCycle(indices.toArray(String[]::new)), executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
+    }
   }
 
   @Override
@@ -193,6 +188,44 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexWildCard)
+      throws IOException {
+    return client
+        .cat()
+        .indices()
+        .thenApply(
+            response ->
+                response.valueBody().stream()
+                    .map(IndicesRecord::index)
+                    .filter(index -> index.matches(indexWildCard))
+                    .toList());
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndex(final String index) {
+    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
+    final var request = Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + index);
+    return sendRequestAsync(
+            () ->
+                genericClient.executeAsync(
+                    request.json(value, genericClient._transport().jsonpMapper()).build()))
+        .thenComposeAsync(
+            response -> {
+              if (response.getStatus() >= 400) {
+                return CompletableFuture.failedFuture(
+                    new ExporterException(
+                        "Failed to set index lifecycle policy for index: "
+                            + index
+                            + ".\n"
+                            + "Status: "
+                            + response.getStatus()
+                            + ", Reason: "
+                            + response.getReason()));
+              }
+              return CompletableFuture.completedFuture(null);
+            },
+            executor);
   }
 
   @Override

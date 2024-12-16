@@ -17,7 +17,7 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch();
 
-  CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
+  CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName);
 
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
@@ -56,7 +56,7 @@ public interface ArchiverRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+    public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
       return CompletableFuture.completedFuture(null);
     }
 

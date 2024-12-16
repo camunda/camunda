@@ -162,7 +162,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.779</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.780</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.4</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.4</version.postgres-test-container>
     <version.elasticsearch7>7.17.26</version.elasticsearch7>
@@ -896,7 +896,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-client-java</artifactId>
+        <artifactId>camunda-client-java</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -3082,7 +3082,7 @@
                 <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
-                <dep>io.camunda:zeebe-client-java</dep>
+                <dep>io.camunda:camunda-client-java</dep>
               </ignoredUnusedDeclaredDependencies>
             </configuration>
             <executions>

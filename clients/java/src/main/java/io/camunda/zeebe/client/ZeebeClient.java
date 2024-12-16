@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -44,10 +45,12 @@ import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTenantCommandStep1;
@@ -1029,6 +1032,41 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   CreateGroupCommandStep1 newCreateGroupCommand();
 
   /**
+   * Command to update a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newUpdateGroupCommand(123L)
+   *  .name(name)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UpdateGroupCommandStep1 newUpdateGroupCommand(long groupKey);
+
+  /**
+   * Command to delete a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newDeleteGroupCommand(123L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
+
+  /**
    * Command to create a user.
    *
    * <pre>
@@ -1458,4 +1496,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the assign user to tenant command
    */
   AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(long tenantKey);
+
+  /**
+   * Command to remove a user from a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newRemoveUserFromTenantCommand(tenantKey)
+   *   .userKey(userKey)
+   *   .send();
+   * </pre>
+   *
+   * <p>This command sends an HTTP DELETE request to remove the specified user from the given
+   * tenant.
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder for the remove user from tenant command
+   */
+  RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(long tenantKey);
 }

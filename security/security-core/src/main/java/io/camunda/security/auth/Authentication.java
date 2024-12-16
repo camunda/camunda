@@ -16,6 +16,7 @@ import java.util.function.Function;
 public record Authentication(
     Long authenticatedUserKey,
     List<Long> authenticatedGroupKeys,
+    List<Long> authenticatedRoleKeys,
     List<String> authenticatedTenantIds,
     String token) {
 
@@ -27,6 +28,7 @@ public record Authentication(
 
     private Long userKey;
     private final List<Long> groupKeys = new ArrayList<>();
+    private final List<Long> roleKeys = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
     private String token;
 
@@ -42,6 +44,17 @@ public record Authentication(
     public Builder groupKeys(final List<Long> values) {
       if (values != null) {
         groupKeys.addAll(values);
+      }
+      return this;
+    }
+
+    public Builder role(final Long value) {
+      return roleKeys(java.util.List.of(value));
+    }
+
+    public Builder roleKeys(final List<Long> values) {
+      if (values != null) {
+        roleKeys.addAll(values);
       }
       return this;
     }
@@ -64,7 +77,11 @@ public record Authentication(
 
     public Authentication build() {
       return new Authentication(
-          userKey, unmodifiableList(groupKeys), unmodifiableList(tenants), token);
+          userKey,
+          unmodifiableList(groupKeys),
+          unmodifiableList(roleKeys),
+          unmodifiableList(tenants),
+          token);
     }
   }
 }

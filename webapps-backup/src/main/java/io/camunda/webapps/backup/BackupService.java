@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.backup;
 
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.util.List;
 
 public interface BackupService {
@@ -20,5 +21,8 @@ public interface BackupService {
   List<GetBackupStateResponseDto> getBackups();
 
   record SnapshotRequest(
-      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
+      String repositoryName,
+      String snapshotName,
+      SnapshotIndexCollection indices,
+      Metadata metadata) {}
 }

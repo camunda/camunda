@@ -22,6 +22,7 @@ import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.elasticsearch.TestSnapshotProvider;
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
@@ -112,7 +113,7 @@ class OpensearchBackupRepositoryTest {
         new BackupService.SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            List.of("index-1", "index-2"),
+            new SnapshotIndexCollection(List.of("index-1", "index-2")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> {};
     final Runnable onFailure = () -> fail("Should execute snapshot successfully.");
@@ -140,7 +141,7 @@ class OpensearchBackupRepositoryTest {
         new SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            List.of("index-1", "index-2"),
+            new SnapshotIndexCollection(List.of("index-1", "index-2")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
     final Runnable onFailure = () -> {};

@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.search.response;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionItem;
+import java.util.Objects;
 
 public class ProcessDefinitionImpl implements ProcessDefinition, Process {
 
@@ -77,5 +78,57 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   @Override
   public String getBpmnProcessId() {
     return processDefinitionId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionKey,
+        name,
+        resourceName,
+        version,
+        versionTag,
+        processDefinitionId,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessDefinitionImpl that = (ProcessDefinitionImpl) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(name, that.name)
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(version, that.version)
+        && Objects.equals(versionTag, that.versionTag)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessDefinitionImpl{"
+        + "processDefinitionKey="
+        + processDefinitionKey
+        + ", name='"
+        + name
+        + '\''
+        + ", resourceName='"
+        + resourceName
+        + '\''
+        + ", version="
+        + version
+        + ", versionTag='"
+        + versionTag
+        + '\''
+        + ", processDefinitionId='"
+        + processDefinitionId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 }

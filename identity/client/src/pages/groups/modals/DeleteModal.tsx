@@ -28,7 +28,7 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
 
   const handleSubmit = async () => {
     const { success } = await callDeleteGroup({
-      id: group.id,
+      groupKey: group.groupKey,
     });
     if (success) {
       enqueueNotification({

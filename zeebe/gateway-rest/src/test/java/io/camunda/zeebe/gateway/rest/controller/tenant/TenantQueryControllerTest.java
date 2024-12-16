@@ -69,8 +69,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %d,
-           "firstSortValues": [],
-           "lastSortValues": []
+           "firstSortValues": ["f"],
+           "lastSortValues": ["v"]
          }
        }
       """
@@ -170,7 +170,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(3)
-                .sortValues(new Object[] {})
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .items(TENANT_ENTITIES)
                 .build());
 
@@ -200,6 +201,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(TENANT_ENTITIES.size())
                 .items(TENANT_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .build());
 
     // when / then

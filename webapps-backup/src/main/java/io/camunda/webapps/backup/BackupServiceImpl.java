@@ -9,21 +9,13 @@ package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
+import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,41 +25,21 @@ public class BackupServiceImpl implements BackupService {
   private final Executor threadPoolTaskExecutor;
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
-  private final List<Prio1Backup> prio1BackupIndices;
-
-  private final List<Prio2Backup> prio2BackupTemplates;
-
-  private final List<Prio3Backup> prio3BackupTemplates;
-
-  private final List<Prio4Backup> prio4BackupTemplates;
-
-  private final List<Prio5Backup> prio5BackupIndices;
-
-  private final List<Prio6Backup> prio6BackupIndices;
-
+  private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupProps;
 
   private final BackupRepository repository;
 
-  private String[][] indexPatternsOrdered;
+  private final List<SnapshotIndexCollection> indexPatternsOrdered;
 
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
-      final List<Prio1Backup> prio1BackupIndices,
-      final List<Prio2Backup> prio2BackupTemplates,
-      final List<Prio3Backup> prio3BackupTemplates,
-      final List<Prio4Backup> prio4BackupTemplates,
-      final List<Prio5Backup> prio5BackupIndices,
-      final List<Prio6Backup> prio6BackupIndices,
+      final BackupPriorities backupPriorities,
       final BackupRepositoryProps operateProperties,
       final BackupRepository repository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
-    this.prio1BackupIndices = prio1BackupIndices;
-    this.prio2BackupTemplates = prio2BackupTemplates;
-    this.prio3BackupTemplates = prio3BackupTemplates;
-    this.prio4BackupTemplates = prio4BackupTemplates;
-    this.prio5BackupIndices = prio5BackupIndices;
-    this.prio6BackupIndices = prio6BackupIndices;
+    this.backupPriorities = backupPriorities;
+    indexPatternsOrdered = backupPriorities.indicesSplitBySnapshot().toList();
     this.repository = repository;
     backupProps = operateProperties;
   }
@@ -76,7 +48,7 @@ public class BackupServiceImpl implements BackupService {
   public void deleteBackup(final Long backupId) {
     repository.validateRepositoryExists(backupProps.repositoryName());
     final String repositoryName = backupProps.repositoryName();
-    final int count = getIndexPatternsOrdered().length;
+    final int count = indexPatternsOrdered.size();
     final String version = getCurrentVersion();
     for (int index = 0; index < count; index++) {
       final String snapshotName =
@@ -114,15 +86,15 @@ public class BackupServiceImpl implements BackupService {
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = backupProps.repositoryName();
-    final int count = getIndexPatternsOrdered().length;
+    final int count = indexPatternsOrdered.size();
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
-    for (int index = 0; index < count; index++) {
-      final List<String> indexPattern = Arrays.asList(getIndexPatternsOrdered()[index]);
-      final Metadata metadata = new Metadata(request.getBackupId(), version, index + 1, count);
+    var index = 0;
+    for (final var indexCollection : indexPatternsOrdered) {
+      final Metadata metadata = new Metadata(request.getBackupId(), version, index++, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
       final SnapshotRequest snapshotRequest =
-          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
+          new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
 
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
@@ -144,47 +116,8 @@ public class BackupServiceImpl implements BackupService {
     }
   }
 
-  private String[][] getIndexPatternsOrdered() {
-    if (indexPatternsOrdered == null) {
-      indexPatternsOrdered =
-          new String[][] {
-            fullQualifiedName(prio1BackupIndices),
-            fullQualifiedName(prio2BackupTemplates),
-            // dated indices
-            fullQualifiedNameWithMatcher(prio2BackupTemplates),
-            fullQualifiedName(prio3BackupTemplates),
-            fullQualifiedName(prio4BackupTemplates),
-            // dated indices
-            fullQualifiedNameWithMatcher(prio4BackupTemplates),
-            fullQualifiedName(prio5BackupIndices),
-            fullQualifiedName(prio6BackupIndices)
-          };
-    }
-    return indexPatternsOrdered;
-  }
-
-  private <A extends BackupPriority> String[] fullQualifiedName(final Collection<A> backups) {
-    return backups.stream().map(this::getFullQualifiedName).toArray(String[]::new);
-  }
-
-  private <A extends BackupPriority> String[] fullQualifiedNameWithMatcher(
-      final Collection<A> backups) {
-    return backups.stream()
-        .map(this::getFullQualifiedName)
-        .flatMap(name -> Stream.of(name + "*", "-" + name))
-        .toArray(String[]::new);
-  }
-
   // TODO Keep in mind this bug: https://github.com/camunda/camunda/issues/20458
   private String getCurrentVersion() {
     return backupProps.version().toLowerCase();
-  }
-
-  private String getFullQualifiedName(final BackupPriority index) {
-    if (index != null) {
-      return index.getFullQualifiedName();
-    } else {
-      throw new BackupException("Can't find out index name for backup.");
-    }
   }
 }

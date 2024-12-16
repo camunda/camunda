@@ -44,6 +44,6 @@ public class FormReader extends AbstractEntityReader<FormEntity> {
     LOG.trace("[RDBMS DB] Search for form with filter {}", dbQuery);
     final var totalHits = formMapper.count(dbQuery);
     final var hits = formMapper.search(dbQuery);
-    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }

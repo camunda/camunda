@@ -6,7 +6,7 @@
       "archives": {
         "justification": "Ignore everything not included in the module itself",
         "include": [
-          "io\\.camunda:zeebe-client-java:.*"
+          "io\\.camunda:camunda-client-java:.*"
         ]
       },
       "elements": {

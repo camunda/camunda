@@ -68,7 +68,7 @@ public class VariableServiceTest {
   public void shouldReturnSingleVariable() {
     // given
     final var entity = mock(VariableEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchVariables(any())).thenReturn(result);
   }
 
@@ -78,7 +78,7 @@ public class VariableServiceTest {
     final var entity = mock(VariableEntity.class);
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchVariables(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(
             processId,
@@ -100,7 +100,7 @@ public class VariableServiceTest {
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchVariables(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
     when(securityContextProvider.isAuthorized(
             processId,
             authentication,

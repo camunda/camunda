@@ -59,7 +59,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 1,
-               "firstSortValues": ["v"],
+               "firstSortValues": ["f"],
                "lastSortValues": [
                  "v"
                ]
@@ -79,7 +79,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   @MockBean private AuthorizationServices authorizationServices;

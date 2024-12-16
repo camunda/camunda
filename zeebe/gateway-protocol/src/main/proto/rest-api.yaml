@@ -2492,9 +2492,9 @@ paths:
         "201":
           description: The group was created successfully.
           content:
-              application/json:
-                schema:
-                  $ref: "#/components/schemas/GroupCreateResponse"
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupCreateResponse"
         "400":
           description: |
             The group could not be created.
@@ -4927,60 +4927,64 @@ components:
     CamundaUser:
       type: "object"
       properties:
-          userId:
-            description: The ID of the user.
+        userId:
+          description: The ID of the user.
+          type: "string"
+        userKey:
+          description: The system generated key of the user.
+          type: "integer"
+          format: "int64"
+        displayName:
+          description: The display name of the user.
+          type: "string"
+        authorizedApplications:
+          description: The applications the user is authorized to use.
+          type: array
+          items:
             type: "string"
-          userKey:
-            description: The system generated key of the User
-            type: "integer"
-            format: "int64"
-          displayName:
-            description: The display name of the User
+        tenants:
+          description: The tenants the user is a member of.
+          type: array
+          items:
+            type: "object"
+            properties:
+              tenantId:
+                type: "string"
+                description: The ID of the tenant.
+              name:
+                type: "string"
+                description: The name of the tenant.
+        groups:
+          description: The groups assigned to the user.
+          type: array
+          items:
             type: "string"
-          authorizedApplications:
-            description: The applications the User is authorized to use
-            type: array
-            items:
-              type: "string"
-          tenants:
-            description: The tenants the User is a member of
-            type: array
-            items:
-              type: "object"
-              properties:
-                tenantId:
-                  type: "string"
-                name:
-                  type: "string"
-          groups:
-            description: The groups assigned to the user
-            type: array
-            items:
-              type: "string"
-          roles:
-            description: The roles assigned to the user
-            type: array
-            items:
-              type: "string"
-          salesPlanType:
-            description: The plan of the user
+        roles:
+          description: The roles assigned to the user.
+          type: array
+          items:
             type: "string"
-          c8Links:
-            description: The links to the components in the C8 stack
-            type: array
-            items:
-              type: "object"
-              properties:
-                name:
-                  type: "string"
-                link:
-                  type: "string"
-          canLogout:
-            description: Flag for understanding if the user is able to perform logout
-            type: boolean
-          apiUser:
-            description: Flag for understanding if the user is an API user
-            type: boolean
+        salesPlanType:
+          description: The plan of the user.
+          type: "string"
+        c8Links:
+          description: The links to the components in the C8 stack.
+          type: array
+          items:
+            type: "object"
+            properties:
+              name:
+                type: "string"
+                description: The name of the component.
+              link:
+                type: "string"
+                description: A link to the component.
+        canLogout:
+          description: Flag for understanding if the user is able to perform logout.
+          type: boolean
+        apiUser:
+          description: Flag for understanding if the user is an API user.
+          type: boolean
     UserResponse:
       type: "object"
       properties:
@@ -5604,6 +5608,59 @@ components:
             In this example, the completion of a task is represented by a job that the worker can complete as denied.
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
+          nullable: true
+        corrections:
+          $ref: "#/components/schemas/JobResultCorrections"
+    JobResultCorrections:
+      type: object
+      description: |
+        JSON object with attributes that were corrected by the worker.
+
+        The following attributes can be corrected, additional attributes will be ignored:
+
+        * `assignee` - reset by providing an empty String
+        * `dueDate` - reset by providing an empty String
+        * `followUpDate` - reset by providing an empty String
+        * `candidateGroups` - reset by providing an empty list
+        * `candidateUsers` - reset by providing an empty list
+        * `priority` - minimum 0, maximum 100, default 50
+
+        Providing any of those attributes with a `null` value or omitting it preserves
+        the persisted attribute's value.
+      nullable: true
+      properties:
+        assignee:
+          type: string
+          description: Assignee of the task.
+          nullable: true
+        dueDate:
+          type: string
+          format: date-time
+          description: The due date of the task.
+          nullable: true
+        followUpDate:
+          type: string
+          format: date-time
+          description: The follow-up date of the task.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task.
+          items:
+            type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          maximum: 100
           nullable: true
     JobUpdateRequest:
       type: object

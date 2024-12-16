@@ -23,7 +23,7 @@ runs:
       shell: bash
       id: build-java
       run: |
-        ./mvnw -B -T1C -DskipTests -DskipOptimize -DskipChecks install ${{ inputs.maven-extra-args }}
+        ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
         export BUILD_DIR=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
         export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
         echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT

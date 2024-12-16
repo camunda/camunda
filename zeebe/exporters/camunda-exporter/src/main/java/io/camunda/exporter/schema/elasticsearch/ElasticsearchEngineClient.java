@@ -67,11 +67,27 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().create(request);
       LOG.debug("Index [{}] was successfully created", indexDescriptor.getFullQualifiedName());
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException ioe) {
       final var errMsg =
           String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
-      LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      LOG.error(errMsg, ioe);
+      throw new ElasticsearchExporterException(errMsg, ioe);
+    } catch (final ElasticsearchException elsEx) {
+      if ("resource_already_exists_exception".equals(elsEx.error().type())) {
+        // we can ignore already exists exceptions
+        // as this means the index was created by another exporter on a different partition
+        final var warnMsg =
+            String.format(
+                "Expected to create index [%s], but already exist. Will continue, likely was created by different partition (exporter).",
+                indexDescriptor.getFullQualifiedName());
+        LOG.debug(warnMsg, elsEx);
+        return;
+      }
+
+      final var errMsg =
+          String.format("Index [%s] was not created", indexDescriptor.getFullQualifiedName());
+      LOG.error(errMsg, elsEx);
+      throw new ElasticsearchExporterException(errMsg, elsEx);
     }
   }
 

@@ -71,7 +71,7 @@ public final class ProcessInstanceServiceTest {
     when(entity.processInstanceKey()).thenReturn(key);
     when(entity.processDefinitionId()).thenReturn("processId");
     when(client.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult(1, List.of(entity), null));
+        .thenReturn(new SearchQueryResult(1, List.of(entity), null, null));
     authorizeProcessReadInstance(true, "processId");
 
     // when
@@ -86,7 +86,7 @@ public final class ProcessInstanceServiceTest {
     // given
     final var key = 100L;
     when(client.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(0, List.of(), null));
+        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // when / then
     final var exception =
@@ -101,7 +101,7 @@ public final class ProcessInstanceServiceTest {
     final var entity1 = mock(ProcessInstanceEntity.class);
     final var entity2 = mock(ProcessInstanceEntity.class);
     when(client.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(2, List.of(entity1, entity2), null));
+        .thenReturn(new SearchQueryResult<>(2, List.of(entity1, entity2), null, null));
 
     // when / then
     final var exception =
@@ -116,7 +116,7 @@ public final class ProcessInstanceServiceTest {
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processDefinitionId()).thenReturn("processId");
     when(client.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
+        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
     authorizeProcessReadInstance(false, "processId");
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);

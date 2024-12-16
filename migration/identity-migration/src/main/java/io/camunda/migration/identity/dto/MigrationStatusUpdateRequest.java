@@ -5,17 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.migration.identity.dto;
 
-public class MultiTenancyProperties {
+import io.camunda.migration.identity.midentity.MigrationEntityType;
 
-  private boolean enabled = false;
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
-  }
-}
+public record MigrationStatusUpdateRequest(
+    String entityId,
+    MigrationEntityType entityType,
+    String organizationId,
+    boolean success,
+    String error) {}

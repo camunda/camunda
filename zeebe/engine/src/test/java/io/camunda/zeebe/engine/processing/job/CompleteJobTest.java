@@ -14,6 +14,7 @@ import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -259,6 +261,79 @@ public final class CompleteJobTest {
         .hasIntent(JobIntent.COMPLETED);
 
     Assertions.assertThat(completedRecord.getValue()).hasResult(new JobResult().setDenied(true));
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultWithCorrections() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
+
+    final JobResultCorrections corrections = new JobResultCorrections();
+    corrections.setAssignee("TestAssignee");
+    corrections.setDueDate("2025-05-23T01:02:03+01:00");
+    corrections.setFollowUpDate("2025-06-23T01:02:03+01:00");
+    corrections.setCandidateUsersList(List.of("userA", "userB"));
+    corrections.setCandidateGroupsList(List.of("groupA", "groupB"));
+    corrections.setPriority(20);
+
+    final List<String> correctedAttributes =
+        List.of(
+            "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority");
+
+    final JobResult result =
+        new JobResult().setCorrections(corrections).setCorrectedAttributes(correctedAttributes);
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withResult(result)
+            .complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+
+    Assertions.assertThat(completedRecord.getValue()).hasResult(result);
+  }
+
+  @Test
+  public void shouldCompleteJobWithPartiallySetResultCorrections() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(userKey);
+
+    final JobResultCorrections corrections = new JobResultCorrections();
+    corrections.setAssignee("TestAssignee");
+    corrections.setDueDate("2025-05-23T01:02:03+01:00");
+    corrections.setFollowUpDate("2025-06-23T01:02:03+01:00");
+    corrections.setPriority(20);
+
+    final List<String> correctedAttributes =
+        List.of("assignee", "dueDate", "followUpDate", "priority");
+
+    final JobResult result =
+        new JobResult().setCorrections(corrections).setCorrectedAttributes(correctedAttributes);
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withResult(result)
+            .complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+
+    Assertions.assertThat(completedRecord.getValue()).hasResult(result);
   }
 
   @Test
