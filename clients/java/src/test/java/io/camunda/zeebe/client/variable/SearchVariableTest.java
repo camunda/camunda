@@ -17,9 +17,9 @@ package io.camunda.zeebe.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.LongFilterProperty;
+import io.camunda.client.protocol.rest.VariableFilterRequest;
+import io.camunda.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;

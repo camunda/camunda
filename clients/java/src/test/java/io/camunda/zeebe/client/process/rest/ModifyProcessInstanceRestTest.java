@@ -18,10 +18,10 @@ package io.camunda.zeebe.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceActivateInstruction;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceRequest;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceTerminateInstruction;
-import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
+import io.camunda.client.protocol.rest.ModifyProcessInstanceActivateInstruction;
+import io.camunda.client.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.client.protocol.rest.ModifyProcessInstanceTerminateInstruction;
+import io.camunda.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

@@ -19,6 +19,11 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionD
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.decisionDefinitionSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
+import io.camunda.client.protocol.rest.DecisionDefinitionFilterRequest;
+import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
+import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
@@ -32,11 +37,6 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

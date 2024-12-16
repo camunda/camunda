@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
@@ -27,9 +30,6 @@ import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;

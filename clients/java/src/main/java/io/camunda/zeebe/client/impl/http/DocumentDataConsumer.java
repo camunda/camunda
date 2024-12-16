@@ -41,7 +41,7 @@ import org.apache.hc.core5.http.nio.CapacityChannel;
  * <ul>
  *   <li>application/octet-stream: the data is returned as an {@link InputStream}
  *   <li>application/problem+json: the data is returned as a {@link
- *       io.camunda.zeebe.client.protocol.rest.ProblemDetail}
+ *       io.camunda.client.protocol.rest.ProblemDetail}
  * </ul>
  *
  * Anything else will cause an error to be propagated to the caller.

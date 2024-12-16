@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.fetch;
 
+import io.camunda.client.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionItem;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;

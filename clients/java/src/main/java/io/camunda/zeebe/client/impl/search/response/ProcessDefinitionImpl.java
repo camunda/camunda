@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.ProcessDefinitionItem;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
-import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionItem;
 import java.util.Objects;
 
 public class ProcessDefinitionImpl implements ProcessDefinition, Process {

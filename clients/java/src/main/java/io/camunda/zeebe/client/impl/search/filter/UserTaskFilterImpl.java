@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.UserTaskFilterRequest;
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;

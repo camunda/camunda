@@ -15,6 +15,6 @@
  */
 package io.camunda.zeebe.client.api.search.filter.builder;
 
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.client.protocol.rest.LongFilterProperty;
 
 public interface LongProperty extends ComparisonProperty<Long, LongFilterProperty, LongProperty> {}

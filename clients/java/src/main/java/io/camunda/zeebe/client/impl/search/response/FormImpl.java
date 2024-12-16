@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.FormItem;
 import io.camunda.zeebe.client.api.search.response.Form;
-import io.camunda.zeebe.client.protocol.rest.FormItem;
 
 public class FormImpl implements Form {
   private final String formId;

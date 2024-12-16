@@ -20,6 +20,9 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchReq
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskFilter;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.userTaskSort;
 
+import io.camunda.client.protocol.rest.UserTaskFilterRequest;
+import io.camunda.client.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.client.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
@@ -34,9 +37,6 @@ import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
-import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;

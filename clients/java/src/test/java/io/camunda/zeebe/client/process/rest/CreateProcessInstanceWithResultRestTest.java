@@ -18,8 +18,8 @@ package io.camunda.zeebe.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
-import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;

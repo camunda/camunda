@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.mapping;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 

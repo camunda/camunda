@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.JobChangeset;
+import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
@@ -23,8 +25,6 @@ import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1.UpdateJobComman
 import io.camunda.zeebe.client.api.response.UpdateJobResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.JobChangeset;
-import io.camunda.zeebe.client.protocol.rest.JobUpdateRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;

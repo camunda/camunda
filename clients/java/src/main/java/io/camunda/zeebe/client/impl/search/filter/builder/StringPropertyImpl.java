@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import java.util.List;
 
 public class StringPropertyImpl implements StringProperty {
