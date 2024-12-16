@@ -64,7 +64,7 @@ public class ReportRestService {
     this.reportRestMapper = reportRestMapper;
   }
 
-  @PostMapping("/process/single/")
+  @PostMapping("/process/single")
   public IdResponseDto createNewSingleProcessReport(
       @Valid @RequestBody final SingleProcessReportDefinitionRequestDto definition,
       final HttpServletRequest request) {
