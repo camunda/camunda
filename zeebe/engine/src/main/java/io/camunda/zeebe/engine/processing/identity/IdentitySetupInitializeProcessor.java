@@ -69,7 +69,7 @@ public final class IdentitySetupInitializeProcessor
     final var setupRecord = command.getValue();
     final var key = keyGenerator.nextKey();
 
-    createNewEntities(key, setupRecord);
+    createNewEntities(setupRecord);
 
     stateWriter.appendFollowUpEvent(key, IdentitySetupIntent.INITIALIZED, setupRecord);
     commandDistributionBehavior
@@ -86,7 +86,7 @@ public final class IdentitySetupInitializeProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void createNewEntities(final long commandKey, final IdentitySetupRecord record) {
+  private void createNewEntities(final IdentitySetupRecord record) {
     final var role = record.getDefaultRole();
     roleState
         .getRoleKeyByName(role.getName())
@@ -95,7 +95,7 @@ public final class IdentitySetupInitializeProcessor
             () -> {
               final long roleKey = keyGenerator.nextKey();
               role.setRoleKey(roleKey);
-              createRole(commandKey, role);
+              createRole(role);
             });
 
     record.getUsers().stream()
@@ -108,12 +108,12 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         userKey -> {
                           user.setUserKey(userKey);
-                          assignUserToRole(commandKey, role.getRoleKey(), userKey);
+                          assignUserToRole(role.getRoleKey(), userKey);
                         },
                         () -> {
                           final long userKey = keyGenerator.nextKey();
                           user.setUserKey(userKey);
-                          createUser(commandKey, user, role.getRoleKey());
+                          createUser(user, role.getRoleKey());
                         }));
 
     final var tenant = record.getDefaultTenant();
@@ -124,14 +124,14 @@ public final class IdentitySetupInitializeProcessor
             () -> {
               final long tenantKey = keyGenerator.nextKey();
               tenant.setTenantKey(tenantKey);
-              createTenant(commandKey, tenant);
+              createTenant(tenant);
             });
   }
 
   private void createDistributedEntities(final long commandKey, final IdentitySetupRecord record) {
     final var role = record.getDefaultRole();
     if (roleState.getRole(role.getRoleKey()).isEmpty()) {
-      createRole(commandKey, role);
+      createRole(role);
     }
 
     record.getUsers().stream()
@@ -141,32 +141,29 @@ public final class IdentitySetupInitializeProcessor
                 userState
                     .getUser(user.getUserKey())
                     .ifPresentOrElse(
-                        userKey ->
-                            assignUserToRole(commandKey, role.getRoleKey(), userKey.getUserKey()),
-                        () -> {
-                          createUser(commandKey, user, role.getRoleKey());
-                        }));
+                        userKey -> assignUserToRole(role.getRoleKey(), userKey.getUserKey()),
+                        () -> createUser(user, role.getRoleKey())));
 
     if (tenantState.getTenantByKey(record.getDefaultTenant().getTenantKey()).isEmpty()) {
-      createTenant(commandKey, record.getDefaultTenant());
+      createTenant(record.getDefaultTenant());
     }
   }
 
-  private void createRole(final long commandKey, final RoleRecord role) {
-    stateWriter.appendFollowUpEvent(commandKey, RoleIntent.CREATED, role);
+  private void createRole(final RoleRecord role) {
+    stateWriter.appendFollowUpEvent(role.getRoleKey(), RoleIntent.CREATED, role);
     addAllPermissions(role.getRoleKey());
   }
 
-  private void createUser(final long commandKey, final UserRecord user, final long roleKey) {
-    stateWriter.appendFollowUpEvent(commandKey, UserIntent.CREATED, user);
-    assignUserToRole(commandKey, roleKey, user.getUserKey());
+  private void createUser(final UserRecord user, final long roleKey) {
+    stateWriter.appendFollowUpEvent(user.getUserKey(), UserIntent.CREATED, user);
+    assignUserToRole(roleKey, user.getUserKey());
   }
 
-  private void createTenant(final long commandKey, final TenantRecord tenant) {
-    stateWriter.appendFollowUpEvent(commandKey, TenantIntent.CREATED, tenant);
+  private void createTenant(final TenantRecord tenant) {
+    stateWriter.appendFollowUpEvent(tenant.getTenantKey(), TenantIntent.CREATED, tenant);
   }
 
-  private void assignUserToRole(final long commandKey, final long roleKey, final long userKey) {
+  private void assignUserToRole(final long roleKey, final long userKey) {
     final var isAlreadyAssigned = roleState.getEntityType(roleKey, userKey).isPresent();
     if (isAlreadyAssigned) {
       return;
@@ -174,7 +171,7 @@ public final class IdentitySetupInitializeProcessor
 
     final var record =
         new RoleRecord().setRoleKey(roleKey).setEntityKey(userKey).setEntityType(EntityType.USER);
-    stateWriter.appendFollowUpEvent(commandKey, RoleIntent.ENTITY_ADDED, record);
+    stateWriter.appendFollowUpEvent(roleKey, RoleIntent.ENTITY_ADDED, record);
   }
 
   private void addAllPermissions(final long roleKey) {
