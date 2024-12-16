@@ -174,7 +174,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   private static Slf4jLogConsumer createContainerLogger(final String name) {
     final Logger logger = LoggerFactory.getLogger(name);
-    return new Slf4jLogConsumer(logger);
+    return new Slf4jLogConsumer(logger, true);
   }
 
   public static CamundaContainerRuntimeBuilder newBuilder() {
