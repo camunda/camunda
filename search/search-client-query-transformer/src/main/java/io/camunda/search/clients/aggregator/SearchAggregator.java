@@ -5,8 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.search.clients.aggregator;
 
-import java.time.OffsetDateTime;
+public interface SearchAggregator {
+  String getName();
 
-public record UsageMetricsEntity(String id, OffsetDateTime eventTime, String event, String value) {}
+  abstract class AbstractBuilder<T> {
+
+    protected String name = null;
+
+    protected abstract T self();
+
+    public T name(final String value) {
+      name = value;
+
+      return self();
+    }
+  }
+}

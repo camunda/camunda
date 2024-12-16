@@ -7,21 +7,10 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-public class UsageMetricsFieldSortingTransformer implements FieldSortingTransformer {
+public class NoSortSortingTransformer implements FieldSortingTransformer {
 
   @Override
   public String apply(final String domainField) {
-    return switch (domainField) {
-      case "id" -> "id";
-      case "event" -> "event";
-      case "eventTime" -> "eventTime";
-      case "value" -> "value";
-      default -> throw new IllegalArgumentException("Unknown field: " + domainField);
-    };
-  }
-
-  @Override
-  public String defaultSortField() {
-    return "id";
+    return defaultSortField();
   }
 }

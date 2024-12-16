@@ -14,7 +14,7 @@ import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 
 public final class TermsAggregationTransformer
-    extends AggregationOptionTransformer<SearchTermsAggregator, Aggregation> {
+    extends AggregationTransformer<SearchTermsAggregator, Aggregation> {
 
   public TermsAggregationTransformer(final OpensearchTransformers transformers) {
     super(transformers);
