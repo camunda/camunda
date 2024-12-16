@@ -82,10 +82,13 @@ class AbstractEntityReaderTest {
                 b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
                     .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
 
-    final var sortValues = reader.extractSortValues(searchResult, sorting);
+    final var firstSortValues = reader.extractFirstSortValues(searchResult, sorting);
+    final var lastSortValues = reader.extractLastSortValues(searchResult, sorting);
 
-    assertThat(sortValues).hasSize(2);
-    assertThat(sortValues).containsExactly("alice", 3L);
+    assertThat(firstSortValues).hasSize(2);
+    assertThat(firstSortValues).containsExactly("foo", 1L);
+    assertThat(lastSortValues).hasSize(2);
+    assertThat(lastSortValues).containsExactly("alice", 3L);
   }
 
   @Test

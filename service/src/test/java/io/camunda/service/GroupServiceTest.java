@@ -91,7 +91,7 @@ public class GroupServiceTest {
   public void shouldReturnSingleGroup() {
     // given
     final var entity = mock(GroupEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchGroups(any())).thenReturn(result);
   }
 
@@ -99,7 +99,7 @@ public class GroupServiceTest {
   public void shouldReturnSingleGroupForGet() {
     // given
     final var entity = mock(GroupEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
@@ -113,7 +113,7 @@ public class GroupServiceTest {
   public void shouldThrowExceptionIfGroupNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchGroups(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+    when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // when / then
     assertThat(services.findGroup(key)).isEmpty();
@@ -124,7 +124,8 @@ public class GroupServiceTest {
     // given
     final var group1 = mock(GroupEntity.class);
     final var group2 = mock(GroupEntity.class);
-    final var result = new SearchQueryResult<>(2, List.of(group1, group2), Arrays.array());
+    final var result =
+        new SearchQueryResult<>(2, List.of(group1, group2), Arrays.array(), Arrays.array());
     when(client.searchGroups(any())).thenReturn(result);
 
     // when

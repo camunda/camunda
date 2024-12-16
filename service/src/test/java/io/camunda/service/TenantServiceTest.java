@@ -82,7 +82,8 @@ public class TenantServiceTest {
   @Test
   public void shouldReturnSingleTenant() {
     // given
-    final var result = new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array());
+    final var result =
+        new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array(), Arrays.array());
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
@@ -95,7 +96,8 @@ public class TenantServiceTest {
   @Test
   public void shouldReturnSingleVariableForGet() {
     // given
-    final var result = new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array());
+    final var result =
+        new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array(), Arrays.array());
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
@@ -109,7 +111,7 @@ public class TenantServiceTest {
   public void shouldThrowExceptionIfNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+    when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
     final var exception =
