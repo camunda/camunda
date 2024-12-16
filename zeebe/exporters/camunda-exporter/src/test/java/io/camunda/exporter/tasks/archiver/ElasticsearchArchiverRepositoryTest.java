@@ -67,6 +67,7 @@ final class ElasticsearchArchiverRepositoryTest {
         1,
         new ArchiverConfiguration(),
         retention,
+        "testPrefix",
         "instance",
         "batch",
         client,
