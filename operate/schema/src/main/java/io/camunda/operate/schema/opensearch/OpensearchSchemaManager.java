@@ -57,7 +57,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 @Component("schemaManager")
-@Profile("!test")
+@Profile("test")
 @Conditional(OpensearchCondition.class)
 public class OpensearchSchemaManager implements SchemaManager {
   public static final String SETTINGS = "settings";
