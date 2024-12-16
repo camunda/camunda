@@ -140,7 +140,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
               processInstanceKey,
               elementInstancePath,
               processDefinitionPath,
-              callingElementPath);
+              callingElementPath,
+              record);
       piEntity
           .setTreePath(treePath.toString())
           .setStartDate(timestamp)
@@ -289,11 +290,13 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       final Long processInstanceKey,
       final List<List<Long>> elementInstancePath,
       final List<Long> processDefinitionPath,
-      final List<Integer> callingElementPath) {
+      final List<Integer> callingElementPath,
+      final Record<ProcessInstanceRecordValue> record) {
     if (elementInstancePath == null || elementInstancePath.isEmpty()) {
       LOGGER.warn(
-          "No elementInstancePath is provided for process instance key: {}. TreePath will be set to default value (PI key).",
-          processInstanceKey);
+          "No elementInstancePath is provided for process instance key: {}. TreePath will be set to default value (PI key).\nFull Zeebe record: {}",
+          processInstanceKey,
+          record);
       return new TreePath().startTreePath(processInstanceKey);
     }
     // Example of how the tree path is built when current instance is on the third level of calling

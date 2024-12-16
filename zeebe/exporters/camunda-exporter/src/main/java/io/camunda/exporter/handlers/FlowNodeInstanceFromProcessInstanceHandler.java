@@ -92,6 +92,11 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
     entity.setScopeKey(recordValue.getFlowScopeKey());
 
+    // log start event
+    if (record.getValue().getBpmnElementType().equals(BpmnElementType.START_EVENT)) {
+      LOGGER.info("Start event detected: {}", record);
+    }
+
     if (intent.equals(ELEMENT_ACTIVATING)) {
       final ProcessInstanceRecordValue value = record.getValue();
       if (value.getElementInstancePath() != null && !value.getElementInstancePath().isEmpty()) {
@@ -112,8 +117,9 @@ public class FlowNodeInstanceFromProcessInstanceHandler
         entity.setLevel(treePathEntries.size() - 1);
       } else {
         LOGGER.warn(
-            "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
-            entity.getId());
+            "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.\nFull Zeebe record: {}",
+            entity.getId(),
+            record);
         entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
         entity.setLevel(1);
       }
