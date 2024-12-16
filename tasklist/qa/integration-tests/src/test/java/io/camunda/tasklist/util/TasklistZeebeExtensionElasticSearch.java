@@ -76,8 +76,6 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
         "http://host.testcontainers.internal:9200",
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
         ConnectionTypes.ELASTICSEARCH.name(),
-        "        \"ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE\",\n",
-        "1",
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE",
         "1",
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
