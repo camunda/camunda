@@ -15,27 +15,25 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 
 public class SchemaWithExporter {
-  private final String prefix;
-  private final String connectionType;
+  private final ExporterConfiguration config = new ExporterConfiguration();
 
   public SchemaWithExporter(final String prefix, final boolean isElasticsearch) {
-    this.prefix = prefix;
-    connectionType =
-        isElasticsearch
-            ? ConnectionTypes.ELASTICSEARCH.getType()
-            : ConnectionTypes.OPENSEARCH.getType();
+    config.getIndex().setPrefix(prefix);
+    config
+        .getConnect()
+        .setType(
+            isElasticsearch
+                ? ConnectionTypes.ELASTICSEARCH.getType()
+                : ConnectionTypes.OPENSEARCH.getType());
   }
 
   public void createSchema() {
     final var exporter = new CamundaExporter();
-    final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(prefix);
-
-    config.getConnect().setType(connectionType);
 
     final var context =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>(connectionType, config));
+            .setConfiguration(
+                new ExporterTestConfiguration<>(config.getConnect().getType(), config));
 
     exporter.configure(context);
     exporter.open(new ExporterTestController());
