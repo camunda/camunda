@@ -28,6 +28,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -174,30 +175,32 @@ public final class RequestMapper extends RequestUtil {
     final JobResultCorrections corrections = new JobResultCorrections();
     final List<String> correctedAttributes = new ArrayList<>();
 
-    if (request.getResult().getCorrections().hasAssignee()) {
-      corrections.setAssignee(request.getResult().getCorrections().getAssignee());
+    final GatewayOuterClass.JobResultCorrections requestCorrections =
+        request.getResult().getCorrections();
+
+    if (requestCorrections.hasAssignee()) {
+      corrections.setAssignee(requestCorrections.getAssignee());
       correctedAttributes.add(UserTaskRecord.ASSIGNEE);
     }
-    if (request.getResult().getCorrections().hasDueDate()) {
-      corrections.setDueDate(request.getResult().getCorrections().getDueDate());
+    if (requestCorrections.hasDueDate()) {
+      corrections.setDueDate(requestCorrections.getDueDate());
       correctedAttributes.add(UserTaskRecord.DUE_DATE);
     }
-    if (request.getResult().getCorrections().hasFollowUpDate()) {
-      corrections.setFollowUpDate(request.getResult().getCorrections().getFollowUpDate());
+    if (requestCorrections.hasFollowUpDate()) {
+      corrections.setFollowUpDate(requestCorrections.getFollowUpDate());
       correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
     }
-    if (request.getResult().getCorrections().hasCandidateUsersList()) {
-      corrections.setCandidateUsersList(
-          request.getResult().getCorrections().getCandidateUsersList().getValuesList());
+    if (requestCorrections.hasCandidateUsersList()) {
+      corrections.setCandidateUsersList(requestCorrections.getCandidateUsersList().getValuesList());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
     }
-    if (request.getResult().getCorrections().hasCandidateGroupsList()) {
+    if (requestCorrections.hasCandidateGroupsList()) {
       corrections.setCandidateGroupsList(
-          request.getResult().getCorrections().getCandidateGroupsList().getValuesList());
+          requestCorrections.getCandidateGroupsList().getValuesList());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
     }
-    if (request.getResult().getCorrections().hasPriority()) {
-      corrections.setPriority(request.getResult().getCorrections().getPriority());
+    if (requestCorrections.hasPriority()) {
+      corrections.setPriority(requestCorrections.getPriority());
       correctedAttributes.add(UserTaskRecord.PRIORITY);
     }
 
