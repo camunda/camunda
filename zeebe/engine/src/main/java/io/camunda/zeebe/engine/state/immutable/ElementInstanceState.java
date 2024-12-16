@@ -53,6 +53,16 @@ public interface ElementInstanceState {
   int getNumberOfTakenSequenceFlows(final long flowScopeKey, final DirectBuffer gatewayElementId);
 
   /**
+   * Returns the number of the taken sequence flows in the scope of the given flow scope key.
+   *
+   * <p><b>NOTE</b>: Each sequence flow counts only as one, even if it is taken multiple times.
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @return the number of taken sequence flows in the scope of the given flow scope key
+   */
+  int getNumberOfTakenSequenceFlows(final long flowScopeKey);
+
+  /**
    * Returns the taken sequence flows that are connected to the given (joining) gateway.
    *
    * @param flowScopeKey the key of the flow scope that contains the gateway

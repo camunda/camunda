@@ -7,19 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.util.Set;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.agrona.DirectBuffer;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
 final class ProcessInstanceElementMigratedApplier
@@ -36,10 +33,8 @@ final class ProcessInstanceElementMigratedApplier
 
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
-    // noElement is true when incoming sequence flows of the migrated gateway only partly taken
-    final boolean noElement = elementInstanceState.getInstance(elementInstanceKey) == null;
-    if (noElement && value.getBpmnElementType() == BpmnElementType.PARALLEL_GATEWAY) {
-      migrateTakenSequenceFlowsForGateway(value);
+    if (value.getBpmnElementType() == BpmnElementType.SEQUENCE_FLOW) {
+      migrateTakenSequenceFlow(value);
       return;
     }
 
@@ -65,32 +60,29 @@ final class ProcessInstanceElementMigratedApplier
     }
   }
 
-  private void migrateTakenSequenceFlowsForGateway(final ProcessInstanceRecord gatewayRecord) {
-    final Set<DirectBuffer> incomingSequenceFlowIds =
-        processState
-            .getFlowElement(
-                gatewayRecord.getProcessDefinitionKey(),
-                gatewayRecord.getTenantId(),
-                gatewayRecord.getElementIdBuffer(),
-                ExecutableFlowNode.class)
-            .getIncoming()
-            .stream()
-            .map(AbstractFlowElement::getId)
-            .collect(Collectors.toSet());
+  private void migrateTakenSequenceFlow(final ProcessInstanceRecord sequenceFlowRecord) {
+    final ExecutableSequenceFlow sequenceFlow =
+        processState.getFlowElement(
+            sequenceFlowRecord.getProcessDefinitionKey(),
+            sequenceFlowRecord.getTenantId(),
+            sequenceFlowRecord.getElementIdBuffer(),
+            ExecutableSequenceFlow.class);
+    final var migratedSequenceFlowId = sequenceFlow.getId();
+    final var targetGatewayId = sequenceFlow.getTarget().getId();
 
     elementInstanceState.visitTakenSequenceFlows(
-        gatewayRecord.getFlowScopeKey(),
-        (flowScopeKey, gatewayElementId, sequenceFlowId, number) -> {
-          if (incomingSequenceFlowIds.contains(sequenceFlowId)) {
+        sequenceFlowRecord.getFlowScopeKey(),
+        (flowScopeKey, sourceGatewayId, sequenceFlowId, number) -> {
+          if (BufferUtil.equals(migratedSequenceFlowId, sequenceFlowId)) {
             IntStream.range(0, number)
                 .forEach(
                     ignore -> {
                       // decrement the number of taken sequence flows for the old gateway
                       elementInstanceState.decrementNumberOfTakenSequenceFlows(
-                          flowScopeKey, gatewayElementId, sequenceFlowId);
+                          flowScopeKey, sourceGatewayId, sequenceFlowId);
                       // increment the number of taken sequence flows for the new gateway
                       elementInstanceState.incrementNumberOfTakenSequenceFlows(
-                          flowScopeKey, gatewayRecord.getElementIdBuffer(), sequenceFlowId);
+                          flowScopeKey, targetGatewayId, sequenceFlowId);
                     });
           }
         });

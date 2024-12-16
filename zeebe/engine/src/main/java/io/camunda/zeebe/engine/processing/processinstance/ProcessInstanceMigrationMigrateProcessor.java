@@ -54,12 +54,12 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -318,29 +318,28 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setVersion(targetProcessDefinition.getVersion())
             .setElementId(targetElementId));
 
-    final List<DirectBuffer> activeSequenceFlowIds = elementInstance.getActiveSequenceFlowIds();
-    if (!activeSequenceFlowIds.isEmpty()) {
-      final Set<ExecutableFlowNode> mappedGateways =
-          getMappedGateways(
+    final int numberOfTakenSequenceFlows =
+        elementInstanceState.getNumberOfTakenSequenceFlows(elementInstance.getKey());
+    if (numberOfTakenSequenceFlows > 0) {
+      final Set<ExecutableSequenceFlow> sequenceFlows =
+          getSequenceFlowsToMigrate(
               sourceProcessDefinition,
               targetProcessDefinition,
               sourceElementIdToTargetElementId,
               elementInstance);
 
-      mappedGateways.forEach(
-          targetGateway -> {
-            final var gatewayInstanceRecord = new ProcessInstanceRecord();
-            gatewayInstanceRecord.wrap(elementInstanceRecord);
-            gatewayInstanceRecord
-                .setElementId(targetGateway.getId())
-                .setBpmnElementType(targetGateway.getElementType())
-                .setBpmnEventType(targetGateway.getEventType())
+      sequenceFlows.forEach(
+          sequenceFlow -> {
+            final var sequenceFlowRecord = new ProcessInstanceRecord();
+            sequenceFlowRecord.copyFrom(elementInstanceRecord);
+            sequenceFlowRecord
+                .setElementId(sequenceFlow.getId())
+                .setBpmnElementType(sequenceFlow.getElementType())
+                .setBpmnEventType(sequenceFlow.getEventType())
                 .setFlowScopeKey(elementInstance.getKey());
 
             stateWriter.appendFollowUpEvent(
-                keyGenerator.nextKey(),
-                ProcessInstanceIntent.ELEMENT_MIGRATED,
-                gatewayInstanceRecord);
+                keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
           });
     }
 
@@ -455,31 +454,43 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setElementId(BufferUtil.wrapString(targetElementId)));
   }
 
-  private static Set<ExecutableFlowNode> getMappedGateways(
+  private Set<ExecutableSequenceFlow> getSequenceFlowsToMigrate(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final ElementInstance elementInstance) {
-    return elementInstance.getActiveSequenceFlowIds().stream()
+    final List<ActiveSequenceFlow> activeSequenceFlows = new ArrayList<>();
+    elementInstanceState.visitTakenSequenceFlows(
+        elementInstance.getKey(),
+        (flowScopeKey, gatewayElementId, sequenceFlowId, number) -> {
+          final var sequenceFlow =
+              sourceProcessDefinition
+                  .getProcess()
+                  .getElementById(sequenceFlowId, ExecutableSequenceFlow.class);
+          activeSequenceFlows.add(new ActiveSequenceFlow(sequenceFlow, sequenceFlow.getTarget()));
+        });
+
+    return activeSequenceFlows.stream()
+        .filter(
+            sequenceFlow ->
+                sequenceFlow.target().getElementType() == BpmnElementType.PARALLEL_GATEWAY)
         .map(
-            activeFlowId ->
-                sourceProcessDefinition
-                    .getProcess()
-                    .getElementById(activeFlowId, ExecutableSequenceFlow.class)
-                    .getTarget())
-        .filter(element -> element.getElementType() == BpmnElementType.PARALLEL_GATEWAY)
-        .distinct() // we might have multiple active sequence flows to the same gateway
-        .map(
-            sourceGateway -> {
+            activeSequenceFlow -> {
+              final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
+              final ExecutableFlowNode sourceGateway = activeSequenceFlow.target;
               final String targetGatewayId =
                   sourceElementIdToTargetElementId.get(
                       BufferUtil.bufferAsString(sourceGateway.getId()));
 
               // TODO -  add validations: if gateway not mapped and if gateway type changed
-              // will be added in a separate PR
-              return targetProcessDefinition
-                  .getProcess()
-                  .getElementById(targetGatewayId, ExecutableFlowNode.class);
+              // target gateway will be used for validations in the next PR, please ignore
+              // the assignment for now
+              final ExecutableFlowNode targetGateway =
+                  targetProcessDefinition
+                      .getProcess()
+                      .getElementById(targetGatewayId, ExecutableFlowNode.class);
+
+              return activeFlow;
             })
         .collect(Collectors.toSet());
   }
@@ -494,4 +505,6 @@ public class ProcessInstanceMigrationMigrateProcessor
       super(message);
     }
   }
+
+  record ActiveSequenceFlow(ExecutableSequenceFlow sequenceFlow, ExecutableFlowNode target) {}
 }
