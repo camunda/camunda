@@ -38,7 +38,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
@@ -160,7 +159,6 @@ public class BackupPriorityConfiguration {
             new MessageTemplate(indexPrefix, isElasticsearch),
             new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
             new SequenceFlowTemplate(indexPrefix, isElasticsearch),
-            new UserTaskTemplate(indexPrefix, isElasticsearch),
             new VariableTemplate(indexPrefix, isElasticsearch),
             // TASKLIST
             new DraftTaskVariableTemplate(indexPrefix, isElasticsearch),
