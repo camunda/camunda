@@ -31,7 +31,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty resourceProp = new StringProperty("resourceProp", "");
+  private final StringProperty resourceProp = new StringProperty("resource", "");
 
   public PersistedResource() {
     super(9);

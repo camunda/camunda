@@ -158,6 +158,7 @@ public class ResourceStateTest {
         .setResourceKey(1L)
         .setTenantId(tenantId)
         .setDeploymentKey(1L)
+        .setResourceName("resource-name")
         .setVersionTag("v1.0");
   }
 }
