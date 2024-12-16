@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -32,6 +33,7 @@ public abstract class MappingMetadataUtil<BUILDER> {
   private final DocumentBasedSearchClient dbClient;
 
   public MappingMetadataUtil(final DocumentBasedSearchClient dbClient) {
+    Objects.requireNonNull(dbClient, "dbClient cannot be null");
     this.dbClient = dbClient;
   }
 
