@@ -162,7 +162,6 @@ class BackupPrioritiesTest {
             "operate-message-8.5.0_",
             "operate-post-importer-queue-8.3.0_",
             "operate-sequence-flow-8.3.0_",
-            "operate-user-task-8.5.0_",
             "operate-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_");
@@ -184,8 +183,6 @@ class BackupPrioritiesTest {
             "-operate-post-importer-queue-8.3.0_",
             "operate-sequence-flow-8.3.0_*",
             "-operate-sequence-flow-8.3.0_",
-            "operate-user-task-8.5.0_*",
-            "-operate-user-task-8.5.0_",
             "operate-variable-8.3.0_*",
             "-operate-variable-8.3.0_",
             "-operate-decision-instance-8.3.0_",
