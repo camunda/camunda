@@ -52,6 +52,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
 
     final var dbMigrator =
         new DbMigratorImpl(
+            context.getBrokerCfg().getExperimental().isVersionCheckRestrictionEnabled(),
             new ClusterContextImpl(context.getPartitionCount()),
             processingState,
             context.getBrokerVersion());

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.annotation.migration;
 
 public class DbMigratorImpl implements DbMigrator {
 
@@ -66,12 +67,26 @@ public class DbMigratorImpl implements DbMigrator {
   private final MutableMigrationTaskContext migrationTaskContext;
   private final List<MigrationTask> migrationTasks;
   private final String currentVersion;
+  private final boolean versionCheckRestrictionEnabled;
 
   public DbMigratorImpl(
       final ClusterContext clusterContext,
       final MutableProcessingState processingState,
       final String currentVersion) {
     this(
+        true,
+        new MigrationTaskContextImpl(clusterContext, processingState),
+        MIGRATION_TASKS,
+        currentVersion);
+  }
+
+  public DbMigratorImpl(
+      final boolean versionCheckRestrictionEnabled,
+      final ClusterContext clusterContext,
+      final MutableProcessingState processingState,
+      final String currentVersion) {
+    this(
+        versionCheckRestrictionEnabled,
         new MigrationTaskContextImpl(clusterContext, processingState),
         MIGRATION_TASKS,
         currentVersion);
@@ -79,9 +94,11 @@ public class DbMigratorImpl implements DbMigrator {
 
   @VisibleForTesting
   public DbMigratorImpl(
+      final boolean versionCheckRestrictionEnabled,
       final MutableMigrationTaskContext migrationTaskContext,
       final List<MigrationTask> migrationTasks,
       final String currentVersion) {
+    this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
     this.migrationTaskContext = migrationTaskContext;
     this.migrationTasks = migrationTasks;
     this.currentVersion = currentVersion != null ? currentVersion : VersionUtil.getVersion();
@@ -139,12 +156,26 @@ public class DbMigratorImpl implements DbMigrator {
       case final Indeterminate indeterminate ->
           LOGGER.warn(
               "Could not check compatibility of snapshot with current version: {}", indeterminate);
-      case final Incompatible.UseOfPreReleaseVersion preRelease ->
-          throw new IllegalStateException(
-              "Cannot upgrade to or from a pre-release version: %s".formatted(preRelease));
-      case final Incompatible incompatible ->
-          throw new IllegalStateException(
-              "Snapshot is not compatible with current version: %s".formatted(incompatible));
+      case final Incompatible.UseOfPreReleaseVersion preRelease -> {
+        final String errorMsg =
+            "Cannot upgrade to or from a pre-release version: %s".formatted(preRelease);
+        if (versionCheckRestrictionEnabled) {
+          throw new IllegalStateException(errorMsg);
+        } else {
+          LOGGER.warn(
+              "Detected issue with migration, but ignoring as configured. Details: '{}'", errorMsg);
+        }
+      }
+      case final Incompatible incompatible -> {
+        final String errorMsg =
+            "Snapshot is not compatible with current version: %s".formatted(incompatible);
+        if (versionCheckRestrictionEnabled) {
+          throw new IllegalStateException(errorMsg);
+        } else {
+          LOGGER.warn(
+              "Detected issue with migration, but ignoring as configured. Details: '{}'", errorMsg);
+        }
+      }
       case final Compatible.SameVersion sameVersion ->
           LOGGER.trace("Snapshot is from the same version as the current version: {}", sameVersion);
       case final Compatible compatible ->

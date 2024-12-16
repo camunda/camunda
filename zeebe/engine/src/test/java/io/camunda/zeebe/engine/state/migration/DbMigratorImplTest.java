@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,12 +15,16 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +45,7 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState().getMigratedByVersion()).thenReturn("8.7.0");
     context = new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
     migrations.clear();
-    sut = new DbMigratorImpl(context, migrations, CURRENT_VERSION);
+    sut = new DbMigratorImpl(true, context, migrations, CURRENT_VERSION);
   }
 
   @Test
@@ -165,6 +170,46 @@ public class DbMigratorImplTest {
     assertThatThrownBy(sut::runMigrations)
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Snapshot is not compatible with current version");
+  }
+
+  @Test
+  void shouldNotThrowOnInvalidUpgrade() {
+    // given -- state that was migrated by version 1.0.0
+    final boolean versionCheckEnabled = false; // disable version check
+
+    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockMigrationState = mock(MutableMigrationState.class);
+    when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
+    when(mockMigrationState.getMigratedByVersion()).thenReturn("1.0.0");
+    final var mockMigration = mock(MigrationTask.class);
+    when(mockMigration.needsToRun(any())).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    final var sut =
+        new DbMigratorImpl(
+            versionCheckEnabled,
+            context,
+            Collections.singletonList(mockMigration),
+            CURRENT_VERSION);
+
+    // when -- upgrading to a version that is not compatible
+    try (final var util = Mockito.mockStatic(VersionUtil.class)) {
+      util.when(VersionUtil::getVersion).thenReturn("2.0.0");
+      // then -- running migrations throws
+      assertThatNoException().isThrownBy(sut::runMigrations);
+    }
+
+    // when - upgrading to a pre-release version
+    try (final var util = Mockito.mockStatic(VersionUtil.class)) {
+      util.when(VersionUtil::getVersion).thenReturn("2.0.0-alpha1");
+
+      // then -- running migrations throws
+      assertThatNoException().isThrownBy(sut::runMigrations);
+    }
+
+    // then -- migration is run
+    verify(mockMigration, times(2))
+        .runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
   }
 
   @Test
