@@ -31,7 +31,7 @@ public class ZeebeConnector {
 
   public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
     final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder().grpcAddress(URI.create(zeebeProperties.getGatewayAddress()));
+        ZeebeClient.newClientBuilder().restAddress(URI.create(zeebeProperties.getGatewayAddress()));
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
       LOGGER.info("Use TLS connection to zeebe");
