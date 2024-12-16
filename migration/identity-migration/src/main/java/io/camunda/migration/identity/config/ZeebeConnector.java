@@ -24,7 +24,7 @@ public class ZeebeConnector {
   @Autowired private IdentityMigrationProperties identityMigrationProperties;
 
   @Bean
-  public ZeebeClient zeebeClient() {
+  public ZeebeClient identityMigrationZeebeClient() {
     final var properties = identityMigrationProperties.getZeebe();
     return newZeebeClient(properties);
   }
