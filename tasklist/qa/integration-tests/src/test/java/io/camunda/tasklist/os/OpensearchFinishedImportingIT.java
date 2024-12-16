@@ -371,7 +371,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     EXPORTER.export(record);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
-     // when
+    // when
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
