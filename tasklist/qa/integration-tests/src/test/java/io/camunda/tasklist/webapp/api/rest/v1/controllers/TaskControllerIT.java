@@ -1321,15 +1321,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String taskId =
           tester
               .createAndDeploySimpleProcess(
-                  bpmnProcessId,
-                  flowNodeBpmnId,
-                  AbstractUserTaskBuilder::zeebeUserTask,
-                  task -> task.zeebeAssignee("demo"))
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
               .processIsDeployed()
               .then()
               .startProcessInstance(bpmnProcessId)
               .then()
               .taskIsCreated(flowNodeBpmnId)
+              .claimHumanTask(flowNodeBpmnId)
               .getTaskId();
 
       final var saveVariablesRequest =
