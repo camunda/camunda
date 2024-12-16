@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.UserQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.UserServices;
@@ -28,9 +26,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -145,16 +141,8 @@ public class GroupController {
   public ResponseEntity<UserSearchResponse> searchUsersInGroup(
       @PathVariable final long groupKey,
       @RequestBody(required = false) final UserSearchQueryRequest query) {
-    final var groupMemberKeys =
-        groupServices
-            .search(
-                SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupKey(groupKey)).build())
-            .items()
-            .stream()
-            .map(GroupEntity::assignedMemberKeys)
-            .flatMap(Set::stream)
-            .collect(Collectors.toSet());
-    return SearchQueryRequestMapper.toUserQuery(query, groupMemberKeys)
+    final var groupKeys = groupServices.getUserKeysByGroupKey(groupKey);
+    return SearchQueryRequestMapper.toUserQuery(query, groupKeys)
         .fold(RestErrorMapper::mapProblemToResponse, this::searchUsersInGroup);
   }
 
@@ -179,7 +167,7 @@ public class GroupController {
 
   private ResponseEntity<UserSearchResponse> searchUsersInGroup(final UserQuery query) {
     try {
-      final var result = userServices.search(query);
+      final var result = groupServices.getUsersByGroupKey(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

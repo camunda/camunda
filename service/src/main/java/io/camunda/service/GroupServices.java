@@ -8,11 +8,14 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.GroupSearchClient;
+import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
@@ -27,19 +30,24 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class GroupServices extends SearchQueryService<GroupServices, GroupQuery, GroupEntity> {
 
   private final GroupSearchClient groupSearchClient;
+  private final UserSearchClient userSearchClient;
 
   public GroupServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
+      final UserSearchClient userSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.groupSearchClient = groupSearchClient;
+    this.userSearchClient = userSearchClient;
   }
 
   @Override
@@ -54,7 +62,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   @Override
   public GroupServices withAuthentication(final Authentication authentication) {
     return new GroupServices(
-        brokerClient, securityContextProvider, groupSearchClient, authentication);
+        brokerClient, securityContextProvider, groupSearchClient, userSearchClient, authentication);
   }
 
   public CompletableFuture<GroupRecord> createGroup(final String name) {
@@ -72,6 +80,23 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .items()
         .stream()
         .toList();
+  }
+
+  public Set<Long> getUserKeysByGroupKey(final long groupKey) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupKey(groupKey)).build())
+        .items()
+        .stream()
+        .map(GroupEntity::assignedMemberKeys)
+        .flatMap(Set::stream)
+        .collect(Collectors.toSet());
+  }
+
+  public SearchQueryResult<UserEntity> getUsersByGroupKey(final UserQuery userQuery) {
+    return userSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.group().read())))
+        .searchUsers(userQuery);
   }
 
   public Optional<GroupEntity> findGroup(final Long groupKey) {
