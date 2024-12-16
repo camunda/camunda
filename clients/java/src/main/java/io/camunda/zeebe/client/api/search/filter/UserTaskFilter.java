@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /** Interface for defining user task filters in search queries. */
@@ -155,12 +156,28 @@ public interface UserTaskFilter extends SearchRequestFilter {
       final List<UserTaskVariableFilterRequest> variableValueFilters);
 
   /**
+   * Filters user tasks by specified Map of Process Instance Variables.
+   *
+   * @param variableValueFilters from the task
+   * @return the updated filter
+   */
+  UserTaskFilter processInstanceVariables(final Map<String, Object> variableValueFilters);
+
+  /**
    * Filters user tasks by specified Local Variables.
    *
    * @param variableValueFilters from the task
    * @return the updated filter
    */
   UserTaskFilter localVariables(final List<UserTaskVariableFilterRequest> variableValueFilters);
+
+  /**
+   * Filters user tasks by specified Map of Local Variables.
+   *
+   * @param variableValueFilters from the task
+   * @return the updated filter
+   */
+  UserTaskFilter localVariables(final Map<String, Object> variableValueFilters);
 
   /**
    * Filters user tasks by the specified element instance key.

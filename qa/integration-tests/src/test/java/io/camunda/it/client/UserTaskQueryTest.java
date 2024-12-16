@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -91,6 +92,22 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveTaskByMapLocalVariable() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(Map.of("task02", 1)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1")
+        .doesNotContain("P2");
+  }
+
+  @Test
   public void shouldRetrieveTaskByProcessInstanceVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -99,6 +116,23 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+            .send()
+            .join();
+
+    // Validate the size of the items
+    assertThat(result.items()).hasSize(2);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1", "P2");
+  }
+
+  @Test
+  public void shouldRetrieveTaskByMapProcessInstanceVariable() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.processInstanceVariables(Map.of("task02", 1)))
             .send()
             .join();
 

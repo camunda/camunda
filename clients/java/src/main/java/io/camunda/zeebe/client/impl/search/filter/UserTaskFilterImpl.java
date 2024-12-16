@@ -24,7 +24,9 @@ import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>
     implements UserTaskFilter {
@@ -141,9 +143,47 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
+  public UserTaskFilter processInstanceVariables(final Map<String, Object> variableValueFilters) {
+    if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
+      final List<UserTaskVariableFilterRequest> variableFilters =
+          variableValueFilters.entrySet().stream()
+              .map(
+                  entry -> {
+                    final UserTaskVariableFilterRequest request =
+                        new UserTaskVariableFilterRequest();
+                    request.setName(entry.getKey());
+                    request.setValue(entry.getValue().toString());
+                    return request;
+                  })
+              .collect(Collectors.toList());
+      filter.setProcessInstanceVariables(variableFilters);
+    }
+    return this;
+  }
+
+  @Override
   public UserTaskFilter localVariables(
       final List<UserTaskVariableFilterRequest> variableValueFilters) {
     filter.setLocalVariables(variableValueFilters);
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter localVariables(final Map<String, Object> variableValueFilters) {
+    if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
+      final List<UserTaskVariableFilterRequest> variableFilters =
+          variableValueFilters.entrySet().stream()
+              .map(
+                  entry -> {
+                    final UserTaskVariableFilterRequest request =
+                        new UserTaskVariableFilterRequest();
+                    request.setName(entry.getKey());
+                    request.setValue(entry.getValue().toString());
+                    return request;
+                  })
+              .collect(Collectors.toList());
+      filter.setLocalVariables(variableFilters);
+    }
     return this;
   }
 
