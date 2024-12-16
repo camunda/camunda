@@ -356,6 +356,23 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             });
   }
 
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    for (final var type : ImportValueType.IMPORT_VALUE_TYPES) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     await()
@@ -382,7 +399,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         Arrays.stream(
                 esClient
                     .search(
-                        new SearchRequest(importPositionIndex.getFullQualifiedName()),
+                        new SearchRequest(importPositionIndex.getFullQualifiedName())
+                            .source(new SearchSourceBuilder().size(100)),
                         RequestOptions.DEFAULT)
                     .getHits()
                     .getHits())

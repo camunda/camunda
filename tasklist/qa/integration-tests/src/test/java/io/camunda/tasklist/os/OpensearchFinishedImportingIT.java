@@ -9,6 +9,7 @@ package io.camunda.tasklist.os;
 
 import static io.camunda.tasklist.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.Metrics;
@@ -363,6 +364,23 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
             });
   }
 
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    for (final var type : ImportValueType.values()) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     Awaitility.await()
@@ -398,7 +416,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     final var hits =
         openSearchClient
             .search(
-                new Builder().index(importPositionIndex.getFullQualifiedName()).build(),
+                new Builder().index(importPositionIndex.getFullQualifiedName()).size(100).build(),
                 ImportPositionEntity.class)
             .hits()
             .hits()

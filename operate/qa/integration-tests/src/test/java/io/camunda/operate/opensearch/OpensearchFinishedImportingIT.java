@@ -8,6 +8,7 @@
 package io.camunda.operate.opensearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
@@ -278,6 +279,23 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
             });
   }
 
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    osClient.index().refresh("*");
+
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    for (final var type : ImportValueType.IMPORT_VALUE_TYPES) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     Awaitility.await()
@@ -302,7 +320,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         osClient
             .doc()
             .search(
-                new Builder().index(importPositionIndex.getFullQualifiedName()),
+                new Builder().index(importPositionIndex.getFullQualifiedName()).size(100),
                 ImportPositionEntity.class)
             .hits()
             .hits()
