@@ -8,10 +8,14 @@
 package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.UserServices;
 import io.grpc.Context;
 import io.grpc.Metadata;
@@ -20,14 +24,16 @@ import io.grpc.MethodDescriptor;
 import io.grpc.ServerCallHandler;
 import io.grpc.Status;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import org.assertj.core.api.LongAssert;
 import org.assertj.core.api.MapAssert;
 import org.junit.jupiter.api.Test;
 
 public class AuthenticationInterceptorTest {
 
   @Test
-  public void missingTokenIsRejected() {
+  public void missingAuthenticationInformationIsRejected() {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
@@ -41,10 +47,59 @@ public class AuthenticationInterceptorTest {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
                   .isEqualTo(
-                      "Expected bearer token at header with key [authorization], but found nothing");
+                      "Expected authentication information at header with key [authorization], but found nothing");
             });
   }
 
+  // BASIC AUTH tests
+  @Test
+  public void validBasicAuthIsAccepted() {
+    // when
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+    final Metadata metadata = new Metadata();
+    // demo:demo
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
+    final var userServices = mock(UserServices.class);
+    when(userServices.search(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
+    new AuthenticationInterceptor(userServices)
+        .interceptCall(
+            closeStatusCapturingServerCall,
+            metadata,
+            (call, headers) -> {
+              call.close(Status.OK, headers);
+              return null;
+            });
+
+    // then
+    assertThat(closeStatusCapturingServerCall.closeStatus).hasValue(Status.OK);
+  }
+
+  @Test
+  public void addUserKeyToContext() {
+    // given
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+    final Metadata metadata = new Metadata();
+    // demo:demo
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
+    final var userServices = mock(UserServices.class);
+    when(userServices.search(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
+    new AuthenticationInterceptor(userServices)
+        .interceptCall(
+            closeStatusCapturingServerCall,
+            metadata,
+            (call, headers) -> {
+              // then
+              assertUserKey().isEqualTo(1L);
+              call.close(Status.OK, headers);
+              return null;
+            });
+  }
+
+  // OIDC auth tests
   @Test
   public void validTokenIsAccepted() {
     // when
@@ -111,10 +166,23 @@ public class AuthenticationInterceptorTest {
     }
   }
 
+  private static LongAssert assertUserKey() {
+    try {
+      return (LongAssert)
+          assertThat(Context.current().call(() -> AuthenticationInterceptor.USER_KEY.get()));
+    } catch (final Exception e) {
+      throw new RuntimeException("Unable to retrieve user key from context", e);
+    }
+  }
+
   private ServerCallHandler<Object, Object> failingNextHandler() {
     return (call, headers) -> {
       throw new RuntimeException("Should not be invoked");
     };
+  }
+
+  private UserEntity createUserEntity() {
+    return new UserEntity(1L, "demo", "name", "email", "demo");
   }
 
   private static final class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {
