@@ -42,10 +42,10 @@ public class VariableValueFilterTest {
         filterBuilder
             .name("name")
             .valueOperation(UntypedOperation.of(eq("equals")))
-            .valueOperation(UntypedOperation.of(gt("greaterThen")))
-            .valueOperation(UntypedOperation.of(gte("greaterThenOrEqual")))
-            .valueOperation(UntypedOperation.of(lt("lessThen")))
-            .valueOperation(UntypedOperation.of(lte("lessThenOrEqual")))
+            .valueOperation(UntypedOperation.of(gt(4)))
+            .valueOperation(UntypedOperation.of(gte(2)))
+            .valueOperation(UntypedOperation.of(lt(1)))
+            .valueOperation(UntypedOperation.of(lte(3)))
             .build();
 
     // then

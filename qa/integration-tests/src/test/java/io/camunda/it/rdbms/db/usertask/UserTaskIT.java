@@ -25,6 +25,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -198,6 +199,45 @@ public class UserTaskIT {
                             List.of(
                                 new VariableValueFilter.Builder()
                                     .name(randomizedVariable.name())
+                                    .build()))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.hits()).hasSize(1);
+    assertUserTaskEntity(searchResult.hits().getFirst(), randomizedUserTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByProcessInstanceVariableNameAndValue(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel randomizedUserTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, randomizedUserTask);
+
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(
+            b -> b.processInstanceKey(randomizedUserTask.processInstanceKey()));
+    final RdbmsWriter writer = rdbmsService.createWriter(1L);
+    writer.getVariableWriter().create(randomizedVariable);
+    writer.flush();
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskDbQuery(
+                    new UserTaskFilter.Builder()
+                        .processInstanceVariables(
+                            List.of(
+                                new VariableValueFilter.Builder()
+                                    .name(randomizedVariable.name())
+                                    .valueOperation(
+                                        UntypedOperation.of(
+                                            Operation.eq(randomizedVariable.value())))
                                     .build()))
                         .build(),
                     UserTaskSort.of(b -> b),

@@ -26,14 +26,10 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BrokerITInvocationProvider.class)
 public class UserTaskExporterIT {
-
-  // RDBMS doesn't support query for task variables up to now
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider().withoutRdbmsExporter();
 
   @TestTemplate
   void shouldExportUserTask(final TestStandaloneBroker testBroker) {

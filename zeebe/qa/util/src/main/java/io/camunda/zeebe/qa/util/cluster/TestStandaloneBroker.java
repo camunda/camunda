@@ -28,6 +28,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -249,7 +250,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   public TestStandaloneBroker withRdbmsExporter() {
     withProperty("camunda.database.type", "rdbms");
-    withProperty("spring.datasource.url", "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+    withProperty(
+        "spring.datasource.url",
+        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
     withProperty("spring.datasource.username", "sa");
     withProperty("spring.datasource.password", "");
