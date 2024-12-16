@@ -100,6 +100,7 @@ import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
+import io.camunda.zeebe.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserToTenantCommandImpl;
