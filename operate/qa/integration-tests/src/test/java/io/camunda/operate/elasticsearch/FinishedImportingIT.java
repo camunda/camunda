@@ -9,6 +9,7 @@ package io.camunda.operate.elasticsearch;
 
 import static io.camunda.operate.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
@@ -35,13 +36,13 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
-import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -111,7 +112,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     }
 
     // the import position for
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
   }
@@ -145,7 +146,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(
             () ->
@@ -177,10 +178,10 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     }
 
     // the import position for
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
   }
@@ -200,7 +201,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     }
 
     // then
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -234,16 +235,16 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
 
     // then
 
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -291,7 +292,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
 
@@ -301,7 +302,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     zeebeImporter.performOneRoundOfImport();
 
-    Awaitility.await()
+    await()
         .during(Duration.ofSeconds(10))
         .atMost(Duration.ofSeconds(12))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
@@ -339,7 +340,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .map(ElasticsearchRecordsReader.class::cast)
         .forEach(ElasticsearchRecordsReader::postConstruct);
 
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(
             () -> {
@@ -355,9 +356,29 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             });
   }
 
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    for (final var type : ImportValueType.IMPORT_VALUE_TYPES) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -381,7 +402,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         Arrays.stream(
                 esClient
                     .search(
-                        new SearchRequest(importPositionIndex.getFullQualifiedName()),
+                        new SearchRequest(importPositionIndex.getFullQualifiedName())
+                            .source(new SearchSourceBuilder().size(100)),
                         RequestOptions.DEFAULT)
                     .getHits()
                     .getHits())

@@ -197,14 +197,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
-        if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
-          recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
-        }
-
-        if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
-          recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
-              importPositionHolder, importValueType.getAliasTemplate(), partitionId);
-        }
+        markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);
@@ -223,6 +216,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         rescheduleReader(nextRunDelay);
       }
     } catch (final NoSuchIndexException ex) {
+      markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
@@ -586,6 +580,25 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         return false;
       }
     };
+  }
+
+  private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
+    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+      recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+    }
+
+    if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+      try {
+        recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+            importPositionHolder, importValueType.getAliasTemplate(), partitionId);
+      } catch (final IOException e) {
+        LOGGER.error(
+            "Failed when trying to mark record reader [{}-{}] as completed",
+            importValueType.getAliasTemplate(),
+            partitionId,
+            e);
+      }
+    }
   }
 
   private void executeNext() {

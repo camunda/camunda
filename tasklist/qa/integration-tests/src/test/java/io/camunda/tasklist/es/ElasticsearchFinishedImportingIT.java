@@ -9,6 +9,7 @@ package io.camunda.tasklist.es;
 
 import static io.camunda.tasklist.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.Metrics;
@@ -44,6 +45,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -372,6 +374,26 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
             });
   }
 
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    for (final var type : ImportValueType.values()) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   @NotNull
   private static Gauge getGauge(final Metrics metrics, final String partition) {
     return metrics.getGauge(
@@ -387,7 +409,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
         Arrays.stream(
                 tasklistEsClient
                     .search(
-                        new SearchRequest(importPositionIndex.getFullQualifiedName()),
+                        new SearchRequest(importPositionIndex.getFullQualifiedName())
+                            .source(new SearchSourceBuilder().size(100)),
                         RequestOptions.DEFAULT)
                     .getHits()
                     .getHits())
