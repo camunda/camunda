@@ -381,7 +381,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     EXPORTER.export(record);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    // when 
+    // when
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
