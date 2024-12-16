@@ -7,17 +7,24 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
 import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +32,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
   public static final Context.Key<Map<String, Object>> USER_CLAIMS =
       Context.key("io.camunda.zeebe:user_claim");
+  public static final Context.Key<Long> USER_KEY = Context.key("io.camunda.zeebe:user_key");
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -45,14 +53,86 @@ public class AuthenticationInterceptor implements ServerInterceptor {
     final var authorization = headers.get(AUTH_KEY);
     if (authorization == null) {
       LOGGER.debug(
-          "Denying call {} as no token was provided", methodDescriptor.getFullMethodName());
+          "Denying call {} as no authentication information were provided",
+          methodDescriptor.getFullMethodName());
       return deny(
           call,
           Status.UNAUTHENTICATED.augmentDescription(
-              "Expected bearer token at header with key [%s], but found nothing"
+              "Expected authentication information at header with key [%s], but found nothing"
                   .formatted(AUTH_KEY.name())));
     }
+    // the authentication can be of 2 types, oidc or basic.
+    if (isBasicAuth(authorization)) {
+      return handleBasicAuth(call, headers, next, methodDescriptor, authorization);
+    }
+    return handleOidcAuth(call, headers, next, methodDescriptor, authorization);
+  }
 
+  private boolean isBasicAuth(final String authorization) {
+    return authorization.startsWith("Basic ");
+  }
+
+  private <ReqT, RespT> Listener<ReqT> handleBasicAuth(
+      final ServerCall<ReqT, RespT> call,
+      final Metadata headers,
+      final ServerCallHandler<ReqT, RespT> next,
+      final MethodDescriptor<ReqT, RespT> methodDescriptor,
+      final String authorization) {
+    try {
+      final String basicAuth = authorization.replaceFirst("Basic ", "");
+      final var decodedAuth = new String(Base64.getDecoder().decode(basicAuth));
+      final String[] authParts = decodedAuth.split(":", 2);
+      final String username = authParts[0];
+      final String password = authParts[1];
+
+      final var userOpt = loadUserByUsername(username);
+      if (userOpt.isEmpty()) {
+        LOGGER.debug(
+            "Denying call {} as the user {} does not exist",
+            methodDescriptor.getFullMethodName(),
+            username);
+        return deny(
+            call,
+            Status.UNAUTHENTICATED
+                .augmentDescription("Expected a valid user, but user does not exist")
+                .withCause(new IllegalArgumentException("User does not exist")));
+      }
+
+      final var user = userOpt.get();
+      // TODO add password validation
+
+      final var context = Context.current().withValue(USER_KEY, user.userKey());
+      return Contexts.interceptCall(context, call, headers, next);
+    } catch (final RuntimeException e) {
+      LOGGER.debug(
+          "Denying call {} as the authentication info are not valid. Error message: {}",
+          methodDescriptor.getFullMethodName(),
+          e.getMessage());
+      return deny(
+          call,
+          Status.UNAUTHENTICATED
+              .augmentDescription("Expected valid authentication info, see cause for details")
+              .withCause(e));
+    }
+  }
+
+  private Optional<UserEntity> loadUserByUsername(final String username) {
+    final var userQuery =
+        SearchQueryBuilders.userSearchQuery(
+            fn -> fn.filter(f -> f.username(username)).page(p -> p.size(1)));
+    return userServices.search(userQuery).items().stream().filter(Objects::nonNull).findFirst();
+  }
+
+  private boolean isPasswordValid(final String password, final UserEntity user) {
+    return user.password().equals(password);
+  }
+
+  private <ReqT, RespT> Listener<ReqT> handleOidcAuth(
+      final ServerCall<ReqT, RespT> call,
+      final Metadata headers,
+      final ServerCallHandler<ReqT, RespT> next,
+      final MethodDescriptor<ReqT, RespT> methodDescriptor,
+      final String authorization) {
     final String token = authorization.replaceFirst("^Bearer ", "");
 
     // TODO verify the token, do we really want to delete the identity SDK ? It's not easy to verify
