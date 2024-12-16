@@ -20,8 +20,6 @@ public class TenantServiceImpl implements TenantService {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private TenantAttributeHolder tenantAttributeHolder;
-
   @Override
   public List<String> tenantIds() {
     return TenantAttributeHolder.getTenantIds();
