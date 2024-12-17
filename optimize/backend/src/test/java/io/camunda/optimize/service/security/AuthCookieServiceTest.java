@@ -18,12 +18,9 @@ import io.camunda.optimize.service.util.configuration.security.CloudAuthConfigur
 import io.camunda.optimize.service.util.configuration.security.CookieConfiguration;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -47,13 +44,9 @@ public class AuthCookieServiceTest {
   public void getTokenFromContainerRequestContext() {
     // given
     final String authorizationHeader = String.format("Bearer %s", "test");
-    final jakarta.ws.rs.core.Cookie cookie =
-        new jakarta.ws.rs.core.Cookie.Builder(OPTIMIZE_AUTHORIZATION)
-            .value(authorizationHeader)
-            .build();
-    final Map<String, jakarta.ws.rs.core.Cookie> cookies =
-        Collections.singletonMap(OPTIMIZE_AUTHORIZATION, cookie);
-    final ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
+    final Cookie cookie = new Cookie(OPTIMIZE_AUTHORIZATION, authorizationHeader);
+    final Cookie[] cookies = new Cookie[] {cookie};
+    final HttpServletRequest requestMock = Mockito.mock(HttpServletRequest.class);
     when(requestMock.getCookies()).thenReturn(cookies);
 
     // when
@@ -65,7 +58,7 @@ public class AuthCookieServiceTest {
 
   @Test
   public void getTokenExceptionFromContainerRequestContext() {
-    final ContainerRequestContext requestMock = Mockito.mock(ContainerRequestContext.class);
+    final HttpServletRequest requestMock = Mockito.mock(HttpServletRequest.class);
     assertThat(AuthCookieService.getAuthCookieToken(requestMock)).isEmpty();
   }
 
