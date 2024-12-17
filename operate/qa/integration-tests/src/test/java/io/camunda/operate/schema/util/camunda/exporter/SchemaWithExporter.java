@@ -7,17 +7,19 @@
  */
 package io.camunda.operate.schema.util.camunda.exporter;
 
-import io.camunda.exporter.CamundaExporter;
+import io.camunda.exporter.DefaultExporterResourceProvider;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
-import io.camunda.zeebe.exporter.test.ExporterTestContext;
-import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.exporter.schema.SchemaManager;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public class SchemaWithExporter {
-  private final ExporterConfiguration config = new ExporterConfiguration();
+
+  private final SchemaManager schemaManager;
 
   public SchemaWithExporter(final String prefix, final boolean isElasticsearch) {
+    final var config = new ExporterConfiguration();
     config.getIndex().setPrefix(prefix);
     config
         .getConnect()
@@ -25,17 +27,21 @@ public class SchemaWithExporter {
             isElasticsearch
                 ? ConnectionTypes.ELASTICSEARCH.getType()
                 : ConnectionTypes.OPENSEARCH.getType());
+
+    final var clientAdapter = ClientAdapter.of(config);
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config, clientAdapter.getExporterEntityCacheProvider(), new SimpleMeterRegistry());
+
+    schemaManager =
+        new SchemaManager(
+            clientAdapter.getSearchEngineClient(),
+            provider.getIndexDescriptors(),
+            provider.getIndexTemplateDescriptors(),
+            config);
   }
 
   public void createSchema() {
-    final var exporter = new CamundaExporter();
-
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>(config.getConnect().getType(), config));
-
-    exporter.configure(context);
-    exporter.open(new ExporterTestController());
+    schemaManager.startup();
   }
 }
