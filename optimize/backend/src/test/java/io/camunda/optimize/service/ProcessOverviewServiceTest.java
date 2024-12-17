@@ -32,6 +32,7 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,14 +43,13 @@ public class ProcessOverviewServiceTest {
 
   private static final String EN_LOCALE = "en";
   private static final String USER_ID = "user123";
-  private static final String TENANT_ID = "tenant1";
   private static final String PROCESS_KEY = "processKey1";
   private static final String OWNER_ID = "owner123";
   private static final String OWNER_NAME = "Owner Name";
   private static final String PROCESS_NAME = "Process Name";
+  private static final List<String> TENANT_LIST = getSingleTenantList();
   public static final DefinitionWithTenantIdsDto DEFINITION_DTO =
-      new DefinitionWithTenantIdsDto(
-          PROCESS_KEY, PROCESS_NAME, PROCESS, List.of(TENANT_ID), Set.of());
+      new DefinitionWithTenantIdsDto(PROCESS_KEY, PROCESS_NAME, PROCESS, TENANT_LIST, Set.of());
 
   private final DefinitionService definitionService = mock(DefinitionService.class);
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService =
@@ -184,7 +184,7 @@ public class ProcessOverviewServiceTest {
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
         .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
+            USER_ID, PROCESS, PROCESS_KEY, getSingleTenantList()))
         .thenReturn(false);
 
     // when
@@ -207,7 +207,7 @@ public class ProcessOverviewServiceTest {
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
         .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
+            USER_ID, PROCESS, PROCESS_KEY, TENANT_LIST))
         .thenReturn(true);
     when(identityService.isUserAuthorizedToAccessIdentity(
             USER_ID, new IdentityDto(USER_ID, IdentityType.GROUP)))
@@ -233,7 +233,7 @@ public class ProcessOverviewServiceTest {
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
         .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
+            USER_ID, PROCESS, PROCESS_KEY, TENANT_LIST))
         .thenReturn(true);
     when(identityService.isUserAuthorizedToAccessIdentity(
             USER_ID, new IdentityDto(USER_ID, IdentityType.GROUP)))
@@ -259,9 +259,9 @@ public class ProcessOverviewServiceTest {
         .thenReturn(
             Optional.of(
                 new DefinitionWithTenantIdsDto(
-                    PROCESS_KEY, PROCESS_NAME, PROCESS, List.of(TENANT_ID), Set.of())));
+                    PROCESS_KEY, PROCESS_NAME, PROCESS, TENANT_LIST, Set.of())));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
+            USER_ID, PROCESS, PROCESS_KEY, TENANT_LIST))
         .thenReturn(true);
 
     when(identityService.getUserById(any())).thenReturn(Optional.of(new UserDto(USER_ID)));
@@ -281,7 +281,7 @@ public class ProcessOverviewServiceTest {
         .thenReturn(true);
 
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
-        .thenReturn(Optional.of(new DefinitionWithTenantIdsDto(List.of(TENANT_ID))));
+        .thenReturn(Optional.of(new DefinitionWithTenantIdsDto(TENANT_LIST)));
 
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(any(), any(), any(), any()))
         .thenReturn(true);
@@ -303,5 +303,11 @@ public class ProcessOverviewServiceTest {
     assertThat(thrown)
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("Owner ID cannot be empty!");
+  }
+
+  private static List<String> getSingleTenantList() {
+    final List<String> tenantList = new ArrayList<>();
+    tenantList.add("tenant1");
+    return tenantList;
   }
 }
