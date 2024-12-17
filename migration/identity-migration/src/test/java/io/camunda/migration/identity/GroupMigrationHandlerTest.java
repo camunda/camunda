@@ -19,7 +19,7 @@ import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.List;
@@ -44,7 +44,7 @@ public class GroupMigrationHandlerTest {
     this.groupService = groupService;
     migrationHandler =
         new GroupMigrationHandler(
-            new Builder(),
+            Authentication.none(),
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             groupService);

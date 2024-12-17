@@ -19,7 +19,7 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.List;
@@ -42,7 +42,7 @@ final class TenantMigrationHandlerTest {
     this.tenantServices = tenantServices;
     migrationHandler =
         new TenantMigrationHandler(
-            new Builder(),
+            Authentication.none(),
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             this.tenantServices);

@@ -34,15 +34,15 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
   private final MappingServices mappingServices;
 
   public TenantMappingRuleMigrationHandler(
-      final Authentication.Builder authenticationBuilder,
+      final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices,
       final MappingServices mappingServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.tenantServices = tenantServices.withAuthentication(authenticationBuilder.build());
-    this.mappingServices = mappingServices.withAuthentication(authenticationBuilder.build());
+    this.tenantServices = tenantServices.withAuthentication(authentication);
+    this.mappingServices = mappingServices.withAuthentication(authentication);
   }
 
   @Override

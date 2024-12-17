@@ -15,8 +15,8 @@ import org.springframework.context.annotation.Configuration;
 public class AuthConfig {
 
   @Bean
-  public Authentication.Builder servicesAuthenticationBuilder() {
+  public Authentication servicesAuthentication() {
     // TODO: implement later
-    return new Authentication.Builder();
+    return new Authentication.Builder().build();
   }
 }

@@ -28,13 +28,13 @@ public class TenantMigrationHandler implements MigrationHandler {
   private final TenantServices tenantServices;
 
   public TenantMigrationHandler(
-      final Authentication.Builder authenticationBuilder,
+      final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.tenantServices = tenantServices.withAuthentication(authenticationBuilder.build());
+    this.tenantServices = tenantServices.withAuthentication(authentication);
   }
 
   @Override

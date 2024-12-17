@@ -24,13 +24,13 @@ public class GroupMigrationHandler implements MigrationHandler {
   private final GroupServices groupServices;
 
   public GroupMigrationHandler(
-      final Authentication.Builder authenticationBuilder,
+      final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
       final GroupServices groupServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.groupServices = groupServices.withAuthentication(authenticationBuilder.build());
+    this.groupServices = groupServices.withAuthentication(authentication);
   }
 
   @Override

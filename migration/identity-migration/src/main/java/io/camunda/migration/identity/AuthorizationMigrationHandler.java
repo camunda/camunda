@@ -33,11 +33,10 @@ public class AuthorizationMigrationHandler {
   private final ManagementIdentityProxy managementIdentityProxy;
 
   public AuthorizationMigrationHandler(
-      final Authentication.Builder authenticationBuilder,
+      final Authentication authentication,
       final AuthorizationServices authorizationService,
       final ManagementIdentityProxy managementIdentityProxy) {
-    this.authorizationService =
-        authorizationService.withAuthentication(authenticationBuilder.build());
+    this.authorizationService = authorizationService.withAuthentication(authentication);
     this.managementIdentityProxy = managementIdentityProxy;
   }
 
