@@ -132,10 +132,10 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION' with decision id '%s'",
+              "Insufficient permissions to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION', required resource identifiers are one of '[%s, *]",
               DECISION_ID);
     }
   }

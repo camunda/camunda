@@ -147,10 +147,10 @@ public class AuthorizationRemovePermissionAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
+              "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
     }
   }
 }

@@ -108,9 +108,10 @@ public class ClockPinAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
-          .hasMessageContaining("Unauthorized to perform operation 'UPDATE' on resource 'SYSTEM'");
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
+          .hasMessageContaining(
+              "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
     }
   }
 }
