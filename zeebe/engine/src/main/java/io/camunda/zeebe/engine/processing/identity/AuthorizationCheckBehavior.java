@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -46,14 +45,13 @@ public final class AuthorizationCheckBehavior {
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
   private final MappingState mappingState;
-  private final TenantState tenantState;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
-    tenantState = processingState.getTenantState();
+    processingState.getTenantState();
     this.securityConfig = securityConfig;
   }
 
