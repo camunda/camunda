@@ -7,24 +7,29 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
 
-final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> {
+/**
+ * A wrapper class for records that facilitates retrying commands after an incident is resolved.
+ *
+ * <p>This class is designed to handle different types of records and their corresponding intents,
+ * allowing seamless recovery by re-processing the failed command.
+ */
+final class IncidentRecordWrapper<T extends UnifiedRecordValue> implements TypedRecord<T> {
 
   private final long key;
-  private final ProcessInstanceIntent intent;
-  private final ProcessInstanceRecord record;
+  private final Intent intent;
+  private final T record;
 
-  IncidentRecordWrapper(
-      final long key, final ProcessInstanceIntent intent, final ProcessInstanceRecord record) {
+  IncidentRecordWrapper(final long key, final Intent intent, final T record) {
     this.key = key;
     this.intent = intent;
     this.record = record;
@@ -101,7 +106,7 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   }
 
   @Override
-  public Record<ProcessInstanceRecord> copyOf() {
+  public Record<T> copyOf() {
     return this;
   }
 
@@ -111,18 +116,18 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   }
 
   @Override
-  public ProcessInstanceRecord getValue() {
+  public T getValue() {
     return record;
   }
 
   @Override
   public int getRequestStreamId() {
-    return 0;
+    return RecordMetadataEncoder.requestStreamIdNullValue();
   }
 
   @Override
   public long getRequestId() {
-    return 0;
+    return RecordMetadataEncoder.requestIdNullValue();
   }
 
   @Override
