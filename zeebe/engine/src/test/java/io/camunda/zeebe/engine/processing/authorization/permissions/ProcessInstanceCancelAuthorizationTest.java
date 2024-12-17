@@ -7,152 +7,148 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class ProcessInstanceCancelAuthorizationTest {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
-
   private static final String PROCESS_ID = "processId";
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
 
-  @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done(),
-            "process.xml")
-        .send()
-        .join();
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
+
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done())
+        .deploy(defaultUserKey);
   }
 
   @Test
-  void shouldBeAuthorizedToCancelInstanceWithDefaultUser() {
+  public void shouldBeAuthorizedToCancelInstanceWithDefaultUser() {
     // given
-    final var processInstanceEvent =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
+    final var processInstanceKey = createProcessInstance();
 
     // when
-    final var response =
-        defaultUserClient
-            .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
-            .send()
-            .join();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel(defaultUserKey);
 
     // then
-    assertThat(response).isNull();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToCancelInstanceWithUser() {
+  public void shouldBeAuthorizedToCancelInstanceWithUser() {
     // given
-    final var processInstanceEvent =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+    final var processInstanceKey = createProcessInstance();
+    final var userKey = createUser();
+    addPermissionsToUser(
+        userKey,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        PROCESS_ID);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response =
-          client
-              .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
-              .send()
-              .join();
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel(userKey);
 
-      // then
-      assertThat(response).isNull();
-    }
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeUnauthorizedToCancelInstanceIfNoPermissions() {
+  public void shouldBeUnauthorizedToCancelInstanceIfNoPermissions() {
     // given
-    final var processInstanceEvent =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var processInstanceKey = createProcessInstance();
+    final var userKey = createUser();
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response =
-          client.newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey()).send();
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectRejection()
+            .cancel(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
-    }
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType,
+      final String... resourceIds) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, resourceIds)
+        .add(defaultUserKey);
+  }
+
+  private long createProcessInstance() {
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
   }
 }

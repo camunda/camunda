@@ -7,128 +7,134 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class MappingCreateAuthorizationTest {
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient client;
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @TestZeebe(autoStart = false)
-  private final TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
-
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
-
-    final var defaultUsername = "demo";
-    client = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, client, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
+  public void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+
     // when
-    final var response =
-        client
-            .newCreateMappingCommand()
-            .claimName("claimName")
-            .claimValue("claimValue")
-            .name("name")
-            .send()
-            .join();
+    ENGINE.mapping().newMapping(claimName).withClaimValue(claimValue).create(defaultUserKey);
 
     // then
-    assertThat(response.getMappingKey()).isPositive();
+    assertThat(
+            RecordingExporter.mappingRecords(MappingIntent.CREATED)
+                .withClaimName(claimName)
+                .withClaimValue(claimValue)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateMappingWithPermissions() {
+  public void shouldBeAuthorizedToCreateMappingWithPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        authUsername,
-        password,
-        new Permissions(ResourceTypeEnum.MAPPING_RULE, PermissionTypeEnum.CREATE, List.of("*")));
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var userKey = createUser();
+    addPermissionsToUser(userKey, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
     // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
-      final var response =
-          client
-              .newCreateMappingCommand()
-              .claimName("claimName")
-              .claimValue("claimValue")
-              .name("name")
-              .send()
-              .join();
+    ENGINE.mapping().newMapping(claimName).withClaimValue(claimValue).create(userKey);
 
-      // then
-      assertThat(response.getMappingKey()).isPositive();
-    }
+    // then
+    assertThat(
+            RecordingExporter.mappingRecords(MappingIntent.CREATED)
+                .withClaimName(claimName)
+                .withClaimValue(claimValue)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
+  public void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(authUsername, password);
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var userKey = createUser();
 
     // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
-      final var response =
-          client
-              .newCreateMappingCommand()
-              .claimName("claimName")
-              .claimValue("claimValue")
-              .name("name")
-              .send();
+    final var rejection =
+        ENGINE
+            .mapping()
+            .newMapping(claimName)
+            .withClaimValue(claimValue)
+            .expectRejection()
+            .create(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
-    }
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, "*")
+        .add(defaultUserKey);
   }
 }

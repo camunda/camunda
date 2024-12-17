@@ -7,142 +7,142 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class AuthorizationAddPermissionAuthorizationTest {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final String PROCESS_ID = "processId";
-  @AutoCloseResource private static CamundaClient defaultUserClient;
-  private static AuthorizationsUtil authUtil;
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(), "process.xml")
-        .send()
-        .join();
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToAddPermissionsWithDefaultUser() {
+  public void shouldBeAuthorizedToAddPermissionsWithDefaultUser() {
     // given
-    final var username = UUID.randomUUID().toString();
-    final var userKey = authUtil.createUser(username, "password");
-
-    // when then
-    final var addPermissionsResponse =
-        defaultUserClient
-            .newAddPermissionsCommand(userKey)
-            .resourceType(ResourceTypeEnum.DEPLOYMENT)
-            .permission(PermissionTypeEnum.DELETE)
-            .resourceId("*")
-            .send()
-            .join();
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(addPermissionsResponse).isNull();
-  }
-
-  @Test
-  void shouldBeAuthorizedToAddPermissionsWithUser() {
-    // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    final var userKey =
-        authUtil.createUserWithPermissions(
-            username,
-            password,
-            new Permissions(
-                ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
-
-    try (final var client = authUtil.createClient(username, password)) {
-      // when then
-      final var addPermissionsResponse =
-          client
-              .newAddPermissionsCommand(userKey)
-              .resourceType(ResourceTypeEnum.DEPLOYMENT)
-              .permission(PermissionTypeEnum.CREATE)
-              .resourceId("*")
-              .send()
-              .join();
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(addPermissionsResponse).isNull();
-    }
-  }
-
-  @Test
-  void shouldBeUnauthorizedToAddPermissionsIfNoPermissions() {
-    // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var userKey = createUser();
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
-      final var response =
-          client
-              // We can use any owner key. The authorization check happens before we use it.
-              .newAddPermissionsCommand(1L)
-              .resourceType(ResourceTypeEnum.DEPLOYMENT)
-              .permission(PermissionTypeEnum.CREATE)
-              .resourceId("*")
-              .send();
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.DELETE, "*")
+        .add(defaultUserKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
-    }
+    // then
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
+                .withOwnerKey(userKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToAddPermissionsWithUser() {
+    // given
+    final var userKey = createUser();
+    addPermissionToUser(userKey, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
+
+    // when
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.DELETE, "*")
+        .add(userKey);
+
+    // then
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
+                .withOwnerKey(userKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeForbiddenToAddPermissionsIfNoPermissions() {
+    // given
+    final var userKey = createUser();
+
+    // when
+    final var rejection =
+        ENGINE
+            .authorization()
+            .permission()
+            .withOwnerKey(userKey)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.DELETE, "*")
+            .expectRejection()
+            .add(userKey);
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, "*")
+        .add(defaultUserKey);
   }
 }

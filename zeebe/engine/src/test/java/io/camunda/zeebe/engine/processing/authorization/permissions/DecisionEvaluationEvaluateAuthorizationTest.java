@@ -7,136 +7,133 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class DecisionEvaluationEvaluateAuthorizationTest {
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
+  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
 
-  @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
-
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("dmn/drg-force-user.dmn")
-        .send()
-        .join();
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
+    ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy(defaultUserKey);
   }
 
   @Test
-  void shouldBeAuthorizedToEvaluateDecisionWithDefaultUser() {
+  public void shouldBeAuthorizedToEvaluateDecisionWithDefaultUser() {
     // when
     final var response =
-        defaultUserClient
-            .newEvaluateDecisionCommand()
-            .decisionId(DECISION_ID)
-            .variables(Map.of("lightsaberColor", "red"))
-            .send()
-            .join();
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVariable("lightsaberColor", "red")
+            .evaluate(defaultUserKey);
 
     // then
-    assertThat(response.getDecisionOutput()).isEqualTo("\"Sith\"");
+    assertThat(response.getValue().getDecisionOutput()).isEqualTo("\"Sith\"");
   }
 
   @Test
-  void shouldBeAuthorizedToEvaluateDecisionWithUser() {
+  public void shouldBeAuthorizedToEvaluateDecisionWithUser() {
     // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.DECISION_DEFINITION,
-            PermissionTypeEnum.CREATE_DECISION_INSTANCE,
-            List.of(DECISION_ID)));
+    final var userKey = createUser();
+    addPermissionsToUser(
+        userKey,
+        AuthorizationResourceType.DECISION_DEFINITION,
+        PermissionType.CREATE_DECISION_INSTANCE);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response =
-          client
-              .newEvaluateDecisionCommand()
-              .decisionId(DECISION_ID)
-              .variables(Map.of("lightsaberColor", "red"))
-              .send()
-              .join();
+    // when
+    final var response =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVariable("lightsaberColor", "red")
+            .evaluate(userKey);
 
-      // then
-      assertThat(response.getDecisionOutput()).isEqualTo("\"Sith\"");
-    }
+    // then
+    assertThat(response.getValue().getDecisionOutput()).isEqualTo("\"Sith\"");
   }
 
   @Test
-  void shouldBeUnauthorizedToEvaluateDecisionIfNoPermissions() {
+  public void shouldBeUnauthorizedToEvaluateDecisionIfNoPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var userKey = createUser();
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response =
-          client
-              .newEvaluateDecisionCommand()
-              .decisionId(DECISION_ID)
-              .variables(Map.of("lightsaberColor", "red"))
-              .send();
+    // when
+    final var rejection =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVariable("lightsaberColor", "red")
+            .expectRejection()
+            .evaluate(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              DECISION_ID);
-    }
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(DECISION_ID));
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, "*")
+        .add(defaultUserKey);
   }
 }

@@ -7,111 +7,120 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class ClockPinAuthorizationTest {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
-
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToPinClockWithDefaultUser() {
+  public void shouldBeAuthorizedToPinClockWithDefaultUser() {
     // given
-    // when
-    final var response = defaultUserClient.newClockPinCommand().time(Instant.now()).send().join();
-
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
-  }
-
-  @Test
-  void shouldBeAuthorizedToPinClockWithPermissions() {
-    // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(ResourceTypeEnum.SYSTEM, PermissionTypeEnum.UPDATE, List.of("*")));
-
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newClockPinCommand().time(Instant.now()).send().join();
-
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
-    }
-  }
-
-  @Test
-  void shouldBeUnAuthorizedToPinClockWithPermissions() {
-    // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var instant = Instant.now();
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
-      final var response = client.newClockPinCommand().time(Instant.now()).send();
+    ENGINE.clock().pinAt(instant, defaultUserKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
-    }
+    // when
+    assertThat(RecordingExporter.clockRecords(ClockIntent.PINNED).withTimestamp(instant).exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToPinClockWithPermissions() {
+    // given
+    final var instant = Instant.now();
+    final var resourceType = AuthorizationResourceType.SYSTEM;
+    final var permissionType = PermissionType.UPDATE;
+    final var userKey = createUser();
+    addPermissionsToUser(userKey, resourceType, permissionType);
+
+    // when
+    ENGINE.clock().pinAt(instant, userKey);
+
+    // when
+    assertThat(RecordingExporter.clockRecords(ClockIntent.PINNED).withTimestamp(instant).exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnAuthorizedToPinClockWithPermissions() {
+    // given
+    final var instant = Instant.now();
+    final var userKey = createUser();
+
+    // when
+    final var rejection = ENGINE.clock().expectRejection().pinAt(instant, userKey);
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, "*")
+        .add(defaultUserKey);
   }
 }

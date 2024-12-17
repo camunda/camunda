@@ -7,269 +7,284 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class ResourceDeletionAuthorizationTest {
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
-
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
-
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteProcessDefinitionWithDefaultUser() {
+  public void shouldBeAuthorizedToDeleteProcessDefinitionWithDefaultUser() {
     // given
     final var processDefinitionKey = deployProcessDefinition(Strings.newRandomValidBpmnId());
 
     // when
-    final var response =
-        defaultUserClient.newDeleteResourceCommand(processDefinitionKey).send().join();
+    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete(defaultUserKey);
 
     // then
-    assertThat(response).isNull();
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(processDefinitionKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteProcessDefinitionWithPermissions() {
+  public void shouldBeAuthorizedToDeleteProcessDefinitionWithPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var processDefinitionKey = deployProcessDefinition(processId);
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.DELETE_PROCESS, List.of(processId)));
+    final var userKey = createUser();
+    addPermissionsToUser(
+        userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_PROCESS, processId);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newDeleteResourceCommand(processDefinitionKey).send().join();
+    // when
+    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete(userKey);
 
-      // then
-      assertThat(response).isNull();
-    }
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(processDefinitionKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeUnAuthorizedToDeleteProcessDefinitionWithPermissions() {
+  public void shouldBeUnAuthorizedToDeleteProcessDefinitionWithPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var processDefinitionKey = deployProcessDefinition(processId);
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var userKey = createUser();
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newDeleteResourceCommand(processDefinitionKey).send();
+    // when
+    ENGINE
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .expectRejection()
+        .delete(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]",
-              processId);
-    }
+    // then
+    Assertions.assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'"
+                .formatted(processId));
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteDrdWithDefaultUser() {
+  public void shouldBeAuthorizedToDeleteDrdWithDefaultUser() {
     // given
     final var drdKey = deployDrd();
 
     // when
-    final var response = defaultUserClient.newDeleteResourceCommand(drdKey).send().join();
+    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(defaultUserKey);
 
     // then
-    assertThat(response).isNull();
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(drdKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteDrdWithPermissions() {
+  public void shouldBeAuthorizedToDeleteDrdWithPermissions() {
     // given
     final var drdId = "force_users";
     final var drdKey = deployDrd();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.DELETE_DRD, List.of(drdId)));
+    final var userKey = createUser();
+    addPermissionsToUser(
+        userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_DRD, drdId);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newDeleteResourceCommand(drdKey).send().join();
+    // when
+    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(userKey);
 
-      // then
-      assertThat(response).isNull();
-    }
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(drdKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeUnAuthorizedToDeleteDrdWithPermissions() {
+  public void shouldBeUnAuthorizedToDeleteDrdWithPermissions() {
     // given
     final var drdId = "force_users";
     final var drdKey = deployDrd();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var userKey = createUser();
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newDeleteResourceCommand(drdKey).send();
+    // when
+    ENGINE.resourceDeletion().withResourceKey(drdKey).expectRejection().delete(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'",
-              drdId);
-    }
+    // then
+    Assertions.assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'"
+                .formatted(drdId));
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteFormWithDefaultUser() {
+  public void shouldBeAuthorizedToDeleteFormWithDefaultUser() {
     // given
     final var formKey = deployForm();
 
     // when
-    final var response = defaultUserClient.newDeleteResourceCommand(formKey).send().join();
+    ENGINE.resourceDeletion().withResourceKey(formKey).delete(defaultUserKey);
 
     // then
-    assertThat(response).isNull();
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(formKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteFormWithPermissions() {
+  public void shouldBeAuthorizedToDeleteFormWithPermissions() {
     // given
     final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.DELETE_FORM, List.of(formId)));
+    final var userKey = createUser();
+    addPermissionsToUser(
+        userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_FORM, formId);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newDeleteResourceCommand(formKey).send().join();
+    // when
+    ENGINE.resourceDeletion().withResourceKey(formKey).delete(userKey);
 
-      // then
-      assertThat(response).isNull();
-    }
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(formKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeUnAuthorizedToDeleteFormWithPermissions() {
+  public void shouldBeUnAuthorizedToDeleteFormWithPermissions() {
     // given
     final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var userKey = createUser();
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newDeleteResourceCommand(formKey).send();
+    // when
+    ENGINE.resourceDeletion().withResourceKey(formKey).expectRejection().delete(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]",
-              formId);
-    }
+    // then
+    Assertions.assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'"
+                .formatted(formId));
   }
 
-  private static long deployProcessDefinition(final String processId) {
-    return defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(), "process.bpmn")
-        .send()
-        .join()
-        .getProcesses()
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType,
+      final String... resourceIds) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, resourceIds)
+        .add(defaultUserKey);
+  }
+
+  private long deployProcessDefinition(final String processId) {
+    return ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy(defaultUserKey)
+        .getValue()
+        .getProcessesMetadata()
         .getFirst()
         .getProcessDefinitionKey();
   }
 
-  private static long deployDrd() {
-    return defaultUserClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("dmn/drg-force-user.dmn")
-        .send()
-        .join()
-        .getDecisionRequirements()
+  private long deployDrd() {
+    return ENGINE
+        .deployment()
+        .withXmlClasspathResource("/dmn/drg-force-user.dmn")
+        .deploy(defaultUserKey)
+        .getValue()
+        .getDecisionRequirementsMetadata()
         .getFirst()
         .getDecisionRequirementsKey();
   }
 
-  private static long deployForm() {
-    return defaultUserClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("form/test-form-1.form")
-        .send()
-        .join()
-        .getForm()
+  private long deployForm() {
+    return ENGINE
+        .deployment()
+        .withXmlClasspathResource("/form/test-form-1.form")
+        .deploy(defaultUserKey)
+        .getValue()
+        .getFormMetadata()
         .getFirst()
         .getFormKey();
   }

@@ -7,107 +7,117 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class RoleCreateAuthorizationTest {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  @TestZeebe(autoStart = false)
-  private final TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
-
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
+  public void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
+    // given
+    final var roleName = UUID.randomUUID().toString();
+
     // when
-    final var response = defaultUserClient.newCreateRoleCommand().name("Foo").send().join();
+    ENGINE.role().newRole(roleName).create(defaultUserKey);
 
     // then
-    assertThat(response.getRoleKey()).isPositive();
+    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateRoleWithPermissions() {
+  public void shouldBeAuthorizedToCreateRoleWithPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        authUsername,
-        password,
-        new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.CREATE, List.of("*")));
-
-    try (final var client = authUtil.createClient(authUsername, password)) {
-      // when
-      final var response = client.newCreateRoleCommand().name("Foo").send().join();
-
-      // then
-      assertThat(response.getRoleKey()).isPositive();
-    }
-  }
-
-  @Test
-  void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
-    // given
-    final var authUsername = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(authUsername, password);
+    final var roleName = UUID.randomUUID().toString();
+    final var userKey = createUser();
+    addPermissionsToUser(userKey, AuthorizationResourceType.ROLE, PermissionType.CREATE);
 
     // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
-      final var response = client.newCreateRoleCommand().name("Foo").send();
+    ENGINE.role().newRole(roleName).create(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
-    }
+    // then
+    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
+    // given
+    final var roleName = UUID.randomUUID().toString();
+    final var userKey = createUser();
+
+    // when
+    final var rejection = ENGINE.role().newRole(roleName).expectRejection().create(userKey);
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, "*")
+        .add(defaultUserKey);
   }
 }

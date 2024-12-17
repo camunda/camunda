@@ -7,192 +7,188 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
 public class ProcessInstanceMigrationMigrateAuthorizationTest {
   public static final String JOB_TYPE = "jobType";
   public static final String SOURCE_TASK = "sourceTask";
   public static final String TARGET_TASK = "targetTask";
-
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
-
   private static final String PROCESS_ID = "processId";
   private static final String TARGET_PROCESS_ID = "targetProcessId";
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
-  private static long targetProcDefKey;
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  @TestZeebe(autoStart = false)
-  private final TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
+  private static long defaultUserKey = -1L;
+  private static long targetProcDefKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
 
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    final var deploymentEvent =
-        defaultUserClient
-            .newDeployResourceCommand()
-            .addProcessModel(
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "process.bpmn",
                 Bpmn.createExecutableProcess(PROCESS_ID)
                     .startEvent()
                     .serviceTask(SOURCE_TASK, t -> t.zeebeJobType(JOB_TYPE))
                     .endEvent()
-                    .done(),
-                "process.xml")
-            .addProcessModel(
+                    .done())
+            .withXmlResource(
+                "targetProcess.bpmn",
                 Bpmn.createExecutableProcess(TARGET_PROCESS_ID)
                     .startEvent()
                     .serviceTask(TARGET_TASK, t -> t.zeebeJobType(JOB_TYPE))
                     .endEvent()
-                    .done(),
-                "targetProcess.xml")
-            .send()
-            .join();
+                    .done())
+            .deploy(defaultUserKey)
+            .getValue();
     targetProcDefKey =
-        deploymentEvent.getProcesses().stream()
-            .filter(process -> process.getBpmnProcessId().equals(TARGET_PROCESS_ID))
+        deployment.getProcessesMetadata().stream()
+            .filter(p -> p.getBpmnProcessId().equals(TARGET_PROCESS_ID))
             .findFirst()
-            .orElseThrow()
+            .get()
             .getProcessDefinitionKey();
   }
 
   @Test
-  void shouldBeAuthorizedToMigrateProcessInstanceWithDefaultUser() {
+  public void shouldBeAuthorizedToMigrateProcessInstanceWithDefaultUser() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
+    final var processInstanceKey = createProcessInstance();
 
-    // when migrate to a non-existing process as authorization checks should fail first
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcDefKey)
+        .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+        .migrate(defaultUserKey);
+
     // then
-    final var response =
-        defaultUserClient
-            .newMigrateProcessInstanceCommand(processInstanceKey)
-            .migrationPlan(targetProcDefKey)
-            .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
-            .send()
-            .join();
-
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords(
+                    ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeAuthorizedToMigrateProcessInstanceWithUser() {
+  public void shouldBeAuthorizedToMigrateProcessInstanceWithUser() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+    final var processInstanceKey = createProcessInstance();
+    final var userKey = createUser();
+    addPermissionsToUser(
+        userKey,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        PROCESS_ID);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when migrate to a non-existing process as authorization checks should fail first
-      // then
-      final var response =
-          client
-              .newMigrateProcessInstanceCommand(processInstanceKey)
-              .migrationPlan(targetProcDefKey)
-              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
-              .send()
-              .join();
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcDefKey)
+        .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+        .migrate(userKey);
 
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
-    }
+    // then
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords(
+                    ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  void shouldBeUnauthorizedToMigrateProcessInstanceIfNoPermissions() {
+  public void shouldBeUnauthorizedToMigrateProcessInstanceIfNoPermissions() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
+    final var processInstanceKey = createProcessInstance();
+    final var userKey = createUser();
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when migrate to a non-existing process as authorization checks should fail first
-      // then
-      final var response =
-          client
-              .newMigrateProcessInstanceCommand(processInstanceKey)
-              .migrationPlan(targetProcDefKey)
-              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
-              .send();
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcDefKey)
+        .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+        .expectRejection()
+        .migrate(userKey);
 
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
-    }
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType,
+      final String... resourceIds) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, resourceIds)
+        .add(defaultUserKey);
+  }
+
+  private long createProcessInstance() {
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
   }
 }

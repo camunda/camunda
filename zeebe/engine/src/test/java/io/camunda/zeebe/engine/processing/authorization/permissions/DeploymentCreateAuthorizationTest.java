@@ -7,132 +7,140 @@
  */
 package io.camunda.zeebe.engine.processing.authorization.permissions;
 
-import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestWatcher;
 
-@AutoCloseResources
-@Testcontainers
-@ZeebeIntegration
-final class DeploymentCreateAuthorizationTest {
-  @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+public class DeploymentCreateAuthorizationTest {
+  private static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
 
-  private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static ZeebeClient defaultUserClient;
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
-      new TestStandaloneBroker()
-          .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+  private static long defaultUserKey = -1L;
+  @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeEach
-  void beforeEach() {
-    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    broker.start();
-
-    final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
-
-    authUtil.awaitUserExistsInElasticsearch(defaultUsername);
+  @BeforeClass
+  public static void beforeAll() {
+    defaultUserKey =
+        RecordingExporter.userRecords(UserIntent.CREATED)
+            .withUsername(DEFAULT_USER.getUsername())
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToDeployWithDefaultUser() {
+  public void shouldBeAuthorizedToDeployWithDefaultUser() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-
-    // when then
-    final var deploymentEvent =
-        defaultUserClient
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                "process.bpmn")
-            .send()
-            .join();
-    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
-  }
-
-  @Test
-  void shouldBeAuthorizedToDeployWithPermissions() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
-
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var deploymentEvent =
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(
-                  Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                  "process.bpmn")
-              .send()
-              .join();
-
-      // then
-      assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
-    }
-  }
-
-  @Test
-  void shouldBeUnAuthorizedToDeployWithPermissions() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUser(username, password);
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
-      final var deployFuture =
-          client
-              .newDeployResourceCommand()
-              .addProcessModel(
-                  Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-                  "process.bpmn")
-              .send();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy(defaultUserKey);
 
-      // then
-      assertThatThrownBy(deployFuture::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
-    }
+    // when
+    assertThat(
+            RecordingExporter.processRecords(ProcessIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToDeployWithPermissions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var userKey = createUser();
+    addPermissionsToUser(userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy(userKey);
+
+    // when
+    assertThat(
+            RecordingExporter.processRecords(ProcessIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnAuthorizedToDeployWithPermissions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var userKey = createUser();
+
+    // when
+    final var rejection =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "process.bpmn",
+                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .expectRejection()
+            .deploy(userKey);
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+  }
+
+  private static long createUser() {
+    return ENGINE
+        .user()
+        .newUser(UUID.randomUUID().toString())
+        .withPassword(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
+        .withEmail(UUID.randomUUID().toString())
+        .create()
+        .getKey();
+  }
+
+  private void addPermissionsToUser(
+      final long userKey,
+      final AuthorizationResourceType authorization,
+      final PermissionType permissionType) {
+    ENGINE
+        .authorization()
+        .permission()
+        .withOwnerKey(userKey)
+        .withResourceType(authorization)
+        .withPermission(permissionType, "*")
+        .add(defaultUserKey);
   }
 }
