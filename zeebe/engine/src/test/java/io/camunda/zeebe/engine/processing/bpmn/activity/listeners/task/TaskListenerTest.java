@@ -1343,13 +1343,57 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRevertCorrectedUserTaskDataWhenTaskListenerDenies() {
+  public void shouldRevertCorrectedUserTaskDataWhenAssigningOnCreationTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u.zeebeAssignee("initial_assignee"),
+        userTask -> {},
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenAssigningTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenClaimingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenCompletingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.completing,
+        u -> u,
+        UserTaskClient::complete,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  private void testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+      final ZeebeTaskListenerEventType eventType,
+      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final Consumer<UserTaskClient> userTaskAction,
+      final UserTaskIntent expectedUserTaskIntent) {
     // given
     final long processInstanceKey =
         createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+            createProcessWithZeebeUserTask(
+                t ->
+                    userTaskBuilder
+                        .apply(t)
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // when
     ENGINE
@@ -1385,10 +1429,10 @@ public class TaskListenerTest {
     // then
     assertUserTaskRecordWithIntent(
         processInstanceKey,
-        UserTaskIntent.COMPLETION_DENIED,
+        expectedUserTaskIntent,
         userTaskRecord ->
             Assertions.assertThat(userTaskRecord)
-                .describedAs("Expect that user task data is reverted to before the completion")
+                .describedAs("Expect that user task data is reverted to before the event")
                 .hasNoChangedAttributes()
                 .hasNoCandidateUsersList()
                 .hasNoCandidateGroupsList()
