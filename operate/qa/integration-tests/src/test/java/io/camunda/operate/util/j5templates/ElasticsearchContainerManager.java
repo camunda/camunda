@@ -67,7 +67,7 @@ public class ElasticsearchContainerManager extends SearchContainerManager {
     if (shouldCreateSchema()) {
       final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, true);
       schemaExporterHelper.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
+      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 19, 5 * 60 /*sec*/))
           .describedAs("Search %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();
     }
