@@ -332,7 +332,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       sequenceFlows.forEach(
           sequenceFlow -> {
             final var sequenceFlowRecord = new ProcessInstanceRecord();
-            sequenceFlowRecord.wrap(elementInstanceRecord);
+            sequenceFlowRecord.copyFrom(elementInstanceRecord);
             sequenceFlowRecord
                 .setElementId(sequenceFlow.getId())
                 .setBpmnElementType(sequenceFlow.getElementType())
