@@ -8,6 +8,8 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.EMAIL;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.KEY;
@@ -17,6 +19,9 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserInd
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import org.springframework.util.CollectionUtils;
 
 public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
 
@@ -31,6 +36,11 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.username() == null ? null : term(USERNAME, filter.username()),
         filter.email() == null ? null : term(EMAIL, filter.email()),
-        filter.name() == null ? null : term(NAME, filter.name()));
+        filter.name() == null ? null : term(NAME, filter.name()),
+        CollectionUtils.isEmpty(filter.groupKeys())
+            ? null
+            : hasParentQuery(
+                IdentityJoinRelationshipType.GROUP.getType(),
+                longTerms(GroupIndex.KEY, filter.groupKeys())));
   }
 }
