@@ -51,6 +51,4 @@ public class ManagementIdentityTransformer {
     return new MigrationStatusUpdateRequest(
         group.id(), MigrationEntityType.GROUP, null, e == null, e == null ? null : e.getMessage());
   }
-
-
 }
