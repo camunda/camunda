@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.DocumentLink;
 import io.camunda.zeebe.client.api.response.DocumentLinkResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentLink;
 import java.time.OffsetDateTime;
 
 public class DocumentLinkResponseImpl implements DocumentLinkResponse {

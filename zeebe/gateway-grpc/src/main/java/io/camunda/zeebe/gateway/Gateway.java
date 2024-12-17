@@ -12,6 +12,7 @@ import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 import com.google.rpc.Code;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
@@ -93,20 +94,23 @@ public final class Gateway implements CloseableSilently {
   private Server server;
   private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
+  private final UserServices userServices;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
       final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer) {
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final UserServices userServices) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
         securityConfiguration,
         brokerClient,
         actorSchedulingService,
-        jobStreamer);
+        jobStreamer,
+        userServices);
   }
 
   public Gateway(
@@ -115,14 +119,15 @@ public final class Gateway implements CloseableSilently {
       final SecurityConfiguration securityConfiguration,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer) {
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final UserServices userServices) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
-
+    this.userServices = userServices;
     healthManager = new GatewayHealthManagerImpl();
   }
 
@@ -375,7 +380,7 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
-      interceptors.add(new AuthenticationInterceptor());
+      interceptors.add(new AuthenticationInterceptor(userServices));
     }
 
     return ServerInterceptors.intercept(service, interceptors);

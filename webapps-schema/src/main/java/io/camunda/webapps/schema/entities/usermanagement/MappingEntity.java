@@ -15,6 +15,7 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
   private Long key;
   private String claimName;
   private String claimValue;
+  private String name;
 
   public MappingEntity() {}
 
@@ -42,6 +43,15 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
 
   public MappingEntity setClaimValue(final String claimValue) {
     this.claimValue = claimValue;
+    return this;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public MappingEntity setName(final String name) {
+    this.name = name;
     return this;
   }
 }

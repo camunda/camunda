@@ -7,10 +7,10 @@
  */
 package io.camunda.authentication.entity;
 
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.ClusterMetadata;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,60 +18,28 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
-public class CamundaUser extends User {
+public final class CamundaUser extends User {
 
   private final Long userKey;
   private final String displayName;
-  private List<String> authorizedApplications = List.of();
-  private List<TenantDTO> tenants = List.of();
-  private List<String> groups = List.of();
-  private String salesPlanType;
-  private Map<ClusterMetadata.AppName, String> c8Links = new HashMap<>();
-  private boolean canLogout;
-  private boolean apiUser;
+  private final List<String> authorizedApplications;
+  private final List<TenantDTO> tenants;
+  private final List<String> groups;
+  private final List<RoleEntity> roles;
+  private final String salesPlanType;
+  private final Map<ClusterMetadata.AppName, String> c8Links;
+  private final boolean canLogout;
+  private final boolean apiUser;
   private final String email;
 
-  public CamundaUser(
-      final Long userKey,
-      final String displayName,
-      final String username,
-      final String password,
-      final String email) {
-    super(username, password, Collections.emptyList());
-    this.userKey = userKey;
-    this.displayName = displayName;
-    this.email = email;
-    c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
-  }
-
-  public CamundaUser(
-      final String displayName,
-      final String username,
-      final String password,
-      final List<String> roles) {
-    this(displayName, username, password, null, roles);
-  }
-
-  public CamundaUser(
-      final String displayName,
-      final String username,
-      final String password,
-      final String email,
-      final List<String> roles) {
-    super(username, password, prepareAuthorities(roles));
-    userKey = null;
-    this.displayName = displayName;
-    this.email = email;
-    c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
-  }
-
-  public CamundaUser(
+  private CamundaUser(
       final Long userKey,
       final String displayName,
       final String username,
       final String password,
       final String email,
-      final List<String> roles,
+      final List<? extends GrantedAuthority> authorities,
+      final List<RoleEntity> roles,
       final List<String> authorizedApplications,
       final List<TenantDTO> tenants,
       final List<String> groups,
@@ -79,7 +47,8 @@ public class CamundaUser extends User {
       final Map<ClusterMetadata.AppName, String> c8Links,
       final boolean canLogout,
       final boolean apiUser) {
-    super(username, password, prepareAuthorities(roles));
+    super(username, password, authorities);
+    this.roles = roles;
     this.userKey = userKey;
     this.displayName = displayName;
     this.authorizedApplications = authorizedApplications;
@@ -108,8 +77,8 @@ public class CamundaUser extends User {
     return displayName;
   }
 
-  public List<String> getRoles() {
-    return getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+  public List<RoleEntity> getRoles() {
+    return roles;
   }
 
   public List<String> getGroups() {
@@ -140,12 +109,13 @@ public class CamundaUser extends User {
     return apiUser;
   }
 
-  public String getEmail() {
-    return email;
+  private static List<? extends GrantedAuthority> prepareAuthorities(
+      final List<String> authorities) {
+    return authorities.stream().map(SimpleGrantedAuthority::new).toList();
   }
 
-  private static List<SimpleGrantedAuthority> prepareAuthorities(final List<String> roles) {
-    return roles.stream().map(SimpleGrantedAuthority::new).toList();
+  public String getEmail() {
+    return email;
   }
 
   public static final class CamundaUserBuilder {
@@ -154,12 +124,13 @@ public class CamundaUser extends User {
     private String username;
     private String password;
     private String email;
-    private List<String> roles = List.of();
+    private List<RoleEntity> roles = List.of();
+    private List<? extends GrantedAuthority> authorities = List.of();
     private List<String> authorizedApplications = List.of();
     private List<TenantDTO> tenants = List.of();
     private List<String> groups = List.of();
     private String salesPlanType;
-    private Map<ClusterMetadata.AppName, String> c8Links;
+    private Map<ClusterMetadata.AppName, String> c8Links = Map.of();
     private boolean canLogout;
     private boolean apiUser;
 
@@ -194,24 +165,29 @@ public class CamundaUser extends User {
       return this;
     }
 
-    public CamundaUserBuilder withRoles(final List<String> roles) {
-      this.roles = roles;
+    public CamundaUserBuilder withRoles(final List<RoleEntity> roles) {
+      this.roles = Objects.requireNonNullElse(roles, List.of());
+      return this;
+    }
+
+    public CamundaUserBuilder withAuthorities(final List<String> authorities) {
+      this.authorities = prepareAuthorities(Objects.requireNonNullElse(authorities, List.of()));
       return this;
     }
 
     public CamundaUserBuilder withAuthorizedApplications(
         final List<String> authorizedApplications) {
-      this.authorizedApplications = authorizedApplications;
+      this.authorizedApplications = Objects.requireNonNullElse(authorizedApplications, List.of());
       return this;
     }
 
     public CamundaUserBuilder withTenants(final List<TenantDTO> tenants) {
-      this.tenants = tenants;
+      this.tenants = Objects.requireNonNullElse(tenants, List.of());
       return this;
     }
 
     public CamundaUserBuilder withGroups(final List<String> groups) {
-      this.groups = groups;
+      this.groups = Objects.requireNonNullElse(groups, List.of());
       return this;
     }
 
@@ -221,7 +197,7 @@ public class CamundaUser extends User {
     }
 
     public CamundaUserBuilder withC8Links(final Map<ClusterMetadata.AppName, String> c8Links) {
-      this.c8Links = c8Links;
+      this.c8Links = Objects.requireNonNullElse(c8Links, Map.of());
       return this;
     }
 
@@ -242,6 +218,7 @@ public class CamundaUser extends User {
           username,
           password,
           email,
+          authorities,
           roles,
           authorizedApplications,
           tenants,

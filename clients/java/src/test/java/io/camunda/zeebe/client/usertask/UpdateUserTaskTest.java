@@ -21,10 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
-import io.camunda.zeebe.client.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.time.OffsetDateTime;

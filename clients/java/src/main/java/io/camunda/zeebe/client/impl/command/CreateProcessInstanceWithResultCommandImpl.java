@@ -52,8 +52,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
   private final boolean useRest;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
-      httpRequestObject;
+  private final io.camunda.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject;
 
   public CreateProcessInstanceWithResultCommandImpl(
       final JsonMapper jsonMapper,
@@ -63,7 +62,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
       final Duration requestTimeout,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc,
-      final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject) {
+      final io.camunda.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject) {
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
     createProcessInstanceRequestBuilder = grpcRequestObject;
@@ -100,7 +99,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse.class,
+        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
         response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
         result);
     return result;

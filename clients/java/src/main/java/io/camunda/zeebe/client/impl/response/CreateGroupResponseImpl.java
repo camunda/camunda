@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.GroupCreateResponse;
 import io.camunda.zeebe.client.api.response.CreateGroupResponse;
-import io.camunda.zeebe.client.protocol.rest.GroupCreateResponse;
 
 public class CreateGroupResponseImpl implements CreateGroupResponse {
 

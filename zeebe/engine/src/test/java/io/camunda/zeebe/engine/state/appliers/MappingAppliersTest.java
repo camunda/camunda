@@ -62,7 +62,8 @@ public class MappingAppliersTest {
         new MappingRecord()
             .setMappingKey(mappingKey)
             .setClaimName(claimName)
-            .setClaimValue(claimValue);
+            .setClaimValue(claimValue)
+            .setName(claimName);
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;

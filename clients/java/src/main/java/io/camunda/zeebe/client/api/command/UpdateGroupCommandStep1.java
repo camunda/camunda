@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.client.protocol.rest.GroupChangeset;
 import io.camunda.zeebe.client.api.response.UpdateGroupResponse;
-import io.camunda.zeebe.client.protocol.rest.GroupChangeset;
 
 public interface UpdateGroupCommandStep1 extends FinalCommandStep<UpdateGroupResponse> {
 

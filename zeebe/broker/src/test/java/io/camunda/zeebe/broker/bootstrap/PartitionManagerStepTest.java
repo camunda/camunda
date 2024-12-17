@@ -18,6 +18,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -94,7 +95,8 @@ class PartitionManagerStepTest {
               mock(BrokerClient.class),
               Collections.emptyList(),
               TEST_SHUTDOWN_TIMEOUT,
-              new SecurityConfiguration());
+              new SecurityConfiguration(),
+              mock(UserServices.class));
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -193,7 +195,8 @@ class PartitionManagerStepTest {
               mock(BrokerClient.class),
               Collections.emptyList(),
               TEST_SHUTDOWN_TIMEOUT,
-              new SecurityConfiguration());
+              new SecurityConfiguration(),
+              mock(UserServices.class));
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =

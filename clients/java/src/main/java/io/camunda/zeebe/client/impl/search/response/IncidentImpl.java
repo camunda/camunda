@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.IncidentItem;
+import io.camunda.client.protocol.rest.IncidentItem.ErrorTypeEnum;
+import io.camunda.client.protocol.rest.IncidentItem.StateEnum;
 import io.camunda.zeebe.client.api.search.response.Incident;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem.StateEnum;
 import java.util.Objects;
 
 public class IncidentImpl implements Incident {
@@ -72,6 +72,11 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
+  public String getErrorType() {
+    return errorType.getValue();
+  }
+
+  @Override
   public String getErrorMessage() {
     return errorMessage;
   }
@@ -104,11 +109,6 @@ public class IncidentImpl implements Incident {
   @Override
   public String getTenantId() {
     return tenantId;
-  }
-
-  @Override
-  public String getErrorType() {
-    return errorType.getValue();
   }
 
   @Override

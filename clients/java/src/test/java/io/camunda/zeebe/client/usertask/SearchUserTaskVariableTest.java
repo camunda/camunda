@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 

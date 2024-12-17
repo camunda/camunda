@@ -77,16 +77,28 @@ public class IdentitySetupInitializeTest {
     final var tenantKey = initialized.getValue().getDefaultTenant().getTenantKey();
 
     // then
-    assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).getFirst().getValue())
+    assertThat(
+            RecordingExporter.roleRecords(RoleIntent.CREATED)
+                .withRecordKey(roleKey)
+                .getFirst()
+                .getValue())
         .hasRoleKey(roleKey)
         .hasName(roleName);
-    assertThat(RecordingExporter.userRecords(UserIntent.CREATED).getFirst().getValue())
+    assertThat(
+            RecordingExporter.userRecords(UserIntent.CREATED)
+                .withRecordKey(userKey)
+                .getFirst()
+                .getValue())
         .hasUserKey(userKey)
         .hasUsername(username)
         .hasName(userName)
         .hasPassword(password)
         .hasEmail(mail);
-    assertThat(RecordingExporter.tenantRecords(TenantIntent.CREATED).getFirst().getValue())
+    assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.CREATED)
+                .withTenantKey(tenantKey)
+                .getFirst()
+                .getValue())
         .hasTenantKey(tenantKey)
         .hasName(tenantName)
         .hasTenantId(tenantId);
@@ -222,9 +234,9 @@ public class IdentitySetupInitializeTest {
   }
 
   private static void assertUserIsAssignedToRole(final long roleKey, final long userKey) {
-    assertThat(RecordingExporter.roleRecords(RoleIntent.ENTITY_ADDED).getFirst().getValue())
-        .hasRoleKey(roleKey)
-        .hasEntityKey(userKey);
+    final var roleRecord = RecordingExporter.roleRecords(RoleIntent.ENTITY_ADDED).getFirst();
+    Assertions.assertThat(roleRecord.getKey()).isEqualTo(roleKey);
+    assertThat(roleRecord.getValue()).hasRoleKey(roleKey).hasEntityKey(userKey);
   }
 
   @Test

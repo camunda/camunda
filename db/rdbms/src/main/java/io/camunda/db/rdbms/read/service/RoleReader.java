@@ -45,7 +45,7 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
     LOG.trace("[RDBMS DB] Search for roles with filter {}", dbQuery);
     final var totalHits = roleMapper.count(dbQuery);
     final var hits = roleMapper.search(dbQuery).stream().map(this::map).toList();
-    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   private RoleEntity map(final RoleDbModel model) {

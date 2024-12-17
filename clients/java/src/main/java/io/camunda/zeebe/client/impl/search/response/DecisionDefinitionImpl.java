@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.DecisionDefinitionItem;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionItem;
 import java.util.Objects;
 
 public final class DecisionDefinitionImpl implements DecisionDefinition {

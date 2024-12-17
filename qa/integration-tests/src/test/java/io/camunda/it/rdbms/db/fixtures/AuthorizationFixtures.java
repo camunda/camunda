@@ -7,12 +7,12 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
+import io.camunda.client.protocol.rest.OwnerTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
 import io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel;
-import io.camunda.zeebe.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;

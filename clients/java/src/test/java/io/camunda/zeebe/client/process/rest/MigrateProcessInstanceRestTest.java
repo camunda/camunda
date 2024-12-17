@@ -17,10 +17,10 @@ package io.camunda.zeebe.client.process.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
+import io.camunda.client.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandFinalStep;
 import io.camunda.zeebe.client.api.command.MigrationPlan;
-import io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

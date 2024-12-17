@@ -16,14 +16,14 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
-import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class EvaluatedDecisionInputImpl implements EvaluatedDecisionInput {
 
-  @JsonIgnore private JsonMapper jsonMapper;
+  @JsonIgnore private final JsonMapper jsonMapper;
   private final String inputId;
   private final String inputName;
   private final String inputValue;

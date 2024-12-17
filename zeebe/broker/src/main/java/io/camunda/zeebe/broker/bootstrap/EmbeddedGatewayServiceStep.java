@@ -31,6 +31,7 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
     final var brokerClient = brokerStartupContext.getBrokerClient();
     final var jobStreamClient =
         new JobStreamClientImpl(scheduler, clusterServices.getCommunicationService());
+    final var userService = brokerStartupContext.getUserServices();
 
     final var embeddedGatewayService =
         new EmbeddedGatewayService(
@@ -40,7 +41,8 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             scheduler,
             concurrencyControl,
             jobStreamClient,
-            brokerClient);
+            brokerClient,
+            userService);
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
     concurrencyControl.runOnCompletion(

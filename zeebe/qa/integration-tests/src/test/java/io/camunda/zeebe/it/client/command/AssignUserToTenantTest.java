@@ -110,7 +110,7 @@ class AssignUserToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with key '%d', but the entity doesn't exist."
-                .formatted(invalidUserKey, tenantKey));
+            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity doesn't exist."
+                .formatted(invalidUserKey, TENANT_ID));
   }
 }

@@ -54,7 +54,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -480,6 +480,13 @@
       <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-service</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

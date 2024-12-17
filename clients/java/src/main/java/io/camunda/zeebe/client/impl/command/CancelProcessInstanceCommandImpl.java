@@ -46,8 +46,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   private final long processInstanceKey;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest
-      httpRequestObject;
+  private final io.camunda.client.protocol.rest.CancelProcessInstanceRequest httpRequestObject;
   private final HttpClient httpClient;
 
   public CancelProcessInstanceCommandImpl(
@@ -66,7 +65,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     this.processInstanceKey = processInstanceKey;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.CancelProcessInstanceRequest();
     this.httpClient = httpClient;
     requestTimeout(requestTimeout);
   }

@@ -19,6 +19,9 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.flowNodeI
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.flowNodeInstanceSort;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
@@ -34,9 +37,6 @@ import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.FlownodeInstanceSortImpl;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;

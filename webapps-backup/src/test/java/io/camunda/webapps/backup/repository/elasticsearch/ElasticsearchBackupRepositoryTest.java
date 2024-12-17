@@ -26,6 +26,7 @@ import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -182,7 +183,7 @@ public class ElasticsearchBackupRepositoryTest {
         new SnapshotRequest(
             "repo-name-1",
             snapshotNameProvider.getSnapshotName(metadata),
-            List.of("index-1", "index-2"),
+            new SnapshotIndexCollection(List.of("index-1", "index-2")),
             metadata);
     // 1 element array to bypass closures over final fields
     backupRepository.executeSnapshotting(

@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -36,6 +37,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   private final TenantState tenantState;
   private final UserState userState;
   private final MappingState mappingState;
+  private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -52,6 +54,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     tenantState = state.getTenantState();
     userState = state.getUserState();
     mappingState = state.getMappingState();
+    groupState = state.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -129,6 +132,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     return switch (entityType) {
       case USER -> userState.getUser(entityKey).isPresent();
       case MAPPING -> mappingState.get(entityKey).isPresent();
+      case GROUP -> groupState.get(entityKey).isPresent();
       default -> false;
     };
   }

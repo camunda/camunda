@@ -20,11 +20,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import com.google.common.collect.Sets;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.PermissionDTO;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
+import io.camunda.client.protocol.rest.PermissionDTO;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.Collections;

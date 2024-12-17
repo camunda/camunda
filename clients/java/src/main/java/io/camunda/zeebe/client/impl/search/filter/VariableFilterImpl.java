@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.VariableFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.VariableFilter;
 import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
 import java.util.function.Consumer;
 
 public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<VariableFilterRequest>

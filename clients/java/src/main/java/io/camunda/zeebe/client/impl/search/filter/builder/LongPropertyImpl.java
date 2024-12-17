@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
+import io.camunda.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import java.util.List;
 
 public class LongPropertyImpl implements LongProperty {

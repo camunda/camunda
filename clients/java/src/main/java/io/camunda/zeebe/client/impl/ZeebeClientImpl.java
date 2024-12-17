@@ -24,6 +24,7 @@ import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
@@ -55,11 +56,13 @@ import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
@@ -97,6 +100,7 @@ import io.camunda.zeebe.client.api.search.query.VariableQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
+import io.camunda.zeebe.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserToTenantCommandImpl;
@@ -128,10 +132,12 @@ import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.RemovePermissionsCommandImpl;
+import io.camunda.zeebe.client.impl.command.RemoveUserFromTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateTenantCommandImpl;
@@ -270,7 +276,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
-    channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
+    channelBuilder.userAgent("camunda-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
     channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
@@ -852,6 +858,23 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final long tenantKey) {
     return new AssignUserToTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final long tenantKey) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantKey);
+  }
+
+  @Override
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(
+      final long tenantKey, final long groupKey) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey, groupKey);
+  }
+
+  @Override
+  public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
+      final long tenantKey, final long groupKey) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey, groupKey);
   }
 
   private JobClient newJobClient() {
