@@ -264,8 +264,7 @@ class BackupPrioritiesTest {
     assertThatThrownBy(configuration::backupPriorities)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("operate-prefix")
-        .hasMessageContaining("tasklist-prefix")
-        .hasMessageContaining("optimize-prefix");
+        .hasMessageContaining("tasklist-prefix");
   }
 
   public Environment matchingProfiles(final String... profiles) {
