@@ -30,6 +30,7 @@ class AssignMappingToTenantTest {
   private static final String TENANT_ID = "tenant-id";
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
+  private static final String NAME = "name";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -59,6 +60,7 @@ class AssignMappingToTenantTest {
             .newCreateMappingCommand()
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
+            .name(NAME)
             .send()
             .join()
             .getMappingKey();

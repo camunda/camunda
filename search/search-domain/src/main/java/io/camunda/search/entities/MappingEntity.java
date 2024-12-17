@@ -10,4 +10,4 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record MappingEntity(Long mappingKey, String claimName, String claimValue) {}
+public record MappingEntity(Long mappingKey, String claimName, String claimValue, String name) {}
