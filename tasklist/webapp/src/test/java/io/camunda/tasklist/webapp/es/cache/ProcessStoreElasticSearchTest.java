@@ -21,11 +21,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
-import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
@@ -78,7 +78,7 @@ class ProcessStoreElasticSearchTest {
   @BeforeEach
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(new MultiTenancyProperties());
+    when(securityConfiguration.getMultiTenancy()).thenReturn(new MultiTenancyConfiguration());
   }
 
   // ** Test Get Process by BPMN Process Id ** //

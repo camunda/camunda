@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.tenant;
 
 import static org.mockito.Mockito.*;
 
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @ExtendWith(MockitoExtension.class)
 public class TenantServiceTest {
 
-  @Spy private TasklistProperties tasklistProperties;
+  @Spy private SecurityConfiguration securityConfiguration;
   @InjectMocks private TenantServiceImpl instance;
 
   @Test
@@ -55,7 +55,7 @@ public class TenantServiceTest {
   void invalidTenant() {
     RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
     final String tenantId = "C";
-    tasklistProperties.getMultiTenancy().setEnabled(true);
+    securityConfiguration.getMultiTenancy().setEnabled(true);
     prepareMocksTenants();
     Assertions.assertThat(instance.isTenantValid(tenantId)).isFalse();
   }
@@ -64,7 +64,7 @@ public class TenantServiceTest {
   void validTenant() {
     RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
     final String tenantId = "A";
-    tasklistProperties.getMultiTenancy().setEnabled(true);
+    securityConfiguration.getMultiTenancy().setEnabled(true);
     prepareMocksTenants();
     Assertions.assertThat(instance.isTenantValid(tenantId)).isTrue();
   }

@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.security.tenant;
 
 import io.camunda.authentication.tenant.TenantAttributeHolder;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 @Component
 public class TenantServiceImpl implements TenantService {
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
 
   @Override
   public List<String> tenantIds() {
@@ -52,6 +52,6 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   public boolean isMultiTenancyEnabled() {
-    return tasklistProperties.getMultiTenancy().isEnabled();
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 }
