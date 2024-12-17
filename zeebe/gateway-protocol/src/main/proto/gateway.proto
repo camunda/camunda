@@ -112,7 +112,7 @@ message JobResult{
   // As a result, the completion request is rejected and the task remains active.
   // Defaults to false.
   optional bool denied = 1;
-  // JSON object with attributes that were corrected by the worker.
+  // Attributes that were corrected by the worker.
   // The following attributes can be corrected, additional attributes will be ignored:
   //   * `assignee` - reset by providing an empty String
   //   * `dueDate` - reset by providing an empty String
@@ -120,6 +120,7 @@ message JobResult{
   //   * `candidateGroups` - reset by providing an empty list
   //   * `candidateUsers` - reset by providing an empty list
   //   * `priority` - minimum 0, maximum 100, default 50
+  //  Omitting any of the attributes will preserve the persisted attribute's value.
   optional JobResultCorrections corrections = 2;
 }
 
@@ -131,9 +132,9 @@ message JobResultCorrections {
   // The follow-up date of the task.
   optional string followUpDate = 3;
   // The list of candidate users of the task.
-  optional StringList candidateUsersList = 4;
+  optional StringList candidateUsers = 4;
   // The list of candidate groups of the task.
-  optional StringList candidateGroupsList = 5;
+  optional StringList candidateGroups = 5;
   // The priority of the task.
   optional int32 priority = 6;
 }

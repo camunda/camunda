@@ -177,9 +177,9 @@ public final class CompleteJobTest extends GatewayTest {
                     .setAssignee("Assignee")
                     .setDueDate("2025-05-23T01:02:03+01:00")
                     .setFollowUpDate("2025-06-23T01:02:03+01:00")
-                    .setCandidateUsersList(
+                    .setCandidateUsers(
                         StringList.newBuilder().addAllValues(List.of("User A, User B")).build())
-                    .setCandidateGroupsList(
+                    .setCandidateGroups(
                         StringList.newBuilder().addAllValues(List.of("Group A", "group B")).build())
                     .setPriority(20)
                     .build())

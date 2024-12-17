@@ -190,13 +190,12 @@ public final class RequestMapper extends RequestUtil {
       corrections.setFollowUpDate(requestCorrections.getFollowUpDate());
       correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
     }
-    if (requestCorrections.hasCandidateUsersList()) {
-      corrections.setCandidateUsersList(requestCorrections.getCandidateUsersList().getValuesList());
+    if (requestCorrections.hasCandidateUsers()) {
+      corrections.setCandidateUsersList(requestCorrections.getCandidateUsers().getValuesList());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
     }
-    if (requestCorrections.hasCandidateGroupsList()) {
-      corrections.setCandidateGroupsList(
-          requestCorrections.getCandidateGroupsList().getValuesList());
+    if (requestCorrections.hasCandidateGroups()) {
+      corrections.setCandidateGroupsList(requestCorrections.getCandidateGroups().getValuesList());
       correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
     }
     if (requestCorrections.hasPriority()) {
