@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -319,8 +318,9 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setVersion(targetProcessDefinition.getVersion())
             .setElementId(targetElementId));
 
-    final List<DirectBuffer> activeSequenceFlowIds = elementInstance.getActiveSequenceFlowIds();
-    if (!activeSequenceFlowIds.isEmpty()) {
+    final int numberOfTakenSequenceFlows =
+        elementInstanceState.getNumberOfTakenSequenceFlows(elementInstance.getKey());
+    if (numberOfTakenSequenceFlows > 0) {
       final Set<ExecutableSequenceFlow> sequenceFlows =
           getSequenceFlowsToMigrate(
               sourceProcessDefinition,
