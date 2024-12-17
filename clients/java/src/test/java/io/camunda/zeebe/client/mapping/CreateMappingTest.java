@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.mapping;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -26,11 +26,18 @@ public class CreateMappingTest extends ClientRestTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
+  public static final String NAME = "mappingName";
 
   @Test
   void shouldCreateMapping() {
     // when
-    client.newCreateMappingCommand().claimName(CLAIM_NAME).claimValue(CLAIM_VALUE).send().join();
+    client
+        .newCreateMappingCommand()
+        .claimName(CLAIM_NAME)
+        .claimValue(CLAIM_VALUE)
+        .name(NAME)
+        .send()
+        .join();
 
     // then
     final MappingRuleCreateRequest request =
@@ -42,7 +49,8 @@ public class CreateMappingTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullClaimName() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateMappingCommand().claimValue(CLAIM_VALUE).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateMappingCommand().claimValue(CLAIM_VALUE).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimName");
   }
@@ -50,8 +58,24 @@ public class CreateMappingTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullClaimValue() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateMappingCommand().claimName(CLAIM_NAME).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateMappingCommand().claimName(CLAIM_NAME).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullName() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateMappingCommand()
+                    .claimName(CLAIM_NAME)
+                    .claimValue(CLAIM_VALUE)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name");
   }
 }

@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.ProcessInstanceFilterRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
@@ -27,12 +30,11 @@ import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -220,8 +222,27 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter variables(
-      List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
+      final List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
     filter.setVariables(variableValueFilters);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters) {
+    if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
+      final List<ProcessInstanceVariableFilterRequest> variableFilters =
+          variableValueFilters.entrySet().stream()
+              .map(
+                  entry -> {
+                    final ProcessInstanceVariableFilterRequest request =
+                        new ProcessInstanceVariableFilterRequest();
+                    request.setName(entry.getKey());
+                    request.setValue(entry.getValue().toString());
+                    return request;
+                  })
+              .collect(Collectors.toList());
+      filter.setVariables(variableFilters);
+    }
     return this;
   }
 

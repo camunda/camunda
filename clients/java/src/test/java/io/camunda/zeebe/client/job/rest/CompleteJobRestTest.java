@@ -17,9 +17,9 @@ package io.camunda.zeebe.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.job.CompleteJobTest;
-import io.camunda.zeebe.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.JsonUtil;
 import io.camunda.zeebe.client.util.StringUtil;

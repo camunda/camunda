@@ -17,6 +17,7 @@ package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
@@ -1141,6 +1143,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *  .newCreateMappingCommand()
    *  .claimName(claimName)
    *  .claimValue(claimValue)
+   *  .name(name)
    *  .send();
    * </pre>
    *
@@ -1516,4 +1519,37 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the remove user from tenant command
    */
   RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(long tenantKey);
+
+  /**
+   * Command to assign a group to a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newAssignGroupToTenantCommand(tenantKey, groupKey)
+   *   .send();
+   * </pre>
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder to configure and send the assign group to tenant command
+   */
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey, long groupKey);
+
+  /**
+   * Command to unassign a group from a tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newUnassignGroupFromTenantCommand(tenantKey, groupKey)
+   *   .send();
+   * </pre>
+   *
+   * @param tenantKey the unique identifier of the tenant
+   * @return a builder to configure and send the unassign group from tenant command
+   */
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
+      long tenantKey, long groupKey);
 }

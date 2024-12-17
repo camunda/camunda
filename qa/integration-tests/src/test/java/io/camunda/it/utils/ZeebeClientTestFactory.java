@@ -7,11 +7,11 @@
  */
 package io.camunda.it.utils;
 
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.lang.annotation.Documented;

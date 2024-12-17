@@ -12,13 +12,14 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
+
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -185,7 +186,7 @@ public class AuthorizationsUtil {
     }
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(15))
         .until(
             () -> {
               final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());

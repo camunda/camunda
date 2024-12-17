@@ -319,7 +319,8 @@ public final class SearchQueryResponseMapper {
     return new MappingItem()
         .mappingKey(mappingEntity.mappingKey())
         .claimName(mappingEntity.claimName())
-        .claimValue(mappingEntity.claimValue());
+        .claimValue(mappingEntity.claimValue())
+        .name(mappingEntity.name());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(

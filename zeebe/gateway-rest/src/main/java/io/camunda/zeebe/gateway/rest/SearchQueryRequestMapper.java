@@ -739,6 +739,7 @@ public final class SearchQueryRequestMapper {
         case "mappingKey" -> builder.mappingKey();
         case "claimName" -> builder.claimName();
         case "claimValue" -> builder.claimValue();
+        case "name" -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

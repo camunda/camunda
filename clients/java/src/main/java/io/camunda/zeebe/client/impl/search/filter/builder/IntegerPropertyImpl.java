@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
+import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import java.util.List;
 
 public class IntegerPropertyImpl implements IntegerProperty {

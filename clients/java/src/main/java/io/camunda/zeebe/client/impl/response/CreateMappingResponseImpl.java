@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.MappingRuleCreateResponse;
 import io.camunda.zeebe.client.api.response.CreateMappingResponse;
-import io.camunda.zeebe.client.protocol.rest.MappingRuleCreateResponse;
 
 public class CreateMappingResponseImpl implements CreateMappingResponse {
 

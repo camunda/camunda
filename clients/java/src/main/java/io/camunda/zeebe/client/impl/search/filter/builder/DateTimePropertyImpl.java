@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
+import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;

@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionFilterRequest;
 
 public class ProcessDefinitionFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessDefinitionFilterRequest>

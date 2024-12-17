@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.PermissionDTO;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.protocol.rest.AuthorizationPatchRequest;
+import io.camunda.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
+import io.camunda.client.protocol.rest.PermissionDTO;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
 public class PatchAuthorizationCommand {

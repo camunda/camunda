@@ -19,11 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
-import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
+import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
+import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import java.util.Collections;

@@ -519,7 +519,10 @@ public final class ZeebeAssertHelper {
     consumer.accept(tenantRecordValue);
   }
 
-  public static void assertMappingCreated(final String claimName, final String claimValue) {
+  public static void assertMappingCreated(
+      final String claimName,
+      final String claimValue,
+      final Consumer<MappingRecordValue> consumer) {
     final MappingRecordValue mapping =
         RecordingExporter.mappingRecords()
             .withIntent(MappingIntent.CREATED)
@@ -529,5 +532,19 @@ public final class ZeebeAssertHelper {
             .getValue();
 
     assertThat(mapping).isNotNull();
+    consumer.accept(mapping);
+  }
+
+  public static void assertGroupUnassignedFromTenant(
+      final long tenantKey, final Consumer<TenantRecordValue> consumer) {
+    final var tenantRecordValue =
+        RecordingExporter.tenantRecords()
+            .withIntent(TenantIntent.ENTITY_REMOVED)
+            .withTenantKey(tenantKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(tenantRecordValue).isNotNull();
+    consumer.accept(tenantRecordValue);
   }
 }

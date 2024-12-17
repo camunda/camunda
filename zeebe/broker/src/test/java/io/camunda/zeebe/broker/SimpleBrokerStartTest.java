@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -64,7 +65,8 @@ public final class SimpleBrokerStartTest {
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),
-                      new SecurityConfiguration());
+                      new SecurityConfiguration(),
+                      mock(UserServices.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -86,7 +88,12 @@ public final class SimpleBrokerStartTest {
 
     final var systemContext =
         new SystemContext(
-            brokerCfg, actorScheduler, atomixCluster, brokerClient, new SecurityConfiguration());
+            brokerCfg,
+            actorScheduler,
+            atomixCluster,
+            brokerClient,
+            new SecurityConfiguration(),
+            mock(UserServices.class));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =

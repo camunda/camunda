@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.Gateway;
@@ -32,7 +33,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final ActorSchedulingService actorScheduler,
       final ConcurrencyControl concurrencyControl,
       final JobStreamClient jobStreamClient,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final UserServices userServices) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
@@ -43,7 +45,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             securityConfiguration,
             brokerClient,
             actorScheduler,
-            jobStreamClient.streamer());
+            jobStreamClient.streamer(),
+            userServices);
   }
 
   @Override

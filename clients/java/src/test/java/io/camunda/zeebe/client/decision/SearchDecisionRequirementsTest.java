@@ -17,8 +17,8 @@ package io.camunda.zeebe.client.decision;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 

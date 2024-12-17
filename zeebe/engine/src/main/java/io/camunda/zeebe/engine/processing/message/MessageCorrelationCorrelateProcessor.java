@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -167,7 +166,7 @@ public final class MessageCorrelationCorrelateProcessor
       final Subscriptions correlatingSubscriptions,
       final String tenantId) {
     final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
-    final AtomicReference<String> processId = new AtomicReference<>();
+    final AtomicReference<Rejection> rejection = new AtomicReference<>();
 
     final var isAuthorized =
         correlatingSubscriptions.visitSubscriptions(
@@ -186,19 +185,14 @@ public final class MessageCorrelationCorrelateProcessor
 
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);
-              processId.set(processIdString);
-              return authCheckBehavior.isAuthorized(request.get()).isRight();
+              final var rejectionOrAuthorized = authCheckBehavior.isAuthorized(request.get());
+              rejectionOrAuthorized.ifLeft(rejection::set);
+              return rejectionOrAuthorized.isRight();
             },
             true);
 
     if (!isAuthorized) {
-      final var authorizationRequest = request.get();
-      final var error =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authorizationRequest.getPermissionType(),
-              authorizationRequest.getResourceType(),
-              "BPMN process id '%s'".formatted(processId.get()));
-      return Optional.of(new Rejection(RejectionType.UNAUTHORIZED, error));
+      return Optional.of(rejection.get());
     }
 
     return Optional.empty();

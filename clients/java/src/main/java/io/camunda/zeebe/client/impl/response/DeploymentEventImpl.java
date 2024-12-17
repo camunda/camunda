@@ -15,6 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.DeploymentDecision;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.client.protocol.rest.DeploymentForm;
+import io.camunda.client.protocol.rest.DeploymentMetadata;
+import io.camunda.client.protocol.rest.DeploymentProcess;
+import io.camunda.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
@@ -22,12 +28,6 @@ import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.impl.Loggers;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
-import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
-import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -42,7 +42,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private static final String UNKNOWN_METADATA_WARN_MSG =
       "Expected metadata in deployment response, but encountered an unknown type of metadata."
           + " This might happen when you've updated your Zeebe cluster, but not your Zeebe client."
-          + " You may have to update the version of your zeebe-client-java dependency to resolve the issue.";
+          + " You may have to update the version of your camunda-client-java dependency to resolve the issue.";
 
   private final long key;
   private final String tenantId;

@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.IncidentFilterRequest;
+import io.camunda.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
+import io.camunda.client.protocol.rest.IncidentFilterRequest.StateEnum;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
 
 public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<IncidentFilterRequest>
     implements IncidentFilter {

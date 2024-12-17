@@ -37,11 +37,34 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
     // then
     final SearchQueryOption queryVariant = searchRequest.queryOption();
+
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchExistsQuery.class,
+            SearchBoolQuery.class,
+            (boolQuery) -> {
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      query ->
+                          assertThat(query.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  (existsQuery) -> {
+                                    assertThat(existsQuery.field())
+                                        .isEqualTo("flowNodeInstanceId"); // Validate the field
+                                  }));
+            });
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.field()).isEqualTo("flowNodeInstanceId"); // Retrieve only User Task
+              assertThat(t.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("implementation");
+                        assertThat(term.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
+                      });
             });
   }
 

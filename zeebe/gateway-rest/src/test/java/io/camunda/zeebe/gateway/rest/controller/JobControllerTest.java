@@ -403,7 +403,7 @@ public class JobControllerTest extends RestControllerTest {
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
         .containsExactly(
-            "assignee",
+            UserTaskRecord.ASSIGNEE,
             UserTaskRecord.DUE_DATE,
             UserTaskRecord.FOLLOW_UP_DATE,
             UserTaskRecord.CANDIDATE_USERS,
@@ -458,7 +458,7 @@ public class JobControllerTest extends RestControllerTest {
 
     assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
         .containsExactly(
-            "assignee",
+            UserTaskRecord.ASSIGNEE,
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.PRIORITY);

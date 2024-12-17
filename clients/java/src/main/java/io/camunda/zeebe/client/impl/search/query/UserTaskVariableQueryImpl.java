@@ -18,6 +18,8 @@ package io.camunda.zeebe.client.impl.search.query;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.variableSort;
 
+import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
@@ -33,8 +35,6 @@ import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.VariableSortImpl;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
