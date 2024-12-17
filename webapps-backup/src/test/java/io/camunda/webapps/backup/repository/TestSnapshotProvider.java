@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.backup.repository.elasticsearch;
+package io.camunda.webapps.backup.repository;
 
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 
 public class TestSnapshotProvider implements SnapshotNameProvider {
 
@@ -24,12 +23,12 @@ public class TestSnapshotProvider implements SnapshotNameProvider {
   }
 
   @Override
-  public String snapshotNamePrefix() {
-    return "test_snapshot_";
+  public Long extractBackupId(final String snapshotName) {
+    return Long.valueOf(snapshotName.split("_")[2]);
   }
 
   @Override
-  public Long extractBackupId(final String snapshotName) {
-    return Long.valueOf(snapshotName.split("_")[2]);
+  public String snapshotNamePrefix() {
+    return "test_snapshot_";
   }
 }

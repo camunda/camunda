@@ -37,14 +37,14 @@ public class BackupServiceImpl implements BackupService {
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
-      final BackupRepositoryProps operateProperties,
+      final BackupRepositoryProps backupProps,
       final BackupRepository repository,
       final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     indexPatternsOrdered = backupPriorities.indicesSplitBySnapshot().toList();
     this.repository = repository;
-    backupProps = operateProperties;
+    this.backupProps = backupProps;
     this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 

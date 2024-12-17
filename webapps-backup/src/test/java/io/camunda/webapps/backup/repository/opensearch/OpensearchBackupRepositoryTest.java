@@ -21,7 +21,7 @@ import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.elasticsearch.TestSnapshotProvider;
+import io.camunda.webapps.backup.repository.TestSnapshotProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
