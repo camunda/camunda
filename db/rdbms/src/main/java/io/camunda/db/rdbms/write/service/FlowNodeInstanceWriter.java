@@ -68,7 +68,7 @@ public class FlowNodeInstanceWriter {
           new QueueItem(
               ContextType.FLOW_NODE,
               flowNodeInstanceKey,
-              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.incrementIncidentCount",
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.incrementSubprocessIncidentCount",
               flowNodeInstanceKey));
     }
   }
@@ -83,7 +83,7 @@ public class FlowNodeInstanceWriter {
           new QueueItem(
               ContextType.FLOW_NODE,
               flowNodeInstanceKey,
-              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.decrementIncidentCount",
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.decrementSubprocessIncidentCount",
               flowNodeInstanceKey));
     }
   }
