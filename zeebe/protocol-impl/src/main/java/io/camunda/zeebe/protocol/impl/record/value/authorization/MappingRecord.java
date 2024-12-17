@@ -18,10 +18,14 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
 
   public MappingRecord() {
-    super(3);
-    declareProperty(mappingKeyProp).declareProperty(claimNameProp).declareProperty(claimValueProp);
+    super(4);
+    declareProperty(mappingKeyProp)
+        .declareProperty(claimNameProp)
+        .declareProperty(claimValueProp)
+        .declareProperty(nameProp);
   }
 
   @Override
@@ -51,6 +55,16 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
 
   public MappingRecord setClaimValue(final String claimValue) {
     claimValueProp.setValue(claimValue);
+    return this;
+  }
+
+  @Override
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  public MappingRecord setName(final String name) {
+    nameProp.setValue(name);
     return this;
   }
 }

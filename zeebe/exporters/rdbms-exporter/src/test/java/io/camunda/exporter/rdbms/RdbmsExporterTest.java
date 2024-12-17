@@ -25,7 +25,9 @@ import io.camunda.db.rdbms.write.queue.PreFlushListener;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
+import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
@@ -43,6 +45,9 @@ class RdbmsExporterTest {
   private RdbmsExporter exporter;
   private StubExecutionQueue executionQueue;
   private ExporterPositionService positionService;
+
+  private ScheduledTask flushTask;
+  private RdbmsPurger rdbmsPurger;
 
   @Test
   void shouldCallCorrectHandler() {
@@ -199,6 +204,19 @@ class RdbmsExporterTest {
     verify(positionService).update(Mockito.argThat(p -> p.lastExportedPosition() == 1));
   }
 
+  @Test
+  void shouldClearFlushTaskOnPurge() {
+    // given
+    createExporter(b -> b);
+
+    // when
+    exporter.purge();
+
+    // then
+    verify(flushTask).cancel();
+    verify(rdbmsPurger).purgeRdbms();
+  }
+
   // ------------------------------------------------
   // mocks and stubs
   // ------------------------------------------------
@@ -225,16 +243,21 @@ class RdbmsExporterTest {
 
   private void createExporter(
       final Function<RdbmsExporterConfig.Builder, RdbmsExporterConfig.Builder> builderFunction) {
+    flushTask = mock(ScheduledTask.class);
+
     controller = mock(Controller.class);
     when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
+    when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
 
     rdbmsWriter = mock(RdbmsWriter.class);
     executionQueue = new StubExecutionQueue();
     positionService = mock(ExporterPositionService.class);
     when(positionService.findOne(anyLong())).thenReturn(null);
+    rdbmsPurger = mock(RdbmsPurger.class);
 
     when(rdbmsWriter.getExporterPositionService()).thenReturn(positionService);
     when(rdbmsWriter.getExecutionQueue()).thenReturn(executionQueue);
+    when(rdbmsWriter.getRdbmsPurger()).thenReturn(rdbmsPurger);
     doAnswer((invocation) -> executionQueue.flush()).when(rdbmsWriter).flush();
 
     final var builder =

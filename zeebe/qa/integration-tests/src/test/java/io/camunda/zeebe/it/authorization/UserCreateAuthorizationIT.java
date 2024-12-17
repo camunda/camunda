@@ -132,9 +132,10 @@ public class UserCreateAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
-          .hasMessageContaining("Unauthorized to perform operation 'CREATE' on resource 'USER'");
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
+          .hasMessageContaining(
+              "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
     }
   }
 }

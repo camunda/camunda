@@ -337,6 +337,7 @@
       </column>
       <column name="CLAIM_NAME" type="VARCHAR(255)"/>
       <column name="CLAIM_VALUE" type="VARCHAR(255)"/>
+      <column name="NAME" type="VARCHAR(255)"/>
     </createTable>
   </changeSet>
 

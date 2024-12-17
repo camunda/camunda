@@ -37,10 +37,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final String GRPC_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String REST_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
-  private static final String ELASTICSEARCH_EXPORTER_CLASSNAME =
-      "io.camunda.zeebe.exporter.ElasticsearchExporter";
-  private static final String ELASTICSEARCH_BULK_SIZE = "1";
-  private static final String IMPORTER_READER_BACKOFF = "1000";
+  private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
+  private static final String CAMUNDA_EXPORTER_BULK_SIZE = "1";
 
   public CamundaContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
@@ -54,15 +52,9 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBE_GATEWAYADDRESS, GRPC_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_CSRF_PREVENTION_ENABLED, "false")
-        .withEnv(
-            ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_IMPORTER_READERBACKOFF,
-            IMPORTER_READER_BACKOFF)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_GATEWAYADDRESS, GRPC_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_RESTADDRESS, REST_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_CSRF_PREVENTION_ENABLED, "false")
-        .withEnv(
-            ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_IMPORTER_READERBACKOFF,
-            IMPORTER_READER_BACKOFF)
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
             ContainerRuntimePorts.CAMUNDA_COMMAND_API,
@@ -73,12 +65,11 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   public CamundaContainer withElasticsearchUrl(final String url) {
     withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_ELASTICSEARCH_CLASSNAME,
-        ELASTICSEARCH_EXPORTER_CLASSNAME);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_ELASTICSEARCH_ARGS_URL, url);
+        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_CLASSNAME, CAMUNDA_EXPORTER_CLASSNAME);
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_CONNECT_URL, url);
     withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_ELASTICSEARCH_ARGS_BULK_SIZE,
-        ELASTICSEARCH_BULK_SIZE);
+        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_BULK_SIZE,
+        CAMUNDA_EXPORTER_BULK_SIZE);
 
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBEELASTICSEARCH_URL, url);

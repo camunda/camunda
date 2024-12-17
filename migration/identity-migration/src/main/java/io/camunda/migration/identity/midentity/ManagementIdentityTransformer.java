@@ -12,11 +12,11 @@ import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
+import io.camunda.migration.identity.dto.UserTenants;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ManagementIdentityTransformer {
-
   public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Tenant tenant, final Exception e) {
     return new MigrationStatusUpdateRequest(
@@ -32,6 +32,16 @@ public class ManagementIdentityTransformer {
     return new MigrationStatusUpdateRequest(
         mappingRule.getName(),
         MigrationEntityType.MAPPING_RULE,
+        null,
+        e == null,
+        e == null ? null : e.getMessage());
+  }
+
+  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+      final UserTenants tenantUser, final Exception e) {
+    return new MigrationStatusUpdateRequest(
+        tenantUser.id(),
+        MigrationEntityType.TENANT_USER,
         null,
         e == null,
         e == null ? null : e.getMessage());

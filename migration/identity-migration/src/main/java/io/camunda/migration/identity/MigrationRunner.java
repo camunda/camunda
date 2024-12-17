@@ -7,15 +7,12 @@
  */
 package io.camunda.migration.identity;
 
-import static java.util.Arrays.asList;
-
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -25,44 +22,39 @@ public class MigrationRunner implements Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
 
-  private ApplicationArguments args;
-
   private final AuthorizationMigrationHandler authorizationMigrationHandler;
   private final TenantMigrationHandler tenantMigrationHandler;
   private final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler;
+  private final UserTenantsMigrationHandler userTenantsMigrationHandler;
   private final RoleMigrationHandler roleMigrationHandler;
+  
 
   public MigrationRunner(
       final AuthorizationMigrationHandler authorizationMigrationHandler,
       final TenantMigrationHandler tenantMigrationHandler,
       final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler,
+      final UserTenantsMigrationHandler userTenantsMigrationHandler,
       final RoleMigrationHandler roleMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
     this.tenantMigrationHandler = tenantMigrationHandler;
     this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
+    this.userTenantsMigrationHandler = userTenantsMigrationHandler;
     this.roleMigrationHandler = roleMigrationHandler;
   }
 
   @Override
-  public void run() {
-
-    final String command =
-        args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
-    if (!asList("migrate", "status").contains(command)) {
-      throw new IllegalArgumentException("Unknown command: " + command);
-    }
-
-    if ("migrate".equals(command)) {
-      migrate();
-    }
+  public Void call() {
+    migrate();
+    return null;
   }
 
   private void migrate() {
     while (true) {
       try {
-        roleMigrationHandler.migrate();
         tenantMigrationHandler.migrate();
         tenantMappingRuleMigrationHandler.migrate();
+        userTenantsMigrationHandler.migrate();
+        roleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
         break;
       } catch (final Exception e) {
@@ -70,10 +62,5 @@ public class MigrationRunner implements Migrator {
         Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
       }
     }
-  }
-
-  @Override
-  public void acceptArguments(final ApplicationArguments args) {
-    this.args = args;
   }
 }

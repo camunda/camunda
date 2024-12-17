@@ -101,6 +101,11 @@ public class RdbmsExporterWrapper implements Exporter {
     exporter.export(record);
   }
 
+  @Override
+  public void purge() throws Exception {
+    exporter.purge();
+  }
+
   private static void createHandlers(
       final long partitionId,
       final RdbmsWriter rdbmsWriter,

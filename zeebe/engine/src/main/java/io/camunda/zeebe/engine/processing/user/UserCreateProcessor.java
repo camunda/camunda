@@ -64,12 +64,11 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   public void processNewCommand(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      final var message =
-          AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, message);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

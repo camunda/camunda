@@ -61,7 +61,7 @@ public class MappingServicesTest {
   @Test
   public void shouldCreateMapping() {
     // given
-    final var mappingDTO = new MappingDTO("newClaimName", "newClaimValue");
+    final var mappingDTO = new MappingDTO("newClaimName", "newClaimValue", "mappingRuleName");
 
     // when
     services.createMapping(mappingDTO);
@@ -73,6 +73,7 @@ public class MappingServicesTest {
     final MappingRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingDTO.claimValue());
+    assertThat(brokerRequestValue.getName()).isEqualTo(mappingDTO.name());
   }
 
   @Test

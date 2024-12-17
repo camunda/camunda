@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.usertask;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -147,8 +148,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         .ifRightOrLeft(
             persistedRecord ->
                 handleCommandProcessing(commandProcessor, command, persistedRecord, intent),
-            violation ->
-                handleCommandRejection(command, violation.getLeft(), violation.getRight()));
+            rejection -> handleCommandRejection(command, rejection));
   }
 
   private void handleCommandProcessing(
@@ -206,11 +206,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void handleCommandRejection(
-      final TypedRecord<UserTaskRecord> command,
-      final RejectionType rejectionType,
-      final String rejectionReason) {
-    rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+      final TypedRecord<UserTaskRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private Optional<TaskListener> findNextTaskListener(

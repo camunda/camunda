@@ -135,10 +135,11 @@ public class XMLUtil {
             new ProcessEntity().setBpmnProcessId(elementId).setName(attributes.getValue("name")));
         processChildrenIds.put(elementId, new LinkedHashSet<>());
         currentProcessId = elementId;
-      } else if (startEventElement.equalsIgnoreCase(localName)) {
-        isStartEvent = true;
       } else if (currentProcessId != null && elementId != null) {
         processChildrenIds.get(currentProcessId).add(elementId);
+        if (startEventElement.equalsIgnoreCase(localName)) {
+          isStartEvent = true;
+        }
       } else if (isStartEvent) {
         if ("property".equalsIgnoreCase(localName)) {
           final String name = attributes.getValue("name");

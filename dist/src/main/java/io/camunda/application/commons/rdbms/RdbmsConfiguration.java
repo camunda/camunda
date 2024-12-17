@@ -36,6 +36,7 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
@@ -142,8 +143,9 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper) {
-    return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper);
+      final ExporterPositionMapper exporterPositionMapper,
+      final PurgeMapper purgeMapper) {
+    return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper, purgeMapper);
   }
 
   @Bean

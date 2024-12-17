@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
-
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -102,13 +100,11 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(incident.getBpmnProcessId());
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      final var reason =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(),
-              authRequest.getResourceType(),
-              "BPMN process id '%s'".formatted(incident.getBpmnProcessId()));
-      rejectResolveCommand(command, reason, RejectionType.UNAUTHORIZED);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

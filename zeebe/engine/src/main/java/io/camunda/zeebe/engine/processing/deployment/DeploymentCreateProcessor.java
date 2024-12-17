@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
@@ -132,15 +131,14 @@ public final class DeploymentCreateProcessor
             command.getValue().getTenantId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
+      final var rejection = isAuthorized.getLeft();
       final String errorMessage =
-          RejectionType.UNAUTHORIZED.equals(rejectionType)
-              ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                  authorizationRequest.getPermissionType(), authorizationRequest.getResourceType())
-              : "Expected to create a deployment for tenant '%s', but no such tenant was found"
-                  .formatted(command.getValue().getTenantId());
-      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? "Expected to create a deployment for tenant '%s', but no such tenant was found"
+                  .formatted(command.getValue().getTenantId())
+              : rejection.reason();
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
       return;
     }
 

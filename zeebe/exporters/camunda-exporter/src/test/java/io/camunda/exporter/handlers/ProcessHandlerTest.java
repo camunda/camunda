@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ProcessHandlerTest {
@@ -138,6 +139,12 @@ public class ProcessHandlerTest {
     assertThat(processEntity.getResourceName()).isEqualTo(processRecordValue.getResourceName());
     assertThat(processEntity.getBpmnXml())
         .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
+    Assertions.assertThat(processEntity.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getId().equals("startEvent"))
+        .hasSize(1);
+    Assertions.assertThat(processEntity.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getId().equals("endEvent"))
+        .hasSize(1);
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
     assertThat(processEntity.getIsPublic()).isFalse();
     assertThat(processEntity.getFormId()).isNull();

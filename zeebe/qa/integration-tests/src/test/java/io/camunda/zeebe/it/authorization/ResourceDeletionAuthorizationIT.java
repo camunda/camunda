@@ -116,10 +116,10 @@ public class ResourceDeletionAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT' with id '%s'",
+              "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]",
               processId);
     }
   }
@@ -176,10 +176,10 @@ public class ResourceDeletionAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT' with id '%s'",
+              "Insufficient permissions to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT', required resource identifiers are one of '[%s, *]",
               drdId);
     }
   }
@@ -234,10 +234,10 @@ public class ResourceDeletionAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT' with id '%s'",
+              "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]",
               formId);
     }
   }
