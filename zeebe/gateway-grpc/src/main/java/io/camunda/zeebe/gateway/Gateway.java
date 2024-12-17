@@ -385,7 +385,7 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (securityConfiguration.getAuthorizations().isEnabled()) {
-      interceptors.add(new AuthenticationInterceptor(userServices));
+      interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
     }
 
     return ServerInterceptors.intercept(service, interceptors);

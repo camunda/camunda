@@ -20,13 +20,13 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class AuthenticationInterceptor implements ServerInterceptor {
 
@@ -38,9 +38,12 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
-  public AuthenticationInterceptor(final UserServices userServices) {
+  public AuthenticationInterceptor(
+      final UserServices userServices, final PasswordEncoder passwordEncoder) {
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Override
@@ -99,7 +102,17 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       }
 
       final var user = userOpt.get();
-      // TODO add password validation
+      if (!isPasswordValid(password, user.password())) {
+        LOGGER.debug(
+            "Denying call {} as the password is not valid for user {}",
+            methodDescriptor.getFullMethodName(),
+            user.username());
+        return deny(
+            call,
+            Status.UNAUTHENTICATED
+                .augmentDescription("Expected a valid password, but password is not valid")
+                .withCause(new IllegalArgumentException("Password is not valid")));
+      }
 
       final var context = Context.current().withValue(USER_KEY, user.userKey());
       return Contexts.interceptCall(context, call, headers, next);
@@ -123,8 +136,8 @@ public class AuthenticationInterceptor implements ServerInterceptor {
     return userServices.search(userQuery).items().stream().filter(Objects::nonNull).findFirst();
   }
 
-  private boolean isPasswordValid(final String password, final UserEntity user) {
-    return user.password().equals(password);
+  private boolean isPasswordValid(final String password, final String userPassword) {
+    return passwordEncoder.matches(password, userPassword);
   }
 
   private <ReqT, RespT> Listener<ReqT> handleOidcAuth(

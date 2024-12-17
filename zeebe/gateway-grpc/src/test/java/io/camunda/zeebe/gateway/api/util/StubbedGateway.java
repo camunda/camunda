@@ -104,7 +104,7 @@ public final class StubbedGateway {
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
-                    gatewayGrpcService, new AuthenticationInterceptor(services)));
+                    gatewayGrpcService, new AuthenticationInterceptor(services, passwordEncoder)));
     server = serverBuilder.build();
     server.start();
   }
