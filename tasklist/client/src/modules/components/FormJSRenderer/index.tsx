@@ -18,6 +18,11 @@ import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import type {FileUploadMetadata} from 'modules/mutations/useUploadDocuments';
 import set from 'lodash/set';
+import {api} from 'modules/api';
+
+const defaultDocumentsEndpointKey = decodeURIComponent(
+  (await api.v2.getDocument('{documentId}')).url,
+);
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
@@ -194,7 +199,10 @@ const FormJSRenderer: React.FC<Props> = ({
         formManager.render({
           container,
           schema,
-          data,
+          data: {
+            defaultDocumentsEndpointKey,
+            ...data,
+          },
           onImportError,
           onSubmit: async ({data: newData, errors, files = new Map()}) => {
             onSubmitStart?.();
