@@ -45,7 +45,7 @@ public class VariablesClient {
     objectVariableDto.setValue(value);
     final VariableDto.ValueInfo info = new VariableDto.ValueInfo();
     info.setObjectTypeName(objectTypeName);
-    info.setSerializationDataFormat(MediaType.APPLICATION_JSON);
+    info.setSerializationDataFormat(MediaType.APPLICATION_JSON_VALUE);
     objectVariableDto.setValueInfo(info);
     return objectVariableDto;
   }
