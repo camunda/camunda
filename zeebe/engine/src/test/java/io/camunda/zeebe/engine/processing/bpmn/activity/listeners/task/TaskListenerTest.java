@@ -950,18 +950,60 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections() {
+  public void
+      shouldAppendUserTaskCorrectedWhenAssigningOnCreationTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u.zeebeAssignee("initial_assignee"),
+        userTask -> {},
+        "");
+  }
+
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenAssigningTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        "assign");
+  }
+
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenClaimingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        "claim");
+  }
+
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenCompletingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.completing, u -> u, UserTaskClient::complete, "complete");
+  }
+
+  private void testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+      final ZeebeTaskListenerEventType eventType,
+      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final Consumer<UserTaskClient> userTaskAction,
+      final String expectedAction) {
     // given
     final long processInstanceKey =
         createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+            createProcessWithZeebeUserTask(
+                t ->
+                    userTaskBuilder
+                        .apply(t)
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
     final var userTaskRecord =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var userTask = userTaskRecord.getValue();
-    ENGINE.userTask().withKey(userTaskRecord.getKey()).complete();
+    userTaskAction.accept(ENGINE.userTask().withKey(userTaskRecord.getKey()));
 
     // when
     ENGINE
@@ -1008,7 +1050,7 @@ public class TaskListenerTest {
         .hasFollowUpDate("new_follow_up_date")
         .hasPriority(100)
         .describedAs("Expect that the action references the listened to action")
-        .hasAction("complete")
+        .hasAction(expectedAction)
         .describedAs("Expect that the other data is also filled but remains unchanged")
         .hasBpmnProcessId(userTask.getBpmnProcessId())
         .hasCreationTimestamp(userTask.getCreationTimestamp())
@@ -1051,7 +1093,7 @@ public class TaskListenerTest {
         .hasDueDate("new_due_date")
         .hasFollowUpDate("new_follow_up_date")
         .describedAs("Expect that the action references the listened to action")
-        .hasAction("complete")
+        .hasAction(expectedAction)
         .describedAs("Expect that the other data is also filled but remains unchanged")
         .hasBpmnProcessId(userTask.getBpmnProcessId())
         .hasCreationTimestamp(userTask.getCreationTimestamp())
