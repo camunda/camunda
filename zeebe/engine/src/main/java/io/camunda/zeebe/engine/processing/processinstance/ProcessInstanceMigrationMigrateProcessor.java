@@ -493,7 +493,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
               requireSequenceFlowExistsInTarget(
-                  activeFlowId,
+                  activeFlow.getId(),
                   sourceGateway,
                   targetGateway,
                   elementInstance.getValue().getProcessInstanceKey());
