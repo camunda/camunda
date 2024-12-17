@@ -218,6 +218,7 @@ final class StandaloneGatewaySecurityTest {
         actorScheduler,
         atomixCluster,
         brokerClient,
-        jobStreamClient);
+        jobStreamClient,
+        null);
   }
 }

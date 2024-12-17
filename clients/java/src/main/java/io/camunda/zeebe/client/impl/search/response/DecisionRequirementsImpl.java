@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.DecisionRequirementsItem;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsItem;
 
 public class DecisionRequirementsImpl implements DecisionRequirements {
   private final Long decisionRequirementsKey;

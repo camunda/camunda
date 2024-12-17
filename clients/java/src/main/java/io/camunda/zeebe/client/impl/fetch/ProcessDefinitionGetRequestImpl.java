@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.fetch;
 
+import io.camunda.client.protocol.rest.ProcessDefinitionItem;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.fetch.ProcessDefinitionGetRequest;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.client.api.search.response.ProcessDefinition;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
-import io.camunda.zeebe.client.protocol.rest.ProcessDefinitionItem;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;

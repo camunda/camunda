@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.response;
 
+import io.camunda.client.protocol.rest.VariableItem;
 import io.camunda.zeebe.client.api.search.response.Variable;
-import io.camunda.zeebe.client.protocol.rest.VariableItem;
 
 public class VariableImpl implements Variable {
 
@@ -29,15 +29,15 @@ public class VariableImpl implements Variable {
   private final String tenantId;
   private final Boolean isTruncated;
 
-  public VariableImpl(VariableItem item) {
-    this.variableKey = item.getVariableKey();
-    this.name = item.getName();
-    this.value = item.getValue();
-    this.fullValue = item.getFullValue();
-    this.scopeKey = item.getScopeKey();
-    this.processInstanceKey = item.getProcessInstanceKey();
-    this.tenantId = item.getTenantId();
-    this.isTruncated = item.getIsTruncated();
+  public VariableImpl(final VariableItem item) {
+    variableKey = item.getVariableKey();
+    name = item.getName();
+    value = item.getValue();
+    fullValue = item.getFullValue();
+    scopeKey = item.getScopeKey();
+    processInstanceKey = item.getProcessInstanceKey();
+    tenantId = item.getTenantId();
+    isTruncated = item.getIsTruncated();
   }
 
   @Override

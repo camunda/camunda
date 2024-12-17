@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -55,6 +56,14 @@ public class AuthorizationServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.authorization().read())))
         .searchAuthorizations(query);
+  }
+
+  public List<AuthorizationEntity> findAll(final AuthorizationQuery query) {
+    return authorizationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.authorization().read())))
+        .findAllAuthorizations(query);
   }
 
   public Set<String> fetchAssignedPermissions(

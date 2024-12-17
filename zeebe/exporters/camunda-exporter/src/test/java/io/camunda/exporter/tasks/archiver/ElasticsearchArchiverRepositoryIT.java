@@ -61,6 +61,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
+  private String indexPrefix = "testPrefix";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
@@ -99,13 +100,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var indexName = UUID.randomUUID().toString();
     final var repository = createRepository();
     testClient.indices().create(r -> r.index(indexName));
-    final var initialLifecycle =
-        testClient
-            .indices()
-            .getSettings(r -> r.index(indexName))
-            .get(indexName)
-            .settings()
-            .lifecycle();
+    final var initialLifecycle = getLifeCycle(indexName);
     assertThat(initialLifecycle).isNull();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
@@ -116,18 +111,61 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var actualLifecycle =
-        testClient
-            .indices()
-            .getSettings(r -> r.index(indexName))
-            .get(indexName)
-            .settings()
-            .index()
-            .lifecycle();
+    final var actualLifecycle = getLifeCycle(indexName);
     assertThat(actualLifecycle)
         .isNotNull()
         .extracting(IndexSettingsLifecycle::name)
         .isEqualTo("operate_delete_archived_indices");
+  }
+
+  @Test
+  void shouldSetIndexLifeCycleOnAllValidIndexes() throws IOException {
+    // given
+    indexPrefix = "test";
+    final var indexName1 = "test-operate-record-8.2.1_records";
+    final var indexName2 = "test-tasklist-record-8.3.0_records";
+    // indexName3 does not have a valid name for the policy to be applied.
+    final var indexName3 = "null-tasklist-record_records";
+
+    final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
+    testClient.indices().create(r -> r.index(indexName3));
+
+    final var initialLifecycle = getLifeCycle(indexName1);
+    assertThat(initialLifecycle).isNull();
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+    putLifecyclePolicy();
+
+    // when
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var lifeCycleForIndex1 = getLifeCycle(indexName1);
+    final var lifeCycleForIndex2 = getLifeCycle(indexName2);
+    final var lifeCycleForIndex3 = getLifeCycle(indexName3);
+
+    assertThat(lifeCycleForIndex1)
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("operate_delete_archived_indices");
+    assertThat(lifeCycleForIndex2)
+        .isNotNull()
+        .extracting(IndexSettingsLifecycle::name)
+        .isEqualTo("operate_delete_archived_indices");
+    assertThat(lifeCycleForIndex3).isNull();
+  }
+
+  private IndexSettingsLifecycle getLifeCycle(final String indexName) throws IOException {
+    return testClient
+        .indices()
+        .getSettings(r -> r.index(indexName))
+        .get(indexName)
+        .settings()
+        .index()
+        .lifecycle();
   }
 
   @Test
@@ -302,6 +340,7 @@ final class ElasticsearchArchiverRepositoryIT {
         1,
         config,
         retention,
+        indexPrefix,
         processInstanceIndex,
         batchOperationIndex,
         client,

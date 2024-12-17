@@ -18,8 +18,8 @@ package io.camunda.zeebe.client.job.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.JsonUtil;
 import java.util.Collections;

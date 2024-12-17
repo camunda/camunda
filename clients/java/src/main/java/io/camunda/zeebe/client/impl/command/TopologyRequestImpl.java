@@ -116,7 +116,7 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
         httpRequestConfig
             .setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
             .build(),
-        io.camunda.zeebe.client.protocol.rest.TopologyResponse.class,
+        io.camunda.client.protocol.rest.TopologyResponse.class,
         TopologyImpl::new,
         result);
   }

@@ -61,7 +61,7 @@ public class MappingServicesTest {
   @Test
   public void shouldCreateMapping() {
     // given
-    final var mappingDTO = new MappingDTO("newClaimName", "newClaimValue");
+    final var mappingDTO = new MappingDTO("newClaimName", "newClaimValue", "mappingRuleName");
 
     // when
     services.createMapping(mappingDTO);
@@ -73,6 +73,7 @@ public class MappingServicesTest {
     final MappingRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingDTO.claimValue());
+    assertThat(brokerRequestValue.getName()).isEqualTo(mappingDTO.name());
   }
 
   @Test
@@ -95,7 +96,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariable() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchMappings(any())).thenReturn(result);
   }
 
@@ -103,7 +104,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariableForFind() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
     when(client.searchMappings(any())).thenReturn(result);
 
     // when
@@ -117,7 +118,7 @@ public class MappingServicesTest {
   public void shouldReturnEmptyWhenNotFoundByFind() {
     // given
     final var key = 100L;
-    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
     assertThat(services.findMapping(key)).isEmpty();
@@ -126,7 +127,7 @@ public class MappingServicesTest {
   @Test
   public void shouldThrowExceptionWhenNotFoundByGet() {
     // given
-    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
     assertThrows(NotFoundException.class, () -> services.getMapping(1L));

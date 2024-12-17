@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
 import io.camunda.zeebe.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
 
 public class FlownodeInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<FlowNodeInstanceFilterRequest>

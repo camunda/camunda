@@ -16,6 +16,10 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResponse;
+import io.camunda.client.protocol.rest.DecisionInstanceItem;
+import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
@@ -24,10 +28,6 @@ import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.response.EvaluatedDecisionInputImpl;
 import io.camunda.zeebe.client.impl.response.MatchedDecisionRuleImpl;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceGetQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceItem;
-import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;

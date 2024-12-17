@@ -41,7 +41,7 @@ final class IncidentResolvedV2Applier implements TypedEventApplier<IncidentInten
   @Override
   public void applyState(final long incidentKey, final IncidentRecord value) {
     if (value.getErrorType() == ErrorType.EXTRACT_VALUE_ERROR) {
-      resetExecutionListenerIndex(value);
+      resetListenerIndices(value);
     }
 
     final var jobKey = value.getJobKey();
@@ -58,10 +58,11 @@ final class IncidentResolvedV2Applier implements TypedEventApplier<IncidentInten
     incidentState.deleteIncident(incidentKey);
   }
 
-  private void resetExecutionListenerIndex(final IncidentRecord value) {
+  private void resetListenerIndices(final IncidentRecord value) {
     final var elementInstance = elementInstanceState.getInstance(value.getElementInstanceKey());
     if (elementInstance != null) {
       elementInstance.resetExecutionListenerIndex();
+      elementInstance.resetTaskListenerIndices();
       elementInstanceState.updateInstance(elementInstance);
     }
   }

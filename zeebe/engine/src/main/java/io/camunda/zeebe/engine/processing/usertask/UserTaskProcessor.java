@@ -157,7 +157,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
 
-    processor.onCommand(command, persistedRecord);
+    // If a user-triggered command (ASSIGN, CLAIM, UPDATE, COMPLETE) lacks request metadata,
+    // it indicates the command was retried by the engine after resolving an incident caused
+    // by a task listener property expression evaluation failure. In this case, the `onCommand`
+    // method was already processed during the initial execution, so we can safely skip it now.
+    if (command.hasRequestMetadata()) {
+      processor.onCommand(command, persistedRecord);
+    }
 
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var eventType = mapIntentToEventType(intent);
@@ -187,6 +193,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+    if (!command.hasRequestMetadata()) {
+      return;
+    }
+
     final var metadata =
         new UserTaskRecordRequestMetadata()
             .setIntent((UserTaskIntent) command.getIntent())

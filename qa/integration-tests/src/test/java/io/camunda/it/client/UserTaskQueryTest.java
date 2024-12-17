@@ -10,21 +10,24 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.client.protocol.rest.StringFilterProperty;
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,6 +60,7 @@ class UserTaskQueryTest {
 
     deployForm("form/form.form");
     delpoyProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
+    delpoyProcessFromResourcePath("/process/job_worker_process.bpmn", "job_worker_process.bpmn");
 
     startProcessInstance("process");
     startProcessInstance("process-2");
@@ -65,6 +69,9 @@ class UserTaskQueryTest {
     startProcessInstance("bpmProcessVariable");
     startProcessInstance("processWithForm");
     startProcessInstance("processWithSubProcess");
+    startProcessInstance(
+        "jobWorkerProcess"); // Start a Job Worker instance in order to validate if User Tasks
+    // queries has the same result
 
     waitForTasksBeingExported();
   }
@@ -89,6 +96,22 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldRetrieveTaskByMapLocalVariable() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(Map.of("task02", 1)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1")
+        .doesNotContain("P2");
+  }
+
+  @Test
   public void shouldRetrieveTaskByProcessInstanceVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -97,6 +120,23 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+            .send()
+            .join();
+
+    // Validate the size of the items
+    assertThat(result.items()).hasSize(2);
+
+    // Validate that names "P1" and "P2" exist in the result
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("P1", "P2");
+  }
+
+  @Test
+  public void shouldRetrieveTaskByMapProcessInstanceVariable() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.processInstanceVariables(Map.of("task02", 1)))
             .send()
             .join();
 
@@ -405,16 +445,23 @@ class UserTaskQueryTest {
     assertThat(result.items().size()).isEqualTo(8);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
-    assertThat(result.items().get(0).getCreationDate())
-        .isLessThan(result.items().get(1).getCreationDate());
+    final UserTask firstItem = result.items().get(0);
+    final UserTask lastItem = result.items().get(7);
+    assertThat(firstItem.getCreationDate()).isLessThan(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
         .isLessThan(result.items().get(2).getCreationDate());
 
     // Assert First and Last Sort Value matches the first and last item
-    assertThat(
-        result.page().firstSortValues().get(0).equals(result.items().get(0).getCreationDate()));
-    assertThat(
-        result.page().lastSortValues().get(0).equals(result.items().get(6).getUserTaskKey()));
+    assertThat(result.page().firstSortValues())
+        .isEqualTo(
+            List.of(
+                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli(),
+                firstItem.getUserTaskKey()));
+    assertThat(result.page().lastSortValues())
+        .isEqualTo(
+            List.of(
+                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli(),
+                lastItem.getUserTaskKey()));
   }
 
   @Test

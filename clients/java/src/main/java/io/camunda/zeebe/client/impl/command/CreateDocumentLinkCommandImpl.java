@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.impl.command;
 
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
+import io.camunda.client.protocol.rest.DocumentLink;
+import io.camunda.client.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -26,8 +28,6 @@ import io.camunda.zeebe.client.api.response.DocumentLinkResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DocumentLinkResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.DocumentLink;
-import io.camunda.zeebe.client.protocol.rest.DocumentLinkRequest;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;

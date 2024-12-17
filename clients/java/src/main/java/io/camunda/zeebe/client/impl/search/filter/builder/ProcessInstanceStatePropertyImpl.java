@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
+import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
 
 public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
@@ -44,6 +44,11 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   }
 
   @Override
+  public ProcessInstanceStateFilterProperty build() {
+    return filterProperty;
+  }
+
+  @Override
   public ProcessInstanceStateProperty in(final List<ProcessInstanceStateEnum> values) {
     filterProperty.set$In(values);
     return this;
@@ -52,11 +57,6 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   @Override
   public ProcessInstanceStateProperty in(final ProcessInstanceStateEnum... values) {
     return in(CollectionUtil.toList(values));
-  }
-
-  @Override
-  public ProcessInstanceStateFilterProperty build() {
-    return filterProperty;
   }
 
   @Override

@@ -56,7 +56,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["v"],
+                  "firstSortValues": ["f"],
                   "lastSortValues": [
                       "v"
                   ]
@@ -66,7 +66,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
           .items(List.of(new DecisionRequirementsEntity(0L, "id", "name", 1, "rN", null, "t")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";

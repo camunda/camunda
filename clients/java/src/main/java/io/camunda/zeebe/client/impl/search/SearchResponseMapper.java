@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.search;
 
+import io.camunda.client.protocol.rest.*;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
@@ -38,7 +39,6 @@ import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
 import io.camunda.zeebe.client.impl.search.response.VariableImpl;
-import io.camunda.zeebe.client.protocol.rest.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;

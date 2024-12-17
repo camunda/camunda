@@ -19,8 +19,9 @@ import static io.camunda.zeebe.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
@@ -37,8 +38,10 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
+    final RequestMethod method = RestGatewayService.getLastRequest().getMethod();
     assertThat(requestPath)
         .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY + "/users/" + USER_KEY);
+    assertThat(method).isEqualTo(RequestMethod.PUT);
   }
 
   @Test

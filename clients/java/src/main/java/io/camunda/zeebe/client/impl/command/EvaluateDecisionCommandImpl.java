@@ -48,7 +48,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest httpRequestObject;
+  private final io.camunda.client.protocol.rest.EvaluateDecisionRequest httpRequestObject;
   private boolean useRest;
 
   public EvaluateDecisionCommandImpl(
@@ -65,7 +65,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.EvaluateDecisionRequest();
     useRest = config.preferRestOverGrpc();
     tenantId(config.getDefaultTenantId());
     requestTimeout(requestTimeout);
@@ -96,7 +96,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.EvaluateDecisionRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.EvaluateDecisionRequest();
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     requestTimeout(requestTimeout);
   }
@@ -153,7 +153,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse.class,
+        io.camunda.client.protocol.rest.EvaluateDecisionResponse.class,
         response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
         result);
     return result;

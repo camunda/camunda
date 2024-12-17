@@ -35,6 +35,7 @@ import com.google.monitoring.v3.UpdateGroupRequest;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
@@ -95,6 +96,7 @@ import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -108,6 +110,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -357,7 +360,7 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () -> new MappingDTO(request.getClaimName(), request.getClaimValue()));
+        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -461,6 +464,7 @@ public class RequestMapper {
 
   public static Authentication getAuthentication() {
     Long authenticatedUserKey = null;
+    final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
     final var token =
@@ -477,6 +481,8 @@ public class RequestMapper {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaUser authenticatedPrincipal) {
         authenticatedUserKey = authenticatedPrincipal.getUserKey();
+        authenticatedRoleKeys.addAll(
+            authenticatedPrincipal.getRoles().stream().map(RoleEntity::roleKey).toList());
         token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
       }
 
@@ -492,6 +498,7 @@ public class RequestMapper {
     return new Builder()
         .token(token.build())
         .user(authenticatedUserKey)
+        .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();
   }
@@ -709,8 +716,48 @@ public class RequestMapper {
     if (request == null || request.getResult() == null) {
       return new JobResult();
     }
-    return new JobResult()
-        .setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+
+    final JobResult jobResult = new JobResult();
+    jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+
+    final var jobResultCorrections = request.getResult().getCorrections();
+    if (jobResultCorrections == null) {
+      return jobResult;
+    }
+
+    final JobResultCorrections corrections = new JobResultCorrections();
+    final List<String> correctedAttributes = new ArrayList<>();
+
+    if (jobResultCorrections.getAssignee() != null) {
+      corrections.setAssignee(jobResultCorrections.getAssignee());
+      // `UserTaskRecord.ASSIGNEE` will be available after merging
+      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
+      correctedAttributes.add("assignee");
+    }
+    if (jobResultCorrections.getDueDate() != null) {
+      corrections.setDueDate(jobResultCorrections.getDueDate());
+      correctedAttributes.add(UserTaskRecord.DUE_DATE);
+    }
+    if (jobResultCorrections.getFollowUpDate() != null) {
+      corrections.setFollowUpDate(jobResultCorrections.getFollowUpDate());
+      correctedAttributes.add(UserTaskRecord.FOLLOW_UP_DATE);
+    }
+    if (jobResultCorrections.getCandidateUsers() != null) {
+      corrections.setCandidateUsersList(jobResultCorrections.getCandidateUsers());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_USERS);
+    }
+    if (jobResultCorrections.getCandidateGroups() != null) {
+      corrections.setCandidateGroupsList(jobResultCorrections.getCandidateGroups());
+      correctedAttributes.add(UserTaskRecord.CANDIDATE_GROUPS);
+    }
+    if (jobResultCorrections.getPriority() != null) {
+      corrections.setPriority(jobResultCorrections.getPriority());
+      correctedAttributes.add(UserTaskRecord.PRIORITY);
+    }
+
+    jobResult.setCorrections(corrections);
+    jobResult.setCorrectedAttributes(correctedAttributes);
+    return jobResult;
   }
 
   private static <R> boolean getBooleanOrDefault(

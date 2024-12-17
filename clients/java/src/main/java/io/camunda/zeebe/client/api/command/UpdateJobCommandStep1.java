@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.zeebe.client.api.response.UpdateJobResponse;
-import io.camunda.zeebe.client.protocol.rest.JobChangeset;
 import java.time.Duration;
 
 public interface UpdateJobCommandStep1 {

@@ -18,10 +18,10 @@ package io.camunda.zeebe.client.impl.http;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Error;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Response;
 import io.camunda.zeebe.client.impl.http.ApiEntity.Unknown;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;

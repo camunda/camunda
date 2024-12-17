@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.fetch;
 
+import io.camunda.client.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceItem;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;

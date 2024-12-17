@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CompleteJobResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -52,7 +52,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final long jobKey;
   private final JsonMapper jsonMapper;
   private JobResult.Builder resultGrpc;
-  private io.camunda.zeebe.client.protocol.rest.JobResult resultRest;
+  private io.camunda.client.protocol.rest.JobResult resultRest;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -94,7 +94,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep2 result() {
-    resultRest = new io.camunda.zeebe.client.protocol.rest.JobResult();
+    resultRest = new io.camunda.client.protocol.rest.JobResult();
     httpRequestObject.setResult(resultRest);
 
     resultGrpc = JobResult.newBuilder();

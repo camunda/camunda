@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.TenantUpdateResponse;
 import io.camunda.zeebe.client.api.response.UpdateTenantResponse;
-import io.camunda.zeebe.client.protocol.rest.TenantUpdateResponse;
 
 public final class UpdateTenantResponseImpl implements UpdateTenantResponse {
   private long tenantKey;

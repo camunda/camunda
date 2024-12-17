@@ -10,6 +10,9 @@ package io.camunda.application.commons.backup;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -24,8 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.core.env.Environment;
 
 class BackupPrioritiesTest {
 
@@ -99,12 +101,13 @@ class BackupPrioritiesTest {
         .filter(arr -> !Arrays.stream(arr).allMatch(Objects::isNull));
   }
 
-  @MethodSource("properties")
-  @ParameterizedTest
-  public void testBackupPriorities(
-      final OperateProperties operateProperties, final TasklistProperties tasklistProperties) {
+  @Test
+  public void testBackupPriorities() {
     final var configuration =
-        new BackupPriorityConfiguration(operateProperties, tasklistProperties);
+        new BackupPriorityConfiguration(
+            new OperateProperties(),
+            new TasklistProperties(),
+            matchingProfiles("operate", "tasklist"));
     final var priorities = configuration.backupPriorities();
 
     final Set<String> allPriorities =
@@ -121,16 +124,116 @@ class BackupPrioritiesTest {
   }
 
   @Test
+  public void testBackupPrioritiesIndicesSplitBySnapshot() {
+    final var configuration =
+        new BackupPriorityConfiguration(new OperateProperties(), null, matchingProfiles("operate"));
+    final var priorities = configuration.backupPriorities();
+
+    final var indices = priorities.indicesSplitBySnapshot().toList();
+
+    assertThat(indices.size()).isEqualTo(8);
+    // PRIO 1
+    assertThat(indices.get(0).indices())
+        .containsExactlyInAnyOrder(
+            "operate-import-position-8.3.0_",
+            "tasklist-import-position-8.2.0_"); // ADD optimize-position-based-import-index_v3)
+    // PRIO 2
+    assertThat(indices.get(1).indices())
+        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.0_");
+    // PRIO 2 TEMPLATES
+    assertThat(indices.get(2).indices())
+        .containsExactlyInAnyOrder(
+            "operate-list-view-8.3.0_*",
+            "-operate-list-view-8.3.0_",
+            "tasklist-task-8.5.0_*",
+            "-tasklist-task-8.5.0_");
+    // PRIO 3
+    assertThat(indices.get(3).indices())
+        .containsExactlyInAnyOrder("operate-batch-operation-1.0.0_", "operate-operation-8.4.1_");
+    // PRIO 4
+    assertThat(indices.get(4).indices())
+        .containsExactlyInAnyOrder(
+            "operate-decision-8.3.0_",
+            "operate-decision-instance-8.3.0_",
+            "operate-event-8.3.0_",
+            "operate-flownode-instance-8.3.1_",
+            "operate-job-8.6.0_",
+            "operate-incident-8.3.1_",
+            "operate-message-8.5.0_",
+            "operate-post-importer-queue-8.3.0_",
+            "operate-sequence-flow-8.3.0_",
+            "operate-variable-8.3.0_",
+            "tasklist-draft-task-variable-8.3.0_",
+            "tasklist-task-variable-8.3.0_");
+
+    // PRIO 4 TEMPLATES
+    assertThat(indices.get(5).indices())
+        .containsExactlyInAnyOrder(
+            "operate-event-8.3.0_*",
+            "-operate-event-8.3.0_",
+            "operate-flownode-instance-8.3.1_*",
+            "-operate-flownode-instance-8.3.1_",
+            "operate-incident-8.3.1_*",
+            "-operate-incident-8.3.1_",
+            "operate-job-8.6.0_*",
+            "-operate-job-8.6.0_",
+            "operate-message-8.5.0_*",
+            "-operate-message-8.5.0_",
+            "operate-post-importer-queue-8.3.0_*",
+            "-operate-post-importer-queue-8.3.0_",
+            "operate-sequence-flow-8.3.0_*",
+            "-operate-sequence-flow-8.3.0_",
+            "operate-variable-8.3.0_*",
+            "-operate-variable-8.3.0_",
+            "-operate-decision-instance-8.3.0_",
+            "operate-decision-instance-8.3.0_*",
+            "-tasklist-draft-task-variable-8.3.0_",
+            "tasklist-draft-task-variable-8.3.0_*",
+            "-tasklist-task-variable-8.3.0_",
+            "tasklist-task-variable-8.3.0_*");
+
+    // PRIO 5
+    assertThat(indices.get(6).indices())
+        .containsExactlyInAnyOrder(
+            "operate-decision-requirements-8.3.0_",
+            "operate-metric-8.3.0_",
+            "operate-process-8.3.0_",
+            "tasklist-form-8.4.0_",
+            "tasklist-metric-8.3.0_",
+            "camunda-authorization-8.7.0_",
+            "camunda-group-8.7.0_",
+            "camunda-mapping-8.7.0_",
+            "camunda-web-session-8.7.0_",
+            "camunda-role-8.7.0_",
+            "camunda-tenant-8.7.0_",
+            "camunda-user-8.7.0_");
+  }
+
+  @Test
   public void shouldFailIfIndexPrefixIsDifferent() {
     final var operateProperties = new OperateProperties();
     operateProperties.getElasticsearch().setIndexPrefix("operate-prefix");
     final var tasklistProperties = new TasklistProperties();
     tasklistProperties.getElasticsearch().setIndexPrefix("tasklist-prefix");
     final var configuration =
-        new BackupPriorityConfiguration(operateProperties, tasklistProperties);
+        new BackupPriorityConfiguration(
+            operateProperties, tasklistProperties, matchingProfiles("operate", "tasklist"));
     assertThatThrownBy(configuration::backupPriorities)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("operate-prefix")
         .hasMessageContaining("tasklist-prefix");
+  }
+
+  public Environment matchingProfiles(final String... profiles) {
+    final var environment = mock(Environment.class);
+    final var profileSet = new HashSet<>(Arrays.asList(profiles));
+    when(environment.matchesProfiles(any()))
+        .thenAnswer(
+            arg -> {
+              final var profileArg = (String) arg.getArgument(0);
+              return profileSet.contains(profileArg);
+            });
+    when(environment.getActiveProfiles()).thenReturn(profiles);
+    return environment;
   }
 }

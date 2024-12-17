@@ -59,8 +59,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         ],
         "page":{
           "totalItems":3,
-          "firstSortValues":[],
-          "lastSortValues":[]
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
         }
       }
       """;
@@ -147,7 +147,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(3)
-                .sortValues(new Object[] {})
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
                         new GroupEntity(groupKey1, groupName1, Set.of()),
@@ -187,8 +188,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
-               "firstSortValues": [],
-               "lastSortValues": []
+               "firstSortValues": ["f"],
+               "lastSortValues": ["v"]
              }
            }"""
                 .formatted(groupKey1, groupName1, groupKey2, groupName2, groupKey3, groupName3));
@@ -214,6 +215,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
                         new GroupEntity(groupKey1, groupName1, Set.of()),
                         new GroupEntity(groupKey2, groupName2, Set.of()),
                         new GroupEntity(groupKey3, groupName3, Set.of())))
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .build());
 
     // when / then

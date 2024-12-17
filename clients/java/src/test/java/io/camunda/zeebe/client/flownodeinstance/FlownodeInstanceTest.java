@@ -15,16 +15,16 @@
  */
 package io.camunda.zeebe.client.flownodeinstance;
 
-import static io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest.StateEnum.ACTIVE;
-import static io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK;
+import static io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest.StateEnum.ACTIVE;
+import static io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
-import io.camunda.zeebe.client.protocol.rest.SortOrderEnum;
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
+import io.camunda.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.List;
 import java.util.Objects;

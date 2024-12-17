@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
+import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.AuthorizationEntity;
@@ -230,16 +231,10 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<Object> sortValues =
-        ofNullable(result.sortValues()).map(Arrays::asList).orElse(Collections.emptyList());
-
     final List<Object> firstSortValues =
-        sortValues.stream().findFirst().map(List::of).orElse(Collections.emptyList());
-
+        ofNullable(result.firstSortValues()).map(Arrays::asList).orElse(emptyList());
     final List<Object> lastSortValues =
-        sortValues.isEmpty()
-            ? Collections.emptyList()
-            : List.of(sortValues.get(sortValues.size() - 1));
+        ofNullable(result.lastSortValues()).map(Arrays::asList).orElse(emptyList());
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
@@ -324,7 +319,8 @@ public final class SearchQueryResponseMapper {
     return new MappingItem()
         .mappingKey(mappingEntity.mappingKey())
         .claimName(mappingEntity.claimName())
-        .claimValue(mappingEntity.claimValue());
+        .claimValue(mappingEntity.claimValue())
+        .name(mappingEntity.name());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
