@@ -24,13 +24,16 @@ import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.MappingService;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.service.MappingServices;
+import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -41,23 +44,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class TenantMappingRuleMigrationHandlerTest {
   private final ManagementIdentityClient managementIdentityClient;
   private final TenantServices tenantServices;
-  private final MappingService mappingService;
+  private final MappingServices mappingServices;
 
   private final TenantMappingRuleMigrationHandler migrationHandler;
 
   public TenantMappingRuleMigrationHandlerTest(
       @Mock final ManagementIdentityClient managementIdentityClient,
       @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices,
-      @Mock final MappingService mappingService) {
+      @Mock(answer = Answers.RETURNS_SELF) final MappingServices mappingServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
-    this.mappingService = mappingService;
+    this.mappingServices = mappingServices;
     migrationHandler =
         new TenantMappingRuleMigrationHandler(
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             tenantServices,
-            mappingService);
+            mappingServices);
   }
 
   @Test
@@ -66,7 +69,8 @@ final class TenantMappingRuleMigrationHandlerTest {
     givenMappingRules();
     when(tenantServices.getById(any()))
         .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
-
+    when(mappingServices.createMapping(any()))
+        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     // when
     migrationHandler.migrate();
 
@@ -74,14 +78,14 @@ final class TenantMappingRuleMigrationHandlerTest {
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(4)).getById(any());
     verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
-    verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
+    verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
   }
 
   @Test
   void setErrorWhenMappingRuleCreationFailed() {
     // given
     givenMappingRules();
-    when(mappingService.findOrCreateMapping(any(), any(), any())).thenThrow(new RuntimeException());
+    when(mappingServices.findMapping(any(MappingDTO.class))).thenThrow(new RuntimeException());
 
     // when
     migrationHandler.migrate();
@@ -89,7 +93,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, never()).search(any());
-    verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
+    verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(
             assertArg(
@@ -104,8 +108,9 @@ final class TenantMappingRuleMigrationHandlerTest {
   void setErrorWhenTenantNotFound() {
     // given
     givenMappingRules();
-    when(tenantServices.getById(any()))
-        .thenThrow(new ProblemException(0, "runtime exception!", null));
+    when(tenantServices.getById(any())).thenThrow(new RuntimeException());
+    when(mappingServices.createMapping(any()))
+        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
 
     // when
     migrationHandler.migrate();
@@ -113,7 +118,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(2)).getById(any());
-    verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
+    verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(
             assertArg(
@@ -130,6 +135,8 @@ final class TenantMappingRuleMigrationHandlerTest {
     givenMappingRules();
     when(tenantServices.getById(any()))
         .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
+    when(mappingServices.createMapping(any()))
+        .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
     doThrow(new RuntimeException("Failed with code 409: 'Conflict'"))
         .when(tenantServices)
         .addMember(any(), any(), anyLong());
@@ -141,7 +148,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(4)).getById(any());
     verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
-    verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
+    verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(
             assertArg(

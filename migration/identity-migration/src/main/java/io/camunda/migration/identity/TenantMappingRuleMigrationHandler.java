@@ -12,7 +12,9 @@ import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.MappingService;
+import io.camunda.search.entities.MappingEntity;
+import io.camunda.service.MappingServices;
+import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
@@ -28,17 +30,17 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
   private final TenantServices tenantServices;
-  private final MappingService mappingService;
+  private final MappingServices mappingServices;
 
   public TenantMappingRuleMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices,
-      final MappingService mappingService) {
+      final MappingServices mappingServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
     this.tenantServices = tenantServices;
-    this.mappingService = mappingService;
+    this.mappingServices = mappingServices;
   }
 
   @Override
@@ -56,11 +58,13 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
   private MigrationStatusUpdateRequest createTenantMappingRule(
       final TenantMappingRule tenantMappingRule) {
     try {
+      final var request =
+          new MappingDTO(tenantMappingRule.getClaimName(), tenantMappingRule.getClaimValue());
       final var mappingKey =
-          mappingService.findOrCreateMapping(
-              tenantMappingRule.getName(),
-              tenantMappingRule.getClaimName(),
-              tenantMappingRule.getClaimValue());
+          mappingServices
+              .findMapping(request)
+              .map(MappingEntity::mappingKey)
+              .orElseGet(() -> mappingServices.createMapping(request).join().getMappingKey());
       for (final Tenant mappingTenant : tenantMappingRule.getAppliedTenants()) {
         final var tenant = tenantServices.getById(mappingTenant.tenantId());
         assignMappingToTenant(tenant.key(), mappingKey);
