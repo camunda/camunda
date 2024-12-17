@@ -32,7 +32,6 @@ import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,12 +40,16 @@ import org.junit.jupiter.api.Test;
 
 public class ProcessOverviewServiceTest {
 
+  private static final String EN_LOCALE = "en";
   private static final String USER_ID = "user123";
   private static final String TENANT_ID = "tenant1";
   private static final String PROCESS_KEY = "processKey1";
   private static final String OWNER_ID = "owner123";
   private static final String OWNER_NAME = "Owner Name";
   private static final String PROCESS_NAME = "Process Name";
+  public static final DefinitionWithTenantIdsDto DEFINITION_DTO =
+      new DefinitionWithTenantIdsDto(
+          PROCESS_KEY, PROCESS_NAME, PROCESS, List.of(TENANT_ID), Set.of());
 
   private final DefinitionService definitionService = mock(DefinitionService.class);
   private final DataSourceDefinitionAuthorizationService definitionAuthorizationService =
@@ -70,21 +73,12 @@ public class ProcessOverviewServiceTest {
   @Test
   void shouldReturnProcessOverviewsWhenUserIsAuthorized() {
     // given
-    final String locale = "en";
-    final String processName = "Process 1";
-
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
-    final DefinitionWithTenantIdsDto definitionDto =
-        new DefinitionWithTenantIdsDto(PROCESS_KEY, processName, PROCESS, tenants, Set.of());
     when(definitionService.getAllDefinitionsWithTenants(PROCESS))
-        .thenReturn(List.of(definitionDto));
-
+        .thenReturn(List.of(DEFINITION_DTO));
     when(definitionService.getCachedTenantToLatestDefinitionMap(PROCESS, PROCESS_KEY))
         .thenReturn(Map.of(PROCESS_KEY, new ProcessDefinitionOptimizeDto()));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            USER_ID, PROCESS, PROCESS_KEY, definitionDto.getTenantIds()))
+            USER_ID, PROCESS, PROCESS_KEY, DEFINITION_DTO.getTenantIds()))
         .thenReturn(true);
 
     final Map<String, ProcessOverviewDto> overviewMap =
@@ -99,35 +93,30 @@ public class ProcessOverviewServiceTest {
 
     // when
     final List<ProcessOverviewResponseDto> result =
-        underTest.getAllProcessOverviews(USER_ID, locale);
+        underTest.getAllProcessOverviews(USER_ID, EN_LOCALE);
 
     // then
-    assertThat(result).hasSize(1);
-    final ProcessOverviewResponseDto response = result.get(0);
-    assertThat(response.getProcessDefinitionKey()).isEqualTo(PROCESS_KEY);
-    assertThat(response.getProcessDefinitionName()).isEqualTo(PROCESS_KEY);
-    assertThat(response.getOwner().getId()).isEqualTo(OWNER_ID);
-    assertThat(response.getOwner().getName()).isEqualTo(OWNER_NAME);
+    assertThat(result)
+        .singleElement()
+        .satisfies(
+            response -> {
+              assertThat(response.getProcessDefinitionKey()).isEqualTo(PROCESS_KEY);
+              assertThat(response.getProcessDefinitionName()).isEqualTo(PROCESS_KEY);
+              assertThat(response.getOwner().getId()).isEqualTo(OWNER_ID);
+              assertThat(response.getOwner().getName()).isEqualTo(OWNER_NAME);
+            });
   }
 
   @Test
   void shouldReturnProcessOverviewsWithoutOwnerWhenUserIsAuthorized() {
     // given
-    final String locale = "en";
-    final String processName = "Process 1";
-
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
-    final DefinitionWithTenantIdsDto definitionDto =
-        new DefinitionWithTenantIdsDto(PROCESS_KEY, processName, PROCESS, tenants, Set.of());
     when(definitionService.getAllDefinitionsWithTenants(PROCESS))
-        .thenReturn(List.of(definitionDto));
+        .thenReturn(List.of(DEFINITION_DTO));
 
     when(definitionService.getCachedTenantToLatestDefinitionMap(PROCESS, PROCESS_KEY))
         .thenReturn(Map.of(PROCESS_KEY, new ProcessDefinitionOptimizeDto()));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            USER_ID, PROCESS, PROCESS_KEY, definitionDto.getTenantIds()))
+            USER_ID, PROCESS, PROCESS_KEY, DEFINITION_DTO.getTenantIds()))
         .thenReturn(true);
 
     when(processOverviewReader.getProcessOverviewsByKey(Set.of(PROCESS_KEY))).thenReturn(Map.of());
@@ -136,33 +125,31 @@ public class ProcessOverviewServiceTest {
 
     // when
     final List<ProcessOverviewResponseDto> result =
-        underTest.getAllProcessOverviews(USER_ID, locale);
+        underTest.getAllProcessOverviews(USER_ID, EN_LOCALE);
 
     // then
-    assertThat(result).hasSize(1);
-    final ProcessOverviewResponseDto response = result.get(0);
-    assertThat(response.getProcessDefinitionKey()).isEqualTo(PROCESS_KEY);
-    assertThat(response.getProcessDefinitionName()).isEqualTo(PROCESS_KEY);
-    assertThat(response.getOwner().getId()).isNull();
-    assertThat(response.getOwner().getName()).isNull();
+    assertThat(result)
+        .singleElement()
+        .satisfies(
+            response -> {
+              assertThat(response.getProcessDefinitionKey()).isEqualTo(PROCESS_KEY);
+              assertThat(response.getProcessDefinitionName()).isEqualTo(PROCESS_KEY);
+              assertThat(response.getOwner().getId()).isNull();
+              assertThat(response.getOwner().getName()).isNull();
+            });
   }
 
   @Test
   void shouldReturnEmptyListProcessOverviewsWhenDefinitionsEmpty() {
     // given
-    final String locale = "en";
-
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
     when(definitionService.getAllDefinitionsWithTenants(PROCESS)).thenReturn(List.of());
 
     // when
     final List<ProcessOverviewResponseDto> result =
-        underTest.getAllProcessOverviews(USER_ID, locale);
+        underTest.getAllProcessOverviews(USER_ID, EN_LOCALE);
 
     // then
-    assertThat(result).hasSize(0);
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -171,18 +158,10 @@ public class ProcessOverviewServiceTest {
     final ProcessUpdateDto updateDto =
         new ProcessUpdateDto(OWNER_ID, new ProcessDigestRequestDto(true));
 
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
-        .thenReturn(
-            Optional.of(
-                new DefinitionWithTenantIdsDto(
-                    PROCESS_KEY, PROCESS_NAME, PROCESS, tenants, Set.of())));
-
+        .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(any(), any(), any(), any()))
         .thenReturn(true);
-
     when(identityService.getUserById(OWNER_ID)).thenReturn(Optional.of(new UserDto(OWNER_ID)));
     when(identityService.isUserAuthorizedToAccessIdentity(
             USER_ID, new IdentityDto(OWNER_ID, IdentityType.USER)))
@@ -202,14 +181,8 @@ public class ProcessOverviewServiceTest {
     final ProcessUpdateDto updateDto =
         new ProcessUpdateDto(OWNER_ID, new ProcessDigestRequestDto(true));
 
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
-        .thenReturn(
-            Optional.of(
-                new DefinitionWithTenantIdsDto(
-                    PROCESS_KEY, PROCESS_NAME, PROCESS, tenants, Set.of())));
+        .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
             USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
         .thenReturn(false);
@@ -231,18 +204,11 @@ public class ProcessOverviewServiceTest {
     final ProcessUpdateDto updateDto =
         new ProcessUpdateDto(OWNER_ID, new ProcessDigestRequestDto(true));
 
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
-        .thenReturn(
-            Optional.of(
-                new DefinitionWithTenantIdsDto(
-                    PROCESS_KEY, PROCESS_NAME, PROCESS, tenants, Set.of())));
+        .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
             USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
         .thenReturn(true);
-
     when(identityService.isUserAuthorizedToAccessIdentity(
             USER_ID, new IdentityDto(USER_ID, IdentityType.GROUP)))
         .thenReturn(false);
@@ -264,18 +230,11 @@ public class ProcessOverviewServiceTest {
     final ProcessUpdateDto updateDto =
         new ProcessUpdateDto(null, new ProcessDigestRequestDto(true));
 
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
-        .thenReturn(
-            Optional.of(
-                new DefinitionWithTenantIdsDto(
-                    PROCESS_KEY, PROCESS_NAME, PROCESS, tenants, Set.of())));
+        .thenReturn(Optional.of(DEFINITION_DTO));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
             USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
         .thenReturn(true);
-
     when(identityService.isUserAuthorizedToAccessIdentity(
             USER_ID, new IdentityDto(USER_ID, IdentityType.GROUP)))
         .thenReturn(false);
@@ -296,21 +255,18 @@ public class ProcessOverviewServiceTest {
     final ProcessUpdateDto updateDto =
         new ProcessUpdateDto(OWNER_ID, new ProcessDigestRequestDto(true));
 
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
-
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
         .thenReturn(
             Optional.of(
                 new DefinitionWithTenantIdsDto(
-                    PROCESS_KEY, PROCESS_NAME, PROCESS, tenants, Set.of())));
+                    PROCESS_KEY, PROCESS_NAME, PROCESS, List.of(TENANT_ID), Set.of())));
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(
             USER_ID, PROCESS, PROCESS_KEY, List.of(TENANT_ID)))
         .thenReturn(true);
 
     when(identityService.getUserById(any())).thenReturn(Optional.of(new UserDto(USER_ID)));
 
-    // then
+    // when/then
     underTest.updateProcess(USER_ID, PROCESS_KEY, updateDto);
   }
 
@@ -324,10 +280,8 @@ public class ProcessOverviewServiceTest {
             USER_ID, new IdentityDto(OWNER_ID, IdentityType.USER)))
         .thenReturn(true);
 
-    final List<String> tenants = new ArrayList<>();
-    tenants.add(TENANT_ID);
     when(definitionService.getProcessDefinitionWithTenants(PROCESS_KEY))
-        .thenReturn(Optional.of(new DefinitionWithTenantIdsDto(tenants)));
+        .thenReturn(Optional.of(new DefinitionWithTenantIdsDto(List.of(TENANT_ID))));
 
     when(definitionAuthorizationService.isAuthorizedToAccessDefinition(any(), any(), any(), any()))
         .thenReturn(true);
