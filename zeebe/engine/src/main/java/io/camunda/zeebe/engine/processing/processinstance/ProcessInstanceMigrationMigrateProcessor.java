@@ -320,8 +320,6 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final List<DirectBuffer> activeSequenceFlowIds = elementInstance.getActiveSequenceFlowIds();
     if (!activeSequenceFlowIds.isEmpty()) {
-      checkSequenceFlowIdsIntegrity(elementInstance, processInstanceKey);
-
       final Set<ExecutableSequenceFlow> sequenceFlows =
           getSequenceFlowsToMigrate(
               sourceProcessDefinition,
@@ -489,19 +487,6 @@ public class ProcessInstanceMigrationMigrateProcessor
               return activeFlow;
             })
         .collect(Collectors.toSet());
-  }
-
-  private static void checkSequenceFlowIdsIntegrity(
-      final ElementInstance elementInstance, final long processInstanceKey) {
-    if (elementInstance.getActiveSequenceFlows() != elementInstance.getActiveSequenceFlowsCount()) {
-      throw new SafetyCheckFailedException(
-          String.format(
-              """
-              Expected to migrate a user task for process instance with key '%d', \
-              but the number of active sequence flows does not match the number of active sequence flow id count. \
-              This is due to process instance created before version 8.6 has incomplete active sequence flow ids.""",
-              processInstanceKey));
-    }
   }
 
   /**
