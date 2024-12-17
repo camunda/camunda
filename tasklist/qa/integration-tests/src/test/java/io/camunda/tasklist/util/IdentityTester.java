@@ -83,10 +83,10 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     /* Workaround: Zeebe Test Container is not yet compatible with ZeebeClient. The deprecated ZeebeClient
     Environment properties must be set for the TestContainer poller.
     ref: https://camunda.slack.com/archives/CSQ2E3BT4/p1721717060291479?thread_ts=1721648856.848609&cid=CSQ2E3BT4 */
-    Environment.system().put("ZEEBE_CLIENT_ID", "zeebe");
-    Environment.system().put("ZEEBE_CLIENT_SECRET", "zecret");
-    Environment.system().put("ZEEBE_TOKEN_AUDIENCE", "zeebe-api");
-    Environment.system()
+    io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_CLIENT_ID", "zeebe");
+    io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_CLIENT_SECRET", "zecret");
+    io.camunda.zeebe.client.impl.util.Environment.system().put("ZEEBE_TOKEN_AUDIENCE", "zeebe-api");
+    io.camunda.zeebe.client.impl.util.Environment.system()
         .put(
             "ZEEBE_AUTHORIZATION_SERVER_URL",
             testContext.getExternalKeycloakBaseUrl()
