@@ -1233,13 +1233,57 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldPersistCorrectedUserTaskDataWhenAssigningOnCreationTaskListenerCompleted() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u.zeebeAssignee("initial_assignee"),
+        userTask -> {},
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenAssigningTaskListenerCompleted() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenClaimingTaskListenerCompleted() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
   public void shouldPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.completing,
+        u -> u,
+        UserTaskClient::complete,
+        UserTaskIntent.COMPLETED);
+  }
+
+  private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+      final ZeebeTaskListenerEventType eventType,
+      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final Consumer<UserTaskClient> userTaskAction,
+      final UserTaskIntent expectedUserTaskIntent) {
     // given
     final long processInstanceKey =
         createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+            createProcessWithZeebeUserTask(
+                t ->
+                    userTaskBuilder
+                        .apply(t)
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // when
     ENGINE
@@ -1278,10 +1322,10 @@ public class TaskListenerTest {
     // then
     assertUserTaskRecordWithIntent(
         processInstanceKey,
-        UserTaskIntent.COMPLETED,
+        expectedUserTaskIntent,
         userTaskRecord ->
             Assertions.assertThat(userTaskRecord)
-                .describedAs("Expect that user task completed with corrected data")
+                .describedAs("Expect that the last user task event contains the corrected data")
                 .hasChangedAttributes(
                     "assignee",
                     "candidateUsersList",
