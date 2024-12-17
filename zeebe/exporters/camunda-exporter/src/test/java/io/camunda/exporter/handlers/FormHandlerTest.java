@@ -24,6 +24,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class FormHandlerTest {
@@ -93,7 +95,26 @@ public class FormHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1))
+        .upsert(indexName, inputEntity.getId(), inputEntity, new HashMap<>());
+  }
+
+  @Test
+  void shouldAddEntityOnFlushForDeletion() {
+    // given
+    final FormEntity inputEntity = new FormEntity().setId("111").setKey(123L).setIsDeleted(true);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsert(
+            indexName,
+            String.valueOf(inputEntity.getKey()),
+            inputEntity,
+            Map.of("isDeleted", true));
   }
 
   @Test

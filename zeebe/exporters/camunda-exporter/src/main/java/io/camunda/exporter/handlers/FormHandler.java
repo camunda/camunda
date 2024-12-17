@@ -16,7 +16,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FormHandler implements ExportHandler<FormEntity, Form> {
 
@@ -79,7 +81,13 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
 
   @Override
   public void flush(final FormEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    final Map<String, Object> updateFields = new HashMap<>();
+    String id = entity.getId();
+    if (entity.getIsDeleted() != null && entity.getIsDeleted()) {
+      updateFields.put("isDeleted", true);
+      id = String.valueOf(entity.getKey());
+    }
+    batchRequest.upsert(indexName, id, entity, updateFields);
   }
 
   @Override
