@@ -155,6 +155,19 @@ public class GcpDocumentStore implements DocumentStore {
     return Either.right(documentReference);
   }
 
+  private static DocumentMetadataModel buildMetadataWithContentHash(
+      final DocumentCreationRequest request, final String documentId, final String contentHash) {
+    final var updatedCustomProperties = new HashMap<>(request.metadata().customProperties());
+    updatedCustomProperties.put(CONTENT_HASH_METADATA_KEY, contentHash);
+
+    return new DocumentMetadataModel(
+        request.metadata().contentType(),
+        documentId,
+        request.metadata().expiresAt(),
+        request.metadata().size(),
+        updatedCustomProperties);
+  }
+
   private Either<DocumentError, InputStream> getDocumentContentInternal(final String documentId) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
