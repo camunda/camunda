@@ -1113,12 +1113,8 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"new_candidate_user\"]"),
             entry(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"new_candidate_group\"]"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "new_due_date"),
-            entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "new_follow_up_date")
-            /*
-             // priority is not yet accessible as a custom header
-             , entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "100")
-            */
-            );
+            entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "new_follow_up_date"),
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "100"));
 
     completeJobs(processInstanceKey, listenerType + "_2");
 
