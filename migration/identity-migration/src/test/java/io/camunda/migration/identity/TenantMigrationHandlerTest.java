@@ -21,8 +21,12 @@ import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -67,7 +71,14 @@ final class TenantMigrationHandlerTest {
   void ignoreWhenTenantAlreadyExists() {
     // given
     when(tenantServices.createTenant(any()))
-        .thenThrow(new ProblemException(0, "Failed with code 409: 'Conflict'", null));
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        TenantIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "tenant already exists"))));
     when(managementIdentityClient.fetchTenants(anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());

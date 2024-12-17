@@ -21,8 +21,12 @@ import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -70,7 +74,14 @@ public class GroupMigrationHandlerTest {
     // given
 
     when(groupService.createGroup(any()))
-        .thenThrow(new ProblemException(0, "Failed with code 409: 'Conflict'", null));
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        GroupIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "group already exists"))));
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
         .thenReturn(List.of());

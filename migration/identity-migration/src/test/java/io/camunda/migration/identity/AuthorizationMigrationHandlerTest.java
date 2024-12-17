@@ -17,8 +17,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,6 +39,8 @@ final class AuthorizationMigrationHandlerTest {
   public AuthorizationMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices,
       @Mock final ManagementIdentityProxy managementIdentityProxy) {
+    when(authorizationServices.patchAuthorization(any()))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
     this.authorizationServices = authorizationServices;
     this.managementIdentityProxy = managementIdentityProxy;
     migrationHandler =

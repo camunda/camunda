@@ -12,7 +12,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.assertArg;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -29,8 +28,12 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -73,6 +76,8 @@ final class TenantMappingRuleMigrationHandlerTest {
         .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
+    when(tenantServices.addMember(any(), any(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     // when
     migrationHandler.migrate();
 
@@ -139,9 +144,15 @@ final class TenantMappingRuleMigrationHandlerTest {
         .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
-    doThrow(new RuntimeException("Failed with code 409: 'Conflict'"))
-        .when(tenantServices)
-        .addMember(any(), any(), anyLong());
+    when(tenantServices.addMember(any(), any(), anyLong()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        TenantIntent.ADD_ENTITY,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "entity already assigned to tenant"))));
 
     // when
     migrationHandler.migrate();
