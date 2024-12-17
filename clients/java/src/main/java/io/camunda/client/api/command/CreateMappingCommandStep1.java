@@ -36,4 +36,13 @@ public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappin
    *     to the broker.
    */
   CreateMappingCommandStep1 claimValue(final String claimValue);
+
+  /**
+   * Set the name to create mapping with.
+   *
+   * @param name the name value
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  CreateMappingCommandStep1 name(final String name);
 }

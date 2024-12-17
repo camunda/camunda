@@ -45,7 +45,7 @@ public class MappingCreateAuthorizationIT {
   @AutoCloseResource private static ZeebeClient client;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -71,6 +71,7 @@ public class MappingCreateAuthorizationIT {
             .newCreateMappingCommand()
             .claimName("claimName")
             .claimValue("claimValue")
+            .name("name")
             .send()
             .join();
 
@@ -95,6 +96,7 @@ public class MappingCreateAuthorizationIT {
               .newCreateMappingCommand()
               .claimName("claimName")
               .claimValue("claimValue")
+              .name("name")
               .send()
               .join();
 
@@ -113,7 +115,12 @@ public class MappingCreateAuthorizationIT {
     // when
     try (final var client = authUtil.createClient(authUsername, password)) {
       final var response =
-          client.newCreateMappingCommand().claimName("claimName").claimValue("claimValue").send();
+          client
+              .newCreateMappingCommand()
+              .claimName("claimName")
+              .claimValue("claimValue")
+              .name("name")
+              .send();
 
       // then
       assertThatThrownBy(response::join)

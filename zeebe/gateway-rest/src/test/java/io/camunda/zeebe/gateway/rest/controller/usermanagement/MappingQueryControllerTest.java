@@ -42,7 +42,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
   @Test
   void getMappingShouldReturnOk() {
     // given
-    final var mapping = new MappingEntity(100L, "Claim Name", "Claim Value");
+    final var mapping = new MappingEntity(100L, "Claim Name", "Claim Value", "Map Name");
     when(mappingServices.getMapping(mapping.mappingKey())).thenReturn(mapping);
 
     // when
@@ -56,11 +56,12 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "mappingKey": 100,
-              "claimName": "Claim Name",
-              "claimValue": "Claim Value"
-            }""");
+                          {
+                            "mappingKey": 100,
+                            "claimName": "Claim Name",
+                            "claimValue": "Claim Value",
+                            "name": "Map Name"
+                          }""");
 
     // then
     verify(mappingServices, times(1)).getMapping(mapping.mappingKey());
@@ -109,9 +110,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new MappingEntity(100L, "Claim Name1", "Claim Value1"),
-                        new MappingEntity(200L, "Claim Name2", "Claim Value2"),
-                        new MappingEntity(300L, "Claim Name3", "Claim Value3")))
+                        new MappingEntity(100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity(200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity(300L, "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -134,17 +135,20 @@ public class MappingQueryControllerTest extends RestControllerTest {
                {
                  "mappingKey": 100,
                  "claimName": "Claim Name1",
-                 "claimValue": "Claim Value1"
+                 "claimValue": "Claim Value1",
+                 "name": "Map Name1"
                },
                {
                  "mappingKey": 200,
                  "claimName": "Claim Name2",
-                 "claimValue": "Claim Value2"
+                 "claimValue": "Claim Value2",
+                 "name": "Map Name2"
                },
                {
                  "mappingKey": 300,
                  "claimName": "Claim Name3",
-                 "claimValue": "Claim Value3"
+                 "claimValue": "Claim Value3",
+                 "name": "Map Name3"
                }
              ],
              "page": {
@@ -166,9 +170,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity(100L, "Claim Name1", "Claim Value1"),
-                        new MappingEntity(200L, "Claim Name2", "Claim Value2"),
-                        new MappingEntity(300L, "Claim Name3", "Claim Value3")))
+                        new MappingEntity(100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity(200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity(300L, "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -192,6 +196,45 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .search(
             new MappingQuery.Builder()
                 .sort(MappingSort.of(builder -> builder.claimName().asc()))
+                .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
+                .build());
+  }
+
+  @Test
+  void shouldSortAndPaginateSearchResultByName() {
+    // given
+    when(mappingServices.search(any(MappingQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<MappingEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new MappingEntity(100L, "Claim Name1", "Claim Value1", "Map Name3"),
+                        new MappingEntity(200L, "Claim Name2", "Claim Value2", "Map Name1"),
+                        new MappingEntity(300L, "Claim Name3", "Claim Value3", "Map Name2")))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(MAPPING_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "name", "order":  "asc"}],
+              "page":  {"from":  20, "limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(mappingServices)
+        .search(
+            new MappingQuery.Builder()
+                .sort(MappingSort.of(builder -> builder.name().asc()))
                 .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
                 .build());
   }

@@ -3622,6 +3622,9 @@ components:
         claimValue:
           type: string
           description: The value of the claim to match.
+        name:
+          type: string
+          description: The name of the mapping.
 
     MappingSearchQueryResponse:
       description: Mapping rule search response.
@@ -4924,6 +4927,10 @@ components:
         claimValue:
           type: string
           description: The value of the claim to match.
+        name:
+          type: string
+          description: The name of the mapping.
+
     CamundaUser:
       type: "object"
       properties:
@@ -5181,9 +5188,14 @@ components:
         claimValue:
           type: string
           description: The value of the claim to map.
+        name:
+          type: string
+          description: The name of the mapping.
       required:
         - claimName
         - claimValue
+        - name
+
     MappingRuleCreateResponse:
       type: object
       properties:
@@ -5197,6 +5209,10 @@ components:
         claimValue:
           type: string
           description: The value of the claim to map.
+        name:
+          type: string
+          description: The name of the mapping.
+
     MappingSearchResponse:
       type: object
       allOf:
@@ -5220,6 +5236,9 @@ components:
         claimValue:
           type: string
           description: The value of the claim to map.
+        name:
+          type: string
+          description: The name of the mapping.
 
     TopologyResponse:
       description: The response of a topology request.

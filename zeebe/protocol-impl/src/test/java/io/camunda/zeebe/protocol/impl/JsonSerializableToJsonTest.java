@@ -2963,12 +2963,14 @@ final class JsonSerializableToJsonTest {
                 new MappingRecord()
                     .setMappingKey(1L)
                     .setClaimName("claimName")
-                    .setClaimValue("claimValue"),
+                    .setClaimValue("claimValue")
+                    .setName("name"),
         """
       {
         "mappingKey": 1,
         "claimName": "claimName",
-        "claimValue": "claimValue"
+        "claimValue": "claimValue",
+        "name": "name"
       }
       """
       },
@@ -2982,7 +2984,8 @@ final class JsonSerializableToJsonTest {
       {
         "mappingKey": -1,
         "claimName": "",
-        "claimValue": ""
+        "claimValue": "",
+        "name": ""
       }
       """
       },

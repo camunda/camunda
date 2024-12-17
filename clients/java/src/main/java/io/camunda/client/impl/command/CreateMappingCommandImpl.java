@@ -56,6 +56,12 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   }
 
   @Override
+  public CreateMappingCommandStep1 name(final String name) {
+    mappingRequest.name(name);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<CreateMappingResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -65,6 +71,7 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   public ZeebeFuture<CreateMappingResponse> send() {
     ArgumentUtil.ensureNotNull("claimName", mappingRequest.getClaimName());
     ArgumentUtil.ensureNotNull("claimValue", mappingRequest.getClaimValue());
+    ArgumentUtil.ensureNotNull("name", mappingRequest.getName());
     final HttpZeebeFuture<CreateMappingResponse> result = new HttpZeebeFuture<>();
     final CreateMappingResponseImpl response = new CreateMappingResponseImpl();
     httpClient.post(
