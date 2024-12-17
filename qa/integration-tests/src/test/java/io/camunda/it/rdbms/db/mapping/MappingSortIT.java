@@ -112,4 +112,25 @@ public class MappingSortIT {
     assertThat(searchResult.items())
         .isSortedAccordingTo(Comparator.comparing(MappingEntity::claimName).reversed());
   }
+
+  @TestTemplate
+  public void shouldSortMappingsByNameValueDesc(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String name = "name-" + MappingFixtures.nextStringId();
+    createAndSaveRandomMappings(rdbmsService, b -> b.name(name));
+
+    final var searchResult =
+        rdbmsService
+            .getMappingReader()
+            .search(
+                new MappingQuery(
+                    new MappingFilter.Builder().name(name).build(),
+                    MappingSort.of(b -> b.name().desc()),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isSortedAccordingTo(Comparator.comparing(MappingEntity::name).reversed());
+  }
 }
