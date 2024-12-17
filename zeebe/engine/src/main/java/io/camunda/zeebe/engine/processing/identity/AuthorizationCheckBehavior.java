@@ -34,12 +34,14 @@ import java.util.stream.Stream;
 public final class AuthorizationCheckBehavior {
 
   public static final String FORBIDDEN_ERROR_MESSAGE =
-      "Unauthorized to perform operation '%s' on resource '%s'";
+      "Insufficient permissions to perform operation '%s' on resource '%s'";
   public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
   public static final String WILDCARD_PERMISSION = "*";
+  private static final String UNAUTHORIZED_ERROR_MESSAGE =
+      "Unauthorized to perform operation '%s' on resource '%s'";
   private final AuthorizationState authorizationState;
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
@@ -87,7 +89,10 @@ public final class AuthorizationCheckBehavior {
       final var userOptional = userState.getUser(userKey.get());
       if (userOptional.isEmpty()) {
         return Either.left(
-            new Rejection(RejectionType.UNAUTHORIZED, request.getForbiddenErrorMessage()));
+            new Rejection(
+                RejectionType.UNAUTHORIZED,
+                UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                    request.getPermissionType(), request.getResourceType())));
       }
       // verify if the user is authorized for the tenant
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
