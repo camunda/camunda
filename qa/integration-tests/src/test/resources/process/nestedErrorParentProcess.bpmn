@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_02hgizz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.23.0">
+  <bpmn:process id="nestedErrorParentProcess" name="Error Process" isExecutable="true">
+    <bpmn:startEvent id="startEvent" name="Start">
+      <bpmn:outgoing>SequenceFlow_1i0srtx</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1i0srtx" sourceRef="startEvent" targetRef="Gateway_0ew4mjs" />
+    <bpmn:endEvent id="endEvent" name="End">
+      <bpmn:incoming>Flow_1q20csi</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1jg1gnc" sourceRef="call_error_subprocess" targetRef="Gateway_1b31jri" />
+    <bpmn:callActivity id="call_error_subprocess" name="Task">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="nestedErrorChildProcess" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0slp1to</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1jg1gnc</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_0slp1to" sourceRef="Gateway_0ew4mjs" targetRef="call_error_subprocess" />
+    <bpmn:parallelGateway id="Gateway_0ew4mjs">
+      <bpmn:incoming>SequenceFlow_1i0srtx</bpmn:incoming>
+      <bpmn:outgoing>Flow_0slp1to</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0n5l7sa</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:serviceTask id="parentprocess_error_task" name="Error">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="errorTask" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0n5l7sa</bpmn:incoming>
+      <bpmn:outgoing>Flow_1fr8uas</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_0n5l7sa" sourceRef="Gateway_0ew4mjs" targetRef="parentprocess_error_task" />
+    <bpmn:exclusiveGateway id="Gateway_1b31jri">
+      <bpmn:incoming>Flow_1fr8uas</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_1jg1gnc</bpmn:incoming>
+      <bpmn:outgoing>Flow_1q20csi</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1fr8uas" sourceRef="parentprocess_error_task" targetRef="Gateway_1b31jri" />
+    <bpmn:sequenceFlow id="Flow_1q20csi" sourceRef="Gateway_1b31jri" targetRef="endEvent" />
+  </bpmn:process>
+  <bpmn:error id="Error_12y8yzc" name="boundaryError" errorCode="boundary" />
+  <bpmn:error id="Error_1ibaxgv" name="subProcessError" errorCode="subProcess" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="nestedErrorParentProcess">
+      <bpmndi:BPMNShape id="Activity_1xlebjf_di" bpmnElement="call_error_subprocess">
+        <dc:Bounds x="410" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="startEvent">
+        <dc:Bounds x="152" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="142" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1su2p3u_di" bpmnElement="Gateway_0ew4mjs">
+        <dc:Bounds x="255" y="92" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0o16sdb" bpmnElement="parentprocess_error_task">
+        <dc:Bounds x="410" y="230" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1niethi_di" bpmnElement="endEvent">
+        <dc:Bounds x="672" y="99" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="680" y="142" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1b31jri_di" bpmnElement="Gateway_1b31jri" isMarkerVisible="true">
+        <dc:Bounds x="565" y="92" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0slp1to_di" bpmnElement="Flow_0slp1to">
+        <di:waypoint x="305" y="117" />
+        <di:waypoint x="410" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1jg1gnc_di" bpmnElement="SequenceFlow_1jg1gnc">
+        <di:waypoint x="510" y="117" />
+        <di:waypoint x="565" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1i0srtx_di" bpmnElement="SequenceFlow_1i0srtx">
+        <di:waypoint x="188" y="117" />
+        <di:waypoint x="255" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0n5l7sa_di" bpmnElement="Flow_0n5l7sa">
+        <di:waypoint x="280" y="142" />
+        <di:waypoint x="280" y="270" />
+        <di:waypoint x="410" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fr8uas_di" bpmnElement="Flow_1fr8uas">
+        <di:waypoint x="510" y="270" />
+        <di:waypoint x="590" y="270" />
+        <di:waypoint x="590" y="142" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1q20csi_di" bpmnElement="Flow_1q20csi">
+        <di:waypoint x="615" y="117" />
+        <di:waypoint x="672" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
