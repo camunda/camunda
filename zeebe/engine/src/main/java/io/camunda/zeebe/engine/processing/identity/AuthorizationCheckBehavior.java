@@ -311,7 +311,6 @@ public final class AuthorizationCheckBehavior {
     private final PermissionType permissionType;
     private final Set<String> resourceIds;
     private final String tenantId;
-    private boolean hasAddedResourceIds = false;
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
@@ -347,7 +346,6 @@ public final class AuthorizationCheckBehavior {
 
     public AuthorizationRequest addResourceId(final String resourceId) {
       resourceIds.add(resourceId);
-      hasAddedResourceIds = true;
       return this;
     }
 
@@ -360,10 +358,12 @@ public final class AuthorizationCheckBehavior {
     }
 
     public String getForbiddenErrorMessage() {
-      return hasAddedResourceIds
-          ? FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              permissionType, resourceType, resourceIds)
-          : FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType);
+      final var resourceIdsContainsOnlyWildcard =
+          resourceIds.size() == 1 && resourceIds.contains(WILDCARD_PERMISSION);
+      return resourceIdsContainsOnlyWildcard
+          ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
+          : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              permissionType, resourceType, resourceIds);
     }
   }
 
