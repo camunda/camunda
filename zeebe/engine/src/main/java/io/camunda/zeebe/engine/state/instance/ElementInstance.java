@@ -271,15 +271,15 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     executionListenerIndexProp.reset();
   }
 
-  public Integer getTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public Integer getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return taskListenerIndicesRecordProp.getValue().getTaskListenerIndex(eventType);
   }
 
-  public void incrementTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     taskListenerIndicesRecordProp.getValue().incrementTaskListenerIndex(eventType);
   }
 
-  public void resetTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+  public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     taskListenerIndicesRecordProp.getValue().resetTaskListenerIndex(eventType);
   }
 
@@ -300,5 +300,20 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    */
   public List<DirectBuffer> getActiveSequenceFlowIds() {
     return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
+  }
+
+  /**
+   * Returns the count of currently active sequence flow ids. This count can be used to verify if
+   * {@link #getActiveSequenceFlowIds()} method is safe to use by comparing the result with {@link
+   * #getActiveSequenceFlows()}. E.g. a process instance created before 8.6 might have a different
+   * count which makes returned active sequence flow ids incorrect, so unsafe to use.
+   *
+   * <p>Warning, this method should not be used for process instances created before 8.6. It may
+   * provide incorrect information for such process instances.
+   *
+   * @since 8.6
+   */
+  public int getActiveSequenceFlowsCount() {
+    return activeSequenceFlowIdsProp.size();
   }
 }
