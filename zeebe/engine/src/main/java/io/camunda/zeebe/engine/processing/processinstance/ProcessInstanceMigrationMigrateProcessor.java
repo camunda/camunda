@@ -462,20 +462,18 @@ public class ProcessInstanceMigrationMigrateProcessor
       final ElementInstance elementInstance) {
     return elementInstance.getActiveSequenceFlowIds().stream()
         .map(
-            activeFlowId -> {
-              final ExecutableSequenceFlow activeFlow =
-                  sourceProcessDefinition
-                      .getProcess()
-                      .getElementById(activeFlowId, ExecutableSequenceFlow.class);
-              final ExecutableFlowNode sourceGateway = activeFlow.getTarget();
-
-              return Map.entry(activeFlow, sourceGateway);
-            })
-        .filter(entry -> entry.getValue().getElementType() == BpmnElementType.PARALLEL_GATEWAY)
+            activeFlowId ->
+                sourceProcessDefinition
+                    .getProcess()
+                    .getElementById(activeFlowId, ExecutableSequenceFlow.class))
+        .map(sequenceFlow -> new ActiveSequenceFlow(sequenceFlow, sequenceFlow.getTarget()))
+        .filter(
+            sequenceFlow ->
+                sequenceFlow.target().getElementType() == BpmnElementType.PARALLEL_GATEWAY)
         .map(
-            entry -> {
-              final ExecutableSequenceFlow activeFlow = entry.getKey();
-              final ExecutableFlowNode sourceGateway = entry.getValue();
+            activeSequenceFlow -> {
+              final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
+              final ExecutableFlowNode sourceGateway = activeSequenceFlow.target;
               final String targetGatewayId =
                   sourceElementIdToTargetElementId.get(
                       BufferUtil.bufferAsString(sourceGateway.getId()));
@@ -516,4 +514,6 @@ public class ProcessInstanceMigrationMigrateProcessor
       super(message);
     }
   }
+
+  record ActiveSequenceFlow(ExecutableSequenceFlow sequenceFlow, ExecutableFlowNode target) {}
 }
