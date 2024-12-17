@@ -17,6 +17,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
@@ -130,7 +131,8 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     }
     if (operateProperties.getElasticsearch().isCreateSchema()) {
-      schemaManager.createSchema();
+      final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, true);
+      schemaExporterHelper.createSchema();
       assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
           .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
           .isTrue();
