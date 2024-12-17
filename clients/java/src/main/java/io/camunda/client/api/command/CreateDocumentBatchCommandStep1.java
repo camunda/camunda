@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.command;
+package io.camunda.client.api.command;
 
-import io.camunda.zeebe.client.api.command.DocumentBuilderStep1.DocumentBuilderStep2;
-import io.camunda.zeebe.client.api.response.DocumentReferenceBatchResponse;
+import io.camunda.client.api.command.DocumentBuilderStep1.DocumentBuilderStep2;
+import io.camunda.client.api.response.DocumentReferenceBatchResponse;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;

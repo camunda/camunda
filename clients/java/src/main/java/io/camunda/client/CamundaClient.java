@@ -27,7 +27,7 @@ import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateDocumentBatchCommandStep1;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;

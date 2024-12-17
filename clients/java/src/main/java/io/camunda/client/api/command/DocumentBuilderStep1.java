@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.command;
+package io.camunda.client.api.command;
 
 import java.io.InputStream;
 import java.time.Duration;

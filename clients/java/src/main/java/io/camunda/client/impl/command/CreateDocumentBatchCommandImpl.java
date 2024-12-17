@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.command;
+package io.camunda.client.impl.command;
 
-import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
+import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.CreateDocumentBatchCommandStep1;
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.DocumentReferenceBatchResponse;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.impl.response.DocumentReferenceBatchResponseImpl;
-import io.camunda.zeebe.client.impl.util.DocumentBuilder;
-import io.camunda.zeebe.client.impl.util.DocumentPartUtil;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.response.DocumentReferenceBatchResponse;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.http.HttpZeebeFuture;
+import io.camunda.client.impl.response.DocumentReferenceBatchResponseImpl;
+import io.camunda.client.impl.util.DocumentBuilder;
+import io.camunda.client.protocol.rest.DocumentCreationBatchResponse;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,7 +47,8 @@ import org.slf4j.LoggerFactory;
 public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchCommandStep1 {
 
   public static final String METADATA_PART_HEADER = "X-Document-Metadata";
-  private final Logger LOGGER = LoggerFactory.getLogger(CreateDocumentBatchCommandImpl.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(CreateDocumentBatchCommandImpl.class);
   private final List<DocumentBuilder> documents = new ArrayList<>();
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
@@ -81,15 +81,16 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
           MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
 
       for (final DocumentBuilder document : documents) {
-        final String filename = DocumentPartUtil.getFilenameOrDefault(document.getMetadata(), null);
+        final String fileName = document.getMetadata().getFileName();
+        ensureNotNull("fileName", fileName);
         final InputStreamBody body =
-            new InputStreamBody(document.getContent(), ContentType.DEFAULT_BINARY, filename);
+            new InputStreamBody(document.getContent(), ContentType.DEFAULT_BINARY, fileName);
         final String metadataString = jsonMapper.toJson(document.getMetadata());
         final MultipartPart part =
             MultipartPartBuilder.create()
                 .setBody(body)
                 .setHeader(
-                    "Content-Disposition", "form-data; name=files; filename=\"" + filename + "\"")
+                    "Content-Disposition", "form-data; name=files; filename=\"" + fileName + "\"")
                 .setHeader(METADATA_PART_HEADER, metadataString)
                 .build();
         entityBuilder.addPart(part);

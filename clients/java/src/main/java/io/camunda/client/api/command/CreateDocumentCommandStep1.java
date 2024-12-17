@@ -16,7 +16,6 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.ExperimentalApi;
-import io.camunda.zeebe.client.api.command.DocumentBuilderStep1.DocumentBuilderStep2;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import java.io.InputStream;
 import java.time.Duration;
