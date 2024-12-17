@@ -1109,13 +1109,82 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldProvideCorrectedUserTaskDataToSubsequentTaskListener() {
+  public void shouldProvideCorrectedUserTaskDataToSubsequentAssigningOnCreationTaskListener() {
+    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u.zeebeAssignee("initial_assignee"),
+        userTask -> {},
+        List.of(
+            UserTaskIntent.CREATING,
+            UserTaskIntent.CREATED,
+            UserTaskIntent.ASSIGNING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.ASSIGNED));
+  }
+
+  @Test
+  public void shouldProvideCorrectedUserTaskDataToSubsequentAssigningTaskListener() {
+    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        List.of(
+            UserTaskIntent.ASSIGN,
+            UserTaskIntent.ASSIGNING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.ASSIGNED));
+  }
+
+  @Test
+  public void shouldProvideCorrectedUserTaskDataToSubsequentClaimingTaskListener() {
+    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        List.of(
+            UserTaskIntent.CLAIM,
+            UserTaskIntent.CLAIMING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.ASSIGNED));
+  }
+
+  @Test
+  public void shouldProvideCorrectedUserTaskDataToSubsequentCompletingTaskListener() {
+    testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+        ZeebeTaskListenerEventType.completing,
+        u -> u,
+        UserTaskClient::complete,
+        List.of(
+            UserTaskIntent.COMPLETE,
+            UserTaskIntent.COMPLETING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.COMPLETED));
+  }
+
+  private void testProvideCorrectedUserTaskDataToSubsequentTaskListener(
+      final ZeebeTaskListenerEventType eventType,
+      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final Consumer<UserTaskClient> userTaskAction,
+      final List<UserTaskIntent> expectedUserTaskIntents) {
     // given
     final long processInstanceKey =
         createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+            createProcessWithZeebeUserTask(
+                t ->
+                    userTaskBuilder
+                        .apply(t)
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // when
     ENGINE
@@ -1160,13 +1229,7 @@ public class TaskListenerTest {
 
     completeJobs(processInstanceKey, listenerType + "_2");
 
-    assertUserTaskIntentsSequence(
-        UserTaskIntent.COMPLETE,
-        UserTaskIntent.COMPLETING,
-        UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.CORRECTED,
-        UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETED);
+    assertUserTaskIntentsSequence(expectedUserTaskIntents.toArray(UserTaskIntent[]::new));
   }
 
   @Test
