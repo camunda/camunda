@@ -87,9 +87,19 @@ final class ClusterEndpointIT {
       final var response = actuator.purge(false);
 
       // then
-      assertThat(response.getPlannedChanges()).isNotEmpty();
-      // TODO More assertions
-
+      assertThat(response.getPlannedChanges().stream().map(Operation::getOperation))
+          .containsExactlyElementsOf(
+              List.of(
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.PARTITION_LEAVE,
+                  OperationEnum.DELETE_HISTORY,
+                  OperationEnum.DELETE_HISTORY,
+                  OperationEnum.PARTITION_BOOTSTRAP,
+                  OperationEnum.PARTITION_BOOTSTRAP,
+                  OperationEnum.PARTITION_JOIN,
+                  OperationEnum.PARTITION_JOIN));
     }
   }
 

@@ -16,12 +16,14 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.assertj.core.api.Assertions;
@@ -68,6 +70,25 @@ final class PartitionLeaveApplierTest {
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("partition 1 has only one replica");
+  }
+
+  @Test
+  void shouldExecuteLeaveLastPartitionWhenPurged() {
+    // given
+    final ClusterConfiguration topologyWithOneReplica =
+        initialClusterConfiguration
+            .updateMember(
+                localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .startConfigurationChange(List.of(new DeleteHistoryOperation(localMemberId)));
+
+    // when
+    final var resultingTopology =
+        partitionLeaveApplier.init(topologyWithOneReplica).get().apply(topologyWithOneReplica);
+
+    // then
+    ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)
+        .member(localMemberId)
+        .hasPartitionWithState(1, State.LEAVING);
   }
 
   @Test
