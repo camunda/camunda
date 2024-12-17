@@ -65,6 +65,8 @@ public class RestErrorMapper {
             yield RestErrorMapper.createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
           case UNAUTHORIZED:
             yield RestErrorMapper.createProblemDetail(HttpStatus.UNAUTHORIZED, message, title);
+          case FORBIDDEN:
+            yield RestErrorMapper.createProblemDetail(HttpStatus.FORBIDDEN, message, title);
           default:
             {
               yield RestErrorMapper.createProblemDetail(

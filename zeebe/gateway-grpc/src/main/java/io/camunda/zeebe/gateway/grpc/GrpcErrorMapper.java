@@ -223,6 +223,12 @@ public final class GrpcErrorMapper {
       case PROCESSING_ERROR:
         builder.setCode(Code.INTERNAL_VALUE);
         break;
+      case UNAUTHORIZED:
+        builder.setCode(Code.UNAUTHENTICATED_VALUE);
+        break;
+      case FORBIDDEN:
+        builder.setCode(Code.PERMISSION_DENIED_VALUE);
+        break;
       case SBE_UNKNOWN:
       case NULL_VAL:
       default:
