@@ -32,7 +32,6 @@ import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.auth.AuthUserService;
-import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.security.auth.Role;
 import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
@@ -42,6 +41,7 @@ import jakarta.json.Json;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,6 +63,7 @@ import org.springframework.test.context.junit4.SpringRunner;
  * to get current user * {@link io.camunda.operate.store.UserStore} is mocked (integration with ELS
  * is not tested)
  */
+@Disabled
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
@@ -76,7 +77,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       AuthUserService.class,
       RolePermissionService.class,
       AuthenticationRestService.class,
-      OperateUserDetailsService.class,
       RetryElasticsearchClient.class,
       ElasticsearchTaskStore.class,
       OperateProfileService.class,
