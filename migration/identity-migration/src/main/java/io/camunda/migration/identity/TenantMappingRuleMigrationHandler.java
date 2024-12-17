@@ -61,7 +61,10 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
       final TenantMappingRule tenantMappingRule) {
     try {
       final var request =
-          new MappingDTO(tenantMappingRule.getClaimName(), tenantMappingRule.getClaimValue());
+          new MappingDTO(
+              tenantMappingRule.getClaimName(),
+              tenantMappingRule.getClaimValue(),
+              tenantMappingRule.getName());
       final var mappingKey =
           mappingServices
               .findMapping(request)
