@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices;
 import java.util.Collection;
 import java.util.List;
@@ -36,7 +37,8 @@ class AuthorizationMigrationHandlerTest {
   void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
     migrationHandler =
-        new AuthorizationMigrationHandler(authorizationServices, managementIdentityProxy);
+        new AuthorizationMigrationHandler(
+            new Builder(), authorizationServices, managementIdentityProxy);
   }
 
   @AfterEach

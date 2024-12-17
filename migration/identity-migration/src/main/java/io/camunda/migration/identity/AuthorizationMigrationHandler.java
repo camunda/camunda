@@ -8,6 +8,7 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -32,9 +33,11 @@ public class AuthorizationMigrationHandler {
   private final ManagementIdentityProxy managementIdentityProxy;
 
   public AuthorizationMigrationHandler(
+      final Authentication.Builder authenticationBuilder,
       final AuthorizationServices authorizationService,
       final ManagementIdentityProxy managementIdentityProxy) {
-    this.authorizationService = authorizationService;
+    this.authorizationService =
+        authorizationService.withAuthentication(authenticationBuilder.build());
     this.managementIdentityProxy = managementIdentityProxy;
   }
 
