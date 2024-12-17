@@ -111,7 +111,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices);
+            userServices,
+            passwordEncoder);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->

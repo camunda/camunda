@@ -70,6 +70,7 @@ import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class Gateway implements CloseableSilently {
 
@@ -94,6 +95,7 @@ public final class Gateway implements CloseableSilently {
   private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -101,7 +103,8 @@ public final class Gateway implements CloseableSilently {
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
@@ -109,7 +112,8 @@ public final class Gateway implements CloseableSilently {
         brokerClient,
         actorSchedulingService,
         jobStreamer,
-        userServices);
+        userServices,
+        passwordEncoder);
   }
 
   public Gateway(
@@ -119,7 +123,8 @@ public final class Gateway implements CloseableSilently {
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
@@ -127,6 +132,7 @@ public final class Gateway implements CloseableSilently {
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     healthManager = new GatewayHealthManagerImpl();
   }
 
