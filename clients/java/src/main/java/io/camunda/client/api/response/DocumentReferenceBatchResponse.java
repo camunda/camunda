@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.response;
+package io.camunda.client.api.response;
 
 import java.util.List;
 

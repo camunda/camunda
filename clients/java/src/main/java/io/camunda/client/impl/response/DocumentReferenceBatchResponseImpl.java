@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.client.impl.response;
+package io.camunda.client.impl.response;
 
-import io.camunda.zeebe.client.api.response.DocumentReferenceBatchResponse;
-import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationFailureDetail;
+import io.camunda.client.api.response.DocumentReferenceBatchResponse;
+import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.client.protocol.rest.DocumentCreationFailureDetail;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

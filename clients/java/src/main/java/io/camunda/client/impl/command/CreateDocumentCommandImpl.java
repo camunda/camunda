@@ -15,8 +15,6 @@
  */
 package io.camunda.client.impl.command;
 
-import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
-
 import io.camunda.client.ZeebeClientConfiguration;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
@@ -28,12 +26,8 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
-import io.camunda.client.protocol.rest.DocumentMetadata;
+import io.camunda.client.impl.util.DocumentBuilder;
 import io.camunda.client.protocol.rest.DocumentReference;
-import java.io.ByteArrayInputStream;
-import io.camunda.zeebe.client.impl.util.DocumentBuilder;
-import io.camunda.zeebe.client.impl.util.DocumentPartUtil;
-import io.camunda.zeebe.client.protocol.rest.DocumentReference;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
@@ -80,7 +74,7 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
       final MultipartEntityBuilder entityBuilder =
           MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
 
-      final String name = DocumentPartUtil.getFilenameOrDefault(getMetadata(), documentId);
+      final String name = getMetadata().getFileName(); // can be null but is handled by the gateway
       entityBuilder.addBinaryBody("file", getContent(), ContentType.DEFAULT_BINARY, name);
 
       final String metadataString = jsonMapper.toJson(getMetadata());
