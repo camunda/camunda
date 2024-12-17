@@ -66,8 +66,6 @@ public class TaskListenerTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
-  private static final String USER_TASK_KEY_HEADER_NAME =
-      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
 
   private static final String USER_TASK_ELEMENT_ID = "my_user_task";
 
@@ -689,10 +687,11 @@ public class TaskListenerTest {
                         .zeebeCandidateGroups("group_A, group_C, group_F")
                         .zeebeFormId("Form_0w7r08e")
                         .zeebeDueDate("2095-09-18T10:31:10+02:00")
+                        .zeebeTaskPriority("88")
                         .zeebeTaskListener(l -> l.completing().type(listenerType))));
 
     // when
-    final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
     final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
@@ -706,7 +705,9 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2095-09-18T10:31:10+02:00"),
             entry(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, Objects.toString(form.getFormKey())),
-            entry(USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecordValue.getKey())));
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "88"),
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"));
     completeJobs(processInstanceKey, listenerType);
   }
 
@@ -728,11 +729,12 @@ public class TaskListenerTest {
             .setCandidateGroupsList(List.of("group_J", "group_R"))
             .setCandidateUsersList(List.of("user_T"))
             .setDueDate("2087-09-21T11:22:33+02:00")
-            .setFollowUpDate("2097-09-21T11:22:33+02:00");
+            .setFollowUpDate("2097-09-21T11:22:33+02:00")
+            .setPriority(42);
 
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).update(changes);
-    final var userTaskRecordValue = ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
     final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
@@ -743,7 +745,9 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "admin"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2087-09-21T11:22:33+02:00"),
             entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2097-09-21T11:22:33+02:00"),
-            entry(USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecordValue.getKey())));
+            entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "42"),
+            entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"));
     completeJobs(processInstanceKey, listenerType);
   }
 
@@ -1174,12 +1178,8 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"new_candidate_user\"]"),
             entry(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"new_candidate_group\"]"),
             entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "new_due_date"),
-            entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "new_follow_up_date")
-            /*
-             // priority is not yet accessible as a custom header
-             , entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "100")
-            */
-            );
+            entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "new_follow_up_date"),
+            entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "100"));
 
     completeJobs(processInstanceKey, listenerType + "_2");
 

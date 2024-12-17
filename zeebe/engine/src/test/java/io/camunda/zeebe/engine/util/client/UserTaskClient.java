@@ -209,7 +209,8 @@ public final class UserTaskClient {
         .setCandidateGroupsChanged()
         .setCandidateUsersChanged()
         .setDueDateChanged()
-        .setFollowUpDateChanged();
+        .setFollowUpDateChanged()
+        .setPriorityChanged();
     userTaskRecord.wrapChangedAttributes(changes, true);
 
     final long userTaskKey = findUserTaskKey();
