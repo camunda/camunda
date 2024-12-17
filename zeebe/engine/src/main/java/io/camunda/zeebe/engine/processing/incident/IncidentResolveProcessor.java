@@ -21,14 +21,20 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -41,15 +47,19 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       "Expected to resolve incident with key '%d', but no such incident was found";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
       "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
-
-  private final ProcessInstanceRecord failedRecord = new ProcessInstanceRecord();
+  private static final String LIFECYCLE_STATE_CONVERSION_NOT_SUPPORTED_MSG =
+      "Conversion from '%s' user task lifecycle state to failed user task command is not yet supported";
+  private static final String UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG =
+      "Unexpected user task lifecycle state: '%s' encountered during conversion to failed user task command.";
 
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
+  private final TypedRecordProcessor<UserTaskRecord> userTaskProcessor;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   private final IncidentState incidentState;
   private final ElementInstanceState elementInstanceState;
+  private final UserTaskState userTaskState;
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
@@ -58,15 +68,18 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   public IncidentResolveProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
+      final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
+    this.userTaskProcessor = userTaskProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     incidentState = processingState.getIncidentState();
     elementInstanceState = processingState.getElementInstanceState();
+    userTaskState = processingState.getUserTaskState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
     this.authCheckBehavior = authCheckBehavior;
@@ -126,15 +139,15 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command, final IncidentRecord incident) {
-    final long jobKey = incident.getJobKey();
 
+    final long jobKey = incident.getJobKey();
     if (isJobRelatedIncident(jobKey)) {
       return;
     }
 
     getFailedCommand(incident)
         .ifRightOrLeft(
-            bpmnStreamProcessor::processRecord,
+            this::processFailedCommand,
             failure -> {
               final var message =
                   String.format(
@@ -144,7 +157,25 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             });
   }
 
-  private Either<String, TypedRecord<ProcessInstanceRecord>> getFailedCommand(
+  private void processFailedCommand(TypedRecord<? extends UnifiedRecordValue> failedCommand) {
+    if (failedCommand.getValue() instanceof ProcessInstanceRecord) {
+      bpmnStreamProcessor.processRecord((TypedRecord<ProcessInstanceRecord>) failedCommand);
+    } else if (failedCommand.getValue() instanceof UserTaskRecord) {
+      userTaskProcessor.processRecord((TypedRecord<UserTaskRecord>) failedCommand);
+    } else {
+      throw new IllegalStateException(
+          "Failed to process command due to unsupported record type: '%s'."
+              .formatted(failedCommand.getValue().getClass().getSimpleName()));
+    }
+  }
+
+  private boolean isUserTaskRelatedIncident(final ElementInstance elementInstance) {
+    return elementInstance.getState() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+        && elementInstance.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
+        && elementInstance.getUserTaskKey() > 0;
+  }
+
+  private Either<String, TypedRecord<? extends UnifiedRecordValue>> getFailedCommand(
       final IncidentRecord incidentRecord) {
     final long elementInstanceKey = incidentRecord.getElementInstanceKey();
     final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
@@ -154,25 +185,67 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
               "Expected to find failed command for element instance %d, but element instance not found",
               elementInstanceKey));
     }
-    return getFailedCommandIntent(elementInstance)
+
+    return isUserTaskRelatedIncident(elementInstance)
+        ? createUserTaskCommand(elementInstance)
+        : createProcessInstanceCommand(elementInstance);
+  }
+
+  private Either<String, TypedRecord<? extends UnifiedRecordValue>> createUserTaskCommand(
+      final ElementInstance elementInstance) {
+
+    final var userTaskKey = elementInstance.getUserTaskKey();
+    final var intermediateState = userTaskState.getIntermediateState(userTaskKey);
+
+    if (intermediateState == null) {
+      return Either.left(
+          String.format("No intermediate state found for user task with key %d", userTaskKey));
+    }
+
+    return getFailedUserTaskCommandIntent(intermediateState.getLifecycleState())
         .map(
-            commandIntent -> {
-              failedRecord.wrap(elementInstance.getValue());
-              return new IncidentRecordWrapper(elementInstanceKey, commandIntent, failedRecord);
+            intent -> {
+              final var userTaskRecord = new UserTaskRecord();
+              userTaskRecord.wrap(intermediateState.getRecord());
+              return new IncidentRecordWrapper<UserTaskRecord>(userTaskKey, intent, userTaskRecord);
             });
   }
 
-  private Either<String, ProcessInstanceIntent> getFailedCommandIntent(
+  private Either<String, TypedRecord<? extends UnifiedRecordValue>> createProcessInstanceCommand(
+      final ElementInstance elementInstance) {
+
+    return getFailedProcessInstanceCommandIntent(elementInstance)
+        .map(
+            intent -> {
+              final var record = new ProcessInstanceRecord();
+              record.wrap(elementInstance.getValue());
+              return new IncidentRecordWrapper<ProcessInstanceRecord>(
+                  elementInstance.getKey(), intent, record);
+            });
+  }
+
+  private Either<String, UserTaskIntent> getFailedUserTaskCommandIntent(
+      final LifecycleState lifecycleState) {
+    return switch (lifecycleState) {
+      case ASSIGNING -> Either.right(UserTaskIntent.ASSIGN);
+      case CLAIMING -> Either.right(UserTaskIntent.CLAIM);
+      case UPDATING -> Either.right(UserTaskIntent.UPDATE);
+      case COMPLETING -> Either.right(UserTaskIntent.COMPLETE);
+      case CREATING, CANCELING ->
+          Either.left(String.format(LIFECYCLE_STATE_CONVERSION_NOT_SUPPORTED_MSG, lifecycleState));
+      default ->
+          Either.left(String.format(UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG, lifecycleState));
+    };
+  }
+
+  private Either<String, ProcessInstanceIntent> getFailedProcessInstanceCommandIntent(
       final ElementInstance elementInstance) {
     final var instanceState = elementInstance.getState();
-    switch (instanceState) {
-      case ELEMENT_ACTIVATING:
-        return Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
-      case ELEMENT_COMPLETING:
-        return Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
-      default:
-        return Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
-    }
+    return switch (instanceState) {
+      case ELEMENT_ACTIVATING -> Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
+      case ELEMENT_COMPLETING -> Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
+      default -> Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
+    };
   }
 
   private void publishIncidentRelatedJob(final long jobKey) {
