@@ -11,7 +11,9 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.TenantService;
+import io.camunda.security.auth.Authentication;
+import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,15 +25,16 @@ public class TenantMigrationHandler implements MigrationHandler {
   private static final Logger LOG = LoggerFactory.getLogger(TenantMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
-  private final TenantService tenantService;
+  private final TenantServices tenantServices;
 
   public TenantMigrationHandler(
+      final Authentication.Builder authenticationBuilder,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
-      final TenantService tenantService) {
+      final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.tenantService = tenantService;
+    this.tenantServices = tenantServices.withAuthentication(authenticationBuilder.build());
   }
 
   @Override
@@ -48,7 +51,7 @@ public class TenantMigrationHandler implements MigrationHandler {
 
   private MigrationStatusUpdateRequest createTenant(final Tenant tenant) {
     try {
-      tenantService.create(tenant.tenantId(), tenant.name());
+      tenantServices.createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name()));
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);

@@ -7,47 +7,46 @@
  */
 package io.camunda.migration.identity;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.command.ProblemException;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.TenantService;
-import java.util.Collection;
+import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.service.TenantServices;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public class TenantMigrationHandlerTest {
-  final ArgumentCaptor<Collection<MigrationStatusUpdateRequest>> migrationStatusCaptor =
-      ArgumentCaptor.forClass(Collection.class);
-  @Mock private ManagementIdentityClient managementIdentityClient;
-  @Mock private TenantService tenantService;
-  private final ManagementIdentityTransformer managementIdentityTransformer =
-      new ManagementIdentityTransformer();
-  private TenantMigrationHandler migrationHandler;
+@ExtendWith(MockitoExtension.class)
+final class TenantMigrationHandlerTest {
+  private final ManagementIdentityClient managementIdentityClient;
+  private final TenantServices tenantServices;
+  private final TenantMigrationHandler migrationHandler;
 
-  @BeforeEach
-  void setUp() throws Exception {
-    MockitoAnnotations.openMocks(this).close();
+  public TenantMigrationHandlerTest(
+      @Mock final ManagementIdentityClient managementIdentityClient,
+      @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices) {
+    this.managementIdentityClient = managementIdentityClient;
+    this.tenantServices = tenantServices;
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityClient, managementIdentityTransformer, tenantService);
+            new Builder(),
+            managementIdentityClient,
+            new ManagementIdentityTransformer(),
+            this.tenantServices);
   }
-
-  @AfterEach
-  void tearDown() {}
 
   @Test
   void stopWhenNoMoreRecords() {
@@ -61,13 +60,13 @@ public class TenantMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenants(anyInt());
-    verify(tenantService, times(2)).create(any(), any());
+    verify(tenantServices, times(2)).createTenant(any());
   }
 
   @Test
   void ignoreWhenTenantAlreadyExists() {
     // given
-    when(tenantService.create(any(), any()))
+    when(tenantServices.createTenant(any()))
         .thenThrow(new ProblemException(0, "Failed with code 409: 'Conflict'", null));
     when(managementIdentityClient.fetchTenants(anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
@@ -78,21 +77,21 @@ public class TenantMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenants(anyInt());
-    verify(tenantService, times(2)).create(any(), any());
+    verify(tenantServices, times(2)).createTenant(any());
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .allMatch(MigrationStatusUpdateRequest::success),
-        "All requests should succeed");
+        .updateMigrationStatus(
+            assertArg(
+                migrationStatusUpdateRequests -> {
+                  assertThat(migrationStatusUpdateRequests)
+                      .describedAs("All requests should succeed")
+                      .allMatch(MigrationStatusUpdateRequest::success);
+                }));
   }
 
   @Test
   void setErrorWhenTenantCreationHasError() {
     // given
-    when(tenantService.create(any(), any()))
-        .thenThrow(new ProblemException(0, "runtime exception!", null));
+    when(tenantServices.createTenant(any())).thenThrow(new RuntimeException());
     when(managementIdentityClient.fetchTenants(anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
@@ -102,13 +101,14 @@ public class TenantMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .noneMatch(MigrationStatusUpdateRequest::success),
-        "All requests should failed");
+        .updateMigrationStatus(
+            assertArg(
+                migrationStatusUpdateRequests -> {
+                  assertThat(migrationStatusUpdateRequests)
+                      .describedAs("All requests should fail")
+                      .noneMatch(MigrationStatusUpdateRequest::success);
+                }));
     verify(managementIdentityClient, times(2)).fetchTenants(anyInt());
-    verify(tenantService, times(2)).create(any(), any());
+    verify(tenantServices, times(2)).createTenant(any());
   }
 }
