@@ -60,7 +60,6 @@ public class IdentityUserReader implements UserReader {
           new UserDTO()
               .setUserId(identityTenantAwareToken.getName())
               .setDisplayName(userDisplayName)
-              .setApiUser(true)
               .setPermissions(permissions)
               .setTenants(identityTenantAwareToken.getTenants()));
     } else {

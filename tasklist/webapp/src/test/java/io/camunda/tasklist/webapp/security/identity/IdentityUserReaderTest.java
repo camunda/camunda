@@ -104,7 +104,6 @@ class IdentityUserReaderTest {
             new UserDTO()
                 .setUserId("demo")
                 .setDisplayName("demo")
-                .setApiUser(true)
                 .setPermissions(Collections.emptyList())
                 .setC8Links(Collections.emptyList())
                 .setTenants(Collections.emptyList()));
