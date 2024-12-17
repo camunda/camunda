@@ -29,16 +29,19 @@ public class HistoryBackupComponent {
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupRepositoryProps;
   private final BackupRepository backupRepository;
+  private final DynamicIndicesProvider dynamicIndicesProvider;
 
   public HistoryBackupComponent(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
       final BackupRepositoryProps backupRepositoryProps,
-      final BackupRepository backupRepository) {
+      final BackupRepository backupRepository,
+      final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     this.backupRepositoryProps = backupRepositoryProps;
     this.backupRepository = backupRepository;
+    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Bean
@@ -48,7 +51,6 @@ public class HistoryBackupComponent {
         backupPriorities,
         backupRepositoryProps,
         backupRepository,
-        // TODO use real implementation
-        DynamicIndicesProvider.noop());
+        dynamicIndicesProvider);
   }
 }
