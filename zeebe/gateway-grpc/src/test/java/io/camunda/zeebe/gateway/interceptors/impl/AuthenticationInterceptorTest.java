@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.LongAssert;
 import org.assertj.core.api.MapAssert;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class AuthenticationInterceptorTest {
 
@@ -37,7 +39,7 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(mock(UserServices.class))
+    new AuthenticationInterceptor(mock(UserServices.class), mock(PasswordEncoder.class))
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -63,7 +65,9 @@ public class AuthenticationInterceptorTest {
     final var userServices = mock(UserServices.class);
     when(userServices.search(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
-    new AuthenticationInterceptor(userServices)
+    final var passwordEncoder = mock(PasswordEncoder.class);
+    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
+    new AuthenticationInterceptor(userServices, passwordEncoder)
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -87,7 +91,7 @@ public class AuthenticationInterceptorTest {
     final var userServices = mock(UserServices.class);
     when(userServices.search(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
-    new AuthenticationInterceptor(userServices)
+    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -99,13 +103,62 @@ public class AuthenticationInterceptorTest {
             });
   }
 
+  @Test
+  public void missingUserIsRejected() {
+    // when
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+    final Metadata metadata = new Metadata();
+    // demo:demo
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
+    final var userServices = mock(UserServices.class);
+    when(userServices.search(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class))
+        .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
+
+    // then
+    assertThat(closeStatusCapturingServerCall.closeStatus)
+        .hasValueSatisfying(
+            status -> {
+              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
+              assertThat(status.getDescription())
+                  .isEqualTo("Expected a valid user, but user does not exist");
+            });
+  }
+
+  @Test
+  public void notValidPasswordIsRejected() {
+    // when
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+    final Metadata metadata = new Metadata();
+    // demo:demo
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
+    final var userServices = mock(UserServices.class);
+    when(userServices.search(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
+    final var passwordEncoder = mock(PasswordEncoder.class);
+    when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
+    new AuthenticationInterceptor(userServices, passwordEncoder)
+        .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
+
+    // then
+    assertThat(closeStatusCapturingServerCall.closeStatus)
+        .hasValueSatisfying(
+            status -> {
+              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
+              assertThat(status.getDescription())
+                  .isEqualTo("Expected a valid password, but password is not valid");
+            });
+  }
+
   // OIDC auth tests
   @Test
   public void validTokenIsAccepted() {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(mock(UserServices.class))
+    new AuthenticationInterceptor(mock(UserServices.class), mock(PasswordEncoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -126,7 +179,7 @@ public class AuthenticationInterceptorTest {
         new CloseStatusCapturingServerCall();
 
     // when
-    new AuthenticationInterceptor(mock(UserServices.class))
+    new AuthenticationInterceptor(mock(UserServices.class), mock(PasswordEncoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
