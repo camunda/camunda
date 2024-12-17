@@ -34,9 +34,9 @@
     "react-i18next": "^15.0.0",
     "react-router-dom": "6.26.2",
     "react-transition-group": "4.4.5",
-    "sass": "1.79.6",
-    "styled-components": "6.1.14",
-    "ts-pattern": "5.3.1",
+    "sass": "1.83.0",
+    "styled-components": "6.1.13",
+    "ts-pattern": "5.6.0",
     "zod": "3.24.1"
   },
   "scripts": {
