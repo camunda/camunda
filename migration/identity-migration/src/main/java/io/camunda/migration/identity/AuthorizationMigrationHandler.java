@@ -79,12 +79,14 @@ public class AuthorizationMigrationHandler {
                                   Collectors.flatMapping(
                                       e -> e.getValue().stream(), Collectors.toSet())));
                   final long ownerKey = getOwnerKeyForUsername(owner);
-                  authorizationService.patchAuthorization(
-                      new PatchAuthorizationRequest(
-                          ownerKey,
-                          PermissionAction.ADD,
-                          convertResourceType(resourceType),
-                          permissions));
+                  authorizationService
+                      .patchAuthorization(
+                          new PatchAuthorizationRequest(
+                              ownerKey,
+                              PermissionAction.ADD,
+                              convertResourceType(resourceType),
+                              permissions))
+                      .join();
 
                   final Collection<UserResourceAuthorization> migrated =
                       permissionAndResources.entrySet().stream()

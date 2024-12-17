@@ -83,7 +83,7 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
 
   private void assignMappingToTenant(final long tenantKey, final long mappingKey) {
     try {
-      tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey);
+      tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;

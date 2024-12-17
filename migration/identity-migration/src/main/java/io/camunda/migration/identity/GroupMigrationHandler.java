@@ -45,7 +45,7 @@ public class GroupMigrationHandler implements MigrationHandler {
 
   private MigrationStatusUpdateRequest createGroup(final Group group) {
     try {
-      groupServices.createGroup(group.name());
+      groupServices.createGroup(group.name()).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(group, e);
