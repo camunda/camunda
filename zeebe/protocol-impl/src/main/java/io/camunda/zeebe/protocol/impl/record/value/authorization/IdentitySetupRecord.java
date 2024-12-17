@@ -28,7 +28,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ArrayProperty<>("mappings", MappingRecord::new);
 
   public IdentitySetupRecord() {
-    super(3);
+    super(4);
     declareProperty(defaultRoleProp)
         .declareProperty(usersProp)
         .declareProperty(defaultTenantProp)
