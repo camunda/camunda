@@ -13,8 +13,8 @@ import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.service.MappingService;
-import io.camunda.migration.identity.service.TenantService;
-import io.camunda.search.entities.TenantEntity;
+import io.camunda.service.TenantServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,17 +27,17 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
       LoggerFactory.getLogger(TenantMappingRuleMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
-  private final TenantService tenantService;
+  private final TenantServices tenantServices;
   private final MappingService mappingService;
 
   public TenantMappingRuleMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
-      final TenantService tenantService,
+      final TenantServices tenantServices,
       final MappingService mappingService) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.tenantService = tenantService;
+    this.tenantServices = tenantServices;
     this.mappingService = mappingService;
   }
 
@@ -62,8 +62,8 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
               tenantMappingRule.getClaimName(),
               tenantMappingRule.getClaimValue());
       for (final Tenant mappingTenant : tenantMappingRule.getAppliedTenants()) {
-        final var tenant = tenantService.fetch(mappingTenant.tenantId(), mappingTenant.name());
-        assignMappingToTenant(tenant, mappingKey);
+        final var tenant = tenantServices.getById(mappingTenant.tenantId());
+        assignMappingToTenant(tenant.key(), mappingKey);
       }
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, null);
     } catch (final Exception e) {
@@ -72,9 +72,9 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
     }
   }
 
-  private void assignMappingToTenant(final TenantEntity tenant, final Long mappingKey) {
+  private void assignMappingToTenant(final long tenantKey, final long mappingKey) {
     try {
-      tenantService.assignMappingToTenant(tenant.key(), mappingKey);
+      tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;

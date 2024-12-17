@@ -7,16 +7,17 @@
  */
 package io.camunda.migration.identity;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.command.ProblemException;
 import io.camunda.migration.identity.dto.MappingRule.Operator;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
@@ -24,47 +25,46 @@ import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.service.MappingService;
-import io.camunda.migration.identity.service.TenantService;
 import io.camunda.search.entities.TenantEntity;
-import java.util.Collection;
+import io.camunda.service.TenantServices;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public class TenantMappingRuleMigrationHandlerTest {
-  final ArgumentCaptor<Collection<MigrationStatusUpdateRequest>> migrationStatusCaptor =
-      ArgumentCaptor.forClass(Collection.class);
-  @Mock private ManagementIdentityClient managementIdentityClient;
-  @Mock private TenantService tenantService;
-  @Mock private MappingService mappingService;
+@ExtendWith(MockitoExtension.class)
+final class TenantMappingRuleMigrationHandlerTest {
+  private final ManagementIdentityClient managementIdentityClient;
+  private final TenantServices tenantServices;
+  private final MappingService mappingService;
 
-  private final ManagementIdentityTransformer managementIdentityTransformer =
-      new ManagementIdentityTransformer();
-  private TenantMappingRuleMigrationHandler migrationHandler;
+  private final TenantMappingRuleMigrationHandler migrationHandler;
 
-  @BeforeEach
-  void setUp() throws Exception {
-    MockitoAnnotations.openMocks(this).close();
-    // when(tenantService.fetchOrCreateTenant(any(), any())).thenReturn(null);
+  public TenantMappingRuleMigrationHandlerTest(
+      @Mock final ManagementIdentityClient managementIdentityClient,
+      @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices,
+      @Mock final MappingService mappingService) {
+    this.managementIdentityClient = managementIdentityClient;
+    this.tenantServices = tenantServices;
+    this.mappingService = mappingService;
     migrationHandler =
         new TenantMappingRuleMigrationHandler(
-            managementIdentityClient, managementIdentityTransformer, tenantService, mappingService);
+            managementIdentityClient,
+            new ManagementIdentityTransformer(),
+            tenantServices,
+            mappingService);
   }
-
-  @AfterEach
-  void tearDown() {}
 
   @Test
   void stopWhenNoMoreRecords() {
     // given
     givenMappingRules();
-    when(tenantService.fetch(any(), any()))
+    when(tenantServices.getById(any()))
         .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
 
     // when
@@ -72,8 +72,8 @@ public class TenantMappingRuleMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
-    verify(tenantService, times(4)).fetch(any(), any());
-    verify(tenantService, times(4)).assignMappingToTenant(any(), any());
+    verify(tenantServices, times(4)).getById(any());
+    verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
     verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
   }
 
@@ -88,22 +88,23 @@ public class TenantMappingRuleMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
-    verify(tenantService, never()).fetch(any(), any());
+    verify(tenantServices, never()).search(any());
     verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .noneMatch(MigrationStatusUpdateRequest::success),
-        "All requests should failed");
+        .updateMigrationStatus(
+            assertArg(
+                migrationStatusUpdateRequests -> {
+                  assertThat(migrationStatusUpdateRequests)
+                      .describedAs("All requests should fail")
+                      .noneMatch(MigrationStatusUpdateRequest::success);
+                }));
   }
 
   @Test
   void setErrorWhenTenantNotFound() {
     // given
     givenMappingRules();
-    when(tenantService.fetch(any(), any()))
+    when(tenantServices.getById(any()))
         .thenThrow(new ProblemException(0, "runtime exception!", null));
 
     // when
@@ -111,42 +112,44 @@ public class TenantMappingRuleMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
-    verify(tenantService, times(2)).fetch(any(), any());
+    verify(tenantServices, times(2)).getById(any());
     verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .noneMatch(MigrationStatusUpdateRequest::success),
-        "All requests should failed");
+        .updateMigrationStatus(
+            assertArg(
+                migrationStatusUpdateRequests -> {
+                  assertThat(migrationStatusUpdateRequests)
+                      .describedAs("All requests should fail")
+                      .noneMatch(MigrationStatusUpdateRequest::success);
+                }));
   }
 
   @Test
   void ignoreWhenMappingAlreadyAssigned() {
     // given
     givenMappingRules();
-    when(tenantService.fetch(any(), any()))
+    when(tenantServices.getById(any()))
         .thenReturn(new TenantEntity(1L, "", "", Collections.emptySet()));
     doThrow(new RuntimeException("Failed with code 409: 'Conflict'"))
-        .when(tenantService)
-        .assignMappingToTenant(any(), any());
+        .when(tenantServices)
+        .addMember(any(), any(), anyLong());
 
     // when
     migrationHandler.migrate();
 
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
-    verify(tenantService, times(4)).fetch(any(), any());
-    verify(tenantService, times(4)).assignMappingToTenant(any(), any());
+    verify(tenantServices, times(4)).getById(any());
+    verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
     verify(mappingService, times(2)).findOrCreateMapping(any(), any(), any());
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .allMatch(MigrationStatusUpdateRequest::success),
-        "All requests should succeed");
+        .updateMigrationStatus(
+            assertArg(
+                migrationStatusUpdateRequests -> {
+                  assertThat(migrationStatusUpdateRequests)
+                      .describedAs("All requests should succeed")
+                      .allMatch(MigrationStatusUpdateRequest::success);
+                }));
   }
 
   private void givenMappingRules() {

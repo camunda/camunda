@@ -69,18 +69,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public TenantEntity getByKey(final Long tenantKey) {
-    final var tenantQuery = TenantQuery.of(q -> q.filter(f -> f.key(tenantKey)));
-    final var result =
-        tenantSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchTenants(tenantQuery);
-    final var tenantEntity = getSingleResultOrThrow(result, tenantKey, "Tenant");
-    final var authorization = Authorization.of(a -> a.tenant().read());
-    if (!securityContextProvider.isAuthorized(
-        tenantEntity.tenantId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return tenantEntity;
+    return getSingle(TenantQuery.of(q -> q.filter(f -> f.key(tenantKey))));
   }
 
   public CompletableFuture<?> addMember(
@@ -109,6 +98,24 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                         //        limit – 10k tenants ought to be enough for anybody …
                         .page(SearchQueryPage.of(b -> b.size(10_000)))))
         .items();
+  }
+
+  public TenantEntity getById(final String tenantId) {
+    return getSingle(TenantQuery.of(q -> q.filter(f -> f.tenantId(tenantId))));
+  }
+
+  private TenantEntity getSingle(final TenantQuery query) {
+    final var result =
+        tenantSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchTenants(query);
+    final var tenantEntity = getSingleResultOrThrow(result, query, "Tenant");
+    final var authorization = Authorization.of(a -> a.tenant().read());
+    if (!securityContextProvider.isAuthorized(
+        tenantEntity.tenantId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
+    }
+    return tenantEntity;
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}
