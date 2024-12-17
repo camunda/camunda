@@ -54,6 +54,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -453,18 +454,23 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setElementId(BufferUtil.wrapString(targetElementId)));
   }
 
-  private static Set<ExecutableSequenceFlow> getSequenceFlowsToMigrate(
+  private Set<ExecutableSequenceFlow> getSequenceFlowsToMigrate(
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final ElementInstance elementInstance) {
-    return elementInstance.getActiveSequenceFlowIds().stream()
-        .map(
-            activeFlowId ->
-                sourceProcessDefinition
-                    .getProcess()
-                    .getElementById(activeFlowId, ExecutableSequenceFlow.class))
-        .map(sequenceFlow -> new ActiveSequenceFlow(sequenceFlow, sequenceFlow.getTarget()))
+    final List<ActiveSequenceFlow> activeSequenceFlows = new ArrayList<>();
+    elementInstanceState.visitTakenSequenceFlows(
+        elementInstance.getKey(),
+        (flowScopeKey, gatewayElementId, sequenceFlowId, number) -> {
+          final var sequenceFlow =
+              sourceProcessDefinition
+                  .getProcess()
+                  .getElementById(sequenceFlowId, ExecutableSequenceFlow.class);
+          activeSequenceFlows.add(new ActiveSequenceFlow(sequenceFlow, sequenceFlow.getTarget()));
+        });
+
+    return activeSequenceFlows.stream()
         .filter(
             sequenceFlow ->
                 sequenceFlow.target().getElementType() == BpmnElementType.PARALLEL_GATEWAY)
