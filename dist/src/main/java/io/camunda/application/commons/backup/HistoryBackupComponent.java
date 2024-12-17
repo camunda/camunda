@@ -12,7 +12,7 @@ import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
 import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.profiles.ProfileOperateTasklist;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@ProfileOperateTasklist
+@ProfileWebApp
 public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;

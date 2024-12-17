@@ -14,7 +14,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.webapps.profiles.ProfileOperateTasklist;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
@@ -65,7 +65,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
-@ProfileOperateTasklist
+@ProfileWebApp
 public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
