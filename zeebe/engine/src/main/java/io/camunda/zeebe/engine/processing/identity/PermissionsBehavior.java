@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
-
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
@@ -45,15 +43,7 @@ public class PermissionsBehavior {
     final var authorizationRequest =
         new AuthorizationRequest(
             command, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
-
-    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      return Either.left(new Rejection(RejectionType.UNAUTHORIZED, errorMessage));
-    }
-
-    return Either.right(command.getValue());
+    return authCheckBehavior.isAuthorized(authorizationRequest).map(unused -> command.getValue());
   }
 
   public Either<Rejection, AuthorizationRecord> ownerExists(

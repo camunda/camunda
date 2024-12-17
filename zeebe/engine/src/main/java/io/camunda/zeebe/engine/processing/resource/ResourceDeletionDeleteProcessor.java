@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UnauthorizedException;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -139,10 +139,11 @@ public class ResourceDeletionDeleteProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ResourceDeletionRecord> command, final Throwable error) {
-    if (error instanceof final UnauthorizedException exception) {
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, exception.getMessage());
+    if (error instanceof final ForbiddenException exception) {
+      rejectionWriter.appendRejection(
+          command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
-          command, RejectionType.UNAUTHORIZED, exception.getMessage());
+          command, exception.getRejectionType(), exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final NoSuchResourceException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
@@ -434,7 +435,7 @@ public class ResourceDeletionDeleteProcessor
         new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
 
     if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      throw new UnauthorizedException(authRequest, "id '%s'".formatted(resourceId));
+      throw new ForbiddenException(authRequest);
     }
   }
 

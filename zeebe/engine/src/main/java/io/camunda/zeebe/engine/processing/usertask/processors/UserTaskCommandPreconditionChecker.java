@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
-
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -19,7 +18,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -35,9 +33,7 @@ public class UserTaskCommandPreconditionChecker {
   private final String intent;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final BiFunction<
-          TypedRecord<UserTaskRecord>,
-          UserTaskRecord,
-          Either<Tuple<RejectionType, String>, UserTaskRecord>>
+          TypedRecord<UserTaskRecord>, UserTaskRecord, Either<Rejection, UserTaskRecord>>
       additionalChecks;
   private final UserTaskState userTaskState;
 
@@ -53,9 +49,7 @@ public class UserTaskCommandPreconditionChecker {
       final List<LifecycleState> validLifecycleStates,
       final String intent,
       final BiFunction<
-              TypedRecord<UserTaskRecord>,
-              UserTaskRecord,
-              Either<Tuple<RejectionType, String>, UserTaskRecord>>
+              TypedRecord<UserTaskRecord>, UserTaskRecord, Either<Rejection, UserTaskRecord>>
           additionalChecks,
       final UserTaskState userTaskState,
       final AuthorizationCheckBehavior authCheckBehavior) {
@@ -66,14 +60,13 @@ public class UserTaskCommandPreconditionChecker {
     this.userTaskState = userTaskState;
   }
 
-  protected Either<Tuple<RejectionType, String>, UserTaskRecord> check(
-      final TypedRecord<UserTaskRecord> command) {
+  protected Either<Rejection, UserTaskRecord> check(final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
     final UserTaskRecord persistedRecord = fetchUserTaskRecord(command);
 
     if (persistedRecord == null) {
       return Either.left(
-          Tuple.of(
+          new Rejection(
               RejectionType.NOT_FOUND,
               String.format(NO_USER_TASK_FOUND_MESSAGE, intent, userTaskKey)));
     }
@@ -90,21 +83,16 @@ public class UserTaskCommandPreconditionChecker {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_USER_TASK)
             .addResourceId(persistedRecord.getBpmnProcessId());
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
-      return Either.left(
-          Tuple.of(
-              RejectionType.UNAUTHORIZED,
-              UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                  authRequest.getPermissionType(),
-                  authRequest.getResourceType(),
-                  "BPMN process id '%s'".formatted(persistedRecord.getBpmnProcessId()))));
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      return Either.left(isAuthorized.getLeft());
     }
 
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
 
     if (!validLifecycleStates.contains(lifecycleState)) {
       return Either.left(
-          Tuple.of(
+          new Rejection(
               RejectionType.INVALID_STATE,
               String.format(INVALID_USER_TASK_STATE_MESSAGE, intent, userTaskKey, lifecycleState)));
     }
