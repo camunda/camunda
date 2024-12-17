@@ -13,11 +13,14 @@ import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.service.TenantService;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TenantMigrationHandler implements MigrationHandler {
 
+  private static final Logger LOG = LoggerFactory.getLogger(TenantMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
   private final TenantService tenantService;
@@ -33,12 +36,14 @@ public class TenantMigrationHandler implements MigrationHandler {
 
   @Override
   public void migrate() {
+    LOG.debug("Migrating tenants");
     List<Tenant> tenants;
     do {
       tenants = managementIdentityClient.fetchTenants(SIZE);
       managementIdentityClient.updateMigrationStatus(
           tenants.stream().map(this::createTenant).toList());
     } while (!tenants.isEmpty());
+    LOG.debug("Finished migrating tenants");
   }
 
   private MigrationStatusUpdateRequest createTenant(final Tenant tenant) {

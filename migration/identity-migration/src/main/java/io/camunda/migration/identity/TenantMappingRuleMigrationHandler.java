@@ -43,12 +43,14 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
 
   @Override
   public void migrate() {
+    LOGGER.debug("Migrating tenant mapping rules");
     List<TenantMappingRule> tenantMappingRules;
     do {
       tenantMappingRules = managementIdentityClient.fetchTenantMappingRules(SIZE);
       managementIdentityClient.updateMigrationStatus(
           tenantMappingRules.stream().map(this::createTenantMappingRule).toList());
     } while (!tenantMappingRules.isEmpty());
+    LOGGER.debug("Finished migrating tenant mapping rules");
   }
 
   private MigrationStatusUpdateRequest createTenantMappingRule(

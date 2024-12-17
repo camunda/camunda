@@ -20,11 +20,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AuthorizationMigrationHandler {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
   private final AuthorizationServices authorizationService;
   private final ManagementIdentityProxy managementIdentityProxy;
 
@@ -36,11 +39,13 @@ public class AuthorizationMigrationHandler {
   }
 
   public void migrate() {
+    LOG.debug("Migrating authorizations");
     UserResourceAuthorization lastRecord = null;
     while (true) {
       final List<UserResourceAuthorization> authorizations =
           managementIdentityProxy.fetchUserResourceAuthorizations(lastRecord, 100);
       if (authorizations.isEmpty()) {
+        LOG.debug("Finished migrating authorizations");
         return;
       }
       lastRecord = authorizations.getLast();
