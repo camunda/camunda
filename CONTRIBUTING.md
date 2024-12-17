@@ -296,5 +296,5 @@ Should describe the motivation for the change. This is optional but encouraged. 
 [forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 [clients/java]: https://github.com/camunda/camunda/labels/scope%2Fclients-java
-[changelog generation]: https://github.com/zeebe-io/zeebe-changelog
+[changelog generation]: https://github.com/camunda/zeebe-changelog
 

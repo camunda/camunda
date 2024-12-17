@@ -23,11 +23,11 @@ public class MappingService {
 
   public MappingService(
       final MappingServices mappingServices,
-      final ZeebeClient zeebeClient,
+      final ZeebeClient identityMigrationZeebeClient,
       final Authentication.Builder servicesAuthenticationBuilder) {
     this.mappingServices =
         mappingServices.withAuthentication(servicesAuthenticationBuilder.build());
-    this.zeebeClient = zeebeClient;
+    zeebeClient = identityMigrationZeebeClient;
   }
 
   public Long findOrCreateUserWithUsername(final String username) {

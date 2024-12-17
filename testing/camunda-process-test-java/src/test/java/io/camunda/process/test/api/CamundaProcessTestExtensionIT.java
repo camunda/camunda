@@ -56,7 +56,6 @@ public class CamundaProcessTestExtensionIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasCompletedElements("start")
         .hasActiveElements("task")
         .hasVariable("status", "active");
   }

@@ -59,7 +59,7 @@ public class MigrationRunner implements Migrator {
   }
 
   @Override
-  public void run() {
+  public Void call() {
     LOG.info("Process Migration started");
     try {
       String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
@@ -85,6 +85,7 @@ public class MigrationRunner implements Migrator {
     }
     terminate(scheduler);
     LOG.info("Process Migration completed");
+    return null;
   }
 
   private boolean shouldContinue(final List<ProcessEntity> processes) {

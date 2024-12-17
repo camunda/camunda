@@ -22,10 +22,10 @@ public class TenantService {
 
   public TenantService(
       final TenantServices tenantServices,
-      final ZeebeClient zeebeClient,
+      final ZeebeClient identityMigrationZeebeClient,
       final Authentication.Builder servicesAuthenticationBuilder) {
     this.tenantServices = tenantServices.withAuthentication(servicesAuthenticationBuilder.build());
-    this.zeebeClient = zeebeClient;
+    zeebeClient = identityMigrationZeebeClient;
   }
 
   public TenantEntity create(final String tenantId, final String tenantName) {

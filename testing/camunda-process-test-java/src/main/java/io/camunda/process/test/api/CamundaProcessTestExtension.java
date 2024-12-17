@@ -15,8 +15,6 @@
  */
 package io.camunda.process.test.api;
 
-import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
-
 import io.camunda.client.ZeebeClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.containers.CamundaContainer;
@@ -26,6 +24,8 @@ import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -151,18 +151,21 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
       final Object testInstance, final Class<T> injectionType, final Supplier<T> injectionValue) {
     ReflectionUtils.findFields(
             testInstance.getClass(),
-            field ->
-                ReflectionUtils.isNotStatic(field)
-                    && field.getType().isAssignableFrom(injectionType),
+            field -> isNotStatic(field) && field.getType().isAssignableFrom(injectionType),
             ReflectionUtils.HierarchyTraversalMode.TOP_DOWN)
         .forEach(
             field -> {
               try {
-                makeAccessible(field).set(testInstance, injectionValue.get());
+                field.setAccessible(true);
+                field.set(testInstance, injectionValue.get());
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
               }
             });
+  }
+
+  private static boolean isNotStatic(final Field field) {
+    return !Modifier.isStatic(field.getModifiers());
   }
 
   private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {

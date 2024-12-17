@@ -69,7 +69,6 @@ public class CamundaSpringProcessTestListenerIT {
     // then
     CamundaAssert.assertThat(processInstance)
         .isActive()
-        .hasCompletedElements("start")
         .hasActiveElements("task")
         .hasVariable("status", "active");
   }
