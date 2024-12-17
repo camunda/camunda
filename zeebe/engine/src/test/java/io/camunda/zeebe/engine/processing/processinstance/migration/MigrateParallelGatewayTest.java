@@ -255,13 +255,11 @@ public class MigrateParallelGatewayTest {
     ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
 
     assertThat(
-            RecordingExporter.records()
+            RecordingExporter.processInstanceRecords()
                 .skipUntil(
                     r ->
-                        r.getValue() instanceof ProcessInstanceRecord
-                            && ((ProcessInstanceRecord) r.getValue()).getElementId().equals("task1")
-                            && r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .processInstanceRecords()
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && r.getValue().getElementId().equals("task1"))
                 .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SEQUENCE_FLOW)
