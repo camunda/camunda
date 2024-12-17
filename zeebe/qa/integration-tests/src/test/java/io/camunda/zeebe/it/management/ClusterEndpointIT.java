@@ -84,11 +84,12 @@ final class ClusterEndpointIT {
       actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when -- request a purge
-      assertThatCode(() -> actuator.purge(false))
-          // then
-          // TODO Change the assertion to check for planned changes once it's implemented.
-          .describedAs("Purging should fail with 400 Bad Request as it is not yet fully supported")
-          .isInstanceOf(FeignException.BadRequest.class);
+      final var response = actuator.purge(false);
+
+      // then
+      assertThat(response.getPlannedChanges()).isNotEmpty();
+      // TODO More assertions
+
     }
   }
 

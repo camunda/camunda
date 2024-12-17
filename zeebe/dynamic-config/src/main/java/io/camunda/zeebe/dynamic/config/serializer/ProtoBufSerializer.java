@@ -629,6 +629,8 @@ public class ProtoBufSerializer
       return new StartPartitionScaleUpOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getInitiateScaleUpPartitions().getDesiredPartitionCount());
+    } else if (topologyChangeOperation.hasDeleteHistory()) {
+      return new DeleteHistoryOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -479,5 +481,36 @@ final class ClusterConfigurationManagementApiTest {
         .left()
         .extracting(ErrorResponse::code)
         .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldPurgeCluster() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        initialTopology
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .addMember(id2, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(0, PartitionState.active(2, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
+            .updateMember(id2, m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(id2, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+    final var request = new PurgeRequest(false);
+
+    // when
+    final var changeStatus = clientApi.purge(request).join().get();
+
+    // then
+    final var currentConfiguration =
+        changeStatus.currentConfiguration().values().stream()
+            .map(MemberState::partitions)
+            .collect(Collectors.toSet());
+    final var expectedConfiguration =
+        changeStatus.expectedConfiguration().values().stream()
+            .map(MemberState::partitions)
+            .collect(Collectors.toSet());
+
+    assertThat(currentConfiguration).containsExactlyElementsOf(expectedConfiguration);
   }
 }
