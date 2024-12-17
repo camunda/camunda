@@ -108,7 +108,7 @@ public class MixpanelClientTest {
         .isEqualTo("strict=1&project_id=" + getMixpanelConfiguration().getProjectId());
     assertThat(requestCaptor.getValue().getMethod()).isEqualTo(HttpMethod.POST);
     assertThat(requestCaptor.getValue().getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue())
-        .isEqualTo(MediaType.APPLICATION_JSON);
+        .isEqualTo(MediaType.APPLICATION_JSON_VALUE);
     assertThat(requestCaptor.getValue().getFirstHeader(HttpHeaders.AUTHORIZATION).getValue())
         .satisfies(
             authHeaderValue -> {
