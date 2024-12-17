@@ -21,6 +21,28 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Indicates a public API that can change at any time, and has no guarantee of API stability and
+ * backward-compatibility. If users want stabilization or signature change of a specific API that is
+ * currently annotated {@code @ExperimentalApi}, please comment on its tracking issue on github with
+ * rationale, usecase, and so forth, so that the Zeebe team may prioritize the process toward
+ * stabilization of the API.
+ *
+ * <p>Usage guidelines:
+ *
+ * <ol>
+ *   <li>This annotation is used only on public API. Internal interfaces should not use it.
+ *   <li>After Zeebe has gained API stability, this annotation can only be added to new API. Adding
+ *       it to an existing API is considered API-breaking.
+ *   <li>Removing this annotation from an API gives it stable status.
+ * </ol>
+ *
+ * <p>Note: This annotation is intended only for Zeebe library code. Users should not attach this
+ * annotation to their own code.
+ *
+ * <p>This annotation was originally copied from io.grpc.ExperimentalApi, licensed under the Apache
+ * License, Version 2.0. Copyright 2015 The gRPC Authors. Changes have been made since.
+ */
 @Retention(RetentionPolicy.CLASS)
 @Target({
   ElementType.ANNOTATION_TYPE,
