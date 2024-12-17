@@ -60,6 +60,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class StubbedGateway {
 
@@ -72,6 +73,7 @@ public final class StubbedGateway {
   private final SecurityConfiguration securityConfiguration;
   private Server server;
   private final UserServices services;
+  private final PasswordEncoder passwordEncoder;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
@@ -85,6 +87,7 @@ public final class StubbedGateway {
     this.config = config;
     this.securityConfiguration = securityConfiguration;
     services = mock(UserServices.class);
+    passwordEncoder = mock(PasswordEncoder.class);
   }
 
   public void start() throws IOException {

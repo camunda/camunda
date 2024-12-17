@@ -240,6 +240,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
             new SecurityConfiguration(),
+            null,
             null);
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));

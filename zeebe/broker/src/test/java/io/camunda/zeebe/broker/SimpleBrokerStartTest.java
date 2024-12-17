@@ -34,6 +34,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class SimpleBrokerStartTest {
 
@@ -66,7 +67,8 @@ public final class SimpleBrokerStartTest {
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),
                       new SecurityConfiguration(),
-                      mock(UserServices.class));
+                      mock(UserServices.class),
+                      mock(PasswordEncoder.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -93,7 +95,8 @@ public final class SimpleBrokerStartTest {
             atomixCluster,
             brokerClient,
             new SecurityConfiguration(),
-            mock(UserServices.class));
+            mock(UserServices.class),
+            mock(PasswordEncoder.class));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =
