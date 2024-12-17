@@ -24,7 +24,6 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
 public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbstractIT {
-  private static SchemaWithExporter schemaExporterHelper;
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
   @Autowired protected SchemaManager schemaManager;
   @Autowired protected OperateProperties operateProperties;
@@ -32,12 +31,13 @@ public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbs
   protected String indexPrefix;
 
   @BeforeClass
-  public static void beforeClass() {
-    schemaExporterHelper = new SchemaWithExporter("", false);
-  }
+  public static void beforeClass() {}
 
   @Before
   public void setUp() {
+    final var indexPrefix = "test-opensearch-operation-" + TestUtil.createRandomString(5);
+    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+    final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
     schemaExporterHelper.createSchema();
   }
 
