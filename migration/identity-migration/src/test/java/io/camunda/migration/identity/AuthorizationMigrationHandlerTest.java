@@ -20,29 +20,29 @@ import io.camunda.service.AuthorizationServices;
 import java.util.Collection;
 import java.util.List;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-class AuthorizationMigrationHandlerTest {
+@ExtendWith(MockitoExtension.class)
+final class AuthorizationMigrationHandlerTest {
 
-  @Mock AuthorizationServices authorizationServices;
-  @Mock ManagementIdentityProxy managementIdentityProxy;
-  AuthorizationMigrationHandler migrationHandler;
+  final AuthorizationServices authorizationServices;
+  final ManagementIdentityProxy managementIdentityProxy;
+  final AuthorizationMigrationHandler migrationHandler;
 
-  @BeforeEach
-  void setUp() throws Exception {
-    MockitoAnnotations.openMocks(this).close();
+  public AuthorizationMigrationHandlerTest(
+      @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices,
+      @Mock final ManagementIdentityProxy managementIdentityProxy) {
+    this.authorizationServices = authorizationServices;
+    this.managementIdentityProxy = managementIdentityProxy;
     migrationHandler =
         new AuthorizationMigrationHandler(
             Authentication.none(), authorizationServices, managementIdentityProxy);
   }
-
-  @AfterEach
-  void tearDown() {}
 
   @Test
   void stopWhenNoMoreRecords() {
