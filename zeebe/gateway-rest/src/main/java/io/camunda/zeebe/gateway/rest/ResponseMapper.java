@@ -32,7 +32,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentBatchProblemDetail;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationBatchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
@@ -85,6 +85,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
@@ -179,16 +180,18 @@ public final class ResponseMapper {
     final List<DocumentReferenceResponse> successful =
         responses.stream().filter(Either::isRight).map(Either::get).toList();
 
+    final var response = new DocumentCreationBatchResponse();
+
     if (successful.size() == responses.size()) {
       final List<DocumentReference> references =
           successful.stream().map(ResponseMapper::transformDocumentReferenceResponse).toList();
-      return ResponseEntity.ok(references);
+      response.setCreatedDocuments(references);
+      return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    final var problem = new DocumentBatchProblemDetail();
     successful.stream()
         .map(ResponseMapper::transformDocumentReferenceResponse)
-        .forEach(problem::addCreatedDocumentsItem);
+        .forEach(response::addCreatedDocumentsItem);
 
     responses.stream()
         .filter(Either::isLeft)
@@ -199,9 +202,11 @@ public final class ResponseMapper {
               final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
               detail.setDetail(defaultProblemDetail.getDetail());
               detail.setFilename(error.request().metadata().fileName());
-              problem.addFailedDocumentsItem(detail);
+              response.addFailedDocumentsItem(detail);
             });
-    return new ResponseEntity<>(problem, HttpStatus.MULTI_STATUS);
+    return ResponseEntity.status(HttpStatus.MULTI_STATUS)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(response);
   }
 
   public static ProblemDetail mapDocumentErrorToProblem(final DocumentError e) {
