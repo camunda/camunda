@@ -51,7 +51,8 @@ public abstract class AbstractSecurityConfigurerAdapter {
               oauth2resourceServer ->
                   oauth2resourceServer.jwt(
                       jwtConfigurer -> jwtConfigurer.decoder(publicApiJwtDecoder())))
-          .build();
+          // .build();
+          .getObject();
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(e);
     }

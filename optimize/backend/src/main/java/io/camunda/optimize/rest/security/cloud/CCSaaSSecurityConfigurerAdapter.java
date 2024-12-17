@@ -208,7 +208,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
           .oauth2ResourceServer(
               oauth2resourceServer ->
                   oauth2resourceServer.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())))
-          .build();
+          .getObject();
+      // .build();
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(e);
     }

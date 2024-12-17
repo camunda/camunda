@@ -7,9 +7,13 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.initializers.DefaultAuthenticationInitializer;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.optimize.OptimizeModuleConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.webapps.WebappsModuleConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringBootConfiguration;
@@ -37,9 +41,15 @@ public class StandaloneOptimize {
 
     final var standaloneOptimizeApplication =
         MainSupport.createDefaultApplicationBuilder()
-            .sources(OptimizeModuleConfiguration.class)
-            .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
+            .sources(
+                CommonsModuleConfiguration.class,
+                OptimizeModuleConfiguration.class,
+                WebappsModuleConfiguration.class)
+            .profiles(
+                Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId(), Profile.AUTH_BASIC.getId())
             .addCommandLineProperties(true)
+            .initializers(
+                new DefaultAuthenticationInitializer(), new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
 

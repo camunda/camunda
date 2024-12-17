@@ -77,6 +77,7 @@ public class WebSecurityConfig {
     try {
       return httpSecurity.build();
     } catch (final Exception e) {
+      // return httpSecurity.getObject();
       throw new RuntimeException(e);
     }
   }
