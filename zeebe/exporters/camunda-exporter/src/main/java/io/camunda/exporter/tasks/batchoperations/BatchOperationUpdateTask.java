@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 
 public class BatchOperationUpdateTask implements BackgroundTask {
 
+  private static final int NO_UPDATES = 0;
   private final BatchOperationUpdateRepository batchOperationUpdateRepository;
 
   private final Logger logger;
@@ -36,14 +37,14 @@ public class BatchOperationUpdateTask implements BackgroundTask {
 
     if (batchOperations.size() > 0) {
 
-      final var finishedOperationsCount =
+      final var finishedSingleOperationsCount =
           batchOperationUpdateRepository.getFinishedOperationsCount(
               batchOperations.stream()
                   .map(BatchOperationEntity::getId)
                   .collect(Collectors.toList()));
 
       final var documentUpdates =
-          finishedOperationsCount.stream()
+          finishedSingleOperationsCount.stream()
               .map(
                   d ->
                       new DocumentUpdate(
@@ -54,11 +55,15 @@ public class BatchOperationUpdateTask implements BackgroundTask {
               .toList();
 
       if (documentUpdates.size() > 0) {
-        return CompletableFuture.completedFuture(
-            batchOperationUpdateRepository.bulkUpdate(documentUpdates));
+        final Integer updatesCount = batchOperationUpdateRepository.bulkUpdate(documentUpdates);
+        logger.trace(
+            "Updated {} batch operations with the following completedOperationsCount {}",
+            updatesCount,
+            documentUpdates);
+        return CompletableFuture.completedFuture(updatesCount);
       } // else return 0
     }
 
-    return CompletableFuture.completedFuture(0);
+    return CompletableFuture.completedFuture(NO_UPDATES);
   }
 }
