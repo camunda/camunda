@@ -336,6 +336,7 @@ final class CamundaExporterIT {
             "custom-prefix-operate-incident-8.3.1_",
             "custom-prefix-operate-list-view-8.3.0_",
             "custom-prefix-operate-metric-8.3.0_",
+            "custom-prefix-operate-message-8.5.0_",
             "custom-prefix-operate-operation-8.4.1_",
             "custom-prefix-operate-post-importer-queue-8.3.0_",
             "custom-prefix-operate-process-8.3.0_",
