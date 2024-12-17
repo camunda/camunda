@@ -3270,14 +3270,14 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/DocumentReference"
+                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "207":
           description: >
             Not all documents were uploaded successfully. More details are provided in the response body.
           content:
-            application/problem+json:
+            application/json:
               schema:
-                $ref: "#/components/schemas/DocumentBatchProblemDetail"
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
@@ -7289,9 +7289,8 @@ components:
           type: string
           description: The detail of the failure.
 
-    DocumentBatchProblemDetail:
+    DocumentCreationBatchResponse:
       allOf:
-        - $ref: "#/components/schemas/ProblemDetail"
         - type: object
           properties:
             createdDocuments:

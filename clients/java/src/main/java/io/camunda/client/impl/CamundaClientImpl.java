@@ -35,6 +35,7 @@ import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
@@ -109,6 +110,7 @@ import io.camunda.client.impl.command.ClockPinCommandImpl;
 import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
@@ -792,6 +794,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateDocumentCommandStep1 newCreateDocumentCommand() {
     return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
+  }
+
+  @Override
+  public CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand() {
+    return new CreateDocumentBatchCommandImpl(jsonMapper, httpClient, config);
   }
 
   @Override

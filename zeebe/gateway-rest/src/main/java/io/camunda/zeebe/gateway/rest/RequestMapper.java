@@ -32,7 +32,6 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.monitoring.v3.UpdateGroupRequest;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -91,8 +90,8 @@ import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
-import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
@@ -347,14 +346,17 @@ public class RequestMapper {
             .collect(
                 Collectors.toMap(
                     part -> part,
-                    part -> {
-                      try {
-                        return objectMapper.readValue(
-                            part.getHeader("X-Document-Metadata"), DocumentMetadata.class);
-                      } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                      }
-                    }));
+                    part ->
+                        Optional.ofNullable(part.getHeader("X-Document-Metadata"))
+                            .map(
+                                header -> {
+                                  try {
+                                    return objectMapper.readValue(header, DocumentMetadata.class);
+                                  } catch (final IOException e) {
+                                    throw new RuntimeException(e);
+                                  }
+                                })
+                            .orElse(new DocumentMetadata())));
 
     final ProblemDetail validationErrors =
         metadataMap.values().stream()
