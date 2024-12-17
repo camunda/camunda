@@ -1,5 +1,5 @@
-import {captureCsrfToken, getCsrfHeaders} from "src/utility/csrf.ts";
-import {redirectToLogin} from "src/utility/auth";
+import { captureCsrfToken, getCsrfHeaders } from "src/utility/csrf.ts";
+import { redirectToLogin } from "src/utility/auth";
 
 export type ApiResult<R> =
   | {

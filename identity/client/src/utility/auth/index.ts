@@ -1,5 +1,5 @@
-import {getCsrfHeaders,} from "src/utility/csrf.ts";
-import {baseUrl} from "src/configuration";
+import { getCsrfHeaders } from "src/utility/csrf.ts";
+import { baseUrl } from "src/configuration";
 
 export const LOGIN_PATH = `${baseUrl}/login`;
 
