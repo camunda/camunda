@@ -10,6 +10,7 @@ package io.camunda.migration.identity.midentity;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
+import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import org.springframework.stereotype.Component;
 
@@ -40,5 +41,11 @@ public class ManagementIdentityTransformer {
       final Group group, final Exception e) {
     return new MigrationStatusUpdateRequest(
         group.id(), MigrationEntityType.GROUP, null, e == null, e == null ? null : e.getMessage());
+  }
+
+  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+      final Role role, final Exception e) {
+    return new MigrationStatusUpdateRequest(
+        role.name(), MigrationEntityType.ROLE, null, e == null, e == null ? null : e.getMessage());
   }
 }

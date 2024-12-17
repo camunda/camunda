@@ -15,6 +15,7 @@ public interface MigrationHandler {
 
   default boolean isConflictError(final Exception e) {
     return e.getMessage().contains("Failed with code 409: 'Conflict'")
-        || e.getMessage().contains("the entity is already assigned to the tenant.");
+        || e.getMessage().contains("the entity is already assigned to the tenant.")
+        || e.getMessage().contains("already exist");
   }
 }
