@@ -80,7 +80,7 @@ public class WebSecurityConfig {
           "/ready",
           "/health",
           "/startup");
-  public static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
+  public static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**", "/api/**");
   // This is both a request and response header.
   public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
   public static final String CSRF_COOKIE_NAME = "csrf-token";

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 /** Tests that after one failure of specific batch import, it will be successfully retried. */
 @SpringBootTest(
@@ -27,6 +28,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles({"test", "auth-basic-with-unprotected-api"})
 public class ZeebeImportRetryAfterFailureElasticSearchIT extends ZeebeImportIT {
 
   @Autowired

@@ -33,7 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "camunda.webapps.default-app = tasklist",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "standalone", "test"})
+@ActiveProfiles({"tasklist", "standalone", "test", "auth-basic-with-unprotected-api"})
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;

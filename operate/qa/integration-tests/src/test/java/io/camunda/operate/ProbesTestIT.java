@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -40,6 +41,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
+@ActiveProfiles({"test", "auth-basic-with-unprotected-api"})
 public class ProbesTestIT {
 
   @Autowired private OperateProperties operateProperties;

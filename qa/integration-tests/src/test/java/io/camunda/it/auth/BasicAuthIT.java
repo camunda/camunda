@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,14 +48,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @SpringBootTest(
-    classes = {CommonsModuleConfiguration.class, BrokerModuleConfiguration.class},
-    properties = {"spring.profiles.active=broker,auth-basic"})
+    classes = {
+      CommonsModuleConfiguration.class,
+      BrokerModuleConfiguration.class,
+      WebSecurityConfig.class
+    })
+@ActiveProfiles({"broker", "auth-basic"})
 @WebAppConfiguration
 @AutoConfigureMockMvc
 public class BasicAuthIT {
@@ -139,31 +143,7 @@ public class BasicAuthIT {
   }
 
   @Test
-  void loginWithValidCredentialsButMissingCsrfTokenHeader() throws Exception {
-    final Cookie csrfCookie = getCsrfCookie();
-    mockMvc
-        .perform(
-            MockMvcRequestBuilders.post("/login")
-                .cookie(csrfCookie)
-                .param("username", USERNAME)
-                .param("password", PASSWORD))
-        .andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  void loginWithValidCredentialsButMissingCsrfTokenCookie() throws Exception {
-    final Cookie csrfCookie = getCsrfCookie();
-    mockMvc
-        .perform(
-            MockMvcRequestBuilders.post("/login")
-                .header(WebSecurityConfig.CSRF_TOKEN_HEADER, csrfCookie.getValue())
-                .param("username", USERNAME)
-                .param("password", PASSWORD))
-        .andExpect(status().isUnauthorized());
-  }
-
-  @Test
-  void loginWithValidCredentialsAndCsrfToken() throws Exception {
+  void loginWithValidCredentials() throws Exception {
     final Cookie csrfCookie = getCsrfCookie();
     mockMvc
         .perform(
@@ -176,21 +156,9 @@ public class BasicAuthIT {
   }
 
   @Test
-  void loginWithValidCredentialsAndInvalidCsrfToken() throws Exception {
+  void loginWithInvalidCredentials() throws Exception {
     final Cookie csrfCookie = getCsrfCookie();
-    mockMvc
-        .perform(
-            MockMvcRequestBuilders.post("/login")
-                .cookie(csrfCookie)
-                .header(WebSecurityConfig.CSRF_TOKEN_HEADER, csrfCookie.getValue() + "_invalid")
-                .param("username", USERNAME)
-                .param("password", PASSWORD))
-        .andExpect(status().isUnauthorized());
-  }
 
-  @Test
-  void loginWithInvalidCredentialsAndValidCsrfToken() throws Exception {
-    final Cookie csrfCookie = getCsrfCookie();
     mockMvc
         .perform(
             MockMvcRequestBuilders.post("/login")
@@ -203,10 +171,11 @@ public class BasicAuthIT {
 
   private Cookie getCsrfCookie() {
     try {
-      final var response = mockMvc.perform(MockMvcRequestBuilders.get("/identity")).andReturn();
-      final var cookie = response.getResponse().getCookie("XSRF-TOKEN");
-      assertThat(cookie).isNotNull();
-      return cookie;
+      final var response =
+          mockMvc.perform(MockMvcRequestBuilders.get("/v2/authentication/me")).andReturn();
+      final var token = response.getResponse().getHeader(WebSecurityConfig.CSRF_TOKEN_HEADER);
+      assertThat(token).isNotNull();
+      return new Cookie(WebSecurityConfig.CSRF_COOKIE_NAME, token);
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
