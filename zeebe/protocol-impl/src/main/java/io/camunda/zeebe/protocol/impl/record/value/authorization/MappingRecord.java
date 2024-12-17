@@ -21,7 +21,7 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
   private final StringProperty nameProp = new StringProperty("name", "");
 
   public MappingRecord() {
-    super(5);
+    super(4);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
