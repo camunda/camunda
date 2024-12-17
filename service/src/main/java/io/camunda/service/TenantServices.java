@@ -74,7 +74,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return getSingle(TenantQuery.of(q -> q.filter(f -> f.key(tenantKey))));
   }
 
-  public CompletableFuture<?> addMember(
+  public CompletableFuture<TenantRecord> addMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
@@ -82,7 +82,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityKey));
   }
 
-  public CompletableFuture<?> removeMember(
+  public CompletableFuture<TenantRecord> removeMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
