@@ -69,6 +69,10 @@ const config: PlaywrightTestConfig = {
     actionTimeout: 0,
     baseURL: `http://localhost:${getPort()}${getBasePath()}`,
     trace: 'retain-on-failure',
+    httpCredentials: {
+      username: 'demo',
+      password: 'demo',
+    },
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
