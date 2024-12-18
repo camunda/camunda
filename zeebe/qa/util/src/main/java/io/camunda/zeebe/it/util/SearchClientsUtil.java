@@ -15,11 +15,16 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 
 public class SearchClientsUtil {
 
-  public static SearchClients createSearchClients(final String elasticsearchUrl) {
+  public static ElasticsearchSearchClient createLowLevelSearchClient(
+      final String elasticsearchUrl) {
     final var config = new ConnectConfiguration();
     config.setUrl(elasticsearchUrl);
     final var elasticsearchClient = new ElasticsearchConnector(config).createClient();
-    return new SearchClients(
-        new ElasticsearchSearchClient(elasticsearchClient), new IndexDescriptors("", true));
+    return new ElasticsearchSearchClient(elasticsearchClient);
+  }
+
+  public static SearchClients createSearchClients(final String elasticsearchUrl) {
+    final var lowLevelSearchClient = createLowLevelSearchClient(elasticsearchUrl);
+    return new SearchClients(lowLevelSearchClient, new IndexDescriptors("", true));
   }
 }

@@ -15,6 +15,8 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
@@ -114,7 +116,7 @@ public class TasklistAssignUserTaskAuthorizationIT {
     processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(PROCESS_ID_WITH_JOB_BASED_USERTASK);
     userTaskKeyWithJobBasedUserTask =
-        awaitUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
 
     // create new (non-admin) user
     testUserKey = adminAuthClient.createUser(TEST_USER_NAME, TEST_USER_PASSWORD);
@@ -191,7 +193,7 @@ public class TasklistAssignUserTaskAuthorizationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureUserTaskAssigneeChanged(processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME);
+    ensureJobBasedUserTaskAssigneeChanged(processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME);
   }
 
   private void deployResource(final ZeebeClient zeebeClient, final String resource) {
@@ -222,6 +224,22 @@ public class TasklistAssignUserTaskAuthorizationIT {
         .send()
         .join()
         .getProcessInstanceKey();
+  }
+
+  public static long awaitJobBasedUserTaskBeingAvailable(final long processInstanceKey) {
+    final AtomicLong userTaskKey = new AtomicLong();
+    final var processInstanceQuery =
+        SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+    Awaitility.await("should create a job-based user task")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = tasklistRestClient.searchJobBasedUserTasks(processInstanceQuery);
+              assertThat(result.hits()).hasSize(1);
+              userTaskKey.set(result.hits().getFirst().source().getKey());
+            });
+    return userTaskKey.get();
   }
 
   public static long awaitUserTaskBeingAvailable(final long processInstanceKey) {
@@ -257,6 +275,23 @@ public class TasklistAssignUserTaskAuthorizationIT {
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
+            });
+  }
+
+  public static void ensureJobBasedUserTaskAssigneeChanged(
+      final long processInstanceKey, final String newAssignee) {
+    final var processInstanceQuery =
+        SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+    final var assigneeQuery = SearchQueryBuilders.term(TaskTemplate.ASSIGNEE, newAssignee);
+    final var finalQuery = SearchQueryBuilders.and(processInstanceQuery, assigneeQuery);
+
+    Awaitility.await("should create an user task")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result = tasklistRestClient.searchJobBasedUserTasks(finalQuery);
+              assertThat(result.totalHits()).isGreaterThanOrEqualTo(1L);
             });
   }
 }

@@ -177,7 +177,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public TestRestTasklistClient newTasklistClient() {
-    return new TestRestTasklistClient(restAddress());
+    return new TestRestTasklistClient(restAddress(), getElasticSearchHostAddress());
   }
 
   @Override

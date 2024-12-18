@@ -210,7 +210,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
       if (type.equals(RejectionType.NOT_FOUND)) {
         return new NotFoundApiException(message, exception);
       }
-      if (type.equals(RejectionType.UNAUTHORIZED)) {
+      if (type.equals(RejectionType.UNAUTHORIZED) || type.equals(RejectionType.FORBIDDEN)) {
         return new ForbiddenActionException(message, exception);
       }
     }
