@@ -105,9 +105,19 @@ public class UserTaskCommandPreconditionChecker {
 
   private UserTaskRecord fetchUserTaskRecord(final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    return command.hasRequestMetadata()
-        ? userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command))
-        // For Zeebe-retried commands (missing metadata), fetch the user task without tenant checks.
-        : userTaskState.getUserTask(userTaskKey);
+    final var userTaskRecord =
+        command.hasRequestMetadata()
+            ? userTaskState.getUserTask(
+                userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command))
+            // For Zeebe-retried commands (missing metadata), fetch the user task without tenant
+            // checks.
+            : userTaskState.getUserTask(userTaskKey);
+
+    if (userTaskRecord == null) {
+      return null;
+    }
+
+    // Decouple the record from the state to prevent unintended modifications.
+    return userTaskRecord.copy();
   }
 }
