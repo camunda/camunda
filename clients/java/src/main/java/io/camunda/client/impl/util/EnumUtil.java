@@ -13,11 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.response;
+package io.camunda.client.impl.util;
 
-public enum PartitionBrokerRole {
-  LEADER,
-  FOLLOWER,
-  INACTIVE,
-  UNKNOWN_ENUM_VALUE;
+import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class EnumUtil {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(EnumUtil.class);
+
+  private EnumUtil() {}
+
+  public static <E> void logUnknownEnumValue(
+      final Object value, final String enumName, final E[] validValues) {
+    LOGGER.debug(
+        "Unexpected {} '{}', should be one of {}", enumName, value, Arrays.toString(validValues));
+  }
 }
