@@ -3811,7 +3811,7 @@ components:
         - name
 
     TenantUpdateResponseBase:
-      description: Base properties for TenantUpdateResponse
+      description: Base properties for TenantUpdateResponse.
       type: object
       properties:
         tenantId:
@@ -3828,7 +3828,7 @@ components:
       properties:
         tenantKey:
           type: integer
-          description: The unique system-generated internal tenant ID
+          description: The unique system-generated internal tenant ID.
           format: int64
     TenantUpdateResponse:
       type: object
@@ -3837,10 +3837,10 @@ components:
       properties:
         tenantKey:
           type: string
-          description: The unique system-generated internal tenant ID
+          description: The unique system-generated internal tenant ID.
 
     TenantItemBase:
-      description: Base properties for TenantItem
+      description: Base properties for TenantItem.
       type: object
       properties:
         name:
@@ -3850,7 +3850,7 @@ components:
           type: string
           description: The unique external tenant ID.
     TenantItemNumberKeys:
-      description: Tenant search response item. (Number keys)
+      description: Tenant search response item. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -3904,7 +3904,7 @@ components:
           description: The name of the tenant.
 
     TenantSearchQueryResponseNumberKeys:
-      description: Tenant search response. (Number keys)
+      description: Tenant search response. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -3943,7 +3943,7 @@ components:
       description: User task search query request.
       type: object
     UserTaskSearchQueryResponseNumberKeys:
-      description: User task search query response. (Number keys)
+      description: User task search query response. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -4038,7 +4038,7 @@ components:
           type: string
           description: The value of the variable.
     UserTaskItemBase:
-      description: Base properties for UserTaskItem
+      description: Base properties for UserTaskItem.
       type: object
       properties:
         name:
@@ -4195,7 +4195,7 @@ components:
           description: Whether the value is truncated or not.
           type: boolean
     VariableSearchQueryResponseNumberKeys:
-      description: Variable search query response. (Number keys)
+      description: Variable search query response. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -4218,7 +4218,7 @@ components:
           items:
             $ref: "#/components/schemas/VariableItem"
     VariableItemBase:
-      description: Base properties for VariableItem
+      description: Base properties for VariableItem.
       type: object
       properties:
         name:
@@ -4237,7 +4237,7 @@ components:
           description: Whether the value is truncated or not.
           type: boolean
     VariableItemNumberKeys:
-      description: Variable search response item. (Number keys)
+      description: Variable search response item. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -4328,7 +4328,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessDefinitionItem"
     ProcessDefinitionItemBase:
-      description: Base properties for ProcessDefinitionItem
+      description: Base properties for ProcessDefinitionItem.
       type: object
       properties:
         name:
@@ -4654,7 +4654,7 @@ components:
           description: The value of the variable.
           type: string
     ProcessInstanceSearchQueryResponseNumberKeys:
-      description: Process instance search response. (Number keys)
+      description: Process instance search response. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -4677,7 +4677,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessInstanceItem"
     ProcessInstanceItemBase:
-      description: Base properties for ProcessInstanceItem
+      description: Base properties for ProcessInstanceItem.
       type: object
       properties:
         processDefinitionId:
@@ -4710,7 +4710,7 @@ components:
           type: string
           description: The tenant ID.
     ProcessInstanceItemNumberKeys:
-      description: Process instance search response item. (Number keys)
+      description: Process instance search response item. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -4871,7 +4871,7 @@ components:
           items:
             $ref: "#/components/schemas/FlowNodeInstanceItem"
     FlowNodeInstanceItemBase:
-      description: Base properties for FlowNodeInstanceItem
+      description: Base properties for FlowNodeInstanceItem.
       type: object
       properties:
         processDefinitionId:
@@ -5104,7 +5104,7 @@ components:
           items:
             $ref: "#/components/schemas/IncidentItem"
     IncidentItemBase:
-      description: Base properties for IncidentItem
+      description: Base properties for IncidentItem.
       type: object
       properties:
         processDefinitionId:
@@ -5216,7 +5216,7 @@ components:
           items:
             $ref: "#/components/schemas/DecisionDefinitionItem"
     DecisionDefinitionItemBase:
-      description: Base properties for DecisionDefinitionItem
+      description: Base properties for DecisionDefinitionItem.
       type: object
       properties:
         decisionDefinitionId:
@@ -5489,7 +5489,7 @@ components:
           type: string
           description: The name of the mapping.
     CamundaUserBase:
-      description: Base properties for CamundaUser
+      description: Base properties for CamundaUser.
       type: object
       properties:
         userId:
@@ -5674,14 +5674,14 @@ components:
           type: string
           description: The updated display name of the role.
     RoleItemBase:
-      description: Base properties for RoleItem
+      description: Base properties for RoleItem.
       type: object
       properties:
         name:
           type: string
           description: The role name.
     RoleItemNumberKeys:
-      description: Role search response item. (Number keys)
+      description: Role search response item. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -5717,7 +5717,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
     RoleSearchQueryResponseNumberKeys:
-      description: Role search response. (Number keys)
+      description: Role search response. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -5777,14 +5777,14 @@ components:
           type: string
           description: The updated display name of the group.
     GroupItemBase:
-      description: Base properties for GroupItem
+      description: Base properties for GroupItem.
       type: object
       properties:
         name:
           type: string
           description: The group name.
     GroupItemNumberKeys:
-      description: Group search response item. (Number keys)
+      description: Group search response item. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -5832,7 +5832,7 @@ components:
           type: string
           description: The name of the group.
     GroupSearchQueryResponseNumberKeys:
-      description: Group search response. (Number keys)
+      description: Group search response. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -6607,7 +6607,7 @@ components:
           items:
             $ref: "#/components/schemas/DecisionRequirementsItem"
     DecisionRequirementsItemBase:
-      description: Base properties for DecisionRequirementsItem
+      description: Base properties for DecisionRequirementsItem.
       type: object
       properties:
         name:
@@ -6667,7 +6667,7 @@ components:
           description: The tenant ID of the decision.
           type: string
     EvaluateDecisionResponseBase:
-      description: Base properties for EvaluateDecisionResponse
+      description: Base properties for EvaluateDecisionResponse.
       type: object
       properties:
         decisionDefinitionId:
@@ -7025,7 +7025,7 @@ components:
           type: string
           nullable: true
     MessageCorrelationResponseBase:
-      description: Base properties for MessageCorrelationResponse
+      description: Base properties for MessageCorrelationResponse.
       type: object
       properties:
         tenantId:
@@ -7034,7 +7034,7 @@ components:
     MessageCorrelationResponseNumberKeys:
       description: |
         The message key of the correlated message, as well as the first process instance key it
-        correlated with. (Number keys)
+        correlated with. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -7096,14 +7096,14 @@ components:
         - name
         - correlationKey
     MessagePublicationResponseBase:
-      description: Base properties for MessagePublicationResponse
+      description: Base properties for MessagePublicationResponse.
       type: object
       properties:
         tenantId:
           description: The tenant ID of the message.
           type: string
     MessagePublicationResponseNumberKeys:
-      description: The message key of the published message. (Number keys)
+      description: The message key of the published message. Key attributes as numeric values.
       deprecated: true
       type: object
       allOf:
@@ -7182,7 +7182,7 @@ components:
           description: The date and time when the link expires.
 
     DeploymentResponseBase:
-      description: Base properties for DeploymentResponse
+      description: Base properties for DeploymentResponse.
       type: object
       properties:
         tenantId:
@@ -7239,7 +7239,7 @@ components:
         form:
           $ref: "#/components/schemas/DeploymentFormNumberKeys"
     DeploymentProcessBase:
-      description: Base properties for DeploymentProcess
+      description: Base properties for DeploymentProcess.
       type: object
       properties:
         processDefinitionId:
@@ -7277,7 +7277,7 @@ components:
           type: string
           description: The assigned key, which acts as a unique identifier for this process.
     DeploymentDecisionBase:
-      description: Base properties for DeploymentDecision
+      description: Base properties for DeploymentDecision.
       type: object
       properties:
         decisionDefinitionId:
@@ -7330,7 +7330,7 @@ components:
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
     DeploymentDecisionRequirementsBase:
-      description: Base properties for DeploymentDecisionRequirements
+      description: Base properties for DeploymentDecisionRequirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -7372,7 +7372,7 @@ components:
           description: |
             The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
     DeploymentFormBase:
-      description: Base properties for DeploymentForm
+      description: Base properties for DeploymentForm.
       type: object
       properties:
         formId:
@@ -7486,7 +7486,7 @@ components:
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           type: string
     CreateProcessInstanceResponseBase:
-      description: Base properties for CreateProcessInstanceResponse
+      description: Base properties for CreateProcessInstanceResponse.
       type: object
       properties:
         processDefinitionId:
@@ -7709,7 +7709,7 @@ components:
       required:
         - signalName
     SignalBroadcastResponseBase:
-      description: Base properties for SignalBroadcastResponse
+      description: Base properties for SignalBroadcastResponse.
       type: object
       properties:
         tenantId:
@@ -7734,7 +7734,7 @@ components:
           description: The unique ID of the signal that was broadcast.
           type: string
     FormItemBase:
-      description: Base properties for FormItem
+      description: Base properties for FormItem.
       type: object
       properties:
         tenantId:
