@@ -40,8 +40,7 @@ public final class CancelProcessInstanceInBatchesTest {
           });
   private static final GrpcClientRule CLIENT_RULE =
       new GrpcClientRule(
-          BROKER_RULE,
-          zeebeClientBuilder -> zeebeClientBuilder.maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB));
+          BROKER_RULE, clientBuilder -> clientBuilder.maxMessageSize(MAX_MESSAGE_SIZE_KB * ONE_KB));
 
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);

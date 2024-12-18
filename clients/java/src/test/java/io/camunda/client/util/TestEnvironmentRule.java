@@ -18,10 +18,10 @@ package io.camunda.client.util;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.ZeebeClientBuilder;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeClientImpl;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.ManagedChannel;
 import io.grpc.testing.GrpcServerRule;
@@ -35,18 +35,18 @@ import org.junit.runners.model.Statement;
 public final class TestEnvironmentRule extends ExternalResource {
 
   private final GrpcServerRule serverRule = new GrpcServerRule();
-  private final Consumer<ZeebeClientBuilder> clientConfigurator;
+  private final Consumer<CamundaClientBuilder> clientConfigurator;
 
   private RecordingGatewayService gatewayService;
-  private ZeebeClientImpl client;
+  private CamundaClientImpl client;
   private GatewayStub gatewayStub;
-  private final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+  private final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
   public TestEnvironmentRule() {
     this(b -> {});
   }
 
-  public TestEnvironmentRule(final Consumer<ZeebeClientBuilder> clientConfigurator) {
+  public TestEnvironmentRule(final Consumer<CamundaClientBuilder> clientConfigurator) {
     this.clientConfigurator = clientConfigurator;
   }
 
@@ -63,8 +63,8 @@ public final class TestEnvironmentRule extends ExternalResource {
 
     final ManagedChannel channel = serverRule.getChannel();
     clientConfigurator.accept(builder);
-    gatewayStub = spy(ZeebeClientImpl.buildGatewayStub(channel, builder));
-    client = new ZeebeClientImpl(builder, channel, gatewayStub);
+    gatewayStub = spy(CamundaClientImpl.buildGatewayStub(channel, builder));
+    client = new CamundaClientImpl(builder, channel, gatewayStub);
   }
 
   @Override
@@ -75,11 +75,11 @@ public final class TestEnvironmentRule extends ExternalResource {
     }
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 
-  public ZeebeClientBuilderImpl getClientBuilder() {
+  public CamundaClientBuilderImpl getClientBuilder() {
     return builder;
   }
 

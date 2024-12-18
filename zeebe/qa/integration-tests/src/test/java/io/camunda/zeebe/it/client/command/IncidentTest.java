@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -34,7 +34,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public final class IncidentTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -108,7 +108,7 @@ public final class IncidentTest {
   }
 
   private ResolveIncidentCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long incidentKey) {
+      final CamundaClient client, final boolean useRest, final long incidentKey) {
     final ResolveIncidentCommandStep1 incidentCommandStep1 =
         client.newResolveIncidentCommand(incidentKey);
     return useRest ? incidentCommandStep1.useRest() : incidentCommandStep1.useGrpc();

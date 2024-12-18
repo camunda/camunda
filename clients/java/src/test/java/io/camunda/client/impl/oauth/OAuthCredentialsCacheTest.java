@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.client.impl.ZeebeClientCredentials;
+import io.camunda.client.impl.CamundaClientCredentials;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,10 +45,10 @@ public final class OAuthCredentialsCacheTest {
   private static final String WOMBAT_CLIENT_ID = "wombat-client";
   private static final String AARDVARK_CLIENT_ID = "aardvark-client";
   private static final String GOLDEN_FILE = "/oauth/credentialsCache.yml";
-  private static final ZeebeClientCredentials WOMBAT =
-      new ZeebeClientCredentials("wombat", EXPIRY, "Bearer");
-  private static final ZeebeClientCredentials AARDVARK =
-      new ZeebeClientCredentials("aardvark", EXPIRY, "Bearer");
+  private static final CamundaClientCredentials WOMBAT =
+      new CamundaClientCredentials("wombat", EXPIRY, "Bearer");
+  private static final CamundaClientCredentials AARDVARK =
+      new CamundaClientCredentials("aardvark", EXPIRY, "Bearer");
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 

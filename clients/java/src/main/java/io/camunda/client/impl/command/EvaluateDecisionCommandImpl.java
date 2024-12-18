@@ -15,18 +15,18 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.EvaluateDecisionResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -54,7 +54,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient) {
     super(jsonMapper);
@@ -80,7 +80,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
    *
    * @deprecated since 8.3.0, use {@link
    *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub asyncStub, JsonMapper
-   *     jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
+   *     jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
    */
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
@@ -139,7 +139,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   @Override
-  public ZeebeFuture<EvaluateDecisionResponse> send() {
+  public CamundaFuture<EvaluateDecisionResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -147,8 +147,8 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     }
   }
 
-  private ZeebeFuture<EvaluateDecisionResponse> sendRestRequest() {
-    final HttpZeebeFuture<EvaluateDecisionResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<EvaluateDecisionResponse> sendRestRequest() {
+    final HttpCamundaFuture<EvaluateDecisionResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
@@ -159,7 +159,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     return result;
   }
 
-  private ZeebeFuture<EvaluateDecisionResponse> sendGrpcRequest() {
+  private CamundaFuture<EvaluateDecisionResponse> sendGrpcRequest() {
     final EvaluateDecisionRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<

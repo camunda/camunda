@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -32,15 +32,15 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaClientBasedAdapter.class);
 
-  private final ZeebeClient zeebeClient;
+  private final CamundaClient camundaClient;
   private final TasklistPermissionServices permissionServices;
   private final TenantService tenantService;
 
   public CamundaClientBasedAdapter(
-      @Qualifier("tasklistZeebeClient") final ZeebeClient zeebeClient,
+      @Qualifier("tasklistCamundaClient") final CamundaClient camundaClient,
       final TasklistPermissionServices permissionServices,
       final TenantService tenantService) {
-    this.zeebeClient = zeebeClient;
+    this.camundaClient = camundaClient;
     this.permissionServices = permissionServices;
     this.tenantService = tenantService;
   }
@@ -70,7 +70,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
 
     if (!isJobBasedUserTask(task)) {
       try {
-        zeebeClient.newUserTaskAssignCommand(task.getKey()).assignee(assignee).send().join();
+        camundaClient.newUserTaskAssignCommand(task.getKey()).assignee(assignee).send().join();
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }
@@ -86,7 +86,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
 
     if (!isJobBasedUserTask(task)) {
       try {
-        zeebeClient.newUserTaskUnassignCommand(task.getKey()).send().join();
+        camundaClient.newUserTaskUnassignCommand(task.getKey()).send().join();
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }
@@ -102,9 +102,9 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
 
     try {
       if (isJobBasedUserTask(task)) {
-        zeebeClient.newCompleteCommand(task.getKey()).variables(variables).send().join();
+        camundaClient.newCompleteCommand(task.getKey()).variables(variables).send().join();
       } else {
-        zeebeClient.newUserTaskCompleteCommand(task.getKey()).variables(variables).send().join();
+        camundaClient.newUserTaskCompleteCommand(task.getKey()).variables(variables).send().join();
       }
     } catch (final ClientException exception) {
       throw new TasklistRuntimeException(exception.getMessage());
@@ -114,7 +114,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
   private ProcessInstanceCreationRecord doCreateProcessInstance(
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
     final var createProcessInstanceCommandStep3 =
-        zeebeClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+        camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
 
     if (tenantService.isMultiTenancyEnabled()) {
       createProcessInstanceCommandStep3.tenantId(tenantId);

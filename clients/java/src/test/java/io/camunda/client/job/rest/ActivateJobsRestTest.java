@@ -23,8 +23,8 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsComman
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivateJobsResponse;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeObjectMapper;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.protocol.rest.ActivatedJob;
 import io.camunda.client.protocol.rest.JobActivationRequest;
@@ -251,7 +251,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     variables.put("b", 2);
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl(
-            new ZeebeObjectMapper(),
+            new CamundaObjectMapper(),
             new ActivatedJob().customHeaders(new HashMap<>()).variables(variables));
 
     // when
@@ -419,7 +419,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     // then
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
-    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
+    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
   }
 
   private static final class VariablesPojo {

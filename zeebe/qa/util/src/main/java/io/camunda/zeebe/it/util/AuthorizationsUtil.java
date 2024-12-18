@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.util;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.ZeebeClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.search.clients.SearchClients;
@@ -29,16 +29,16 @@ import org.awaitility.Awaitility;
 public class AuthorizationsUtil implements CloseableSilently {
 
   private final TestGateway<?> gateway;
-  private final ZeebeClient client;
+  private final CamundaClient client;
   private final SearchClients searchClients;
 
   public AuthorizationsUtil(
-      final TestGateway<?> gateway, final ZeebeClient client, final String elasticsearchUrl) {
+      final TestGateway<?> gateway, final CamundaClient client, final String elasticsearchUrl) {
     this(gateway, client, SearchClientsUtil.createSearchClients(elasticsearchUrl));
   }
 
   public AuthorizationsUtil(
-      final TestGateway<?> gateway, final ZeebeClient client, final SearchClients searchClients) {
+      final TestGateway<?> gateway, final CamundaClient client, final SearchClients searchClients) {
     this.gateway = gateway;
     this.client = client;
     this.searchClients = searchClients;
@@ -90,17 +90,17 @@ public class AuthorizationsUtil implements CloseableSilently {
     }
   }
 
-  public ZeebeClient createClient(final String username, final String password) {
+  public CamundaClient createClient(final String username, final String password) {
     return createClient(gateway, username, password);
   }
 
-  public ZeebeClient createUserAndClient(
+  public CamundaClient createUserAndClient(
       final String username, final String password, final Permissions... permissions) {
     createUserWithPermissions(username, password, permissions);
     return createClient(gateway, username, password);
   }
 
-  public static ZeebeClient createClient(
+  public static CamundaClient createClient(
       final TestGateway<?> gateway, final String username, final String password) {
     return gateway
         .newClientBuilder()
@@ -129,7 +129,7 @@ public class AuthorizationsUtil implements CloseableSilently {
   public void awaitUserExistsInElasticsearch(final String username) {
     final var userQuery = UserQuery.of(b -> b.filter(f -> f.username(username)));
     Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(15))
         .ignoreExceptions()
         .until(
             () -> {
@@ -164,7 +164,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             });
   }
 
-  public ZeebeClient getDefaultClient() {
+  public CamundaClient getDefaultClient() {
     return client;
   }
 

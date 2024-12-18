@@ -16,15 +16,15 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -84,7 +84,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public ZeebeFuture<CompleteJobResponse> send() {
+  public CamundaFuture<CompleteJobResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -125,8 +125,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     return this;
   }
 
-  private ZeebeFuture<CompleteJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<CompleteJobResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<CompleteJobResponse> sendRestRequest() {
+    final HttpCamundaFuture<CompleteJobResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/completion",
         jsonMapper.toJson(httpRequestObject),
@@ -135,7 +135,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     return result;
   }
 
-  private ZeebeFuture<CompleteJobResponse> sendGrpcRequest() {
+  private CamundaFuture<CompleteJobResponse> sendGrpcRequest() {
     final CompleteJobRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>

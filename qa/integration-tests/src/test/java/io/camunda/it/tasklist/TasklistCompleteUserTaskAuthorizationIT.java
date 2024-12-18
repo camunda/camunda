@@ -10,7 +10,7 @@ package io.camunda.it.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -47,7 +47,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
   private static long testUserKey;
 
   @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static ZeebeClient adminCamundaClient;
+  @AutoCloseResource private static CamundaClient adminCamundaClient;
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   private long userTaskKey;
@@ -194,8 +194,8 @@ public class TasklistCompleteUserTaskAuthorizationIT {
     ensureJobBasedUserTaskIsCompleted(userTaskKeyWithJobBasedUserTask);
   }
 
-  private void deployResource(final ZeebeClient zeebeClient, final String resource) {
-    zeebeClient.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
+  private void deployResource(final CamundaClient camundaClient, final String resource) {
+    camundaClient.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
   }
 
   private void waitForProcessToBeDeployed(final String processDefinitionId) {

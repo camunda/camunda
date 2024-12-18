@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.PinClockResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.protocol.rest.ClockPinRequest;
 import java.time.Duration;
 import java.time.Instant;
@@ -63,8 +63,8 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<PinClockResponse> send() {
-    final HttpZeebeFuture<PinClockResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<PinClockResponse> send() {
+    final HttpCamundaFuture<PinClockResponse> result = new HttpCamundaFuture<>();
     httpClient.put("/clock", jsonMapper.toJson(request), httpRequestConfig.build(), result);
     return result;
   }

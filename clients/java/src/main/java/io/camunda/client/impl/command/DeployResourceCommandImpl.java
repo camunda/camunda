@@ -18,10 +18,10 @@ package io.camunda.client.impl.command;
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import com.google.protobuf.ByteString;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
@@ -29,8 +29,8 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.DeploymentEventImpl;
 import io.camunda.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -74,7 +74,7 @@ public final class DeployResourceCommandImpl
 
   public DeployResourceCommandImpl(
       final GatewayStub asyncStub,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc,
@@ -99,7 +99,7 @@ public final class DeployResourceCommandImpl
    *
    * @deprecated since 8.3.0, use {@link
    *     DeployResourceCommandImpl#DeployResourceCommandImpl(GatewayStub asyncStub,
-   *     ZeebeClientConfiguration config, Predicate retryPredicate)}
+   *     CamundaClientConfiguration config, Predicate retryPredicate)}
    */
   @Deprecated
   public DeployResourceCommandImpl(
@@ -216,7 +216,7 @@ public final class DeployResourceCommandImpl
   }
 
   @Override
-  public ZeebeFuture<DeploymentEvent> send() {
+  public CamundaFuture<DeploymentEvent> send() {
     if (useRest) {
       // adding here the tenantId because in the multipart request fields are only appended
       multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
@@ -245,8 +245,8 @@ public final class DeployResourceCommandImpl
     return this;
   }
 
-  private ZeebeFuture<DeploymentEvent> sendRestRequest() {
-    final HttpZeebeFuture<DeploymentEvent> result = new HttpZeebeFuture<>();
+  private CamundaFuture<DeploymentEvent> sendRestRequest() {
+    final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
     httpClient.postMultipart(
         "/deployments",
         multipartEntityBuilder,
@@ -257,7 +257,7 @@ public final class DeployResourceCommandImpl
     return result;
   }
 
-  private ZeebeFuture<DeploymentEvent> sendGrpcRequest() {
+  private CamundaFuture<DeploymentEvent> sendGrpcRequest() {
     final DeployResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, DeployResourceResponse> future =

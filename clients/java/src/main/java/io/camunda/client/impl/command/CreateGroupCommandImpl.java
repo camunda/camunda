@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateGroupResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CreateGroupResponseImpl;
 import io.camunda.client.protocol.rest.GroupCreateRequest;
 import io.camunda.client.protocol.rest.GroupCreateResponse;
@@ -56,9 +56,9 @@ public class CreateGroupCommandImpl implements CreateGroupCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<CreateGroupResponse> send() {
+  public CamundaFuture<CreateGroupResponse> send() {
     ArgumentUtil.ensureNotNull("name", request.getName());
-    final HttpZeebeFuture<CreateGroupResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CreateGroupResponse> result = new HttpCamundaFuture<>();
     final CreateGroupResponseImpl response = new CreateGroupResponseImpl();
     httpClient.post(
         "/groups",

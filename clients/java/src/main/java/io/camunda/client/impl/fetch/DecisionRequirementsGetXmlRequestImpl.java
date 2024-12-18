@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -43,8 +43,8 @@ public class DecisionRequirementsGetXmlRequestImpl implements DecisionRequiremen
   }
 
   @Override
-  public ZeebeFuture<String> send() {
-    final HttpZeebeFuture<String> result = new HttpZeebeFuture<>();
+  public CamundaFuture<String> send() {
+    final HttpCamundaFuture<String> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/decision-requirements/%d/xml", decisionRequirementsKey),
         httpRequestConfig.build(),

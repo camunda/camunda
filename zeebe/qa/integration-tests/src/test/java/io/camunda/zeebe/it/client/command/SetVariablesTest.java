@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
@@ -39,7 +39,7 @@ public final class SetVariablesTest {
 
   private static final String PROCESS_ID = "process";
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -84,7 +84,7 @@ public final class SetVariablesTest {
     final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
     // when
-    final ZeebeFuture<SetVariablesResponse> command =
+    final CamundaFuture<SetVariablesResponse> command =
         getCommand(client, useRest, processInstanceKey).variables("null").send();
 
     // then
@@ -161,7 +161,7 @@ public final class SetVariablesTest {
   }
 
   private SetVariablesCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long elementInstanceKey) {
+      final CamundaClient client, final boolean useRest, final long elementInstanceKey) {
     final SetVariablesCommandStep1 setVariablesCommand =
         client.newSetVariablesCommand(elementInstanceKey);
     return useRest ? setVariablesCommand.useRest() : setVariablesCommand.useGrpc();

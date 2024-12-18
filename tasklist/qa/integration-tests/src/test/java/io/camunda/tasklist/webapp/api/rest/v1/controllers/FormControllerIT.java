@@ -102,21 +102,21 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
         final var bpmnProcessId = "Process_11hxie4";
         final var flowNodeBpmnId = "Activity_14emqkd";
 
-        zeebeClient
+        camundaClient
             .newDeployResourceCommand()
             .addResourceFromClasspath("formDeployedV1.form")
             .send()
             .join();
 
         v2DeployedData =
-            zeebeClient
+            camundaClient
                 .newDeployResourceCommand()
                 .addResourceFromClasspath("formDeployedV2.form")
                 .send()
                 .join();
 
         lastVersionDeployedData =
-            zeebeClient
+            camundaClient
                 .newDeployResourceCommand()
                 .addResourceFromClasspath("formDeployedV3.form")
                 .send()
@@ -124,7 +124,7 @@ public class FormControllerIT extends TasklistZeebeIntegrationTest {
 
         final var formKey =
             lastVersionDeployedData.getForm().stream().findFirst().get().getFormKey();
-        zeebeClient.newDeleteResourceCommand(formKey).send().join();
+        camundaClient.newDeleteResourceCommand(formKey).send().join();
 
         tester
             .having()

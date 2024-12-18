@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.zeebe;
 
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.ZeebeProperties;
 import org.slf4j.Logger;
@@ -27,15 +27,15 @@ public class ZeebeConnector {
   @Autowired private OperateProperties operateProperties;
 
   @Bean // will be closed automatically
-  public ZeebeClient zeebeClient() {
+  public CamundaClient camundaClient() {
     final var properties = operateProperties.getZeebe();
-    return newZeebeClient(properties);
+    return newCamundaClient(properties);
   }
 
-  public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
+  public CamundaClient newCamundaClient(final ZeebeProperties zeebeProperties) {
     final var gatewayAddress = getGatewayAddress(zeebeProperties);
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(gatewayAddress)
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {

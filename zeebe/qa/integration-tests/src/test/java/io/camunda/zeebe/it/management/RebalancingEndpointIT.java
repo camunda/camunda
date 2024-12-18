@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.management;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -40,7 +40,7 @@ final class RebalancingEndpointIT {
           .withReplicationFactor(3)
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   @BeforeEach
   void setup() {

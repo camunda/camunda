@@ -19,7 +19,7 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.zeebe.spring.client.config.legacy.ZeebeClientStarterAutoConfigurationTest;
 import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
@@ -40,13 +40,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       CamundaAutoConfiguration.class,
       ZeebeClientStarterAutoConfigurationTest.TestConfig.class
     })
-public class ZeebeClientConfigurationDefaultPropertiesTest {
+public class CamundaClientConfigurationDefaultPropertiesTest {
 
   @Autowired private ApplicationContext applicationContext;
 
   @Test
   void testDefaultClientConfiguration() throws URISyntaxException {
-    final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
+    final CamundaClient client = applicationContext.getBean(CamundaClient.class);
 
     assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isFalse();
     assertThat(client.getConfiguration().getCaCertificatePath()).isNull();

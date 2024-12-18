@@ -10,7 +10,7 @@ package io.camunda.it.tasklist.compatibility;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -42,7 +42,7 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
   private static long testUserKey;
 
   @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static ZeebeClient adminCamundaClient;
+  @AutoCloseResource private static CamundaClient adminCamundaClient;
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
@@ -108,8 +108,8 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
     assertThat(response.statusCode()).isEqualTo(403);
   }
 
-  private void deployResource(final ZeebeClient zeebeClient) {
-    zeebeClient
+  private void deployResource(final CamundaClient camundaClient) {
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("process/process_public_start.bpmn")
         .send()

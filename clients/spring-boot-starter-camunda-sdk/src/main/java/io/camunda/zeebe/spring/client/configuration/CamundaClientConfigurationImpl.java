@@ -19,8 +19,8 @@ import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.*;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
 import static org.springframework.util.StringUtils.hasText;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.ZeebeClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -47,9 +47,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
+public class CamundaClientConfigurationImpl implements CamundaClientConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientConfigurationImpl.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaClientConfigurationImpl.class);
   private final Map<String, Object> configCache = new HashMap<>();
   private final ZeebeClientConfigurationProperties properties;
   private final CamundaClientProperties camundaClientProperties;
@@ -59,7 +59,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   private final ZeebeClientExecutorService zeebeClientExecutorService;
 
   @Autowired
-  public ZeebeClientConfigurationImpl(
+  public CamundaClientConfigurationImpl(
       final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
@@ -354,7 +354,8 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
     return new NoopCredentialsProvider();
   }
 
-  private void maybeConfigureIdentityProviderSSLConfig(OAuthCredentialsProviderBuilder builder) {
+  private void maybeConfigureIdentityProviderSSLConfig(
+      final OAuthCredentialsProviderBuilder builder) {
     if (camundaClientProperties.getAuth().getKeystorePath() != null) {
       final Path keyStore = Paths.get(camundaClientProperties.getAuth().getKeystorePath());
       if (Files.exists(keyStore)) {

@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -28,7 +28,7 @@ public class OperationReferenceTest {
   private static TestStandaloneBroker zeebe;
 
   @AutoCloseResource
-  private final ZeebeClient client =
+  private final CamundaClient client =
       zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofMinutes(2)).build();
 
   @SuppressWarnings("unused")

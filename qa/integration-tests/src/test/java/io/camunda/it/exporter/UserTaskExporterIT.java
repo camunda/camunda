@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
@@ -77,7 +77,7 @@ public class UserTaskExporterIT {
     assertThat(userTasks.getFirst().getElementInstanceKey()).isGreaterThan(0);
   }
 
-  private List<UserTask> fetchUserTasks(final ZeebeClient client, final long processInstanceId) {
+  private List<UserTask> fetchUserTasks(final CamundaClient client, final long processInstanceId) {
     return client
         .newUserTaskQuery()
         .filter(f -> f.processInstanceKey(processInstanceId))
@@ -87,7 +87,7 @@ public class UserTaskExporterIT {
   }
 
   private String startZeebeUserTaskProcess(
-      final ZeebeClient client, final Consumer<UserTaskBuilder> taskParams) {
+      final CamundaClient client, final Consumer<UserTaskBuilder> taskParams) {
     if (taskParams != null) {
       ExporterTestUtil.createAndDeployUserTaskProcess(
           client,
@@ -107,7 +107,7 @@ public class UserTaskExporterIT {
   }
 
   private void waitForTask(
-      final ZeebeClient client, final Consumer<UserTaskFilter> filterConsumer) {
+      final CamundaClient client, final Consumer<UserTaskFilter> filterConsumer) {
     Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))

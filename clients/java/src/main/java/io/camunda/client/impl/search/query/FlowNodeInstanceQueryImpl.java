@@ -19,8 +19,8 @@ import static io.camunda.client.api.search.SearchRequestBuilders.flowNodeInstanc
 import static io.camunda.client.api.search.SearchRequestBuilders.flowNodeInstanceSort;
 import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
@@ -28,8 +28,8 @@ import io.camunda.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.FlownodeInstanceSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -65,8 +65,9 @@ public class FlowNodeInstanceQueryImpl
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<FlowNodeInstance>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<FlowNodeInstance>> result = new HttpZeebeFuture<>();
+  public CamundaFuture<SearchQueryResponse<FlowNodeInstance>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<FlowNodeInstance>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         "/flownode-instances/search",
         jsonMapper.toJson(request),

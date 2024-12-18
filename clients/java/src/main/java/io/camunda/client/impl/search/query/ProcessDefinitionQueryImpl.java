@@ -19,8 +19,8 @@ import static io.camunda.client.api.search.SearchRequestBuilders.processDefiniti
 import static io.camunda.client.api.search.SearchRequestBuilders.processDefinitionSort;
 import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
@@ -28,8 +28,8 @@ import io.camunda.client.api.search.query.ProcessDefinitionQuery;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
@@ -66,8 +66,9 @@ public class ProcessDefinitionQueryImpl
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<ProcessDefinition>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<ProcessDefinition>> result = new HttpZeebeFuture<>();
+  public CamundaFuture<SearchQueryResponse<ProcessDefinition>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<ProcessDefinition>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         "/process-definitions/search",
         jsonMapper.toJson(request),

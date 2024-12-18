@@ -15,8 +15,8 @@
  */
 package io.camunda.client.impl.worker;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
@@ -38,14 +38,14 @@ public final class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
   private final HttpClient httpClient;
-  private final ZeebeClientConfiguration config;
+  private final CamundaClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final Predicate<StatusCode> retryPredicate;
 
   public JobClientImpl(
       final GatewayStub asyncStub,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;

@@ -19,7 +19,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.impl.ZeebeObjectMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.protocol.rest.DeploymentResponse;
 import io.camunda.client.protocol.rest.EvaluateDecisionResponse;
 import io.camunda.client.protocol.rest.JobActivationResponse;
@@ -31,7 +31,7 @@ import org.assertj.core.api.Assertions;
 
 public class RestGatewayService {
 
-  private static final ZeebeObjectMapper JSON_MAPPER = new ZeebeObjectMapper();
+  private static final CamundaObjectMapper JSON_MAPPER = new CamundaObjectMapper();
 
   private final WireMockRuntimeInfo mockInfo;
 

@@ -17,16 +17,16 @@ package io.camunda.client.impl.command;
 
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1.CreateDocumentCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.protocol.rest.DocumentMetadata;
 import io.camunda.client.protocol.rest.DocumentReference;
@@ -61,7 +61,7 @@ public class CreateDocumentCommandImpl
   public CreateDocumentCommandImpl(
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration configuration) {
+      final CamundaClientConfiguration configuration) {
     metadata = new DocumentMetadata();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -77,7 +77,7 @@ public class CreateDocumentCommandImpl
   }
 
   @Override
-  public ZeebeFuture<DocumentReferenceResponse> send() {
+  public CamundaFuture<DocumentReferenceResponse> send() {
     try {
       final MultipartEntityBuilder entityBuilder =
           MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
@@ -90,7 +90,7 @@ public class CreateDocumentCommandImpl
       entityBuilder.addPart(
           "metadata", new StringBody(metadataString, ContentType.APPLICATION_JSON));
 
-      final HttpZeebeFuture<DocumentReferenceResponse> result = new HttpZeebeFuture<>();
+      final HttpCamundaFuture<DocumentReferenceResponse> result = new HttpCamundaFuture<>();
 
       final Map<String, String> queryParams = new HashMap<>();
       if (documentId != null) {

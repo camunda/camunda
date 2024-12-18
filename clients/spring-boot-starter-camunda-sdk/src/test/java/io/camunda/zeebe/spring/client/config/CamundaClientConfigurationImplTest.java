@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.ZeebeObjectMapper;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
+import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.zeebe.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -30,15 +30,15 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
-public class ZeebeClientConfigurationImplTest {
-  private static ZeebeClientConfigurationImpl configuration(
+public class CamundaClientConfigurationImplTest {
+  private static CamundaClientConfigurationImpl configuration(
       final ZeebeClientConfigurationProperties legacyProperties,
       final CamundaClientProperties properties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final ZeebeClientExecutorService executorService) {
-    return new ZeebeClientConfigurationImpl(
+    return new CamundaClientConfigurationImpl(
         legacyProperties, properties, jsonMapper, interceptors, chainHandlers, executorService);
   }
 
@@ -51,7 +51,7 @@ public class ZeebeClientConfigurationImplTest {
   }
 
   private static JsonMapper jsonMapper() {
-    return new ZeebeObjectMapper();
+    return new CamundaObjectMapper();
   }
 
   private static ZeebeClientExecutorService executorService() {
@@ -60,7 +60,7 @@ public class ZeebeClientConfigurationImplTest {
 
   @Test
   void shouldCreateSingletonCredentialProvider() {
-    final ZeebeClientConfigurationImpl configuration =
+    final CamundaClientConfigurationImpl configuration =
         configuration(
             legacyProperties(),
             properties(),

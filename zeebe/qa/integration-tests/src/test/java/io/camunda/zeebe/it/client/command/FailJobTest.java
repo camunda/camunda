@@ -11,7 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
@@ -36,7 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public final class FailJobTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -123,7 +123,7 @@ public final class FailJobTest {
   }
 
   private ActivatedJob activateJob(
-      final ZeebeClient client, final boolean useRest, final String jobType) {
+      final CamundaClient client, final boolean useRest, final String jobType) {
     final var activateResponse =
         getActivateCommand(client, useRest).jobType(jobType).maxJobsToActivate(1).send().join();
 
@@ -135,19 +135,19 @@ public final class FailJobTest {
   }
 
   private FailJobCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long jobKey) {
+      final CamundaClient client, final boolean useRest, final long jobKey) {
     final FailJobCommandStep1 failJobCommandStep1 = client.newFailCommand(jobKey);
     return useRest ? failJobCommandStep1.useRest() : failJobCommandStep1.useGrpc();
   }
 
   private ActivateJobsCommandStep1 getActivateCommand(
-      final ZeebeClient client, final boolean useRest) {
+      final CamundaClient client, final boolean useRest) {
     final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
     return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
   }
 
   private CompleteJobCommandStep1 getCompleteCommand(
-      final ZeebeClient client, final boolean useRest, final long jobKey) {
+      final CamundaClient client, final boolean useRest, final long jobKey) {
     final CompleteJobCommandStep1 completeJobCommandStep1 = client.newCompleteCommand(jobKey);
     return useRest ? completeJobCommandStep1.useRest() : completeJobCommandStep1.useGrpc();
   }

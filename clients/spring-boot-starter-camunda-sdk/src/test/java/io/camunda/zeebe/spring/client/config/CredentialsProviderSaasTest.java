@@ -26,8 +26,8 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -47,7 +47,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
-    classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
+    classes = {JsonMapperConfiguration.class, CamundaClientConfigurationImpl.class},
     properties = {
       "camunda.client.mode=saas",
       "camunda.client.cluster-id=12345",
@@ -67,7 +67,7 @@ public class CredentialsProviderSaasTest {
 
   private static final String ACCESS_TOKEN = "access-token";
   @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
-  @Autowired ZeebeClientConfigurationImpl configuration;
+  @Autowired CamundaClientConfigurationImpl configuration;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {

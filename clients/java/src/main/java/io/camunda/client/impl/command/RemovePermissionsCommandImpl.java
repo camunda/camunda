@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.client.api.command.RemovePermissionsCommandStep1.RemovePermissionsCommandStep2;
 import io.camunda.client.api.command.RemovePermissionsCommandStep1.RemovePermissionsCommandStep3;
 import io.camunda.client.api.command.RemovePermissionsCommandStep1.RemovePermissionsCommandStep4;
 import io.camunda.client.api.response.RemovePermissionsResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -86,8 +86,8 @@ public class RemovePermissionsCommandImpl
   }
 
   @Override
-  public ZeebeFuture<RemovePermissionsResponse> send() {
-    final HttpZeebeFuture<RemovePermissionsResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<RemovePermissionsResponse> send() {
+    final HttpCamundaFuture<RemovePermissionsResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         path, jsonMapper.toJson(delegate.getRequest()), httpRequestConfig.build(), result);
     return result;

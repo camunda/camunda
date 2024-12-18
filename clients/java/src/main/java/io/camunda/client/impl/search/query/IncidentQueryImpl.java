@@ -19,8 +19,8 @@ import static io.camunda.client.api.search.SearchRequestBuilders.incidentFilter;
 import static io.camunda.client.api.search.SearchRequestBuilders.incidentSort;
 import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
@@ -28,8 +28,8 @@ import io.camunda.client.api.search.query.IncidentQuery;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.IncidentSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -66,8 +66,8 @@ public class IncidentQueryImpl
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<Incident>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<Incident>> result = new HttpZeebeFuture<>();
+  public CamundaFuture<SearchQueryResponse<Incident>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<Incident>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/incidents/search",
         jsonMapper.toJson(request),

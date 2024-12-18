@@ -17,14 +17,14 @@ package io.camunda.client.impl.command;
 
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DocumentLinkResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.DocumentLinkResponseImpl;
 import io.camunda.client.protocol.rest.DocumentLink;
 import io.camunda.client.protocol.rest.DocumentLinkRequest;
@@ -47,7 +47,7 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
       final String storeId,
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration configuration) {
+      final CamundaClientConfiguration configuration) {
     ensureNotNull("documentId", documentId);
     this.documentId = documentId;
     queryParams = new HashMap<>();
@@ -82,8 +82,8 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
   }
 
   @Override
-  public ZeebeFuture<DocumentLinkResponse> send() {
-    final HttpZeebeFuture<DocumentLinkResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<DocumentLinkResponse> send() {
+    final HttpCamundaFuture<DocumentLinkResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/documents/%s/links", documentId),
         queryParams,

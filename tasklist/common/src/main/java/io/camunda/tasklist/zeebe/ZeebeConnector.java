@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.zeebe;
 
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
@@ -31,18 +31,18 @@ public class ZeebeConnector {
   @Autowired private TasklistProperties tasklistProperties;
 
   @Bean // will be closed automatically
-  public ZeebeClient tasklistZeebeClient() {
-    return newZeebeClient(tasklistProperties.getZeebe());
+  public CamundaClient tasklistCamundaClient() {
+    return newCamundaClient(tasklistProperties.getZeebe());
   }
 
-  public ZeebeClient newZeebeClient(final ZeebeProperties zeebeProperties) {
+  public CamundaClient newCamundaClient(final ZeebeProperties zeebeProperties) {
     LOGGER.info(
         "Zeebe Client - Using REST Configuration: {}",
         getURIFromSaaSOrProperties(zeebeProperties.getRestAddress()));
     LOGGER.info(
         "Zeebe Client - Using Gateway Configuration: {}", zeebeProperties.getGatewayAddress());
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeProperties.getGatewayAddress())
             // .restAddress(getURIFromString(zeebeProperties.getRestAddress()))
             .restAddress(getURIFromSaaSOrProperties(zeebeProperties.getRestAddress()))

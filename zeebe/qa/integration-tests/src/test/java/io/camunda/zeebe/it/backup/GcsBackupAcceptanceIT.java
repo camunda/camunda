@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.backup;
 
 import com.google.cloud.storage.BucketInfo;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -62,7 +62,7 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
           .withNodeConfig(this::configureNode)
           .build();
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   @BeforeAll
   static void beforeAll() throws Exception {

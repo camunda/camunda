@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.response.VariableImpl;
 import io.camunda.client.protocol.rest.VariableItem;
 import java.time.Duration;
@@ -45,8 +45,8 @@ public class VariableGetRequestImpl implements VariableGetRequest {
   }
 
   @Override
-  public ZeebeFuture<Variable> send() {
-    final HttpZeebeFuture<Variable> result = new HttpZeebeFuture<>();
+  public CamundaFuture<Variable> send() {
+    final HttpCamundaFuture<Variable> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/variables/%d", variableKey),
         httpRequestConfig.build(),
