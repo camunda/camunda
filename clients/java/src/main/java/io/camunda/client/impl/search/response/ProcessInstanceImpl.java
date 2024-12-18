@@ -37,14 +37,14 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String tenantId;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
-    processInstanceKey = ParseUtil.parseLongOrEmpty(item.getProcessInstanceKey());
+    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionName = item.getProcessDefinitionName();
     processDefinitionVersion = item.getProcessDefinitionVersion();
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
-    processDefinitionKey = ParseUtil.parseLongOrEmpty(item.getProcessDefinitionKey());
-    parentProcessInstanceKey = ParseUtil.parseLongOrEmpty(item.getParentProcessInstanceKey());
-    parentFlowNodeInstanceKey = ParseUtil.parseLongOrEmpty(item.getParentFlowNodeInstanceKey());
+    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
+    parentProcessInstanceKey = ParseUtil.parseLongOrNull(item.getParentProcessInstanceKey());
+    parentFlowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getParentFlowNodeInstanceKey());
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);

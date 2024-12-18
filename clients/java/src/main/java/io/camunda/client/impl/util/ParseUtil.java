@@ -17,7 +17,7 @@ package io.camunda.client.impl.util;
 
 public class ParseUtil {
 
-  public static Long parseLongOrEmpty(final String input) {
-    return input == null ? -1L : Long.parseLong(input);
+  public static Long parseLongOrNull(final String input) {
+    return input == null ? null : Long.parseLong(input);
   }
 }

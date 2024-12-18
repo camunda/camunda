@@ -19,7 +19,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +74,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
       final JsonMapper jsonMapper, final io.camunda.client.protocol.rest.ActivatedJob job) {
     this.jsonMapper = jsonMapper;
 
-    key = ParseUtil.parseLongOrEmpty(job.getJobKey());
+    key = parseLongOrEmpty(job.getJobKey());
     type = getOrEmpty(job.getType());
     customHeaders =
         job.getCustomHeaders() == null
@@ -93,12 +92,12 @@ public final class ActivatedJobImpl implements ActivatedJob {
     deadline = getOrEmpty(job.getDeadline());
     variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
     variables = jsonMapper.toJson(variablesAsMap);
-    processInstanceKey = ParseUtil.parseLongOrEmpty(job.getProcessInstanceKey());
+    processInstanceKey = parseLongOrEmpty(job.getProcessInstanceKey());
     bpmnProcessId = getOrEmpty(job.getProcessDefinitionId());
     processDefinitionVersion = getOrEmpty(job.getProcessDefinitionVersion());
-    processDefinitionKey = ParseUtil.parseLongOrEmpty(job.getProcessDefinitionKey());
+    processDefinitionKey = parseLongOrEmpty(job.getProcessDefinitionKey());
     elementId = getOrEmpty(job.getElementId());
-    elementInstanceKey = ParseUtil.parseLongOrEmpty(job.getElementInstanceKey());
+    elementInstanceKey = parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
   }
 
@@ -214,5 +213,9 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   private static Integer getOrEmpty(final Integer value) {
     return value == null ? -1 : value;
+  }
+
+  private static Long parseLongOrEmpty(final String value) {
+    return value == null ? -1 : Long.parseLong(value);
   }
 }
