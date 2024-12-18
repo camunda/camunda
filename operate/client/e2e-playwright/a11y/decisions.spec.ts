@@ -15,6 +15,7 @@ import {
   mockDecisionXml,
 } from '../mocks/decisions.mocks';
 import {validateResults} from './validateResults';
+import {URL_PATTERN} from '../constants';
 
 test.describe('decisions', () => {
   for (const theme of ['light', 'dark']) {
@@ -27,7 +28,7 @@ test.describe('decisions', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_PATTERN,
         mockResponses({
           groupedDecisions: mockGroupedDecisions,
           batchOperations: mockBatchOperations,
@@ -54,7 +55,7 @@ test.describe('decisions', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_PATTERN,
         mockResponses({
           groupedDecisions: mockGroupedDecisions,
           batchOperations: mockBatchOperations,
