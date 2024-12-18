@@ -101,6 +101,8 @@ public class ElasticsearchTestExtension
       tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
       tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
     }
+    /* Needed for the tasklist-user index */
+    elasticsearchSchemaManager.createSchema();
   }
 
   @Override

@@ -24,6 +24,7 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
   private static final Logger LOGGER =
       LoggerFactory.getLogger(TestElasticsearchSchemaManager.class);
 
+  @Override
   public void deleteSchema() {
     final String prefix = tasklistProperties.getElasticsearch().getIndexPrefix();
     LOGGER.info("Removing indices " + prefix + "*");
@@ -31,10 +32,11 @@ public class TestElasticsearchSchemaManager extends ElasticsearchSchemaManager
     retryElasticsearchClient.deleteTemplatesFor(prefix + "*");
   }
 
+  @Override
   public void deleteSchemaQuietly() {
     try {
       deleteSchema();
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.debug(t.getMessage());
     }
   }

@@ -94,6 +94,8 @@ public class OpenSearchTestExtension
       tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
       tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
     }
+    /* Needed for the tasklist-user index */
+    schemaManager.createSchema();
   }
 
   @Override
