@@ -9,6 +9,6 @@
 import {MeDto} from 'modules/api/v2/authentication/me';
 import {mockGetRequest} from '../mockRequest';
 
-const mockMe = () => mockGetRequest<MeDto>('/v2/me');
+const mockMe = () => mockGetRequest<MeDto>('/v2/authentication/me');
 
 export {mockMe};
