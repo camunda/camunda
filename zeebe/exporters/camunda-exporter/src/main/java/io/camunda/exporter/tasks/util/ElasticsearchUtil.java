@@ -8,18 +8,23 @@
 package io.camunda.exporter.tasks.util;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class ElasticsearchUtil {
@@ -149,5 +154,20 @@ public class ElasticsearchUtil {
             },
             executor)
         .thenComposeAsync(ignored -> endResult);
+  }
+
+  public static Throwable collectBulkErrors(final List<BulkResponseItem> items) {
+    final var collectedErrors = new ArrayList<String>();
+    items.stream()
+        .flatMap(item -> Optional.ofNullable(item.error()).stream())
+        .collect(Collectors.groupingBy(ErrorCause::type))
+        .forEach(
+            (type, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to update %d item(s) of bulk update [type: %s, reason: %s]",
+                        errors.size(), type, errors.getFirst().reason())));
+
+    return new ExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 }

@@ -8,7 +8,6 @@
 package io.camunda.exporter.tasks.incident;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -19,7 +18,6 @@ import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
@@ -36,17 +34,13 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.exporter.api.ExporterException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -199,7 +193,8 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
         .thenComposeAsync(
             r -> {
               if (r.errors()) {
-                return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
+                return CompletableFuture.failedFuture(
+                    ElasticsearchUtil.collectBulkErrors(r.items()));
               }
 
               return CompletableFuture.completedFuture(r.items().size());
@@ -349,21 +344,6 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
     }
 
     return new PendingIncidentUpdateBatch(highestPosition, incidents);
-  }
-
-  private Throwable collectBulkErrors(final List<BulkResponseItem> items) {
-    final var collectedErrors = new ArrayList<String>();
-    items.stream()
-        .flatMap(item -> Optional.ofNullable(item.error()).stream())
-        .collect(Collectors.groupingBy(ErrorCause::type))
-        .forEach(
-            (type, errors) ->
-                collectedErrors.add(
-                    String.format(
-                        "Failed to update %d item(s) of bulk update [type: %s, reason: %s]",
-                        errors.size(), type, errors.getFirst().reason())));
-
-    return new ExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   private record PendingIncidentUpdate(long key, long position, String intent) {}
