@@ -24,13 +24,31 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 
+/**
+ * Soley create or update Schema for ElasticSearch by running this standalone application.
+ *
+ * <p>Configure with {@link ConnectConfiguration} properties, prefixed by `camunda.database`, for
+ * example:
+ *
+ * <pre>
+ * camunda.database.type=elasticsearch
+ * camunda.database.url=
+ * camunda.database.security.selfSigned=
+ * camunda.database.security.enabled=
+ * camunda.database.security.certificatePath=
+ * camunda.database.username=
+ * camunda.database.password=
+ * </pre>
+ *
+ * All of those porperties can also be handed over via environment variables, e.g.
+ * `CAMUNDA_DATABASE_URL`
+ */
 @SpringBootConfiguration
 @EnableConfigurationProperties
 public class StandaloneSchemaManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
 
-  private static final String GLOBAL_PREFIX = "";
   private static final boolean IS_ELASTICSEARCH = true;
 
   public static void main(final String[] args) {
@@ -62,12 +80,19 @@ public class StandaloneSchemaManager {
     final SchemaManagerConnectConfiguration connectConfiguration =
         applicationContext.getBean(SchemaManagerConnectConfiguration.class);
 
+    if (!"elasticsearch".equalsIgnoreCase(connectConfiguration.getType())) {
+      LOG.error(
+          "Cannot creating schema for anything other than Elasticsearch with this script for now...");
+      System.exit(0);
+    }
+
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
     final ExporterConfiguration exporterConfig = new ExporterConfiguration();
     exporterConfig.setConnect(connectConfiguration);
 
-    final IndexDescriptors indexDescriptors = new IndexDescriptors(GLOBAL_PREFIX, IS_ELASTICSEARCH);
+    final IndexDescriptors indexDescriptors =
+        new IndexDescriptors(connectConfiguration.getIndexPrefix(), IS_ELASTICSEARCH);
 
     final SearchEngineClient client = ClientAdapter.of(exporterConfig).getSearchEngineClient();
     final SchemaManager schemaManager =
@@ -80,6 +105,7 @@ public class StandaloneSchemaManager {
     System.exit(0);
   }
 
-  @ConfigurationProperties("camunda.elasticsearch")
+  /** Helper class to use Spring defaults to read properties for database connection */
+  @ConfigurationProperties("camunda.database")
   public static final class SchemaManagerConnectConfiguration extends ConnectConfiguration {}
 }
