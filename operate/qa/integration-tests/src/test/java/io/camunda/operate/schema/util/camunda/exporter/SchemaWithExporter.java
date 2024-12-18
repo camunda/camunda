@@ -8,6 +8,7 @@
 package io.camunda.operate.schema.util.camunda.exporter;
 
 import io.camunda.exporter.DefaultExporterResourceProvider;
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -31,7 +32,10 @@ public class SchemaWithExporter {
     final var clientAdapter = ClientAdapter.of(config);
     final var provider = new DefaultExporterResourceProvider();
     provider.init(
-        config, clientAdapter.getExporterEntityCacheProvider(), new SimpleMeterRegistry());
+        config,
+        clientAdapter.getExporterEntityCacheProvider(),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     schemaManager =
         new SchemaManager(
