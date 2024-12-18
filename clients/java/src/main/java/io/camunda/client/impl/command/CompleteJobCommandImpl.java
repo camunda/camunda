@@ -118,7 +118,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep3 corrections() {
-    correctionsRest = new io.camunda.zeebe.client.protocol.rest.JobResultCorrections();
+    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
     resultRest.setCorrections(correctionsRest);
 
     correctionsGrpc = JobResultCorrections.newBuilder();
