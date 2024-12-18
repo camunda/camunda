@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeseriali
 import io.camunda.zeebe.gateway.rest.deserializer.LongFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.serializer.StringSerializer;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +42,7 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceStateFilterProperty.class,
         new ProcessInstanceStateFilterPropertyDeserializer());
+    module.addSerializer(String.class, new StringSerializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
