@@ -16,6 +16,7 @@
   <name>Zeebe QA Utilities</name>
 
   <dependencies>
+
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>

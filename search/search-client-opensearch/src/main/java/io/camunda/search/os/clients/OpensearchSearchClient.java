@@ -61,11 +61,11 @@ public final class OpensearchSearchClient implements CamundaSearchClient {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (client != null) {
       try {
         client._transport().close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       }
     }

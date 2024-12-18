@@ -9,6 +9,7 @@ package io.camunda.zeebe.auth.impl;
 
 public class Authorization {
 
+  public static final String AUTHORIZED_ANONYMOUS_USER = "authorized_anonymous_user";
   public static final String AUTHORIZED_TENANTS = "authorized_tenants";
 
   public static JwtAuthorizationEncoder jwtEncoder() {
