@@ -34,10 +34,6 @@
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
     <dependency>
@@ -71,10 +67,6 @@
     <dependency>
       <groupId>io.camunda.migration</groupId>
       <artifactId>migration-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-client-java</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
