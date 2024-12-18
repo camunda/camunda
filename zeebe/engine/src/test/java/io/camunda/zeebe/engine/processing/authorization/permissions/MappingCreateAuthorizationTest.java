@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class MappingCreateAuthorizationIT {
+public class MappingCreateAuthorizationTest {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =

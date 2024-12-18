@@ -19,13 +19,11 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
@@ -38,19 +36,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class JobUpdateAuthorizationIT {
+public class ProcessInstanceMigrationMigrateAuthorizationTest {
+  public static final String JOB_TYPE = "jobType";
+  public static final String SOURCE_TASK = "sourceTask";
+  public static final String TARGET_TASK = "targetTask";
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
+  private static final String TARGET_PROCESS_ID = "targetProcessId";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
-  private static long jobKey;
+  private static long targetProcDefKey;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -66,18 +68,36 @@ public class JobUpdateAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask("serviceTask", t -> t.zeebeJobType("jobType"))
-                .endEvent()
-                .done(),
-            "process.xml")
-        .send()
-        .join();
+    final var deploymentEvent =
+        defaultUserClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(SOURCE_TASK, t -> t.zeebeJobType(JOB_TYPE))
+                    .endEvent()
+                    .done(),
+                "process.xml")
+            .addProcessModel(
+                Bpmn.createExecutableProcess(TARGET_PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(TARGET_TASK, t -> t.zeebeJobType(JOB_TYPE))
+                    .endEvent()
+                    .done(),
+                "targetProcess.xml")
+            .send()
+            .join();
+    targetProcDefKey =
+        deploymentEvent.getProcesses().stream()
+            .filter(process -> process.getBpmnProcessId().equals(TARGET_PROCESS_ID))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+  }
 
+  @Test
+  void shouldBeAuthorizedToMigrateProcessInstanceWithDefaultUser() {
+    // given
     final var processInstanceKey =
         defaultUserClient
             .newCreateInstanceCommand()
@@ -86,26 +106,33 @@ public class JobUpdateAuthorizationIT {
             .send()
             .join()
             .getProcessInstanceKey();
-    jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
-  }
 
-  @Test
-  void shouldBeAuthorizedToUpdateJobWithDefaultUser() {
-    // when then
+    // when migrate to a non-existing process as authorization checks should fail first
+    // then
     final var response =
-        defaultUserClient.newUpdateJobCommand(jobKey).updateRetries(1).send().join();
+        defaultUserClient
+            .newMigrateProcessInstanceCommand(processInstanceKey)
+            .migrationPlan(targetProcDefKey)
+            .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+            .send()
+            .join();
+
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
     assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateJobWithUser() {
+  void shouldBeAuthorizedToMigrateProcessInstanceWithUser() {
     // given
+    final var processInstanceKey =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
@@ -117,8 +144,16 @@ public class JobUpdateAuthorizationIT {
             List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
-      final var response = client.newUpdateJobCommand(jobKey).updateRetries(1).send().join();
+      // when migrate to a non-existing process as authorization checks should fail first
+      // then
+      final var response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcDefKey)
+              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+              .send()
+              .join();
+
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
       assertThat(response).isNull();
@@ -126,15 +161,29 @@ public class JobUpdateAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToUpdateJobIfNoPermissions() {
+  void shouldBeUnauthorizedToMigrateProcessInstanceIfNoPermissions() {
     // given
+    final var processInstanceKey =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newUpdateJobCommand(jobKey).updateRetries(1).send();
+      // when migrate to a non-existing process as authorization checks should fail first
+      // then
+      final var response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcDefKey)
+              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+              .send();
 
       // then
       assertThatThrownBy(response::join)

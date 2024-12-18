@@ -24,7 +24,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class ClockPinAuthorizationIT {
+public class UserCreateAuthorizationTest {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -45,7 +44,7 @@ public class ClockPinAuthorizationIT {
   @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -64,46 +63,71 @@ public class ClockPinAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToPinClockWithDefaultUser() {
+  void shouldBeAuthorizedToCreateUserWithDefaultUser() {
     // given
-    // when
-    final var response = defaultUserClient.newClockPinCommand().time(Instant.now()).send().join();
+    final var username = UUID.randomUUID().toString();
 
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    // when
+    final var response =
+        defaultUserClient
+            .newUserCreateCommand()
+            .username(username)
+            .name("Foo")
+            .email("bar@baz.com")
+            .password("zabraboof")
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getUserKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToPinClockWithPermissions() {
+  void shouldBeAuthorizedToCreateUserWithPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
+    final var newUsername = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        username,
+        authUsername,
         password,
-        new Permissions(ResourceTypeEnum.SYSTEM, PermissionTypeEnum.UPDATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(username, password)) {
+    try (final var client = authUtil.createClient(authUsername, password)) {
       // when
-      final var response = client.newClockPinCommand().time(Instant.now()).send().join();
+      final var response =
+          client
+              .newUserCreateCommand()
+              .username(newUsername)
+              .name("Foo")
+              .email("bar@baz.com")
+              .password("zabraboof")
+              .send()
+              .join();
 
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+      // then
+      assertThat(response.getUserKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnAuthorizedToPinClockWithPermissions() {
+  void shouldBeUnAuthorizedToCreateUserWithoutPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
+    final var newUsername = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(username, password);
+    authUtil.createUser(authUsername, password);
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
-      final var response = client.newClockPinCommand().time(Instant.now()).send();
+    try (final var client = authUtil.createClient(authUsername, password)) {
+      final var response =
+          client
+              .newUserCreateCommand()
+              .username(newUsername)
+              .name("Foo")
+              .email("bar@baz.com")
+              .password("zabraboof")
+              .send();
 
       // then
       assertThatThrownBy(response::join)
@@ -111,7 +135,7 @@ public class ClockPinAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
     }
   }
 }

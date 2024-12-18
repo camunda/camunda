@@ -18,15 +18,13 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,14 +36,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class UserTaskUpdateAuthorizationIT {
-  public static final String USER_TASK_ID = "userTask";
-
+public class ClockPinAuthorizationTest {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
 
@@ -66,29 +61,13 @@ public class UserTaskUpdateAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .userTask(USER_TASK_ID)
-                .zeebeUserTask()
-                .endEvent()
-                .done(),
-            "process.xml")
-        .send()
-        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateUserTaskWithDefaultUser() {
+  void shouldBeAuthorizedToPinClockWithDefaultUser() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var userTaskKey = getUserTaskKey(processInstanceKey);
-
-    // when then
-    final var response =
-        defaultUserClient.newUserTaskUpdateCommand(userTaskKey).priority(100).send().join();
+    // when
+    final var response = defaultUserClient.newClockPinCommand().time(Instant.now()).send().join();
 
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
@@ -96,23 +75,18 @@ public class UserTaskUpdateAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateUserTaskWithUser() {
+  void shouldBeAuthorizedToPinClockWithPermissions() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var userTaskKey = getUserTaskKey(processInstanceKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_USER_TASK,
-            List.of(PROCESS_ID)));
+        new Permissions(ResourceTypeEnum.SYSTEM, PermissionTypeEnum.UPDATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
-      final var response = client.newUserTaskUpdateCommand(userTaskKey).priority(100).send().join();
+      // when
+      final var response = client.newClockPinCommand().time(Instant.now()).send().join();
 
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
@@ -121,18 +95,15 @@ public class UserTaskUpdateAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToUpdateUserTaskIfNoPermissions() {
+  void shouldBeUnAuthorizedToPinClockWithPermissions() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var userTaskKey = getUserTaskKey(processInstanceKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     // when
     try (final var client = authUtil.createClient(username, password)) {
-      // when we use the unauthorized client
-      final var response = client.newUserTaskUpdateCommand(userTaskKey).priority(100).send();
+      final var response = client.newClockPinCommand().time(Instant.now()).send();
 
       // then
       assertThatThrownBy(response::join)
@@ -140,28 +111,7 @@ public class UserTaskUpdateAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
     }
-  }
-
-  private long createProcessInstance() {
-    return defaultUserClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(PROCESS_ID)
-        .latestVersion()
-        .send()
-        .join()
-        .getProcessInstanceKey();
-  }
-
-  private static long getUserTaskKey(final long processInstanceKey) {
-    return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId(USER_TASK_ID)
-        .limit(1)
-        .findFirst()
-        .orElseThrow()
-        .getKey();
   }
 }

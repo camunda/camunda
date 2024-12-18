@@ -19,15 +19,14 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,9 +37,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class JobCompleteAuthorizationIT {
-
-  public static final String JOB_TYPE = "jobType";
+public class MessagePublishAuthorizationTest {
+  public static final String INTERMEDIATE_MSG_NAME = "intermediateMsg";
+  public static final String START_MSG_NAME = "startMsg";
+  public static final String CORRELATION_KEY_VARIABLE = "correlationKey";
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -72,8 +72,15 @@ public class JobCompleteAuthorizationIT {
         .addProcessModel(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("serviceTask", t -> t.zeebeJobType(JOB_TYPE))
+                .intermediateCatchEvent()
+                .message(
+                    m ->
+                        m.name(INTERMEDIATE_MSG_NAME)
+                            .zeebeCorrelationKeyExpression(CORRELATION_KEY_VARIABLE))
                 .endEvent()
+                .moveToProcess(PROCESS_ID)
+                .startEvent()
+                .message(m -> m.name(START_MSG_NAME))
                 .done(),
             "process.xml")
         .send()
@@ -81,87 +88,68 @@ public class JobCompleteAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToCompleteJobWithDefaultUser() {
+  void shouldBeAuthorizedToPublishMessageWithDefaultUser() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
 
-    // when then
-    final var response = defaultUserClient.newCompleteCommand(jobKey).send().join();
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    // when
+    final var response =
+        defaultUserClient
+            .newPublishMessageCommand()
+            .messageName(INTERMEDIATE_MSG_NAME)
+            .correlationKey(correlationKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getMessageKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToCompleteJobWithUser() {
+  void shouldBeAuthorizedToPublishMessageWithUser() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
+        new Permissions(ResourceTypeEnum.MESSAGE, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
-      final var response = client.newCompleteCommand(jobKey).send().join();
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+      // when
+      final var response =
+          client
+              .newPublishMessageCommand()
+              .messageName(INTERMEDIATE_MSG_NAME)
+              .correlationKey(correlationKey)
+              .send()
+              .join();
+
+      // then
+      assertThat(response.getMessageKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToCompleteJobIfNoPermissions() {
+  void shouldBeUnauthorizedToPublishMessageIfNoPermissions() {
     // given
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
 
     try (final var client = authUtil.createClient(username, password)) {
       // when
-      final var response = client.newCompleteCommand(jobKey).send();
+      final var response =
+          client
+              .newPublishMessageCommand()
+              .messageName(INTERMEDIATE_MSG_NAME)
+              .correlationKey(correlationKey)
+              .send();
 
       // then
       assertThatThrownBy(response::join)
@@ -169,8 +157,17 @@ public class JobCompleteAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'");
     }
+  }
+
+  private void createProcessInstance(final String correlationKey) {
+    defaultUserClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(PROCESS_ID)
+        .latestVersion()
+        .variables(Map.of(CORRELATION_KEY_VARIABLE, correlationKey))
+        .send()
+        .join();
   }
 }

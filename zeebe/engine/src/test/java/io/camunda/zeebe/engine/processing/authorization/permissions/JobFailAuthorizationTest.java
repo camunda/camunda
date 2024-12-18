@@ -19,10 +19,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -41,8 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class SignalBroadcastAuthorizationIT {
-  public static final String SIGNAL_NAME = "signal";
+public class JobFailAuthorizationTest {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -51,6 +47,7 @@ public class SignalBroadcastAuthorizationIT {
   private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
+  private static long jobKey;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
@@ -74,35 +71,40 @@ public class SignalBroadcastAuthorizationIT {
         .addProcessModel(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .intermediateCatchEvent()
-                .signal(s -> s.name(SIGNAL_NAME))
+                .serviceTask("serviceTask", t -> t.zeebeJobType("jobType"))
                 .endEvent()
-                .moveToProcess(PROCESS_ID)
-                .startEvent()
-                .signal(s -> s.name(SIGNAL_NAME))
                 .done(),
             "process.xml")
         .send()
         .join();
+
+    final var processInstanceKey =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+    jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToBroadcastSignalWithDefaultUser() {
-    // given
-    createProcessInstance();
-
-    // when
-    final var response =
-        defaultUserClient.newBroadcastSignalCommand().signalName(SIGNAL_NAME).send().join();
-
-    // then
-    assertThat(response.getKey()).isPositive();
+  void shouldBeAuthorizedToFailJobWithDefaultUser() {
+    // when then
+    final var response = defaultUserClient.newFailCommand(jobKey).retries(1).send().join();
+    // The Rest API returns a null future for an empty response
+    // We can verify for null, as if we'd be unauthenticated we'd get an exception
+    assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToBroadcastSignalWithUser() {
+  void shouldBeAuthorizedToFailJobWithUser() {
     // given
-    createProcessInstance();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
@@ -111,62 +113,27 @@ public class SignalBroadcastAuthorizationIT {
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)),
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
             List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newBroadcastSignalCommand().signalName(SIGNAL_NAME).send().join();
-
-      // then
-      assertThat(response.getKey()).isPositive();
+      // when then
+      final var response = client.newFailCommand(jobKey).retries(1).send().join();
+      // The Rest API returns a null future for an empty response
+      // We can verify for null, as if we'd be unauthenticated we'd get an exception
+      assertThat(response).isNull();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToBroadcastSignalIfNoPermissions() {
+  void shouldBeUnauthorizedToFailJobIfNoPermissions() {
     // given
-    createProcessInstance();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     try (final var client = authUtil.createClient(username, password)) {
-
       // when
-      final var response = client.newBroadcastSignalCommand().signalName(SIGNAL_NAME).send();
-
-      // then
-      assertThatThrownBy(response::join)
-          .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: FORBIDDEN")
-          .hasMessageContaining("status: 403")
-          .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
-    }
-  }
-
-  @Test
-  void shouldNotBroadcastSignalIfUnauthorizedForOne() {
-    // given
-    final var username = UUID.randomUUID().toString();
-    final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
-    final var processInstanceKey = createProcessInstance();
-
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newBroadcastSignalCommand().signalName(SIGNAL_NAME).send();
+      final var response = client.newFailCommand(jobKey).retries(1).send();
 
       // then
       assertThatThrownBy(response::join)
@@ -176,36 +143,6 @@ public class SignalBroadcastAuthorizationIT {
           .hasMessageContaining(
               "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
-
-      assertThat(
-              RecordingExporter.records()
-                  .limit(r -> r.getRejectionType() == RejectionType.UNAUTHORIZED)
-                  .processInstanceRecords()
-                  .withProcessInstanceKey(processInstanceKey)
-                  .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
-                  .withEventType(BpmnEventType.SIGNAL)
-                  .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                  .exists())
-          .isFalse();
     }
-  }
-
-  private Long createProcessInstance() {
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT)
-        .withEventType(BpmnEventType.SIGNAL)
-        .await();
-
-    return processInstanceKey;
   }
 }

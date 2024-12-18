@@ -19,13 +19,11 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
@@ -38,14 +36,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class IncidentResolveAuthorizationIT {
+public class AuthorizationAddPermissionAuthorizationTest {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
-  private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
+  private static AuthorizationsUtil authUtil;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
@@ -67,65 +65,76 @@ public class IncidentResolveAuthorizationIT {
     defaultUserClient
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .zeebeOutputExpression("assert(foo, foo != null)", "target")
-                .endEvent()
-                .done(),
-            "process.xml")
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(), "process.xml")
         .send()
         .join();
   }
 
   @Test
-  void shouldBeAuthorizedToResolveIncidentWithDefaultUser() {
+  void shouldBeAuthorizedToAddPermissionsWithDefaultUser() {
     // given
-    final var incidentKey = createIncident();
+    final var username = UUID.randomUUID().toString();
+    final var userKey = authUtil.createUser(username, "password");
 
     // when then
-    final var response = defaultUserClient.newResolveIncidentCommand(incidentKey).send().join();
-
+    final var addPermissionsResponse =
+        defaultUserClient
+            .newAddPermissionsCommand(userKey)
+            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .permission(PermissionTypeEnum.DELETE)
+            .resourceId("*")
+            .send()
+            .join();
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    assertThat(addPermissionsResponse).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToResolveIncidentWithUser() {
+  void shouldBeAuthorizedToAddPermissionsWithUser() {
     // given
-    final var incidentKey = createIncident();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+    final var userKey =
+        authUtil.createUserWithPermissions(
+            username,
+            password,
+            new Permissions(
+                ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newResolveIncidentCommand(incidentKey).send().join();
-
+      // when then
+      final var addPermissionsResponse =
+          client
+              .newAddPermissionsCommand(userKey)
+              .resourceType(ResourceTypeEnum.DEPLOYMENT)
+              .permission(PermissionTypeEnum.CREATE)
+              .resourceId("*")
+              .send()
+              .join();
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+      assertThat(addPermissionsResponse).isNull();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToResolveIncidentIfNoPermissions() {
+  void shouldBeUnauthorizedToAddPermissionsIfNoPermissions() {
     // given
-    final var incidentKey = createIncident();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
+    // when
     try (final var client = authUtil.createClient(username, password)) {
-
-      // when
-      final var response = client.newResolveIncidentCommand(incidentKey).send();
+      final var response =
+          client
+              // We can use any owner key. The authorization check happens before we use it.
+              .newAddPermissionsCommand(1L)
+              .resourceType(ResourceTypeEnum.DEPLOYMENT)
+              .permission(PermissionTypeEnum.CREATE)
+              .resourceId("*")
+              .send();
 
       // then
       assertThatThrownBy(response::join)
@@ -133,23 +142,7 @@ public class IncidentResolveAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
     }
-  }
-
-  private long createIncident() {
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .getFirst()
-        .getKey();
   }
 }

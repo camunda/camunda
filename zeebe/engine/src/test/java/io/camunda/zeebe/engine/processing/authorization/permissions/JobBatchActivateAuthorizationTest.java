@@ -43,7 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 @TestMethodOrder(OrderAnnotation.class)
-public class JobBatchActivateAuthorizationIT {
+public class JobBatchActivateAuthorizationTest {
 
   public static final String JOB_TYPE = "jobType";
 

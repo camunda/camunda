@@ -12,15 +12,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
+import io.camunda.client.ZeebeClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -35,16 +37,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class RoleCreateAuthorizationIT {
+final class DeploymentCreateAuthorizationTest {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private final TestStandaloneBroker broker =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -63,51 +65,74 @@ public class RoleCreateAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
-    // when
-    final var response = defaultUserClient.newCreateRoleCommand().name("Foo").send().join();
+  void shouldBeAuthorizedToDeployWithDefaultUser() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
 
-    // then
-    assertThat(response.getRoleKey()).isPositive();
+    // when then
+    final var deploymentEvent =
+        defaultUserClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                "process.bpmn")
+            .send()
+            .join();
+    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
   }
 
   @Test
-  void shouldBeAuthorizedToCreateRoleWithPermissions() {
+  void shouldBeAuthorizedToDeployWithPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
+    final var processId = Strings.newRandomValidBpmnId();
+    final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        authUsername,
+        username,
         password,
-        new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(authUsername, password)) {
+    try (final var client = authUtil.createClient(username, password)) {
       // when
-      final var response = client.newCreateRoleCommand().name("Foo").send().join();
+      final var deploymentEvent =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(
+                  Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                  "process.bpmn")
+              .send()
+              .join();
 
       // then
-      assertThat(response.getRoleKey()).isPositive();
+      assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
     }
   }
 
   @Test
-  void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
+  void shouldBeUnAuthorizedToDeployWithPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
+    final var processId = Strings.newRandomValidBpmnId();
+    final var username = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(authUsername, password);
+    authUtil.createUser(username, password);
 
     // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
-      final var response = client.newCreateRoleCommand().name("Foo").send();
+    try (final var client = authUtil.createClient(username, password)) {
+      final var deployFuture =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(
+                  Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                  "process.bpmn")
+              .send();
 
       // then
-      assertThatThrownBy(response::join)
+      assertThatThrownBy(deployFuture::join)
           .isInstanceOf(ProblemException.class)
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
     }
   }
 }

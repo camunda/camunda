@@ -42,7 +42,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class MessageCorrelationCorrelateAuthorizationIT {
+public class MessageCorrelationCorrelateAuthorizationTest {
 
   public static final String INTERMEDIATE_MSG_NAME = "intermediateMsg";
   public static final String START_MSG_NAME = "startMsg";

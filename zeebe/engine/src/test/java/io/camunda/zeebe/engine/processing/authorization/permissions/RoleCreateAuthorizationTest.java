@@ -25,7 +25,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,18 +35,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class DecisionEvaluationEvaluateAuthorizationIT {
-
+public class RoleCreateAuthorizationTest {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final String DECISION_ID = "jedi_or_sith";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -63,71 +60,46 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("dmn/drg-force-user.dmn")
-        .send()
-        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToEvaluateDecisionWithDefaultUser() {
+  void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
     // when
-    final var response =
-        defaultUserClient
-            .newEvaluateDecisionCommand()
-            .decisionId(DECISION_ID)
-            .variables(Map.of("lightsaberColor", "red"))
-            .send()
-            .join();
+    final var response = defaultUserClient.newCreateRoleCommand().name("Foo").send().join();
 
     // then
-    assertThat(response.getDecisionOutput()).isEqualTo("\"Sith\"");
+    assertThat(response.getRoleKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToEvaluateDecisionWithUser() {
+  void shouldBeAuthorizedToCreateRoleWithPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        username,
+        authUsername,
         password,
-        new Permissions(
-            ResourceTypeEnum.DECISION_DEFINITION,
-            PermissionTypeEnum.CREATE_DECISION_INSTANCE,
-            List.of(DECISION_ID)));
+        new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.CREATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(username, password)) {
+    try (final var client = authUtil.createClient(authUsername, password)) {
       // when
-      final var response =
-          client
-              .newEvaluateDecisionCommand()
-              .decisionId(DECISION_ID)
-              .variables(Map.of("lightsaberColor", "red"))
-              .send()
-              .join();
+      final var response = client.newCreateRoleCommand().name("Foo").send().join();
 
       // then
-      assertThat(response.getDecisionOutput()).isEqualTo("\"Sith\"");
+      assertThat(response.getRoleKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToEvaluateDecisionIfNoPermissions() {
+  void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(username, password);
+    authUtil.createUser(authUsername, password);
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response =
-          client
-              .newEvaluateDecisionCommand()
-              .decisionId(DECISION_ID)
-              .variables(Map.of("lightsaberColor", "red"))
-              .send();
+    // when
+    try (final var client = authUtil.createClient(authUsername, password)) {
+      final var response = client.newCreateRoleCommand().name("Foo").send();
 
       // then
       assertThatThrownBy(response::join)
@@ -135,8 +107,7 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              DECISION_ID);
+              "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
     }
   }
 }

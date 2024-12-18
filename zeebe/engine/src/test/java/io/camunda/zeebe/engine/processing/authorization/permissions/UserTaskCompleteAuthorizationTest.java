@@ -38,7 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class UserTaskClaimAuthorizationIT {
+public class UserTaskCompleteAuthorizationTest {
   public static final String USER_TASK_ID = "userTask";
 
   @Container
@@ -81,14 +81,13 @@ public class UserTaskClaimAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToClaimUserTaskWithDefaultUser() {
+  void shouldBeAuthorizedToCompleteUserTaskWithDefaultUser() {
     // given
     final var processInstanceKey = createProcessInstance();
     final var userTaskKey = getUserTaskKey(processInstanceKey);
 
     // when then
-    final var response =
-        defaultUserClient.newUserTaskAssignCommand(userTaskKey).assignee("assignee").send().join();
+    final var response = defaultUserClient.newUserTaskCompleteCommand(userTaskKey).send().join();
 
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
@@ -96,7 +95,7 @@ public class UserTaskClaimAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToClaimUserTaskWithUser() {
+  void shouldBeAuthorizedToCompleteUserTaskWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
     final var userTaskKey = getUserTaskKey(processInstanceKey);
@@ -112,8 +111,7 @@ public class UserTaskClaimAuthorizationIT {
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
-      final var response =
-          client.newUserTaskAssignCommand(userTaskKey).assignee("assignee").send().join();
+      final var response = client.newUserTaskCompleteCommand(userTaskKey).send().join();
 
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
@@ -122,7 +120,7 @@ public class UserTaskClaimAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToClaimUserTaskIfNoPermissions() {
+  void shouldBeUnauthorizedToCompleteUserTaskIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance();
     final var userTaskKey = getUserTaskKey(processInstanceKey);
@@ -132,7 +130,7 @@ public class UserTaskClaimAuthorizationIT {
 
     try (final var client = authUtil.createClient(username, password)) {
       // when we use the unauthorized client
-      final var response = client.newUserTaskAssignCommand(userTaskKey).assignee("assignee").send();
+      final var response = client.newUserTaskCompleteCommand(userTaskKey).send();
 
       // then
       assertThatThrownBy(response::join)

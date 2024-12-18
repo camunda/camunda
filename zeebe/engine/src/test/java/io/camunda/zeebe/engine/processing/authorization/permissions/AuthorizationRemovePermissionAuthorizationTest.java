@@ -36,14 +36,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class ProcessInstanceCancelAuthorizationIT {
+public class AuthorizationRemovePermissionAuthorizationTest {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
-  private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
+  private static AuthorizationsUtil authUtil;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
@@ -65,85 +65,84 @@ public class ProcessInstanceCancelAuthorizationIT {
     defaultUserClient
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done(),
-            "process.xml")
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(), "process.xml")
         .send()
         .join();
   }
 
   @Test
-  void shouldBeAuthorizedToCancelInstanceWithDefaultUser() {
+  void shouldBeAuthorizedToRemovePermissionsWithDefaultUser() {
     // given
-    final var processInstanceEvent =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
+    final var username = UUID.randomUUID().toString();
+    final var resourceType = ResourceTypeEnum.DEPLOYMENT;
+    final var permissionType = PermissionTypeEnum.DELETE;
+    final var resourceId = "resourceId";
+    final var userKey =
+        authUtil.createUserWithPermissions(
+            username,
+            "password",
+            new Permissions(resourceType, permissionType, List.of(resourceId)));
 
-    // when
+    // when then
     final var response =
         defaultUserClient
-            .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
+            .newRemovePermissionsCommand(userKey)
+            .resourceType(resourceType)
+            .permission(permissionType)
+            .resourceId(resourceId)
             .send()
             .join();
 
-    // then
+    // The Rest API returns a null future for an empty response
+    // We can verify for null, as if we'd be unauthenticated we'd get an exception
     assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToCancelInstanceWithUser() {
+  void shouldBeAuthorizedToRemovePermissionsWithUser() {
     // given
-    final var processInstanceEvent =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUserWithPermissions(
-        username,
-        password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+    final var resourceType = ResourceTypeEnum.AUTHORIZATION;
+    final var permissionType = PermissionTypeEnum.UPDATE;
+    final var resourceId = "*";
+    final var userKey =
+        authUtil.createUserWithPermissions(
+            username, password, new Permissions(resourceType, permissionType, List.of(resourceId)));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when
+      // when then
       final var response =
           client
-              .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
+              .newRemovePermissionsCommand(userKey)
+              .resourceType(resourceType)
+              .permission(permissionType)
+              .resourceId(resourceId)
               .send()
               .join();
-
-      // then
+      // The Rest API returns a null future for an empty response
+      // We can verify for null, as if we'd be unauthenticated we'd get an exception
       assertThat(response).isNull();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToCancelInstanceIfNoPermissions() {
+  void shouldBeUnauthorizedToRemovePermissionsIfNoPermissions() {
     // given
-    final var processInstanceEvent =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
+    // when
     try (final var client = authUtil.createClient(username, password)) {
-      // when
       final var response =
-          client.newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey()).send();
+          client
+              // We can use any owner key. The authorization check happens before we use it.
+              .newRemovePermissionsCommand(1L)
+              .resourceType(ResourceTypeEnum.DEPLOYMENT)
+              .permission(PermissionTypeEnum.CREATE)
+              .resourceId("*")
+              .send();
 
       // then
       assertThatThrownBy(response::join)
@@ -151,8 +150,7 @@ public class ProcessInstanceCancelAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
     }
   }
 }
