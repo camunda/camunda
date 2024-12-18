@@ -12,7 +12,8 @@ import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.AuthorizationHandler;
+import io.camunda.exporter.handlers.AuthorizationPermissionAddedHandler;
+import io.camunda.exporter.handlers.AuthorizationPermissionRemovedHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -147,7 +148,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserCreatedUpdatedHandler(
                 indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
-            new AuthorizationHandler(
+            new AuthorizationPermissionAddedHandler(
+                indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
+            new AuthorizationPermissionRemovedHandler(
                 indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
                 indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
