@@ -3025,12 +3025,14 @@ final class JsonSerializableToJsonTest {
                         new MappingRecord()
                             .setMappingKey(6)
                             .setClaimName("claim1")
-                            .setClaimValue("value1"))
+                            .setClaimValue("value1")
+                            .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(7)
                             .setClaimName("claim2")
-                            .setClaimValue("value2")),
+                            .setClaimValue("value2")
+                            .setName("Claim 2")),
         """
       {
         "defaultRole": {
@@ -3068,12 +3070,14 @@ final class JsonSerializableToJsonTest {
           {
             "mappingKey": 6,
             "claimName": "claim1",
-            "claimValue": "value1"
+            "claimValue": "value1",
+            "name": "Claim 1"
           },
           {
             "mappingKey": 7,
             "claimName": "claim2",
-            "claimValue": "value2"
+            "claimValue": "value2",
+            "name": "Claim 2"
           }
         ]
       }
