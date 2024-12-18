@@ -186,6 +186,13 @@ public final class ProcessInstanceMigrationPreconditions {
       Taken sequence flow with id '%s' must connect to the mapped target gateway \
       with id '%s' in the target process definition.""";
 
+  private static final String ERROR_TARGET_GATEWAY_HAS_LESS_INCOMING_SEQUENCE_FLOWS =
+      """
+      Expected to migrate process instance '%s' \
+      but target gateway with id '%s' has less incoming sequence flows \
+      than the source gateway with id '%s'. \
+      Target gateway must have at least the same number of incoming sequence flows as the source gateway.""";
+
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
@@ -943,6 +950,22 @@ public final class ProcessInstanceMigrationPreconditions {
               BufferUtil.bufferAsString(sourceGateway.getId()),
               BufferUtil.bufferAsString(activeSequenceFlowId),
               BufferUtil.bufferAsString(targetGateway.getId()));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
+  }
+
+  public static void requireValidTargetIncomingFlowCount(
+      final ExecutableFlowNode sourceGateway,
+      final ExecutableFlowNode targetGateway,
+      final long processInstanceKey) {
+    if (targetGateway.getIncoming().size() < sourceGateway.getIncoming().size()) {
+      final var reason =
+          String.format(
+              ERROR_TARGET_GATEWAY_HAS_LESS_INCOMING_SEQUENCE_FLOWS,
+              processInstanceKey,
+              BufferUtil.bufferAsString(targetGateway.getId()),
+              BufferUtil.bufferAsString(sourceGateway.getId()));
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_ARGUMENT);
     }
