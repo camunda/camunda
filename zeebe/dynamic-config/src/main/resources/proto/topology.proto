@@ -148,6 +148,7 @@ message PartitionEnableExporterOperation {
 message PartitionBootstrapOperation {
   int32 partitionId = 1;
   int32 priority = 2;
+  ExportersConfig exporterConfig = 3;
 }
 
 message StartPartitionScaleUpOperation {

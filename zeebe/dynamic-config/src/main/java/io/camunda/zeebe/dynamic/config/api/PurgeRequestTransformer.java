@@ -31,7 +31,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
       final ClusterConfiguration clusterConfiguration) {
 
     final SortedMap<Integer, PartitionBootstrapOperation> primaries =
-        findBootstrapMembers(clusterConfiguration.members());
+        createBootstrapOperations(clusterConfiguration.members());
 
     final Map<Integer, List<PartitionJoinOperation>> followers =
         new TreeMap<>(Comparator.naturalOrder());
@@ -63,6 +63,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
         (partitionId, bootstrapOperation) -> {
           operations.add(bootstrapOperation);
         });
+
     followers.forEach(
         (partitionId, joinOperations) -> {
           operations.addAll(joinOperations);
@@ -71,12 +72,8 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
     return Either.right(operations);
   }
 
-  /**
-   * This method finds the leaders for each partition. Please note that when <a
-   * href="https://github.com/camunda/camunda/issues/14786">order of priority in priority
-   * election</a> is changed, this method must be updated.
-   */
-  private SortedMap<Integer, PartitionBootstrapOperation> findBootstrapMembers(
+  /** This method creates the BootstrapOperations for all leaders for each partition. */
+  private SortedMap<Integer, PartitionBootstrapOperation> createBootstrapOperations(
       final Map<MemberId, MemberState> members) {
 
     final SortedMap<Integer, PartitionBootstrapOperation> primaries =
@@ -89,11 +86,15 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
               .forEach(
                   (partitionId, partitionState) -> {
                     if (!primaries.containsKey(partitionId)
-                        || primaries.get(partitionId).priority() < partitionState.priority()) {
+                        || partitionState.hasHigherPriority(
+                            primaries.get(partitionId).priority())) {
                       primaries.put(
                           partitionId,
                           new PartitionBootstrapOperation(
-                              memberId, partitionId, partitionState.priority()));
+                              memberId,
+                              partitionId,
+                              partitionState.priority(),
+                              partitionState.config().exporting()));
                     }
                   });
         });

@@ -363,7 +363,7 @@ final class ClusterConfigurationManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2),
-            new PartitionBootstrapOperation(id0, 3, 1));
+            new PartitionBootstrapOperation(id0, 3, 1, ExportersConfig.empty()));
   }
 
   @Test
@@ -387,7 +387,7 @@ final class ClusterConfigurationManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2),
-            new PartitionBootstrapOperation(id0, 3, 1));
+            new PartitionBootstrapOperation(id0, 3, 1, ExportersConfig.empty()));
   }
 
   @Test

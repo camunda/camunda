@@ -429,6 +429,7 @@ public class ProtoBufSerializer
               Topology.PartitionBootstrapOperation.newBuilder()
                   .setPartitionId(bootstrapOperation.partitionId())
                   .setPriority(bootstrapOperation.priority())
+                  .setExporterConfig(encodeExportingConfig(bootstrapOperation.exporters()))
                   .build());
       case final DeleteHistoryOperation deleteHistoryOperation ->
           builder.setDeleteHistory(Topology.DeleteHistoryOperation.newBuilder().build());
@@ -624,7 +625,9 @@ public class ProtoBufSerializer
       return new PartitionBootstrapOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
-          topologyChangeOperation.getPartitionBootstrap().getPriority());
+          topologyChangeOperation.getPartitionBootstrap().getPriority(),
+          decodeExportingConfig(
+              topologyChangeOperation.getPartitionBootstrap().getExporterConfig()));
     } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
       return new StartPartitionScaleUpOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),

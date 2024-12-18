@@ -87,6 +87,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               bootstrapOperation.partitionId(),
               bootstrapOperation.priority(),
               bootstrapOperation.memberId(),
+              bootstrapOperation.exporters(),
               partitionChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId());

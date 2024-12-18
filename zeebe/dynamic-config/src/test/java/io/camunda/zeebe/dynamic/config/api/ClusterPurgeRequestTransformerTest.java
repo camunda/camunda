@@ -17,9 +17,12 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ClusterPurgeRequestTransformerTest {
@@ -60,8 +63,8 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 1),
                       new DeleteHistoryOperation(id0),
                       new DeleteHistoryOperation(id1),
-                      new PartitionBootstrapOperation(id0, 0, 2),
-                      new PartitionBootstrapOperation(id1, 1, 2),
+                      new PartitionBootstrapOperation(id0, 0, 2, ExportersConfig.empty()),
+                      new PartitionBootstrapOperation(id1, 1, 2, ExportersConfig.empty()),
                       new PartitionJoinOperation(id0, 1, 1),
                       new PartitionJoinOperation(id1, 0, 1));
             });
@@ -103,12 +106,44 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 2),
                       new DeleteHistoryOperation(id0),
                       new DeleteHistoryOperation(id1),
-                      new PartitionBootstrapOperation(id0, 0, 2),
-                      new PartitionBootstrapOperation(id0, 2, 2),
-                      new PartitionBootstrapOperation(id1, 1, 2),
+                      new PartitionBootstrapOperation(id0, 0, 2, ExportersConfig.empty()),
+                      new PartitionBootstrapOperation(id0, 2, 2, ExportersConfig.empty()),
+                      new PartitionBootstrapOperation(id1, 1, 2, ExportersConfig.empty()),
                       new PartitionJoinOperation(id0, 1, 1),
                       new PartitionJoinOperation(id1, 0, 1),
                       new PartitionJoinOperation(id1, 2, 1));
+            });
+  }
+
+  @Test
+  void shouldCreateBootstrapOperationWithExporterConfig() {
+    // given
+    final var transformer = new PurgeRequestTransformer();
+    final ExportersConfig exportersConfig =
+        new ExportersConfig(
+            Map.of(
+                "exporter",
+                new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config"))));
+    final var partitionConfigWithExporter =
+        DynamicPartitionConfig.init().updateExporting(exportersConfig);
+
+    final ClusterConfiguration currentTopology =
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                id0, m -> m.addPartition(0, PartitionState.active(2, partitionConfigWithExporter)));
+
+    // when
+    final var result = transformer.operations(currentTopology);
+
+    // then
+    assertThat(result)
+        .isRight()
+        .right()
+        .satisfies(
+            operations -> {
+              assertThat(operations)
+                  .contains(new PartitionBootstrapOperation(id0, 0, 2, exportersConfig));
             });
   }
 }
