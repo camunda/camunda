@@ -20,7 +20,6 @@ public class OperateProfileService {
   public static final String SSO_AUTH_PROFILE = "sso-auth";
   public static final String IDENTITY_AUTH_PROFILE = "identity-auth";
   public static final String AUTH_BASIC = "auth-basic";
-  public static final String AUTH_BASIC_WITH_UNPROTECTED_API = "auth-basic-with-unprotected-api";
   public static final String AUTH_PROFILE = "auth";
   public static final String LDAP_AUTH_PROFILE = "ldap-auth";
 

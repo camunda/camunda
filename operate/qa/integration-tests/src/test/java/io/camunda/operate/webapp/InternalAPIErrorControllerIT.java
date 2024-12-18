@@ -48,7 +48,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-@ActiveProfiles({"test", "auth-basic-with-unprotected-api"})
+@ActiveProfiles({"test"})
 @AutoConfigureMockMvc
 public class InternalAPIErrorControllerIT {
   private static final String EXCEPTION_MESSAGE = "profile exception message";

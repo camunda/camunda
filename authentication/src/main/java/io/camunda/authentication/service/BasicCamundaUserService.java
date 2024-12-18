@@ -7,39 +7,22 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.authentication.AuthProfile;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
-import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Profile("auth-basic")
 @Service
 public class BasicCamundaUserService implements CamundaUserService {
-  private static final Logger LOG = LoggerFactory.getLogger(BasicCamundaUserService.class);
 
   @Override
-  public AuthProfile getProfile() {
-    return AuthProfile.BASIC;
-  }
+  public CamundaUserDTO getCurrentUser() {
+    final var authenticatedUser =
+        (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-  @Override
-  public @Nullable CamundaUserDTO getCurrentUser() {
-    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null) {
-      return null;
-    }
-    final Object principal = authentication.getPrincipal();
-    if (!(principal instanceof final CamundaUser authenticatedUser)) {
-      LOG.error("Principal {} is not a CamundaUser", principal);
-      return null;
-    }
     return new CamundaUserDTO(
         authenticatedUser.getUserId(),
         authenticatedUser.getUserKey(),

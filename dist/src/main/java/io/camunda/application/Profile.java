@@ -7,11 +7,7 @@
  */
 package io.camunda.application;
 
-import io.camunda.authentication.AuthProfile;
-import java.util.Arrays;
 import java.util.Set;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 
 /**
  * A fixed set of Spring profiles. Some are application specific (broker, gateway), and others
@@ -35,10 +31,10 @@ public enum Profile {
 
   // authentication profiles
   AUTH_BASIC("auth-basic"),
-  AUTH_BASIC_WITH_UNPROTECTED_API("auth-basic-with-unprotected-api"),
   AUTH_OIDC("auth-oidc"),
   IDENTITY_AUTH("identity-auth"),
   SSO_AUTH("sso-auth"),
+  DEFAULT_AUTH_PROFILE("auth"),
   LDAP_AUTH_PROFILE("ldap-auth"),
 
   // migration profiles
@@ -59,9 +55,8 @@ public enum Profile {
   }
 
   public static Set<Profile> getAuthProfiles() {
-    return Arrays.stream(AuthProfile.values())
-        .map(authProfile -> get(authProfile.getId()))
-        .collect(Collectors.toSet());
+    return Set.of(
+        AUTH_BASIC, AUTH_OIDC, DEFAULT_AUTH_PROFILE, IDENTITY_AUTH, LDAP_AUTH_PROFILE, SSO_AUTH);
   }
 
   public static Set<Profile> getWebappProfiles() {
@@ -71,12 +66,5 @@ public enum Profile {
   @Override
   public String toString() {
     return "Profiles{ordinal='" + ordinal() + "', name='" + name() + "', id='" + id + '\'' + "}";
-  }
-
-  public static @Nullable Profile get(final String id) {
-    return Arrays.stream(Profile.values())
-        .filter(profile -> profile.getId().equals(id))
-        .findFirst()
-        .orElse(null);
   }
 }

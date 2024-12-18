@@ -29,7 +29,6 @@
     "styled-components": "6.1.13"
   },
   "devDependencies": {
-    "@types/carbon__elements": "^11",
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "22.10.0",
     "@types/react": "18.3.12",

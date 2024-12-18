@@ -22,7 +22,6 @@ import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import jakarta.json.Json;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -39,7 +38,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over REST API /currentUser to get current user */
-@Disabled
 @ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 

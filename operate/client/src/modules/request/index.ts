@@ -9,7 +9,6 @@
 import {logger} from 'modules/logger';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from './mergePathname';
-import {captureCsrfToken, getCsrfHeaders} from './csrf';
 
 type RequestParams = {
   url: string;
@@ -28,15 +27,12 @@ async function request({url, method, body, headers, signal}: RequestParams) {
       body: typeof body === 'string' ? body : JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
-        ...getCsrfHeaders(),
         ...headers,
       },
       mode: 'cors',
       signal,
     },
   );
-
-  captureCsrfToken(response);
 
   if (response.status === 401) {
     authenticationStore.expireSession();

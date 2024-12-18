@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.authentication.service.CamundaUserService;
 import org.springframework.http.HttpStatus;
@@ -34,18 +33,4 @@ public class AuthenticationController {
         ? new ResponseEntity<>(currentUser, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
   }
-
-  @GetMapping(
-      path = "/config",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public AuthenticationStatus getStatus() {
-    return new AuthenticationStatus(
-        camundaUserService.getProfile().getId(),
-        WebSecurityConfig.LOGIN_URL,
-        WebSecurityConfig.LOGOUT_URL,
-        WebSecurityConfig.CSRF_TOKEN_HEADER);
-  }
-
-  public record AuthenticationStatus(
-      String authProfile, String logoutUrl, String loginUrl, String csrfTokenHeader) {}
 }

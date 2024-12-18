@@ -34,7 +34,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 @SpringBootTest(
@@ -45,7 +44,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
 @WebAppConfiguration
-@ActiveProfiles({"test", "auth-basic-with-unprotected-api"})
 @WithMockUser(username = AuthorizationIT.USER)
 public class AuthorizationIT {
   protected static final String USER = "calculon";

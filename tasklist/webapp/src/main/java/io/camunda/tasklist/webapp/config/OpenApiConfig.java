@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.config;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
@@ -28,7 +28,7 @@ public class OpenApiConfig {
       new SecurityScheme()
           .type(SecurityScheme.Type.APIKEY)
           .in(SecurityScheme.In.COOKIE)
-          .name(WebSecurityConfig.SESSION_COOKIE_NAME)
+          .name(TasklistURIs.COOKIE_JSESSIONID)
           .description("Cookie-based authentication is only available on Self-Managed clusters.");
 
   public static final String BEARER_SECURITY_SCHEMA_NAME = "bearer-key";

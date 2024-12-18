@@ -1,5 +1,4 @@
-import { captureCsrfToken, getCsrfHeaders } from "src/utility/csrf.ts";
-import { redirectToLogin } from "src/utility/auth";
+import {redirectToLogin} from "src/utility/auth";
 
 export type ApiResult<R> =
   | {
@@ -72,8 +71,6 @@ const apiRequest: <R, P>(
     headers["Content-Type"] = "application/json";
   }
 
-  Object.assign(headers, getCsrfHeaders());
-
   try {
     const response = await fetch(
       requestUrl(baseUrl || "", url, !hasBody ? params : undefined),
@@ -85,7 +82,6 @@ const apiRequest: <R, P>(
         redirect: "manual",
       },
     );
-    captureCsrfToken(response);
     if (response.status === 401) {
       redirectToLogin();
     }

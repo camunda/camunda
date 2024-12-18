@@ -7,7 +7,6 @@
  */
 package io.camunda.it.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
@@ -34,7 +33,6 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import jakarta.servlet.http.Cookie;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -144,12 +142,9 @@ public class BasicAuthIT {
 
   @Test
   void loginWithValidCredentials() throws Exception {
-    final Cookie csrfCookie = getCsrfCookie();
     mockMvc
         .perform(
             MockMvcRequestBuilders.post("/login")
-                .cookie(csrfCookie)
-                .header(WebSecurityConfig.CSRF_TOKEN_HEADER, csrfCookie.getValue())
                 .param("username", USERNAME)
                 .param("password", PASSWORD))
         .andExpect(status().isNoContent());
@@ -157,27 +152,11 @@ public class BasicAuthIT {
 
   @Test
   void loginWithInvalidCredentials() throws Exception {
-    final Cookie csrfCookie = getCsrfCookie();
-
     mockMvc
         .perform(
             MockMvcRequestBuilders.post("/login")
-                .cookie(csrfCookie)
-                .header(WebSecurityConfig.CSRF_TOKEN_HEADER, csrfCookie.getValue())
                 .param("username", USERNAME)
                 .param("password", WRONG_PASSWORD))
         .andExpect(status().isUnauthorized());
-  }
-
-  private Cookie getCsrfCookie() {
-    try {
-      final var response =
-          mockMvc.perform(MockMvcRequestBuilders.get("/v2/authentication/me")).andReturn();
-      final var token = response.getResponse().getHeader(WebSecurityConfig.CSRF_TOKEN_HEADER);
-      assertThat(token).isNotNull();
-      return new Cookie(WebSecurityConfig.CSRF_COOKIE_NAME, token);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
   }
 }

@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -76,7 +75,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
-@Disabled
 @SpringBootTest(
     classes = {AuthSSOApplication.class},
     properties = {
@@ -200,7 +198,6 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
-  @Disabled
   public void testLoginFailedWithNoPermissions(
       final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockPermissionAllowed();

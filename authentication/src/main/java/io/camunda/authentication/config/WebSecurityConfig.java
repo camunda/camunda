@@ -7,11 +7,7 @@
  */
 package io.camunda.authentication.config;
 
-import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
-import io.camunda.authentication.csrf.CsrfTokenResponseHeaderFilter;
-import io.camunda.authentication.csrf.ResponseHeaderCsrfTokenRepository;
-import io.camunda.authentication.csrf.SpaCsrfTokenRequestHandler;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
@@ -45,15 +41,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfFilter;
-import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@Profile("auth-basic|auth-basic-with-unprotected-api|auth-oidc")
+@Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
@@ -83,10 +76,6 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**",
           "/new/**");
-  public static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**", "/api/**");
-  // This is both a request and response header.
-  public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
-  public static final String CSRF_COOKIE_NAME = "csrf-token";
   public static final String SESSION_COOKIE_NAME = "camunda-session";
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
@@ -123,7 +112,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile({"auth-basic", "auth-basic-with-unprotected-api"})
+  @Profile({"auth-basic"})
   public CamundaUserDetailsService camundaUserDetailsService(
       final UserServices userServices,
       final RoleServices roleServices,
@@ -134,7 +123,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Profile({"auth-basic", "auth-basic-with-unprotected-api"})
+  @Profile({"auth-basic"})
   @Order(1)
   public SecurityFilterChain basicAuthSecurityFilterChain(
       final HttpSecurity httpSecurity,
@@ -161,46 +150,7 @@ public class WebSecurityConfig {
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
-    return buildLoginAuthSecurityFilterChain(httpSecurity, authFailureHandler);
-  }
-
-  @Bean
-  @Profile("auth-basic-with-unprotected-api")
-  @Order(2)
-  public SecurityFilterChain loginAuthWithSessionCookiesApiSecurityFilterChain(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
-      throws Exception {
-    // Require a valid session cookie when present. This allows the frontend clients to use
-    // login authentication.
-    return buildLoginAuthSecurityFilterChain(
-        withSecurityMatcher(httpSecurity, this::hasCsrfHeader), authFailureHandler);
-  }
-
-  @Bean
-  @Profile("auth-basic-with-unprotected-api")
-  @Order(3)
-  public SecurityFilterChain unauthenticatedSecurityFilterChain(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
-      throws Exception {
-    LOG.warn("Authentication is disabled");
-    // Allow any API requests without authentication.
-    return baseHttpSecurity(
-            httpSecurity, authFailureHandler, Sets.union(UNAUTHENTICATED_PATHS, API_PATHS))
-        .build();
-  }
-
-  private CsrfTokenRepository buildCsrfTokenRepository() {
-    final var cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
-    cookieCsrfTokenRepository.setCookieName(CSRF_COOKIE_NAME);
-    cookieCsrfTokenRepository.setHeaderName(CSRF_TOKEN_HEADER);
-    return new ResponseHeaderCsrfTokenRepository(cookieCsrfTokenRepository, CSRF_TOKEN_HEADER);
-  }
-
-  public SecurityFilterChain buildLoginAuthSecurityFilterChain(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
-      throws Exception {
     LOG.info("Configuring login auth");
-    final var csrfTokenRepository = buildCsrfTokenRepository();
     return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
         .formLogin(
             formLogin ->
@@ -209,8 +159,6 @@ public class WebSecurityConfig {
                     .failureHandler(authFailureHandler)
                     .successHandler(
                         (request, response, authentication) -> {
-                          csrfTokenRepository.saveToken(
-                              csrfTokenRepository.generateToken(request), request, response);
                           response.setStatus(HttpStatus.NO_CONTENT.value());
                         }))
         .logout(
@@ -218,28 +166,13 @@ public class WebSecurityConfig {
                 logout
                     .logoutUrl(LOGOUT_URL)
                     .logoutSuccessHandler(this::genericSuccessHandler)
-                    .deleteCookies(SESSION_COOKIE_NAME, CSRF_COOKIE_NAME))
+                    .deleteCookies(SESSION_COOKIE_NAME))
         .exceptionHandling(
             exceptionHandling ->
                 exceptionHandling
                     .authenticationEntryPoint(authFailureHandler)
                     .accessDeniedHandler(authFailureHandler))
-        .csrf(
-            csrfConfigurer ->
-                csrfConfigurer
-                    .csrfTokenRepository(csrfTokenRepository)
-                    .requireCsrfProtectionMatcher(this::needsCsrfProtection)
-                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
-        .addFilterAfter(
-            new CsrfTokenResponseHeaderFilter(csrfTokenRepository, CSRF_TOKEN_HEADER),
-            CsrfFilter.class)
         .build();
-  }
-
-  private boolean needsCsrfProtection(final HttpServletRequest request) {
-    // FIXME: login needs CSRF protection too. See https://github.com/camunda/camunda/issues/26199
-    return CsrfFilter.DEFAULT_CSRF_MATCHER.matches(request)
-        && !request.getRequestURI().equals(LOGIN_URL);
   }
 
   private void genericSuccessHandler(
@@ -252,10 +185,6 @@ public class WebSecurityConfig {
   private boolean isBasicAuthRequest(final HttpServletRequest request) {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
-  }
-
-  private boolean hasCsrfHeader(final HttpServletRequest request) {
-    return request.getHeader(CSRF_TOKEN_HEADER) != null;
   }
 
   private HttpSecurity baseHttpSecurity(

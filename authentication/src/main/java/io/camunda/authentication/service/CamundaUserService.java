@@ -7,13 +7,10 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.authentication.AuthProfile;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import javax.annotation.Nullable;
 
 public interface CamundaUserService {
-  AuthProfile getProfile();
-
   @Nullable
   CamundaUserDTO getCurrentUser();
 

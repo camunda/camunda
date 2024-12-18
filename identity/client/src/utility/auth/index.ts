@@ -1,5 +1,4 @@
-import { getCsrfHeaders } from "src/utility/csrf.ts";
-import { baseUrl } from "src/configuration";
+import {baseUrl} from "src/configuration";
 
 export const LOGIN_PATH = `${baseUrl}/login`;
 
@@ -18,7 +17,6 @@ export function login(username: string, password: string): Promise<boolean> {
   return fetch("/login", {
     method: "post",
     body: data,
-    headers: getCsrfHeaders(),
   })
     .then((response: Response) => {
       if (response.status < 400) {
@@ -37,7 +35,6 @@ export function logout() {
   return fetch("/logout", {
     method: "post",
     body: data,
-    headers: getCsrfHeaders(),
   })
     .then((response: Response) => {
       if (response.status < 400) {
