@@ -20,6 +20,7 @@ public class ContainerRuntimeEnvs {
   // Camunda
   public static final String CAMUNDA_ENV_SPRING_PROFILES_ACTIVE = "SPRING_PROFILES_ACTIVE";
   public static final String CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED = "ZEEBE_CLOCK_CONTROLLED";
+  public static final String CAMUNDA_ENV_ZEEBE_LOG_APPENDER = "ZEEBE_LOG_APPENDER";
 
   // Exporter
   public static final String CAMUNDA_ENV_CAMUNDA_EXPORTER_CLASSNAME =
@@ -63,4 +64,5 @@ public class ContainerRuntimeEnvs {
       "CAMUNDA_OPERATE_CLIENT_USERNAME";
   public static final String CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_PASSWORD =
       "CAMUNDA_OPERATE_CLIENT_PASSWORD";
+  public static final String CONNECTORS_ENV_LOG_APPENDER = "CONNECTORS_LOG_APPENDER";
 }
