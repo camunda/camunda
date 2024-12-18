@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -441,7 +442,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
       serialize.accept(jacksonJsonpGenerator);
       jacksonJsonpGenerator.flush();
 
-      return objectMapper.readValue(out.toString(), new TypeReference<>() {});
+      return objectMapper.readValue(
+          out.toString(), new TypeReference<TreeMap<String, Object>>() {});
     }
   }
 
