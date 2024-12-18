@@ -11,14 +11,13 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.NotImplementedException;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -32,10 +31,7 @@ public class AuthorizationController {
     this.authorizationServices = authorizationServices;
   }
 
-  @PostMapping(
-      path = "/{ownerKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/{ownerKey}")
   public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {

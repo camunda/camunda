@@ -15,11 +15,10 @@ import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryRequest
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.*;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -29,10 +28,7 @@ public class DecisionInstanceQueryController {
 
   @Autowired private DecisionInstanceServices decisionInstanceServices;
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionInstanceSearchQueryResponse> searchDecisionInstances(
       @RequestBody(required = false) final DecisionInstanceSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionInstanceQuery(query)

@@ -21,6 +21,7 @@ import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.search.query.SearchQueryResult.Builder;
 import io.camunda.service.search.sort.DecisionDefinitionSort;
 import io.camunda.service.security.auth.Authentication;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -47,6 +48,28 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                   "version": 1,
                   "decisionRequirementsId": "drId",
                   "decisionRequirementsKey": 2
+              }
+          ],
+          "page": {
+              "totalItems": 1,
+              "firstSortValues": [],
+              "lastSortValues": [
+                  "v"
+              ]
+          }
+      }""";
+  static final String EXPECTED_SEARCH_RESPONSE_STRING_KEYS =
+      """
+      {
+          "items": [
+              {
+                  "tenantId": "t",
+                  "decisionDefinitionKey": "0",
+                  "decisionDefinitionId": "dId",
+                  "decisionDefinitionName": "name",
+                  "version": 1,
+                  "decisionRequirementsId": "drId",
+                  "decisionRequirementsKey": "2"
               }
           ],
           "page": {
@@ -117,6 +140,30 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(decisionDefinitionServices).search(new DecisionDefinitionQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchDecisionDefinitionsWithEmptyQueryStringKeys() {
+    // given
+    when(decisionDefinitionServices.search(any(DecisionDefinitionQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final String request = "{}";
+    // when / then
+    webClient
+        .post()
+        .uri(DECISION_DEFINITIONS_SEARCH_URL)
+        .accept(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE_STRING_KEYS);
 
     verify(decisionDefinitionServices).search(new DecisionDefinitionQuery.Builder().build());
   }
