@@ -10,7 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
@@ -24,7 +24,7 @@ public class CreateDocumentLinkTest {
 
   private static final String DOCUMENT_CONTENT = "test";
 
-  private static ZeebeClient zeebeClient;
+  private static CamundaClient camundaClient;
   private static DocumentReferenceResponse documentReference;
 
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
@@ -37,23 +37,23 @@ public class CreateDocumentLinkTest {
 
   @BeforeAll
   public static void beforeAll() {
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     documentReference =
-        zeebeClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
+        camundaClient.newCreateDocumentCommand().content(DOCUMENT_CONTENT).send().join();
   }
 
   @Test
   public void shouldReturnBadRequestWhenDocumentStoreDoesNotExist() {
     // given
     final var storeId = "invalid-document-store-id";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
             () ->
-                zeebeClient
+                camundaClient
                     .newCreateDocumentLinkCommand(documentReference.getDocumentId())
                     .storeId(storeId)
                     .send()
@@ -70,14 +70,14 @@ public class CreateDocumentLinkTest {
   public void shouldReturnMethodNotAllowedWhenStoreIsInMemory() {
     // given
     final var storeId = "in-memory";
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
         assertThrowsExactly(
             ProblemException.class,
             () ->
-                zeebeClient
+                camundaClient
                     .newCreateDocumentLinkCommand(documentReference.getDocumentId())
                     .storeId(storeId)
                     .send()

@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.zeebe;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
@@ -27,8 +27,9 @@ public class TasklistPartitionSupplierConfiguration {
   public PartitionSupplier tasklistPartitionSupplierCompatibility(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
-      @Autowired @Qualifier("tasklistZeebeClient") final ZeebeClient zeebeClient) {
-    return new PartitionSupplierConfigurer(broker, gateway, zeebeClient).createPartitionSupplier();
+      @Autowired @Qualifier("tasklistCamundaClient") final CamundaClient camundaClient) {
+    return new PartitionSupplierConfigurer(broker, gateway, camundaClient)
+        .createPartitionSupplier();
   }
 
   @Bean("tasklistPartitionSupplier")

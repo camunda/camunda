@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
@@ -106,7 +106,8 @@ public class IncidentExporterIT {
     assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
-  private void waitForIncident(final ZeebeClient client, final Consumer<IncidentFilter> filterFn) {
+  private void waitForIncident(
+      final CamundaClient client, final Consumer<IncidentFilter> filterFn) {
     Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))
@@ -114,7 +115,7 @@ public class IncidentExporterIT {
   }
 
   private void throwIncident(
-      final ZeebeClient client,
+      final CamundaClient client,
       final String jobType,
       final String errorCode,
       final String errorMessage) {

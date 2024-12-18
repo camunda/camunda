@@ -15,13 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
-import io.camunda.it.utils.ZeebeClientTestFactory.Permissions;
-import io.camunda.it.utils.ZeebeClientTestFactory.User;
+import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
+import io.camunda.it.utils.CamundaClientTestFactory.User;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -63,7 +63,7 @@ class ProcessAuthorizationIT {
   private boolean initialized;
 
   @BeforeEach
-  void setUp(@Authenticated(ADMIN) final ZeebeClient adminClient) {
+  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     if (!initialized) {
       final List<String> processes =
           List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
@@ -76,7 +76,7 @@ class ProcessAuthorizationIT {
 
   @TestTemplate
   void searchShouldReturnAuthorizedProcessDefinitions(
-      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
 
@@ -88,8 +88,8 @@ class ProcessAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnForbiddenForUnauthorizedProcessDefinition(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // given
     final var processDefinitionKey = getProcessDefinitionKey(adminClient, "incident_process_v1");
 
@@ -106,8 +106,8 @@ class ProcessAuthorizationIT {
 
   @TestTemplate
   void getByKeyShouldReturnAuthorizedProcessDefinition(
-      @Authenticated(ADMIN) final ZeebeClient adminClient,
-      @Authenticated(RESTRICTED) final ZeebeClient userClient) {
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // given
     final var processDefinitionKey = getProcessDefinitionKey(adminClient, "service_tasks_v1");
 
@@ -120,7 +120,8 @@ class ProcessAuthorizationIT {
     assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("service_tasks_v1");
   }
 
-  private long getProcessDefinitionKey(final ZeebeClient client, final String processDefinitionId) {
+  private long getProcessDefinitionKey(
+      final CamundaClient client, final String processDefinitionId) {
     return client
         .newProcessDefinitionQuery()
         .filter(f -> f.processDefinitionId(processDefinitionId))
@@ -131,8 +132,9 @@ class ProcessAuthorizationIT {
         .getProcessDefinitionKey();
   }
 
-  private DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {
-    return zeebeClient
+  private DeploymentEvent deployResource(
+      final CamundaClient camundaClient, final String resourceName) {
+    return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .send()
@@ -140,13 +142,13 @@ class ProcessAuthorizationIT {
   }
 
   private void waitForProcessesToBeDeployed(
-      final ZeebeClient zeebeClient, final int expectedCount) {
+      final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy processes and import in Operate")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
+              final var result = camundaClient.newProcessDefinitionQuery().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

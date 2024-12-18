@@ -12,7 +12,7 @@ import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstance
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
 
 // Modify Process Instance Implementation to execute all given modifications in one Zeebe
 // 'transaction'
-// So for one operation we have only one 'zeebeClient.send().join()'
+// So for one operation we have only one 'camundaClient.send().join()'
 @Component
 public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHandler
     implements ModifyProcessInstanceHandler {
@@ -75,9 +75,9 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
 
   // Needed for tests
   @Override
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
-    modifyProcessZeebeWrapper.setZeebeClient(zeebeClient);
+  public void setCamundaClient(final CamundaClient camundaClient) {
+    this.camundaClient = camundaClient;
+    modifyProcessZeebeWrapper.setCamundaClient(camundaClient);
   }
 
   private ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2

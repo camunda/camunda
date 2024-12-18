@@ -9,7 +9,7 @@ package io.camunda.it.tasklist;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVariable;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 public class TasklistCreateProcessInstanceIT {
 
   private static final String PROCESS_ID = "startedByForm";
-  @AutoCloseResource private static ZeebeClient defaultCamundaClient;
+  @AutoCloseResource private static CamundaClient defaultCamundaClient;
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
@@ -85,8 +85,8 @@ public class TasklistCreateProcessInstanceIT {
     ensureProcessInstanceCreated(PROCESS_ID);
   }
 
-  private void deployResource(final ZeebeClient zeebeClient) {
-    zeebeClient
+  private void deployResource(final CamundaClient camundaClient) {
+    camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("process/startedByFormProcess.bpmn")
         .send()

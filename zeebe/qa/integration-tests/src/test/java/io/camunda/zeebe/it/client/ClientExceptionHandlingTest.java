@@ -30,7 +30,7 @@ public final class ClientExceptionHandlingTest {
   public final GrpcClientRule clientRule =
       new GrpcClientRule(
           brokerRule,
-          zeebeClientBuilder -> zeebeClientBuilder.gatewayAddress(getInvalidGatewayHostAndPort()));
+          clientBuilder -> clientBuilder.gatewayAddress(getInvalidGatewayHostAndPort()));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

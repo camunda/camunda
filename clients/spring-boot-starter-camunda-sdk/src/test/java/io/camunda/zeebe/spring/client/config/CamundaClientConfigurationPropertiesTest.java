@@ -29,7 +29,7 @@ import java.net.URISyntaxException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ZeebeClientConfigurationPropertiesTest {
+public class CamundaClientConfigurationPropertiesTest {
 
   private static final String BROKER_GRPC_ADDRESS =
       "https://cluster-id.cluster-region.base-url:123";

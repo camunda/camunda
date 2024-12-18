@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.worker;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 
 /** Implementations MUST be thread-safe. */
@@ -30,7 +30,7 @@ public interface JobHandler {
    * message.
    *
    * <p>If the retries reaches zero an incident will be created, which has to be resolved before the
-   * job is available again (see {@link ZeebeClient#newResolveIncidentCommand(long)}
+   * job is available again (see {@link CamundaClient#newResolveIncidentCommand(long)}
    */
   void handle(JobClient client, ActivatedJob job) throws Exception;
 }

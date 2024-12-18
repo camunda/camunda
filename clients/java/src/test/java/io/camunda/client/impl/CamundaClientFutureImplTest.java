@@ -39,7 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-final class ZeebeClientFutureImplTest {
+final class CamundaClientFutureImplTest {
 
   private final Service service = new Service();
   private final String serverName = InProcessServerBuilder.generateName();
@@ -62,7 +62,7 @@ final class ZeebeClientFutureImplTest {
   void shouldCancelStreamServerSide() {
     // given
     final ActivateJobsRequest request = ActivateJobsRequest.newBuilder().setType("type").build();
-    final ZeebeClientFutureImpl<?, ActivateJobsResponse> future = new ZeebeClientFutureImpl<>();
+    final CamundaClientFutureImpl<?, ActivateJobsResponse> future = new CamundaClientFutureImpl<>();
     try (final Client client = createClient()) {
       // when
       client.stub.activateJobs(request, future);
@@ -77,7 +77,7 @@ final class ZeebeClientFutureImplTest {
   void shouldCancelCallIfFutureAlreadyCanceled() {
     // given
     final ActivateJobsRequest request = ActivateJobsRequest.newBuilder().setType("type").build();
-    final ZeebeClientFutureImpl<?, ActivateJobsResponse> future = new ZeebeClientFutureImpl<>();
+    final CamundaClientFutureImpl<?, ActivateJobsResponse> future = new CamundaClientFutureImpl<>();
     future.cancel(false);
 
     try (final Client client = createClient()) {
@@ -139,13 +139,13 @@ final class ZeebeClientFutureImplTest {
   }
 
   @Nested
-  final class ZeebeStreamingClientFutureImplTest {
+  final class CamundaStreamingClientFutureImplTest {
     @Test
     void shouldRethrowExceptionOnCollectorError() {
       // given
       final RuntimeException error = new RuntimeException("failed");
-      final ZeebeStreamingClientFutureImpl<?, ActivateJobsResponse> future =
-          new ZeebeStreamingClientFutureImpl<>(
+      final CamundaStreamingClientFutureImpl<?, ActivateJobsResponse> future =
+          new CamundaStreamingClientFutureImpl<>(
               null,
               ignored -> {
                 throw error;
@@ -160,8 +160,8 @@ final class ZeebeClientFutureImplTest {
       // given
       final ActivateJobsRequest request = ActivateJobsRequest.newBuilder().setType("type").build();
       final RuntimeException error = new RuntimeException("failed");
-      final ZeebeStreamingClientFutureImpl<?, ActivateJobsResponse> future =
-          new ZeebeStreamingClientFutureImpl<>(
+      final CamundaStreamingClientFutureImpl<?, ActivateJobsResponse> future =
+          new CamundaStreamingClientFutureImpl<>(
               null,
               ignored -> {
                 throw error;

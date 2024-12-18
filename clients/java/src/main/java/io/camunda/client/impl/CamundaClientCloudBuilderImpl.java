@@ -22,13 +22,13 @@ import static io.camunda.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CamundaClientCloudBuilderStep1;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.ZeebeClientBuilder;
-import io.camunda.client.ZeebeClientCloudBuilderStep1;
-import io.camunda.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2;
-import io.camunda.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3;
-import io.camunda.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -43,18 +43,18 @@ import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
-public class ZeebeClientCloudBuilderImpl
-    implements ZeebeClientCloudBuilderStep1,
-        ZeebeClientCloudBuilderStep2,
-        ZeebeClientCloudBuilderStep3,
-        ZeebeClientCloudBuilderStep4 {
+public class CamundaClientCloudBuilderImpl
+    implements CamundaClientCloudBuilderStep1,
+        CamundaClientCloudBuilderStep2,
+        CamundaClientCloudBuilderStep3,
+        CamundaClientCloudBuilderStep4 {
 
   private static final String BASE_ADDRESS = "zeebe.camunda.io";
   private static final String BASE_AUTH_URL = "https://login.cloud.camunda.io/oauth/token";
 
   private static final String DEFAULT_REGION = "bru-2";
 
-  private final ZeebeClientBuilderImpl innerBuilder = new ZeebeClientBuilderImpl();
+  private final CamundaClientBuilderImpl innerBuilder = new CamundaClientBuilderImpl();
 
   private String clusterId;
   private String clientId;
@@ -62,31 +62,31 @@ public class ZeebeClientCloudBuilderImpl
   private String region = DEFAULT_REGION;
 
   @Override
-  public ZeebeClientCloudBuilderStep2 withClusterId(final String clusterId) {
+  public CamundaClientCloudBuilderStep2 withClusterId(final String clusterId) {
     this.clusterId = clusterId;
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep3 withClientId(final String clientId) {
+  public CamundaClientCloudBuilderStep3 withClientId(final String clientId) {
     this.clientId = clientId;
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withClientSecret(final String clientSecret) {
+  public CamundaClientCloudBuilderStep4 withClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withRegion(final String region) {
+  public CamundaClientCloudBuilderStep4 withRegion(final String region) {
     this.region = region;
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder withProperties(final Properties properties) {
+  public CamundaClientBuilder withProperties(final Properties properties) {
     BuilderUtils.applyIfNotNull(properties, CLOUD_CLUSTER_ID, this::withClusterId);
 
     BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_ID, this::withClientId);
@@ -110,33 +110,33 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientBuilder applyEnvironmentVariableOverrides(
+  public CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides) {
     innerBuilder.applyEnvironmentVariableOverrides(applyEnvironmentVariableOverrides);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
+  public CamundaClientBuilder gatewayAddress(final String gatewayAddress) {
     innerBuilder.gatewayAddress(gatewayAddress);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder restAddress(final URI restAddress) {
+  public CamundaClientBuilder restAddress(final URI restAddress) {
     innerBuilder.restAddress(restAddress);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
+  public CamundaClientBuilder grpcAddress(final URI grpcAddress) {
     innerBuilder.grpcAddress(grpcAddress);
     return this;
   }
 
   @Override
   @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
-  public ZeebeClientBuilder defaultTenantId(final String tenantId) {
+  public CamundaClientBuilder defaultTenantId(final String tenantId) {
     Loggers.LOGGER.debug(
         "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
     return this;
@@ -144,141 +144,141 @@ public class ZeebeClientCloudBuilderImpl
 
   @Override
   @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
-  public ZeebeClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
+  public CamundaClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
     Loggers.LOGGER.debug(
         "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
+  public CamundaClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
     innerBuilder.defaultJobWorkerMaxJobsActive(maxJobsActive);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numThreads) {
+  public CamundaClientBuilder numJobWorkerExecutionThreads(final int numThreads) {
     innerBuilder.numJobWorkerExecutionThreads(numThreads);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder jobWorkerExecutor(
+  public CamundaClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership) {
     innerBuilder.jobWorkerExecutor(executor, takeOwnership);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
+  public CamundaClientBuilder defaultJobWorkerName(final String workerName) {
     innerBuilder.defaultJobWorkerName(workerName);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
+  public CamundaClientBuilder defaultJobTimeout(final Duration timeout) {
     innerBuilder.defaultJobTimeout(timeout);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobPollInterval(final Duration pollInterval) {
+  public CamundaClientBuilder defaultJobPollInterval(final Duration pollInterval) {
     innerBuilder.defaultJobPollInterval(pollInterval);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
+  public CamundaClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
     innerBuilder.defaultMessageTimeToLive(timeToLive);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
+  public CamundaClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
     innerBuilder.defaultRequestTimeout(requestTimeout);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder usePlaintext() {
+  public CamundaClientBuilder usePlaintext() {
     innerBuilder.usePlaintext();
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder caCertificatePath(final String certificatePath) {
+  public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     innerBuilder.caCertificatePath(certificatePath);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
+  public CamundaClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     innerBuilder.credentialsProvider(credentialsProvider);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder keepAlive(final Duration keepAlive) {
+  public CamundaClientBuilder keepAlive(final Duration keepAlive) {
     innerBuilder.keepAlive(keepAlive);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder withInterceptors(final ClientInterceptor... interceptor) {
+  public CamundaClientBuilder withInterceptors(final ClientInterceptor... interceptor) {
     innerBuilder.withInterceptors(interceptor);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withChainHandlers(
+  public CamundaClientCloudBuilderStep4 withChainHandlers(
       final AsyncExecChainHandler... chainHandler) {
     innerBuilder.withChainHandlers(chainHandler);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder withJsonMapper(final JsonMapper jsonMapper) {
+  public CamundaClientBuilder withJsonMapper(final JsonMapper jsonMapper) {
     innerBuilder.withJsonMapper(jsonMapper);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder overrideAuthority(final String authority) {
+  public CamundaClientBuilder overrideAuthority(final String authority) {
     innerBuilder.overrideAuthority(authority);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder maxMessageSize(final int maxMessageSize) {
+  public CamundaClientBuilder maxMessageSize(final int maxMessageSize) {
     innerBuilder.maxMessageSize(maxMessageSize);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder maxMetadataSize(final int maxMetadataSize) {
+  public CamundaClientBuilder maxMetadataSize(final int maxMetadataSize) {
     return innerBuilder.maxMetadataSize(maxMetadataSize);
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
+  public CamundaClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
     innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy) {
+  public CamundaClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy) {
     innerBuilder.useDefaultRetryPolicy(useDefaultRetryPolicy);
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
+  public CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
     innerBuilder.preferRestOverGrpc(preferRestOverGrpc);
     return this;
   }
 
   @Override
-  public ZeebeClient build() {
+  public CamundaClient build() {
     innerBuilder.grpcAddress(determineGrpcAddress());
     innerBuilder.restAddress(determineRestAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());
@@ -351,19 +351,19 @@ public class ZeebeClientCloudBuilderImpl
   private boolean isNeedToSetCloudGrpcAddress() {
     return innerBuilder.getGrpcAddress() == null
         || Objects.equals(
-            innerBuilder.getGrpcAddress(), ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS);
+            innerBuilder.getGrpcAddress(), CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS);
   }
 
   private boolean isNeedToSetCloudGatewayAddress() {
     return innerBuilder.getGatewayAddress() == null
         || Objects.equals(
-            innerBuilder.getGatewayAddress(), ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS);
+            innerBuilder.getGatewayAddress(), CamundaClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS);
   }
 
   private boolean isNeedToSetCloudRestAddress() {
     return innerBuilder.getRestAddress() == null
         || Objects.equals(
-            innerBuilder.getRestAddress(), ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS);
+            innerBuilder.getRestAddress(), CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS);
   }
 
   private URI getURIFromString(final String uri) {

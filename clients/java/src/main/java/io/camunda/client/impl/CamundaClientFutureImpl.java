@@ -16,7 +16,7 @@
 package io.camunda.client.impl;
 
 import com.google.protobuf.GeneratedMessageV3;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
 import io.grpc.Status;
@@ -29,19 +29,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
+public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
-    implements ZeebeFuture<ClientResponse>,
+    implements CamundaFuture<ClientResponse>,
         ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
 
   protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;
   private final Function<BrokerResponse, ClientResponse> responseMapper;
 
-  public ZeebeClientFutureImpl() {
+  public CamundaClientFutureImpl() {
     this(brokerResponse -> null);
   }
 
-  public ZeebeClientFutureImpl(final Function<BrokerResponse, ClientResponse> responseMapper) {
+  public CamundaClientFutureImpl(final Function<BrokerResponse, ClientResponse> responseMapper) {
     this.responseMapper = responseMapper;
   }
 

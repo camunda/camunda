@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToTenantResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,8 +52,8 @@ public final class AssignUserToTenantCommandImpl implements AssignUserToTenantCo
   }
 
   @Override
-  public ZeebeFuture<AssignUserToTenantResponse> send() {
-    final HttpZeebeFuture<AssignUserToTenantResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<AssignUserToTenantResponse> send() {
+    final HttpCamundaFuture<AssignUserToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%d/users/%d", tenantKey, userKey);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;

@@ -17,13 +17,13 @@ package io.camunda.client.impl.command;
 
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.client.ZeebeClientConfiguration;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteDocumentResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +41,7 @@ public class DeleteDocumentCommandImpl implements DeleteDocumentCommandStep1 {
       final String documentId,
       final String storeId,
       final HttpClient client,
-      final ZeebeClientConfiguration configuration) {
+      final CamundaClientConfiguration configuration) {
     ensureNotNull("documentId", documentId);
     this.documentId = documentId;
     this.client = client;
@@ -64,12 +64,12 @@ public class DeleteDocumentCommandImpl implements DeleteDocumentCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<DeleteDocumentResponse> send() {
+  public CamundaFuture<DeleteDocumentResponse> send() {
     final Map<String, String> queryParams = new HashMap<>();
     if (storeId != null) {
       queryParams.put("storeId", storeId);
     }
-    final HttpZeebeFuture<DeleteDocumentResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<DeleteDocumentResponse> result = new HttpCamundaFuture<>();
     client.delete(
         String.format("/documents/%s", documentId), queryParams, requestConfig.build(), result);
     return result;

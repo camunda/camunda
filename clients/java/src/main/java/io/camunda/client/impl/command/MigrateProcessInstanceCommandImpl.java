@@ -15,18 +15,18 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandFinalStep;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.MigrateProcessInstanceResponseImpl;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -61,7 +61,7 @@ public final class MigrateProcessInstanceCommandImpl
       final GatewayStub asyncStub,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final JsonMapper jsonMapper) {
     requestBuilder.setProcessInstanceKey(processInstanceKey);
     this.asyncStub = asyncStub;
@@ -139,7 +139,7 @@ public final class MigrateProcessInstanceCommandImpl
   }
 
   @Override
-  public ZeebeFuture<MigrateProcessInstanceResponse> send() {
+  public CamundaFuture<MigrateProcessInstanceResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -147,8 +147,8 @@ public final class MigrateProcessInstanceCommandImpl
     }
   }
 
-  private ZeebeFuture<MigrateProcessInstanceResponse> sendRestRequest() {
-    final HttpZeebeFuture<MigrateProcessInstanceResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<MigrateProcessInstanceResponse> sendRestRequest() {
+    final HttpCamundaFuture<MigrateProcessInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/" + processInstanceKey + "/migration",
         jsonMapper.toJson(httpRequestObject),
@@ -157,7 +157,7 @@ public final class MigrateProcessInstanceCommandImpl
     return result;
   }
 
-  private ZeebeFuture<MigrateProcessInstanceResponse> sendGrpcRequest() {
+  private CamundaFuture<MigrateProcessInstanceResponse> sendGrpcRequest() {
     final MigrateProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

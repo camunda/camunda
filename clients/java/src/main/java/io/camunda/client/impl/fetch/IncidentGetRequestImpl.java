@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.protocol.rest.IncidentItem;
 import java.time.Duration;
@@ -46,8 +46,8 @@ public class IncidentGetRequestImpl implements IncidentGetRequest {
   }
 
   @Override
-  public ZeebeFuture<Incident> send() {
-    final HttpZeebeFuture<Incident> result = new HttpZeebeFuture<>();
+  public CamundaFuture<Incident> send() {
+    final HttpCamundaFuture<Incident> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/incidents/%d", incidentKey),
         httpRequestConfig.build(),

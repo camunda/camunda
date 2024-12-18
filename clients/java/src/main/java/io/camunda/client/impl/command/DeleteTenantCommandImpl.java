@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteTenantResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -48,8 +48,8 @@ public final class DeleteTenantCommandImpl implements DeleteTenantCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<DeleteTenantResponse> send() {
-    final HttpZeebeFuture<DeleteTenantResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<DeleteTenantResponse> send() {
+    final HttpCamundaFuture<DeleteTenantResponse> result = new HttpCamundaFuture<>();
     httpClient.delete("/tenants/" + tenantKey, httpRequestConfig.build(), result);
     return result;
   }

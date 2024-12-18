@@ -16,15 +16,15 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.FailJobResponseImpl;
 import io.camunda.client.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -116,7 +116,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   @Override
-  public ZeebeFuture<FailJobResponse> send() {
+  public CamundaFuture<FailJobResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -124,8 +124,8 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     }
   }
 
-  private ZeebeFuture<FailJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<FailJobResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<FailJobResponse> sendRestRequest() {
+    final HttpCamundaFuture<FailJobResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/failure",
         objectMapper.toJson(httpRequestObject),
@@ -134,7 +134,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
     return result;
   }
 
-  private ZeebeFuture<FailJobResponse> sendGrpcRequest() {
+  private CamundaFuture<FailJobResponse> sendGrpcRequest() {
     final FailJobRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<FailJobResponse, GatewayOuterClass.FailJobResponse> future =

@@ -62,7 +62,7 @@ class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
                     new MappingInstruction()
                         .setSourceElementId("taskB")
                         .setTargetElementId("taskB")));
-    migrateProcessInstanceHandler.setZeebeClient(zeebeContainerManager.getClient());
+    migrateProcessInstanceHandler.setCamundaClient(zeebeContainerManager.getClient());
     migrateProcessInstanceHandler.migrate(
         processFrom, migrationPlan, String.valueOf(UUID.randomUUID().getMostSignificantBits()));
 

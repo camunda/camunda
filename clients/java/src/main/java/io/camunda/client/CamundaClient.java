@@ -87,42 +87,42 @@ import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeClientCloudBuilderImpl;
-import io.camunda.client.impl.ZeebeClientImpl;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
+import io.camunda.client.impl.CamundaClientImpl;
 
-/** The client to communicate with a Zeebe broker/cluster. */
-public interface ZeebeClient extends AutoCloseable, JobClient {
+/** The client to communicate with a Camunda broker/cluster. */
+public interface CamundaClient extends AutoCloseable, JobClient {
 
   /**
-   * @return a new Zeebe client with default configuration values. In order to customize
+   * @return a new Camunda client with default configuration values. In order to customize
    *     configuration, use the methods {@link #newClientBuilder()} or {@link
-   *     #newClient(ZeebeClientConfiguration)}. See {@link ZeebeClientBuilder} for the configuration
-   *     options and default values.
+   *     #newClient(CamundaClientConfiguration)}. See {@link CamundaClientBuilder} for the
+   *     configuration options and default values.
    */
-  static ZeebeClient newClient() {
+  static CamundaClient newClient() {
     return newClientBuilder().build();
   }
 
   /**
-   * @return a new {@link ZeebeClient} using the provided configuration.
+   * @return a new {@link CamundaClient} using the provided configuration.
    */
-  static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
-    return new ZeebeClientImpl(configuration);
+  static CamundaClient newClient(final CamundaClientConfiguration configuration) {
+    return new CamundaClientImpl(configuration);
   }
 
   /**
-   * @return a builder to configure and create a new {@link ZeebeClient}.
+   * @return a builder to configure and create a new {@link CamundaClient}.
    */
-  static ZeebeClientBuilder newClientBuilder() {
-    return new ZeebeClientBuilderImpl();
+  static CamundaClientBuilder newClientBuilder() {
+    return new CamundaClientBuilderImpl();
   }
 
   /**
    * @return a builder with convenient methods to connect to the Camunda Cloud cluster.
    */
-  static ZeebeClientCloudBuilderStep1 newCloudClientBuilder() {
-    return new ZeebeClientCloudBuilderImpl();
+  static CamundaClientCloudBuilderStep1 newCloudClientBuilder() {
+    return new CamundaClientCloudBuilderImpl();
   }
 
   /**
@@ -130,7 +130,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * which endpoint and which broker is the leader of which partition.
    *
    * <pre>
-   * List&#60;BrokerInfo&#62; brokers = zeebeClient
+   * List&#60;BrokerInfo&#62; brokers = camundaClient
    *  .newTopologyRequest()
    *  .send()
    *  .join()
@@ -148,7 +148,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   /**
    * @return the client's configuration
    */
-  ZeebeClientConfiguration getConfiguration();
+  CamundaClientConfiguration getConfiguration();
 
   @Override
   void close();
@@ -157,7 +157,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to deploy new processes.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newDeployCommand()
    *  .addResourceFile("~/wf/process1.bpmn")
    *  .addResourceFile("~/wf/process2.bpmn")
@@ -166,7 +166,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    * @deprecated since 8 for removal with 8.1, replaced by {@link
-   *     ZeebeClient#newDeployResourceCommand()}
+   *     CamundaClient#newDeployResourceCommand()}
    */
   DeployProcessCommandStep1 newDeployCommand();
 
@@ -174,7 +174,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to deploy new resources, i.e. BPMN process models and DMN decision models.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newDeployCommand()
    *  .addResourceFile("~/wf/process1.bpmn")
    *  .addResourceFile("~/wf/process2.bpmn")
@@ -190,7 +190,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to create/start a new instance of a process.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newCreateInstanceCommand()
    *  .bpmnProcessId("my-process")
    *  .latestVersion()
@@ -206,7 +206,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to modify a process instance.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *    .newModifyProcessInstanceCommand(processInstanceKey)
    *    .activateElement("element1")
    *    .and()
@@ -253,7 +253,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * <pre>
    *
-   * zeebeClient
+   * camundaClient
    *  .newMigrateProcessInstanceCommand(1L)
    *  .migrationPlan(2L)
    *  .addMappingInstruction("element1", "element2")
@@ -268,7 +268,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *             .addMappingInstruction("element1", "element2")
    *             .addMappingInstruction("element3", "element4")
    *             .build();
-   * zeebeClient
+   * camundaClient
    *  .newMigrateProcessInstanceCommand(1L)
    *  .migrationPlan(migrationPlan)
    *  .send();
@@ -284,7 +284,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to cancel a process instance.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newCancelInstanceCommand(processInstanceKey)
    *  .send();
    * </pre>
@@ -299,7 +299,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * task, etc.)
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newSetVariablesCommand(elementInstanceKey)
    *  .variables(json)
    *  .send();
@@ -314,7 +314,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to evaluate a decision.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newEvaluateDecisionCommand()
    *  .decisionKey("my-decision")
    *  .variables(json)
@@ -329,7 +329,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to publish a message which can be correlated to a process instance.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newPublishMessageCommand()
    *  .messageName("order canceled")
    *  .correlationKey(orderId)
@@ -345,7 +345,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to correlate a message and wait for it to be correlated against a process instance.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newCorrelateMessageCommand()
    *  .messageName("order canceled")
    *  .correlationKey(orderId)
@@ -362,7 +362,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to broadcast a signal.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newBroadcastSignalCommand()
    *  .signalName("signal")
    *  .variables(json)
@@ -377,7 +377,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to resolve an existing incident.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newResolveIncidentCommand(incidentKey)
    *  .send();
    * </pre>
@@ -393,7 +393,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long jobKey = ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateRetriesCommand(jobKey)
    *  .retries(3)
    *  .send();
@@ -414,7 +414,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * ActivatedJob job= ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateRetriesCommand(job)
    *  .retries(3)
    *  .send();
@@ -435,7 +435,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long jobKey = ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateTimeoutCommand(jobKey)
    *  .timeout(100)
    *  .send();
@@ -456,7 +456,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * ActivatedJob job= ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateTimeoutCommand(job)
    *  .timeout(100)
    *  .send();
@@ -479,7 +479,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * them and eventually completes them.
    *
    * <pre>
-   * JobWorker worker = zeebeClient
+   * JobWorker worker = camundaClient
    *  .newWorker()
    *  .jobType("payment")
    *  .handler(paymentHandler)
@@ -517,7 +517,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to delete a resource.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newDeleteResourceCommand(resourceKey)
    *  .send();
    * </pre>
@@ -533,7 +533,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long userTaskKey = ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUserTaskCompleteCommand(userTaskKey)
    *  .variables(map)
    *  .send();
@@ -556,7 +556,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long userTaskKey = ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUserTaskAssignCommand(userTaskKey)
    *  .assignee(newAssignee)
    *  .send();
@@ -576,7 +576,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long userTaskKey = ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUserTaskUpdateCommand(userTaskKey)
    *  .candidateGroups(newCandidateGroups)
    *  .send();
@@ -596,7 +596,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long userTaskKey = ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUserTaskUnassignCommand(userTaskKey)
    *  .send();
    * </pre>
@@ -615,7 +615,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * JobChangeset changeset= ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateCommand(jobKey)
    *  .update(changeset)
    *  .send();
@@ -641,7 +641,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * ActivatedJob job= ..;
    * JobChangeset changeset= ..;
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateCommand(job)
    *  .update(changeset)
    *  .send();
@@ -674,13 +674,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * <pre>{@code
    * final long pinnedTime = 1742461285000L; // Thu, Mar 20, 2025 09:01:25 GMT+0000
-   * zeebeClient
+   * camundaClient
    *  .newClockPinCommand()
    *  .time(pinnedTime)
    *  .send();
    *
    * final Instant futureInstant = Instant.now().plus(Duration.ofDays(7));
-   * zeebeClient
+   * camundaClient
    *  .newClockPinCommand()
    *  .time(futureInstant)
    *  .send();
@@ -701,7 +701,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * any previous <code>pin</code> command that may have set the clock to a specific, static time.
    *
    * <pre>{@code
-   * zeebeClient
+   * camundaClient
    *  .newClockResetCommand()
    *  .send();
    * }</pre>
@@ -720,7 +720,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long processDefinitionKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newProcessDefinitionGetRequest(processDefinitionKey)
    *   .send();
    *   </pre>
@@ -736,7 +736,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long processDefinitionKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newProcessDefinitionGetXmlRequest(processDefinitionKey)
    *  .send();
    * </pre>
@@ -752,7 +752,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long processDefinitionKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newProcessDefinitionGetFormRequest(processDefinitionKey)
    *  .send();
    * </pre>
@@ -768,7 +768,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long processDefinitionKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newProcessDefinitionQuery()
    *  .filter((f) -> f.processDefinitionKey(processDefinitionKey))
    *  .sort((s) -> s.name().asc())
@@ -786,7 +786,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long processInstanceKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newProcessInstanceGetRequest(processInstanceKey)
    *  .send();
    * </pre>
@@ -801,7 +801,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long processInstanceKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newProcessInstanceQuery()
    *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
    *  .sort((s) -> s.startDate().asc())
@@ -819,7 +819,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long flownodeInstanceKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newFlownodeInstanceQuery()
    *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
    *  .sort((s) -> s.flowNodeName().asc())
@@ -837,7 +837,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long flowNodeInstanceKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newFlowNodeInstanceGetRequest(flowNodeInstanceKey)
    *   .send();
    *   </pre>
@@ -851,7 +851,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Executes a search request to query user tasks.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newUserTaskQuery()
    *  .filter((f) -> f.userTaskKey(userTaskKey))
    *  .sort((s) -> s.creationDate().asc())
@@ -867,7 +867,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Executes a search request to query Decision Requirements.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newDecisionRequirementsQuery()
    *   .filter((f) -> f.decisionRequirementsKey(decisionRequirementsKey))
    *   .sort((s) -> s.version().asc())
@@ -885,7 +885,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long decisionDefinitionKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newDecisionDefinitionQuery()
    *  .filter((f) -> f.decisionKey(decisionDefinitionKey))
    *  .sort((s) -> s.dmnDecisionName().asc())
@@ -903,7 +903,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long decisionDefinitionKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newDecisionDefinitionGetRequest(decisionDefinitionKey)
    *   .send();
    *   </pre>
@@ -919,7 +919,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long decisionDefinitionKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newDecisionDefinitionGetXmlRequest(decisionDefinitionKey)
    *  .send();
    * </pre>
@@ -935,7 +935,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long decisionInstanceKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newDecisionInstanceQuery()
    *  .filter((f) -> f.decisionInstanceKey(decisionInstanceKey))
    *  .sort((s) -> s.decisionInstanceKey().asc())
@@ -953,7 +953,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * String decisionInstanceId = ...;
    *
-   * zeebeClient
+   * camundaClient
    * .newDecisionInstanceGetQuery(decisionInstanceId)
    * .send();
    * </pre>
@@ -969,7 +969,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long decisionDefinitionKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newIncidentQuery()
    *  .filter((f) -> f.processInstanceKey(processInstanceKey))
    *  .sort((s) -> s.processDefinitionKey().asc())
@@ -987,7 +987,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long incidentKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newIncidentGetRequest(incidentKey)
    *   .send();
    *   </pre>
@@ -1003,7 +1003,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
+   * camundaClient
    *  .newRoleCreateCommand()
    *  .name(name)
    *  .send();
@@ -1021,7 +1021,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
+   * camundaClient
    *  .newCreateGroupCommand()
    *  .name(name)
    *  .send();
@@ -1039,7 +1039,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
+   * camundaClient
    *  .newUpdateGroupCommand(123L)
    *  .name(name)
    *  .send();
@@ -1057,7 +1057,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
+   * camundaClient
    *  .newDeleteGroupCommand(123L)
    *  .send();
    * </pre>
@@ -1074,7 +1074,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
+   * camundaClient
    *  .newUserCreateCommand()
    *  .username(username)
    *  .email(email)
@@ -1093,7 +1093,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to add permissions to an owner.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newAddPermissionsCommand(ownerKey)
    *  .resourceType(resourceType)
    *  .permission(permissionType)
@@ -1116,7 +1116,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to remove permissions from an owner.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newRemovePermissionsCommand(ownerKey)
    *  .resourceType(resourceType)
    *  .permission(permissionType)
@@ -1139,7 +1139,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to create a mapping rule.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newCreateMappingCommand()
    *  .claimName(claimName)
    *  .claimValue(claimValue)
@@ -1160,7 +1160,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    * long decisionRequirementsKey = ...;
    *
-   * zeebeClient
+   * camundaClient
    *  .newDecisionRequirementsGetXmlRequest(decisionRequirementsKey)
    *  .send();
    * </pre>
@@ -1176,7 +1176,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long decisionRequirementsKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newDecisionRequirementsGetRequest(decisionRequirementsKey)
    *   .send();
    *   </pre>
@@ -1192,7 +1192,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long userTaskKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newUserTaskGetFormRequest(userTaskKey)
    *   .send();
    *   </pre>
@@ -1208,7 +1208,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long userTaskKey = ...;
    *
-   *   zeebeClient
+   *   camundaClient
    *   .newUserTaskGetRequest(userTaskKey)
    *   .send();
    *   </pre>
@@ -1222,7 +1222,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Executes a search request to query variables.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newVariableQuery()
    *  .filter((f) -> f.variableKey(variableKey))
    *  .sort((s) -> s.value().asc())
@@ -1239,7 +1239,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long variableKey = ...;
    *
-   *  zeebeClient
+   *  camundaClient
    * .newVariableGetRequest(variableKey)
    * .send();
    *
@@ -1254,7 +1254,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <pre>
    *   long variableKey = ...;
    *
-   *  zeebeClient
+   *  camundaClient
    * .newUserTaskVariableQuery(variableKey)
    *  .sort((s) -> s.value().asc())
    *  .page((p) -> p.limit(100))
@@ -1274,7 +1274,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to create a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newCreateDocumentCommand()
    *   .content(inputStream)
    *   .fileName("file.txt")
@@ -1296,7 +1296,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to get a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newDocumentContentGetRequest(documentId)
    *   .storeId(storeId)
    *   .send();
@@ -1317,7 +1317,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to get a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newDocumentContentGetRequest(documentReferenceResponse)
    *   .send();
    *   </pre>
@@ -1338,7 +1338,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to update a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newCreateDocumentLinkCommand(documentId)
    *   .storeId(storeId)
    *   .timeToLive(Duration.ofHours(1))
@@ -1360,7 +1360,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to update a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newCreateDocumentLinkCommand(documentReferenceResponse)
    *   .timeToLive(Duration.ofHours(1))
    *   .send();
@@ -1382,7 +1382,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to update a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newDeleteDocumentCommand(documentId)
    *   .storeId(storeId)
    *   .send();
@@ -1403,7 +1403,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Command to update a document.
    *
    * <pre>
-   *   zeebeClient
+   *   camundaClient
    *   .newDeleteDocumentCommand(documentReferenceResponse)
    *   .send();
    *   </pre>
@@ -1419,7 +1419,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to create a tenant.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newCreateTenantCommand()
    *  .tenantId("tenant-id")
    *  .name("Tenant Name")
@@ -1436,7 +1436,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Example usage:
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *   .newUpdateTenantCommand(12345L) // Specify the tenant key
    *   .name("Updated Tenant Name")   // Set the new tenant name
    *   .send();                       // Send the command to the broker
@@ -1451,7 +1451,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Command to delete a tenant.
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *  .newDeleteTenantCommand(tenantKey)
    *  .send();
    * </pre>
@@ -1467,7 +1467,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Example usage:
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *   .newAssignMappingToTenantCommand(tenantKey)
    *   .mappingKey(mappingKey)
    *   .send();
@@ -1487,7 +1487,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Example usage:
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *   .newAssignUserToTenantCommand(tenantKey)
    *   .userKey(userKey)
    *   .send();
@@ -1506,7 +1506,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Example usage:
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *   .newRemoveUserFromTenantCommand(tenantKey)
    *   .userKey(userKey)
    *   .send();
@@ -1526,7 +1526,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Example usage:
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *   .newAssignGroupToTenantCommand(tenantKey, groupKey)
    *   .send();
    * </pre>
@@ -1542,7 +1542,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * <p>Example usage:
    *
    * <pre>
-   * zeebeClient
+   * camundaClient
    *   .newUnassignGroupFromTenantCommand(tenantKey, groupKey)
    *   .send();
    * </pre>

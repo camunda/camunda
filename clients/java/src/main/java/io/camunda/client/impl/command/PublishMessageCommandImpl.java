@@ -15,18 +15,18 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.PublishMessageResponseImpl;
 import io.camunda.client.protocol.rest.MessagePublicationRequest;
 import io.camunda.client.protocol.rest.MessagePublicationResponse;
@@ -53,7 +53,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
 
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub,
-      final ZeebeClientConfiguration configuration,
+      final CamundaClientConfiguration configuration,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
@@ -134,7 +134,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   @Override
-  public ZeebeFuture<PublishMessageResponse> send() {
+  public CamundaFuture<PublishMessageResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -142,8 +142,8 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     }
   }
 
-  private ZeebeFuture<PublishMessageResponse> sendRestRequest() {
-    final HttpZeebeFuture<PublishMessageResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<PublishMessageResponse> sendRestRequest() {
+    final HttpCamundaFuture<PublishMessageResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/messages/publication",
         objectMapper.toJson(httpRequestObject),
@@ -154,7 +154,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     return result;
   }
 
-  private ZeebeFuture<PublishMessageResponse> sendGrpcRequest() {
+  private CamundaFuture<PublishMessageResponse> sendGrpcRequest() {
     final PublishMessageRequest request = grpcRequestObjectBuilder.build();
     final RetriableClientFutureImpl<
             PublishMessageResponse, GatewayOuterClass.PublishMessageResponse>

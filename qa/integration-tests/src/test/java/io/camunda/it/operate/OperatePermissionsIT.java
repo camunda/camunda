@@ -15,7 +15,7 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
@@ -63,7 +63,7 @@ public class OperatePermissionsIT {
         AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress());
     final var defaultClient = authorizationsUtil.getDefaultClient();
     // create super user that can read all process definitions
-    final var superZeebeClient =
+    final var superCamundaClient =
         authorizationsUtil.createUserAndClient(
             SUPER_USER, "password", new Permissions(PROCESS_DEFINITION, READ, List.of("*")));
     superOperateClient = testInstance.newOperateClient(SUPER_USER, "password");
@@ -82,7 +82,7 @@ public class OperatePermissionsIT {
                     .getProcesses()));
     assertThat(DEPLOYED_PROCESSES).hasSize(processes.size());
 
-    waitForProcessesToBeDeployed(superZeebeClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(superCamundaClient, DEPLOYED_PROCESSES.size());
   }
 
   @AfterAll
@@ -124,13 +124,13 @@ public class OperatePermissionsIT {
   }
 
   private static void waitForProcessesToBeDeployed(
-      final ZeebeClient zeebeClient, final int expectedProcessDefinitions) {
+      final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("Should processes be exported to Elasticsearch")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(zeebeClient.newProcessDefinitionQuery().send().join().items())
+                assertThat(camundaClient.newProcessDefinitionQuery().send().join().items())
                     .hasSize(expectedProcessDefinitions));
   }
 }

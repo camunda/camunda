@@ -14,7 +14,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -44,7 +44,7 @@ class ClockTest {
   private static final Instant PAST_FIXED_INSTANT = Instant.parse("2024-08-15T14:00:00Z");
   private static final Duration DELTA = Duration.ofSeconds(1);
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
   private ZeebeResourcesHelper resourcesHelper;
 
   @TestZeebe

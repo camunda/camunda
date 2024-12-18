@@ -20,16 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.util.ClientTest;
 import org.junit.Test;
 
-public class ZeebeObjectMapperTest extends ClientTest {
+public class CamundaObjectMapperTest extends ClientTest {
 
   @Test
   public void shouldReturnEmptyObject() {
     // Given
-    final ZeebeObjectMapper zeebeObjectMapper = new ZeebeObjectMapper();
+    final CamundaObjectMapper camundaObjectMapper = new CamundaObjectMapper();
     final TestObject testObject = new TestObject();
     testObject.setObject(new Object());
     // When
-    final String actual = zeebeObjectMapper.toJson(testObject);
+    final String actual = camundaObjectMapper.toJson(testObject);
     // Then
     assertThat(actual).isEqualTo("{\"object\":{}}");
   }

@@ -9,7 +9,7 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -39,7 +39,7 @@ final class IncidentUpdateIT {
   private final String jobType = Strings.newRandomValidBpmnId();
 
   @TestTemplate
-  void shouldMarkAllInstancesWithIncident(final ZeebeClient client) {
+  void shouldMarkAllInstancesWithIncident(final CamundaClient client) {
     // given
     final var parentInstanceKey = createUndeployedProcessInstance(client);
     final var childInstanceKey = getChildProcessInstanceKey(client);
@@ -58,7 +58,7 @@ final class IncidentUpdateIT {
   }
 
   @TestTemplate
-  void shouldUnmarkAllInstancesWithIncident(final ZeebeClient client) {
+  void shouldUnmarkAllInstancesWithIncident(final CamundaClient client) {
     // given
     final var parentInstanceKey = createUndeployedProcessInstance(client);
     final var childInstanceKey = getChildProcessInstanceKey(client);
@@ -78,7 +78,7 @@ final class IncidentUpdateIT {
   }
 
   private void assertIncidentState(
-      final ZeebeClient client, final long key, final String expected) {
+      final CamundaClient client, final long key, final String expected) {
     Awaitility.await("until incident %d state is = %s".formatted(key, expected))
         .ignoreExceptions()
         .untilAsserted(
@@ -90,7 +90,7 @@ final class IncidentUpdateIT {
   }
 
   private void assertProcessInstanceIncidentState(
-      final ZeebeClient client, final long key, final boolean expected) {
+      final CamundaClient client, final long key, final boolean expected) {
     Awaitility.await("until process instance %d incident state = %s".formatted(key, expected))
         .ignoreExceptions()
         .untilAsserted(
@@ -103,7 +103,7 @@ final class IncidentUpdateIT {
   }
 
   private void assertFlowNodeInstanceIncidentState(
-      final ZeebeClient client,
+      final CamundaClient client,
       final long processInstanceKey,
       final String flowNodeId,
       final boolean expected) {
@@ -121,7 +121,7 @@ final class IncidentUpdateIT {
   }
 
   private FlowNodeInstance getFlowNodeInstance(
-      final ZeebeClient client, final long parentInstanceKey, final String callActivityId) {
+      final CamundaClient client, final long parentInstanceKey, final String callActivityId) {
     return client
         .newFlownodeInstanceQuery()
         .filter(f -> f.processInstanceKey(parentInstanceKey).flowNodeId(callActivityId))
@@ -132,7 +132,7 @@ final class IncidentUpdateIT {
   }
 
   private ProcessInstance getProcessInstance(
-      final ZeebeClient client, final long childInstanceKey) {
+      final CamundaClient client, final long childInstanceKey) {
     return client
         .newProcessInstanceQuery()
         .filter(p -> p.processInstanceKey(childInstanceKey))
@@ -142,7 +142,7 @@ final class IncidentUpdateIT {
         .getFirst();
   }
 
-  private long getChildProcessInstanceKey(final ZeebeClient client) {
+  private long getChildProcessInstanceKey(final CamundaClient client) {
     return Awaitility.await("until one flow node exists in the child process instance")
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
@@ -159,7 +159,7 @@ final class IncidentUpdateIT {
         .getProcessInstanceKey();
   }
 
-  private void triggerIncidentOnJob(final ZeebeClient client) {
+  private void triggerIncidentOnJob(final CamundaClient client) {
     final var job =
         client
             .newActivateJobsCommand()
@@ -172,12 +172,12 @@ final class IncidentUpdateIT {
     client.newThrowErrorCommand(job).errorCode("unknown").send().join();
   }
 
-  private long createUndeployedProcessInstance(final ZeebeClient client) {
+  private long createUndeployedProcessInstance(final CamundaClient client) {
     deployProcesses(client);
     return createProcessInstance(client);
   }
 
-  private long createProcessInstance(final ZeebeClient client) {
+  private long createProcessInstance(final CamundaClient client) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(parentProcessId)
@@ -187,7 +187,7 @@ final class IncidentUpdateIT {
         .getProcessInstanceKey();
   }
 
-  private void deployProcesses(final ZeebeClient client) {
+  private void deployProcesses(final CamundaClient client) {
     final var parentProcess =
         Bpmn.createExecutableProcess(parentProcessId)
             .startEvent()
@@ -209,7 +209,7 @@ final class IncidentUpdateIT {
   }
 
   private Incident waitForIncident(
-      final ZeebeClient client, final Consumer<IncidentFilter> filterFn) {
+      final CamundaClient client, final Consumer<IncidentFilter> filterFn) {
     return Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))

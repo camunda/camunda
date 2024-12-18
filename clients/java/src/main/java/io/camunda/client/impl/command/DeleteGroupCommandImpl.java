@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteGroupResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -44,8 +44,8 @@ public class DeleteGroupCommandImpl implements DeleteGroupCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<DeleteGroupResponse> send() {
-    final HttpZeebeFuture<DeleteGroupResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<DeleteGroupResponse> send() {
+    final HttpCamundaFuture<DeleteGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.delete("/groups/" + groupKey, httpRequestConfig.build(), result);
     return result;
   }

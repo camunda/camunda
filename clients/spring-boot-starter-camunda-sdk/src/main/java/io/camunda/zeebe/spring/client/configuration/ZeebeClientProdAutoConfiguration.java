@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.ZeebeClientImpl;
+import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
@@ -57,14 +57,14 @@ public class ZeebeClientProdAutoConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
 
   @Bean
-  public ZeebeClientConfigurationImpl zeebeClientConfiguration(
+  public CamundaClientConfigurationImpl zeebeClientConfiguration(
       final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final ZeebeClientExecutorService zeebeClientExecutorService) {
-    return new ZeebeClientConfigurationImpl(
+    return new CamundaClientConfigurationImpl(
         properties,
         camundaClientProperties,
         jsonMapper,
@@ -74,18 +74,18 @@ public class ZeebeClientProdAutoConfiguration {
   }
 
   @Bean(destroyMethod = "close")
-  public ZeebeClient zeebeClient(final ZeebeClientConfigurationImpl configuration) {
+  public CamundaClient zeebeClient(final CamundaClientConfigurationImpl configuration) {
     LOG.info("Creating ZeebeClient using ZeebeClientConfigurationImpl [" + configuration + "]");
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
     if (jobWorkerExecutor != null) {
-      final ManagedChannel managedChannel = ZeebeClientImpl.buildChannel(configuration);
+      final ManagedChannel managedChannel = CamundaClientImpl.buildChannel(configuration);
       final GatewayGrpc.GatewayStub gatewayStub =
-          ZeebeClientImpl.buildGatewayStub(managedChannel, configuration);
+          CamundaClientImpl.buildGatewayStub(managedChannel, configuration);
       final ExecutorResource executorResource =
           new ExecutorResource(jobWorkerExecutor, configuration.ownsJobWorkerExecutor());
-      return new ZeebeClientImpl(configuration, managedChannel, gatewayStub, executorResource);
+      return new CamundaClientImpl(configuration, managedChannel, gatewayStub, executorResource);
     } else {
-      return new ZeebeClientImpl(configuration);
+      return new CamundaClientImpl(configuration);
     }
   }
 }

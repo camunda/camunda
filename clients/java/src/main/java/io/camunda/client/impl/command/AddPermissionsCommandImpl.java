@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2;
 import io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep3;
 import io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep4;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AddPermissionsResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -86,8 +86,8 @@ public class AddPermissionsCommandImpl
   }
 
   @Override
-  public ZeebeFuture<AddPermissionsResponse> send() {
-    final HttpZeebeFuture<AddPermissionsResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<AddPermissionsResponse> send() {
+    final HttpCamundaFuture<AddPermissionsResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         path, jsonMapper.toJson(delegate.getRequest()), httpRequestConfig.build(), result);
     return result;
