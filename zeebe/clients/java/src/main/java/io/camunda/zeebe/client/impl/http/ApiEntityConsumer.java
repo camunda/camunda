@@ -15,16 +15,21 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.json.async.NonBlockingByteBufferJsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Asynchronously consumes the response body as a JSON entity of type {@link T}, or if the server
@@ -47,6 +52,8 @@ import org.apache.hc.core5.http.nio.entity.AbstractBinAsyncEntityConsumer;
  * @param <T> the type of the successful response body
  */
 final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntity<T>> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiEntityConsumer.class);
+
   private final ObjectMapper json;
   private final Class<T> type;
   private final int maxCapacity;
@@ -93,11 +100,29 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
     buffer.asParserOnFirstToken();
 
-    if (isResponse) {
-      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+    try {
+      if (isResponse) {
+        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+      }
+      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
+    } catch (final Exception e) {
+      // write the original JSON response into an error response
+      final String jsonString = getJsonString();
+      return ApiEntity.of(
+          new ProblemDetail().title("Unexpected server response").status(500).detail(jsonString));
     }
+  }
 
-    return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
+  private String getJsonString() {
+    try (final ByteArrayOutputStream output = new ByteArrayOutputStream();
+        final JsonGenerator generator = json.createGenerator(output)) {
+      buffer.serialize(generator);
+      generator.flush();
+      return output.toString(StandardCharsets.UTF_8.name());
+    } catch (final Exception ex) {
+      LOGGER.warn("Failed to serialize JSON string", ex);
+      return "Original response cannot be constructed";
+    }
   }
 
   @Override
@@ -124,6 +149,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
         parser.close();
       } catch (final Exception e) {
         // log but otherwise ignore
+        LOGGER.warn("Failed to close JSON parser", e);
       }
     }
 
@@ -132,6 +158,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
         buffer.close();
       } catch (final IOException e) {
         // log but otherwise ignore
+        LOGGER.warn("Failed to close JSON parser", e);
       }
     }
 
