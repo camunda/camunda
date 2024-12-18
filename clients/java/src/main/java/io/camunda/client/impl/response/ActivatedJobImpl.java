@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,7 +75,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
       final JsonMapper jsonMapper, final io.camunda.client.protocol.rest.ActivatedJob job) {
     this.jsonMapper = jsonMapper;
 
-    key = parseLongOrEmpty(job.getJobKey());
+    key = ParseUtil.parseLongOrEmpty(job.getJobKey());
     type = getOrEmpty(job.getType());
     customHeaders =
         job.getCustomHeaders() == null
@@ -92,12 +93,12 @@ public final class ActivatedJobImpl implements ActivatedJob {
     deadline = getOrEmpty(job.getDeadline());
     variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
     variables = jsonMapper.toJson(variablesAsMap);
-    processInstanceKey = parseLongOrEmpty(job.getProcessInstanceKey());
+    processInstanceKey = ParseUtil.parseLongOrEmpty(job.getProcessInstanceKey());
     bpmnProcessId = getOrEmpty(job.getProcessDefinitionId());
     processDefinitionVersion = getOrEmpty(job.getProcessDefinitionVersion());
-    processDefinitionKey = parseLongOrEmpty(job.getProcessDefinitionKey());
+    processDefinitionKey = ParseUtil.parseLongOrEmpty(job.getProcessDefinitionKey());
     elementId = getOrEmpty(job.getElementId());
-    elementInstanceKey = parseLongOrEmpty(job.getElementInstanceKey());
+    elementInstanceKey = ParseUtil.parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
   }
 
@@ -209,14 +210,6 @@ public final class ActivatedJobImpl implements ActivatedJob {
 
   private static Long getOrEmpty(final Long value) {
     return value == null ? -1L : value;
-  }
-
-  private static Long parseLongOrEmpty(final String value) {
-    try {
-      return Long.parseLong(value);
-    } catch (final NumberFormatException e) {
-      return -1L;
-    }
   }
 
   private static Integer getOrEmpty(final Integer value) {

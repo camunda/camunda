@@ -17,11 +17,7 @@ package io.camunda.client.impl.util;
 
 public class ParseUtil {
 
-  public static Long parseLongOrNull(final String input) {
-    try {
-      return Long.parseLong(input);
-    } catch (final NumberFormatException e) {
-      return null;
-    }
+  public static Long parseLongOrEmpty(final String input) {
+    return input == null ? -1L : Long.parseLong(input);
   }
 }

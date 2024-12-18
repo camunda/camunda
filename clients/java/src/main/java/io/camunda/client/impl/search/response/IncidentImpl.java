@@ -38,17 +38,17 @@ public class IncidentImpl implements Incident {
   private final String tenantId;
 
   public IncidentImpl(final IncidentItem item) {
-    incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
-    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
+    incidentKey = ParseUtil.parseLongOrEmpty(item.getIncidentKey());
+    processDefinitionKey = ParseUtil.parseLongOrEmpty(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
-    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    processInstanceKey = ParseUtil.parseLongOrEmpty(item.getProcessInstanceKey());
     errorType = item.getErrorType();
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
+    flowNodeInstanceKey = ParseUtil.parseLongOrEmpty(item.getFlowNodeInstanceKey());
     creationTime = item.getCreationTime();
     state = item.getState();
-    jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
+    jobKey = ParseUtil.parseLongOrEmpty(item.getJobKey());
     tenantId = item.getTenantId();
   }
 

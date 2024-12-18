@@ -32,7 +32,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   private final String tenantId;
 
   public ProcessDefinitionImpl(final ProcessDefinitionItem item) {
-    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
+    processDefinitionKey = ParseUtil.parseLongOrEmpty(item.getProcessDefinitionKey());
     name = item.getName();
     resourceName = item.getResourceName();
     version = item.getVersion();

@@ -37,16 +37,16 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final FlowNodeInstanceItem.TypeEnum type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
-    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
+    flowNodeInstanceKey = ParseUtil.parseLongOrEmpty(item.getFlowNodeInstanceKey());
+    processDefinitionKey = ParseUtil.parseLongOrEmpty(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
-    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    processInstanceKey = ParseUtil.parseLongOrEmpty(item.getProcessInstanceKey());
     flowNodeId = item.getFlowNodeId();
     flowNodeName = item.getFlowNodeName();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     incident = item.getHasIncident();
-    incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
+    incidentKey = ParseUtil.parseLongOrEmpty(item.getIncidentKey());
     state = item.getState();
     tenantId = item.getTenantId();
     type = item.getType();
