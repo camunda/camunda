@@ -483,6 +483,11 @@ jobs:
   optimize-docker:
     needs: release
     name: Optimize Docker Image Release
+    permissions:
+      contents: read           # Required for checking out the repository.
+      packages: write          # Required for pushing Docker images to DockerHub.
+      id-token: write          # Required for authentication with HashiCorp Vault using OIDC.
+      actions: read            # Required to download artifacts.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
