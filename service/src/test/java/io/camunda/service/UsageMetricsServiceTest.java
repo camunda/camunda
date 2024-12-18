@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricsCount;
-import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -54,11 +53,7 @@ public final class UsageMetricsServiceTest {
     final var endTime = OffsetDateTime.of(2023, 1, 2, 0, 0, 0, 0, OffsetDateTime.now().getOffset());
     final UsageMetricsQuery searchQuery =
         SearchQueryBuilders.usageMetricsSearchQuery()
-            .filter(
-                new UsageMetricsFilter.Builder()
-                    .startTime(Operation.gte(startTime))
-                    .endTime(Operation.lte(endTime))
-                    .build())
+            .filter(new UsageMetricsFilter.Builder().startTime(startTime).endTime(endTime).build())
             .build();
 
     // when

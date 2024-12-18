@@ -31,7 +31,6 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.MappingFilter;
-import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
@@ -104,8 +103,8 @@ public final class SearchQueryRequestMapper {
     }
     final UsageMetricsFilter filter =
         new UsageMetricsFilter.Builder()
-            .startTime(Operation.gte(toOffsetDateTime(request.getStartTime())))
-            .endTime(Operation.lte(toOffsetDateTime(request.getEndTime())))
+            .startTime(toOffsetDateTime(request.getStartTime()))
+            .endTime(toOffsetDateTime(request.getEndTime()))
             .build();
     return Either.right(new UsageMetricsQuery.Builder().filter(filter).build());
   }

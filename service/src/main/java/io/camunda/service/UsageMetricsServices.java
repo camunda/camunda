@@ -40,14 +40,11 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {
     final var filter = query.filter();
-    if (filter.startTime() == null
-        || filter.startTime().value() == null
-        || filter.endTime() == null
-        || filter.endTime().value() == null) {
+    if (filter.startTime() == null || filter.endTime() == null) {
       throw new IllegalArgumentException("Query must have a start AND end time");
     }
-    final var startTime = filter.startTime().value();
-    final var endTime = filter.endTime().value();
+    final var startTime = filter.startTime();
+    final var endTime = filter.endTime();
     if (endTime.isBefore(startTime)) {
       throw new IllegalArgumentException("End time must be after start time");
     }

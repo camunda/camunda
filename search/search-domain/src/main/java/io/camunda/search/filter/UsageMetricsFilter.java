@@ -7,45 +7,35 @@
  */
 package io.camunda.search.filter;
 
-import static io.camunda.util.CollectionUtil.addValuesToList;
-import static io.camunda.util.CollectionUtil.collectValues;
-
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
-import java.util.List;
 
-public record UsageMetricsFilter(
-    List<String> events, Operation<OffsetDateTime> startTime, Operation<OffsetDateTime> endTime)
+public record UsageMetricsFilter(String event, OffsetDateTime startTime, OffsetDateTime endTime)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UsageMetricsFilter> {
-    private List<String> events;
-    private Operation<OffsetDateTime> startTime;
-    private Operation<OffsetDateTime> endTime;
+    private String event;
+    private OffsetDateTime startTime;
+    private OffsetDateTime endTime;
 
-    public Builder events(final List<String> events) {
-      this.events = addValuesToList(this.events, events);
+    public Builder event(final String event) {
+      this.event = event;
       return this;
     }
 
-    public Builder events(final String event, final String... events) {
-      events(collectValues(event, events));
-      return this;
-    }
-
-    public Builder startTime(final Operation<OffsetDateTime> value) {
+    public Builder startTime(final OffsetDateTime value) {
       startTime = value;
       return this;
     }
 
-    public Builder endTime(final Operation<OffsetDateTime> value) {
+    public Builder endTime(final OffsetDateTime value) {
       endTime = value;
       return this;
     }
 
     @Override
     public UsageMetricsFilter build() {
-      return new UsageMetricsFilter(events, startTime, endTime);
+      return new UsageMetricsFilter(event, startTime, endTime);
     }
   }
 }

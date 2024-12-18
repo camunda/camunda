@@ -12,7 +12,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UsageMetricsCount;
-import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authentication;
@@ -83,10 +82,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .search(
             new UsageMetricsQuery.Builder()
                 .filter(
-                    new UsageMetricsFilter.Builder()
-                        .startTime(Operation.gte(startTime))
-                        .endTime(Operation.lte(endTime))
-                        .build())
+                    new UsageMetricsFilter.Builder().startTime(startTime).endTime(endTime).build())
                 .build());
   }
 
