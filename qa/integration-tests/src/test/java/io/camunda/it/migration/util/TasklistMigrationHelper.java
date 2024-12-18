@@ -7,8 +7,14 @@
  */
 package io.camunda.it.migration.util;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
+import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.io.IOException;
 import java.net.URI;
@@ -20,13 +26,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 
-public class TasklistUtil {
+public class TasklistMigrationHelper {
   static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   public final Map<TaskImplementation, List<UserTaskArg>> generatedTasks = new HashMap<>();
   private GenericContainer tasklistContainer;
@@ -34,12 +41,17 @@ public class TasklistUtil {
   private String csrfToken;
   private final Network network;
   private String tasklistUrl = "http://localhost:8080";
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public TasklistUtil(final Network network) {
+  public TasklistMigrationHelper(final Network network) {
     this.network = network;
   }
 
-  public GenericContainer createTasklist(final Map<String, String> env, final boolean newVersion) {
+  public GenericContainer createTasklist(
+      final Map<String, String> envOverrides,
+      final boolean newVersion,
+      final ZeebeMigrationHelper zeebe,
+      final DatabaseType databaseType) {
     String image = "camunda/tasklist:8.6.6";
     if (newVersion) {
       image = "camunda/tasklist:SNAPSHOT";
@@ -56,7 +68,15 @@ public class TasklistUtil {
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
 
+    final Map<String, String> env =
+        databaseType.equals(DatabaseType.ELASTICSEARCH)
+            ? tasklistElasticsearchDefaultConfig(zeebe)
+            : tasklistOpensearchDefaultConfig(zeebe);
+    if (envOverrides != null) {
+      env.putAll(envOverrides);
+    }
     env.forEach(tasklistContainer::withEnv);
+
     tasklistContainer.start();
     try {
       login();
@@ -135,6 +155,38 @@ public class TasklistUtil {
     return HTTP_CLIENT.send(completeTask, HttpResponse.BodyHandlers.ofString());
   }
 
+  public Optional<TaskResponse> getUserTask(final long userTaskKey)
+      throws InterruptedException, IOException {
+    final HttpRequest completeTask =
+        HttpRequest.newBuilder()
+            .GET()
+            .headers(requestHeaders())
+            .uri(URI.create(tasklistUrl + "/tasks/" + userTaskKey))
+            .build();
+    final var res = HTTP_CLIENT.send(completeTask, HttpResponse.BodyHandlers.ofString());
+    if (res.statusCode() == 200) {
+      return Optional.of(objectMapper.readValue(res.body(), TaskResponse.class));
+    }
+    return Optional.empty();
+  }
+
+  public List<TaskSearchResponse> searchUserTasks(final TaskSearchRequest searchRequest)
+      throws InterruptedException, IOException {
+
+    final HttpRequest completeTask =
+        HttpRequest.newBuilder()
+            .POST(
+                HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(searchRequest)))
+            .headers(requestHeaders())
+            .uri(URI.create(tasklistUrl + "/tasks/search"))
+            .build();
+    final var res = HTTP_CLIENT.send(completeTask, HttpResponse.BodyHandlers.ofString());
+    if (res.statusCode() == 200) {
+      return objectMapper.readValue(res.body(), new TypeReference<List<TaskSearchResponse>>() {});
+    }
+    return List.of();
+  }
+
   private String[] requestHeaders() {
     return new String[] {
       "Cookie",
@@ -182,6 +234,33 @@ public class TasklistUtil {
                     .map(c -> c.split("=")[0] + "=" + c.split("=")[1])
                     .findFirst()
                     .get());
+  }
+
+  private Map<String, String> tasklistElasticsearchDefaultConfig(final ZeebeMigrationHelper zeebe) {
+    return new HashMap<>() {
+      {
+        put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", "http://elasticsearch:9200");
+        put("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", "elasticsearch");
+        put("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", "9200");
+        put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", "http://elasticsearch:9200");
+        put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
+        put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
+      }
+    };
+  }
+
+  private Map<String, String> tasklistOpensearchDefaultConfig(final ZeebeMigrationHelper zeebe) {
+    return new HashMap<>() {
+      {
+        put("CAMUNDA_TASKLIST_DATABASE", "opensearch");
+        put("CAMUNDA_TASKLIST_OPENSEARCH_URL", "http://opensearch:9200");
+        put("CAMUNDA_TASKLIST_OPENSEARCH_HOST", "opensearch");
+        put("CAMUNDA_TASKLIST_OPENSEARCH_PORT", "9200");
+        put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", "http://opensearch:9200");
+        put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
+        put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
+      }
+    };
   }
 
   public record UserTaskArg(long key, String version, String apiVersion) {}
