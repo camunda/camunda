@@ -20,13 +20,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AuthorizationPermissionRemovedHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
-  private static final Logger LOG =
-      LoggerFactory.getLogger(AuthorizationPermissionRemovedHandler.class);
+
+  private static final String UPDATE_PERMISSIONS_SCRIPT =
+      """
+            if (ctx._source.permissions != null) {
+            for (p in params.inputPermissions) {
+              for (permission in ctx._source.permissions) {
+                if (permission.type == p.type) {
+                  // Remove matching resource IDs
+                  permission.resourceIds.removeAll(p.resourceIds);
+                }
+              }
+            }
+            // Remove permissions with empty resourceIds
+            ctx._source.permissions.removeIf(permission -> permission.resourceIds.isEmpty());
+            if (ctx._source.permissions.isEmpty()) {
+              ctx.op = 'delete';
+            }
+          }
+          """;
 
   private final String indexName;
 
@@ -76,31 +91,6 @@ public class AuthorizationPermissionRemovedHandler
   @Override
   public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    if (entity.getPermissions() == null || entity.getPermissions().isEmpty()) {
-      // No permissions to process
-      LOG.debug("No permissions to remove for entity ID {}", entity.getId());
-      return;
-    }
-
-    final String script =
-        """
-          if (ctx._source.permissions != null) {
-            for (p in params.inputPermissions) {
-              for (permission in ctx._source.permissions) {
-                if (permission.type == p.type) {
-                  // Remove matching resource IDs
-                  permission.resourceIds.removeAll(p.resourceIds);
-                }
-              }
-            }
-            // Remove permissions with empty resourceIds
-            ctx._source.permissions.removeIf(permission -> permission.resourceIds.isEmpty());
-            if (ctx._source.permissions.isEmpty()) {
-              ctx.op = 'delete';
-            }
-          }
-      """;
-
     final List<Map<String, Object>> inputPermissions =
         entity.getPermissions().stream()
             .map(
@@ -115,8 +105,7 @@ public class AuthorizationPermissionRemovedHandler
     final Map<String, Object> params = new HashMap<>();
     params.put("inputPermissions", inputPermissions);
 
-    LOG.debug("Updating permissions for entity ID {}", entity.getId());
-    batchRequest.updateWithScript(indexName, entity.getId(), script, params);
+    batchRequest.updateWithScript(indexName, entity.getId(), UPDATE_PERMISSIONS_SCRIPT, params);
   }
 
   @Override
