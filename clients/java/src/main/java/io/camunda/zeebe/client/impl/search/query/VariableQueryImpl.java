@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.search.response.Variable;
 import io.camunda.zeebe.client.api.search.sort.VariableSort;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -92,7 +93,9 @@ public class VariableQueryImpl
   @Override
   public VariableQuery sort(final VariableSort value) {
     final VariableSortImpl sorting = (VariableSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toVariableSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 

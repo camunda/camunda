@@ -25,6 +25,7 @@ import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
 import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
 import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
+import io.camunda.zeebe.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.List;
 import java.util.Objects;
@@ -109,7 +110,9 @@ public class FlownodeInstanceTest extends ClientRestTest {
     // then
     final FlowNodeInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
-    final List<SearchQuerySortRequest> sorts = Objects.requireNonNull(request.getSort());
+    final List<SearchQuerySortRequest> sorts =
+        SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+            Objects.requireNonNull(request.getSort()));
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "processInstanceKey", SortOrderEnum.ASC);
