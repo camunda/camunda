@@ -437,7 +437,7 @@ public class TaskController extends ApiErrorController {
       @RequestBody final SaveVariablesRequest saveVariablesRequest) {
     final var taskSupplier = getTaskSupplier(taskId);
     if (permissionServices.hasPermissionToUpdateUserTask(TaskDTO.toTaskEntity(taskSupplier.get()))
-        && (!isUserRestrictionEnabled() || hasAccessToTask(getTaskSupplier(taskId)))) {
+        && (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier))) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);
