@@ -47,4 +47,26 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   record DocumentUpdate(String id, Map<String, Object> doc) {}
 
   record OperationsAggData(String batchOperationId, long finishedOperationsCount) {}
+
+  class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
+
+    @Override
+    public Collection<String> getNotFinishedBatchOperations() {
+      return List.of();
+    }
+
+    @Override
+    public List<OperationsAggData> getFinishedOperationsCount(
+        final List<String> batchOperationIds) {
+      return List.of();
+    }
+
+    @Override
+    public Integer bulkUpdate(final List<DocumentUpdate> documentUpdates) {
+      return 0;
+    }
+
+    @Override
+    public void close() throws Exception {}
+  }
 }
