@@ -53,12 +53,16 @@ public class UserTaskAssignmentDeniedApplierTest {
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, given);
 
     testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(initialAssignee));
+        userTaskKey,
+        UserTaskIntent.ASSIGNING,
+        given.setAssignee(initialAssignee).setAssigneeChanged());
     testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.ASSIGNED, given.setAssignee(initialAssignee));
+        userTaskKey,
+        UserTaskIntent.ASSIGNED,
+        given.setAssignee(initialAssignee).setAssigneeChanged());
 
     testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(newAssignee));
+        userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(newAssignee).setAssigneeChanged());
 
     Assertions.assertThat(userTaskState.getUserTask(userTaskKey).getAssignee())
         .isEqualTo(initialAssignee);
@@ -66,7 +70,8 @@ public class UserTaskAssignmentDeniedApplierTest {
         .isEqualTo(LifecycleState.ASSIGNING);
 
     // when
-    userTaskAssignmentDeniedApplierApplier.applyState(userTaskKey, given.setAssignee(newAssignee));
+    userTaskAssignmentDeniedApplierApplier.applyState(
+        userTaskKey, given.setAssignee(newAssignee).setAssigneeChanged());
 
     // then
     Assertions.assertThat(userTaskState.getIntermediateState(userTaskKey))
