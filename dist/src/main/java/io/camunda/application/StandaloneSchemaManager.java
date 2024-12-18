@@ -84,7 +84,7 @@ public class StandaloneSchemaManager {
     if (!"elasticsearch".equalsIgnoreCase(connectConfiguration.getType())) {
       LOG.error(
           "Cannot creating schema for anything other than Elasticsearch with this script for now...");
-      System.exit(0);
+      System.exit(1);
     }
 
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
