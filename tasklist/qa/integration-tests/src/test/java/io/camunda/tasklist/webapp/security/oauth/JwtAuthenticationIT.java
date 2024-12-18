@@ -43,7 +43,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
           + "=http://dummy-issuer/"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"auth", "test"})
+@ActiveProfiles({"auth", "test", "standalone"})
 public class JwtAuthenticationIT {
 
   @MockBean JwtDecoder jwtDecoder;
