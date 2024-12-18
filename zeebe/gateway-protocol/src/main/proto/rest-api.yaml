@@ -3607,7 +3607,7 @@ paths:
       operationId: searchUsageMetrics
       summary: Query usage metrics
       description: |
-        Search for usage metrics by given start date and end date
+        Search for usage metrics by given start date and end date.
       requestBody:
         required: true
         content:
