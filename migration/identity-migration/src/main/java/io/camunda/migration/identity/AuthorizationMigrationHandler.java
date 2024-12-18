@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthorizationMigrationHandler {
+public class AuthorizationMigrationHandler implements MigrationHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
   private final AuthorizationServices authorizationService;
@@ -40,6 +40,7 @@ public class AuthorizationMigrationHandler {
     this.managementIdentityProxy = managementIdentityProxy;
   }
 
+  @Override
   public void migrate() {
     LOG.debug("Migrating authorizations");
     UserResourceAuthorization lastRecord = null;
