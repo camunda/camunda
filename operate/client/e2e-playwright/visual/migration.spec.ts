@@ -16,6 +16,7 @@ import {
   mockResponses,
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
+import {URL_PATTERN} from '../constants';
 
 test.describe('migration view', () => {
   for (const theme of ['light', 'dark']) {
@@ -36,7 +37,7 @@ test.describe('migration view', () => {
       }, theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_PATTERN,
         mockResponses({
           groupedProcesses: mockGroupedProcesses,
           batchOperations: mockBatchOperations,
