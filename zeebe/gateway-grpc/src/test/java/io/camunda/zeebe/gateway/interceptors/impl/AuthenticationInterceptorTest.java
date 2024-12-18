@@ -122,7 +122,7 @@ public class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
-                  .isEqualTo("Expected a valid user, but user does not exist");
+                  .isEqualTo("Invalid credentials");
             });
   }
 
@@ -148,7 +148,7 @@ public class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
-                  .isEqualTo("Expected a valid password, but password is not valid");
+                  .isEqualTo("Invalid credentials");
             });
   }
 

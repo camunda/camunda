@@ -56,7 +56,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
     final var authorization = headers.get(AUTH_KEY);
     if (authorization == null) {
       LOGGER.debug(
-          "Denying call {} as no authentication information were provided",
+          "Denying call {} as no authentication information was provided",
           methodDescriptor.getFullMethodName());
       return deny(
           call,
@@ -97,8 +97,8 @@ public class AuthenticationInterceptor implements ServerInterceptor {
         return deny(
             call,
             Status.UNAUTHENTICATED
-                .augmentDescription("Expected a valid user, but user does not exist")
-                .withCause(new IllegalArgumentException("User does not exist")));
+                .augmentDescription("Invalid credentials")
+                .withCause(new IllegalArgumentException("Invalid credentials")));
       }
 
       final var user = userOpt.get();
@@ -110,8 +110,8 @@ public class AuthenticationInterceptor implements ServerInterceptor {
         return deny(
             call,
             Status.UNAUTHENTICATED
-                .augmentDescription("Expected a valid password, but password is not valid")
-                .withCause(new IllegalArgumentException("Password is not valid")));
+                .augmentDescription("Invalid credentials")
+                .withCause(new IllegalArgumentException("Invalid credentials")));
       }
 
       final var context = Context.current().withValue(USER_KEY, user.userKey());
