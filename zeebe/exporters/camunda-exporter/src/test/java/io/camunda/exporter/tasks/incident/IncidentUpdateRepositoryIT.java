@@ -9,13 +9,6 @@ package io.camunda.exporter.tasks.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
@@ -50,7 +43,6 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -63,32 +55,24 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
 @AutoCloseResources
-abstract sealed class IncidentUpdateRepositoryIT {
+abstract class IncidentUpdateRepositoryIT {
+  public static final int PARTITION_ID = 1;
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateRepositoryIT.class);
-
-  private static final int PARTITION_ID = 1;
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final PostImporterQueueTemplate postImporterQueueTemplate;
   protected final IncidentTemplate incidentTemplate;
@@ -147,113 +131,6 @@ abstract sealed class IncidentUpdateRepositoryIT {
   protected abstract <T> Collection<T> search(
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
-
-  static final class ElasticsearchIT extends IncidentUpdateRepositoryIT {
-    @Container
-    private static final ElasticsearchContainer CONTAINER =
-        TestSearchContainers.createDefeaultElasticsearchContainer();
-
-    @AutoCloseResource private final RestClientTransport transport = createTransport();
-    private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
-
-    public ElasticsearchIT() {
-      super("http://" + CONTAINER.getHttpHostAddress(), true);
-    }
-
-    @Override
-    protected IncidentUpdateRepository createRepository() {
-      return new ElasticsearchIncidentUpdateRepository(
-          PARTITION_ID,
-          postImporterQueueTemplate.getAlias(),
-          incidentTemplate.getAlias(),
-          listViewTemplate.getAlias(),
-          flowNodeInstanceTemplate.getAlias(),
-          operationTemplate.getAlias(),
-          client,
-          Runnable::run,
-          LOGGER);
-    }
-
-    @Override
-    protected <T> Collection<T> search(
-        final String index,
-        final String field,
-        final List<String> terms,
-        final Class<T> documentType)
-        throws IOException {
-      final var client = new ElasticsearchClient(transport);
-      final var values = terms.stream().map(FieldValue::of).toList();
-      final var query = QueryBuilders.terms(t -> t.field(field).terms(v -> v.value(values)));
-      return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
-          .map(Hit::source)
-          .toList();
-    }
-
-    private RestClientTransport createTransport() {
-      final var restClient =
-          RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
-      return new RestClientTransport(restClient, new JacksonJsonpMapper());
-    }
-  }
-
-  static final class OpenSearchIT extends IncidentUpdateRepositoryIT {
-    @Container
-    private static final OpensearchContainer<?> CONTAINER =
-        TestSearchContainers.createDefaultOpensearchContainer();
-
-    @AutoCloseResource
-    private final org.opensearch.client.transport.rest_client.RestClientTransport transport =
-        createTransport();
-
-    private final OpenSearchAsyncClient client = new OpenSearchAsyncClient(transport);
-
-    public OpenSearchIT() {
-      super(CONTAINER.getHttpHostAddress(), false);
-    }
-
-    @Override
-    protected IncidentUpdateRepository createRepository() {
-      return new OpenSearchIncidentUpdateRepository(
-          PARTITION_ID,
-          postImporterQueueTemplate.getAlias(),
-          incidentTemplate.getAlias(),
-          listViewTemplate.getAlias(),
-          flowNodeInstanceTemplate.getAlias(),
-          operationTemplate.getAlias(),
-          client,
-          Runnable::run,
-          LOGGER);
-    }
-
-    @Override
-    protected <T> Collection<T> search(
-        final String index,
-        final String field,
-        final List<String> terms,
-        final Class<T> documentType)
-        throws IOException {
-      final var client = new OpenSearchClient(transport);
-      final var values =
-          terms.stream().map(org.opensearch.client.opensearch._types.FieldValue::of).toList();
-      final var query =
-          org.opensearch.client.opensearch._types.query_dsl.QueryBuilders.terms()
-              .field(field)
-              .terms(v -> v.value(values))
-              .build()
-              .toQuery();
-      return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
-          .map(org.opensearch.client.opensearch.core.search.Hit::source)
-          .toList();
-    }
-
-    private org.opensearch.client.transport.rest_client.RestClientTransport createTransport() {
-      final var restClient =
-          org.opensearch.client.RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress()))
-              .build();
-      return new org.opensearch.client.transport.rest_client.RestClientTransport(
-          restClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
-    }
-  }
 
   @Nested
   final class GetIncidentDocumentsTest {
