@@ -19,7 +19,7 @@ import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EnumUtil {
+public final class EnumUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EnumUtil.class);
 
