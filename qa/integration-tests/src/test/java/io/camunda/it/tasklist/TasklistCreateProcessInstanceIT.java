@@ -32,13 +32,14 @@ public class TasklistCreateProcessInstanceIT {
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
-  private TestStandaloneCamunda broker = new TestStandaloneCamunda().withCamundaExporter();
+  private TestStandaloneCamunda standaloneCamunda =
+      new TestStandaloneCamunda().withCamundaExporter();
 
   @BeforeEach
   public void beforeAll() {
-    tasklistRestClient = broker.newTasklistClient();
+    tasklistRestClient = standaloneCamunda.newTasklistClient();
     defaultCamundaClient =
-        broker
+        standaloneCamunda
             .newClientBuilder()
             .preferRestOverGrpc(true)
             .defaultRequestTimeout(Duration.ofSeconds(15))

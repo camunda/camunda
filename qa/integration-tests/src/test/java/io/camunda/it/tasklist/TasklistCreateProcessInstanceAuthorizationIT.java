@@ -46,7 +46,7 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
-  private TestStandaloneCamunda broker =
+  private TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -56,12 +56,13 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
   public void beforeAll() {
     final var defaultUser = "demo";
     final var searchClients =
-        SearchClientsUtil.createSearchClients(broker.getElasticSearchHostAddress());
+        SearchClientsUtil.createSearchClients(standaloneCamunda.getElasticSearchHostAddress());
 
     // intermediate state, so that a user exists that has
     // access to the storage to retrieve data
     try (final var intermediateAuthClient =
-        AuthorizationsUtil.create(broker, broker.getElasticSearchHostAddress())) {
+        AuthorizationsUtil.create(
+            standaloneCamunda, standaloneCamunda.getElasticSearchHostAddress())) {
       intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
@@ -79,9 +80,9 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
     }
 
     adminCamundaClient =
-        AuthorizationsUtil.createClient(broker, ADMIN_USER_NAME, ADMIN_USER_PASSWORD);
-    adminAuthClient = new AuthorizationsUtil(broker, adminCamundaClient, searchClients);
-    tasklistRestClient = broker.newTasklistClient();
+        AuthorizationsUtil.createClient(standaloneCamunda, ADMIN_USER_NAME, ADMIN_USER_PASSWORD);
+    adminAuthClient = new AuthorizationsUtil(standaloneCamunda, adminCamundaClient, searchClients);
+    tasklistRestClient = standaloneCamunda.newTasklistClient();
 
     // deploy a process as admin user
     deployResource(adminCamundaClient);
