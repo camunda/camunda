@@ -33,7 +33,7 @@ import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
-import {shouldDisplayInfoNotification} from './Details/shouldDisplayInfoNotification';
+import {parseJSON} from 'modules/utils/jsonUtils';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -151,11 +151,11 @@ const Task: React.FC = observer(() => {
   }
 
   function handleSubmissionFailure(error: Error) {
-    const errorMessage = isRequestError(error)
-      ? (error?.networkError?.message ?? error.message)
-      : error.message;
-
-    if (shouldDisplayInfoNotification(errorMessage)) {
+    const errorMessage = parseJSON(error?.message);
+    if (
+      errorMessage?.status === 504 &&
+      errorMessage?.error_code === 'TASK_PROCESSING_TIMEOUT'
+    ) {
       tracking.track({eventName: 'task-completion-delayed-notification'});
       notificationsStore.displayNotification({
         kind: 'info',
@@ -166,19 +166,29 @@ const Task: React.FC = observer(() => {
       return;
     }
 
-    const statusMatch = errorMessage.match(/status:\s*(\d+)/);
-    const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : undefined;
-
-    if (statusCode === 409) {
+    if (
+      errorMessage?.status === 409 &&
+      errorMessage?.error_code === 'TASK_ALREADY_IN_PROCESSING'
+    ) {
       tracking.track({eventName: 'task-completion-rejected-notification'});
-    }
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: t('taskCouldNotBeCompletedNotification'),
+        subtitle: t('taskDetailsTaskCompletionRejectionErrorSubtitle'),
+        isDismissable: true,
+      });
+    } else {
+      const errorMessage = isRequestError(error)
+        ? (error?.networkError?.message ?? error?.message)
+        : error?.message;
 
-    notificationsStore.displayNotification({
-      kind: 'error',
-      title: t('taskCouldNotBeCompletedNotification'),
-      subtitle: getCompleteTaskErrorMessage(errorMessage, statusCode),
-      isDismissable: true,
-    });
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: t('taskCouldNotBeCompletedNotification'),
+        subtitle: getCompleteTaskErrorMessage(errorMessage),
+        isDismissable: true,
+      });
+    }
 
     // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
     if (shouldFetchMore(errorMessage)) {

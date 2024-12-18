@@ -32,16 +32,4 @@ describe('getTaskAssignmentChangeErrorMessage', () => {
       'Service is not reachable',
     );
   });
-
-  it('should return assignment rejected by system error message', () => {
-    expect(getTaskAssignmentChangeErrorMessage(undefined, 409, false)).toBe(
-      'The task assignment was rejected by the system',
-    );
-  });
-
-  it('should return unassignment rejected by system error message', () => {
-    expect(getTaskAssignmentChangeErrorMessage(undefined, 409, true)).toBe(
-      'The task unassignment was rejected by the system',
-    );
-  });
 });

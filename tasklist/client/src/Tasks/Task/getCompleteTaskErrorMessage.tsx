@@ -8,7 +8,7 @@
 
 import {t} from 'i18next';
 
-function getCompleteTaskErrorMessage(code: string, statusCode?: number) {
+function getCompleteTaskErrorMessage(code: string) {
   if (code === 'Task is not assigned') {
     return t('taskNotCompletedNotAssigned');
   }
@@ -19,10 +19,6 @@ function getCompleteTaskErrorMessage(code: string, statusCode?: number) {
 
   if (code === 'Task is not active') {
     return undefined;
-  }
-
-  if (statusCode === 409) {
-    return t('taskDetailsTaskCompletionRejectionErrorSubtitle');
   }
 
   return t('taskNotCompletedNotReachable');

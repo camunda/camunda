@@ -520,8 +520,43 @@ class TaskServiceTest {
         .hasMessage("reason for error");
   }
 
-  @Test
-  void assignZeebeUserTaskException() {
+  private static Stream<Arguments> exceptionScenarios() {
+    return Stream.of(
+        Arguments.of(
+            // Existing Test: Generic ClientException
+            new ClientException("reason for error"), "reason for error"),
+        Arguments.of(
+            // Invalid State Exception
+            new ClientException(
+                "Command 'ASSIGN' rejected with code 'INVALID_STATE': Expected to assign user task with key '123', but it is in state 'ASSIGNING'"),
+            """
+          { "status": 409,
+            "error_code": "TASK_ALREADY_IN_PROCESSING",
+            "message": "Task is already being processed.",
+            "instance": "/v2/user-tasks/123"
+          }
+          """),
+        Arguments.of(
+            // Timeout Exception
+            new ClientException(
+                "io.camunda.zeebe.client.api.command.ClientException: io.camunda.zeebe.client.api.command.ClientException: java.net.SocketTimeoutException: 10 SECONDS",
+                new ClientException(
+                    "io.camunda.zeebe.client.api.command.ClientException: java.net.SocketTimeoutException: 10 SECONDS",
+                    new java.net.SocketTimeoutException(
+                        "java.net.SocketTimeoutException: 10 SECONDS"))),
+            """
+            { "status": 504,
+              "error_code": "TASK_PROCESSING_TIMEOUT",
+              "message": "The request timed out while processing the task.",
+              "instance": "/v2/user-tasks/123"
+            }
+            """));
+  }
+
+  @ParameterizedTest
+  @MethodSource("exceptionScenarios")
+  void assignZeebeUserTaskException(
+      final ClientException exceptionToThrow, final String expectedMessage) {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
@@ -536,18 +571,18 @@ class TaskServiceTest {
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     when(user.getUserId()).thenReturn(providedAssignee);
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)))
+    when(zeebeClient.newUserTaskAssignCommand(Long.parseLong(taskId)))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()))
+    when(zeebeClient.newUserTaskAssignCommand(Long.parseLong(taskId)).assignee(any()))
         .thenReturn(mock(AssignUserTaskCommandStep1.class));
-    when(zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(any()).send())
-        .thenThrow(new ClientException("reason for error"));
+    when(zeebeClient.newUserTaskAssignCommand(Long.parseLong(taskId)).assignee(any()).send())
+        .thenThrow(exceptionToThrow);
 
     // Then
     assertThatThrownBy(
             () -> instance.assignTask(taskId, providedAssignee, providedAllowOverrideAssignment))
         .isInstanceOf(TasklistRuntimeException.class)
-        .hasMessage("reason for error");
+        .hasMessage(expectedMessage);
   }
 
   @ParameterizedTest

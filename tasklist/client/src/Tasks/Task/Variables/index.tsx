@@ -35,7 +35,7 @@ import {ResetForm} from './ResetForm';
 import type {FormValues} from './types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import {shouldDisplayInfoNotification} from '../Details/shouldDisplayInfoNotification';
+import {parseJSON} from 'modules/utils/jsonUtils';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -126,11 +126,17 @@ const Variables: React.FC<Props> = ({
 
           setSubmissionState('finished');
         } catch (error) {
-          const typedError = error as Error;
-          onSubmitFailure(typedError);
-          if (!shouldDisplayInfoNotification(typedError.message)) {
-            setSubmissionState('error');
+          const errorMessage = parseJSON((error as Error)?.message);
+
+          if (
+            errorMessage?.status === 504 &&
+            errorMessage?.error_code === 'TASK_PROCESSING_TIMEOUT'
+          ) {
+            onSubmitFailure(error as Error);
+            return;
           }
+          onSubmitFailure(error as Error);
+          setSubmissionState('error');
         }
       }}
       initialValues={variables.reduce(
