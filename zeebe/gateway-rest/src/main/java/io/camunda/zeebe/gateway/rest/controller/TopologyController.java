@@ -16,11 +16,10 @@ import io.camunda.zeebe.gateway.protocol.rest.Partition.HealthEnum;
 import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.gateway.rest.Loggers;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
@@ -33,7 +32,7 @@ public final class TopologyController {
     this.client = client;
   }
 
-  @GetMapping(path = "/topology", produces = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaGetMapping(path = "/topology")
   public TopologyResponse get() {
 
     final var response = new TopologyResponse();

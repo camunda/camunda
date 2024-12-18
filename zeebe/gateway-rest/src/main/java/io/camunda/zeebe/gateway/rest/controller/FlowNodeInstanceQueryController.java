@@ -17,7 +17,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +34,7 @@ public class FlowNodeInstanceQueryController {
     this.flownodeInstanceServices = flownodeInstanceServices;
   }
 
-  @PostMappingStringKeys(path = "/search")
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<FlowNodeInstanceSearchQueryResponse> searchFlownodeInstances(
       @RequestBody(required = false) final FlowNodeInstanceSearchQueryRequest query) {
     return SearchQueryRequestMapper.toFlownodeInstanceQuery(query)

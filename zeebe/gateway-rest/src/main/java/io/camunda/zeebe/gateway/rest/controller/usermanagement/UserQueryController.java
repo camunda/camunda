@@ -14,7 +14,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestQueryController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +31,7 @@ public class UserQueryController {
     this.userServices = userServices;
   }
 
-  @PostMappingStringKeys(path = "/search")
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<UserSearchResponse> searchUsers(
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)

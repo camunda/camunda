@@ -18,14 +18,14 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,14 +36,14 @@ public class DecisionDefinitionQueryController {
 
   @Autowired private DecisionDefinitionServices decisionDefinitionServices;
 
-  @PostMappingStringKeys(path = "/search")
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
       @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @GetMapping(
+  @CamundaGetMapping(
       path = "/{decisionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionDefinitionXml(

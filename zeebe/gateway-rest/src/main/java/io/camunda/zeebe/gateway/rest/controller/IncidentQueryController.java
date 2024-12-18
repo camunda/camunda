@@ -19,8 +19,8 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.annotation.GetMappingStringKeys;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import jakarta.validation.ValidationException;
 import java.nio.charset.StandardCharsets;
@@ -41,14 +41,14 @@ public class IncidentQueryController {
     this.incidentServices = incidentServices;
   }
 
-  @PostMappingStringKeys(path = "/search")
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<IncidentSearchQueryResponse> searchIncidents(
       @RequestBody(required = false) final IncidentSearchQueryRequest query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @GetMappingStringKeys(path = "/{incidentKey}")
+  @CamundaGetMapping(path = "/{incidentKey}")
   public ResponseEntity<IncidentItem> getByKey(
       @PathVariable("incidentKey") final Long incidentKey) {
     try {

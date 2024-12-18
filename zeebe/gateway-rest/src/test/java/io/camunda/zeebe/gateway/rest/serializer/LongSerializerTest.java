@@ -37,7 +37,7 @@ class LongSerializerTest {
 
   @BeforeEach
   void setUp() {
-    longSerializer = new LongSerializer(false);
+    longSerializer = new LongSerializer();
     jsonGenerator = mock(JsonGenerator.class);
     context = mock(JsonStreamContext.class);
     parentContext = mock(JsonStreamContext.class);
@@ -80,19 +80,6 @@ class LongSerializerTest {
     longSerializer.serialize(1L, jsonGenerator, null);
     // then
     verify(jsonGenerator).writeNumber(1L);
-    verify(httpServletRequest).getHeader(HttpHeaders.ACCEPT);
-  }
-
-  @Test
-  void shouldSerializeRestClassWithDefaultStringIfNoHeaderAvailable() throws IOException {
-    // given
-    doReturn(new UserTaskItem()).when(context).getCurrentValue();
-    doReturn("elementInstanceKey").when(context).getCurrentName();
-    longSerializer = new LongSerializer(true);
-    // when
-    longSerializer.serialize(1L, jsonGenerator, null);
-    // then
-    verify(jsonGenerator).writeString(String.valueOf(1L));
     verify(httpServletRequest).getHeader(HttpHeaders.ACCEPT);
   }
 

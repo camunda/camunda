@@ -14,7 +14,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.DecisionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +35,7 @@ public class DecisionDefinitionController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMappingStringKeys(path = "/evaluation")
+  @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       @RequestBody final EvaluateDecisionRequest evaluateDecisionRequest) {
     return RequestMapper.toEvaluateDecisionRequest(

@@ -22,18 +22,9 @@ public class LongSerializer extends JsonSerializer<Long> {
   public static final String PACKAGE_GATEWAY_REST = "io.camunda.zeebe.gateway.protocol.rest";
   public static final String KEY = "Key";
   public static final String KEYS = "Keys";
-  private final boolean defaultString;
-
-  public LongSerializer(final boolean defaultString) {
-    this.defaultString = defaultString;
-  }
 
   private void writeDefault(final Long value, final JsonGenerator gen) throws IOException {
-    if (defaultString) {
-      writeString(value, gen);
-    } else {
-      writeNumber(value, gen);
-    }
+    writeNumber(value, gen);
   }
 
   private void writeString(final Long value, final JsonGenerator gen) throws IOException {

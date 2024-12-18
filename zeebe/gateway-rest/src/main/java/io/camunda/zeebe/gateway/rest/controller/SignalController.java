@@ -14,7 +14,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +35,7 @@ public class SignalController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMappingStringKeys(path = "/broadcast")
+  @CamundaPostMapping(path = "/broadcast")
   public CompletableFuture<ResponseEntity<Object>> broadcastSignal(
       @RequestBody final SignalBroadcastRequest request) {
     return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isEnabled())

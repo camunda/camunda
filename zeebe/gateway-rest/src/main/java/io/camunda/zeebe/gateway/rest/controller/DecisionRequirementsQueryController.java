@@ -15,7 +15,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,7 +29,7 @@ public class DecisionRequirementsQueryController {
 
   @Autowired private DecisionRequirementsServices decisionRequirementsServices;
 
-  @PostMappingStringKeys(path = "/search")
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionRequirementsSearchQueryResponse> searchUserTasks(
       @RequestBody(required = false) final DecisionRequirementsSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)

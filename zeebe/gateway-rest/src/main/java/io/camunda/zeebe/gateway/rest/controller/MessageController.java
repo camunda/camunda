@@ -16,7 +16,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.annotation.PostMappingStringKeys;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +37,7 @@ public class MessageController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMappingStringKeys(path = "/publication")
+  @CamundaPostMapping(path = "/publication")
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
       @RequestBody final MessagePublicationRequest publicationRequest) {
     return RequestMapper.toMessagePublicationRequest(
@@ -45,7 +45,7 @@ public class MessageController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
   }
 
-  @PostMappingStringKeys(path = "/correlation")
+  @CamundaPostMapping(path = "/correlation")
   public CompletableFuture<ResponseEntity<Object>> correlateMessage(
       @RequestBody final MessageCorrelationRequest correlationRequest) {
     return RequestMapper.toMessageCorrelationRequest(

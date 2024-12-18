@@ -11,12 +11,11 @@ import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -31,9 +30,7 @@ public class ClockController {
     this.clockServices = clockServices;
   }
 
-  @PutMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPutMapping
   public CompletableFuture<ResponseEntity<Object>> pinClock(
       @RequestBody final ClockPinRequest pinRequest) {
 
@@ -41,9 +38,9 @@ public class ClockController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::pinClock);
   }
 
-  @PostMapping(
+  @CamundaPostMapping(
       path = "/reset",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+      consumes = {})
   public CompletableFuture<ResponseEntity<Object>> resetClock() {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () -> clockServices.withAuthentication(RequestMapper.getAuthentication()).resetClock());

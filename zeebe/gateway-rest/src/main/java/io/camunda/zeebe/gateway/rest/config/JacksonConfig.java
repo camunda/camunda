@@ -21,7 +21,7 @@ public class JacksonConfig {
   @Bean("gatewayRestObjectMapperCustomizer")
   public Consumer<Jackson2ObjectMapperBuilder> gatewayRestObjectMapperCustomizer() {
     final var module = new SimpleModule("gateway-rest-module");
-    module.addSerializer(Long.class, new LongSerializer(false));
+    module.addSerializer(Long.class, new LongSerializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

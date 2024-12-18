@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@RequestMapping(method = RequestMethod.GET)
-public @interface GetMappingStringKeys {
+@RequestMapping(method = RequestMethod.POST)
+public @interface CamundaPostMapping {
   /** Alias for {@link RequestMapping#path}. */
   @AliasFor(annotation = RequestMapping.class)
   String[] path() default {};
@@ -35,4 +35,8 @@ public @interface GetMappingStringKeys {
     RequestMapper.MEDIA_TYPE_KEYS_STRING_VALUE,
     MediaType.APPLICATION_PROBLEM_JSON_VALUE,
   };
+
+  /** Alias for {@link RequestMapping#consumes}. */
+  @AliasFor(annotation = RequestMapping.class)
+  String[] consumes() default {MediaType.APPLICATION_JSON_VALUE};
 }

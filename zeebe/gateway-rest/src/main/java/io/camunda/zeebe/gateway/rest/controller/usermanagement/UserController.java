@@ -12,13 +12,12 @@ import io.camunda.service.UserServices.CreateUserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.NotImplementedException;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -33,9 +32,7 @@ public class UserController {
     this.passwordEncoder = passwordEncoder;
   }
 
-  @PostMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
     //    return RequestMapper.toCreateUserRequest(userRequest, passwordEncoder)

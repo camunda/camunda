@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@RequestMapping(method = RequestMethod.POST)
-public @interface PostMappingStringKeys {
+@RequestMapping(method = RequestMethod.PUT)
+public @interface CamundaPutMapping {
   /** Alias for {@link RequestMapping#path}. */
   @AliasFor(annotation = RequestMapping.class)
   String[] path() default {};
