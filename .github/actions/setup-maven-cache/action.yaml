@@ -76,10 +76,9 @@ runs:
         fi
 
       # Check if PR contains a label to disable the cache
-    - name: Check if cache is disabled
-      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
-      uses: ./.github/actions/is-cache-disabled
-      id: is-cache-disabled
+    - name: Check if cache is enabled
+      uses: ./.github/actions/is-cache-enabled
+      id: is-cache-enabled
 
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
@@ -92,8 +91,8 @@ runs:
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
 
     - name: Restore maven cache
-      # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is not disabled
-      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') && steps.is-cache-disabled.outputs.is-cache-disabled == 'false' }}
+      # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
+      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
       uses: actions/cache/restore@v4
       with:
         # This has to match the 'Cache local Maven repository' step above
