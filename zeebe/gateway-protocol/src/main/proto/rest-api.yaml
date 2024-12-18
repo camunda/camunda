@@ -5300,11 +5300,11 @@ components:
       type: object
       properties:
         startTime:
-          description: The start date and time for usage metrics.
+          description: The start date for usage metrics, including this date.
           type: string
           format: date-time
         endTime:
-          description: The end date and time for usage metrics.
+          description: The end date for usage metrics, including this date.
           type: string
           format: date-time
       required:
