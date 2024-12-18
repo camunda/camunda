@@ -9,6 +9,7 @@ package io.camunda.authentication.service;
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.search.entities.RoleEntity;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -32,11 +33,10 @@ public class BasicCamundaUserService implements CamundaUserService {
         authenticatedUser.getAuthorizedApplications(),
         authenticatedUser.getTenants(),
         authenticatedUser.getGroups(),
-        authenticatedUser.getRoles(),
+        authenticatedUser.getRoles().stream().map(RoleEntity::name).toList(),
         authenticatedUser.getSalesPlanType(),
         authenticatedUser.getC8Links(),
-        authenticatedUser.canLogout(),
-        authenticatedUser.isApiUser());
+        authenticatedUser.canLogout());
   }
 
   @Override

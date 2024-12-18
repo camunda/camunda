@@ -11,6 +11,7 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -98,6 +99,35 @@ final class CamundaExporterIT {
 
     when(indexTemplate.getFullQualifiedName())
         .thenReturn(CONFIG_PREFIX + "-template_index_qualified_name");
+  }
+
+  @TestTemplate
+  void shouldOpenDifferentPartitions(
+      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var p1Exporter = new CamundaExporter();
+    final var p1Context = getContextFromConfig(config, 1);
+    p1Exporter.configure(p1Context);
+
+    final var p2Exporter = new CamundaExporter();
+    final var p2Context = getContextFromConfig(config, 2);
+    p2Exporter.configure(p2Context);
+
+    // when
+    new Thread(
+            () -> {
+              final var p1ExporterController = new ExporterTestController();
+              p1Exporter.open(p1ExporterController);
+            })
+        .start();
+
+    // then
+    assertThatNoException()
+        .isThrownBy(
+            () -> {
+              final var p2ExporterController = new ExporterTestController();
+              p1Exporter.open(p2ExporterController);
+            });
   }
 
   @TestTemplate
@@ -306,6 +336,7 @@ final class CamundaExporterIT {
             "custom-prefix-operate-incident-8.3.1_",
             "custom-prefix-operate-list-view-8.3.0_",
             "custom-prefix-operate-metric-8.3.0_",
+            "custom-prefix-operate-message-8.5.0_",
             "custom-prefix-operate-operation-8.4.1_",
             "custom-prefix-operate-post-importer-queue-8.3.0_",
             "custom-prefix-operate-process-8.3.0_",
@@ -465,8 +496,13 @@ final class CamundaExporterIT {
   }
 
   private Context getContextFromConfig(final ExporterConfiguration config) {
+    return getContextFromConfig(config, 1);
+  }
+
+  private Context getContextFromConfig(final ExporterConfiguration config, final int partitionId) {
     return new ExporterTestContext()
-        .setConfiguration(new ExporterTestConfiguration<>(config.getConnect().getType(), config));
+        .setConfiguration(new ExporterTestConfiguration<>(config.getConnect().getType(), config))
+        .setPartitionId(partitionId);
   }
 
   private CamundaExporter createExporter(
@@ -505,6 +541,7 @@ final class CamundaExporterIT {
     @BeforeEach
     void setup() {
       controller.resetScheduledTasks();
+      controller.resetLastRanAt();
     }
 
     @TestTemplate
@@ -512,25 +549,27 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      createSchemas(config, clientAdapter);
+      // adds a not complete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
       final var context = spy(getContextFromConfig(config));
       doReturn(partitionId).when(context).getPartitionId();
       camundaExporter.configure(context);
       camundaExporter.open(controller);
 
       // when
-
-      // adds a not complete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
-
-      controller.runScheduledTasks(Duration.ofMinutes(1));
-
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
               r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
+
+      // if importers completed this would trigger scheduled flush which would result in the
+      // record being visible in ES/OS
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
 
       // then
       assertThat(controller.getPosition()).isEqualTo(-1);
@@ -638,6 +677,15 @@ final class CamundaExporterIT {
               .setCompleted(completed);
 
       client.index(entity.getId(), importPositionIndexName, entity);
+    }
+
+    private void createSchemas(
+        final ExporterConfiguration config, final SearchClientAdapter adapter) throws IOException {
+      final var exporter = new CamundaExporter();
+      exporter.configure(getContextFromConfig(config));
+      exporter.open(new ExporterTestController());
+
+      adapter.refresh();
     }
   }
 }

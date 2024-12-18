@@ -199,14 +199,7 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (importBatch == null
           || importBatch.getHits() == null
           || importBatch.getHits().size() == 0) {
-        if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
-          recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
-        }
-
-        if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
-          recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
-              importPositionHolder, importValueType.getAliasTemplate(), partitionId);
-        }
+        markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);
@@ -225,6 +218,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         rescheduleReader(nextRunDelay);
       }
     } catch (final NoSuchIndexException ex) {
+      markRecordReaderCompletedIfMinimumEmptyBatchesReceived();
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
@@ -550,6 +544,25 @@ public class OpensearchRecordsReader implements RecordsReader {
         return false;
       }
     };
+  }
+
+  private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
+    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+      recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+    }
+
+    if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+      try {
+        recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+            importPositionHolder, importValueType.getAliasTemplate(), partitionId);
+      } catch (final IOException e) {
+        LOGGER.error(
+            "Failed when trying to mark record reader [{}-{}] as completed",
+            importValueType.getAliasTemplate(),
+            partitionId,
+            e);
+      }
+    }
   }
 
   private void executeNext() {

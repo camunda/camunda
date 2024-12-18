@@ -8,11 +8,11 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.client.ZeebeClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.zeebe.containers.ZeebeContainer;
 import java.net.URI;
 import java.net.URISyntaxException;

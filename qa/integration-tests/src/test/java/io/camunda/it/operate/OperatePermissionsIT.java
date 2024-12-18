@@ -7,18 +7,18 @@
  */
 package io.camunda.it.operate;
 
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static io.camunda.it.client.QueryTest.deployResource;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ;
-import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.application.Profile;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;

@@ -14,12 +14,16 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
 
 public final class CompleteJobTest extends GatewayTest {
@@ -145,5 +149,137 @@ public final class CompleteJobTest extends GatewayTest {
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
 
     assertThat(brokerRequestValue.getResult().isDenied()).isFalse();
+
+    // check default values
+    assertThat(brokerRequestValue.getResult().getCorrections().getAssignee()).isEqualTo("");
+    assertThat(brokerRequestValue.getResult().getCorrections().getDueDate()).isEqualTo("");
+    assertThat(brokerRequestValue.getResult().getCorrections().getFollowUpDate()).isEqualTo("");
+    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateUsersList())
+        .isEqualTo(List.of());
+    assertThat(brokerRequestValue.getResult().getCorrections().getCandidateGroupsList())
+        .isEqualTo(List.of());
+    assertThat(brokerRequestValue.getResult().getCorrections().getPriority()).isEqualTo(-1);
+
+    assertThat(brokerRequestValue.getResult().getCorrectedAttributes()).isEqualTo(List.of());
+  }
+
+  @Test
+  public void shouldMapRequestAndResponseWithResultCorrectionsFullySet() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+
+    final JobResult jobResult =
+        JobResult.newBuilder()
+            .setCorrections(
+                io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections
+                    .newBuilder()
+                    .setAssignee("Assignee")
+                    .setDueDate("2025-05-23T01:02:03+01:00")
+                    .setFollowUpDate("2025-06-23T01:02:03+01:00")
+                    .setCandidateUsers(
+                        StringList.newBuilder().addAllValues(List.of("User A, User B")).build())
+                    .setCandidateGroups(
+                        StringList.newBuilder().addAllValues(List.of("Group A", "group B")).build())
+                    .setPriority(20)
+                    .build())
+            .build();
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setResult(jobResult).build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
+
+    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+
+    final JobResultCorrections expectedCorrections =
+        new JobResultCorrections()
+            .setAssignee("Assignee")
+            .setDueDate("2025-05-23T01:02:03+01:00")
+            .setFollowUpDate("2025-06-23T01:02:03+01:00")
+            .setCandidateUsersList(List.of("User A, User B"))
+            .setCandidateGroupsList(List.of("Group A", "group B"))
+            .setPriority(20);
+
+    final List<String> expectedCorrectedAttributes =
+        List.of(
+            UserTaskRecord.ASSIGNEE,
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.CANDIDATE_USERS,
+            UserTaskRecord.CANDIDATE_GROUPS,
+            UserTaskRecord.PRIORITY);
+
+    verifyJobResultCorrections(
+        expectedCorrections, expectedCorrectedAttributes, brokerRequestValue);
+  }
+
+  @Test
+  public void shouldMapRequestAndResponseWithResultCorrectionsPartiallySet() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+
+    final JobResult jobResult =
+        JobResult.newBuilder()
+            .setCorrections(
+                io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections
+                    .newBuilder()
+                    .setAssignee("Assignee")
+                    .setDueDate("2025-05-23T01:02:03+01:00")
+                    .setFollowUpDate("2025-06-23T01:02:03+01:00")
+                    .setPriority(20)
+                    .build())
+            .build();
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setResult(jobResult).build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
+
+    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+
+    final List<String> expectedCorrectedAttributes =
+        List.of(
+            UserTaskRecord.ASSIGNEE,
+            UserTaskRecord.DUE_DATE,
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY);
+
+    final JobResultCorrections expectedCorrections =
+        new JobResultCorrections()
+            .setAssignee("Assignee")
+            .setDueDate("2025-05-23T01:02:03+01:00")
+            .setFollowUpDate("2025-06-23T01:02:03+01:00")
+            .setCandidateUsersList(List.of())
+            .setCandidateGroupsList(List.of())
+            .setPriority(20);
+
+    verifyJobResultCorrections(
+        expectedCorrections, expectedCorrectedAttributes, brokerRequestValue);
+  }
+
+  private static void verifyJobResultCorrections(
+      final JobResultCorrections expectedCorrections,
+      final List<String> correctedAttributes,
+      final JobRecord brokerRequestValue) {
+
+    assertThat(brokerRequestValue.getResult().getCorrections()).isEqualTo(expectedCorrections);
+    assertThat(brokerRequestValue.getResult().getCorrectedAttributes())
+        .isEqualTo(correctedAttributes);
   }
 }

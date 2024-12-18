@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.nio.file.Path;
 import java.util.List;
@@ -219,7 +219,12 @@ final class PartitionLeaveTest {
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
     final var systemContext =
         new SystemContext(
-            brokerCfg, actorScheduler, atomixCluster, brokerClient, new SecurityConfiguration());
+            brokerCfg,
+            actorScheduler,
+            atomixCluster,
+            brokerClient,
+            new SecurityConfiguration(),
+            null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

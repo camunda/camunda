@@ -81,7 +81,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           ],
           "page": {
               "totalItems": 1,
-              "firstSortValues": [],
+              "firstSortValues": ["f"],
               "lastSortValues": [
                   "v"
               ]
@@ -102,7 +102,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "alpha",
                       "<default>",
                       "formId")))
-          .sortValues(new Object[] {"v"})
+          .firstSortValues(new Object[] {"f"})
+          .lastSortValues(new Object[] {"v"})
           .build();
   private static final String FORM_ITEM_JSON =
       """

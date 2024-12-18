@@ -22,6 +22,7 @@ import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTempla
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_USERS;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_BPMN_ID;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_INSTANCE_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.IMPLEMENTATION;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PROCESS_DEFINITION_ID;
@@ -36,6 +37,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,6 +81,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
+    queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
 
     return and(queries);
   }

@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -45,7 +45,7 @@ public class MappingCreateAuthorizationIT {
   @AutoCloseResource private static ZeebeClient client;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -71,6 +71,7 @@ public class MappingCreateAuthorizationIT {
             .newCreateMappingCommand()
             .claimName("claimName")
             .claimValue("claimValue")
+            .name("name")
             .send()
             .join();
 
@@ -95,6 +96,7 @@ public class MappingCreateAuthorizationIT {
               .newCreateMappingCommand()
               .claimName("claimName")
               .claimValue("claimValue")
+              .name("name")
               .send()
               .join();
 
@@ -113,15 +115,20 @@ public class MappingCreateAuthorizationIT {
     // when
     try (final var client = authUtil.createClient(authUsername, password)) {
       final var response =
-          client.newCreateMappingCommand().claimName("claimName").claimValue("claimValue").send();
+          client
+              .newCreateMappingCommand()
+              .claimName("claimName")
+              .claimValue("claimValue")
+              .name("name")
+              .send();
 
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'MAPPING_RULE'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
     }
   }
 }

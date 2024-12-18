@@ -45,7 +45,7 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
     LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.count(dbQuery);
     final var hits = groupMapper.search(dbQuery).stream().map(this::map).toList();
-    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   private GroupEntity map(final GroupDbModel model) {

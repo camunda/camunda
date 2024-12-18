@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.client.protocol.rest.UserRequest;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
@@ -23,10 +24,10 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
-import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -60,6 +61,7 @@ public class BasicAuthIT {
   private static final String PASSWORD = "correct_password";
   @MockBean UserServices userService;
   @MockBean AuthorizationServices authorizationServices;
+  @MockBean RoleServices roleServices;
   @MockBean TenantServices tenantServices;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private PasswordEncoder passwordEncoder;
@@ -76,21 +78,21 @@ public class BasicAuthIT {
             new SearchQueryResult<>(
                 1,
                 List.of(new UserEntity(1L, USERNAME, "name", "", passwordEncoder.encode(PASSWORD))),
+                null,
                 null));
     when(tenantServices.getTenantsByMemberKey(anyLong()))
         .thenReturn(List.of(new TenantEntity(9L, "T1", "Tenant 1", Set.of())));
 
-    when(authorizationServices.search(any()))
+    when(authorizationServices.findAll(any()))
         .thenReturn(
-            new SearchQueryResult<>(
-                1,
-                List.of(
-                    new AuthorizationEntity(
-                        1L,
-                        AuthorizationOwnerType.USER.name(),
-                        AuthorizationResourceType.APPLICATION.name(),
-                        List.of(new Permission(PermissionType.ACCESS, Set.of("*"))))),
-                null));
+            List.of(
+                new AuthorizationEntity(
+                    1L,
+                    AuthorizationOwnerType.USER.name(),
+                    AuthorizationResourceType.APPLICATION.name(),
+                    List.of(new Permission(PermissionType.ACCESS, Set.of("*"))))));
+
+    when(roleServices.findAll(any())).thenReturn(List.of());
 
     content =
         objectMapper.writeValueAsString(

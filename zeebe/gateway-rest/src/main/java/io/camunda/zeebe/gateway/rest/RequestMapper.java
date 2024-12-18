@@ -35,6 +35,7 @@ import com.google.monitoring.v3.UpdateGroupRequest;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
@@ -359,7 +360,7 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () -> new MappingDTO(request.getClaimName(), request.getClaimValue()));
+        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -463,6 +464,7 @@ public class RequestMapper {
 
   public static Authentication getAuthentication() {
     Long authenticatedUserKey = null;
+    final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
     final var token =
@@ -479,6 +481,8 @@ public class RequestMapper {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaUser authenticatedPrincipal) {
         authenticatedUserKey = authenticatedPrincipal.getUserKey();
+        authenticatedRoleKeys.addAll(
+            authenticatedPrincipal.getRoles().stream().map(RoleEntity::roleKey).toList());
         token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
       }
 
@@ -494,6 +498,7 @@ public class RequestMapper {
     return new Builder()
         .token(token.build())
         .user(authenticatedUserKey)
+        .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
         .build();
   }
@@ -725,9 +730,7 @@ public class RequestMapper {
 
     if (jobResultCorrections.getAssignee() != null) {
       corrections.setAssignee(jobResultCorrections.getAssignee());
-      // `UserTaskRecord.ASSIGNEE` will be available after merging
-      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
-      correctedAttributes.add("assignee");
+      correctedAttributes.add(UserTaskRecord.ASSIGNEE);
     }
     if (jobResultCorrections.getDueDate() != null) {
       corrections.setDueDate(jobResultCorrections.getDueDate());

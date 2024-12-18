@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -33,7 +32,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -48,8 +46,6 @@ import org.agrona.DirectBuffer;
 
 public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
-  public static final String NO_JOB_FOUND_MESSAGE =
-      "Expected to cancel job with key '%d', but no such job was found";
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
@@ -168,11 +164,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       incidentErrorMessage = jobErrorMessage;
     }
 
-    final ErrorType errorType =
-        value.getJobKind() == JobKind.EXECUTION_LISTENER
-            ? ErrorType.EXECUTION_LISTENER_NO_RETRIES
-            : ErrorType.JOB_NO_RETRIES;
-
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceProvider(elementInstanceState::getInstance)
@@ -182,7 +173,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
     incidentEvent.reset();
     incidentEvent
-        .setErrorType(errorType)
+        .setErrorType(determineErrorType(value))
         .setErrorMessage(incidentErrorMessage)
         .setBpmnProcessId(value.getBpmnProcessIdBuffer())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
@@ -199,6 +190,14 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), IncidentIntent.CREATED, incidentEvent);
   }
 
+  private ErrorType determineErrorType(final JobRecord jobRecord) {
+    return switch (jobRecord.getJobKind()) {
+      case JobKind.BPMN_ELEMENT -> ErrorType.JOB_NO_RETRIES;
+      case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
+      case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
+    };
+  }
+
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var request =
@@ -207,17 +206,6 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
-
-    if (authCheckBehavior.isAuthorized(request).isRight()) {
-      return Either.right(job);
-    }
-
-    return Either.left(
-        new Rejection(
-            RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                request.getPermissionType(),
-                request.getResourceType(),
-                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
+    return authCheckBehavior.isAuthorized(request).map(unused -> job);
   }
 }

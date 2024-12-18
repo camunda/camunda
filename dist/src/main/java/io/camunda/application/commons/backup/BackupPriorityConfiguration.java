@@ -14,7 +14,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.webapps.profiles.ProfileWebApp;
+import io.camunda.webapps.profiles.ProfileOperateTasklist;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
@@ -38,7 +38,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
@@ -53,6 +52,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebS
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,9 +62,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 @Configuration
-@ProfileWebApp
+@ProfileOperateTasklist
 public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
@@ -73,19 +74,30 @@ public class BackupPriorityConfiguration {
 
   final OperateProperties operateProperties;
   final TasklistProperties tasklistProperties;
+  final String[] profiles;
 
   public BackupPriorityConfiguration(
       @Autowired(required = false) final OperateProperties operateProperties,
-      @Autowired(required = false) final TasklistProperties tasklistProperties) {
-    this.operateProperties = operateProperties;
-    this.tasklistProperties = tasklistProperties;
+      @Autowired(required = false) final TasklistProperties tasklistProperties,
+      @Autowired final Environment environment) {
+    profiles = environment.getActiveProfiles();
+    if (environment.matchesProfiles("operate")) {
+      this.operateProperties = operateProperties;
+    } else {
+      this.operateProperties = null;
+    }
+    if (environment.matchesProfiles("tasklist")) {
+      this.tasklistProperties = tasklistProperties;
+    } else {
+      this.tasklistProperties = null;
+    }
   }
 
-  private static <A> Function<Map<String, A>, String> differentConfigFor(final String field) {
+  private <A> Function<Map<String, A>, String> differentConfigFor(final String field) {
     return values ->
         String.format(
-            "Expected %s to be configured with the same value in operate and tasklist. Got %s.",
-            field, values);
+            "Expected %s to be configured with the same value in operate and tasklist. Got %s. Active profiles: %s",
+            field, values, Arrays.asList(profiles));
   }
 
   @Bean
@@ -108,7 +120,8 @@ public class BackupPriorityConfiguration {
                 differentConfigFor("database.type"),
                 Map.of(
                     "operate",
-                    Optional.of(DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
+                    Optional.ofNullable(operateProperties)
+                        .map(ignored -> DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
                     "tasklist",
                     Optional.ofNullable(tasklistProperties)
                         .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH))),
@@ -146,7 +159,6 @@ public class BackupPriorityConfiguration {
             new MessageTemplate(indexPrefix, isElasticsearch),
             new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
             new SequenceFlowTemplate(indexPrefix, isElasticsearch),
-            new UserTaskTemplate(indexPrefix, isElasticsearch),
             new VariableTemplate(indexPrefix, isElasticsearch),
             // TASKLIST
             new DraftTaskVariableTemplate(indexPrefix, isElasticsearch),

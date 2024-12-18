@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
-
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -72,19 +70,16 @@ public final class VariableDocumentUpdateProcessor
             .addResourceId(scope.getValue().getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
-      final var rejectionType = isAuthorized.getLeft();
+      final var rejection = isAuthorized.getLeft();
       final String errorMessage =
-          RejectionType.UNAUTHORIZED.equals(rejectionType)
-              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                  authRequest.getPermissionType(),
-                  authRequest.getResourceType(),
-                  "BPMN process id '%s'".formatted(scope.getValue().getBpmnProcessId()))
-              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
                   "update variables for element",
                   scope.getValue().getProcessInstanceKey(),
-                  "such element");
-      writers.rejection().appendRejection(record, rejectionType, errorMessage);
-      writers.response().writeRejectionOnCommand(record, rejectionType, errorMessage);
+                  "such element")
+              : rejection.reason();
+      writers.rejection().appendRejection(record, rejection.type(), errorMessage);
+      writers.response().writeRejectionOnCommand(record, rejection.type(), errorMessage);
       return;
     }
 

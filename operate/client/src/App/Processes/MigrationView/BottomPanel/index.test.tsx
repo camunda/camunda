@@ -62,10 +62,14 @@ const {
   CompensationTask,
   CompensationBoundaryEvent,
   MessageStartEvent,
+  ParallelGateway_1,
+  ParallelGateway_2,
+  ParallelGateway_3,
+  ParallelGateway_4,
 } = elements;
 
 const HEADER_ROW_COUNT = 1;
-const CONTENT_ROW_COUNT = 36;
+const CONTENT_ROW_COUNT = 40;
 
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
@@ -118,6 +122,10 @@ describe('MigrationView/BottomPanel', () => {
       screen.getByText(CompensationBoundaryEvent.name),
     ).toBeInTheDocument();
     expect(screen.getByText(MessageStartEvent.name)).toBeInTheDocument();
+    expect(screen.getByText(ParallelGateway_1.name)).toBeInTheDocument();
+    expect(screen.getByText(ParallelGateway_2.name)).toBeInTheDocument();
+    expect(screen.getByText(ParallelGateway_3.name)).toBeInTheDocument();
+    expect(screen.getByText(ParallelGateway_4.name)).toBeInTheDocument();
 
     expect(screen.getAllByRole('row')).toHaveLength(
       HEADER_ROW_COUNT + CONTENT_ROW_COUNT,

@@ -21,6 +21,8 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskPr
 import static io.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
@@ -29,8 +31,6 @@ import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
-import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.io.IOException;
 import java.time.Instant;

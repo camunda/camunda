@@ -325,7 +325,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -598,6 +598,8 @@
           <ignoredUsedUndeclaredDependencies>
             <dependency>org.apache.tomcat.embed:tomcat-embed-core</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <!-- required by io.camunda.tasklist.util.IdentityTester - not adding it as dependency because it is banned -->
+            <dependency>io.camunda:zeebe-client-java</dependency>
           </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>

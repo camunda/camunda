@@ -59,6 +59,14 @@ describe('processInstanceMigrationMappingStore', () => {
 
       {id: 'shipArticles', type: 'bpmn:UserTask'},
       {
+        id: 'ParallelGateway_1',
+        type: 'bpmn:ParallelGateway',
+      },
+      {
+        id: 'ParallelGateway_2',
+        type: 'bpmn:ParallelGateway',
+      },
+      {
         id: 'MessageInterrupting',
         type: 'bpmn:BoundaryEvent',
       },
@@ -101,6 +109,14 @@ describe('processInstanceMigrationMappingStore', () => {
       {
         id: 'MessageReceiveTask',
         type: 'bpmn:ReceiveTask',
+      },
+      {
+        id: 'ParallelGateway_3',
+        type: 'bpmn:ParallelGateway',
+      },
+      {
+        id: 'ParallelGateway_4',
+        type: 'bpmn:ParallelGateway',
       },
       {
         id: 'BusinessRuleTask',
@@ -181,6 +197,10 @@ describe('processInstanceMigrationMappingStore', () => {
     expect(isAutoMappable('ErrorEventSubProcess')).toBe(true);
     expect(isAutoMappable('ErrorStartEvent')).toBe(true);
     expect(isAutoMappable('MultiInstanceSubProcess')).toBe(true);
+    expect(isAutoMappable('ParallelGateway_1')).toBe(true);
+    expect(isAutoMappable('ParallelGateway_2')).toBe(true);
+    expect(isAutoMappable('ParallelGateway_3')).toBe(true);
+    expect(isAutoMappable('ParallelGateway_4')).toBe(true);
 
     expect(isAutoMappable('requestForPayment')).toBe(false);
     expect(isAutoMappable('TimerInterrupting')).toBe(false);
@@ -289,6 +309,54 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'shipArticles',
             name: 'Ship Articles',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ParallelGateway_1',
+          name: 'ParallelGateway_1',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ParallelGateway_1',
+            name: 'ParallelGateway_1',
+          },
+          {
+            id: 'ParallelGateway_2',
+            name: 'ParallelGateway_2',
+          },
+          {
+            id: 'ParallelGateway_3',
+            name: 'ParallelGateway_3',
+          },
+          {
+            id: 'ParallelGateway_4',
+            name: 'ParallelGateway_4',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ParallelGateway_2',
+          name: 'ParallelGateway_2',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ParallelGateway_1',
+            name: 'ParallelGateway_1',
+          },
+          {
+            id: 'ParallelGateway_2',
+            name: 'ParallelGateway_2',
+          },
+          {
+            id: 'ParallelGateway_3',
+            name: 'ParallelGateway_3',
+          },
+          {
+            id: 'ParallelGateway_4',
+            name: 'ParallelGateway_4',
           },
         ],
       },
@@ -500,6 +568,54 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'MessageReceiveTask',
             name: 'Message receive task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ParallelGateway_3',
+          name: 'ParallelGateway_3',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ParallelGateway_1',
+            name: 'ParallelGateway_1',
+          },
+          {
+            id: 'ParallelGateway_2',
+            name: 'ParallelGateway_2',
+          },
+          {
+            id: 'ParallelGateway_3',
+            name: 'ParallelGateway_3',
+          },
+          {
+            id: 'ParallelGateway_4',
+            name: 'ParallelGateway_4',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'ParallelGateway_4',
+          name: 'ParallelGateway_4',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'ParallelGateway_1',
+            name: 'ParallelGateway_1',
+          },
+          {
+            id: 'ParallelGateway_2',
+            name: 'ParallelGateway_2',
+          },
+          {
+            id: 'ParallelGateway_3',
+            name: 'ParallelGateway_3',
+          },
+          {
+            id: 'ParallelGateway_4',
+            name: 'ParallelGateway_4',
           },
         ],
       },

@@ -47,6 +47,9 @@ public class MappingQueryTransformerTest extends AbstractTransformerTest {
             SearchQuery.of(q -> q.term(t -> t.field("claimName").value("barfoo")))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.claimValue("foobar"),
-            SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))));
+            SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))),
+        Arguments.of(
+            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.name("foobar"),
+            SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))));
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.usertask;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -147,8 +148,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         .ifRightOrLeft(
             persistedRecord ->
                 handleCommandProcessing(commandProcessor, command, persistedRecord, intent),
-            violation ->
-                handleCommandRejection(command, violation.getLeft(), violation.getRight()));
+            rejection -> handleCommandRejection(command, rejection));
   }
 
   private void handleCommandProcessing(
@@ -157,7 +157,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
 
-    processor.onCommand(command, persistedRecord);
+    // If a user-triggered command (ASSIGN, CLAIM, UPDATE, COMPLETE) lacks request metadata,
+    // it indicates the command was retried by the engine after resolving an incident caused
+    // by a task listener property expression evaluation failure. In this case, the `onCommand`
+    // method was already processed during the initial execution, so we can safely skip it now.
+    if (command.hasRequestMetadata()) {
+      processor.onCommand(command, persistedRecord);
+    }
 
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var eventType = mapIntentToEventType(intent);
@@ -187,6 +193,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+    if (!command.hasRequestMetadata()) {
+      return;
+    }
+
     final var metadata =
         new UserTaskRecordRequestMetadata()
             .setIntent((UserTaskIntent) command.getIntent())
@@ -196,11 +206,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private void handleCommandRejection(
-      final TypedRecord<UserTaskRecord> command,
-      final RejectionType rejectionType,
-      final String rejectionReason) {
-    rejectionWriter.appendRejection(command, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+      final TypedRecord<UserTaskRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private Optional<TaskListener> findNextTaskListener(

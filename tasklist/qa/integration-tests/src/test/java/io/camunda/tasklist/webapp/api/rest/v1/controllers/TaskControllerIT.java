@@ -1098,10 +1098,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           new TaskAssignRequest().setAssignee("bill_doe").setAllowOverrideAssignment(false);
 
       setCurrentUser(
-          new UserDTO()
-              .setUserId("bob_doe")
-              .setPermissions(List.of(Permission.WRITE))
-              .setApiUser(true));
+          new UserDTO().setUserId("bob_doe").setPermissions(List.of(Permission.WRITE)), true);
 
       // when
       final var errorResult =
@@ -1396,7 +1393,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "simpleTestProcess";
       final String flowNodeBpmnId = "taskD_".concat(UUID.randomUUID().toString());
       final var taskId = createTask(bpmnProcessId, flowNodeBpmnId, 1).getTaskId();
-      setCurrentUser(getDefaultCurrentUser().setApiUser(true));
+      setCurrentUser(getDefaultCurrentUser(), true);
 
       // when
       final var result =
@@ -1608,7 +1605,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(
                       new VariableInputDTO().setName("object_var").setValue("{\"test\": true}")));
-      setCurrentUser(getDefaultCurrentUser().setApiUser(true));
+      setCurrentUser(getDefaultCurrentUser(), true);
 
       // when
       final var errorResult =
@@ -1659,7 +1656,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(new VariableInputDTO().setName("array_var").setValue("[30, 8, 2022]")));
 
-      setCurrentUser(getDefaultCurrentUser().setUserId("user_B").setApiUser(true));
+      setCurrentUser(getDefaultCurrentUser().setUserId("user_B"), true);
 
       // when
       final var errorResult =

@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import static io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler.withOperationReference;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 

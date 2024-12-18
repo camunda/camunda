@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
@@ -366,7 +367,8 @@ final class SystemContextTest {
         mock(ActorScheduler.class),
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
-        new SecurityConfiguration());
+        new SecurityConfiguration(),
+        mock(UserServices.class));
   }
 
   @Test

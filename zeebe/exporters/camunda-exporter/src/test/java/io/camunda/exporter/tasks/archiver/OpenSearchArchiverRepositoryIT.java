@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -63,6 +64,7 @@ final class OpenSearchArchiverRepositoryIT {
   @AutoCloseResource private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
+  private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
@@ -117,6 +119,40 @@ final class OpenSearchArchiverRepositoryIT {
     Awaitility.await("until the policy has been visibly applied")
         .untilAsserted(
             () -> assertThat(fetchPolicyForIndex(indexName)).isEqualTo(retention.getPolicyName()));
+  }
+
+  @Test
+  void shouldSetIndexLifeCycleToAllValidIndexes() throws IOException {
+    // given
+    connectConfiguration.setIndexPrefix("test");
+    final var indexName1 = "test-operate-record-8.2.1_records";
+    final var indexName2 = "test-tasklist-record-8.3.0_records";
+    // indexName3 does not have a valid name for the policy to be applied.
+    final var indexName3 = "null-tasklist-record_records";
+
+    final var repository = createRepository();
+    testClient.indices().create(r -> r.index(indexName1));
+    testClient.indices().create(r -> r.index(indexName2));
+    testClient.indices().create(r -> r.index(indexName3));
+
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+
+    // when
+    createLifeCyclePolicy();
+    final var result = repository.setLifeCycleToAllIndexes();
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    // Takes a while for the policy to be applied
+    Awaitility.await("until the policy has been visibly applied")
+        .untilAsserted(
+            () -> assertThat(fetchPolicyForIndex(indexName1)).isEqualTo(retention.getPolicyName()));
+    Awaitility.await("until the policy has been visibly applied")
+        .untilAsserted(
+            () -> assertThat(fetchPolicyForIndex(indexName2)).isEqualTo(retention.getPolicyName()));
+    assertThat(fetchPolicyForIndex(indexName3)).isEqualTo("null");
   }
 
   @Test
@@ -329,6 +365,7 @@ final class OpenSearchArchiverRepositoryIT {
         1,
         config,
         retention,
+        connectConfiguration.getIndexPrefix(),
         processInstanceIndex,
         batchOperationIndex,
         client,

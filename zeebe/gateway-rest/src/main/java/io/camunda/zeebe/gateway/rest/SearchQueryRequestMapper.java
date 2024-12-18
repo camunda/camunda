@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.search.filter.Operation.eq;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
@@ -33,6 +34,7 @@ import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -739,6 +741,7 @@ public final class SearchQueryRequestMapper {
         case "mappingKey" -> builder.mappingKey();
         case "claimName" -> builder.claimName();
         case "claimValue" -> builder.claimValue();
+        case "name" -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -891,11 +894,13 @@ public final class SearchQueryRequestMapper {
     if (filters != null && !filters.isEmpty()) {
       return filters.stream()
           .map(
-              filter ->
-                  new VariableValueFilter.Builder()
-                      .name(filter.getName())
-                      .eq(filter.getValue())
-                      .build())
+              filter -> {
+                final var builder = new VariableValueFilter.Builder().name(filter.getName());
+                if (filter.getValue() != null) {
+                  builder.valueOperation(UntypedOperation.of(eq(filter.getValue())));
+                }
+                return builder.build();
+              })
           .toList();
     }
 
@@ -911,7 +916,7 @@ public final class SearchQueryRequestMapper {
               filter ->
                   new VariableValueFilter.Builder()
                       .name(filter.getName())
-                      .eq(filter.getValue())
+                      .valueOperation(UntypedOperation.of(eq(filter.getValue())))
                       .build())
           .toList();
     }

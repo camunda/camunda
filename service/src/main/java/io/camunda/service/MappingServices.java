@@ -57,7 +57,8 @@ public class MappingServices
     return sendBrokerRequest(
         new BrokerMappingCreateRequest()
             .setClaimName(request.claimName())
-            .setClaimValue(request.claimValue()));
+            .setClaimValue(request.claimValue())
+            .setName(request.name()));
   }
 
   public MappingEntity getMapping(final Long mappingKey) {
@@ -76,9 +77,20 @@ public class MappingServices
         .findFirst();
   }
 
+  public Optional<MappingEntity> findMapping(final MappingDTO request) {
+    return search(
+            SearchQueryBuilders.mappingSearchQuery()
+                .filter(f -> f.claimName(request.claimName()).claimValue(request.claimValue()))
+                .page(p -> p.size(1))
+                .build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
   public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
   }
 
-  public record MappingDTO(String claimName, String claimValue) {}
+  public record MappingDTO(String claimName, String claimValue, String name) {}
 }

@@ -32,6 +32,7 @@ import io.camunda.tasklist.webapp.dto.VariableDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -43,6 +44,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,6 +52,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -1829,6 +1832,7 @@ class TaskControllerTest {
         "This operation is not supported using Tasklist V1 API. Please use the latest API. For more information, refer to the documentation: https://docs.camunda.tasklist";
 
     private final String taskId = "taskId";
+    private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
 
     @BeforeEach
     public void setUp() {
@@ -1837,7 +1841,15 @@ class TaskControllerTest {
       when(taskService.getTask(taskId))
           .thenReturn(
               new TaskDTO().setId(taskId).setImplementation(TaskImplementation.ZEEBE_USER_TASK));
-      when(userReader.getCurrentUser()).thenReturn(new UserDTO().setApiUser(true));
+      when(userReader.getCurrentUser()).thenReturn(new UserDTO());
+
+      authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
+      authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
+    }
+
+    @AfterEach
+    public void tearDown() {
+      authenticationUtil.close();
     }
 
     @Test

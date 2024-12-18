@@ -11,10 +11,10 @@ import static io.camunda.operate.qa.util.VariablesUtil.createALotOfVarsPayload;
 import static io.camunda.operate.qa.util.VariablesUtil.createBigVarsWithSuffix;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.operate.data.generation.DataGeneratorConfig.DataGeneratorThread;
 import io.camunda.operate.property.ImportProperties;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import jakarta.annotation.PreDestroy;

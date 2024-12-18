@@ -9,6 +9,8 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
@@ -69,21 +71,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public TenantEntity getByKey(final Long tenantKey) {
-    final var tenantQuery = TenantQuery.of(q -> q.filter(f -> f.key(tenantKey)));
-    final var result =
-        tenantSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchTenants(tenantQuery);
-    final var tenantEntity = getSingleResultOrThrow(result, tenantKey, "Tenant");
-    final var authorization = Authorization.of(a -> a.tenant().read());
-    if (!securityContextProvider.isAuthorized(
-        tenantEntity.tenantId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return tenantEntity;
+    return getSingle(TenantQuery.of(q -> q.filter(f -> f.key(tenantKey))));
   }
 
-  public CompletableFuture<?> addMember(
+  public CompletableFuture<TenantRecord> addMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
@@ -91,7 +82,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityKey));
   }
 
-  public CompletableFuture<?> removeMember(
+  public CompletableFuture<TenantRecord> removeMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
@@ -109,6 +100,30 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                         //        limit – 10k tenants ought to be enough for anybody …
                         .page(SearchQueryPage.of(b -> b.size(10_000)))))
         .items();
+  }
+
+  public TenantEntity getById(final String tenantId) {
+    return getSingle(TenantQuery.of(q -> q.filter(f -> f.tenantId(tenantId))));
+  }
+
+  private TenantEntity getSingle(final TenantQuery query) {
+    final var result =
+        tenantSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchTenants(query);
+    if (result.total() < 1) {
+      throw new NotFoundException("Tenant matching %s not found".formatted(query));
+    } else if (result.total() > 1) {
+      throw new CamundaSearchException("Found multiple tenants matching %s".formatted(query));
+    }
+
+    final var tenantEntity = result.items().stream().findFirst().orElseThrow();
+    final var authorization = Authorization.of(a -> a.tenant().read());
+    if (!securityContextProvider.isAuthorized(
+        tenantEntity.tenantId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
+    }
+    return tenantEntity;
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}

@@ -231,13 +231,15 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<Object> sortValues =
-        ofNullable(result.sortValues()).map(Arrays::asList).orElse(emptyList());
+    final List<Object> firstSortValues =
+        ofNullable(result.firstSortValues()).map(Arrays::asList).orElse(emptyList());
+    final List<Object> lastSortValues =
+        ofNullable(result.lastSortValues()).map(Arrays::asList).orElse(emptyList());
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
-        .firstSortValues(emptyList()) // FIXME https://github.com/camunda/camunda/issues/26080
-        .lastSortValues(sortValues);
+        .firstSortValues(firstSortValues)
+        .lastSortValues(lastSortValues);
   }
 
   private static List<ProcessDefinitionItem> toProcessDefinitions(
@@ -317,7 +319,8 @@ public final class SearchQueryResponseMapper {
     return new MappingItem()
         .mappingKey(mappingEntity.mappingKey())
         .claimName(mappingEntity.claimName())
-        .claimValue(mappingEntity.claimValue());
+        .claimValue(mappingEntity.claimValue())
+        .name(mappingEntity.name());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(

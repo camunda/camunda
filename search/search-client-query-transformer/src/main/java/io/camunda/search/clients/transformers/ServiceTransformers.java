@@ -26,7 +26,6 @@ import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
-import io.camunda.search.clients.transformers.filter.ComparableValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.DecisionDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.DecisionInstanceFilterTransformer;
@@ -67,7 +66,6 @@ import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
 import io.camunda.search.filter.AuthorizationFilter;
-import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
@@ -290,9 +288,6 @@ public final class ServiceTransformers {
     mappers.put(
         AuthorizationFilter.class,
         new AuthorizationFilterTransformer(indexDescriptors.get(AuthorizationIndex.class)));
-
-    mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());
-
     mappers.put(
         MappingFilter.class,
         new MappingFilterTransformer(indexDescriptors.get(MappingIndex.class)));

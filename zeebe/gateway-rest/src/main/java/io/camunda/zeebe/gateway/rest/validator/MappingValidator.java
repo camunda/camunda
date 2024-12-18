@@ -26,6 +26,9 @@ public class MappingValidator {
           if (request.getClaimValue() == null || request.getClaimValue().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimValue"));
           }
+          if (request.getName() == null || request.getName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+          }
         });
   }
 }

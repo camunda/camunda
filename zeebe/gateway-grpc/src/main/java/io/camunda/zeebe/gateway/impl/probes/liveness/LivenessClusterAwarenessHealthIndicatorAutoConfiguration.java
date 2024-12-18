@@ -14,6 +14,7 @@ import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnable
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,8 +32,8 @@ public class LivenessClusterAwarenessHealthIndicatorAutoConfiguration {
   @Bean(name = "livenessGatewayClusterAwarenessHealthIndicator")
   @ConditionalOnMissingBean(name = "livenessGatewayClusterAwarenessHealthIndicator")
   public HealthIndicator livenessGatewayClusterAwarenessHealthIndicator(
-      ClusterAwarenessHealthIndicator healthIndicator,
-      LivenessClusterAwarenessHealthIndicatorProperties properties) {
+      final ClusterAwarenessHealthIndicator healthIndicator,
+      final LivenessClusterAwarenessHealthIndicatorProperties properties) {
     return new DelayedHealthIndicator(healthIndicator, properties.getMaxDowntime());
   }
 }

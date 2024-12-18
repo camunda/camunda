@@ -11,17 +11,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "camunda.migration.identity")
 public class IdentityMigrationProperties {
-  private ZeebeProperties zeebe;
   private ManagementIdentityProperties managementIdentity;
   private String organizationId;
-
-  public ZeebeProperties getZeebe() {
-    return zeebe;
-  }
-
-  public void setZeebe(final ZeebeProperties zeebe) {
-    this.zeebe = zeebe;
-  }
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;

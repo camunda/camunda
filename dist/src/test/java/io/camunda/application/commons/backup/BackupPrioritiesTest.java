@@ -10,6 +10,9 @@ package io.camunda.application.commons.backup;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -24,8 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.core.env.Environment;
 
 class BackupPrioritiesTest {
 
@@ -99,12 +101,13 @@ class BackupPrioritiesTest {
         .filter(arr -> !Arrays.stream(arr).allMatch(Objects::isNull));
   }
 
-  @MethodSource("properties")
-  @ParameterizedTest
-  public void testBackupPriorities(
-      final OperateProperties operateProperties, final TasklistProperties tasklistProperties) {
+  @Test
+  public void testBackupPriorities() {
     final var configuration =
-        new BackupPriorityConfiguration(operateProperties, tasklistProperties);
+        new BackupPriorityConfiguration(
+            new OperateProperties(),
+            new TasklistProperties(),
+            matchingProfiles("operate", "tasklist"));
     final var priorities = configuration.backupPriorities();
 
     final Set<String> allPriorities =
@@ -122,7 +125,8 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPrioritiesIndicesSplitBySnapshot() {
-    final var configuration = new BackupPriorityConfiguration(new OperateProperties(), null);
+    final var configuration =
+        new BackupPriorityConfiguration(new OperateProperties(), null, matchingProfiles("operate"));
     final var priorities = configuration.backupPriorities();
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
@@ -158,7 +162,6 @@ class BackupPrioritiesTest {
             "operate-message-8.5.0_",
             "operate-post-importer-queue-8.3.0_",
             "operate-sequence-flow-8.3.0_",
-            "operate-user-task-8.5.0_",
             "operate-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_");
@@ -180,8 +183,6 @@ class BackupPrioritiesTest {
             "-operate-post-importer-queue-8.3.0_",
             "operate-sequence-flow-8.3.0_*",
             "-operate-sequence-flow-8.3.0_",
-            "operate-user-task-8.5.0_*",
-            "-operate-user-task-8.5.0_",
             "operate-variable-8.3.0_*",
             "-operate-variable-8.3.0_",
             "-operate-decision-instance-8.3.0_",
@@ -215,10 +216,24 @@ class BackupPrioritiesTest {
     final var tasklistProperties = new TasklistProperties();
     tasklistProperties.getElasticsearch().setIndexPrefix("tasklist-prefix");
     final var configuration =
-        new BackupPriorityConfiguration(operateProperties, tasklistProperties);
+        new BackupPriorityConfiguration(
+            operateProperties, tasklistProperties, matchingProfiles("operate", "tasklist"));
     assertThatThrownBy(configuration::backupPriorities)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("operate-prefix")
         .hasMessageContaining("tasklist-prefix");
+  }
+
+  public Environment matchingProfiles(final String... profiles) {
+    final var environment = mock(Environment.class);
+    final var profileSet = new HashSet<>(Arrays.asList(profiles));
+    when(environment.matchesProfiles(any()))
+        .thenAnswer(
+            arg -> {
+              final var profileArg = (String) arg.getArgument(0);
+              return profileSet.contains(profileArg);
+            });
+    when(environment.getActiveProfiles()).thenReturn(profiles);
+    return environment;
   }
 }

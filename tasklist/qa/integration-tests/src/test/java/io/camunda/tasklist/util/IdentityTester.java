@@ -15,12 +15,12 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTIT
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
-import io.camunda.zeebe.client.impl.util.Environment;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import java.util.Collections;
@@ -285,10 +285,10 @@ public abstract class IdentityTester extends SessionlessTasklistZeebeIntegration
     Environment.system().remove("ZEEBE_CLIENT_SECRET");
     Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
     Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_ID");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_CLIENT_SECRET");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
-    io.camunda.zeebe.client.impl.util.Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
+    Environment.system().remove("ZEEBE_CLIENT_ID");
+    Environment.system().remove("ZEEBE_CLIENT_SECRET");
+    Environment.system().remove("ZEEBE_TOKEN_AUDIENCE");
+    Environment.system().remove("ZEEBE_AUTHORIZATION_SERVER_URL");
     testContainerUtil.stopIdentity(testContext);
   }
 }
