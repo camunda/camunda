@@ -20,6 +20,10 @@ public record Authentication(
     List<String> authenticatedTenantIds,
     String token) {
 
+  public static Authentication none() {
+    return new Builder().build();
+  }
+
   public static Authentication of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }
