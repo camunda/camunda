@@ -25,11 +25,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/usage-metrics")
-public class UsageMetricsQueryController {
+public class UsageMetricsController {
 
   private final UsageMetricsServices usageMetricsServices;
 
-  public UsageMetricsQueryController(final UsageMetricsServices usageMetricsServices) {
+  public UsageMetricsController(final UsageMetricsServices usageMetricsServices) {
     this.usageMetricsServices = usageMetricsServices;
   }
 

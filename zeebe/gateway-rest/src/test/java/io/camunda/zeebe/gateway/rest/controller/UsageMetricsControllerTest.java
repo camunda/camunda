@@ -26,8 +26,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(UsageMetricsQueryController.class)
-public class UsageMetricsQueryControllerTest extends RestControllerTest {
+@WebMvcTest(UsageMetricsController.class)
+public class UsageMetricsControllerTest extends RestControllerTest {
   static final String USAGE_METRICS_URL = "/v2/usage-metrics/";
   static final String USAGE_METRICS_SEARCH_URL = USAGE_METRICS_URL + "search";
 
@@ -61,6 +61,7 @@ public class UsageMetricsQueryControllerTest extends RestControllerTest {
            "endTime":   "2024-12-31T10:50:26.000Z"
         }
         """;
+    // when/then
     webClient
         .post()
         .uri(USAGE_METRICS_SEARCH_URL)
@@ -90,20 +91,102 @@ public class UsageMetricsQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldThrowExceptionIfNoStartAndEndTimeAreGiven() {
+  void shouldYieldBadRequestIfNoStartAndEndTimeAreGiven() {
+    // given
+    final var request = "{}";
+    final var expectedResponse =
+        """
+        {
+          "type":"about:blank",
+          "title":"INVALID_ARGUMENT",
+          "status":400,
+          "detail":"startTime and endTime must be specified.",
+          "instance":"/v2/usage-metrics/search"
+        }
+        """;
+    // when/then
     webClient
         .post()
         .uri(USAGE_METRICS_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{}")
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isBadRequest()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
-        .json(
-            "{\"type\":\"about:blank\",\"title\":\"INVALID_ARGUMENT\",\"status\":400,\"detail\":\"startTime and endTime must be specified.\",\"instance\":\"/v2/usage-metrics/search\"}");
+        .json(expectedResponse);
+  }
+
+  @Test
+  void shouldYieldBadRequestIfNoStartTimeIsGiven() {
+    // given
+    final var request =
+        """
+        {
+           "endTime":   "2024-12-31T10:50:26.000Z"
+        }
+        """;
+    final var expectedResponse =
+        """
+        {
+          "type":"about:blank",
+          "title":"INVALID_ARGUMENT",
+          "status":400,
+          "detail":"startTime and endTime must be specified.",
+          "instance":"/v2/usage-metrics/search"
+        }
+        """;
+    // when/then
+    webClient
+        .post()
+        .uri(USAGE_METRICS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(expectedResponse);
+  }
+
+  @Test
+  void shouldYieldBadRequestIfNoEndTimeIsGiven() {
+    // given
+    final var request =
+        """
+        {
+           "startTime":   "2024-12-31T10:50:26.000Z"
+        }
+        """;
+    final var expectedResponse =
+        """
+        {
+          "type":"about:blank",
+          "title":"INVALID_ARGUMENT",
+          "status":400,
+          "detail":"startTime and endTime must be specified.",
+          "instance":"/v2/usage-metrics/search"
+        }
+        """;
+    // when/then
+    webClient
+        .post()
+        .uri(USAGE_METRICS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(expectedResponse);
   }
 }
