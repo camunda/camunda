@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {isValidJSON} from 'modules/utils/isValidJSON';
+import {isValidJSON} from 'modules/utils/jsonUtils';
 import {z} from 'zod';
 
 const customFiltersSchema = z.object({

@@ -6,13 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {t} from 'i18next';
-
-function getTaskAssignmentChangeErrorMessage(
-  code?: string,
-  statusCode?: number,
-  isAssigning?: boolean,
-) {
+function getTaskAssignmentChangeErrorMessage(code: string) {
   if (code === 'Task is already assigned') {
     return 'Task has been assigned to another user';
   }
@@ -23,12 +17,6 @@ function getTaskAssignmentChangeErrorMessage(
 
   if (code === 'Task is not assigned') {
     return undefined;
-  }
-
-  if (statusCode === 409) {
-    return isAssigning
-      ? t('taskDetailsTaskUnassignmentRejectionErrorSubtitle')
-      : t('taskDetailsTaskAssignmentRejectionErrorSubtitle');
   }
 
   return 'Service is not reachable';

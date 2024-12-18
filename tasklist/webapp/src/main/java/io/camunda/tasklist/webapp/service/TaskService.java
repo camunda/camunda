@@ -326,4 +326,42 @@ public class TaskService {
       TAG_KEY_ORGANIZATION_ID, userReader.getCurrentOrganizationId()
     };
   }
+
+  private String getErrorMessage(final String taskId, final ClientException exception) {
+    final String errorMessage;
+    if (exception.getMessage() != null && exception.getMessage().contains("INVALID_STATE")) {
+      errorMessage =
+          createErrorMessage(
+              409, "TASK_ALREADY_IN_PROCESSING", "Task is already being processed.", taskId);
+    } else if (isCausedByTimeoutException(exception)) {
+      errorMessage =
+          createErrorMessage(
+              504,
+              "TASK_PROCESSING_TIMEOUT",
+              "The request timed out while processing the task.",
+              taskId);
+    } else {
+      errorMessage = exception.getMessage();
+    }
+    return errorMessage;
+  }
+
+  private String createErrorMessage(
+      final int statusCode, final String errorCode, final String message, final String taskKey) {
+    return String.format(
+        """
+      { "status": %d,
+        "error_code": "%s",
+        "message": "%s",
+        "instance": "/v2/user-tasks/%s"
+      }
+      """,
+        statusCode, errorCode, message, taskKey);
+  }
+
+  private boolean isCausedByTimeoutException(final Throwable exception) {
+    return exception != null
+        && exception.getCause() != null
+        && exception.getCause().getCause() instanceof java.net.SocketTimeoutException;
+  }
 }
