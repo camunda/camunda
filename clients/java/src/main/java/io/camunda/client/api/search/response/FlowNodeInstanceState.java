@@ -13,22 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.client.api.search.response;
 
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 
 public enum FlowNodeInstanceState {
   ACTIVE,
   COMPLETED,
-  TERMINATED;
+  TERMINATED,
+  UNKNOWN_ENUM_VALUE;
 
   public static FlowNodeInstanceFilterRequest.StateEnum toProtocolState(
-      FlowNodeInstanceState value) {
+      final FlowNodeInstanceState value) {
     return (value == null) ? null : FlowNodeInstanceFilterRequest.StateEnum.fromValue(value.name());
   }
 
-  public static FlowNodeInstanceState fromProtocolState(FlowNodeInstanceItem.StateEnum value) {
-    return (value == null) ? null : FlowNodeInstanceState.valueOf(value.name());
+  public static FlowNodeInstanceState fromProtocolState(
+      final FlowNodeInstanceItem.StateEnum value) {
+    if (value == null) {
+      return null;
+    }
+    try {
+      return FlowNodeInstanceState.valueOf(value.name());
+    } catch (final IllegalArgumentException e) {
+      EnumUtil.logUnknownEnumValue(value, "flow node instance state", values());
+      return UNKNOWN_ENUM_VALUE;
+    }
   }
 }

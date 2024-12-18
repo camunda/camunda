@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.api.search;
+package io.camunda.client.api.search.response;
 
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 
 public enum FlowNodeInstanceType {
   UNSPECIFIED,
@@ -43,13 +44,23 @@ public enum FlowNodeInstanceType {
   BUSINESS_RULE_TASK,
   SCRIPT_TASK,
   SEND_TASK,
-  UNKNOWN;
+  UNKNOWN,
+  UNKNOWN_ENUM_VALUE;
 
-  public static FlowNodeInstanceFilterRequest.TypeEnum toProtocolType(FlowNodeInstanceType value) {
+  public static FlowNodeInstanceFilterRequest.TypeEnum toProtocolType(
+      final FlowNodeInstanceType value) {
     return (value == null) ? null : FlowNodeInstanceFilterRequest.TypeEnum.fromValue(value.name());
   }
 
-  public static FlowNodeInstanceType fromProtocolType(FlowNodeInstanceItem.TypeEnum value) {
-    return (value == null) ? null : FlowNodeInstanceType.valueOf(value.name());
+  public static FlowNodeInstanceType fromProtocolType(final FlowNodeInstanceItem.TypeEnum value) {
+    if (value == null) {
+      return null;
+    }
+    try {
+      return FlowNodeInstanceType.valueOf(value.name());
+    } catch (final IllegalArgumentException e) {
+      EnumUtil.logUnknownEnumValue(value, "flow node instance type", values());
+      return UNKNOWN_ENUM_VALUE;
+    }
   }
 }

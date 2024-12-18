@@ -15,15 +15,14 @@
  */
 package io.camunda.client.flownodeinstance;
 
-import static io.camunda.client.api.search.FlowNodeInstanceState.ACTIVE;
-import static io.camunda.client.api.search.FlowNodeInstanceType.SERVICE_TASK;
+import static io.camunda.client.api.search.response.FlowNodeInstanceState.ACTIVE;
+import static io.camunda.client.api.search.response.FlowNodeInstanceType.SERVICE_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.FlowNodeInstanceState;
-import io.camunda.client.api.search.FlowNodeInstanceType;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.FlowNodeInstanceType;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;
@@ -137,25 +136,25 @@ public class FlownodeInstanceTest extends ClientRestTest {
   @Test
   public void shouldConvertFlowNodeInstanceType() {
 
-    for (FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
+    for (final FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
       final FlowNodeInstanceFilterRequest.TypeEnum protocolValue =
           FlowNodeInstanceType.toProtocolType(value);
       assertThat(protocolValue).isNotNull();
-      assertThat(protocolValue.name()).isEqualTo(value.name());
+      if (value == FlowNodeInstanceType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(FlowNodeInstanceFilterRequest.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
     }
 
-    for (FlowNodeInstanceItem.TypeEnum protocolValue : FlowNodeInstanceItem.TypeEnum.values()) {
+    for (final FlowNodeInstanceItem.TypeEnum protocolValue :
+        FlowNodeInstanceItem.TypeEnum.values()) {
+      final FlowNodeInstanceType value = FlowNodeInstanceType.fromProtocolType(protocolValue);
+      assertThat(value).isNotNull();
       if (protocolValue == FlowNodeInstanceItem.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThatThrownBy(
-                () -> {
-                  FlowNodeInstanceType.fromProtocolType(protocolValue);
-                })
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage(
-                "No enum constant io.camunda.zeebe.client.api.search.FlowNodeInstanceType.UNKNOWN_DEFAULT_OPEN_API");
+        assertThat(value).isEqualTo(FlowNodeInstanceType.UNKNOWN_ENUM_VALUE);
       } else {
-        final FlowNodeInstanceType value = FlowNodeInstanceType.fromProtocolType(protocolValue);
-        assertThat(value).isNotNull();
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
     }
@@ -164,25 +163,25 @@ public class FlownodeInstanceTest extends ClientRestTest {
   @Test
   public void shouldConvertFlowNodeInstanceState() {
 
-    for (FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
+    for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
       final FlowNodeInstanceFilterRequest.StateEnum protocolValue =
           FlowNodeInstanceState.toProtocolState(value);
       assertThat(protocolValue).isNotNull();
-      assertThat(protocolValue.name()).isEqualTo(value.name());
+      if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(FlowNodeInstanceFilterRequest.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
     }
 
-    for (FlowNodeInstanceItem.StateEnum protocolValue : FlowNodeInstanceItem.StateEnum.values()) {
+    for (final FlowNodeInstanceItem.StateEnum protocolValue :
+        FlowNodeInstanceItem.StateEnum.values()) {
+      final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
+      assertThat(value).isNotNull();
       if (protocolValue == FlowNodeInstanceItem.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThatThrownBy(
-                () -> {
-                  FlowNodeInstanceState.fromProtocolState(protocolValue);
-                })
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage(
-                "No enum constant io.camunda.zeebe.client.api.search.FlowNodeInstanceState.UNKNOWN_DEFAULT_OPEN_API");
+        assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
       } else {
-        final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
-        assertThat(value).isNotNull();
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
     }
