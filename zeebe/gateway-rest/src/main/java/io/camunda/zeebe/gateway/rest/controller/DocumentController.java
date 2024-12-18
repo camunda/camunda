@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
@@ -15,7 +16,9 @@ import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import jakarta.servlet.http.Part;
 import java.io.InputStream;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.springframework.http.HttpStatus;
@@ -30,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @CamundaRestController
@@ -38,9 +40,12 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 public class DocumentController {
 
   private final DocumentServices documentServices;
+  private final ObjectMapper objectMapper;
 
-  public DocumentController(final DocumentServices documentServices) {
+  public DocumentController(
+      final DocumentServices documentServices, final ObjectMapper objectMapper) {
     this.documentServices = documentServices;
+    this.objectMapper = objectMapper;
   }
 
   @PostMapping(
@@ -49,11 +54,23 @@ public class DocumentController {
   public CompletableFuture<ResponseEntity<Object>> createDocument(
       @RequestParam(required = false) final String documentId,
       @RequestParam(required = false) final String storeId,
-      @RequestPart(value = "file") final MultipartFile file,
+      @RequestPart(value = "file") final Part file,
       @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata) {
 
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocument);
+  }
+
+  @PostMapping(
+      path = "/batch",
+      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> createDocuments(
+      @RequestPart(value = "files") final List<Part> files,
+      @RequestParam(required = false) final String storeId) {
+
+    return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocumentBatch);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocument(
@@ -65,6 +82,17 @@ public class DocumentController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createDocument(request),
         ResponseMapper::toDocumentReference);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createDocumentBatch(
+      final List<DocumentServices.DocumentCreateRequest> requests) {
+
+    return RequestMapper.executeServiceMethod(
+        () ->
+            documentServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .createDocumentBatch(requests),
+        ResponseMapper::toDocumentReferenceBatch);
   }
 
   @GetMapping(

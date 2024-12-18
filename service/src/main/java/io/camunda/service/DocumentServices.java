@@ -12,6 +12,7 @@ import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.Authentication;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.Either;
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class DocumentServices extends ApiServices<DocumentServices> {
@@ -40,6 +43,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     return new DocumentServices(brokerClient, securityContextProvider, authentication, registry);
   }
 
+  /** Will return a failed future for any error returned by the store */
   public CompletableFuture<DocumentReferenceResponse> createDocument(
       final DocumentCreateRequest request) {
 
@@ -53,18 +57,44 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                 storeRecord
                     .instance()
                     .createDocument(storeRequest)
-                    .thenApply(this::handleResponse)
+                    .thenApply(this::requireRightOrThrow)
                     .thenApply(
                         result ->
                             new DocumentReferenceResponse(
                                 result.documentId(), storeRecord.storeId(), result.metadata())));
   }
 
+  /** Will never return a failed future; an Either type is returned instead */
+  public CompletableFuture<List<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
+      createDocumentBatch(final List<DocumentCreateRequest> requests) {
+
+    final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> results =
+        new ArrayList<>();
+
+    final List<CompletableFuture<Void>> futures =
+        requests.stream()
+            .map(
+                request -> {
+                  final var storeRequest =
+                      new DocumentCreationRequest(
+                          request.documentId, request.contentInputStream, request.metadata);
+                  return getDocumentStore(request.storeId)
+                      .thenCompose(
+                          storeRecord -> storeRecord.instance().createDocument(storeRequest))
+                      .thenApply(result -> transformResponse(request, result))
+                      .thenAccept(results::add);
+                })
+            .toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .thenApply((ignoredRes) -> results);
+  }
+
   public InputStream getDocumentContent(final String documentId, final String storeId) {
 
     return getDocumentStore(storeId)
         .thenCompose(storeRecord -> storeRecord.instance().getDocument(documentId))
-        .thenApply(this::handleResponse)
+        .thenApply(this::requireRightOrThrow)
         .join();
   }
 
@@ -73,7 +103,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     return getDocumentStore(storeId)
         .thenCompose(
             storeRecord ->
-                storeRecord.instance().deleteDocument(documentId).thenAccept(this::handleResponse));
+                storeRecord
+                    .instance()
+                    .deleteDocument(documentId)
+                    .thenAccept(this::requireRightOrThrow));
   }
 
   public CompletableFuture<DocumentLink> createLink(
@@ -87,7 +120,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                 documentStoreRecord
                     .instance()
                     .createLink(documentId, ttl)
-                    .thenApply(this::handleResponse));
+                    .thenApply(this::requireRightOrThrow));
   }
 
   private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {
@@ -104,7 +137,19 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     }
   }
 
-  private <T> T handleResponse(final Either<DocumentError, T> response) {
+  private Either<DocumentErrorResponse, DocumentReferenceResponse> transformResponse(
+      final DocumentCreateRequest request,
+      final Either<DocumentError, DocumentReference> rawResult) {
+    if (rawResult.isLeft()) {
+      return Either.left(new DocumentErrorResponse(request, rawResult.getLeft()));
+    }
+    final var reference = rawResult.get();
+    return Either.right(
+        new DocumentReferenceResponse(
+            reference.documentId(), request.storeId, reference.metadata()));
+  }
+
+  private <T> T requireRightOrThrow(final Either<DocumentError, T> response) {
     if (response.isLeft()) {
       throw new DocumentException(response.getLeft());
     } else {
@@ -135,4 +180,6 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       return documentError;
     }
   }
+
+  public record DocumentErrorResponse(DocumentCreateRequest request, DocumentError error) {}
 }
