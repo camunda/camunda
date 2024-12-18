@@ -11,6 +11,7 @@ import io.camunda.client.ZeebeClient;
 import io.camunda.client.ZeebeClientBuilder;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
+import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnTasklistCompatibility(enabled = "true")
 public class ZeebeConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeConnector.class);

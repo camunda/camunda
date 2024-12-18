@@ -37,6 +37,7 @@ import org.testcontainers.utility.MountableFile;
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     })
 @ExtendWith(SpringExtension.class)
 public class ZeebeConnectorSecureIT {

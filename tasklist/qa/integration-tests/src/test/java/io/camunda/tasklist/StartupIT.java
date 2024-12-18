@@ -72,7 +72,8 @@ public class StartupIT {
             "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL",
             String.format("http://%s:%s", elsHost, elsPort))
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true");
 
     testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");

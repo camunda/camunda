@@ -211,6 +211,7 @@ services:
       - 8080:8080
     environment:
       - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
     depends_on:
       - ${DATABASE}
       - zeebe
@@ -375,6 +376,7 @@ services:
     environment:
       - CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX=e2etasklist
       - CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX=e2e
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
       - CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe-e2e:26503
       - CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=http://zeebe-e2e:8088
       - CAMUNDA_TASKLIST_IMPORTER.READERBACKOFF=0
@@ -396,6 +398,7 @@ services:
       - 8080:8080
     environment:
       - spring.profiles.active=dev,dev-data,sso-auth
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
       - camunda.tasklist.auth0.backendDomain=camunda-dev.eu.auth0.com
       - camunda.tasklist.auth0.claimName=https://camunda.com/orgs
       - camunda.tasklist.auth0.clientId=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3

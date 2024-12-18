@@ -149,7 +149,7 @@ public class ProcessExternalController extends ApiErrorController {
       final var variables =
           requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
       final ProcessInstanceDTO processInstanceDTO =
-          processService.startProcessInstance(bpmnProcessId, variables, tenantId);
+          processService.startProcessInstance(bpmnProcessId, variables, tenantId, false);
       return ResponseEntity.ok(processInstanceDTO);
     }
   }

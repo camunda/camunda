@@ -18,6 +18,18 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-elasticsearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-query-transformer</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>
     </dependency>
     <dependency>
@@ -27,6 +39,11 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>
@@ -58,11 +75,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway</artifactId>
     </dependency>
 
     <dependency>
