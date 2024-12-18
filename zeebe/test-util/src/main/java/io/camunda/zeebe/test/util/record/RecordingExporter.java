@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -492,6 +493,10 @@ public final class RecordingExporter implements Exporter {
 
   public static MappingRecordStream mappingRecords() {
     return new MappingRecordStream(records(ValueType.MAPPING, MappingRecordValue.class));
+  }
+
+  public static MappingRecordStream mappingRecords(final MappingIntent intent) {
+    return mappingRecords().withIntent(intent);
   }
 
   public static GroupRecordStream groupRecords() {
