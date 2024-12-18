@@ -59,7 +59,6 @@ jobs:
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 1
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
-          SPRING_PROFILES_ACTIVE: auth-basic
         ports:
           - 26500:26500
           - 8086:8080
@@ -119,6 +118,7 @@ jobs:
         run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
         env:
           CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
+          SPRING_PROFILES_ACTIVE: auth-basic
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci
