@@ -191,7 +191,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent("documentId", null))
+    when(documentServices.getDocumentContent("documentId", null, null))
         .thenReturn(new ByteArrayInputStream(content));
 
     // when/then

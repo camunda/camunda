@@ -74,10 +74,13 @@ public class DocumentController {
         MediaType.APPLICATION_PROBLEM_JSON_VALUE
       })
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
-      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
+      @PathVariable final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @RequestParam(required = false) final String documentHash) {
 
     try {
-      final InputStream contentInputStream = getDocumentContentStream(documentId, storeId);
+      final InputStream contentInputStream =
+          getDocumentContentStream(documentId, storeId, documentHash);
       return ResponseEntity.ok()
           .contentType(MediaType.APPLICATION_OCTET_STREAM)
           .body(contentInputStream::transferTo);
@@ -104,10 +107,11 @@ public class DocumentController {
     }
   }
 
-  private InputStream getDocumentContentStream(final String documentId, final String storeId) {
+  private InputStream getDocumentContentStream(
+      final String documentId, final String storeId, final String documentHash) {
     return documentServices
         .withAuthentication(RequestMapper.getAuthentication())
-        .getDocumentContent(documentId, storeId);
+        .getDocumentContent(documentId, storeId, documentHash);
   }
 
   @DeleteMapping(
@@ -130,22 +134,26 @@ public class DocumentController {
   public CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
+      @RequestParam(required = false) final String contentHash,
       @RequestBody final DocumentLinkRequest linkRequest) {
 
     return RequestMapper.toDocumentLinkParams(linkRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            params -> createDocumentLink(documentId, storeId, params));
+            params -> createDocumentLink(documentId, storeId, contentHash, params));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
-      final String documentId, final String storeId, final DocumentLinkParams params) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final DocumentLinkParams params) {
 
     return RequestMapper.executeServiceMethod(
         () ->
             documentServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createLink(documentId, storeId, params),
+                .createLink(documentId, storeId, contentHash, params),
         ResponseMapper::toDocumentLinkResponse);
   }
 

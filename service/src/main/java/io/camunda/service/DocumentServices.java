@@ -93,17 +93,28 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentLink> createLink(
-      final String documentId, final String storeId, final DocumentLinkParams params) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final DocumentLinkParams params) {
 
     final long ttl = params.timeToLive().toMillis();
 
     return getDocumentStore(storeId)
         .thenCompose(
-            documentStoreRecord ->
-                documentStoreRecord
-                    .instance()
-                    .createLink(documentId, ttl)
-                    .thenApply(this::handleResponse));
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, contentHash)
+                  .thenCompose(
+                      verification ->
+                          verification.isLeft()
+                              ? CompletableFuture.completedFuture(
+                                  Either.left(verification.getLeft()))
+                              : storeRecordInstance.createLink(documentId, ttl))
+                  .thenApply(this::handleResponse);
+            });
   }
 
   private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {

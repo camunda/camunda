@@ -3008,8 +3008,8 @@ paths:
           description: The ID of the document store to download the document from.
           schema:
             type: string
-        - name: X-Content-Hash
-          in: header
+        - name: contentHash
+          in: query
           required: false
           schema:
             type: string
@@ -3100,8 +3100,8 @@ paths:
           description: The ID of the document store to link the document from.
           schema:
             type: string
-        - name: X-Content-Hash
-          in: header
+        - name: contentHash
+          in: query
           required: false
           schema:
             type: string
