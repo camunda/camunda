@@ -11,10 +11,10 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.signalRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
-import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.command.BroadcastSignalCommandStep1;
+import io.camunda.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;

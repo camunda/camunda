@@ -17,9 +17,9 @@ package io.camunda;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;

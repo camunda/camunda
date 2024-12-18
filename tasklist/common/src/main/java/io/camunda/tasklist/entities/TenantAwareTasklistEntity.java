@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.entities;
 
-import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 
 import java.util.Objects;
 import java.util.StringJoiner;

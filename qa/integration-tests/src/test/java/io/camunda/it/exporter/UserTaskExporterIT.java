@@ -9,11 +9,11 @@ package io.camunda.it.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
-import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;

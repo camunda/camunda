@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.annotation;
 
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.client.ZeebeClientConfiguration;
 import java.lang.annotation.*;
 
 @Target(ElementType.METHOD)

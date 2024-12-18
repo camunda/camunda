@@ -1391,12 +1391,6 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.camunda</groupId>
-            <artifactId>zeebe-client-java</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -2638,6 +2632,23 @@
               <configuration>
                 <rules>
                   <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                </rules>
+              </configuration>
+            </execution>
+            <execution>
+              <id>forbid-banned-dependencies</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <!-- ban the direct usage of the zeebe-client-java dependency -->
+                  <bannedDependencies>
+                    <excludes>
+                      <exclude>io.camunda:zeebe-client-java</exclude>
+                    </excludes>
+                    <searchTransitive>false</searchTransitive>
+                  </bannedDependencies>
                 </rules>
               </configuration>
             </execution>

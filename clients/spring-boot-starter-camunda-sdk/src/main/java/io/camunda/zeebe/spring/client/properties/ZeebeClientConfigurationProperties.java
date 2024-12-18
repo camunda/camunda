@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
-import io.camunda.zeebe.client.ClientProperties;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.client.ClientProperties;
+import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.impl.ZeebeClientBuilderImpl;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;

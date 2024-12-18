@@ -7,8 +7,8 @@
  */
 package io.camunda.migration.identity.service;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.search.entities.GroupEntity;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Collections;
 import org.springframework.stereotype.Service;
 
