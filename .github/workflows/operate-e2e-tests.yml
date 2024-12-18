@@ -59,6 +59,7 @@ jobs:
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://elasticsearch:9200
           ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 1
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
+          SPRING_PROFILES_ACTIVE: auth-basic
         ports:
           - 26500:26500
           - 8086:8080
@@ -134,7 +135,7 @@ jobs:
         if: failure()
         uses: jwalton/gh-docker-logs@v2
         with:
-          dest: './logs'
+          dest: "./logs"
       - name: Tar logs
         if: failure()
         run: tar cvzf ./logs.tgz ./logs
