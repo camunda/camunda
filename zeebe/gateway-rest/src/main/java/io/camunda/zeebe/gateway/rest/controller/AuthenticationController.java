@@ -9,9 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Profile("auth-basic")
@@ -24,9 +23,7 @@ public class AuthenticationController {
     this.camundaUserService = camundaUserService;
   }
 
-  @GetMapping(
-      path = "/me",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping(path = "/me")
   public CamundaUserDTO getCurrentUser() {
     return camundaUserService.getCurrentUser();
   }
