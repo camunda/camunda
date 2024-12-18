@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.client.ZeebeClient;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
