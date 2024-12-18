@@ -16,7 +16,6 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
@@ -165,14 +164,13 @@ final class IdentitySetupInitializerIT {
     broker.stop();
     broker.start().awaitCompleteTopology();
 
+    // then the next Initialize command is rejected
     assertThat(
-            RecordingExporter.identitySetupRecords()
-                .limitByCount(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED, 2)
-                .toList())
-        .extracting(Record::getIntent)
-        .describedAs(
-            "No records are written in between the last INITIALIZE and INITIALIZED records")
-        .endsWith(IdentitySetupIntent.INITIALIZE, IdentitySetupIntent.INITIALIZED);
+            RecordingExporter.records()
+                .onlyCommandRejections()
+                .withIntent(IdentitySetupIntent.INITIALIZE)
+                .exists())
+        .isTrue();
   }
 
   @Test
