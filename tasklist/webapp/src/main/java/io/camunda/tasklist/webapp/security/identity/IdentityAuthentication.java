@@ -78,7 +78,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private void retrieveTenants() {
-    if (getTasklistProperties().getMultiTenancy().isEnabled()) {
+    if (getSecurityConfiguration().getMultiTenancy().isEnabled()) {
       try {
         final var accessToken = tokens.getAccessToken();
         final var identityTenants = getIdentity().tenants().forToken(accessToken);

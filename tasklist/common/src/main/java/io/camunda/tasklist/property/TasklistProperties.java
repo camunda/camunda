@@ -92,9 +92,6 @@ public class TasklistProperties {
   @NestedConfigurationProperty private BackupProperties backup = new BackupProperties();
 
   @NestedConfigurationProperty
-  private MultiTenancyProperties multiTenancy = new MultiTenancyProperties();
-
-  @NestedConfigurationProperty
   private TasklistDocumentationProperties documentation = new TasklistDocumentationProperties();
 
   public boolean isImporterEnabled() {
@@ -381,15 +378,6 @@ public class TasklistProperties {
 
   public TasklistProperties setZeebeOpenSearch(final ZeebeOpenSearchProperties zeebeOpenSearch) {
     this.zeebeOpenSearch = zeebeOpenSearch;
-    return this;
-  }
-
-  public MultiTenancyProperties getMultiTenancy() {
-    return multiTenancy;
-  }
-
-  public TasklistProperties setMultiTenancy(final MultiTenancyProperties multiTenancy) {
-    this.multiTenancy = multiTenancy;
     return this;
   }
 
