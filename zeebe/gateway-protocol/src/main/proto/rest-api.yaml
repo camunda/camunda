@@ -3039,13 +3039,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingSearchResponse"
+                $ref: "#/components/schemas/MappingSearchQueryResponse"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/MappingSearchResponseNumberKeys"
+                $ref: "#/components/schemas/MappingSearchQueryResponseNumberKeys"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/MappingSearchResponse"
+                $ref: "#/components/schemas/MappingSearchQueryResponse"
         "400":
           description: >
             The mapping rule search query failed.
@@ -5900,7 +5900,7 @@ components:
         mappingKey:
           description: The key of the created mapping rule.
           type: string
-    MappingSearchResponseNumberKeys:
+    MappingSearchQueryResponseNumberKeys:
       deprecated: true
       type: object
       allOf:
@@ -5910,8 +5910,8 @@ components:
           description: The matching mapping rules.
           type: array
           items:
-            $ref: "#/components/schemas/MappingResponseNumberKeys"
-    MappingSearchResponse:
+            $ref: "#/components/schemas/MappingItemNumberKeys"
+    MappingSearchQueryResponse:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -5920,8 +5920,8 @@ components:
           description: The matching mapping rules.
           type: array
           items:
-            $ref: "#/components/schemas/MappingResponse"
-    MappingResponseBase:
+            $ref: "#/components/schemas/MappingItem"
+    MappingItemBase:
       type: "object"
       properties:
         claimName:
@@ -5933,19 +5933,19 @@ components:
         name:
           type: string
           description: The name of the mapping.
-    MappingResponseNumberKeys:
+    MappingItemNumberKeys:
       type: "object"
       allOf:
-        - $ref: "#/components/schemas/MappingResponseBase"
+        - $ref: "#/components/schemas/MappingItemBase"
       properties:
         mappingKey:
           description: The key of the created mapping rule.
           type: integer
           format: int64
-    MappingResponse:
+    MappingItem:
       type: "object"
       allOf:
-        - $ref: "#/components/schemas/MappingResponseBase"
+        - $ref: "#/components/schemas/MappingItemBase"
       properties:
         mappingKey:
           description: The key of the created mapping rule.

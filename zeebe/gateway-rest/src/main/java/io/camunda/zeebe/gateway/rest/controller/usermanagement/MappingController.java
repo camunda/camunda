@@ -12,10 +12,10 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
-import io.camunda.zeebe.gateway.protocol.rest.MappingResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -74,7 +74,7 @@ public class MappingController {
   @GetMapping(
       path = "/{mappingKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<MappingResponse> getMapping(@PathVariable final long mappingKey) {
+  public ResponseEntity<MappingItem> getMapping(@PathVariable final long mappingKey) {
     try {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toMapping(mappingServices.getMapping(mappingKey)));
@@ -87,13 +87,13 @@ public class MappingController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<MappingSearchResponse> searchMappings(
+  public ResponseEntity<MappingSearchQueryResponse> searchMappings(
       @RequestBody(required = false) final MappingSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<MappingSearchResponse> search(final MappingQuery query) {
+  private ResponseEntity<MappingSearchQueryResponse> search(final MappingQuery query) {
     try {
       final var result = mappingServices.search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
