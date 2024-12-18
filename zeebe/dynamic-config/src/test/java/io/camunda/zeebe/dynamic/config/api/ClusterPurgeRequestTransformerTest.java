@@ -56,7 +56,7 @@ final class ClusterPurgeRequestTransformerTest {
             operations -> {
               assertThat(operations).hasSize(10);
               assertThat(operations)
-                  .containsExactlyInAnyOrder(
+                  .containsExactly(
                       new PartitionLeaveOperation(id0, 0),
                       new PartitionLeaveOperation(id0, 1),
                       new PartitionLeaveOperation(id1, 0),
@@ -65,13 +65,13 @@ final class ClusterPurgeRequestTransformerTest {
                       new DeleteHistoryOperation(id1),
                       new PartitionBootstrapOperation(id0, 0, 2, ExportersConfig.empty()),
                       new PartitionBootstrapOperation(id1, 1, 2, ExportersConfig.empty()),
-                      new PartitionJoinOperation(id0, 1, 1),
-                      new PartitionJoinOperation(id1, 0, 1));
+                      new PartitionJoinOperation(id1, 0, 1),
+                      new PartitionJoinOperation(id0, 1, 1));
             });
   }
 
   @Test
-  void shouldPurgeClusterWithThreePartitions() {
+  void purgeClusterShouldBootstrapPartitionsInOrder() {
     // given
     final var transformer = new PurgeRequestTransformer();
 
@@ -97,7 +97,7 @@ final class ClusterPurgeRequestTransformerTest {
             operations -> {
               assertThat(operations).hasSize(14);
               assertThat(operations)
-                  .containsExactlyInAnyOrder(
+                  .containsExactly(
                       new PartitionLeaveOperation(id0, 0),
                       new PartitionLeaveOperation(id0, 1),
                       new PartitionLeaveOperation(id0, 2),
@@ -107,10 +107,10 @@ final class ClusterPurgeRequestTransformerTest {
                       new DeleteHistoryOperation(id0),
                       new DeleteHistoryOperation(id1),
                       new PartitionBootstrapOperation(id0, 0, 2, ExportersConfig.empty()),
-                      new PartitionBootstrapOperation(id0, 2, 2, ExportersConfig.empty()),
                       new PartitionBootstrapOperation(id1, 1, 2, ExportersConfig.empty()),
-                      new PartitionJoinOperation(id0, 1, 1),
+                      new PartitionBootstrapOperation(id0, 2, 2, ExportersConfig.empty()),
                       new PartitionJoinOperation(id1, 0, 1),
+                      new PartitionJoinOperation(id0, 1, 1),
                       new PartitionJoinOperation(id1, 2, 1));
             });
   }
