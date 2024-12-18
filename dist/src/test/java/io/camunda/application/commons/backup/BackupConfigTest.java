@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,7 +88,7 @@ public class BackupConfigTest {
     when(configurationService.getElasticSearchConfiguration().getBackup()).thenReturn(backup);
     final var environment = mock(Environment.class);
     when(environment.getProperty(eq(CAMUNDA_OPTIMIZE_DATABASE), (String) any()))
-        .thenReturn("elasticsearch");
+        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
     checkRepo(null, null, environment);
   }
 
