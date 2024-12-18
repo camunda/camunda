@@ -11,12 +11,12 @@ import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import io.camunda.client.ZeebeClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
@@ -73,14 +73,16 @@ public class MigrationITInvocationProvider
 
   @Override
   public void beforeAll(final ExtensionContext extensionContext) throws Exception {
+    databaseTypes.forEach(
+        db -> {
+          zeebeEnvironmentBefore.putIfAbsent(db, new HashMap<>());
+          zeebeEnvironmentAfter.putIfAbsent(db, new HashMap<>());
+          tasklistEnvironmentBefore.putIfAbsent(db, new HashMap<>());
+          tasklistEnvironmentAfter.putIfAbsent(db, new HashMap<>());
+        });
     databaseTypes.parallelStream()
         .forEach(
             db -> {
-              zeebeEnvironmentBefore.putIfAbsent(db, new HashMap<>());
-              zeebeEnvironmentAfter.putIfAbsent(db, new HashMap<>());
-              tasklistEnvironmentBefore.putIfAbsent(db, new HashMap<>());
-              tasklistEnvironmentAfter.putIfAbsent(db, new HashMap<>());
-
               final Network network = Network.newNetwork();
               zeebeUtils.put(db, new ZeebeMigrationHelper(network));
               tasklistContainer.put(db, new TasklistMigrationHelper(network));
