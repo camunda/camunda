@@ -20,6 +20,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
@@ -32,14 +33,17 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
-    implements CompleteJobCommandStep1, CompleteJobCommandStep2 {
+    implements CompleteJobCommandStep1, CompleteJobCommandStep2, CompleteJobCommandStep3 {
 
   private final GatewayStub asyncStub;
   private final Builder grpcRequestObjectBuilder;
@@ -53,6 +57,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final JsonMapper jsonMapper;
   private JobResult.Builder resultGrpc;
   private io.camunda.client.protocol.rest.JobResult resultRest;
+  private JobResultCorrections.Builder correctionsGrpc;
+  private io.camunda.client.protocol.rest.JobResultCorrections correctionsRest;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -105,12 +111,83 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 denied(final boolean denied) {
     resultRest.setDenied(denied);
-
     resultGrpc.setDenied(denied);
+    onResultChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 corrections() {
+    correctionsRest = new io.camunda.zeebe.client.protocol.rest.JobResultCorrections();
+    resultRest.setCorrections(correctionsRest);
+
+    correctionsGrpc = JobResultCorrections.newBuilder();
+    resultGrpc.setCorrections(correctionsGrpc);
+
+    onResultChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 assignee(final String assignee) {
+    correctionsRest.setAssignee(assignee);
+    correctionsGrpc.setAssignee(assignee);
+    onCorrectionsChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 dueDate(final String dueDate) {
+    correctionsRest.setDueDate(dueDate);
+    correctionsGrpc.setDueDate(dueDate);
+    onCorrectionsChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 followUpDate(final String followUpDate) {
+    correctionsRest.setFollowUpDate(followUpDate);
+    correctionsGrpc.setFollowUpDate(followUpDate);
+    onCorrectionsChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 candidateUsers(final List<String> candidateUsers) {
+    correctionsRest.setCandidateUsers(candidateUsers);
+    correctionsGrpc.setCandidateUsers(StringList.newBuilder().addAllValues(candidateUsers).build());
+    onCorrectionsChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 candidateGroups(final List<String> candidateGroups) {
+    correctionsRest.setCandidateGroups(candidateGroups);
+    correctionsGrpc.setCandidateGroups(
+        StringList.newBuilder().addAllValues(candidateGroups).build());
+    onCorrectionsChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep3 priority(final int priority) {
+    correctionsRest.setPriority(priority);
+    correctionsGrpc.setPriority(priority);
+    onCorrectionsChange();
+    return this;
+  }
+
+  private void onResultChange() {
     // grpcRequestObjectBuilder.setResult() makes immutable copy of passed value so we need to
     // refresh it everytime when we need to set another jobResult property
     grpcRequestObjectBuilder.setResult(resultGrpc);
-    return this;
+  }
+
+  private void onCorrectionsChange() {
+    // resultGrpc.setCorrections() makes immutable copy of passed value so we need to
+    // refresh it everytime when we need to set another correctionsGrpc property
+    resultGrpc.setCorrections(correctionsGrpc);
+    onResultChange();
   }
 
   @Override
