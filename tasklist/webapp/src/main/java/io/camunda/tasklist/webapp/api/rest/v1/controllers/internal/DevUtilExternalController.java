@@ -12,7 +12,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,8 +43,6 @@ public class DevUtilExternalController {
   @Autowired
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
-
-  @Autowired private SearchEngineUserDetailsService searchEngineUserDetailsService;
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
 
@@ -85,7 +82,6 @@ public class DevUtilExternalController {
     esClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
     processCache.clearCache();
     schemaManager.createSchema();
-    searchEngineUserDetailsService.initializeUsers();
     return ResponseEntity.ok().build();
   }
 }

@@ -27,7 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "test"})
+@ActiveProfiles({"tasklist", "test", "auth-basic-with-unprotected-api"})
 public abstract class ModuleIntegrationTest {
 
   @Autowired protected ApplicationContext applicationContext;

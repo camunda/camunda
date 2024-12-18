@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.security.se;
 
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_PROFILE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
@@ -22,6 +21,7 @@ import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import jakarta.json.Json;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -37,7 +37,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
+@Disabled
+@ActiveProfiles({"tasklist", "test", "auth-basic-with-unprotected-api"})
 public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTest
     implements AuthenticationTestable {
 

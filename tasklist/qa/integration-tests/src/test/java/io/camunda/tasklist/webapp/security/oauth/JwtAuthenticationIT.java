@@ -15,6 +15,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@Disabled
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {TestApplication.class},

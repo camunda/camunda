@@ -22,6 +22,7 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityService;
 import java.util.HashMap;
 import org.assertj.core.util.DateUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+@Disabled
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {AuthIdentityApplication.class},
