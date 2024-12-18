@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.authorization;
 
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.UPDATE_USER_TASK;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,11 +48,12 @@ public class UserTaskAssignAuthorizationIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
+  private static final String PROCESS_ID_2 = "processId1";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static ZeebeClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -78,12 +81,24 @@ public class UserTaskAssignAuthorizationIT {
             "process.xml")
         .send()
         .join();
+    defaultUserClient
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(PROCESS_ID_2)
+                .startEvent()
+                .userTask(USER_TASK_ID)
+                .zeebeUserTask()
+                .endEvent()
+                .done(),
+            "process.xml")
+        .send()
+        .join();
   }
 
   @Test
   void shouldBeAuthorizedToAssignUserTaskWithDefaultUser() {
     // given
-    final var processInstanceKey = createProcessInstance();
+    final var processInstanceKey = createProcessInstance(PROCESS_ID);
     final var userTaskKey = getUserTaskKey(processInstanceKey);
 
     // when then
@@ -103,7 +118,7 @@ public class UserTaskAssignAuthorizationIT {
   @Test
   void shouldBeAuthorizedToAssignUserTaskWithUser() {
     // given
-    final var processInstanceKey = createProcessInstance();
+    final var processInstanceKey = createProcessInstance(PROCESS_ID);
     final var userTaskKey = getUserTaskKey(processInstanceKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -134,7 +149,7 @@ public class UserTaskAssignAuthorizationIT {
   @Test
   void shouldBeUnauthorizedToAssignUserTaskIfNoPermissions() {
     // given
-    final var processInstanceKey = createProcessInstance();
+    final var processInstanceKey = createProcessInstance(PROCESS_ID);
     final var userTaskKey = getUserTaskKey(processInstanceKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -160,10 +175,108 @@ public class UserTaskAssignAuthorizationIT {
     }
   }
 
-  private long createProcessInstance() {
+  @Test
+  void shouldCorrectlyAddAndRemovePermissionsStepByStep() {
+    // given
+    final var processInstanceKey = createProcessInstance(PROCESS_ID);
+    final var processInstanceKey2 = createProcessInstance(PROCESS_ID_2);
+    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    final var userTaskKey2 = getUserTaskKey(processInstanceKey2);
+    final var username = UUID.randomUUID().toString();
+    final var password = "password";
+    final long user = authUtil.createUser(username, password);
+
+    try (final var client = authUtil.createClient(username, password)) {
+      // Step 1: Add permissions for two resources
+      authUtil
+          .getDefaultClient()
+          .newAddPermissionsCommand(user)
+          .resourceType(PROCESS_DEFINITION)
+          .permission(UPDATE_USER_TASK)
+          .resourceIds(List.of(PROCESS_ID, PROCESS_ID_2))
+          .send()
+          .join();
+
+      // Step 2: Verify permissions work
+      client
+          .newUserTaskAssignCommand(userTaskKey)
+          .assignee("assignee")
+          .allowOverride(true)
+          .send()
+          .join();
+      client
+          .newUserTaskAssignCommand(userTaskKey2)
+          .assignee("assignee")
+          .allowOverride(true)
+          .send()
+          .join();
+
+      // Step 3: Remove permission for the first resource
+      authUtil
+          .getDefaultClient()
+          .newRemovePermissionsCommand(user)
+          .resourceType(PROCESS_DEFINITION)
+          .permission(UPDATE_USER_TASK)
+          .resourceIds(List.of(PROCESS_ID))
+          .send()
+          .join();
+
+      // Step 4: Verify permission still works for the second resource
+      client
+          .newUserTaskAssignCommand(userTaskKey2)
+          .assignee("assignee")
+          .allowOverride(true)
+          .send()
+          .join();
+
+      // Step 5: Verify unauthorized exception after first permission removed
+      final var response =
+          client
+              .newUserTaskAssignCommand(userTaskKey)
+              .assignee("assignee")
+              .allowOverride(true)
+              .send();
+
+      // then
+      assertThatThrownBy(response::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
+          .hasMessageContaining(
+              "Command 'ASSIGN' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, processId]'");
+
+      // Step 6: Remove permission for the remaining resource
+      authUtil
+          .getDefaultClient()
+          .newRemovePermissionsCommand(user)
+          .resourceType(PROCESS_DEFINITION)
+          .permission(UPDATE_USER_TASK)
+          .resourceIds(List.of(PROCESS_ID_2))
+          .send()
+          .join();
+
+      // Step 6: Verify unauthorized exception after all permissions are removed
+      final var response2 =
+          client
+              .newUserTaskAssignCommand(userTaskKey)
+              .assignee("assignee")
+              .allowOverride(true)
+              .send();
+
+      // then
+      assertThatThrownBy(response2::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
+          .hasMessageContaining(
+              "Command 'ASSIGN' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, processId]");
+    }
+  }
+
+  private long createProcessInstance(final String bpmnProcessId) {
     return defaultUserClient
         .newCreateInstanceCommand()
-        .bpmnProcessId(PROCESS_ID)
+        .bpmnProcessId(bpmnProcessId)
         .latestVersion()
         .send()
         .join()
