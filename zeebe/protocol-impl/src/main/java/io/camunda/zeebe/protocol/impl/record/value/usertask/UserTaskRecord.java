@@ -526,6 +526,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     addIfAttributeChanged(PRIORITY, UserTaskRecord::getPriority, other);
   }
 
+  public UserTaskRecord resetChangedAttributes() {
+    changedAttributesProp.reset();
+    return this;
+  }
+
   private <T> void addIfAttributeChanged(
       final String attribute,
       final Function<UserTaskRecord, T> attributeGetter,

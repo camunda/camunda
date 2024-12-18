@@ -26,6 +26,6 @@ public final class UserTaskAssigningV2Applier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.ASSIGNING);
-    userTaskState.storeIntermediateState(value, LifecycleState.ASSIGNING);
+    userTaskState.storeIntermediateState(value.resetChangedAttributes(), LifecycleState.ASSIGNING);
   }
 }

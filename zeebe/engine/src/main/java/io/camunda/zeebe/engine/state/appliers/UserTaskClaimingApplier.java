@@ -25,6 +25,6 @@ public class UserTaskClaimingApplier implements TypedEventApplier<UserTaskIntent
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CLAIMING);
-    userTaskState.storeIntermediateState(value, LifecycleState.CLAIMING);
+    userTaskState.storeIntermediateState(value.resetChangedAttributes(), LifecycleState.CLAIMING);
   }
 }
