@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -147,9 +147,7 @@ public class ResourceDeletionAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.DEPLOYMENT,
-            io.camunda.client.protocol.rest.PermissionTypeEnum.DELETE_DRD,
-            List.of(drdId)));
+            ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.DELETE_DRD, List.of(drdId)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when

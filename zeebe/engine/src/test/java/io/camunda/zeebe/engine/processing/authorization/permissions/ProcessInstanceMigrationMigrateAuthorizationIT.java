@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,17 +36,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class ProcessInstanceCancelAuthorizationIT {
+public class ProcessInstanceMigrationMigrateAuthorizationIT {
+  public static final String JOB_TYPE = "jobType";
+  public static final String SOURCE_TASK = "sourceTask";
+  public static final String TARGET_TASK = "targetTask";
+
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
+  private static final String TARGET_PROCESS_ID = "targetProcessId";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
+  private static long targetProcDefKey;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -62,47 +68,71 @@ public class ProcessInstanceCancelAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done(),
-            "process.xml")
-        .send()
-        .join();
+    final var deploymentEvent =
+        defaultUserClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(SOURCE_TASK, t -> t.zeebeJobType(JOB_TYPE))
+                    .endEvent()
+                    .done(),
+                "process.xml")
+            .addProcessModel(
+                Bpmn.createExecutableProcess(TARGET_PROCESS_ID)
+                    .startEvent()
+                    .serviceTask(TARGET_TASK, t -> t.zeebeJobType(JOB_TYPE))
+                    .endEvent()
+                    .done(),
+                "targetProcess.xml")
+            .send()
+            .join();
+    targetProcDefKey =
+        deploymentEvent.getProcesses().stream()
+            .filter(process -> process.getBpmnProcessId().equals(TARGET_PROCESS_ID))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
   }
 
   @Test
-  void shouldBeAuthorizedToCancelInstanceWithDefaultUser() {
+  void shouldBeAuthorizedToMigrateProcessInstanceWithDefaultUser() {
     // given
-    final var processInstanceEvent =
+    final var processInstanceKey =
         defaultUserClient
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .send()
-            .join();
+            .join()
+            .getProcessInstanceKey();
 
-    // when
+    // when migrate to a non-existing process as authorization checks should fail first
+    // then
     final var response =
         defaultUserClient
-            .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
+            .newMigrateProcessInstanceCommand(processInstanceKey)
+            .migrationPlan(targetProcDefKey)
+            .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
             .send()
             .join();
 
-    // then
+    // The Rest API returns a null future for an empty response
+    // We can verify for null, as if we'd be unauthenticated we'd get an exception
     assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToCancelInstanceWithUser() {
+  void shouldBeAuthorizedToMigrateProcessInstanceWithUser() {
     // given
-    final var processInstanceEvent =
+    final var processInstanceKey =
         defaultUserClient
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .send()
-            .join();
+            .join()
+            .getProcessInstanceKey();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
@@ -114,36 +144,46 @@ public class ProcessInstanceCancelAuthorizationIT {
             List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when
+      // when migrate to a non-existing process as authorization checks should fail first
+      // then
       final var response =
           client
-              .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcDefKey)
+              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
               .send()
               .join();
 
-      // then
+      // The Rest API returns a null future for an empty response
+      // We can verify for null, as if we'd be unauthenticated we'd get an exception
       assertThat(response).isNull();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToCancelInstanceIfNoPermissions() {
+  void shouldBeUnauthorizedToMigrateProcessInstanceIfNoPermissions() {
     // given
-    final var processInstanceEvent =
+    final var processInstanceKey =
         defaultUserClient
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
             .send()
-            .join();
+            .join()
+            .getProcessInstanceKey();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when
+      // when migrate to a non-existing process as authorization checks should fail first
+      // then
       final var response =
-          client.newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey()).send();
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcDefKey)
+              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+              .send();
 
       // then
       assertThatThrownBy(response::join)

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +26,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,23 +37,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class ProcessInstanceMigrationMigrateAuthorizationIT {
-  public static final String JOB_TYPE = "jobType";
-  public static final String SOURCE_TASK = "sourceTask";
-  public static final String TARGET_TASK = "targetTask";
-
+public class VariableDocumentUpdateAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
-  private static final String TARGET_PROCESS_ID = "targetProcessId";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
-  private static long targetProcDefKey;
 
   @TestZeebe(autoStart = false)
-  private final TestStandaloneBroker broker =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -68,52 +63,29 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    final var deploymentEvent =
-        defaultUserClient
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess(PROCESS_ID)
-                    .startEvent()
-                    .serviceTask(SOURCE_TASK, t -> t.zeebeJobType(JOB_TYPE))
-                    .endEvent()
-                    .done(),
-                "process.xml")
-            .addProcessModel(
-                Bpmn.createExecutableProcess(TARGET_PROCESS_ID)
-                    .startEvent()
-                    .serviceTask(TARGET_TASK, t -> t.zeebeJobType(JOB_TYPE))
-                    .endEvent()
-                    .done(),
-                "targetProcess.xml")
-            .send()
-            .join();
-    targetProcDefKey =
-        deploymentEvent.getProcesses().stream()
-            .filter(process -> process.getBpmnProcessId().equals(TARGET_PROCESS_ID))
-            .findFirst()
-            .orElseThrow()
-            .getProcessDefinitionKey();
+    defaultUserClient
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("task")
+                .endEvent()
+                .done(),
+            "process.xml")
+        .send()
+        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToMigrateProcessInstanceWithDefaultUser() {
+  void shouldBeAuthorizedToUpdateVariablesWithDefaultUser() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
+    final var processInstanceKey = createProcessInstance();
 
-    // when migrate to a non-existing process as authorization checks should fail first
-    // then
+    // when then
     final var response =
         defaultUserClient
-            .newMigrateProcessInstanceCommand(processInstanceKey)
-            .migrationPlan(targetProcDefKey)
-            .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+            .newSetVariablesCommand(processInstanceKey)
+            .variables(Map.of("foo", "bar"))
             .send()
             .join();
 
@@ -123,16 +95,9 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToMigrateProcessInstanceWithUser() {
+  void shouldBeAuthorizedToUpdateVariablesWithUser() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
+    final var processInstanceKey = createProcessInstance();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
@@ -144,13 +109,11 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
             List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when migrate to a non-existing process as authorization checks should fail first
-      // then
+      // when then
       final var response =
           client
-              .newMigrateProcessInstanceCommand(processInstanceKey)
-              .migrationPlan(targetProcDefKey)
-              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
+              .newSetVariablesCommand(processInstanceKey)
+              .variables(Map.of("foo", "bar"))
               .send()
               .join();
 
@@ -161,29 +124,18 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToMigrateProcessInstanceIfNoPermissions() {
+  void shouldBeUnauthorizedToUpdateVariablesIfNoPermissions() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
+    final var processInstanceKey = createProcessInstance();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
+    // when
     try (final var client = authUtil.createClient(username, password)) {
-      // when migrate to a non-existing process as authorization checks should fail first
-      // then
+      // when
       final var response =
-          client
-              .newMigrateProcessInstanceCommand(processInstanceKey)
-              .migrationPlan(targetProcDefKey)
-              .addMappingInstruction(SOURCE_TASK, TARGET_TASK)
-              .send();
+          client.newSetVariablesCommand(processInstanceKey).variables(Map.of("foo", "bar")).send();
 
       // then
       assertThatThrownBy(response::join)
@@ -194,5 +146,15 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
               "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
     }
+  }
+
+  private long createProcessInstance() {
+    return defaultUserClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(PROCESS_ID)
+        .latestVersion()
+        .send()
+        .join()
+        .getProcessInstanceKey();
   }
 }

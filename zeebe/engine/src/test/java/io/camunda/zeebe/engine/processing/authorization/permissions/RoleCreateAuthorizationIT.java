@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,7 +24,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class ClockPinAuthorizationIT {
+public class RoleCreateAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -45,7 +44,7 @@ public class ClockPinAuthorizationIT {
   @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -64,46 +63,43 @@ public class ClockPinAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToPinClockWithDefaultUser() {
-    // given
+  void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
     // when
-    final var response = defaultUserClient.newClockPinCommand().time(Instant.now()).send().join();
+    final var response = defaultUserClient.newCreateRoleCommand().name("Foo").send().join();
 
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    // then
+    assertThat(response.getRoleKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToPinClockWithPermissions() {
+  void shouldBeAuthorizedToCreateRoleWithPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        username,
+        authUsername,
         password,
-        new Permissions(ResourceTypeEnum.SYSTEM, PermissionTypeEnum.UPDATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.CREATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(username, password)) {
+    try (final var client = authUtil.createClient(authUsername, password)) {
       // when
-      final var response = client.newClockPinCommand().time(Instant.now()).send().join();
+      final var response = client.newCreateRoleCommand().name("Foo").send().join();
 
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+      // then
+      assertThat(response.getRoleKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnAuthorizedToPinClockWithPermissions() {
+  void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(username, password);
+    authUtil.createUser(authUsername, password);
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
-      final var response = client.newClockPinCommand().time(Instant.now()).send();
+    try (final var client = authUtil.createClient(authUsername, password)) {
+      final var response = client.newCreateRoleCommand().name("Foo").send();
 
       // then
       assertThatThrownBy(response::join)
@@ -111,7 +107,7 @@ public class ClockPinAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
     }
   }
 }

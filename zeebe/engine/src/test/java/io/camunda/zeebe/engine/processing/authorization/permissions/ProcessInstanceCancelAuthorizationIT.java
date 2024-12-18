@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +18,7 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -35,17 +36,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class MappingCreateAuthorizationIT {
-
+public class ProcessInstanceCancelAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
+  private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient client;
+  @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private final TestStandaloneBroker broker =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -57,70 +58,92 @@ public class MappingCreateAuthorizationIT {
     broker.start();
 
     final var defaultUsername = "demo";
-    client = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, client, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
+    defaultUserClient
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done(),
+            "process.xml")
+        .send()
+        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
+  void shouldBeAuthorizedToCancelInstanceWithDefaultUser() {
+    // given
+    final var processInstanceEvent =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
+
     // when
     final var response =
-        client
-            .newCreateMappingCommand()
-            .claimName("claimName")
-            .claimValue("claimValue")
-            .name("name")
+        defaultUserClient
+            .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
             .send()
             .join();
 
     // then
-    assertThat(response.getMappingKey()).isPositive();
+    assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateMappingWithPermissions() {
+  void shouldBeAuthorizedToCancelInstanceWithUser() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
+    final var processInstanceEvent =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
+    final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        authUsername,
+        username,
         password,
-        new Permissions(ResourceTypeEnum.MAPPING_RULE, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
-    // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
+    try (final var client = authUtil.createClient(username, password)) {
+      // when
       final var response =
           client
-              .newCreateMappingCommand()
-              .claimName("claimName")
-              .claimValue("claimValue")
-              .name("name")
+              .newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey())
               .send()
               .join();
 
       // then
-      assertThat(response.getMappingKey()).isPositive();
+      assertThat(response).isNull();
     }
   }
 
   @Test
-  void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
+  void shouldBeUnauthorizedToCancelInstanceIfNoPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
+    final var processInstanceEvent =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
+    final var username = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(authUsername, password);
+    authUtil.createUser(username, password);
 
-    // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
+    try (final var client = authUtil.createClient(username, password)) {
+      // when
       final var response =
-          client
-              .newCreateMappingCommand()
-              .claimName("claimName")
-              .claimValue("claimValue")
-              .name("name")
-              .send();
+          client.newCancelInstanceCommand(processInstanceEvent.getProcessInstanceKey()).send();
 
       // then
       assertThatThrownBy(response::join)
@@ -128,7 +151,8 @@ public class MappingCreateAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
+              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
+              PROCESS_ID);
     }
   }
 }

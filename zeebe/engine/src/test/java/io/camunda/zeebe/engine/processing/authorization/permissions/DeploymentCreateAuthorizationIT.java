@@ -5,27 +5,26 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
-import io.camunda.client.CamundaClient;
+import io.camunda.client.ZeebeClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
@@ -38,17 +37,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class JobCompleteAuthorizationIT {
-
-  public static final String JOB_TYPE = "jobType";
-
+final class DeploymentCreateAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
@@ -67,110 +62,77 @@ public class JobCompleteAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .serviceTask("serviceTask", t -> t.zeebeJobType(JOB_TYPE))
-                .endEvent()
-                .done(),
-            "process.xml")
-        .send()
-        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToCompleteJobWithDefaultUser() {
+  void shouldBeAuthorizedToDeployWithDefaultUser() {
     // given
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
+    final var processId = Strings.newRandomValidBpmnId();
 
     // when then
-    final var response = defaultUserClient.newCompleteCommand(jobKey).send().join();
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    final var deploymentEvent =
+        defaultUserClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                "process.bpmn")
+            .send()
+            .join();
+    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
   }
 
   @Test
-  void shouldBeAuthorizedToCompleteJobWithUser() {
+  void shouldBeAuthorizedToDeployWithPermissions() {
     // given
+    final var processId = Strings.newRandomValidBpmnId();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
+        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
-      final var response = client.newCompleteCommand(jobKey).send().join();
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+      // when
+      final var deploymentEvent =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(
+                  Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                  "process.bpmn")
+              .send()
+              .join();
+
+      // then
+      assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToCompleteJobIfNoPermissions() {
+  void shouldBeUnAuthorizedToDeployWithPermissions() {
     // given
+    final var processId = Strings.newRandomValidBpmnId();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    final var jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
 
+    // when
     try (final var client = authUtil.createClient(username, password)) {
-      // when
-      final var response = client.newCompleteCommand(jobKey).send();
+      final var deployFuture =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(
+                  Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+                  "process.bpmn")
+              .send();
 
       // then
-      assertThatThrownBy(response::join)
+      assertThatThrownBy(deployFuture::join)
           .isInstanceOf(ProblemException.class)
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
     }
   }
 }

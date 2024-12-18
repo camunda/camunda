@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,7 +18,6 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -36,17 +35,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class AuthorizationRemovePermissionAuthorizationIT {
+public class UserCreateAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final String PROCESS_ID = "processId";
-  @AutoCloseResource private static CamundaClient defaultUserClient;
   private static AuthorizationsUtil authUtil;
+  @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -62,86 +60,73 @@ public class AuthorizationRemovePermissionAuthorizationIT {
     authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(), "process.xml")
-        .send()
-        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToRemovePermissionsWithDefaultUser() {
+  void shouldBeAuthorizedToCreateUserWithDefaultUser() {
     // given
     final var username = UUID.randomUUID().toString();
-    final var resourceType = ResourceTypeEnum.DEPLOYMENT;
-    final var permissionType = PermissionTypeEnum.DELETE;
-    final var resourceId = "resourceId";
-    final var userKey =
-        authUtil.createUserWithPermissions(
-            username,
-            "password",
-            new Permissions(resourceType, permissionType, List.of(resourceId)));
 
-    // when then
+    // when
     final var response =
         defaultUserClient
-            .newRemovePermissionsCommand(userKey)
-            .resourceType(resourceType)
-            .permission(permissionType)
-            .resourceId(resourceId)
+            .newUserCreateCommand()
+            .username(username)
+            .name("Foo")
+            .email("bar@baz.com")
+            .password("zabraboof")
             .send()
             .join();
 
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    // then
+    assertThat(response.getUserKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToRemovePermissionsWithUser() {
+  void shouldBeAuthorizedToCreateUserWithPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
+    final var newUsername = UUID.randomUUID().toString();
     final var password = "password";
-    final var resourceType = ResourceTypeEnum.AUTHORIZATION;
-    final var permissionType = PermissionTypeEnum.UPDATE;
-    final var resourceId = "*";
-    final var userKey =
-        authUtil.createUserWithPermissions(
-            username, password, new Permissions(resourceType, permissionType, List.of(resourceId)));
+    authUtil.createUserWithPermissions(
+        authUsername,
+        password,
+        new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when then
+    try (final var client = authUtil.createClient(authUsername, password)) {
+      // when
       final var response =
           client
-              .newRemovePermissionsCommand(userKey)
-              .resourceType(resourceType)
-              .permission(permissionType)
-              .resourceId(resourceId)
+              .newUserCreateCommand()
+              .username(newUsername)
+              .name("Foo")
+              .email("bar@baz.com")
+              .password("zabraboof")
               .send()
               .join();
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+
+      // then
+      assertThat(response.getUserKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToRemovePermissionsIfNoPermissions() {
+  void shouldBeUnAuthorizedToCreateUserWithoutPermissions() {
     // given
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
+    final var newUsername = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(username, password);
+    authUtil.createUser(authUsername, password);
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
+    try (final var client = authUtil.createClient(authUsername, password)) {
       final var response =
           client
-              // We can use any owner key. The authorization check happens before we use it.
-              .newRemovePermissionsCommand(1L)
-              .resourceType(ResourceTypeEnum.DEPLOYMENT)
-              .permission(PermissionTypeEnum.CREATE)
-              .resourceId("*")
+              .newUserCreateCommand()
+              .username(newUsername)
+              .name("Foo")
+              .email("bar@baz.com")
+              .password("zabraboof")
               .send();
 
       // then
@@ -150,7 +135,7 @@ public class AuthorizationRemovePermissionAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
     }
   }
 }

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +19,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -38,8 +38,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class UserTaskAssignAuthorizationIT {
-  public static final String USER_TASK_ID = "userTask";
+public class ProcessInstanceModificationModifyAuthorizationIT {
+  public static final String JOB_TYPE = "jobType";
+  public static final String SERVICE_TASK_ID = "serviceTask";
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -71,8 +72,7 @@ public class UserTaskAssignAuthorizationIT {
         .addProcessModel(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .userTask(USER_TASK_ID)
-                .zeebeUserTask()
+                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
                 .done(),
             "process.xml")
@@ -81,30 +81,28 @@ public class UserTaskAssignAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToAssignUserTaskWithDefaultUser() {
+  void shouldBeAuthorizedToModifyProcessWithDefaultUser() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
 
     // when then
     final var response =
         defaultUserClient
-            .newUserTaskAssignCommand(userTaskKey)
-            .assignee("assignee")
-            .allowOverride(true)
+            .newModifyProcessInstanceCommand(processInstanceKey)
+            .terminateElement(serviceTaskKey)
             .send()
             .join();
-
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
     assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToAssignUserTaskWithUser() {
+  void shouldBeAuthorizedToModifyProcessWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
@@ -112,19 +110,17 @@ public class UserTaskAssignAuthorizationIT {
         password,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_USER_TASK,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
             List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
       final var response =
           client
-              .newUserTaskAssignCommand(userTaskKey)
-              .assignee("assignee")
-              .allowOverride(true)
+              .newModifyProcessInstanceCommand(processInstanceKey)
+              .terminateElement(serviceTaskKey)
               .send()
               .join();
-
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
       assertThat(response).isNull();
@@ -132,21 +128,20 @@ public class UserTaskAssignAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToAssignUserTaskIfNoPermissions() {
+  void shouldBeUnauthorizedToModifyProcessIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userTaskKey = getUserTaskKey(processInstanceKey);
+    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when we use the unauthorized client
+      // when then
       final var response =
           client
-              .newUserTaskAssignCommand(userTaskKey)
-              .assignee("assignee")
-              .allowOverride(true)
+              .newModifyProcessInstanceCommand(processInstanceKey)
+              .terminateElement(serviceTaskKey)
               .send();
 
       // then
@@ -155,7 +150,7 @@ public class UserTaskAssignAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
+              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
     }
   }
@@ -170,13 +165,12 @@ public class UserTaskAssignAuthorizationIT {
         .getProcessInstanceKey();
   }
 
-  private static long getUserTaskKey(final long processInstanceKey) {
-    return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId(USER_TASK_ID)
+  private static long getServiceTaskKey(final long processIstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processIstanceKey)
+        .withElementId(SERVICE_TASK_ID)
         .limit(1)
-        .findFirst()
-        .orElseThrow()
+        .getFirst()
         .getKey();
   }
 }

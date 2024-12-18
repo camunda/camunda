@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class UserTaskCompleteAuthorizationIT {
+public class UserTaskAssignAuthorizationIT {
   public static final String USER_TASK_ID = "userTask";
 
   @Container
@@ -81,13 +81,19 @@ public class UserTaskCompleteAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToCompleteUserTaskWithDefaultUser() {
+  void shouldBeAuthorizedToAssignUserTaskWithDefaultUser() {
     // given
     final var processInstanceKey = createProcessInstance();
     final var userTaskKey = getUserTaskKey(processInstanceKey);
 
     // when then
-    final var response = defaultUserClient.newUserTaskCompleteCommand(userTaskKey).send().join();
+    final var response =
+        defaultUserClient
+            .newUserTaskAssignCommand(userTaskKey)
+            .assignee("assignee")
+            .allowOverride(true)
+            .send()
+            .join();
 
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
@@ -95,7 +101,7 @@ public class UserTaskCompleteAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToCompleteUserTaskWithUser() {
+  void shouldBeAuthorizedToAssignUserTaskWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
     final var userTaskKey = getUserTaskKey(processInstanceKey);
@@ -111,7 +117,13 @@ public class UserTaskCompleteAuthorizationIT {
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
-      final var response = client.newUserTaskCompleteCommand(userTaskKey).send().join();
+      final var response =
+          client
+              .newUserTaskAssignCommand(userTaskKey)
+              .assignee("assignee")
+              .allowOverride(true)
+              .send()
+              .join();
 
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
@@ -120,7 +132,7 @@ public class UserTaskCompleteAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToCompleteUserTaskIfNoPermissions() {
+  void shouldBeUnauthorizedToAssignUserTaskIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance();
     final var userTaskKey = getUserTaskKey(processInstanceKey);
@@ -130,7 +142,12 @@ public class UserTaskCompleteAuthorizationIT {
 
     try (final var client = authUtil.createClient(username, password)) {
       // when we use the unauthorized client
-      final var response = client.newUserTaskCompleteCommand(userTaskKey).send();
+      final var response =
+          client
+              .newUserTaskAssignCommand(userTaskKey)
+              .assignee("assignee")
+              .allowOverride(true)
+              .send();
 
       // then
       assertThatThrownBy(response::join)

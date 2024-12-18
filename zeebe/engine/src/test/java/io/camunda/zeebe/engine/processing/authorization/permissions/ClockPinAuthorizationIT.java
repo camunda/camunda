@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +24,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class UserCreateAuthorizationIT {
+public class ClockPinAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -63,71 +64,46 @@ public class UserCreateAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToCreateUserWithDefaultUser() {
+  void shouldBeAuthorizedToPinClockWithDefaultUser() {
     // given
-    final var username = UUID.randomUUID().toString();
-
     // when
-    final var response =
-        defaultUserClient
-            .newUserCreateCommand()
-            .username(username)
-            .name("Foo")
-            .email("bar@baz.com")
-            .password("zabraboof")
-            .send()
-            .join();
+    final var response = defaultUserClient.newClockPinCommand().time(Instant.now()).send().join();
 
-    // then
-    assertThat(response.getUserKey()).isPositive();
+    // The Rest API returns a null future for an empty response
+    // We can verify for null, as if we'd be unauthenticated we'd get an exception
+    assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToCreateUserWithPermissions() {
+  void shouldBeAuthorizedToPinClockWithPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
-    final var newUsername = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        authUsername,
+        username,
         password,
-        new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.SYSTEM, PermissionTypeEnum.UPDATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(authUsername, password)) {
+    try (final var client = authUtil.createClient(username, password)) {
       // when
-      final var response =
-          client
-              .newUserCreateCommand()
-              .username(newUsername)
-              .name("Foo")
-              .email("bar@baz.com")
-              .password("zabraboof")
-              .send()
-              .join();
+      final var response = client.newClockPinCommand().time(Instant.now()).send().join();
 
-      // then
-      assertThat(response.getUserKey()).isPositive();
+      // The Rest API returns a null future for an empty response
+      // We can verify for null, as if we'd be unauthenticated we'd get an exception
+      assertThat(response).isNull();
     }
   }
 
   @Test
-  void shouldBeUnAuthorizedToCreateUserWithoutPermissions() {
+  void shouldBeUnAuthorizedToPinClockWithPermissions() {
     // given
-    final var authUsername = UUID.randomUUID().toString();
-    final var newUsername = UUID.randomUUID().toString();
+    final var username = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(authUsername, password);
+    authUtil.createUser(username, password);
 
     // when
-    try (final var client = authUtil.createClient(authUsername, password)) {
-      final var response =
-          client
-              .newUserCreateCommand()
-              .username(newUsername)
-              .name("Foo")
-              .email("bar@baz.com")
-              .password("zabraboof")
-              .send();
+    try (final var client = authUtil.createClient(username, password)) {
+      final var response = client.newClockPinCommand().time(Instant.now()).send();
 
       // then
       assertThatThrownBy(response::join)
@@ -135,7 +111,7 @@ public class UserCreateAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
+              "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
     }
   }
 }

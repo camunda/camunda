@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,15 +19,14 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,9 +37,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class ProcessInstanceModificationModifyAuthorizationIT {
-  public static final String JOB_TYPE = "jobType";
-  public static final String SERVICE_TASK_ID = "serviceTask";
+public class MessagePublishAuthorizationIT {
+  public static final String INTERMEDIATE_MSG_NAME = "intermediateMsg";
+  public static final String START_MSG_NAME = "startMsg";
+  public static final String CORRELATION_KEY_VARIABLE = "correlationKey";
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
@@ -72,8 +72,15 @@ public class ProcessInstanceModificationModifyAuthorizationIT {
         .addProcessModel(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
+                .intermediateCatchEvent()
+                .message(
+                    m ->
+                        m.name(INTERMEDIATE_MSG_NAME)
+                            .zeebeCorrelationKeyExpression(CORRELATION_KEY_VARIABLE))
                 .endEvent()
+                .moveToProcess(PROCESS_ID)
+                .startEvent()
+                .message(m -> m.name(START_MSG_NAME))
                 .done(),
             "process.xml")
         .send()
@@ -81,67 +88,67 @@ public class ProcessInstanceModificationModifyAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToModifyProcessWithDefaultUser() {
+  void shouldBeAuthorizedToPublishMessageWithDefaultUser() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
 
-    // when then
+    // when
     final var response =
         defaultUserClient
-            .newModifyProcessInstanceCommand(processInstanceKey)
-            .terminateElement(serviceTaskKey)
+            .newPublishMessageCommand()
+            .messageName(INTERMEDIATE_MSG_NAME)
+            .correlationKey(correlationKey)
             .send()
             .join();
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+
+    // then
+    assertThat(response.getMessageKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToModifyProcessWithUser() {
+  void shouldBeAuthorizedToPublishMessageWithUser() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+        new Permissions(ResourceTypeEnum.MESSAGE, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
+      // when
       final var response =
           client
-              .newModifyProcessInstanceCommand(processInstanceKey)
-              .terminateElement(serviceTaskKey)
+              .newPublishMessageCommand()
+              .messageName(INTERMEDIATE_MSG_NAME)
+              .correlationKey(correlationKey)
               .send()
               .join();
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+
+      // then
+      assertThat(response.getMessageKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToModifyProcessIfNoPermissions() {
+  void shouldBeUnauthorizedToPublishMessageIfNoPermissions() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
+    final var correlationKey = UUID.randomUUID().toString();
+    createProcessInstance(correlationKey);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
+      // when
       final var response =
           client
-              .newModifyProcessInstanceCommand(processInstanceKey)
-              .terminateElement(serviceTaskKey)
+              .newPublishMessageCommand()
+              .messageName(INTERMEDIATE_MSG_NAME)
+              .correlationKey(correlationKey)
               .send();
 
       // then
@@ -150,27 +157,17 @@ public class ProcessInstanceModificationModifyAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'");
     }
   }
 
-  private long createProcessInstance() {
-    return defaultUserClient
+  private void createProcessInstance(final String correlationKey) {
+    defaultUserClient
         .newCreateInstanceCommand()
         .bpmnProcessId(PROCESS_ID)
         .latestVersion()
+        .variables(Map.of(CORRELATION_KEY_VARIABLE, correlationKey))
         .send()
-        .join()
-        .getProcessInstanceKey();
-  }
-
-  private static long getServiceTaskKey(final long processIstanceKey) {
-    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processIstanceKey)
-        .withElementId(SERVICE_TASK_ID)
-        .limit(1)
-        .getFirst()
-        .getKey();
+        .join();
   }
 }

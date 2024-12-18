@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,7 +19,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -38,8 +38,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class JobUpdateAuthorizationIT {
-
+public class IncidentResolveAuthorizationIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -47,7 +46,6 @@ public class JobUpdateAuthorizationIT {
   private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
   @AutoCloseResource private static CamundaClient defaultUserClient;
-  private static long jobKey;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
@@ -71,41 +69,31 @@ public class JobUpdateAuthorizationIT {
         .addProcessModel(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("serviceTask", t -> t.zeebeJobType("jobType"))
+                .zeebeOutputExpression("assert(foo, foo != null)", "target")
                 .endEvent()
                 .done(),
             "process.xml")
         .send()
         .join();
-
-    final var processInstanceKey =
-        defaultUserClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join()
-            .getProcessInstanceKey();
-    jobKey =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateJobWithDefaultUser() {
+  void shouldBeAuthorizedToResolveIncidentWithDefaultUser() {
+    // given
+    final var incidentKey = createIncident();
+
     // when then
-    final var response =
-        defaultUserClient.newUpdateJobCommand(jobKey).updateRetries(1).send().join();
+    final var response = defaultUserClient.newResolveIncidentCommand(incidentKey).send().join();
+
     // The Rest API returns a null future for an empty response
     // We can verify for null, as if we'd be unauthenticated we'd get an exception
     assertThat(response).isNull();
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateJobWithUser() {
+  void shouldBeAuthorizedToResolveIncidentWithUser() {
     // given
+    final var incidentKey = createIncident();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
@@ -117,8 +105,9 @@ public class JobUpdateAuthorizationIT {
             List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
-      // when then
-      final var response = client.newUpdateJobCommand(jobKey).updateRetries(1).send().join();
+      // when
+      final var response = client.newResolveIncidentCommand(incidentKey).send().join();
+
       // The Rest API returns a null future for an empty response
       // We can verify for null, as if we'd be unauthenticated we'd get an exception
       assertThat(response).isNull();
@@ -126,15 +115,17 @@ public class JobUpdateAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToUpdateJobIfNoPermissions() {
+  void shouldBeUnauthorizedToResolveIncidentIfNoPermissions() {
     // given
+    final var incidentKey = createIncident();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
 
     try (final var client = authUtil.createClient(username, password)) {
+
       // when
-      final var response = client.newUpdateJobCommand(jobKey).updateRetries(1).send();
+      final var response = client.newResolveIncidentCommand(incidentKey).send();
 
       // then
       assertThatThrownBy(response::join)
@@ -145,5 +136,20 @@ public class JobUpdateAuthorizationIT {
               "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
     }
+  }
+
+  private long createIncident() {
+    final var processInstanceKey =
+        defaultUserClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+    return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getKey();
   }
 }

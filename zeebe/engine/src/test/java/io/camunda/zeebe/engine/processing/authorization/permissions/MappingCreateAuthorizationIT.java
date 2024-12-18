@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.authorization;
+package io.camunda.zeebe.engine.processing.authorization.permissions;
 
 import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,7 +18,6 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,17 +35,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-public class VariableDocumentUpdateAuthorizationIT {
+public class MappingCreateAuthorizationIT {
+
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static CamundaClient defaultUserClient;
+  @AutoCloseResource private static CamundaClient client;
 
   @TestZeebe(autoStart = false)
-  private TestStandaloneBroker broker =
+  private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -59,83 +57,70 @@ public class VariableDocumentUpdateAuthorizationIT {
     broker.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(broker, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
+    client = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, client, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
-    defaultUserClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .startEvent()
-                .userTask("task")
-                .endEvent()
-                .done(),
-            "process.xml")
-        .send()
-        .join();
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateVariablesWithDefaultUser() {
-    // given
-    final var processInstanceKey = createProcessInstance();
-
-    // when then
+  void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
+    // when
     final var response =
-        defaultUserClient
-            .newSetVariablesCommand(processInstanceKey)
-            .variables(Map.of("foo", "bar"))
+        client
+            .newCreateMappingCommand()
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .name("name")
             .send()
             .join();
 
-    // The Rest API returns a null future for an empty response
-    // We can verify for null, as if we'd be unauthenticated we'd get an exception
-    assertThat(response).isNull();
+    // then
+    assertThat(response.getMappingKey()).isPositive();
   }
 
   @Test
-  void shouldBeAuthorizedToUpdateVariablesWithUser() {
+  void shouldBeAuthorizedToCreateMappingWithPermissions() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUserWithPermissions(
-        username,
+        authUsername,
         password,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+        new Permissions(ResourceTypeEnum.MAPPING_RULE, PermissionTypeEnum.CREATE, List.of("*")));
 
-    try (final var client = authUtil.createClient(username, password)) {
-      // when then
+    // when
+    try (final var client = authUtil.createClient(authUsername, password)) {
       final var response =
           client
-              .newSetVariablesCommand(processInstanceKey)
-              .variables(Map.of("foo", "bar"))
+              .newCreateMappingCommand()
+              .claimName("claimName")
+              .claimValue("claimValue")
+              .name("name")
               .send()
               .join();
 
-      // The Rest API returns a null future for an empty response
-      // We can verify for null, as if we'd be unauthenticated we'd get an exception
-      assertThat(response).isNull();
+      // then
+      assertThat(response.getMappingKey()).isPositive();
     }
   }
 
   @Test
-  void shouldBeUnauthorizedToUpdateVariablesIfNoPermissions() {
+  void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
     // given
-    final var processInstanceKey = createProcessInstance();
-    final var username = UUID.randomUUID().toString();
+    final var authUsername = UUID.randomUUID().toString();
     final var password = "password";
-    authUtil.createUser(username, password);
+    authUtil.createUser(authUsername, password);
 
     // when
-    try (final var client = authUtil.createClient(username, password)) {
-      // when
+    try (final var client = authUtil.createClient(authUsername, password)) {
       final var response =
-          client.newSetVariablesCommand(processInstanceKey).variables(Map.of("foo", "bar")).send();
+          client
+              .newCreateMappingCommand()
+              .claimName("claimName")
+              .claimValue("claimValue")
+              .name("name")
+              .send();
 
       // then
       assertThatThrownBy(response::join)
@@ -143,18 +128,7 @@ public class VariableDocumentUpdateAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
-              PROCESS_ID);
+              "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
     }
-  }
-
-  private long createProcessInstance() {
-    return defaultUserClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(PROCESS_ID)
-        .latestVersion()
-        .send()
-        .join()
-        .getProcessInstanceKey();
   }
 }
