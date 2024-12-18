@@ -37,7 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
-final class DeploymentCreateAuthorizationIT {
+final class BasicAuthOverRestIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -65,7 +65,7 @@ final class DeploymentCreateAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToDeployWithDefaultUser() {
+  void shouldBeAuthorizedWithDefaultUser() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
 
@@ -82,7 +82,7 @@ final class DeploymentCreateAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToDeployWithPermissions() {
+  void shouldBeAuthorizedWithUserThatIsGrantedPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var username = UUID.randomUUID().toString();
@@ -109,7 +109,7 @@ final class DeploymentCreateAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnAuthorizedToDeployWithPermissions() {
+  void shouldBeUnauthorizedWithUserThatIsNotGrantedPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var username = UUID.randomUUID().toString();
