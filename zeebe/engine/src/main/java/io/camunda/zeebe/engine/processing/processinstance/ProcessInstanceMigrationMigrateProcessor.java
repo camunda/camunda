@@ -492,6 +492,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                   targetProcessDefinition
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
+              requireValidTargetIncomingFlowCount(
+                  sourceGateway, targetGateway, elementInstance.getValue().getProcessInstanceKey());
               requireSequenceFlowExistsInTarget(
                   activeFlow.getId(),
                   sourceGateway,
