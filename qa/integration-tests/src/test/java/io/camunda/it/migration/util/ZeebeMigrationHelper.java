@@ -7,9 +7,9 @@
  */
 package io.camunda.it.migration.util;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.zeebe.containers.ZeebeContainer;
@@ -152,15 +152,6 @@ public class ZeebeMigrationHelper {
         broker.mappedPort(TestZeebePort.GATEWAY), broker.mappedPort(TestZeebePort.REST));
 
     zeebeClient = broker.newClientBuilder().build();
-    zeebeClient
-        .newUserCreateCommand()
-        .name("demo")
-        .username("demo")
-        .email("dem@demo.com")
-        .password("demo")
-        .send()
-        .join();
-
     return broker;
   }
 
