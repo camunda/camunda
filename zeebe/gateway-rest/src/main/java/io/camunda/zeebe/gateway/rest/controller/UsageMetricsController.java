@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.service.UsageMetricsServices;
-import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -34,7 +34,7 @@ public class UsageMetricsController {
 
   @GetMapping(
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<UsageMetricsSearchQueryResponse> getUsageMetrics(
+  public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
       @RequestParam(required = false) final String startTime,
       @RequestParam(required = false) final String endTime) {
 
@@ -42,12 +42,11 @@ public class UsageMetricsController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
   }
 
-  private ResponseEntity<UsageMetricsSearchQueryResponse> getMetrics(
-      final UsageMetricsQuery query) {
+  private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
     try {
       final var result =
           usageMetricsServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUsageMetricsSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUsageMetricsResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -9,7 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
@@ -36,7 +36,7 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
   public SearchQuery toSearchQuery(final UsageMetricsFilter filter) {
     this.filter = filter;
     final var queries = new ArrayList<SearchQuery>();
-    queries.add(term("event", filter.event()));
+    queries.add(stringTerms("event", filter.events()));
     queries.addAll(
         dateTimeOperations(
             "eventTime",
@@ -54,6 +54,6 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
   }
 
   private boolean shouldUseTasklistIndex(final UsageMetricsFilter filter) {
-    return filter != null && "task_completed_by_assignee".equals(filter.event());
+    return filter != null && filter.events().contains("task_completed_by_assignee");
   }
 }

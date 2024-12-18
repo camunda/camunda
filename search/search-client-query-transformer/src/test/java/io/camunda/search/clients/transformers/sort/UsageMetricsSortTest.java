@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.sort;
 
 import static java.time.ZoneOffset.UTC;
 
-import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.sort.SearchSortOptions;
@@ -45,8 +44,8 @@ public class UsageMetricsSortTest extends AbstractSortTransformerTest {
     final var endTime = OffsetDateTime.of(2023, 1, 2, 0, 0, 0, 0, UTC);
     final var filter =
         new UsageMetricsFilter.Builder()
-            .startTime(Operation.gte(startTime))
-            .endTime(Operation.lte(endTime))
+            .startTime(startTime)
+            .endTime(endTime)
             .events("sort-event")
             .build();
     final var request = SearchQueryBuilders.usageMetricsSearchQuery(q -> q.filter(filter).sort(fn));

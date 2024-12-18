@@ -70,7 +70,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
@@ -88,9 +88,9 @@ public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
 
-  public static UsageMetricsSearchQueryResponse toUsageMetricsSearchQueryResponse(
+  public static UsageMetricsResponse toUsageMetricsResponse(
       final UsageMetricsCount usageMetricsCount) {
-    return new UsageMetricsSearchQueryResponse()
+    return new UsageMetricsResponse()
         .assignees(usageMetricsCount.assignees())
         .processInstances(usageMetricsCount.processInstances())
         .decisionInstances(usageMetricsCount.decisionInstances());

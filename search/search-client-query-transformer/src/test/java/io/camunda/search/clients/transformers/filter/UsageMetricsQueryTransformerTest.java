@@ -14,7 +14,6 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.Operation;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import java.time.OffsetDateTime;
@@ -29,10 +28,7 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
     final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
     final var filter =
         FilterBuilders.usageMetrics(
-            f ->
-                f.startTime(Operation.gte(startTime))
-                    .endTime(Operation.lte(endTime))
-                    .events("EVENT_PROCESS_INSTANCE_START"));
+            f -> f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -83,8 +79,8 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
     var filter =
         FilterBuilders.usageMetrics(
             f ->
-                f.startTime(Operation.gte(startTime))
-                    .endTime(Operation.lte(endTime))
+                f.startTime(startTime)
+                    .endTime(endTime)
                     .events("EVENT_PROCESS_INSTANCE_START", "EVENT_PROCESS_INSTANCE_END"));
 
     // when
@@ -94,10 +90,7 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
     // should use Tasklist
     filter =
         FilterBuilders.usageMetrics(
-            f ->
-                f.startTime(Operation.gte(startTime))
-                    .endTime(Operation.lte(endTime))
-                    .events("task_completed_by_assignee"));
+            f -> f.startTime(startTime).endTime(endTime).events("task_completed_by_assignee"));
     // when
     transformer.toSearchQuery(filter);
     assertThat(transformer.getIndex()).isEqualTo(tasklistMetricIndex);

@@ -262,7 +262,7 @@ public class SearchClients
                 new UsageMetricsFilter.Builder()
                     .startTime(query.filter().startTime())
                     .endTime(query.filter().endTime())
-                    .event(event)
+                    .events(event)
                     .build())
             .build();
     final List<UsageMetricsEntity> metrics =
