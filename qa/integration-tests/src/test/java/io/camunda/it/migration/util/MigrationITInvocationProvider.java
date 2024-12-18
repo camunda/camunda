@@ -15,6 +15,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -54,202 +56,53 @@ public class MigrationITInvocationProvider
   private final Map<DatabaseType, Map<String, String>> tasklistEnvironmentAfter = new HashMap<>();
 
   private final Map<DatabaseType, TestStandaloneBroker> testBrokers = new HashMap<>();
-  private BiConsumer<ZeebeClient, TasklistUtil> beforeMigrationFunc;
-  private BiConsumer<ZeebeClient, TasklistUtil> afterMigrationFunc;
+  private BiConsumer<ZeebeClient, TasklistMigrationHelper> beforeMigrationFunc;
+  private BiConsumer<ZeebeClient, TasklistMigrationHelper> afterMigrationFunc;
   private final Map<DatabaseType, ZeebeClient> zeebeClients = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final Map<DatabaseType, TasklistUtil> tasklistUtils = new HashMap<>();
-  private final Map<DatabaseType, ZeebeUtil> zeebeUtils = new HashMap<>();
+  private final Map<DatabaseType, TasklistMigrationHelper> tasklistContainer = new HashMap<>();
+  private final Map<DatabaseType, ZeebeMigrationHelper> zeebeUtils = new HashMap<>();
   private final List<DatabaseType> databaseTypes = new ArrayList<>();
-  private String elasticsearchExternalUrl;
-  private String opensearchExternalUrl;
+  private final Map<DatabaseType, String> databaseExternalUrls = new HashMap<>();
 
   @Override
   public void afterAll(final ExtensionContext extensionContext) {
-    tasklistUtils.forEach((k, v) -> v.stop());
+    tasklistContainer.forEach((k, v) -> v.stop());
     zeebeUtils.forEach((k, v) -> v.stop());
   }
 
   @Override
   public void beforeAll(final ExtensionContext extensionContext) throws Exception {
-    databaseTypes.stream()
-        .parallel()
+    databaseTypes.parallelStream()
         .forEach(
             db -> {
-              switch (db) {
-                case ELASTICSEARCH:
-                  final Network network = Network.newNetwork();
-                  zeebeUtils.put(db, new ZeebeUtil(network));
-                  tasklistUtils.put(db, new TasklistUtil(network));
+              zeebeEnvironmentBefore.putIfAbsent(db, new HashMap<>());
+              zeebeEnvironmentAfter.putIfAbsent(db, new HashMap<>());
+              tasklistEnvironmentBefore.putIfAbsent(db, new HashMap<>());
+              tasklistEnvironmentAfter.putIfAbsent(db, new HashMap<>());
 
-                  final ElasticsearchContainer elasticsearchContainer =
-                      TestSearchContainers.createDefeaultElasticsearchContainer()
-                          .withNetwork(network)
-                          .withNetworkAliases("elasticsearch");
-                  elasticsearchContainer.start();
-                  elasticsearchExternalUrl =
-                      "http://" + elasticsearchContainer.getHttpHostAddress();
-                  closeables.add(elasticsearchContainer);
+              final Network network = Network.newNetwork();
+              zeebeUtils.put(db, new ZeebeMigrationHelper(network));
+              tasklistContainer.put(db, new TasklistMigrationHelper(network));
 
-                  /* Startup Sequence 8.6*/
+              startDatabaseContainer(db, network);
 
-                  updateEnvMap(db, zeebeEnvironmentBefore, zeebe86ElasticsearchDefaultConfig());
+              /* Startup Sequence 8.6*/
 
-                  closeables.add(zeebeUtils.get(db).start86Broker(zeebeEnvironmentBefore.get(db)));
-                  zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
+              beforeMigrationStartup(db);
 
-                  updateEnvMap(
-                      db,
-                      tasklistEnvironmentBefore,
-                      tasklistElasticsearchDefaultConfig(zeebeUtils.get(db)));
-                  var tasklistEs =
-                      tasklistUtils
-                          .get(db)
-                          .createTasklist(tasklistEnvironmentBefore.get(db), false);
-                  closeables.add(tasklistEs);
+              // Stop Zeebe and Tasklist
+              zeebeUtils.get(db).stop();
+              tasklistContainer.get(db).stop();
 
-                  if (beforeMigrationFunc != null) {
-                    beforeMigrationFunc.accept(zeebeClients.get(db), tasklistUtils.get(db));
-                  }
+              /* Startup Sequence 8.7*/
 
-                  /* Startup Sequence 8.7*/
-
-                  zeebeUtils.get(db).stop();
-                  tasklistUtils.get(db).stop();
-
-                  updateEnvMap(db, zeebeEnvironmentAfter, zeebe87ElasticsearchDefaultConfig());
-                  final var broker =
-                      zeebeUtils
-                          .get(db)
-                          .start87Broker(
-                              cfg -> {
-                                cfg.setClassName("io.camunda.exporter.CamundaExporter");
-                                cfg.setArgs(
-                                    Map.of(
-                                        "connect",
-                                        Map.of(
-                                            "url",
-                                            "http://"
-                                                + elasticsearchContainer.getHttpHostAddress()),
-                                        "bulk",
-                                        Map.of("size", 10, "delay", 1),
-                                        "index",
-                                        Map.of("shouldWaitForImporters", false)));
-                              },
-                              zeebeEnvironmentAfter.get(db));
-
-                  try {
-                    cloneProcesses(db);
-                  } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                  }
-
-                  updateEnvMap(
-                      db,
-                      tasklistEnvironmentAfter,
-                      tasklistElasticsearchDefaultConfig(zeebeUtils.get(db)));
-                  tasklistEs =
-                      tasklistUtils.get(db).createTasklist(tasklistEnvironmentAfter.get(db), true);
-                  closeables.add(tasklistEs);
-
-                  testBrokers.put(db, broker);
-                  zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
-
-                  if (afterMigrationFunc != null) {
-                    afterMigrationFunc.accept(zeebeClients.get(db), tasklistUtils.get(db));
-                  }
-
-                  closeables.add(broker);
-                  break;
-
-                case OPENSEARCH:
-                  final Network networkOs = Network.newNetwork();
-                  zeebeUtils.put(db, new ZeebeUtil(networkOs));
-                  tasklistUtils.put(db, new TasklistUtil(networkOs));
-
-                  final OpensearchContainer opensearchContainer =
-                      TestSearchContainers.createDefaultOpensearchContainer()
-                          .withNetwork(networkOs)
-                          .withNetworkAliases("opensearch");
-                  opensearchContainer.start();
-                  opensearchExternalUrl = opensearchContainer.getHttpHostAddress();
-                  closeables.add(opensearchContainer);
-
-                  // Startup Sequence 8.6
-
-                  updateEnvMap(db, zeebeEnvironmentBefore, zeebe86OpensearchDefaultConfig());
-
-                  closeables.add(zeebeUtils.get(db).start86Broker(zeebeEnvironmentBefore.get(db)));
-                  zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
-
-                  updateEnvMap(
-                      db,
-                      tasklistEnvironmentBefore,
-                      tasklistOpensearchDefaultConfig(zeebeUtils.get(db)));
-                  var tasklistOs =
-                      tasklistUtils
-                          .get(db)
-                          .createTasklist(tasklistEnvironmentBefore.get(db), false);
-                  closeables.add(tasklistOs);
-
-                  if (beforeMigrationFunc != null) {
-                    beforeMigrationFunc.accept(zeebeClients.get(db), tasklistUtils.get(db));
-                  }
-
-                  // Startup Sequence 8.7
-
-                  zeebeUtils.get(db).stop();
-                  tasklistUtils.get(db).stop();
-
-                  updateEnvMap(db, zeebeEnvironmentAfter, zeebe87OpensearchDefaultConfig());
-                  final var brokerOs =
-                      zeebeUtils
-                          .get(db)
-                          .start87Broker(
-                              cfg -> {
-                                cfg.setClassName("io.camunda.exporter.CamundaExporter");
-                                cfg.setArgs(
-                                    Map.of(
-                                        "connect",
-                                        Map.of("url", opensearchExternalUrl, "type", "opensearch"),
-                                        "bulk",
-                                        Map.of("size", 10, "delay", 1),
-                                        "index",
-                                        Map.of("shouldWaitForImporters", false)));
-                              },
-                              zeebeEnvironmentAfter.get(db));
-
-                  try {
-                    cloneProcesses(db);
-                  } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                  }
-
-                  updateEnvMap(
-                      db,
-                      tasklistEnvironmentAfter,
-                      tasklistOpensearchDefaultConfig(zeebeUtils.get(db)));
-                  tasklistOs =
-                      tasklistUtils.get(db).createTasklist(tasklistEnvironmentAfter.get(db), true);
-                  closeables.add(tasklistOs);
-
-                  testBrokers.put(db, brokerOs);
-                  zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
-
-                  if (afterMigrationFunc != null) {
-                    afterMigrationFunc.accept(zeebeClients.get(db), tasklistUtils.get(db));
-                  }
-
-                  closeables.add(brokerOs);
-                  break;
-                default:
-                  throw new IllegalArgumentException("Unsupported database type: " + db);
-              }
+              afterMigrationStartup(db);
             });
   }
 
   private TestTemplateInvocationContext invocationContext(
-      final TasklistUtil.UserTaskArg params, final DatabaseType databaseType) {
+      final TasklistMigrationHelper.UserTaskArg params, final DatabaseType databaseType) {
     return new TestTemplateInvocationContext() {
 
       @Override
@@ -265,7 +118,10 @@ public class MigrationITInvocationProvider
               public boolean supportsParameter(
                   final ParameterContext parameterContext, final ExtensionContext extensionContext)
                   throws ParameterResolutionException {
-                return Set.of(ZeebeClient.class, TasklistUtil.class, TasklistUtil.UserTaskArg.class)
+                return Set.of(
+                        ZeebeClient.class,
+                        TasklistMigrationHelper.class,
+                        TasklistMigrationHelper.UserTaskArg.class)
                     .contains(parameterContext.getParameter().getType());
               }
 
@@ -275,12 +131,15 @@ public class MigrationITInvocationProvider
                   throws ParameterResolutionException {
                 if (parameterContext.getParameter().getType().equals(ZeebeClient.class)) {
                   return zeebeClients.get(databaseType);
-                } else if (parameterContext.getParameter().getType().equals(TasklistUtil.class)) {
-                  return tasklistUtils.get(databaseType);
                 } else if (parameterContext
                     .getParameter()
                     .getType()
-                    .equals(TasklistUtil.UserTaskArg.class)) {
+                    .equals(TasklistMigrationHelper.class)) {
+                  return tasklistContainer.get(databaseType);
+                } else if (parameterContext
+                    .getParameter()
+                    .getType()
+                    .equals(TasklistMigrationHelper.UserTaskArg.class)) {
                   return params;
                 }
                 throw new ParameterResolutionException("Unsupported parameter type");
@@ -314,13 +173,13 @@ public class MigrationITInvocationProvider
   }
 
   public MigrationITInvocationProvider withRunBefore(
-      final BiConsumer<ZeebeClient, TasklistUtil> runBefore) {
+      final BiConsumer<ZeebeClient, TasklistMigrationHelper> runBefore) {
     beforeMigrationFunc = runBefore;
     return this;
   }
 
   public MigrationITInvocationProvider withRunAfter(
-      final BiConsumer<ZeebeClient, TasklistUtil> runAfter) {
+      final BiConsumer<ZeebeClient, TasklistMigrationHelper> runAfter) {
     afterMigrationFunc = runAfter;
     return this;
   }
@@ -330,109 +189,113 @@ public class MigrationITInvocationProvider
     return this;
   }
 
-  private Map<String, String> zeebe86ElasticsearchDefaultConfig() {
-    return new HashMap<>() {
-      {
-        put(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.ElasticsearchExporter");
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:9200");
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
-        put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
-        put("CAMUNDA_DATABASE_URL", "http://elasticsearch:9200");
-        put("CAMUNDA_REST_QUERY_ENABLED", "true");
-      }
-    };
+  private Stream<TasklistMigrationHelper.UserTaskArg> zeebeTasks(final DatabaseType db) {
+    return tasklistContainer
+        .get(db)
+        .generatedTasks
+        .get(TaskImplementation.ZEEBE_USER_TASK)
+        .stream();
   }
 
-  private Map<String, String> zeebe87ElasticsearchDefaultConfig() {
-    return new HashMap<>() {
-      {
-        put("camunda.rest.query.enabled", "true");
-        put("camunda.database.url", elasticsearchExternalUrl);
-      }
-    };
-  }
-
-  private Map<String, String> zeebe86OpensearchDefaultConfig() {
-    return new HashMap<>() {
-      {
-        put(
-            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", "http://opensearch:9200");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1");
-        put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
-        put("CAMUNDA_DATABASE_URL", "http://opensearch:9200");
-        put("CAMUNDA_REST_QUERY_ENABLED", "true");
-      }
-    };
-  }
-
-  private Map<String, String> zeebe87OpensearchDefaultConfig() {
-    return new HashMap<>() {
-      {
-        put("camunda.rest.query.enabled", "true");
-        put("camunda.database.url", opensearchExternalUrl);
-        put("camunda.database.type", "opensearch");
-      }
-    };
-  }
-
-  private Map<String, String> tasklistElasticsearchDefaultConfig(final ZeebeUtil zeebe) {
-    return new HashMap<>() {
-      {
-        put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", "http://elasticsearch:9200");
-        put("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", "elasticsearch");
-        put("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", "9200");
-        put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", "http://elasticsearch:9200");
-        put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
-        put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
-      }
-    };
-  }
-
-  private Map<String, String> tasklistOpensearchDefaultConfig(final ZeebeUtil zeebe) {
-    return new HashMap<>() {
-      {
-        put("CAMUNDA_TASKLIST_DATABASE", "opensearch");
-        put("CAMUNDA_TASKLIST_OPENSEARCH_URL", "http://opensearch:9200");
-        put("CAMUNDA_TASKLIST_OPENSEARCH_HOST", "opensearch");
-        put("CAMUNDA_TASKLIST_OPENSEARCH_PORT", "9200");
-        put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", "http://opensearch:9200");
-        put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
-        put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
-      }
-    };
-  }
-
-  private Stream<TasklistUtil.UserTaskArg> zeebeTasks(final DatabaseType db) {
-    return tasklistUtils.get(db).generatedTasks.get(TaskImplementation.ZEEBE_USER_TASK).stream();
-  }
-
-  public Stream<TasklistUtil.UserTaskArg> zeebeTasksForUpdate(final DatabaseType db) {
-    return tasklistUtils.get(db).generatedTasks.get(TaskImplementation.ZEEBE_USER_TASK).stream()
+  public Stream<TasklistMigrationHelper.UserTaskArg> zeebeTasksForUpdate(final DatabaseType db) {
+    return tasklistContainer.get(db).generatedTasks.get(TaskImplementation.ZEEBE_USER_TASK).stream()
         .filter(t -> t.apiVersion().equals(API_V2));
   }
 
-  private Stream<TasklistUtil.UserTaskArg> jobWorkers(final DatabaseType db) {
-    return tasklistUtils.get(db).generatedTasks.get(TaskImplementation.JOB_WORKER).stream();
+  private Stream<TasklistMigrationHelper.UserTaskArg> jobWorkers(final DatabaseType db) {
+    return tasklistContainer.get(db).generatedTasks.get(TaskImplementation.JOB_WORKER).stream();
   }
 
-  private void updateEnvMap(
-      final DatabaseType type,
-      final Map<DatabaseType, Map<String, String>> origin,
-      final Map<String, String> env) {
-    final var map = origin.getOrDefault(type, new HashMap<>());
-    map.putAll(env);
-    origin.put(type, map);
+  private void startDatabaseContainer(final DatabaseType db, final Network network) {
+    switch (db) {
+      case ELASTICSEARCH:
+        final ElasticsearchContainer elasticsearchContainer =
+            TestSearchContainers.createDefeaultElasticsearchContainer()
+                .withNetwork(network)
+                .withNetworkAliases("elasticsearch");
+        elasticsearchContainer.start();
+        databaseExternalUrls.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
+        closeables.add(elasticsearchContainer);
+        break;
+      case OPENSEARCH:
+        final OpensearchContainer opensearchContainer =
+            TestSearchContainers.createDefaultOpensearchContainer()
+                .withNetwork(network)
+                .withNetworkAliases("opensearch");
+        opensearchContainer.start();
+        databaseExternalUrls.put(db, opensearchContainer.getHttpHostAddress());
+        closeables.add(opensearchContainer);
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported database type: " + db);
+    }
+  }
+
+  private Consumer<ExporterCfg> getExporterConfig(final DatabaseType databaseType) {
+    final Map<String, String> connect =
+        databaseType.equals(DatabaseType.ELASTICSEARCH)
+            ? Map.of("url", databaseExternalUrls.get(databaseType))
+            : Map.of("url", databaseExternalUrls.get(databaseType), "type", "opensearch");
+    return cfg -> {
+      cfg.setClassName("io.camunda.exporter.CamundaExporter");
+      cfg.setArgs(
+          Map.of(
+              "connect",
+              connect,
+              "bulk",
+              Map.of("size", 10, "delay", 1),
+              "index",
+              Map.of("shouldWaitForImporters", false)));
+    };
+  }
+
+  private void beforeMigrationStartup(final DatabaseType db) {
+    closeables.add(zeebeUtils.get(db).start86Broker(zeebeEnvironmentBefore.get(db), db));
+    zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
+
+    // Start Tasklist
+    closeables.add(
+        tasklistContainer
+            .get(db)
+            .createTasklist(tasklistEnvironmentBefore.get(db), false, zeebeUtils.get(db), db));
+
+    if (beforeMigrationFunc != null) {
+      beforeMigrationFunc.accept(zeebeClients.get(db), tasklistContainer.get(db));
+    }
+  }
+
+  private void afterMigrationStartup(final DatabaseType db) {
+    zeebeEnvironmentAfter.get(db).put("camunda.database.url", databaseExternalUrls.get(db));
+    final var broker =
+        zeebeUtils.get(db).start87Broker(getExporterConfig(db), zeebeEnvironmentAfter.get(db), db);
+
+    try {
+      cloneProcesses(db);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    // Start Tasklist
+    closeables.add(
+        tasklistContainer
+            .get(db)
+            .createTasklist(tasklistEnvironmentAfter.get(db), true, zeebeUtils.get(db), db));
+
+    testBrokers.put(db, broker);
+    zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
+
+    if (afterMigrationFunc != null) {
+      afterMigrationFunc.accept(zeebeClients.get(db), tasklistContainer.get(db));
+    }
+
+    closeables.add(broker);
   }
 
   private void cloneProcesses(final DatabaseType type) throws IOException {
     switch (type) {
       case ELASTICSEARCH:
         final var cfg = new ConnectConfiguration();
-        cfg.setUrl(elasticsearchExternalUrl);
+        cfg.setUrl(databaseExternalUrls.get(type));
         cfg.setType("elasticsearch");
         final var connector = new ElasticsearchConnector(cfg);
         final var esClient = connector.createClient();
@@ -463,7 +326,7 @@ public class MigrationITInvocationProvider
         break;
       case OPENSEARCH:
         final var osCfg = new ConnectConfiguration();
-        osCfg.setUrl(opensearchExternalUrl);
+        osCfg.setUrl(databaseExternalUrls.get(type));
         osCfg.setType("opensearch");
         final var osConnector = new OpensearchConnector(osCfg);
         final var osClient = osConnector.createClient();
