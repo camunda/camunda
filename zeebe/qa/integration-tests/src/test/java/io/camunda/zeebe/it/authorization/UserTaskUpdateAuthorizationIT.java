@@ -140,7 +140,7 @@ public class UserTaskUpdateAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[%s, *]",
+              "Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
     }
   }

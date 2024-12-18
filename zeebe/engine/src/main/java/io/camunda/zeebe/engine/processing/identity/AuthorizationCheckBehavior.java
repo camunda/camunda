@@ -363,7 +363,7 @@ public final class AuthorizationCheckBehavior {
       return resourceIdsContainsOnlyWildcard
           ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
           : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              permissionType, resourceType, resourceIds);
+              permissionType, resourceType, resourceIds.stream().sorted().toList());
     }
   }
 
