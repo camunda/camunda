@@ -23,6 +23,9 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -38,6 +41,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -282,6 +286,134 @@ public class UserTaskListenersTest {
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
+  void shouldCompleteUserTaskWithCompleteTaskListenerWithCorrections() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.completing().type("my_listener")));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) ->
+            client
+                .newCompleteCommand(job)
+                .result()
+                .corrections()
+                .assignee("Test")
+                .dueDate("due date")
+                .followUpDate("follow up date")
+                .candidateUsers(Arrays.asList("User A", "User B"))
+                .candidateGroups(Arrays.asList("Group A", "Group B"))
+                .priority(80)
+                .send()
+                .join();
+
+    client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
+
+    // when: invoke complete user task command
+    final var completeUserTaskFuture = client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    final JobResult expectedResult =
+        new JobResult()
+            .setDenied(false)
+            .setCorrections(
+                new JobResultCorrections()
+                    .setAssignee("Test")
+                    .setDueDate("due date")
+                    .setFollowUpDate("follow up date")
+                    .setCandidateUsersList(Arrays.asList("User A", "User B"))
+                    .setCandidateGroupsList(Arrays.asList("Group A", "Group B"))
+                    .setPriority(80))
+            .setCorrectedAttributes(
+                Arrays.asList(
+                    UserTaskRecord.ASSIGNEE,
+                    UserTaskRecord.DUE_DATE,
+                    UserTaskRecord.FOLLOW_UP_DATE,
+                    UserTaskRecord.CANDIDATE_USERS,
+                    UserTaskRecord.CANDIDATE_GROUPS,
+                    UserTaskRecord.PRIORITY));
+
+    // TL job should be successfully completed with the result "denied" set correctly and
+    // corrections as expected
+    ZeebeAssertHelper.assertJobCompleted(
+        "my_listener", (tl) -> assertThat(tl.getResult()).isEqualTo(expectedResult));
+
+    // wait for successful `COMPLETE` user task command completion
+    assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
+
+    // then
+    ZeebeAssertHelper.assertUserTaskCompleted(
+        userTaskKey,
+        (userTask) -> {
+          assertThat(userTask.getAssignee()).isEqualTo("Test");
+          assertThat(userTask.getDueDate()).isEqualTo("due date");
+          assertThat(userTask.getFollowUpDate()).isEqualTo("follow up date");
+          assertThat(userTask.getCandidateUsersList()).containsExactly("User A", "User B");
+          assertThat(userTask.getCandidateGroupsList()).containsExactly("Group A", "Group B");
+          assertThat(userTask.getPriority()).isEqualTo(80);
+        });
+  }
+
+  @Test
+  void shouldCompleteUserTaskWithCompleteTaskListenerWithPartialCorrections() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.completing().type("my_listener")));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) ->
+            client
+                .newCompleteCommand(job)
+                .result()
+                .corrections()
+                .assignee("Test")
+                .followUpDate("follow up date")
+                .candidateUsers(Arrays.asList("User A", "User B"))
+                .priority(80)
+                .send()
+                .join();
+
+    client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
+
+    // when: invoke complete user task command
+    final var completeUserTaskFuture = client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    final JobResult expectedResult =
+        new JobResult()
+            .setDenied(false)
+            .setCorrections(
+                new JobResultCorrections()
+                    .setAssignee("Test")
+                    .setFollowUpDate("follow up date")
+                    .setCandidateUsersList(Arrays.asList("User A", "User B"))
+                    .setPriority(80))
+            .setCorrectedAttributes(
+                Arrays.asList(
+                    UserTaskRecord.ASSIGNEE,
+                    UserTaskRecord.FOLLOW_UP_DATE,
+                    UserTaskRecord.CANDIDATE_USERS,
+                    UserTaskRecord.PRIORITY));
+
+    // TL job should be successfully completed with the result "denied" set correctly and
+    // corrections as expected
+    ZeebeAssertHelper.assertJobCompleted(
+        "my_listener", (tl) -> assertThat(tl.getResult()).isEqualTo(expectedResult));
+
+    // wait for successful `COMPLETE` user task command completion
+    assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
+
+    // then
+    ZeebeAssertHelper.assertUserTaskCompleted(
+        userTaskKey,
+        (userTask) -> {
+          assertThat(userTask.getAssignee()).isEqualTo("Test");
+          assertThat(userTask.getFollowUpDate()).isEqualTo("follow up date");
+          assertThat(userTask.getCandidateUsersList()).containsExactly("User A", "User B");
+          assertThat(userTask.getPriority()).isEqualTo(80);
+        });
   }
 
   private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
