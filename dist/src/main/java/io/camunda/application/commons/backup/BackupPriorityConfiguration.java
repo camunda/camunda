@@ -143,7 +143,12 @@ public class BackupPriorityConfiguration {
                 isElasticsearch
                     ? new PositionBasedImportIndexES()
                     : new PositionBasedImportIndexOS(),
-                indexService));
+                optimizeIndexNameService),
+            new OptimizePrio1Delegate<>(
+                isElasticsearch
+                    ? new TimestampBasedImportIndexES()
+                    : new TimestampBasedImportIndexOS(),
+                optimizeIndexNameService));
 
     final List<Prio2Backup> prio2 =
         List.of(

@@ -150,7 +150,8 @@ class BackupPrioritiesTest {
         .containsExactlyInAnyOrder(
             "operate-import-position-8.3.0_",
             "tasklist-import-position-8.2.0_",
-            "optimize-position-based-import-index_v3");
+            "optimize-position-based-import-index_v3",
+            "optimize-timestamp-based-import-index_v5");
     // PRIO 2
     assertThat(indices.get(1).indices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.0_");
@@ -228,7 +229,6 @@ class BackupPrioritiesTest {
             "optimize-single-decision-report_v10",
             "optimize-process-overview_v2",
             "optimize-instant-dashboard_v1",
-            "optimize-timestamp-based-import-index_v5",
             "optimize-business-key_v2",
             "optimize-single-process-report_v11",
             "optimize-combined-report_v5",
