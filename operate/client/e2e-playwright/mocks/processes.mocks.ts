@@ -30,7 +30,7 @@ function mockResponses({
   deleteProcess?: BatchOperationDto;
 }) {
   return (route: Route) => {
-    if (route.request().url().includes('/api/authentications/user')) {
+    if (route.request().url().includes('/v2/authentication/me')) {
       return route.fulfill({
         status: 200,
         body: JSON.stringify({
