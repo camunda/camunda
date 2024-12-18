@@ -3600,20 +3600,28 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /usage-metrics/search:
-    post:
+  /usage-metrics:
+    get:
       tags:
         - Usage metrics
-      operationId: searchUsageMetrics
-      summary: Query usage metrics
-      description: |
-        Search for usage metrics by given start date and end date.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UsageMetricsSearchQueryRequest"
+      operationId: getUsageMetrics
+      summary: Get usage metrics
+      description: Retrieve the usage metrics by given start and end date.
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          description: The start date for usage metrics, including this date.
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          required: true
+          description: The end date for usage metrics, including this date.
+          schema:
+            type: string
+            format: date-time
       responses:
         "200":
           description: >
@@ -3621,10 +3629,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UsageMetricsSearchQueryResponse"
+                $ref: "#/components/schemas/UsageMetricsResponse"
         "400":
           description: >
-            The usage metrics search query failed.
+            The usage metrics request failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -5296,21 +5304,7 @@ components:
         decisionRequirementsKey:
           type: string
           description: The assigned key of the decision requirements graph that the decision definition is part of.
-    UsageMetricsSearchQueryRequest:
-      type: object
-      properties:
-        startTime:
-          description: The start date for usage metrics, including this date.
-          type: string
-          format: date-time
-        endTime:
-          description: The end date for usage metrics, including this date.
-          type: string
-          format: date-time
-      required:
-        - startTime
-        - endTime
-    UsageMetricsSearchQueryResponse:
+    UsageMetricsResponse:
       type: object
       properties:
         assignees:

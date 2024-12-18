@@ -8,10 +8,13 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.search.filter.Operation.eq;
+import static io.camunda.zeebe.gateway.rest.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -95,18 +98,24 @@ public final class SearchQueryRequestMapper {
   private SearchQueryRequestMapper() {}
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
-      final UsageMetricsSearchQueryRequest request) {
-    if (request == null || request.getStartTime() == null || request.getEndTime() == null) {
-      final var problemDetail =
-          RequestValidator.createProblemDetail(List.of("startTime and endTime must be specified"));
-      return Either.left(problemDetail.orElseThrow());
-    }
-    final UsageMetricsFilter filter =
-        new UsageMetricsFilter.Builder()
-            .startTime(toOffsetDateTime(request.getStartTime()))
-            .endTime(toOffsetDateTime(request.getEndTime()))
-            .build();
-    return Either.right(new UsageMetricsQuery.Builder().filter(filter).build());
+      final String startTime, final String endTime) {
+    return getResult(
+        validate(
+            violations -> {
+              if (startTime == null || endTime == null) {
+                violations.add("The startTime and endTime must both be specified");
+              }
+              validateDate(startTime, "startTime", violations);
+              validateDate(endTime, "endTime", violations);
+            }),
+        () ->
+            new UsageMetricsQuery.Builder()
+                .filter(
+                    new UsageMetricsFilter.Builder()
+                        .startTime(toOffsetDateTime(startTime))
+                        .endTime(toOffsetDateTime(endTime))
+                        .build())
+                .build());
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
@@ -1002,7 +1011,7 @@ public final class SearchQueryRequestMapper {
       validationErrors.addAll(page.getLeft());
     }
 
-    return RequestMapper.getResult(
+    return getResult(
         RequestValidator.createProblemDetail(validationErrors),
         () ->
             queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());
