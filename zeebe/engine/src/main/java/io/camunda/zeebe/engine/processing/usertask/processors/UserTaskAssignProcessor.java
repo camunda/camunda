@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
@@ -54,8 +55,13 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    userTaskRecord.setAssignee(command.getValue().getAssignee());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+
+    if (!BufferUtil.equals(
+        command.getValue().getAssigneeBuffer(), userTaskRecord.getAssigneeBuffer())) {
+      userTaskRecord.setAssigneeChanged();
+    }
+    userTaskRecord.setAssignee(command.getValue().getAssignee());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
