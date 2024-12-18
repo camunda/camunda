@@ -95,6 +95,7 @@ public class GcpDocumentStore implements DocumentStore {
       final DocumentCreationRequest request) {
     final String documentId =
         Optional.ofNullable(request.documentId()).orElse(UUID.randomUUID().toString());
+    final String fileName = Optional.ofNullable(request.metadata().fileName()).orElse(documentId);
 
     final Blob existingBlob;
     try {
@@ -108,7 +109,7 @@ public class GcpDocumentStore implements DocumentStore {
     final BlobId blobId = BlobId.of(bucketName, documentId);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
     try {
-      applyMetadata(blobInfoBuilder, request.metadata());
+      applyMetadata(blobInfoBuilder, request.metadata(), fileName);
     } catch (final JsonProcessingException e) {
       return Either.left(
           new DocumentError.InvalidInput("Failed to serialize metadata: " + e.getMessage()));
@@ -119,7 +120,14 @@ public class GcpDocumentStore implements DocumentStore {
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
-    final var documentReference = new DocumentReference(documentId, request.metadata());
+    final var updatedMetadata =
+        new DocumentMetadataModel(
+            request.metadata().contentType(),
+            fileName,
+            request.metadata().expiresAt(),
+            request.metadata().size(),
+            request.metadata().customProperties());
+    final var documentReference = new DocumentReference(documentId, updatedMetadata);
     return Either.right(documentReference);
   }
 
@@ -165,7 +173,9 @@ public class GcpDocumentStore implements DocumentStore {
   }
 
   private void applyMetadata(
-      final BlobInfo.Builder blobInfoBuilder, final DocumentMetadataModel metadata)
+      final BlobInfo.Builder blobInfoBuilder,
+      final DocumentMetadataModel metadata,
+      final String fileName)
       throws JsonProcessingException {
     if (metadata == null) {
       return;
@@ -176,11 +186,7 @@ public class GcpDocumentStore implements DocumentStore {
     if (metadata.expiresAt() != null) {
       blobInfoBuilder.setCustomTimeOffsetDateTime(OffsetDateTime.from(metadata.expiresAt()));
     }
-    if (metadata.fileName() != null && !metadata.fileName().isEmpty()) {
-      blobInfoBuilder.setContentDisposition("attachment; filename=" + metadata.fileName());
-    } else {
-      blobInfoBuilder.setContentDisposition("attachment");
-    }
+    blobInfoBuilder.setContentDisposition("attachment; filename=" + fileName);
     if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
       final Map<String, String> blobMetadata = new HashMap<>();
       final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
