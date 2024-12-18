@@ -25,7 +25,7 @@ function useCompleteTask() {
         return response.json();
       }
 
-      throw error ?? new Error('Could not complete task');
+      throw await error.response?.json();
     },
   });
 }

@@ -33,6 +33,7 @@ import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
+import {parseJSON} from 'modules/utils/jsonUtils';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -150,16 +151,44 @@ const Task: React.FC = observer(() => {
   }
 
   function handleSubmissionFailure(error: Error) {
-    const errorMessage = isRequestError(error)
-      ? (error?.networkError?.message ?? error.message)
-      : error.message;
+    const errorMessage = parseJSON(error?.message);
+    if (
+      errorMessage?.status === 504 &&
+      errorMessage?.error_code === 'TASK_PROCESSING_TIMEOUT'
+    ) {
+      tracking.track({eventName: 'task-completion-delayed-notification'});
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: t('taskCompletionDelayedInfoTitle'),
+        subtitle: t('taskCompletionDelayedInfoSubtitle'),
+        isDismissable: true,
+      });
+      return;
+    }
 
-    notificationsStore.displayNotification({
-      kind: 'error',
-      title: t('taskCouldNotBeCompletedNotification'),
-      subtitle: getCompleteTaskErrorMessage(errorMessage),
-      isDismissable: true,
-    });
+    if (
+      errorMessage?.status === 409 &&
+      errorMessage?.error_code === 'TASK_ALREADY_IN_PROCESSING'
+    ) {
+      tracking.track({eventName: 'task-completion-rejected-notification'});
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: t('taskCouldNotBeCompletedNotification'),
+        subtitle: t('taskDetailsTaskCompletionRejectionErrorSubtitle'),
+        isDismissable: true,
+      });
+    } else {
+      const errorMessage = isRequestError(error)
+        ? (error?.networkError?.message ?? error?.message)
+        : error?.message;
+
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: t('taskCouldNotBeCompletedNotification'),
+        subtitle: getCompleteTaskErrorMessage(errorMessage),
+        isDismissable: true,
+      });
+    }
 
     // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
     if (shouldFetchMore(errorMessage)) {

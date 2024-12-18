@@ -13,7 +13,7 @@ function getCompleteTaskErrorMessage(code: string) {
     return t('taskNotCompletedNotAssigned');
   }
 
-  if (code.includes('Task is not assigned to')) {
+  if (code?.includes('Task is not assigned to')) {
     return t('taskNotCompletedAssignedToOther');
   }
 
