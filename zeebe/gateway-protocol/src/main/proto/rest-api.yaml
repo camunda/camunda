@@ -5318,7 +5318,7 @@ components:
           type: integer
           format: int64
         processInstances:
-          description: The amount of created process instances.
+          description: The amount of created root process instances.
           type: integer
           format: int64
         decisionInstances:
