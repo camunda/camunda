@@ -66,6 +66,8 @@ final class SnapshotWithExportersTest {
                           .flatMap(FileBasedSnapshotId::ofFileName),
                   Optional::isPresent)
               .orElseThrow();
+      // pause processing to avoid new processing to cause a new snapshot after restart
+      PartitionsActuator.of(zeebe).pauseProcessing();
       zeebe.stop();
 
       // when -- taking snapshot on broker with exporters configured
