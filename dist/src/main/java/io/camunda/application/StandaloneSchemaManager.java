@@ -38,6 +38,7 @@ import org.springframework.context.ConfigurableApplicationContext;
  * camunda.database.security.certificatePath=
  * camunda.database.username=
  * camunda.database.password=
+ * camunda.database.indexPrefix=
  * </pre>
  *
  * All of those porperties can also be handed over via environment variables, e.g.
