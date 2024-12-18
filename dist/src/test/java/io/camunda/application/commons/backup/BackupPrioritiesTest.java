@@ -22,6 +22,7 @@ import io.camunda.application.commons.backup.BackupPriorityConfiguration.Optimiz
 import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio6Delegate;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.Arrays;
@@ -278,7 +279,7 @@ class BackupPrioritiesTest {
             });
     when(environment.getActiveProfiles()).thenReturn(profiles);
     when(environment.getProperty(eq(CAMUNDA_OPTIMIZE_DATABASE), (String) any()))
-        .thenReturn("elasticsearch");
+        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
     return environment;
   }
 }
