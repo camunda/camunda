@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -51,6 +52,7 @@ import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.zeebe.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
@@ -1067,6 +1069,40 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
+
+  /**
+   * Command to assign a user to a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newAssignUserToGroupCommand(123L, 456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long userKey, long groupKey);
+
+  /**
+   * Command to unassign a user from a group.
+   *
+   * <pre>
+   *
+   *
+   * zeebeClient
+   *  .newUnassignUserFromGroupCommand(123L, 456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long userKey, long groupKey);
 
   /**
    * Command to create a user.
