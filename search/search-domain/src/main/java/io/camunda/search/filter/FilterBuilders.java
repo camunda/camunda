@@ -158,15 +158,6 @@ public final class FilterBuilders {
     return fn.apply(dateValue()).build();
   }
 
-  public static ComparableValueFilter.Builder comparableValue() {
-    return new ComparableValueFilter.Builder();
-  }
-
-  public static ComparableValueFilter comparableValue(
-      final Function<ComparableValueFilter.Builder, ObjectBuilder<ComparableValueFilter>> fn) {
-    return fn.apply(comparableValue()).build();
-  }
-
   public static IncidentFilter.Builder incident() {
     return new IncidentFilter.Builder();
   }
