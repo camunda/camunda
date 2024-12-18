@@ -195,6 +195,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
+  public static final String CONTENT_HASH_METADATA_KEY = "contentHash";
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -797,14 +799,21 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, null, config);
   }
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(
       final DocumentReferenceResponse documentReference) {
+    final String contentHash =
+        (String)
+            documentReference.getMetadata().getCustomProperties().get(CONTENT_HASH_METADATA_KEY);
     return new DocumentContentGetRequestImpl(
-        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
+        httpClient,
+        documentReference.getDocumentId(),
+        documentReference.getStoreId(),
+        contentHash,
+        config);
   }
 
   @Override

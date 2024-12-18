@@ -35,17 +35,20 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
   private final RequestConfig.Builder httpRequestConfig;
   private final String documentId;
   private String storeId;
+  private final String contentHash;
 
   public DocumentContentGetRequestImpl(
       final HttpClient httpClient,
       final String documentId,
       final String storeId,
+      final String contentHash,
       final ZeebeClientConfiguration configuration) {
     ensureNotNull("documentId", documentId);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.documentId = documentId;
     this.storeId = storeId;
+    this.contentHash = contentHash;
     requestTimeout(configuration.getDefaultRequestTimeout());
   }
 
@@ -62,6 +65,9 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
     final Map<String, String> queryParams = new HashMap<>();
     if (storeId != null) {
       queryParams.put("storeId", storeId);
+    }
+    if (contentHash != null) {
+      queryParams.put("contentHash", contentHash);
     }
     httpClient.get(
         String.format("/documents/%s", documentId),
