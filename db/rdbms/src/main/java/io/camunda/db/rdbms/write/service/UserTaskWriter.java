@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import java.util.Map;
 
 public class UserTaskWriter {
 
@@ -80,5 +81,24 @@ public class UserTaskWriter {
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
+  }
+
+  public void migrateToProcess(
+      final long userTaskKey,
+      final long processDefinitionKey,
+      final String processDefinitionId,
+      final int processDefinitionVersion,
+      final String elementId) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK,
+            userTaskKey,
+            "io.camunda.db.rdbms.sql.UserTaskMapper.migrateToProcess",
+            Map.of(
+                "userTaskKey", userTaskKey,
+                "elementId", elementId,
+                "processDefinitionKey", processDefinitionKey,
+                "processDefinitionId", processDefinitionId,
+                "processDefinitionVersion", processDefinitionVersion)));
   }
 }
