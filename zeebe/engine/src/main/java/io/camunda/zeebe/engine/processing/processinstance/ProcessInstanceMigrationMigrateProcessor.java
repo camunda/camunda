@@ -318,15 +318,12 @@ public class ProcessInstanceMigrationMigrateProcessor
             .setVersion(targetProcessDefinition.getVersion())
             .setElementId(targetElementId));
 
-    final int numberOfTakenSequenceFlows =
-        elementInstanceState.getNumberOfTakenSequenceFlows(elementInstance.getKey());
-    if (numberOfTakenSequenceFlows > 0) {
-      final Set<ExecutableSequenceFlow> sequenceFlows =
-          getSequenceFlowsToMigrate(
-              sourceProcessDefinition,
-              targetProcessDefinition,
-              sourceElementIdToTargetElementId,
-              elementInstance);
+    final Set<ExecutableSequenceFlow> sequenceFlows =
+        getSequenceFlowsToMigrate(
+            sourceProcessDefinition,
+            targetProcessDefinition,
+            sourceElementIdToTargetElementId,
+            elementInstance);
 
       sequenceFlows.forEach(
           sequenceFlow -> {
@@ -336,12 +333,14 @@ public class ProcessInstanceMigrationMigrateProcessor
                 .setElementId(sequenceFlow.getId())
                 .setBpmnElementType(sequenceFlow.getElementType())
                 .setBpmnEventType(sequenceFlow.getEventType())
-                .setFlowScopeKey(elementInstance.getKey());
+                .setFlowScopeKey(elementInstance.getKey())
+                .resetElementInstancePath()
+                .resetCallingElementPath()
+                .resetProcessDefinitionPath();
 
-            stateWriter.appendFollowUpEvent(
-                keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
-          });
-    }
+          stateWriter.appendFollowUpEvent(
+              keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
+        });
 
     if (elementInstance.getJobKey() > 0) {
       final var job = jobState.getJob(elementInstance.getJobKey());
