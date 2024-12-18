@@ -1,0 +1,43 @@
+---
+name: Is cache enabled
+
+description: |
+  Checks if cache is enabled given three conditions
+  - is a pull request related event
+  - the pull request does not contains a 'ci:no-cache' label
+  - the branch is neither 'main' nor 'stable/*'
+  This information can be used to skip cache restoration
+  in the setup-maven-cache and setup-yarn-cache to test
+  workflows from scratch
+
+inputs: {}
+
+outputs:
+  is-cache-disabled:
+    description: |
+      Output whether the workflows has cache enabled based on three conditions:
+      - workflow is triggered by a pull_request event
+      - pull_request does not contains 'ci:no-cache' label
+      - branch is neither 'main' or 'stable/*'
+    value: ${{ steps.detect-cache-status.outputs.is-cache-enabled == 'true' }}
+
+runs:
+  using: composite
+  steps:
+
+  - id: detect-cache-status
+    shell: bash
+    run: |
+      IS_PR_EVENT=${{ github.event_name == 'pull_request' }}
+      HAS_NO_CACHE_LABEL=${{ contains(github.event.pull_request.labels.*.name, 'ci:no-cache') }}
+      IS_FEATURE_BRANCH=${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
+      echo "IS_PR_EVENT: $IS_PR_EVENT"
+      echo "HAS_NO_CACHE_LABEL: $HAS_NO_CACHE_LABEL"
+      echo "IS_FEATURE_BRANCH: $IS_FEATURE_BRANCH"
+
+      IS_CACHE_ENABLED="true"
+      if [[ $HAS_NO_CACHE_LABEL == "true" && $IS_PR_EVENT == "true" && $IS_FEATURE_BRANCH == "true" ]]; then
+        IS_CACHE_ENABLED="false"
+      fi
+      echo "IS_CACHE_ENABLED: $IS_CACHE_ENABLED"
+      echo is-cache-enabled="$IS_CACHE_ENABLED" | tee -a $GITHUB_OUTPUT
