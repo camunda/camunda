@@ -7,9 +7,9 @@
  */
 package io.camunda.it.exporter;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;

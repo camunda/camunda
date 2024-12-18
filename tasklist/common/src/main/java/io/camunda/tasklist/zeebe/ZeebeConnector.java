@@ -7,10 +7,10 @@
  */
 package io.camunda.tasklist.zeebe;
 
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.ZeebeClientBuilder;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import org.slf4j.Logger;

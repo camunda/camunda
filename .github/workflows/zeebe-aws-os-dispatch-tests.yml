@@ -17,11 +17,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [ os-exporter ]
+        group: 
+        - os-exporter
+        - search-client-os
         include:
           - group: os-exporter
             name: "Zeebe OS Exporter Integration Tests"
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+          - group: search-client-os
+            name: "Search Client AWS OS Integration Tests"
+            maven-modules: "'io.camunda:camunda-search-client-connect'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
@@ -37,6 +45,20 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_9_URL;
+      - name: Set temp GH envs
+        id: temp-vars
+        run: |
+          echo "AWS_REGION=$(echo $AWS_REGION)" >> "$GITHUB_ENV"
+          echo "AWS_DEFAULT_REGION=$(echo $AWS_DEFAULT_REGION)" >> "$GITHUB_ENV"
+          echo "AWS_ROLE_ARN=$(echo $AWS_ROLE_ARN)" >> "$GITHUB_ENV"
+          echo "AWS_WEB_IDENTITY_TOKEN_FILE=$(echo $AWS_WEB_IDENTITY_TOKEN_FILE)" >> "$GITHUB_ENV"
+          echo "AWS_STS_REGIONAL_ENDPOINTS=$(echo $AWS_STS_REGIONAL_ENDPOINTS)" >> "$GITHUB_ENV"
+      - uses: aws-actions/configure-aws-credentials@v4
+        name: Pre-login to AWS
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}

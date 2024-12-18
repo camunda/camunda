@@ -12,29 +12,31 @@ import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserTenants;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.MappingService;
-import io.camunda.migration.identity.service.TenantService;
-import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.MappingEntity;
+import io.camunda.service.MappingServices;
+import io.camunda.service.MappingServices.MappingDTO;
+import io.camunda.service.TenantServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserTenantsMigrationHandler implements MigrationHandler {
-
+  private static final String USERNAME_CLAIM = "sub";
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
-  private final TenantService tenantService;
-  private final MappingService mappingService;
+  private final TenantServices tenantServices;
+  private final MappingServices mappingServices;
 
   public UserTenantsMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
-      final TenantService tenantService,
-      final MappingService mappingService) {
+      final TenantServices tenantServices,
+      final MappingServices mappingServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
-    this.tenantService = tenantService;
-    this.mappingService = mappingService;
+    this.tenantServices = tenantServices;
+    this.mappingServices = mappingServices;
   }
 
   @Override
@@ -50,11 +52,18 @@ public class UserTenantsMigrationHandler implements MigrationHandler {
   private MigrationStatusUpdateRequest createTenantUser(final UserTenants userTenants) {
 
     try {
-      final var userKey = mappingService.findOrCreateUserWithUsername(userTenants.username());
+      final var mapping =
+          new MappingDTO(
+              USERNAME_CLAIM, userTenants.username(), userTenants.username() + "_mapping");
 
+      final var mappingKey =
+          mappingServices
+              .findMapping(mapping)
+              .map(MappingEntity::mappingKey)
+              .orElseGet(() -> mappingServices.createMapping(mapping).join().getMappingKey());
       for (final Tenant userTenant : userTenants.tenants()) {
-        final var tenant = tenantService.fetch(userTenant.tenantId(), userTenant.name());
-        assignMemberToTenant(tenant, userKey);
+        final var tenantKey = tenantServices.getById(userTenant.tenantId()).key();
+        assignMemberToTenant(tenantKey, mappingKey);
       }
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(userTenants, null);
     } catch (final Exception e) {
@@ -62,9 +71,9 @@ public class UserTenantsMigrationHandler implements MigrationHandler {
     }
   }
 
-  private void assignMemberToTenant(final TenantEntity tenant, final Long userKey) {
+  private void assignMemberToTenant(final long tenantKey, final long mappingKey) {
     try {
-      tenantService.assignMappingToTenant(tenant.key(), userKey);
+      tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw e;

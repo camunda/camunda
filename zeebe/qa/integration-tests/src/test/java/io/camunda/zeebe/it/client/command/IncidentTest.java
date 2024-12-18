@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;

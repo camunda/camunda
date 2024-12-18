@@ -9,7 +9,7 @@ package io.camunda.zeebe.test;
 
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Map;

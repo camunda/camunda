@@ -88,8 +88,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-client-java</artifactId>
-      <version>${project.version}</version>
+      <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -639,7 +638,7 @@
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>3.1.8</version>
+      <version>3.1.9</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->

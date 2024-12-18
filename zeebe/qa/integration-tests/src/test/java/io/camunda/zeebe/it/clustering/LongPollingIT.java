@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;

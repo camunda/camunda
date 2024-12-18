@@ -52,6 +52,7 @@ public final class ReplayStateTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
+          .withoutAwaitingIdentitySetup()
           .withOnProcessedCallback(record -> lastProcessedPosition = record.getPosition())
           .withOnSkippedCallback(record -> lastProcessedPosition = record.getPosition());
 

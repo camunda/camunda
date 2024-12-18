@@ -19,11 +19,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.command.DeployResourceCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.Process;
 import io.camunda.zeebe.spring.client.annotation.Deployment;
 import io.camunda.zeebe.spring.client.annotation.processor.ZeebeDeploymentAnnotationProcessor;
 import io.camunda.zeebe.spring.client.bean.ClassInfo;

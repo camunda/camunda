@@ -13,8 +13,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.application.Profile;
+import io.camunda.client.ZeebeClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.time.Duration;

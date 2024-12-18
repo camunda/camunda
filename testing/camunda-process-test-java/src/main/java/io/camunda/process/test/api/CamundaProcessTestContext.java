@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;

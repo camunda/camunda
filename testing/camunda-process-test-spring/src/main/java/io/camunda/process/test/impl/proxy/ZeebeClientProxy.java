@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.proxy;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.ZeebeClient;
 import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 

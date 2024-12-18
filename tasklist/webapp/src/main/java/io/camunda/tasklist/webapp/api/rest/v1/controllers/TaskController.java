@@ -28,6 +28,7 @@ import io.camunda.tasklist.webapp.mapper.TaskMapper;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
@@ -214,7 +215,7 @@ public class TaskController extends ApiErrorController {
 
   private void checkTaskImplementation(final LazySupplier<TaskDTO> taskSupplier) {
     if (taskSupplier.get().getImplementation() != TaskImplementation.JOB_WORKER
-        && userReader.getCurrentUser().isApiUser()) {
+        && TasklistAuthenticationUtil.isApiUser()) {
       final TaskDTO task = taskSupplier.get();
       LOGGER.warn(
           "V1 API is used for task with id={} implementation={}",

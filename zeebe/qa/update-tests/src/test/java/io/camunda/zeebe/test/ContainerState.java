@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.test;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.RemoteDebugger;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;

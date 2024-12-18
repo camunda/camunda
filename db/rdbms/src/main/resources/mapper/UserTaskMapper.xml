@@ -235,37 +235,37 @@
       )
     </if>
 
-    <!-- Variables Basic Filter -->
+    <!-- Variables Filter -->
     <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
       AND EXISTS (Select * from VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
       AND ( 1 = 1
-      <foreach collection="filter.processInstanceVariableFilter" item="operation">
-        OR ( v.VAR_NAME = #{operation.name}
-        /**
-        FIXME waiting for the new API implementation of the variableFilter which uses the new
-        operator class.
-        (eq as property is not allowed since the expression language from mybatis also supports a
-        "eq" function)
-        test="operation.eq != null"
-        **/
+      <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter">
+        AND ( v.VAR_NAME = #{variableValueFilter.name}
+        <if
+          test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+          <foreach collection="variableValueFilter.valueOperations" item="operation">
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+          </foreach>
+        </if>
         )
       </foreach>
       ))
     </if>
 
-    <!-- Local Variables Basic Filter -->
+    <!-- Local Variables Filter -->
     <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
       AND EXISTS (Select * from VARIABLE v where v.SCOPE_KEY = ut.USER_TASK_KEY
       AND ( 1 = 1
-      <foreach collection="filter.localVariableFilters" item="operation">
-        OR ( v.VAR_NAME = #{operation.name}
-        /**
-        FIXME waiting for the new API implementation of the variableFilter which uses the new
-        operator class.
-        (eq as property is not allowed since the expression language from mybatis also supports a
-        "eq" function)
-        test="operation.eq != null"
-        **/
+      <foreach collection="filter.localVariableFilters" item="variableValueFilter">
+        AND ( v.VAR_NAME = #{variableValueFilter.name}
+        <if
+          test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+          <foreach collection="variableValueFilter.valueOperations" item="operation">
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+          </foreach>
+        </if>
         )
       </foreach>
       ))

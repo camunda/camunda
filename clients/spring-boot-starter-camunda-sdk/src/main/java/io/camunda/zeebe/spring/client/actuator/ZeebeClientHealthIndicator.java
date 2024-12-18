@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.actuator;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.response.Topology;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;

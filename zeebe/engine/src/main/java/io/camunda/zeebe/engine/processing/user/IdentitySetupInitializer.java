@@ -11,6 +11,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -80,6 +81,18 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     final var defaultTenant =
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME);
     setupRecord.setDefaultTenant(defaultTenant);
+
+    securityConfig
+        .getInitialization()
+        .getMappings()
+        .forEach(
+            mapping -> {
+              final var mappingrecord =
+                  new MappingRecord()
+                      .setClaimName(mapping.getClaimName())
+                      .setClaimValue(mapping.getClaimValue());
+              setupRecord.addMapping(mappingrecord);
+            });
 
     taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, setupRecord);
     return taskResultBuilder.build();

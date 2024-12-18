@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer;
@@ -26,8 +28,6 @@ import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.util.ArrayList;

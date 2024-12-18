@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.api.worker.JobWorker;
-import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;

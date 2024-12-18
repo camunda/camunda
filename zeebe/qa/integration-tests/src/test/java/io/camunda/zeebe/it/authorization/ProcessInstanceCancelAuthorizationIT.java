@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -151,7 +151,7 @@ public class ProcessInstanceCancelAuthorizationIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[%s, *]",
+              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
     }
   }

@@ -12,10 +12,12 @@ import static org.mockito.ArgumentMatchers.any;
 
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -28,10 +30,13 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
 
   @MockBean protected UserReader userReader;
 
+  private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
+
   @Override
   @BeforeEach
   public void before() {
     super.before();
+    authenticationUtil = Mockito.mockStatic(TasklistAuthenticationUtil.class);
     setDefaultCurrentUser();
   }
 
@@ -39,6 +44,7 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
   @AfterEach
   public void after() {
     setDefaultCurrentUser();
+    authenticationUtil.close();
     super.after();
   }
 
@@ -54,6 +60,10 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
   }
 
   protected void setCurrentUser(final UserDTO user) {
+    setCurrentUser(user, false);
+  }
+
+  protected void setCurrentUser(final UserDTO user, final boolean isApiUser) {
     Mockito.when(userReader.getCurrentUserId()).thenReturn(user.getUserId());
     Mockito.when(userReader.getCurrentUser()).thenReturn(user);
     Mockito.when(userReader.getUsersByUsernames(any())).thenReturn(List.of(user));
@@ -62,5 +72,6 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
             ? UserReader.DEFAULT_ORGANIZATION
             : user.getUserId() + "-org";
     Mockito.when(userReader.getCurrentOrganizationId()).thenReturn(organisation);
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
   }
 }
