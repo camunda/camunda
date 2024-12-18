@@ -18,6 +18,7 @@ import {
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
 import {expect} from '@playwright/test';
+import {URL_PATTERN} from '../constants';
 
 const baseDirectory =
   'e2e-playwright/docs-screenshots/process-instance-migration/';
@@ -36,7 +37,7 @@ test.describe('process instance migration', () => {
     migrationView,
   }) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
@@ -113,7 +114,7 @@ test.describe('process instance migration', () => {
     await commonPage.deleteArrows();
 
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockProcessesResponses({
         statistics: [
           {
@@ -203,7 +204,7 @@ test.describe('process instance migration', () => {
     await commonPage.deleteArrows();
 
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
