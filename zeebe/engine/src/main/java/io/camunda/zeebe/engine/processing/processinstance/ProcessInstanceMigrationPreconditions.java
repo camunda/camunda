@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -896,6 +897,40 @@ public final class ProcessInstanceMigrationPreconditions {
         throw new ProcessInstanceMigrationPreconditionFailedException(
             reason, RejectionType.INVALID_STATE);
       }
+    }
+  }
+
+  /**
+   * While processing commands, `ACTIVATE_ELEMENT` command for the source gateway might not fit into
+   * the existing command batch and can be deferred to be processed later. In the meantime, if an
+   * instance migration command is executed, the migrate command will end up changing the instance
+   * that is not stable. E.g. the gateway should be activated/completed but the execution is
+   * deferred.
+   *
+   * <p>If we do not prevent such migration execution, it will lead process instance records will be
+   * written to the log stream and processed with wrong process definition key, bpmn process id or
+   * other process related information. That breaks the data integrity of the log stream.
+   *
+   * <p>To prevent that, we need to make sure the joining parallel gateway is in a stable state.
+   * E.g. incoming sequence flows to it is only partially taken, so valid for migration.
+   *
+   * @param elementInstanceState element instance state to retrieve the taken sequence flow count
+   * @param sourceGateway source gateway to check the number of taken sequence flows
+   * @param flowScopeKey flow scope key of the source gateway
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNoConcurrentCommandForGateway(
+      final ElementInstanceState elementInstanceState,
+      final ExecutableFlowNode sourceGateway,
+      final long flowScopeKey,
+      final long processInstanceKey) {
+    final int numberOfTakenSequenceFlows =
+        elementInstanceState.getNumberOfTakenSequenceFlows(flowScopeKey, sourceGateway.getId());
+
+    if (numberOfTakenSequenceFlows == sourceGateway.getIncoming().size()) {
+      final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 
