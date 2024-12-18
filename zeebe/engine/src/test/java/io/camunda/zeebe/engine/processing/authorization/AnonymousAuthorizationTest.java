@@ -118,8 +118,12 @@ public class AnonymousAuthorizationTest {
         .create(anonymousWithExplicitlyDisabledAnonymous);
 
     // then
-    assertThat(RecordingExporter.records().withRejectionType(RejectionType.UNAUTHORIZED).exists())
-        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .getFirst()
+                .getRejectionType())
+        .isEqualTo(RejectionType.FORBIDDEN);
   }
 
   @Test
@@ -136,8 +140,12 @@ public class AnonymousAuthorizationTest {
         .create(anonymousWithExplicitlyDisabledAnonymous);
 
     // then
-    assertThat(RecordingExporter.records().withRejectionType(RejectionType.UNAUTHORIZED).exists())
-        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .getFirst()
+                .getRejectionType())
+        .isEqualTo(RejectionType.FORBIDDEN);
   }
 
   @Test

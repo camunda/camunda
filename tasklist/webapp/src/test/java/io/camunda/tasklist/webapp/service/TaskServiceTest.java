@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,6 +47,7 @@ import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -55,6 +57,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,10 +66,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TaskServiceTest {
 
   @Mock private UserReader userReader;
@@ -79,6 +87,18 @@ class TaskServiceTest {
   @Mock private TaskValidator taskValidator;
 
   @InjectMocks private TaskService instance;
+
+  private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
+
+  @BeforeEach
+  public void setUp() {
+    authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    authenticationUtil.close();
+  }
 
   @Test
   void getTasks() {
@@ -283,10 +303,10 @@ class TaskServiceTest {
     final var userA = "userA";
     final var userB = "userB";
     return Stream.of(
-        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), userA),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB).setApiUser(true), userA),
-        Arguments.of(true, true, null, new UserDTO().setUserId(userB), userB),
-        Arguments.of(true, true, "", new UserDTO().setUserId(userB), userB));
+        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), false, userA),
+        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), true, userA),
+        Arguments.of(true, true, null, new UserDTO().setUserId(userB), false, userB),
+        Arguments.of(true, true, "", new UserDTO().setUserId(userB), false, userB));
   }
 
   @ParameterizedTest
@@ -296,9 +316,11 @@ class TaskServiceTest {
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
       final UserDTO user,
+      final boolean isApiUser,
       final String expectedAssignee) {
 
     // Given
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
@@ -319,8 +341,9 @@ class TaskServiceTest {
   @Test
   public void assignTaskByApiUser() {
     // given
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -332,8 +355,9 @@ class TaskServiceTest {
   @Test
   public void assignTaskToEmptyUser() {
     // given
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -345,8 +369,9 @@ class TaskServiceTest {
   @Test
   public void assignTaskToInvalidTask() {
     // given
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA").setApiUser(true));
+    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
     when(taskStore.getTask(taskId))
         .thenThrow(new NotFoundException("task with id " + taskId + " was not found "));
 
@@ -557,8 +582,10 @@ class TaskServiceTest {
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
       final UserDTO user,
+      final boolean isApiUser,
       final String expectedAssignee) {
     // Given
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
 

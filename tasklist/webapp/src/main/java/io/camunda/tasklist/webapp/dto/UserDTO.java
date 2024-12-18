@@ -17,7 +17,6 @@ public class UserDTO {
 
   private String userId;
   private String displayName;
-  private boolean apiUser;
   private List<Permission> permissions;
   private List<String> roles;
   private String salesPlanType;
@@ -43,15 +42,6 @@ public class UserDTO {
 
   public UserDTO setDisplayName(final String displayName) {
     this.displayName = displayName;
-    return this;
-  }
-
-  public boolean isApiUser() {
-    return apiUser;
-  }
-
-  public UserDTO setApiUser(final boolean apiUser) {
-    this.apiUser = apiUser;
     return this;
   }
 
@@ -116,7 +106,7 @@ public class UserDTO {
   @Override
   public int hashCode() {
     return Objects.hash(
-        userId, displayName, apiUser, permissions, roles, salesPlanType, c8Links, tenants, groups);
+        userId, displayName, permissions, roles, salesPlanType, c8Links, tenants, groups);
   }
 
   @Override
@@ -128,8 +118,7 @@ public class UserDTO {
       return false;
     }
     final UserDTO userDTO = (UserDTO) o;
-    return apiUser == userDTO.apiUser
-        && Objects.equals(userId, userDTO.userId)
+    return Objects.equals(userId, userDTO.userId)
         && Objects.equals(displayName, userDTO.displayName)
         && Objects.equals(permissions, userDTO.permissions)
         && Objects.equals(roles, userDTO.roles)
@@ -148,8 +137,6 @@ public class UserDTO {
         + ", displayName='"
         + displayName
         + '\''
-        + ", apiUser="
-        + apiUser
         + ", permissions="
         + permissions
         + ", roles="

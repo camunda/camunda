@@ -59,7 +59,6 @@ public class SSOUserReader implements UserReader {
               // For testing assignee migration locally use 'authentication.getName()'
               .setUserId(/*authentication.getName()*/ email)
               .setDisplayName(name)
-              .setApiUser(false)
               .setGroups(identityAuthorizationService.getUserGroups())
               .setPermissions(tokenAuthentication.getPermissions())
               .setRoles(
@@ -74,7 +73,6 @@ public class SSOUserReader implements UserReader {
           new UserDTO()
               .setUserId(name)
               .setDisplayName(name)
-              .setApiUser(true)
               // M2M token in the cloud always has WRITE permissions
               .setPermissions(List.of(Permission.WRITE)));
     }
@@ -88,8 +86,7 @@ public class SSOUserReader implements UserReader {
 
   @Override
   public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
-    return map(
-        usernames, name -> new UserDTO().setDisplayName(name).setUserId(name).setApiUser(false));
+    return map(usernames, name -> new UserDTO().setDisplayName(name).setUserId(name));
   }
 
   @Override

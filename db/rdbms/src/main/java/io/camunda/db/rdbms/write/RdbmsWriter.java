@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write;
 
+import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
@@ -20,6 +21,7 @@ import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
+import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RoleWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
@@ -28,6 +30,7 @@ import io.camunda.db.rdbms.write.service.VariableWriter;
 
 public class RdbmsWriter {
 
+  private final RdbmsPurger rdbmsPurger;
   private final ExecutionQueue executionQueue;
   private final AuthorizationWriter authorizationWriter;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
@@ -48,9 +51,12 @@ public class RdbmsWriter {
   private final MappingWriter mappingWriter;
 
   public RdbmsWriter(
-      final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
+      final ExecutionQueue executionQueue,
+      final ExporterPositionService exporterPositionService,
+      final PurgeMapper purgeMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
+    rdbmsPurger = new RdbmsPurger(purgeMapper);
     authorizationWriter = new AuthorizationWriter(executionQueue);
     decisionDefinitionWriter = new DecisionDefinitionWriter(executionQueue);
     decisionInstanceWriter = new DecisionInstanceWriter(executionQueue);
@@ -135,6 +141,10 @@ public class RdbmsWriter {
 
   public ExporterPositionService getExporterPositionService() {
     return exporterPositionService;
+  }
+
+  public RdbmsPurger getRdbmsPurger() {
+    return rdbmsPurger;
   }
 
   public ExecutionQueue getExecutionQueue() {

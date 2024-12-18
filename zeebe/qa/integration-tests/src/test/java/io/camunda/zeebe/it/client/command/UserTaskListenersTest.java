@@ -213,7 +213,7 @@ public class UserTaskListenersTest {
             incident ->
                 assertThat(incident)
                     .hasJobKey(jobKey)
-                    .hasErrorType(ErrorType.JOB_NO_RETRIES)
+                    .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
                     .extracting(
                         IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
                     .startsWith("io.camunda.client.api.command.ClientStatusException:")
