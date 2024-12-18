@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Set;
 
 public interface OperationHandler {

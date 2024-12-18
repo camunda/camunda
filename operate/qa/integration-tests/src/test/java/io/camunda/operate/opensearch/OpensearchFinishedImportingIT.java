@@ -85,6 +85,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
+    recordsReaderHolder.resetPartitionsCompletedImporting();
   }
 
   @Test

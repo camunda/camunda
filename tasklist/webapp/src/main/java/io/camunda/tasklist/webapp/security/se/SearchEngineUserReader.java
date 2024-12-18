@@ -45,8 +45,7 @@ public class SearchEngineUserReader implements UserReader {
                       user.getAuthorities().stream()
                           .map(GrantedAuthority::getAuthority)
                           .map(Role::fromString)
-                          .toList()))
-              .setApiUser(false));
+                          .toList())));
     }
     return Optional.empty();
   }
@@ -63,8 +62,7 @@ public class SearchEngineUserReader implements UserReader {
         userEntity ->
             new UserDTO()
                 .setUserId(userEntity.getUserId())
-                .setDisplayName(userEntity.getDisplayName())
-                .setApiUser(false));
+                .setDisplayName(userEntity.getDisplayName()));
   }
 
   @Override

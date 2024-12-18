@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering.network;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.ZeebeClient;
 import java.util.concurrent.CompletableFuture;
 
 interface AsymmetricNetworkPartitionTestCase {

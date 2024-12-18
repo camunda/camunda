@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.es;
 
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -48,13 +49,14 @@ public class TaskValidator {
   private void validateTaskStateAndAssignment(final TaskEntity task) {
     validateTaskIsActive(task);
 
-    final UserDTO currentUser = getCurrentUser();
-    if (currentUser.isApiUser()) {
+    if (TasklistAuthenticationUtil.isApiUser()) {
       // JWT Token/API users are allowed to complete task assigned to anyone
       return;
     }
 
     validateTaskIsAssigned(task);
+
+    final UserDTO currentUser = getCurrentUser();
     if (!task.getAssignee().equals(currentUser.getUserId())) {
       throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
     }
@@ -64,7 +66,7 @@ public class TaskValidator {
       final TaskEntity taskBefore, final boolean allowOverrideAssignment) {
     validateTaskIsActive(taskBefore);
 
-    if (getCurrentUser().isApiUser() && allowOverrideAssignment) {
+    if (TasklistAuthenticationUtil.isApiUser() && allowOverrideAssignment) {
       // JWT Token/API users can reassign task
       return;
     }

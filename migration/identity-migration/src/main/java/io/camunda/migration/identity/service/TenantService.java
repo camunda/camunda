@@ -7,11 +7,11 @@
  */
 package io.camunda.migration.identity.service;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.util.Collections;
 import org.springframework.stereotype.Service;
 

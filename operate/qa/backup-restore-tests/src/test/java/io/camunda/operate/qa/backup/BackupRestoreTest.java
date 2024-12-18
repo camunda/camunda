@@ -11,12 +11,12 @@ import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.webapps.backup.BackupStateDto.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;

@@ -16,6 +16,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.migration.identity.dto.MappingRule.Operator;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
@@ -25,7 +26,6 @@ import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.migration.identity.service.MappingService;
 import io.camunda.migration.identity.service.TenantService;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.zeebe.client.api.command.ProblemException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;

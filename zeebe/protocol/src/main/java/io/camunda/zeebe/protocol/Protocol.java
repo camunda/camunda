@@ -71,9 +71,8 @@ public final class Protocol {
   /** Prefix for key of reserved task headers */
   public static final String RESERVED_HEADER_NAME_PREFIX = "io.camunda.zeebe:";
 
-  /** Task header key used for user tasks to contain form key from BPMN XML */
-  public static final String USER_TASK_FORM_KEY_HEADER_NAME =
-      RESERVED_HEADER_NAME_PREFIX + "formKey";
+  /** Task header key used for the action associated with the user task */
+  public static final String USER_TASK_ACTION_HEADER_NAME = RESERVED_HEADER_NAME_PREFIX + "action";
 
   /** Task header key used for assignee */
   public static final String USER_TASK_ASSIGNEE_HEADER_NAME =
@@ -94,6 +93,18 @@ public final class Protocol {
   /** Task header key used for follow-up date */
   public static final String USER_TASK_FOLLOW_UP_DATE_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "followUpDate";
+
+  /** Task header key used for user tasks to contain form key from BPMN XML */
+  public static final String USER_TASK_FORM_KEY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "formKey";
+
+  /** Task header key used for the unique user task key. */
+  public static final String USER_TASK_KEY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "userTaskKey";
+
+  /** Task header key used for the priority of the user task */
+  public static final String USER_TASK_PRIORITY_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "priority";
 
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;

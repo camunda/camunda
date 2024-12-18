@@ -9,9 +9,9 @@ package io.camunda.zeebe.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.ZeebeClient;
+import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
