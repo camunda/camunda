@@ -25,6 +25,8 @@ public abstract class DatabaseMetadataService<CLIENT extends DatabaseClient> {
 
   protected static final String ERROR_MESSAGE_REQUEST =
       "Could not write Optimize metadata (version and installationID) to the database.";
+
+  
   protected static final String ERROR_MESSAGE_READING_METADATA_DOC =
       "Failed retrieving the Optimize metadata document from database!";
   protected static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
