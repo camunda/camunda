@@ -20,10 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
+import io.camunda.client.protocol.rest.JobResult;
+import io.camunda.client.protocol.rest.JobResultCorrections;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -172,5 +175,107 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getDenied()).isNull();
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsSet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .result()
+        .corrections()
+        .assignee("Test")
+        .dueDate("due date")
+        .followUpDate("follow up date")
+        .candidateUsers(Arrays.asList("User A", "User B"))
+        .candidateGroups(Arrays.asList("Group A", "Group B"))
+        .priority(80)
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate("due date")
+                            .followUpDate("follow up date")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(Arrays.asList("Group A", "Group B"))
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsPartiallySet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .result()
+        .corrections()
+        .assignee("Test")
+        .dueDate("due date")
+        .followUpDate("")
+        .candidateUsers(Arrays.asList("User A", "User B"))
+        .priority(80)
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate("due date")
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(null)
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithDefaultResultCorrections() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).result().corrections().send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new JobResultCorrections()
+                            .assignee(null)
+                            .dueDate(null)
+                            .followUpDate(null)
+                            .candidateUsers(null)
+                            .candidateGroups(null)
+                            .priority(null)));
+
+    assertThat(request).isEqualTo(expectedRequest);
   }
 }
