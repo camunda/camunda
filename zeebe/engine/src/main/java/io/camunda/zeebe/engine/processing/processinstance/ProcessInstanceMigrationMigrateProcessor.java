@@ -307,7 +307,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         targetElementId,
         processInstanceKey);
     requireNoConcurrentCommand(
-        eventScopeInstanceState, elementInstance, sourceProcessDefinition, processInstanceKey);
+        eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
@@ -325,18 +325,18 @@ public class ProcessInstanceMigrationMigrateProcessor
             sourceElementIdToTargetElementId,
             elementInstance);
 
-      sequenceFlows.forEach(
-          sequenceFlow -> {
-            final var sequenceFlowRecord = new ProcessInstanceRecord();
-            sequenceFlowRecord.copyFrom(elementInstanceRecord);
-            sequenceFlowRecord
-                .setElementId(sequenceFlow.getId())
-                .setBpmnElementType(sequenceFlow.getElementType())
-                .setBpmnEventType(sequenceFlow.getEventType())
-                .setFlowScopeKey(elementInstance.getKey())
-                .resetElementInstancePath()
-                .resetCallingElementPath()
-                .resetProcessDefinitionPath();
+    sequenceFlows.forEach(
+        sequenceFlow -> {
+          final var sequenceFlowRecord = new ProcessInstanceRecord();
+          sequenceFlowRecord.copyFrom(elementInstanceRecord);
+          sequenceFlowRecord
+              .setElementId(sequenceFlow.getId())
+              .setBpmnElementType(sequenceFlow.getElementType())
+              .setBpmnEventType(sequenceFlow.getEventType())
+              .setFlowScopeKey(elementInstance.getKey())
+              .resetElementInstancePath()
+              .resetCallingElementPath()
+              .resetProcessDefinitionPath();
 
           stateWriter.appendFollowUpEvent(
               keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);

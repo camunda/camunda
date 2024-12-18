@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -838,13 +837,14 @@ public final class ProcessInstanceMigrationPreconditions {
    * migration in between.
    *
    * @param eventScopeInstanceState event scope instance state to retrieve the event trigger
+   * @param elementInstanceState element instance state to retrieve taken sequence flows count
    * @param elementInstance element instance to do the check active sequence flows
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireNoConcurrentCommand(
       final EventScopeInstanceState eventScopeInstanceState,
+      final ElementInstanceState elementInstanceState,
       final ElementInstance elementInstance,
-      final DeployedProcess sourceProcessDefinition,
       final long processInstanceKey) {
     final EventTrigger eventTrigger =
         eventScopeInstanceState.peekEventTrigger(elementInstance.getKey());
@@ -855,20 +855,23 @@ public final class ProcessInstanceMigrationPreconditions {
     // An active sequence flow indicates a concurrent command. It is created when taking a
     // sequence flow and writing an ACTIVATE command for the next element.
     // We allow migrating joining parallel gateway with at least one incoming sequence flow is taken
-    final long activeFlowsToNonGateway =
-        elementInstance.getActiveSequenceFlowIds().stream()
-            .map(
-                activeFlowId ->
-                    sourceProcessDefinition
-                        .getProcess()
-                        .getElementById(activeFlowId, ExecutableSequenceFlow.class)
-                        .getTarget())
-            .filter(element -> element.getElementType() != BpmnElementType.PARALLEL_GATEWAY)
-            .count();
-    if (eventTrigger != null || activeFlowsToNonGateway > 0) {
+    if (eventTrigger != null) {
       final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+
+    final long activeSequenceFlows = elementInstance.getActiveSequenceFlows();
+    if (activeSequenceFlows > 0) {
+      final int takenSequenceFlowsToGateways =
+          elementInstanceState.getNumberOfTakenSequenceFlows(elementInstance.getKey());
+      // if there is a sequence flow that is flowing to an element rather than parallel or inclusive
+      // gateway
+      if (takenSequenceFlowsToGateways < activeSequenceFlows) {
+        final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
     }
   }
 
