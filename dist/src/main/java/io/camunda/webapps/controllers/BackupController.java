@@ -20,7 +20,7 @@ import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.profiles.ProfileOperateTasklist;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.common.lang.NonNull;
 import java.math.BigDecimal;
@@ -38,7 +38,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backupHistory")
-@ProfileOperateTasklist
+@ProfileWebApp
 public class BackupController {
   private static final Logger LOG = LoggerFactory.getLogger(BackupController.class);
 

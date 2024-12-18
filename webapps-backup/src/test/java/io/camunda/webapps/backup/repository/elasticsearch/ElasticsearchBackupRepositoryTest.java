@@ -26,6 +26,7 @@ import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.backup.repository.TestSnapshotProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
 import java.io.IOException;
 import java.time.Instant;
