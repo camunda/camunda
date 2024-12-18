@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.Assert.assertThrows;
 
+import io.camunda.client.ZeebeClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.ByteArrayInputStream;
@@ -47,9 +47,11 @@ public class CreateDocumentBatchTest {
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
+            .fileName("test1.txt")
             .done()
             .addDocument()
             .content(documentContent2)
+            .fileName("test2.txt")
             .done()
             .send()
             .join();
@@ -72,9 +74,11 @@ public class CreateDocumentBatchTest {
         zeebeClient
             .newCreateDocumentBatchCommand()
             .addDocument()
+            .fileName("test1.txt")
             .content(documentContent1)
             .done()
             .addDocument()
+            .fileName("test2.txt")
             .content(documentContent2)
             .done()
             .send()
@@ -97,6 +101,7 @@ public class CreateDocumentBatchTest {
         zeebeClient
             .newCreateDocumentBatchCommand()
             .addDocument()
+            .fileName("file1.txt")
             .content(documentContent1)
             .done()
             .send()
@@ -172,11 +177,13 @@ public class CreateDocumentBatchTest {
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
+            .fileName("test1.pdf")
             .customMetadata("key1", "value1")
             .customMetadata("key2", 2)
             .done()
             .addDocument()
             .content(documentContent2)
+            .fileName("test2.pdf")
             .customMetadata("key3", "value3")
             .customMetadata("key4", 4)
             .done()
@@ -233,8 +240,10 @@ public class CreateDocumentBatchTest {
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
+            .fileName("test1.txt")
             .done()
             .addDocument()
+            .fileName("test2.txt")
             .content(documentContent2)
             .done()
             .send()
@@ -265,6 +274,7 @@ public class CreateDocumentBatchTest {
             .newCreateDocumentBatchCommand()
             .storeId(storeId)
             .addDocument()
+            .fileName("test1.txt")
             .content(documentContent)
             .done()
             .send()
@@ -289,6 +299,7 @@ public class CreateDocumentBatchTest {
             .newCreateDocumentBatchCommand()
             .storeId("non-existing-store")
             .addDocument()
+            .fileName("test1.txt")
             .content(documentContent)
             .done()
             .send();
