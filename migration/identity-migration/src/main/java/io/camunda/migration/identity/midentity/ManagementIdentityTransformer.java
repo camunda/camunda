@@ -13,11 +13,11 @@ import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserTenants;
-import org.springframework.stereotype.Component;
 
-@Component
-public class ManagementIdentityTransformer {
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+public final class ManagementIdentityTransformer {
+  private ManagementIdentityTransformer() {}
+
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Tenant tenant, final Exception e) {
     return new MigrationStatusUpdateRequest(
         tenant.tenantId(),
@@ -27,7 +27,7 @@ public class ManagementIdentityTransformer {
         e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final MappingRule mappingRule, final Exception e) {
     return new MigrationStatusUpdateRequest(
         mappingRule.getName(),
@@ -37,7 +37,7 @@ public class ManagementIdentityTransformer {
         e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final UserTenants tenantUser, final Exception e) {
     return new MigrationStatusUpdateRequest(
         tenantUser.id(),
@@ -47,13 +47,13 @@ public class ManagementIdentityTransformer {
         e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Group group, final Exception e) {
     return new MigrationStatusUpdateRequest(
         group.id(), MigrationEntityType.GROUP, null, e == null, e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final GroupTenants groupTenants, final Exception e) {
     return new MigrationStatusUpdateRequest(
         groupTenants.id(),
