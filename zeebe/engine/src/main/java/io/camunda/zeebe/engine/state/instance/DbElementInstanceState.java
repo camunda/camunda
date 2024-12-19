@@ -275,6 +275,27 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void decrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
+
+    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+
+    final var newValue = number.getValue() - 1;
+    if (newValue > 0) {
+      numberOfTakenSequenceFlows.wrapInt(newValue);
+      numberOfTakenSequenceFlowsColumnFamily.update(
+          numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+    } else {
+      numberOfTakenSequenceFlowsColumnFamily.deleteExisting(numberOfTakenSequenceFlowsKey);
+    }
+  }
+
+  @Override
   public void insertProcessInstanceKeyByDefinitionKey(
       final long processInstanceKey, final long processDefinitionKey) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
@@ -365,6 +386,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public int getNumberOfTakenSequenceFlows(final long flowScopeKey) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+
+    final var count = new MutableInteger(0);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey,
+        (key, number) -> {
+          count.increment();
+        });
+
+    return count.get();
+  }
+
+  @Override
   public Set<DirectBuffer> getTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     this.flowScopeKey.wrapLong(flowScopeKey);
@@ -378,6 +413,21 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return takenSequenceFlows;
+  }
+
+  @Override
+  public void visitTakenSequenceFlows(
+      final long flowScopeKey, final TakenSequenceFlowVisitor visitor) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey,
+        (key, number) -> {
+          visitor.visit(
+              key.first().first().getValue(),
+              key.first().second().getBuffer(),
+              key.second().getBuffer(),
+              number.getValue());
+        });
   }
 
   @Override

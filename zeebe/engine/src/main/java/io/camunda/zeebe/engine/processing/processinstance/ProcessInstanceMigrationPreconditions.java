@@ -838,11 +838,13 @@ public final class ProcessInstanceMigrationPreconditions {
    * migration in between.
    *
    * @param eventScopeInstanceState event scope instance state to retrieve the event trigger
+   * @param elementInstanceState element instance state to retrieve taken sequence flows count
    * @param elementInstance element instance to do the check active sequence flows
    * @param processInstanceKey process instance key to be logged
    */
   public static void requireNoConcurrentCommand(
       final EventScopeInstanceState eventScopeInstanceState,
+      final ElementInstanceState elementInstanceState,
       final ElementInstance elementInstance,
       final long processInstanceKey) {
     final EventTrigger eventTrigger =
@@ -853,10 +855,24 @@ public final class ProcessInstanceMigrationPreconditions {
     // or
     // An active sequence flow indicates a concurrent command. It is created when taking a
     // sequence flow and writing an ACTIVATE command for the next element.
-    if (eventTrigger != null || elementInstance.getActiveSequenceFlows() > 0) {
+    // We allow migrating joining parallel gateway with at least one incoming sequence flow is taken
+    if (eventTrigger != null) {
       final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+
+    final long activeSequenceFlows = elementInstance.getActiveSequenceFlows();
+    if (activeSequenceFlows > 0) {
+      final int takenSequenceFlowsToGateways =
+          elementInstanceState.getNumberOfTakenSequenceFlows(elementInstance.getKey());
+      // if there is a sequence flow that is flowing to an element rather than parallel or inclusive
+      // gateway
+      if (takenSequenceFlowsToGateways < activeSequenceFlows) {
+        final String reason = String.format(ERROR_CONCURRENT_COMMAND, processInstanceKey);
+        throw new ProcessInstanceMigrationPreconditionFailedException(
+            reason, RejectionType.INVALID_STATE);
+      }
     }
   }
 
