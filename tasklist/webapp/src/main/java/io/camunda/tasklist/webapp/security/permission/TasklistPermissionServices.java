@@ -13,9 +13,11 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.tasklist.property.IdentityProperties;
+import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import java.util.List;
+import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -56,32 +58,31 @@ public class TasklistPermissionServices {
   }
 
   public List<String> getProcessDefinitionsWithCreateProcessInstancePermission() {
-    if (isAuthorizationDisabled()) {
-      return WILD_CARD_PERMISSION;
-    }
-    final var authentication = RequestMapper.getAuthentication();
-    if (isWithoutAuthenticatedUserKey(authentication)) {
+    final var authenticationSupplier = LazySupplier.of(RequestMapper::getAuthentication);
+    if (isAuthorizationCheckDisabled(authenticationSupplier)) {
       return WILD_CARD_PERMISSION;
     }
 
     final var securityContext =
-        securityContextProvider.provideSecurityContext(authentication, CREATE_PROC_INST_AUTH_CHECK);
+        securityContextProvider.provideSecurityContext(
+            authenticationSupplier.get(), CREATE_PROC_INST_AUTH_CHECK);
     return authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
   }
 
   private boolean isAuthorizedForResource(
       final String resourceId, final Authorization authorization) {
 
-    final var authentication = RequestMapper.getAuthentication();
-    if (isAuthorizationCheckDisabled(authentication)) {
+    final var authenticationSupplier = LazySupplier.of(RequestMapper::getAuthentication);
+    if (isAuthorizationCheckDisabled(authenticationSupplier)) {
       return true;
     }
 
-    return securityContextProvider.isAuthorized(resourceId, authentication, authorization);
+    return securityContextProvider.isAuthorized(
+        resourceId, authenticationSupplier.get(), authorization);
   }
 
-  private boolean isAuthorizationCheckDisabled(final Authentication authentication) {
-    return isAuthorizationDisabled() || isWithoutAuthenticatedUserKey(authentication);
+  private boolean isAuthorizationCheckDisabled(final Supplier<Authentication> authentication) {
+    return isAuthorizationDisabled() || isWithoutAuthenticatedUserKey(authentication.get());
   }
 
   private boolean isAuthorizationDisabled() {
