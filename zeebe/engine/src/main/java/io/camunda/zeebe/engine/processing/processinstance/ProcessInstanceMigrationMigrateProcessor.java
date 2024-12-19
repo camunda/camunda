@@ -467,8 +467,11 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     return activeSequenceFlows.stream()
         .filter(
-            sequenceFlow ->
-                sequenceFlow.target().getElementType() == BpmnElementType.PARALLEL_GATEWAY)
+            sequenceFlow -> {
+              final BpmnElementType elementType = sequenceFlow.target().getElementType();
+              return elementType == BpmnElementType.PARALLEL_GATEWAY
+                  || elementType == BpmnElementType.INCLUSIVE_GATEWAY;
+            })
         .map(
             activeSequenceFlow -> {
               final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
