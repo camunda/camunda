@@ -129,12 +129,14 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           }
         }
       }
-      case UserTaskIntent.COMPLETED, UserTaskIntent.CANCELED ->
+      case UserTaskIntent.COMPLETED ->
           entity
-              .setState(
-                  record.getIntent().equals(UserTaskIntent.COMPLETED)
-                      ? TaskState.COMPLETED
-                      : TaskState.CANCELED)
+              .setState(TaskState.COMPLETED)
+              .setCompletionTime(
+                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case UserTaskIntent.CANCELED ->
+          entity
+              .setState(TaskState.CANCELED)
               .setCompletionTime(
                   ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
       case UserTaskIntent.MIGRATED ->
@@ -153,8 +155,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   /**
-   * Applies changes to the user task fields based on the attributes in the
-   * {@link UserTaskRecordValue}.
+   * Applies changes to the user task fields based on the attributes in the {@link
+   * UserTaskRecordValue}.
    *
    * <p>This method can be used for updating fields either:
    *
