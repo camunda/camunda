@@ -14,12 +14,10 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOUR
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.tomcat.IngestionQoSFilter;
 import io.camunda.optimize.tomcat.JavaScriptMainLicenseEnricherFilter;
 import io.camunda.optimize.tomcat.MaxRequestSizeFilter;
 import io.camunda.optimize.tomcat.NoCachingFilter;
 import jakarta.servlet.DispatcherType;
-import java.util.concurrent.Callable;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,29 +52,6 @@ public class FilterBeansConfig {
 
     registrationBean.setName("noCachingFilter");
 
-    return registrationBean;
-  }
-
-  @Bean
-  public FilterRegistrationBean<IngestionQoSFilter> variableIngestionQoSFilterRegistrationBean(
-      final ConfigurationService configurationService) {
-    return getIngestionQoSFilterRegistrationBean(
-        () -> configurationService.getVariableIngestionConfiguration().getMaxRequests(),
-        VARIABLE_SUB_PATH,
-        "variableIngestionQoSFilter");
-  }
-
-  private FilterRegistrationBean<IngestionQoSFilter> getIngestionQoSFilterRegistrationBean(
-      final Callable<Integer> provider, final String subPath, final String name) {
-    final IngestionQoSFilter ingestionQoSFilter = new IngestionQoSFilter(provider);
-
-    final FilterRegistrationBean<IngestionQoSFilter> registrationBean =
-        new FilterRegistrationBean<>();
-
-    registrationBean.setFilter(ingestionQoSFilter);
-    registrationBean.addUrlPatterns(REST_API_PATH + INGESTION_PATH + subPath);
-    registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
-    registrationBean.setName(name);
     return registrationBean;
   }
 
