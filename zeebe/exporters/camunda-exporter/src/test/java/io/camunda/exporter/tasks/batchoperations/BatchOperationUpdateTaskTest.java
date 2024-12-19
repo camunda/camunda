@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +38,7 @@ public class BatchOperationUpdateTaskTest {
   @Test
   void shouldReturnZeroIfNoDocumentUpdatesRequired() {
     // given - when
-    repository.batchOperations.add(new BatchOperationEntity().setId("1"));
+    repository.batchOperationIds.add("1");
     final var result = task.execute();
 
     // then
@@ -49,9 +48,9 @@ public class BatchOperationUpdateTaskTest {
   @Test
   void shouldUpdateBatchOperations() {
     // given - when
-    repository.batchOperations.add(new BatchOperationEntity().setId("1"));
-    repository.batchOperations.add(new BatchOperationEntity().setId("2"));
-    repository.batchOperations.add(new BatchOperationEntity().setId("3"));
+    repository.batchOperationIds.add("1");
+    repository.batchOperationIds.add("2");
+    repository.batchOperationIds.add("3");
     repository.finishedOperationsCount.add(new OperationsAggData("1", 5));
     repository.finishedOperationsCount.add(new OperationsAggData("2", 6));
     final var result = task.execute();
@@ -66,13 +65,13 @@ public class BatchOperationUpdateTaskTest {
   }
 
   private static final class TestRepository implements BatchOperationUpdateRepository {
-    List<BatchOperationEntity> batchOperations = new ArrayList<>();
+    List<String> batchOperationIds = new ArrayList<>();
     List<OperationsAggData> finishedOperationsCount = new ArrayList<>();
     private List<DocumentUpdate> documentUpdates = new ArrayList<>();
 
     @Override
-    public List<BatchOperationEntity> getNotFinishedBatchOperations() {
-      return batchOperations;
+    public List<String> getNotFinishedBatchOperations() {
+      return batchOperationIds;
     }
 
     @Override

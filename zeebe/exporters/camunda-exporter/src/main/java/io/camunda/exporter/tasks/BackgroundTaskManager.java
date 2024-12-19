@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -22,6 +23,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
   private final ArchiverRepository archiverRepository;
   private final IncidentUpdateRepository incidentRepository;
+  private final BatchOperationUpdateRepository batchOperationUpdateRepository;
   private final Logger logger;
   private final ScheduledThreadPoolExecutor executor;
   private final List<Runnable> tasks;
@@ -33,6 +35,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository archiverRepository,
       final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
+      final @WillCloseWhenClosed BatchOperationUpdateRepository batchOperationUpdateRepository,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
       final List<Runnable> tasks) {
@@ -41,6 +44,9 @@ public final class BackgroundTaskManager implements CloseableSilently {
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
     this.incidentRepository =
         Objects.requireNonNull(incidentRepository, "must specify an incident repository");
+    this.batchOperationUpdateRepository =
+        Objects.requireNonNull(
+            batchOperationUpdateRepository, "must specify a batch operation update repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
@@ -59,7 +65,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
     CloseHelper.closeAll(
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,
-        incidentRepository);
+        incidentRepository,
+        batchOperationUpdateRepository);
   }
 
   public void start() {
