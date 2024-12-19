@@ -494,7 +494,7 @@ public final class EndpointManager {
             .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
             .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT);
 
-    // retrieve the user claims from the context and add them to the token
+    // retrieve the user claims from the context and add them to the token if present
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
     if (userClaims != null) {
@@ -502,6 +502,12 @@ public final class EndpointManager {
           (key, value) -> {
             authorizationToken.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
           });
+    }
+
+    // retrieve the user key from the context and add it to the token if present
+    final Long userKey = Context.current().call(AuthenticationInterceptor.USER_KEY::get);
+    if (userKey != null) {
+      authorizationToken.withClaim(Authorization.AUTHORIZED_USER_KEY, userKey);
     }
 
     brokerRequest.setAuthorization(authorizationToken.encode());

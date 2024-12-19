@@ -28,6 +28,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Entry point for the gateway modules by using the the {@link
@@ -60,6 +61,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final JobStreamClient jobStreamClient;
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   private Gateway gateway;
 
@@ -73,7 +75,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final AtomixCluster atomixCluster,
       final BrokerClient brokerClient,
       final JobStreamClient jobStreamClient,
-      @Autowired(required = false) final UserServices userServices) {
+      @Autowired(required = false) final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.securityConfiguration = securityConfiguration;
@@ -83,6 +86,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.jobStreamClient = jobStreamClient;
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Bean(destroyMethod = "close")
@@ -107,7 +111,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
-            userServices);
+            userServices,
+            passwordEncoder);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->

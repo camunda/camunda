@@ -17,7 +17,6 @@ public final class SecurityCfg {
   private boolean enabled = DEFAULT_TLS_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
-  private AuthenticationCfg authentication = new AuthenticationCfg();
   private KeyStoreCfg keyStore = new KeyStoreCfg();
 
   public boolean isEnabled() {
@@ -47,14 +46,6 @@ public final class SecurityCfg {
     return this;
   }
 
-  public AuthenticationCfg getAuthentication() {
-    return authentication;
-  }
-
-  public void setAuthentication(final AuthenticationCfg authentication) {
-    this.authentication = authentication;
-  }
-
   public KeyStoreCfg getKeyStore() {
     return keyStore;
   }
@@ -65,7 +56,7 @@ public final class SecurityCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath, authentication, keyStore);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, keyStore);
   }
 
   @Override
@@ -80,7 +71,6 @@ public final class SecurityCfg {
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath)
-        && Objects.equals(authentication, that.authentication)
         && Objects.equals(keyStore, that.keyStore);
   }
 
@@ -93,8 +83,6 @@ public final class SecurityCfg {
         + certificateChainPath
         + ", privateKeyPath="
         + privateKeyPath
-        + ", authentication="
-        + authentication
         + ", keyStore="
         + keyStore
         + '}';

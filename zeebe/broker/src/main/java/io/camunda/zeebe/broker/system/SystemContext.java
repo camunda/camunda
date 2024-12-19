@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.slf4j.Logger;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class SystemContext {
 
@@ -66,6 +67,7 @@ public final class SystemContext {
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -76,7 +78,8 @@ public final class SystemContext {
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -86,6 +89,7 @@ public final class SystemContext {
     this.meterRegistry = meterRegistry;
     this.securityConfiguration = securityConfiguration;
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     initSystemContext();
   }
 
@@ -96,7 +100,8 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -106,7 +111,8 @@ public final class SystemContext {
         brokerClient,
         new SimpleMeterRegistry(),
         securityConfiguration,
-        userServices);
+        userServices,
+        passwordEncoder);
   }
 
   private void initSystemContext() {
@@ -352,5 +358,9 @@ public final class SystemContext {
 
   public UserServices getUserServices() {
     return userServices;
+  }
+
+  public PasswordEncoder getPasswordEncoder() {
+    return passwordEncoder;
   }
 }

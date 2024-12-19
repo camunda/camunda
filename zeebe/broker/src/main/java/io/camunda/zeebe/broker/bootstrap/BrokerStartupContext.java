@@ -35,6 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Context that is utilized during broker startup and shutdown process. It contains dependencies
@@ -126,4 +127,6 @@ public interface BrokerStartupContext {
   SecurityConfiguration getSecurityConfiguration();
 
   UserServices getUserServices();
+
+  PasswordEncoder getPasswordEncoder();
 }
