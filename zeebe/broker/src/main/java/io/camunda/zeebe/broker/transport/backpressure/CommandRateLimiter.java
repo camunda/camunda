@@ -20,6 +20,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +44,23 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
   private final int partitionId;
   private final BackpressureMetrics metrics = new BackpressureMetrics();
 
+  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
   protected CommandRateLimiter(final CommandRateLimiterBuilder builder, final int partitionId) {
     super(builder);
     this.partitionId = partitionId;
     metrics.setInflight(partitionId, 0);
     metrics.setNewLimit(partitionId, getLimit());
+
+    executor.scheduleAtFixedRate(
+        () -> {
+          LOG.info(
+              "Partition {} Response Listeners: {}", this.partitionId, responseListeners.size());
+          LOG.info(metrics.getMetrics(partitionId));
+        },
+        30,
+        30,
+        TimeUnit.SECONDS);
   }
 
   @Override

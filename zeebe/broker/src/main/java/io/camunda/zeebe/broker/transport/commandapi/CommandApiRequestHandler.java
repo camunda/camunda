@@ -23,6 +23,9 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -36,8 +39,21 @@ final class CommandApiRequestHandler
   private final BackpressureMetrics metrics = new BackpressureMetrics();
   private boolean isDiskSpaceAvailable = true;
 
+  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
   CommandApiRequestHandler() {
     super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
+
+    executor.scheduleAtFixedRate(
+        () -> {
+          LOG.info("CommandApiRequestHandler Metrics:");
+          for (int i = 0; i <= 3; i++) {
+            LOG.info(metrics.getMetrics(i));
+          }
+        },
+        30,
+        30,
+        TimeUnit.SECONDS);
   }
 
   @Override
