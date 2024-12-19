@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f459f847f31d40b266364bb60d73f0e2ad1c4ed3
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f459f847f31d40b266364bb60d73f0e2ad1c4ed3
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f459f847f31d40b266364bb60d73f0e2ad1c4ed3
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f459f847f31d40b266364bb60d73f0e2ad1c4ed3
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
         with:
           directory: tasklist/client
       - run: yarn install --frozen-lockfile
@@ -142,7 +142,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f459f847f31d40b266364bb60d73f0e2ad1c4ed3
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
         with:
           directory: tasklist/client
       - name: Install node dependencies
@@ -187,7 +187,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@f459f847f31d40b266364bb60d73f0e2ad1c4ed3
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
         with:
           directory: tasklist/client
       - name: Install node dependencies
