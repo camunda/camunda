@@ -629,7 +629,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-mvc-auth-commons</artifactId>
+        <artifactId>camunda-mvc-auth-commons</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -754,12 +754,6 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-els-schema</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-mvc-auth-commons</artifactId>
         <version>${project.version}</version>
       </dependency>
 
