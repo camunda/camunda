@@ -108,28 +108,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         }
         updateChangedAttributes(record, entity);
       }
-      case UserTaskIntent.UPDATED -> {
-        for (final String attribute : record.getValue().getChangedAttributes()) {
-          entity.getChangedAttributes().add(attribute);
-          switch (attribute) {
-            case "candidateGroupsList" ->
-                entity.setCandidateGroups(
-                    record.getValue().getCandidateGroupsList().toArray(new String[0]));
-            case "candidateUsersList" ->
-                entity.setCandidateUsers(
-                    record.getValue().getCandidateUsersList().toArray(new String[0]));
-            case "dueDate" ->
-                entity.setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()));
-            case "followUpDate" ->
-                entity.setFollowUpDate(
-                    ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()));
-            case "priority" -> entity.setPriority(record.getValue().getPriority());
-            default ->
-                LOGGER.warn(
-                    "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);
-          }
-        }
-      }
+      case UserTaskIntent.UPDATED -> updateChangedAttributes(record, entity);
       case UserTaskIntent.COMPLETED -> {
         entity
             .setState(TaskState.COMPLETED)
