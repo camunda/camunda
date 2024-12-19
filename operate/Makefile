@@ -5,7 +5,7 @@ env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch \
     && mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
-	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
+	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	CAMUNDA_OPERATE_ELASTICSEARCH_CREATESCHEMA=false \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1 \
