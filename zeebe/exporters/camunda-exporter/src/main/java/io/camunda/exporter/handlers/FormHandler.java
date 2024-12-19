@@ -48,7 +48,7 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
 
   @Override
   public List<String> generateIds(final Record<Form> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(String.valueOf(record.getValue().getFormKey()));
   }
 
   @Override
@@ -82,12 +82,10 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
   @Override
   public void flush(final FormEntity entity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
-    String id = entity.getId();
     if (entity.getIsDeleted() != null && entity.getIsDeleted()) {
-      updateFields.put("isDeleted", true);
-      id = String.valueOf(entity.getKey());
+      updateFields.put("isDeleted", entity.getIsDeleted());
     }
-    batchRequest.upsert(indexName, id, entity, updateFields);
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override

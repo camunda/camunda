@@ -66,7 +66,12 @@ public class FormHandlerTest {
 
     final Record<Form> decisionRecord =
         factory.generateRecord(
-            ValueType.FORM, r -> r.withIntent(FormIntent.CREATED).withKey(expectedId));
+            ValueType.FORM,
+            r ->
+                r.withIntent(FormIntent.CREATED)
+                    .withKey(expectedId)
+                    .withValue(
+                        factory.generateObject(ImmutableForm.class).withFormKey(expectedId)));
 
     // when
     final var idList = underTest.generateIds(decisionRecord);
@@ -111,10 +116,7 @@ public class FormHandlerTest {
     // then
     verify(mockRequest, times(1))
         .upsert(
-            indexName,
-            String.valueOf(inputEntity.getKey()),
-            inputEntity,
-            Map.of("isDeleted", true));
+            indexName, String.valueOf(inputEntity.getId()), inputEntity, Map.of("isDeleted", true));
   }
 
   @Test
