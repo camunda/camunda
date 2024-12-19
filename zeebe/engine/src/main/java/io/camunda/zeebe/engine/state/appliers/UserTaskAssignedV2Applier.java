@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.List;
 
 public final class UserTaskAssignedV2Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
@@ -25,10 +26,9 @@ public final class UserTaskAssignedV2Applier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    final String assignee = value.getAssignee();
-    final UserTaskRecord userTask = userTaskState.getUserTask(key);
-    userTask.setAssignee(assignee);
-    userTaskState.update(userTask);
+    final var userTaskRecord = new UserTaskRecord();
+    userTaskRecord.wrapWithoutVariables(value);
+    userTaskState.update(userTaskRecord.setChangedAttributes(List.of()).setAction(""));
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
     userTaskState.deleteIntermediateState(key);
     userTaskState.deleteRecordRequestMetadata(key);
