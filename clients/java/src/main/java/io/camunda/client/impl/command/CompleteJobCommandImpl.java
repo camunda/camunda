@@ -129,7 +129,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 assignee(final String assignee) {
+  public CompleteJobCommandStep3 correctAssignee(final String assignee) {
     correctionsRest.setAssignee(assignee);
     correctionsGrpc.setAssignee(assignee);
     onCorrectionsChange();
@@ -137,7 +137,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 dueDate(final String dueDate) {
+  public CompleteJobCommandStep3 correctDueDate(final String dueDate) {
     correctionsRest.setDueDate(dueDate);
     correctionsGrpc.setDueDate(dueDate);
     onCorrectionsChange();
@@ -145,7 +145,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 followUpDate(final String followUpDate) {
+  public CompleteJobCommandStep3 correctFollowUpDate(final String followUpDate) {
     correctionsRest.setFollowUpDate(followUpDate);
     correctionsGrpc.setFollowUpDate(followUpDate);
     onCorrectionsChange();
@@ -153,7 +153,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 candidateUsers(final List<String> candidateUsers) {
+  public CompleteJobCommandStep3 correctCandidateUsers(final List<String> candidateUsers) {
     correctionsRest.setCandidateUsers(candidateUsers);
     correctionsGrpc.setCandidateUsers(StringList.newBuilder().addAllValues(candidateUsers).build());
     onCorrectionsChange();
@@ -161,7 +161,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 candidateGroups(final List<String> candidateGroups) {
+  public CompleteJobCommandStep3 correctCandidateGroups(final List<String> candidateGroups) {
     correctionsRest.setCandidateGroups(candidateGroups);
     correctionsGrpc.setCandidateGroups(
         StringList.newBuilder().addAllValues(candidateGroups).build());
@@ -170,7 +170,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 priority(final int priority) {
+  public CompleteJobCommandStep3 correctPriority(final int priority) {
     correctionsRest.setPriority(priority);
     correctionsGrpc.setPriority(priority);
     onCorrectionsChange();

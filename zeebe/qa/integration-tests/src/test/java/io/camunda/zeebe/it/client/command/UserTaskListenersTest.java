@@ -301,12 +301,12 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult()
                 .corrections()
-                .assignee("Test")
-                .dueDate("due date")
-                .followUpDate("follow up date")
-                .candidateUsers(Arrays.asList("User A", "User B"))
-                .candidateGroups(Arrays.asList("Group A", "Group B"))
-                .priority(80)
+                .correctAssignee("Test")
+                .correctDueDate("due date")
+                .correctFollowUpDate("follow up date")
+                .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
+                .correctPriority(80)
                 .send()
                 .join();
 
@@ -369,10 +369,10 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult()
                 .corrections()
-                .assignee("Test")
-                .followUpDate("follow up date")
-                .candidateUsers(Arrays.asList("User A", "User B"))
-                .priority(80)
+                .correctAssignee("Test")
+                .correctFollowUpDate("follow up date")
+                .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                .correctPriority(80)
                 .send()
                 .join();
 

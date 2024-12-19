@@ -113,7 +113,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 assignee(String assignee);
+    CompleteJobCommandStep3 correctAssignee(String assignee);
 
     /**
      * Correct the due date of the task.
@@ -122,7 +122,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 dueDate(String dueDate);
+    CompleteJobCommandStep3 correctDueDate(String dueDate);
 
     /**
      * Correct the follow up date of the task.
@@ -131,7 +131,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 followUpDate(String followUpDate);
+    CompleteJobCommandStep3 correctFollowUpDate(String followUpDate);
 
     /**
      * Correct the candidate users of the task.
@@ -140,7 +140,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 candidateUsers(List<String> candidateUsers);
+    CompleteJobCommandStep3 correctCandidateUsers(List<String> candidateUsers);
 
     /**
      * Correct the candidate groups of the task.
@@ -149,7 +149,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 candidateGroups(List<String> candidateGroups);
+    CompleteJobCommandStep3 correctCandidateGroups(List<String> candidateGroups);
 
     /**
      * Correct the priority of the task.
@@ -158,6 +158,6 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 priority(int priority);
+    CompleteJobCommandStep3 correctPriority(int priority);
   }
 }
