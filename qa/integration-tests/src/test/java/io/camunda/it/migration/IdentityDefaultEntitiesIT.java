@@ -8,7 +8,6 @@
 package io.camunda.it.migration;
 
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
-import static io.camunda.it.migration.IdentityMigrationTestUtil.getIdentityAccessToken;
 
 import io.camunda.application.Profile;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
@@ -49,8 +48,14 @@ public class IdentityDefaultEntitiesIT {
         .withProperty(
             "camunda.migration.identity.managementIdentity.baseUrl", externalIdentityUrl(IDENTITY))
         .withProperty(
-            "camunda.migration.identity.managementIdentity.m2mToken",
-            getIdentityAccessToken(KEYCLOAK))
+            "camunda.migration.identity.management-identity.issuer-backend-url",
+            IdentityMigrationTestUtil.externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/")
+        .withProperty("camunda.migration.identity.management-identity.issuer-type", "KEYCLOAK")
+        .withProperty("camunda.migration.identity.management-identity.client-id", "migration-app")
+        .withProperty("camunda.migration.identity.management-identity.client-secret", "secret")
+        .withProperty(
+            "camunda.migration.identity.management-identity.audience",
+            "camunda-identity-resource-server")
         .start();
 
     // then -- the migration did not fail

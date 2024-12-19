@@ -76,6 +76,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+    </dependency>
 
     <!-- Test -->
     <dependency>

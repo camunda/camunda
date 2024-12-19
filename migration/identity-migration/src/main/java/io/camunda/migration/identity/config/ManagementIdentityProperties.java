@@ -9,7 +9,11 @@ package io.camunda.migration.identity.config;
 
 public class ManagementIdentityProperties {
   private String baseUrl;
-  private String m2mToken;
+  private String issuerBackendUrl;
+  private String clientId;
+  private String clientSecret;
+  private String audience;
+  private String issuerType;
 
   public String getBaseUrl() {
     return baseUrl;
@@ -19,11 +23,43 @@ public class ManagementIdentityProperties {
     this.baseUrl = baseUrl;
   }
 
-  public String getM2mToken() {
-    return m2mToken;
+  public String getClientId() {
+    return clientId;
   }
 
-  public void setM2mToken(final String m2mToken) {
-    this.m2mToken = m2mToken;
+  public void setClientId(final String clientId) {
+    this.clientId = clientId;
+  }
+
+  public String getClientSecret() {
+    return clientSecret;
+  }
+
+  public void setClientSecret(final String clientSecret) {
+    this.clientSecret = clientSecret;
+  }
+
+  public String getAudience() {
+    return audience;
+  }
+
+  public void setAudience(final String audience) {
+    this.audience = audience;
+  }
+
+  public String getIssuerBackendUrl() {
+    return issuerBackendUrl;
+  }
+
+  public void setIssuerBackendUrl(final String issuerBackendUrl) {
+    this.issuerBackendUrl = issuerBackendUrl;
+  }
+
+  public String getIssuerType() {
+    return issuerType;
+  }
+
+  public void setIssuerType(final String issuerType) {
+    this.issuerType = issuerType;
   }
 }
