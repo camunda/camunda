@@ -300,7 +300,6 @@ public class UserTaskListenersTest {
             client
                 .newCompleteCommand(job)
                 .withResult()
-                .corrections()
                 .correctAssignee("Test")
                 .correctDueDate("due date")
                 .correctFollowUpDate("follow up date")
@@ -368,7 +367,6 @@ public class UserTaskListenersTest {
             client
                 .newCompleteCommand(job)
                 .withResult()
-                .corrections()
                 .correctAssignee("Test")
                 .correctFollowUpDate("follow up date")
                 .correctCandidateUsers(Arrays.asList("User A", "User B"))

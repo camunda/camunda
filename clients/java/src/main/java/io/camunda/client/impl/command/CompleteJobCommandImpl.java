@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
-import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
@@ -43,7 +42,7 @@ import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
-    implements CompleteJobCommandStep1, CompleteJobCommandStep2, CompleteJobCommandStep3 {
+    implements CompleteJobCommandStep1, CompleteJobCommandStep2 {
 
   private final GatewayStub asyncStub;
   private final Builder grpcRequestObjectBuilder;
@@ -101,9 +100,13 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 withResult() {
     resultRest = new io.camunda.client.protocol.rest.JobResult();
+    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
+    resultRest.setCorrections(correctionsRest);
     httpRequestObject.setResult(resultRest);
 
     resultGrpc = JobResult.newBuilder();
+    correctionsGrpc = JobResultCorrections.newBuilder();
+    resultGrpc.setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
     return this;
   }
@@ -117,19 +120,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 corrections() {
-    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
-    resultRest.setCorrections(correctionsRest);
-
-    correctionsGrpc = JobResultCorrections.newBuilder();
-    resultGrpc.setCorrections(correctionsGrpc);
-
-    onResultChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep3 correctAssignee(final String assignee) {
+  public CompleteJobCommandStep2 correctAssignee(final String assignee) {
     correctionsRest.setAssignee(assignee);
     correctionsGrpc.setAssignee(assignee);
     onCorrectionsChange();
@@ -137,7 +128,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 correctDueDate(final String dueDate) {
+  public CompleteJobCommandStep2 correctDueDate(final String dueDate) {
     correctionsRest.setDueDate(dueDate);
     correctionsGrpc.setDueDate(dueDate);
     onCorrectionsChange();
@@ -145,7 +136,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 correctFollowUpDate(final String followUpDate) {
+  public CompleteJobCommandStep2 correctFollowUpDate(final String followUpDate) {
     correctionsRest.setFollowUpDate(followUpDate);
     correctionsGrpc.setFollowUpDate(followUpDate);
     onCorrectionsChange();
@@ -153,7 +144,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 correctCandidateUsers(final List<String> candidateUsers) {
+  public CompleteJobCommandStep2 correctCandidateUsers(final List<String> candidateUsers) {
     correctionsRest.setCandidateUsers(candidateUsers);
     correctionsGrpc.setCandidateUsers(StringList.newBuilder().addAllValues(candidateUsers).build());
     onCorrectionsChange();
@@ -161,7 +152,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 correctCandidateGroups(final List<String> candidateGroups) {
+  public CompleteJobCommandStep2 correctCandidateGroups(final List<String> candidateGroups) {
     correctionsRest.setCandidateGroups(candidateGroups);
     correctionsGrpc.setCandidateGroups(
         StringList.newBuilder().addAllValues(candidateGroups).build());
@@ -170,7 +161,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep3 correctPriority(final int priority) {
+  public CompleteJobCommandStep2 correctPriority(final int priority) {
     correctionsRest.setPriority(priority);
     correctionsGrpc.setPriority(priority);
     onCorrectionsChange();

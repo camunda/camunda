@@ -92,28 +92,13 @@ public interface CompleteJobCommandStep1
     CompleteJobCommandStep2 deny(boolean isDenied);
 
     /**
-     * Attributes that were corrected by the worker. The below attributes can be corrected and
-     * additional attributes will be ignored: `assignee` - reset by providing an empty String
-     * `dueDate` - reset by providing an empty String `followUpDate` - reset by providing an empty
-     * String `candidateGroups` - reset by providing an empty list `candidateUsers` - reset by
-     * providing an empty list `priority` - minimum 0, maximum 100, default 50 Omitting any of the
-     * attributes will preserve the persisted attribute's value.
-     *
-     * @return the builder for this command.
-     */
-    CompleteJobCommandStep3 corrections();
-  }
-
-  interface CompleteJobCommandStep3 extends CompleteJobCommandStep2 {
-
-    /**
      * Correct the assignee of the task.
      *
      * @param assignee assignee of the task
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 correctAssignee(String assignee);
+    CompleteJobCommandStep2 correctAssignee(String assignee);
 
     /**
      * Correct the due date of the task.
@@ -122,7 +107,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 correctDueDate(String dueDate);
+    CompleteJobCommandStep2 correctDueDate(String dueDate);
 
     /**
      * Correct the follow up date of the task.
@@ -131,7 +116,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 correctFollowUpDate(String followUpDate);
+    CompleteJobCommandStep2 correctFollowUpDate(String followUpDate);
 
     /**
      * Correct the candidate users of the task.
@@ -140,7 +125,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 correctCandidateUsers(List<String> candidateUsers);
+    CompleteJobCommandStep2 correctCandidateUsers(List<String> candidateUsers);
 
     /**
      * Correct the candidate groups of the task.
@@ -149,7 +134,7 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 correctCandidateGroups(List<String> candidateGroups);
+    CompleteJobCommandStep2 correctCandidateGroups(List<String> candidateGroups);
 
     /**
      * Correct the priority of the task.
@@ -158,6 +143,6 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep3 correctPriority(int priority);
+    CompleteJobCommandStep2 correctPriority(int priority);
   }
 }

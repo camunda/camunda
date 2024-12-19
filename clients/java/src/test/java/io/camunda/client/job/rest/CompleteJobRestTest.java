@@ -186,7 +186,6 @@ class CompleteJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(jobKey)
         .withResult()
-        .corrections()
         .correctAssignee("Test")
         .correctDueDate("due date")
         .correctFollowUpDate("follow up date")
@@ -224,7 +223,6 @@ class CompleteJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(jobKey)
         .withResult()
-        .corrections()
         .correctAssignee("Test")
         .correctDueDate("due date")
         .correctFollowUpDate("")
@@ -258,7 +256,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).withResult().corrections().send().join();
+    client.newCompleteCommand(jobKey).withResult().send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);

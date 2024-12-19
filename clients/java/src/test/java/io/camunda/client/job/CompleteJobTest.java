@@ -246,7 +246,6 @@ public final class CompleteJobTest extends ClientTest {
     client
         .newCompleteCommand(job)
         .withResult()
-        .corrections()
         .correctAssignee("Test")
         .correctDueDate("due date")
         .correctFollowUpDate("follow up date")
@@ -297,7 +296,6 @@ public final class CompleteJobTest extends ClientTest {
     client
         .newCompleteCommand(job)
         .withResult()
-        .corrections()
         .correctAssignee("Test")
         .correctDueDate("due date")
         .correctFollowUpDate("")
@@ -340,7 +338,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().corrections().send().join();
+    client.newCompleteCommand(job).withResult().send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
