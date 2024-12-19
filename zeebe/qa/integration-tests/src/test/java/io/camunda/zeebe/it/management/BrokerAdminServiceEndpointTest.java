@@ -40,7 +40,7 @@ public class BrokerAdminServiceEndpointTest {
       {
         "1": {
           "role": "LEADER",
-          "processedPosition": 2,
+          "processedPosition": 1,
           "snapshotId": null,
           "processedPositionInSnapshot": null,
           "streamProcessorPhase": "PROCESSING",
@@ -97,7 +97,7 @@ public class BrokerAdminServiceEndpointTest {
       """
       {
         "role": "LEADER",
-        "processedPosition": 2,
+        "processedPosition": 1,
         "snapshotId": null,
         "processedPositionInSnapshot": null,
         "streamProcessorPhase": "PROCESSING",
