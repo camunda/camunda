@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -231,6 +232,10 @@ public final class RecordingExporter implements Exporter {
 
   public static ProcessRecordStream processRecords() {
     return new ProcessRecordStream(records(ValueType.PROCESS, Process.class));
+  }
+
+  public static ProcessRecordStream processRecords(final ProcessIntent intent) {
+    return processRecords().withIntent(intent);
   }
 
   public static DeploymentDistributionRecordStream deploymentDistributionRecords() {

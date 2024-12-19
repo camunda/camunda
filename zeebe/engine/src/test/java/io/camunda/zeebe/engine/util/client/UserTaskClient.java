@@ -132,6 +132,20 @@ public final class UserTaskClient {
     return expectation.apply(position);
   }
 
+  public Record<UserTaskRecordValue> assign(final long userKey) {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.ASSIGN,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            userKey,
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return expectation.apply(position);
+  }
+
   public Record<UserTaskRecordValue> assign(
       final Consumer<UserTaskRecord> userTaskRecordCustomizer) {
     final long userTaskKey = findUserTaskKey();
@@ -161,6 +175,20 @@ public final class UserTaskClient {
     return expectation.apply(position);
   }
 
+  public Record<UserTaskRecordValue> claim(final long userKey) {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.CLAIM,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            userKey,
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return expectation.apply(position);
+  }
+
   public Record<UserTaskRecordValue> complete() {
     final long userTaskKey = findUserTaskKey();
     final long position =
@@ -171,6 +199,20 @@ public final class UserTaskClient {
             UserTaskIntent.COMPLETE,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<UserTaskRecordValue> complete(final long userKey) {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.COMPLETE,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            userKey,
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
 
@@ -222,6 +264,27 @@ public final class UserTaskClient {
             UserTaskIntent.UPDATE,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
+  public Record<UserTaskRecordValue> update(final UserTaskRecord changes, final long userKey) {
+    changes
+        .setCandidateGroupsChanged()
+        .setCandidateUsersChanged()
+        .setDueDateChanged()
+        .setFollowUpDateChanged();
+    userTaskRecord.wrapChangedAttributes(changes, true);
+
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
+            UserTaskIntent.UPDATE,
+            userTaskRecord.setUserTaskKey(userTaskKey),
+            userKey,
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
 }
