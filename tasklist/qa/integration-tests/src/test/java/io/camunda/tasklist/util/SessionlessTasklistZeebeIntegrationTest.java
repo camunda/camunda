@@ -75,12 +75,13 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
   @Autowired private MeterRegistry meterRegistry;
 
   @Autowired private ObjectMapper objectMapper;
-
+  private boolean shouldWaitForImporters = true;
   private final HttpClient httpClient = HttpClient.newHttpClient();
 
   @Override
   @BeforeEach
   public void before() {
+    zeebeExtension.setShouldWaitForExportersToFinish(shouldWaitForImporters);
     super.before();
 
     zeebeContainer = zeebeExtension.getZeebeContainer();
@@ -173,6 +174,14 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
         objectMapper.readValue(httpResponse.body(), ZeebeClockActuatorResponse.class);
 
     return Instant.ofEpochMilli(result.epochMilli);
+  }
+
+  public boolean getShouldWaitForImporters() {
+    return shouldWaitForImporters;
+  }
+
+  public void setShouldWaitForImporters(final boolean shouldWaitForImporters) {
+    this.shouldWaitForImporters = shouldWaitForImporters;
   }
 
   private static final class ZeebeClockActuatorPinRequest {

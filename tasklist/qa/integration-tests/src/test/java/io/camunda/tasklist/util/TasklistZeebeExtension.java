@@ -43,11 +43,9 @@ public abstract class TasklistZeebeExtension
 
   @Autowired protected TasklistProperties tasklistProperties;
   @Autowired protected TasklistIndexPrefixHolder indexPrefixHolder;
-
   protected ZeebeContainer zeebeContainer;
-
   protected boolean failed = false;
-
+  private boolean shouldWaitForExportersToFinish = true;
   private CamundaClient client;
 
   @Autowired(required = false)
@@ -83,6 +81,9 @@ public abstract class TasklistZeebeExtension
       LOGGER.info("Creating Zeebe container with identity enabled");
       zeebeContainer =
           createZeebeContainer()
+              .withEnv(
+                  "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS",
+                  String.valueOf(getShouldWaitForImporters()))
               .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
               .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE", "keycloak")
               .withEnv(
@@ -190,4 +191,12 @@ public abstract class TasklistZeebeExtension
   public abstract void setZeebeEsClient(final RestHighLevelClient zeebeOsClient);
 
   protected abstract int getDatabasePort();
+
+  public boolean getShouldWaitForImporters() {
+    return shouldWaitForExportersToFinish;
+  }
+
+  public void setShouldWaitForExportersToFinish(final boolean shouldWaitForExportersToFinish) {
+    this.shouldWaitForExportersToFinish = shouldWaitForExportersToFinish;
+  }
 }
