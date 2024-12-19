@@ -1,7 +1,9 @@
-name: AWS OpenSearch Manual Run Integration Tests
+name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 
 on:
   workflow_dispatch: { }
+  schedule:
+    - cron: "0 23 * * Sat"
 
 defaults:
   run:
