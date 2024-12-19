@@ -23,12 +23,8 @@ import io.camunda.client.protocol.rest.Partition.HealthEnum;
 import io.camunda.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PartitionInfoImpl implements PartitionInfo {
-
-  private static final Logger LOG = LoggerFactory.getLogger(PartitionInfoImpl.class);
 
   private final int partitionId;
   private final PartitionBrokerRole role;
