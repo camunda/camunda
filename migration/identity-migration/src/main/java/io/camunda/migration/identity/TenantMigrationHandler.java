@@ -43,8 +43,8 @@ public class TenantMigrationHandler implements MigrationHandler {
     List<Tenant> tenants;
     do {
       tenants = managementIdentityClient.fetchTenants(SIZE);
-      /*      managementIdentityClient.updateMigrationStatus(
-      tenants.stream().map(this::createTenant).toList());*/
+      managementIdentityClient.updateMigrationStatus(
+          tenants.stream().map(this::createTenant).toList());
     } while (!tenants.isEmpty());
     LOG.debug("Finished migrating tenants");
   }
