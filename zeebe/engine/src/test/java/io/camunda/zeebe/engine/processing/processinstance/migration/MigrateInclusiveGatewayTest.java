@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -26,98 +25,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MigrateParallelGatewayTest {
-
+public class MigrateInclusiveGatewayTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldMigrateParallelGatewayWithIncident() {
-    final String sourceProcessId = helper.getBpmnProcessId();
-    final String targetProcessId = helper.getBpmnProcessId() + "_target";
-
-    final String executionListenerJobType = "executionListenerJobType";
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(sourceProcessId)
-                    .startEvent()
-                    .parallelGateway("parallel1")
-                    .zeebeStartExecutionListener(executionListenerJobType)
-                    .endEvent("end1")
-                    .moveToLastGateway()
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(targetProcessId)
-                    .startEvent()
-                    .parallelGateway("parallel2")
-                    .zeebeStartExecutionListener(executionListenerJobType)
-                    .endEvent("end2")
-                    .moveToLastGateway()
-                    .endEvent()
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey =
-        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
-
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
-
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(executionListenerJobType)
-        .withRetries(0)
-        .fail();
-
-    final var incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("parallel1")
-            .getFirst();
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("parallel1", "parallel2")
-        .migrate();
-
-    RecordingExporter.incidentRecords(IncidentIntent.MIGRATED)
-        .withRecordKey(incident.getKey())
-        .await();
-
-    // then
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(executionListenerJobType)
-        .withRetries(1)
-        .updateRetries();
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-    ENGINE.job().ofInstance(processInstanceKey).withType(executionListenerJobType).complete();
-
-    assertThat(
-            RecordingExporter.records()
-                .limitToProcessInstance(processInstanceKey)
-                .processInstanceRecords()
-                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.END_EVENT))
-        .extracting(r -> r.getValue().getElementId())
-        .describedAs(
-            "Expected to successfully evaluate execution listener job type and resolve incident")
-        .contains("end2");
-  }
-
-  @Test
-  public void shouldMigrateJoiningParallelGatewayWithOneSequenceFlowTaken() {
+  public void shouldMigrateJoiningInclusiveGatewayWithOneSequenceFlowTaken() {
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "_v2";
 
@@ -127,24 +42,28 @@ public class MigrateParallelGatewayTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(sourceProcessId)
                     .startEvent()
-                    .parallelGateway("fork")
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task1", b -> b.zeebeJobType("type1"))
                     .sequenceFlowId("flow1")
-                    .parallelGateway("join1")
+                    .inclusiveGateway("join1")
                     .endEvent()
                     .moveToNode("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task2", b -> b.zeebeJobType("type2"))
                     .connectTo("join1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .parallelGateway("fork")
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task1", b -> b.zeebeJobType("type1"))
                     .sequenceFlowId("flow1")
-                    .parallelGateway("join2")
+                    .inclusiveGateway("join2")
                     .endEvent()
                     .moveToNode("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task3", b -> b.zeebeJobType("type3"))
                     .connectTo("join2")
                     .done())
@@ -189,16 +108,16 @@ public class MigrateParallelGatewayTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
                 .withElementId("join2")
                 .getFirst()
                 .getValue())
-        .describedAs("Expected to activate the joining parallel gateway")
+        .describedAs("Expected to activate the joining inclusive gateway")
         .isNotNull();
   }
 
   @Test
-  public void shouldMigrateJoiningParallelGatewayWithMultipleSequenceFlowsTaken() {
+  public void shouldMigrateJoiningInclusiveGatewayWithMultipleSequenceFlowsTaken() {
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "_v2";
 
@@ -208,32 +127,38 @@ public class MigrateParallelGatewayTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(sourceProcessId)
                     .startEvent()
-                    .parallelGateway("fork")
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task1", b -> b.zeebeJobType("type1"))
                     .sequenceFlowId("flow1")
-                    .parallelGateway("join1")
+                    .inclusiveGateway("join1")
                     .endEvent()
                     .moveToNode("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task2", b -> b.zeebeJobType("type2"))
                     .sequenceFlowId("flow2")
                     .connectTo("join1")
                     .moveToNode("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task3", b -> b.zeebeJobType("type3"))
                     .connectTo("join1")
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
-                    .parallelGateway("fork")
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task1", b -> b.zeebeJobType("type1"))
                     .sequenceFlowId("flow1")
-                    .parallelGateway("join2")
+                    .inclusiveGateway("join2")
                     .endEvent()
                     .moveToNode("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task2", b -> b.zeebeJobType("type2"))
                     .sequenceFlowId("flow2")
                     .connectTo("join2")
                     .moveToNode("fork")
+                    .conditionExpression("= true")
                     .serviceTask("task4", b -> b.zeebeJobType("type4"))
                     .connectTo("join2")
                     .done())
@@ -284,16 +209,16 @@ public class MigrateParallelGatewayTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
                 .withElementId("join2")
                 .getFirst()
                 .getValue())
-        .describedAs("Expected to activate the joining parallel gateway")
+        .describedAs("Expected to activate the joining inclusive gateway")
         .isNotNull();
   }
 
   @Test
-  public void shouldMigrateJoiningParallelGatewayInsideSubprocess() {
+  public void shouldMigrateJoiningInclusiveGatewayInsideSubprocess() {
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "_v2";
 
@@ -308,16 +233,19 @@ public class MigrateParallelGatewayTest {
                         s ->
                             s.embeddedSubProcess()
                                 .startEvent()
-                                .parallelGateway("fork")
+                                .inclusiveGateway("fork")
+                                .conditionExpression("= true")
                                 .serviceTask("task1", b -> b.zeebeJobType("type1"))
                                 .sequenceFlowId("flow1")
-                                .parallelGateway("join1")
+                                .inclusiveGateway("join1")
                                 .endEvent()
                                 .moveToNode("fork")
+                                .conditionExpression("= true")
                                 .serviceTask("task2", b -> b.zeebeJobType("type2"))
                                 .sequenceFlowId("flow2")
                                 .connectTo("join1")
                                 .moveToNode("fork")
+                                .conditionExpression("= true")
                                 .serviceTask("task3", b -> b.zeebeJobType("type3"))
                                 .connectTo("join1"))
                     .endEvent()
@@ -330,16 +258,19 @@ public class MigrateParallelGatewayTest {
                         s ->
                             s.embeddedSubProcess()
                                 .startEvent()
-                                .parallelGateway("fork")
+                                .inclusiveGateway("fork")
+                                .conditionExpression("= true")
                                 .serviceTask("task1", b -> b.zeebeJobType("type1"))
                                 .sequenceFlowId("flow1")
-                                .parallelGateway("join2")
+                                .inclusiveGateway("join2")
                                 .endEvent()
                                 .moveToNode("fork")
+                                .conditionExpression("= true")
                                 .serviceTask("task2", b -> b.zeebeJobType("type2"))
                                 .sequenceFlowId("flow2")
                                 .connectTo("join2")
                                 .moveToNode("fork")
+                                .conditionExpression("= true")
                                 .serviceTask("task4", b -> b.zeebeJobType("type4"))
                                 .connectTo("join2"))
                     .endEvent()
@@ -394,11 +325,11 @@ public class MigrateParallelGatewayTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementType(BpmnElementType.INCLUSIVE_GATEWAY)
                 .withElementId("join2")
                 .getFirst()
                 .getValue())
-        .describedAs("Expected to activate the joining parallel gateway")
+        .describedAs("Expected to activate the joining inclusive gateway")
         .isNotNull();
   }
 }
