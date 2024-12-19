@@ -15,4 +15,12 @@ function isValidJSON(value: string) {
   }
 }
 
-export {isValidJSON};
+function parseJSON(value: string) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+export {isValidJSON, parseJSON};
