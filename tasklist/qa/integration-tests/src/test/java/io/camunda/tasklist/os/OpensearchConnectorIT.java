@@ -44,7 +44,7 @@ public class OpensearchConnectorIT {
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =
       new OpensearchContainer<>("opensearchproject/opensearch")
           .withEnv(Map.of())
-          .withExposedPorts(9200, 9205);
+          .withExposedPorts(9200, 9200);
 
   // We can't use field injections from the WireMock or TempDir extensions, as those would run after
   // the DynamicPropertySource method used by SpringBootTest; so we need to manually manage their
