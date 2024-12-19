@@ -17,6 +17,7 @@ package io.camunda.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
@@ -309,6 +310,43 @@ class CompleteJobRestTest extends ClientRestTest {
                             .candidateUsers(null)
                             .candidateGroups(null)
                             .priority(null)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultPartiallySet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            new CompleteJobResult()
+                .correctAssignee("Test")
+                .correctDueDate(null)
+                .correctFollowUpDate("")
+                .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                .correctPriority(80))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(null)
+                            .priority(80)));
 
     assertThat(request).isEqualTo(expectedRequest);
   }

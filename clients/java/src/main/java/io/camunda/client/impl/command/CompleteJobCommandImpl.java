@@ -20,6 +20,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
@@ -109,6 +110,18 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     resultGrpc.setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
     return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
+    return withResult()
+        .correctAssignee(jobResult.getAssignee())
+        .correctDueDate(jobResult.getDueDate())
+        .correctFollowUpDate(jobResult.getFollowUpDate())
+        .correctCandidateGroups(jobResult.getCandidateGroups())
+        .correctCandidateUsers(jobResult.getCandidateUsers())
+        .correctPriority(jobResult.getPriority())
+        .resultDone();
   }
 
   @Override

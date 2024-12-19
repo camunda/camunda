@@ -18,6 +18,7 @@ package io.camunda.client.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.util.ClientTest;
@@ -391,6 +392,53 @@ public final class CompleteJobTest extends ClientTest {
                             .clearDueDate()
                             .clearFollowUpDate()
                             .clearPriority()
+                            .build())
+                    .build())
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultPartiallySet() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(
+            new CompleteJobResult()
+                .correctAssignee("Test")
+                .correctDueDate(null)
+                .correctFollowUpDate("")
+                .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                .correctPriority(80))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setCorrections(
+                        JobResultCorrections.newBuilder()
+                            .setAssignee("Test")
+                            .clearDueDate()
+                            .setFollowUpDate("")
+                            .setCandidateUsers(
+                                StringList.newBuilder()
+                                    .addAllValues(Arrays.asList("User A", "User B"))
+                                    .build())
+                            .clearCandidateGroups()
+                            .setPriority(80)
                             .build())
                     .build())
             .build();

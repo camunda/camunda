@@ -77,6 +77,24 @@ public interface CompleteJobCommandStep1
    */
   CompleteJobCommandStep2 withResult();
 
+  /**
+   * The result of the completed job as determined by the worker.
+   *
+   * <pre>{@code
+   * CompleteJobResult jobResult =
+   *     new CompleteJobResult()
+   *         .correctAssignee("newAssignee")
+   *         .correctPriority(42);
+   * client.newCompleteJobCommand(jobKey)
+   *     .withResult(jobResult)
+   *     .send();
+   * }</pre>
+   *
+   * @param jobResult the result of the job
+   * @return the builder for this command.
+   */
+  CompleteJobCommandStep1 withResult(CompleteJobResult jobResult);
+
   interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
 
     /**
