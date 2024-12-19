@@ -99,34 +99,11 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
-      case UserTaskIntent.ASSIGNED -> {
-        entity.getChangedAttributes().add("assignee");
-        if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
-          entity.setAssignee(null);
-        } else {
-          entity.setAssignee(record.getValue().getAssignee());
-        }
-        updateChangedAttributes(record, entity);
-      }
+      case UserTaskIntent.ASSIGNED -> handleAssignment(record, entity);
       case UserTaskIntent.UPDATED -> updateChangedAttributes(record, entity);
-      case UserTaskIntent.COMPLETED -> {
-        entity
-            .setState(TaskState.COMPLETED)
-            .setCompletionTime(
-                ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-        updateChangedAttributes(record, entity);
-      }
-      case UserTaskIntent.CANCELED ->
-          entity
-              .setState(TaskState.CANCELED)
-              .setCompletionTime(
-                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      case UserTaskIntent.MIGRATED ->
-          entity
-              .setFlowNodeBpmnId(record.getValue().getElementId())
-              .setBpmnProcessId(record.getValue().getBpmnProcessId())
-              .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-              .setState(TaskState.CREATED);
+      case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
+      case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
+      case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
       default -> {}
     }
 
@@ -290,5 +267,40 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   private boolean refersToPreviousVersionRecord(final long key) {
     return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
+  }
+
+  private void handleAssignment(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity.getChangedAttributes().add("assignee");
+    if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
+      entity.setAssignee(null);
+    } else {
+      entity.setAssignee(record.getValue().getAssignee());
+    }
+
+    updateChangedAttributes(record, entity);
+  }
+
+  private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setState(TaskState.COMPLETED)
+        .setCompletionTime(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    updateChangedAttributes(record, entity);
+  }
+
+  private void handleCancellation(
+      final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setState(TaskState.CANCELED)
+        .setCompletionTime(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+  }
+
+  private void handleMigration(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setFlowNodeBpmnId(record.getValue().getElementId())
+        .setBpmnProcessId(record.getValue().getBpmnProcessId())
+        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
+        .setState(TaskState.CREATED);
   }
 }
