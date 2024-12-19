@@ -24,8 +24,12 @@ import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.Test;
@@ -228,6 +232,129 @@ public final class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isTrue();
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultCorrectionSet() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .result()
+        .corrections()
+        .assignee("Test")
+        .dueDate("due date")
+        .followUpDate("follow up date")
+        .candidateUsers(Arrays.asList("User A", "User B"))
+        .candidateGroups(Arrays.asList("Group A", "Group B"))
+        .priority(80)
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setCorrections(
+                        JobResultCorrections.newBuilder()
+                            .setAssignee("Test")
+                            .setDueDate("due date")
+                            .setFollowUpDate("follow up date")
+                            .setCandidateUsers(
+                                StringList.newBuilder()
+                                    .addAllValues(Arrays.asList("User A", "User B"))
+                                    .build())
+                            .setCandidateGroups(
+                                StringList.newBuilder()
+                                    .addAllValues(Arrays.asList("Group A", "Group B"))
+                                    .build())
+                            .setPriority(80)
+                            .build())
+                    .build())
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultCorrectionPartiallySet() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .result()
+        .corrections()
+        .assignee("Test")
+        .dueDate("due date")
+        .followUpDate("")
+        .candidateUsers(Arrays.asList("User A", "User B"))
+        .priority(80)
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setCorrections(
+                        JobResultCorrections.newBuilder()
+                            .setAssignee("Test")
+                            .setDueDate("due date")
+                            .setFollowUpDate("")
+                            .setCandidateUsers(
+                                StringList.newBuilder()
+                                    .addAllValues(Arrays.asList("User A", "User B"))
+                                    .build())
+                            .setPriority(80)
+                            .build())
+                    .build())
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJobWithDefaultResultCorrection() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newCompleteCommand(job).result().corrections().send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setCorrections(JobResultCorrections.newBuilder().build())
+                    .build())
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
 
     rule.verifyDefaultRequestTimeout();
   }

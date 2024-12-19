@@ -17,6 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 public interface CompleteJobCommandStep1
@@ -89,5 +90,74 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command.
      */
     CompleteJobCommandStep2 denied(boolean denied);
+
+    /**
+     * Attributes that were corrected by the worker. The below attributes can be corrected and
+     * additional attributes will be ignored: `assignee` - reset by providing an empty String
+     * `dueDate` - reset by providing an empty String `followUpDate` - reset by providing an empty
+     * String `candidateGroups` - reset by providing an empty list `candidateUsers` - reset by
+     * providing an empty list `priority` - minimum 0, maximum 100, default 50 Omitting any of the
+     * attributes will preserve the persisted attribute's value.
+     *
+     * @return the builder for this command.
+     */
+    CompleteJobCommandStep3 corrections();
+  }
+
+  interface CompleteJobCommandStep3 extends CompleteJobCommandStep2 {
+
+    /**
+     * Correct the assignee of the task.
+     *
+     * @param assignee assignee of the task
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep3 assignee(String assignee);
+
+    /**
+     * Correct the due date of the task.
+     *
+     * @param dueDate due date of the task
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep3 dueDate(String dueDate);
+
+    /**
+     * Correct the follow up date of the task.
+     *
+     * @param followUpDate follow up date of the task
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep3 followUpDate(String followUpDate);
+
+    /**
+     * Correct the candidate users of the task.
+     *
+     * @param candidateUsers candidate users of the task
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep3 candidateUsers(List<String> candidateUsers);
+
+    /**
+     * Correct the candidate groups of the task.
+     *
+     * @param candidateGroups candidate groups of the task
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep3 candidateGroups(List<String> candidateGroups);
+
+    /**
+     * Correct the priority of the task.
+     *
+     * @param priority priority of the task
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep3 priority(int priority);
   }
 }
