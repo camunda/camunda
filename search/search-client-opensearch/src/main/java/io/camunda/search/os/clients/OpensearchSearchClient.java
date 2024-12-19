@@ -171,7 +171,8 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
 
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
-    return client.scroll(r -> r.scrollId(scrollId), documentClass);
+    return client.scroll(
+        r -> r.scrollId(scrollId).scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME)), documentClass);
   }
 
   private void clearScroll(final String scrollId) {
