@@ -7,15 +7,9 @@
  */
 package io.camunda.optimize;
 
-import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
-import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.tomcat.JavaScriptMainLicenseEnricherFilter;
-import io.camunda.optimize.tomcat.MaxRequestSizeFilter;
 import io.camunda.optimize.tomcat.NoCachingFilter;
 import jakarta.servlet.DispatcherType;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -67,29 +61,6 @@ public class FilterBeansConfig {
     registrationBean.setDispatcherTypes(
         DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC);
     registrationBean.setName("javaScriptMainLicenseEnricherFilter");
-
-    return registrationBean;
-  }
-
-  @Bean
-  public FilterRegistrationBean<MaxRequestSizeFilter>
-      variableIngestionRequestLimitFilterRegistrationBean(
-          final ConfigurationService configurationService, final ObjectMapper objectMapper) {
-
-    final MaxRequestSizeFilter variableIngestionRequestLimitFilter =
-        new MaxRequestSizeFilter(
-            () -> objectMapper,
-            () ->
-                configurationService.getVariableIngestionConfiguration().getMaxBatchRequestBytes());
-
-    final FilterRegistrationBean<MaxRequestSizeFilter> registrationBean =
-        new FilterRegistrationBean<>();
-
-    registrationBean.setFilter(variableIngestionRequestLimitFilter);
-    registrationBean.addUrlPatterns(REST_API_PATH + INGESTION_PATH + VARIABLE_SUB_PATH);
-    registrationBean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ASYNC);
-
-    registrationBean.setName("variableIngestionMaxRequestSizeFilter");
 
     return registrationBean;
   }
