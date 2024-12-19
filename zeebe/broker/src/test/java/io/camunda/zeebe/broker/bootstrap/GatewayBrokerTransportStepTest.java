@@ -34,6 +34,7 @@ import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class GatewayBrokerTransportStepTest {
   private static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
@@ -66,7 +67,8 @@ class GatewayBrokerTransportStepTest {
             Collections.emptyList(),
             TEST_SHUTDOWN_TIMEOUT,
             new SecurityConfiguration(),
-            mock(UserServices.class));
+            mock(UserServices.class),
+            mock(PasswordEncoder.class));
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 

@@ -34,6 +34,7 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 final class SecurityTest {
   private SelfSignedCertificate certificate;
@@ -188,6 +189,7 @@ final class SecurityTest {
         brokerClient,
         actorScheduler,
         jobStreamClient.streamer(),
-        mock(UserServices.class));
+        mock(UserServices.class),
+        mock(PasswordEncoder.class));
   }
 }

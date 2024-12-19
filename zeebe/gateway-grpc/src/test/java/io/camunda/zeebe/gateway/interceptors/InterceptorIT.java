@@ -39,6 +39,7 @@ import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 final class InterceptorIT {
 
@@ -92,7 +93,8 @@ final class InterceptorIT {
             brokerClient,
             scheduler,
             jobStreamClient.streamer(),
-            mock(UserServices.class));
+            mock(UserServices.class),
+            mock(PasswordEncoder.class));
 
     cluster.start().join();
     scheduler.start();

@@ -111,6 +111,7 @@ final class PartitionJoinTest {
             atomixCluster,
             brokerClient,
             new SecurityConfiguration(),
+            null,
             null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
