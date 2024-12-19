@@ -6,9 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {UserDto} from 'modules/api/getUser';
-import {mockGetRequest} from './mockRequest';
+const URL_PATTERN = /^.*\/(api|v2).*$/i;
 
-const mockGetUser = () => mockGetRequest<UserDto>('/api/authentications/user');
-
-export {mockGetUser};
+export {URL_PATTERN};

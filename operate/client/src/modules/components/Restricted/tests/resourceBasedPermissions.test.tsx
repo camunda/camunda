@@ -51,7 +51,6 @@ describe('Restricted', () => {
   it('should show restricted content if user has write permissions and no restricted resource based scopes defined', async () => {
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -64,7 +63,7 @@ describe('Restricted', () => {
     await processesStore.fetchProcesses();
 
     const {rerender} = render(
-      <Restricted scopes={['write']}>
+      <Restricted>
         <div>test content</div>
       </Restricted>,
       {wrapper: createWrapper()},
@@ -74,7 +73,6 @@ describe('Restricted', () => {
 
     rerender(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: [],
           permissions: processesStore.getPermissions('demoProcess'),
@@ -87,45 +85,13 @@ describe('Restricted', () => {
     expect(screen.getByText('test content')).toBeInTheDocument();
   });
 
-  it('should hide restricted content if user has resource based permissions but no write permission ', async () => {
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    await processesStore.fetchProcesses();
-
-    render(
-      <Restricted
-        scopes={['write']}
-        resourceBasedRestrictions={{
-          scopes: ['UPDATE_PROCESS_INSTANCE'],
-          permissions: processesStore.getPermissions('demoProcess'),
-        }}
-      >
-        <div>test content</div>
-      </Restricted>,
-      {wrapper: createWrapper()},
-    );
-
-    expect(screen.queryByText('test content')).not.toBeInTheDocument();
-  });
-
-  it('should render restricted content for users with write permissions when resource based permissions are disabled', async () => {
+  it('should render restricted content when resource based permissions are disabled', async () => {
     window.clientConfig = {
       resourcePermissionsEnabled: false,
     };
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['read', 'write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -136,7 +102,6 @@ describe('Restricted', () => {
 
     render(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
           permissions: processesStore.getPermissions('demoProcess'),
@@ -153,7 +118,6 @@ describe('Restricted', () => {
   it('should render restricted content in processes page', async () => {
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['read', 'write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -167,7 +131,6 @@ describe('Restricted', () => {
 
     const {rerender} = render(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['UPDATE_PROCESS_INSTANCE'],
           permissions: processesStore.getPermissions('demoProcess'),
@@ -182,7 +145,6 @@ describe('Restricted', () => {
 
     rerender(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
           permissions: processesStore.getPermissions('demoProcess'),
@@ -196,7 +158,6 @@ describe('Restricted', () => {
 
     rerender(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
           permissions: processesStore.getPermissions(
@@ -212,7 +173,6 @@ describe('Restricted', () => {
 
     rerender(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE_PROCESS_INSTANCE'],
           permissions: processesStore.getPermissions('bigVarProcess'),
@@ -226,7 +186,6 @@ describe('Restricted', () => {
 
     rerender(
       <Restricted
-        scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE_PROCESS_INSTANCE'],
           permissions: processesStore.getPermissions('orderProcess'),
