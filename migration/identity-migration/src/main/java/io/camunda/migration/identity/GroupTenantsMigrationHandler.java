@@ -56,7 +56,7 @@ final class GroupTenantsMigrationHandler implements MigrationHandler {
   }
 
   private MigrationStatusUpdateRequest createGroupTenants(final GroupTenants groupTenants) {
-    final var groupName = groupTenants.groupName();
+    final var groupName = groupTenants.name();
     final var group = groupServices.findGroup(groupName);
     if (group.isEmpty()) {
       LOG.warn("Group {} not found", groupName);
