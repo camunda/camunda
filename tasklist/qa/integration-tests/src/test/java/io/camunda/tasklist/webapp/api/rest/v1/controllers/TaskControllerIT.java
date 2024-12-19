@@ -30,6 +30,7 @@ import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse.DraftSearchVariableValue;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
@@ -61,6 +62,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 public class TaskControllerIT extends TasklistZeebeIntegrationTest {
+
+  static {
+    System.setProperty("camunda.tasklist.database", "opensearch");
+  }
 
   @InjectMocks private IdentityProperties identityProperties;
 
@@ -175,8 +180,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // when
       final var result =
           mockMvcHelper.doRequest(
-              post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                  .param("state", TaskState.CREATED.name()));
+              post(TasklistURIs.TASKS_URL_V1.concat("/search")),
+              new TaskSearchRequest().setState(TaskState.CREATED));
 
       // then
       assertThat(result)
@@ -437,16 +442,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   "var_1",
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("1")
-                      .setPreviewValue("1")),
+                  new DraftSearchVariableValue().setValue("1").setPreviewValue("1")),
               tuple(
                   "var_2",
                   "2",
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("222")
-                      .setPreviewValue("222")));
+                  new DraftSearchVariableValue().setValue("222").setPreviewValue("222")));
     }
 
     @Test
@@ -650,15 +651,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   "128",
                   "128",
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("998")
-                      .setPreviewValue("998")),
+                  new DraftSearchVariableValue().setValue("998").setPreviewValue("998")),
               tuple(
                   "var_long_draft_str",
                   null,
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
+                  new DraftSearchVariableValue()
                       .setValue(null)
                       .setIsValueTruncated(true)
                       .setPreviewValue(longDraftVarValue.substring(0, variableSizeThreshold))),
@@ -673,7 +672,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   null,
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
+                  new DraftSearchVariableValue()
                       .setValue("{\"propA\": 12}")
                       .setPreviewValue("{\"propA\": 12}")));
     }
