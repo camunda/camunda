@@ -373,16 +373,16 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/react@1.71.0":
-  version "1.71.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.71.0.tgz#4e41efec90cd8837c184c8cfc45fc552ecaddea9"
-  integrity sha512-OavbieRyUk11s6g9vClrzVTnWkoRbEcXjtieI7CD0lvHVAEc5hNf1+lKtS27LINBPKchJdi6Ox/p7N9Vc0jh1g==
+"@carbon/react@1.72.0":
+  version "1.72.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.72.0.tgz#ce4fee6e6ba45c6fde4fea4a6b9c382a267adf63"
+  integrity sha512-cQdf7EDeu7E4fTjP/vqfni4buc8V7XHw2YIlGVeRlLXVSc3WdoJgimLYaKUV4o0vvoqQvmiDEKDu0XdT7USJiw==
   dependencies:
     "@babel/runtime" "^7.24.7"
     "@carbon/feature-flags" "^0.24.0"
     "@carbon/icons-react" "^11.53.0"
     "@carbon/layout" "^11.28.0"
-    "@carbon/styles" "^1.70.0"
+    "@carbon/styles" "^1.71.0"
     "@floating-ui/react" "^0.26.0"
     "@ibm/telemetry-js" "^1.5.0"
     classnames "2.5.1"
@@ -391,7 +391,6 @@
     flatpickr "4.6.13"
     invariant "^2.2.3"
     lodash.debounce "^4.0.8"
-    lodash.findlast "^4.5.0"
     lodash.omit "^4.5.0"
     lodash.throttle "^4.1.1"
     prop-types "^15.7.2"
@@ -401,10 +400,10 @@
     use-resize-observer "^6.0.0"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.70.0":
-  version "1.70.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.70.0.tgz#70ae507d804e87740bf8aa1220f6289068ef8523"
-  integrity sha512-iL3dQHufX/2mYhTu7GUbUF3MMn3fua3CaQ4oKSdVGtW2J3+eeZ7m90WUGjgnp/IevVJj+RY06am5k+5l0m2/yg==
+"@carbon/styles@^1.71.0":
+  version "1.71.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.71.0.tgz#de67fc603f290d0e22450f3ff2d8adb08831ebb4"
+  integrity sha512-tkQ/Ub7QYHCyFqXJMCe7+Dbpypx7pCefJCeEEluEqpeVSfLu1qtRMZUftfndvzChIZUXtm+ImpHtRknRnyS3+g==
   dependencies:
     "@carbon/colors" "^11.28.0"
     "@carbon/feature-flags" "^0.24.0"
@@ -4214,11 +4213,6 @@ lodash.debounce@^4.0.8:
   version "4.0.8"
   resolved "https://registry.yarnpkg.com/lodash.debounce/-/lodash.debounce-4.0.8.tgz#82d79bff30a67c4005ffd5e2515300ad9ca4d7af"
   integrity sha512-FT1yDzDYEoYWhnSGnpE/4Kj1fLZkDFyqRb7fNt6FdYOSxlUWAtp42Eh6Wb0rGIv/m9Bgo7x4GhQbm5Ys4SG5ow==
-
-lodash.findlast@^4.5.0:
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/lodash.findlast/-/lodash.findlast-4.6.0.tgz#ea8bb78cf2e7e7804fc8aeb7d1953e07fe31fbc8"
-  integrity sha512-+OGwb1FVKjhc2aIEQ9vKqNDW1a0/HaCLr0iCIK10jfVif3dBE0nhQD0jOZNZLh7zOlmFUTrk+vt85eXoH4vKuA==
 
 lodash.merge@^4.6.2:
   version "4.6.2"
