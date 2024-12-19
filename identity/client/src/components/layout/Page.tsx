@@ -9,7 +9,7 @@
 import { FC, PointerEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
-import { spacing06 } from "@carbon/themes";
+import { spacing06 } from "@carbon/elements";
 import { cssSize } from "src/utility/style";
 import { useNavigate } from "react-router";
 
