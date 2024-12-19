@@ -8,7 +8,9 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.UserSearchClient;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.UserEntity;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authentication;
@@ -27,16 +29,19 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   private final UserSearchClient userSearchClient;
   private final PasswordEncoder passwordEncoder;
+  private final GroupServices groupServices;
 
   public UserServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
       final Authentication authentication,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final GroupServices groupServices) {
     super(brokerClient, securityContextProvider, authentication);
     this.userSearchClient = userSearchClient;
     this.passwordEncoder = passwordEncoder;
+    this.groupServices = groupServices;
   }
 
   @Override
@@ -51,7 +56,12 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   @Override
   public UserServices withAuthentication(final Authentication authentication) {
     return new UserServices(
-        brokerClient, securityContextProvider, userSearchClient, authentication, passwordEncoder);
+        brokerClient,
+        securityContextProvider,
+        userSearchClient,
+        authentication,
+        passwordEncoder,
+        groupServices);
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {
@@ -77,6 +87,18 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   public CompletableFuture<UserRecord> deleteUser(final long userKey) {
     return sendBrokerRequest(new BrokerUserDeleteRequest().setUserKey(userKey).setUsername(""));
+  }
+
+  public SearchQueryResult<UserEntity> getUsersByGroupKey(final long groupKey) {
+    final GroupEntity group = groupServices.getGroup(groupKey);
+
+    // search for users with an ID contained in the group
+    return search(
+        UserQuery.of(
+            queryBuilder ->
+                queryBuilder
+                    .filter(filterBuilder -> filterBuilder.groupKeys(group.assignedMemberKeys()))
+                    .page(SearchQueryPage.of(b -> b.size(10_000)))));
   }
 
   public record UserDTO(

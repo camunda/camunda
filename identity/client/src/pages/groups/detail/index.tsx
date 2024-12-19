@@ -27,16 +27,15 @@ import DeleteModal from "src/pages/groups/modals/DeleteModal";
 const Details: FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslate();
-  const { groupKey = "", tab = "members" } = useParams<{
-    groupKey: string;
-    tab: string;
+  const { id = "" } = useParams<{
+    id: string;
   }>();
 
   const {
     data: group,
     loading,
     reload,
-  } = useApi(getGroupDetails, { groupKey });
+  } = useApi(getGroupDetails, { groupKey: id });
   const [renameGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
@@ -86,14 +85,9 @@ const Details: FC = () => {
                   label: t("Members"),
                   content: <Members groupId={group?.groupKey} />,
                 },
-                {
-                  key: "roles",
-                  label: t("Roles"),
-                  content: t("Roles"),
-                },
               ]}
-              selectedTabKey={tab}
-              path={`../${groupKey}`}
+              selectedTabKey="members"
+              path={`../${id}`}
             />
           </Section>
         )}
