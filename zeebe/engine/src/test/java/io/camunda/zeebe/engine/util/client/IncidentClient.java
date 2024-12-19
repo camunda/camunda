@@ -115,5 +115,26 @@ public final class IncidentClient {
 
       return expectation.apply(position);
     }
+
+    public Record<IncidentRecordValue> resolve(final long userKey) {
+      if (incidentKey == DEFAULT_KEY) {
+        incidentKey =
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getKey();
+      }
+
+      final long position =
+          writer.writeCommandOnPartition(
+              Protocol.decodePartitionId(incidentKey),
+              incidentKey,
+              IncidentIntent.RESOLVE,
+              incidentRecord,
+              userKey,
+              TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      return expectation.apply(position);
+    }
   }
 }

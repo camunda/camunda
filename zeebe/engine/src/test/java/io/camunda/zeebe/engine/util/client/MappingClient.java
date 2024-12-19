@@ -71,6 +71,11 @@ public class MappingClient {
       return expectation.apply(position);
     }
 
+    public Record<MappingRecordValue> create(final long userKey) {
+      final long position = writer.writeCommand(MappingIntent.CREATE, mappingRecord, userKey);
+      return expectation.apply(position);
+    }
+
     public MappingCreateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;

@@ -24,4 +24,8 @@ public class ResourceDeletionRecordStream
       final Stream<Record<ResourceDeletionRecordValue>> wrappedStream) {
     return new ResourceDeletionRecordStream(wrappedStream);
   }
+
+  public ResourceDeletionRecordStream withResourceKey(final long resourceKey) {
+    return valueFilter(record -> record.getResourceKey() == resourceKey);
+  }
 }
