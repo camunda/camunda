@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.UserServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
@@ -38,6 +39,7 @@ public class GroupControllerTest extends RestControllerTest {
   private static final String GROUP_BASE_URL = "/v2/groups";
 
   @MockBean private GroupServices groupServices;
+  @MockBean private UserServices userServices;
 
   @BeforeEach
   void setup() {

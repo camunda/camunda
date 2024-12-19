@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.EMAIL;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.KEY;
@@ -28,7 +29,7 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
   public SearchQuery toSearchQuery(final UserFilter filter) {
 
     return and(
-        filter.key() == null ? null : term(KEY, filter.key()),
+        filter.keys() == null ? null : longTerms(KEY, filter.keys()),
         filter.username() == null ? null : term(USERNAME, filter.username()),
         filter.email() == null ? null : term(EMAIL, filter.email()),
         filter.name() == null ? null : term(NAME, filter.name()));

@@ -169,8 +169,10 @@ public class CamundaServicesConfiguration {
   public GroupServices groupServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final GroupSearchClient groupSearchClient) {
-    return new GroupServices(brokerClient, securityContextProvider, groupSearchClient, null);
+      final GroupSearchClient groupSearchClient,
+      final UserSearchClient userSearchClient) {
+    return new GroupServices(
+        brokerClient, securityContextProvider, groupSearchClient, userSearchClient, null);
   }
 
   @Bean

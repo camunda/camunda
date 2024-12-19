@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
@@ -21,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +39,7 @@ import org.springframework.http.MediaType;
 @WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
 
-  static final String EXPECTED_SEARCH_RESPONSE =
+  static final String EXPECTED_GROUP_SEARCH_RESPONSE =
       """
       {
         "items":[
@@ -64,14 +66,40 @@ public class GroupQueryControllerTest extends RestControllerTest {
         }
       }
       """;
+  static final String EXPECTED_USER_SEARCH_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "key":222,
+            "username":"user1",
+            "name":"user1",
+            "email":""
+          },
+          {
+            "key":333,
+            "username":"user2",
+            "name":"user2",
+            "email":""
+          }
+        ],
+        "page":{
+          "totalItems":2,
+          "firstSortValues":[],
+          "lastSortValues":[]
+        }
+      }
+      """;
   private static final String GROUP_BASE_URL = "/v2/groups";
   private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
 
   @MockBean private GroupServices groupServices;
+  @MockBean private UserServices userServices;
 
   @BeforeEach
   void setup() {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
   }
 
   @Test
@@ -236,7 +264,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_GROUP_SEARCH_RESPONSE);
 
     verify(groupServices)
         .search(
@@ -244,6 +272,54 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 .sort(GroupSort.of(builder -> builder.name().asc()))
                 .page(SearchQueryPage.of(builder -> builder.from(20).size(2)))
                 .build());
+  }
+
+  @Test
+  void shouldReturnUsersAssignedToGroup() {
+    // given
+    final var groupKey = 111L;
+    final var groupName = "groupName";
+    final var userKey1 = 222L;
+    final var userKey2 = 333L;
+    final var groupUser1 = new GroupEntity(groupKey, groupName, Set.of(userKey1));
+    final var groupUser2 = new GroupEntity(groupKey, groupName, Set.of(userKey2));
+    when(groupServices.search(any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(2)
+                .items(List.of(groupUser1, groupUser2))
+                .build());
+    when(groupServices.getUsersByGroupKey(any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<UserEntity>()
+                .total(2)
+                .items(
+                    List.of(
+                        new UserEntity(userKey1, "user1", "user1", "", ""),
+                        new UserEntity(userKey2, "user2", "user2", "", "")))
+                .build());
+
+    // when
+    webClient
+        .post()
+        .uri("%s/%s/users/search".formatted(GROUP_BASE_URL, groupKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "username", "order":  "asc"}],
+              "page":  {"from":  20, "limit":  2}
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_USER_SEARCH_RESPONSE);
+
+    verify(groupServices).getUserKeysByGroupKey(groupKey);
+    verify(groupServices).getUsersByGroupKey(any());
   }
 
   @ParameterizedTest
