@@ -18,6 +18,7 @@ public class InitializationConfiguration {
   public static final String DEFAULT_USER_EMAIL = "demo@demo.com";
 
   private List<ConfiguredUser> users = new ArrayList<>();
+  private List<ConfiguredMapping> mappings = new ArrayList<>();
 
   public List<ConfiguredUser> getUsers() {
     return users;
@@ -25,5 +26,13 @@ public class InitializationConfiguration {
 
   public void setUsers(final List<ConfiguredUser> users) {
     this.users = users;
+  }
+
+  public List<ConfiguredMapping> getMappings() {
+    return mappings;
+  }
+
+  public void setMappings(final List<ConfiguredMapping> mappings) {
+    this.mappings = mappings;
   }
 }

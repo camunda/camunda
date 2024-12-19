@@ -15,17 +15,17 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
 import io.camunda.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.ModifyProcessInstanceResponseImpl;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceActivateInstruction;
 import io.camunda.client.protocol.rest.ModifyProcessInstanceTerminateInstruction;
@@ -70,7 +70,7 @@ public final class ModifyProcessInstanceCommandImpl
       final GatewayStub asyncStub,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration config) {
+      final CamundaClientConfiguration config) {
     requestBuilder.setProcessInstanceKey(processInstanceKey);
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
@@ -288,7 +288,7 @@ public final class ModifyProcessInstanceCommandImpl
   }
 
   @Override
-  public ZeebeFuture<ModifyProcessInstanceResponse> send() {
+  public CamundaFuture<ModifyProcessInstanceResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -296,8 +296,8 @@ public final class ModifyProcessInstanceCommandImpl
     }
   }
 
-  private ZeebeFuture<ModifyProcessInstanceResponse> sendRestRequest() {
-    final HttpZeebeFuture<ModifyProcessInstanceResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<ModifyProcessInstanceResponse> sendRestRequest() {
+    final HttpCamundaFuture<ModifyProcessInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/" + processInstanceKey + "/modification",
         jsonMapper.toJson(httpRequestObject),
@@ -306,7 +306,7 @@ public final class ModifyProcessInstanceCommandImpl
     return result;
   }
 
-  private ZeebeFuture<ModifyProcessInstanceResponse> sendGrpcRequest() {
+  private CamundaFuture<ModifyProcessInstanceResponse> sendGrpcRequest() {
     final ModifyProcessInstanceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<

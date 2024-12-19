@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CancelProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -54,7 +54,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
       final long processInstanceKey,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
@@ -79,7 +79,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   }
 
   @Override
-  public ZeebeFuture<CancelProcessInstanceResponse> send() {
+  public CamundaFuture<CancelProcessInstanceResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -87,8 +87,8 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     }
   }
 
-  private ZeebeFuture<CancelProcessInstanceResponse> sendRestRequest() {
-    final HttpZeebeFuture<CancelProcessInstanceResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<CancelProcessInstanceResponse> sendRestRequest() {
+    final HttpCamundaFuture<CancelProcessInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/" + processInstanceKey + "/cancellation",
         jsonMapper.toJson(httpRequestObject),
@@ -97,7 +97,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     return result;
   }
 
-  public ZeebeFuture<CancelProcessInstanceResponse> sendGrpcRequest() {
+  public CamundaFuture<CancelProcessInstanceResponse> sendGrpcRequest() {
     final CancelProcessInstanceRequest request = builder.build();
 
     final RetriableClientFutureImpl<

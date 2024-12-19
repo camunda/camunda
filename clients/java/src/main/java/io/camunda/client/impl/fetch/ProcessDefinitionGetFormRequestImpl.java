@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.search.response.Form;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.response.FormImpl;
 import io.camunda.client.protocol.rest.FormItem;
 import java.time.Duration;
@@ -47,8 +47,8 @@ public class ProcessDefinitionGetFormRequestImpl implements ProcessDefinitionGet
   }
 
   @Override
-  public ZeebeFuture<Form> send() {
-    final HttpZeebeFuture<Form> result = new HttpZeebeFuture<>();
+  public CamundaFuture<Form> send() {
+    final HttpCamundaFuture<Form> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/process-definitions/%d/form", processDefinitionKey),
         httpRequestConfig.build(),

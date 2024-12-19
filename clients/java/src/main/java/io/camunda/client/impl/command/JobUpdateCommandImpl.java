@@ -15,14 +15,14 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1.UpdateJobCommandStep2;
 import io.camunda.client.api.response.UpdateJobResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
 import java.time.Duration;
@@ -53,8 +53,8 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   }
 
   @Override
-  public ZeebeFuture<UpdateJobResponse> send() {
-    final HttpZeebeFuture<UpdateJobResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<UpdateJobResponse> send() {
+    final HttpCamundaFuture<UpdateJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
     return result;

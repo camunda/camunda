@@ -67,14 +67,14 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual4 = resultListeners.get(0);
     assertEquals("22", actual4.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual4.getListenerType());
-    assertEquals(ListenerEventType.UNSPECIFIED, actual4.getEvent());
+    assertEquals(ListenerEventType.COMPLETING, actual4.getEvent());
     assertEquals(ListenerState.FAILED, actual4.getState());
     assertNull(actual4.getTime());
 
     final ListenerDto actual3 = resultListeners.get(1);
     assertEquals("21", actual3.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual3.getListenerType());
-    assertEquals(ListenerEventType.UNSPECIFIED, actual3.getEvent());
+    assertEquals(ListenerEventType.UNKNOWN, actual3.getEvent());
     assertEquals(ListenerState.ACTIVE, actual3.getState());
     assertNull(actual3.getTime());
 
@@ -96,7 +96,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual2 = resultListeners.get(4);
     assertEquals("31", actual2.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual2.getListenerType());
-    assertEquals(ListenerEventType.UNSPECIFIED, actual2.getEvent());
+    assertEquals(ListenerEventType.ASSIGNING, actual2.getEvent());
     assertEquals(ListenerState.UNKNOWN, actual2.getState());
     assertNotNull(actual2.getTime());
   }
@@ -116,7 +116,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
     final ListenerDto actual0 = resultListeners.get(0);
     assertEquals("21", actual0.getListenerKey());
     assertEquals(ListenerType.TASK_LISTENER, actual0.getListenerType());
-    assertEquals(ListenerEventType.UNSPECIFIED, actual0.getEvent());
+    assertEquals(ListenerEventType.UNKNOWN, actual0.getEvent());
     assertEquals(ListenerState.ACTIVE, actual0.getState());
     assertNull(actual0.getTime());
 
@@ -267,7 +267,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setFlowNodeInstanceId(1L)
             .setState("CREATED")
             .setJobKind("TASK_LISTENER")
-            .setListenerEventType("UPDATE");
+            .setListenerEventType("UPDATING");
 
     final JobEntity e4 =
         createJob()
@@ -277,7 +277,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setFlowNodeInstanceId(2L)
             .setState("FAILED")
             .setJobKind("TASK_LISTENER")
-            .setListenerEventType("COMPLETE")
+            .setListenerEventType("COMPLETING")
             .setErrorCode("0")
             .setErrorMessage("Internal Error");
 
@@ -290,7 +290,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setState("invalid")
             .setEndTime(OffsetDateTime.now().minusMinutes(5))
             .setJobKind("TASK_LISTENER")
-            .setListenerEventType("CREATE");
+            .setListenerEventType("ASSIGNING");
 
     // Execution Listener of other process instance that should *not* get returned
     final JobEntity e6 =
@@ -301,8 +301,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
             .setFlowNodeId("other_ID")
             .setState("COMPLETE")
             .setEndTime(OffsetDateTime.now().minusMinutes(4))
-            .setJobKind("EXECUTION_LISTENER")
-            .setListenerEventType("START");
+            .setJobKind("EXECUTION_LISTENER");
 
     // non Listener jobs to check that they do *not* get returned
     final JobEntity e7 =

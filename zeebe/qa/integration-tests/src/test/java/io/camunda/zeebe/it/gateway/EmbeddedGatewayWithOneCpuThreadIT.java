@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -25,7 +25,7 @@ public final class EmbeddedGatewayWithOneCpuThreadIT {
       new EmbeddedBrokerRule(brokerCfg -> brokerCfg.getThreads().setCpuThreadCount(1));
 
   private Broker broker;
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @Before
   public void setup() {
@@ -33,12 +33,12 @@ public final class EmbeddedGatewayWithOneCpuThreadIT {
     client = createClient();
   }
 
-  private ZeebeClient createClient() {
+  private CamundaClient createClient() {
     final var config = broker.getConfig();
     final var gtwConfig = config.getGateway();
     final var port = gtwConfig.getNetwork().getPort();
 
-    return ZeebeClient.newClientBuilder()
+    return CamundaClient.newClientBuilder()
         .usePlaintext()
         .gatewayAddress("localhost:" + port)
         .build();

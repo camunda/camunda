@@ -33,7 +33,7 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -61,8 +61,8 @@ class ProcessInternalControllerTest {
   @Mock private FormStore formStore;
   @Mock private ProcessService processService;
   @Mock private TasklistProperties tasklistProperties;
-  @Mock private IdentityAuthorizationService identityAuthorizationService;
   @Mock private TenantService tenantService;
+  @Mock private TasklistPermissionServices permissionServices;
 
   @InjectMocks private ProcessInternalController instance;
 
@@ -219,11 +219,11 @@ class ProcessInternalControllerTest {
               .setVersion(1)
               .setStartEventFormId("task")
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
-      when(identityAuthorizationService.getProcessDefinitionsFromAuthorization())
+      when(permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission())
           .thenReturn(new ArrayList<>());
       when(processStore.getProcesses(
               query,
-              identityAuthorizationService.getProcessDefinitionsFromAuthorization(),
+              permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission(),
               null,
               null))
           .thenReturn(List.of(providedProcessEntity));

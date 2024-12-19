@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -32,7 +32,7 @@ public final class CreateLargeDeploymentTest {
 
   private static final int MAX_MSG_SIZE_MB = 1;
 
-  ZeebeClient client;
+  CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe =
@@ -78,7 +78,7 @@ public final class CreateLargeDeploymentTest {
     assertThat(deployedValidProcess.getProcesses()).hasSize(1);
   }
 
-  private DeployResourceCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
+  private DeployResourceCommandStep1 getCommand(final CamundaClient client, final boolean useRest) {
     final DeployResourceCommandStep1 deployResourceCommand = client.newDeployResourceCommand();
     return useRest ? deployResourceCommand.useRest() : deployResourceCommand.useGrpc();
   }

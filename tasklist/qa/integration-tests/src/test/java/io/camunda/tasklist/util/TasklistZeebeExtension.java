@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
@@ -46,7 +46,7 @@ public abstract class TasklistZeebeExtension
 
   protected boolean failed = false;
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @Autowired(required = false)
   private Environment environment;
@@ -110,7 +110,7 @@ public abstract class TasklistZeebeExtension
     final Integer zeebeRestPort = zeebeContainer.getMappedPort(8080);
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .restAddress(
                 getURIFromString(
@@ -174,7 +174,7 @@ public abstract class TasklistZeebeExtension
     return zeebeContainer;
   }
 
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 

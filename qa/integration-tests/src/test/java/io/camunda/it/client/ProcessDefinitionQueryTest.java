@@ -10,7 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
@@ -36,7 +36,7 @@ public class ProcessDefinitionQueryTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessDefinitionQueryTest.class);
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
-  private static ZeebeClient zeebeClient;
+  private static CamundaClient camundaClient;
 
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testStandaloneCamunda;
@@ -48,7 +48,7 @@ public class ProcessDefinitionQueryTest {
   @BeforeAll
   public static void beforeAll() throws InterruptedException {
 
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // Deploy form
     deployResource(String.format("form/%s", "form.form"));
@@ -75,11 +75,11 @@ public class ProcessDefinitionQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = zeebeClient.newProcessDefinitionQuery().send().join();
+    final var resultAll = camundaClient.newProcessDefinitionQuery().send().join();
     final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
 
     final var resultSearchFrom =
-        zeebeClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -91,7 +91,7 @@ public class ProcessDefinitionQueryTest {
   void shouldPaginateWithSortingByProcessDefinitionKey() {
     // given
     final var resultAll =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionKey().desc())
             .send()
@@ -99,14 +99,14 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var firstPage =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionKey().desc())
             .page(p -> p.limit(1))
             .send()
             .join();
     final var secondPage =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionKey().desc())
             .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
@@ -126,7 +126,7 @@ public class ProcessDefinitionQueryTest {
   void shouldPaginateWithSortingByProcessDefinitionId() {
     // given
     final var resultAll =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .send()
@@ -134,14 +134,14 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var firstPage =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(2))
             .send()
             .join();
     final var secondPage =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
@@ -163,14 +163,14 @@ public class ProcessDefinitionQueryTest {
   void shouldGetPreviousPageWithSortingByProcessDefinitionId() {
     // given
     final var firstPage =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(2))
             .send()
             .join();
     final var secondPage =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
@@ -178,7 +178,7 @@ public class ProcessDefinitionQueryTest {
             .join();
     // when
     final var firstPageAgain =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(2).searchBefore(secondPage.page().firstSortValues()))
@@ -199,7 +199,7 @@ public class ProcessDefinitionQueryTest {
         assertThrowsExactly(
             ProblemException.class,
             () ->
-                zeebeClient
+                camundaClient
                     .newProcessDefinitionGetRequest(invalidProcessDefinitionKey)
                     .send()
                     .join());
@@ -224,7 +224,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+        camundaClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
 
     // then
     assertThat(result).isNotNull();
@@ -244,7 +244,7 @@ public class ProcessDefinitionQueryTest {
         DEPLOYED_PROCESSES.stream().map(Process::getBpmnProcessId).toList();
 
     // when
-    final var result = zeebeClient.newProcessDefinitionQuery().send().join();
+    final var result = camundaClient.newProcessDefinitionQuery().send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(expectedProcessDefinitionIds.size());
@@ -259,7 +259,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .filter(f -> f.processDefinitionId(processDefinitionId))
             .send()
@@ -277,7 +277,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessDefinitionQuery().filter(f -> f.name(name)).send().join();
+        camundaClient.newProcessDefinitionQuery().filter(f -> f.name(name)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -291,7 +291,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessDefinitionQuery().filter(f -> f.version(version)).send().join();
+        camundaClient.newProcessDefinitionQuery().filter(f -> f.version(version)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(8);
@@ -305,7 +305,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .filter(f -> f.resourceName(resourceName))
             .send()
@@ -323,7 +323,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessDefinitionQuery().filter(f -> f.tenantId(tenantId)).send().join();
+        camundaClient.newProcessDefinitionQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(8);
@@ -337,7 +337,11 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessDefinitionQuery().filter(f -> f.versionTag(versionTag)).send().join();
+        camundaClient
+            .newProcessDefinitionQuery()
+            .filter(f -> f.versionTag(versionTag))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(8);
@@ -351,7 +355,11 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient.newProcessDefinitionQuery().filter(f -> f.versionTag(versionTag)).send().join();
+        camundaClient
+            .newProcessDefinitionQuery()
+            .filter(f -> f.versionTag(versionTag))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -369,7 +377,7 @@ public class ProcessDefinitionQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .send()
@@ -385,13 +393,13 @@ public class ProcessDefinitionQueryTest {
   void shouldSortProcessDefinitionsByKey() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionKey().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionKey().desc())
             .send()
@@ -413,13 +421,13 @@ public class ProcessDefinitionQueryTest {
   void shouldSortProcessDefinitionsByProcessDefinitionId() {
     // when
     final var resultAsc =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().asc())
             .send()
             .join();
     final var resultDesc =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .sort(s -> s.processDefinitionId().desc())
             .send()
@@ -441,9 +449,9 @@ public class ProcessDefinitionQueryTest {
   void shouldSortProcessDefinitionsByName() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.name().asc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.name().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.name().desc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.name().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(ProcessDefinition::getName).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -460,9 +468,9 @@ public class ProcessDefinitionQueryTest {
   void shouldSortProcessDefinitionsByProcessResourceName() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.resourceName().asc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.resourceName().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.resourceName().desc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.resourceName().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(ProcessDefinition::getResourceName).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -479,9 +487,9 @@ public class ProcessDefinitionQueryTest {
   void shouldSortProcessDefinitionsByVersion() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.version().asc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.version().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.version().desc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.version().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(ProcessDefinition::getVersion).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -498,9 +506,9 @@ public class ProcessDefinitionQueryTest {
   void shouldSortProcessDefinitionsByTenantId() {
     // when
     final var resultAsc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.tenantId().asc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.tenantId().asc()).send().join();
     final var resultDesc =
-        zeebeClient.newProcessDefinitionQuery().sort(s -> s.tenantId().desc()).send().join();
+        camundaClient.newProcessDefinitionQuery().sort(s -> s.tenantId().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(ProcessDefinition::getTenantId).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -515,12 +523,13 @@ public class ProcessDefinitionQueryTest {
 
   @Test
   public void shouldValidatePagination() {
-    final var result = zeebeClient.newProcessDefinitionQuery().page(p -> p.limit(2)).send().join();
+    final var result =
+        camundaClient.newProcessDefinitionQuery().page(p -> p.limit(2)).send().join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getProcessDefinitionKey();
     // apply searchAfter
     final var resultAfter =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
@@ -530,7 +539,7 @@ public class ProcessDefinitionQueryTest {
     final var keyAfter = resultAfter.items().getFirst().getProcessDefinitionKey();
     // apply searchBefore
     final var resultBefore =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
@@ -542,7 +551,7 @@ public class ProcessDefinitionQueryTest {
   @Test
   public void shouldValidateGetProcessForm() {
     final var resultProcess =
-        zeebeClient
+        camundaClient
             .newProcessDefinitionQuery()
             .filter(f -> f.name("Process With Form"))
             .send()
@@ -552,14 +561,14 @@ public class ProcessDefinitionQueryTest {
         resultProcess.items().stream().findFirst().get().getProcessDefinitionKey();
 
     final var resultForm =
-        zeebeClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+        camundaClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
 
     assertThat(resultForm.getFormId()).isEqualTo("test");
     assertThat(resultForm.getVersion()).isEqualTo(2L);
   }
 
   private static DeploymentEvent deployResource(final String resourceName) {
-    return zeebeClient
+    return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .send()
@@ -572,11 +581,11 @@ public class ProcessDefinitionQueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newProcessDefinitionQuery().send().join();
+              final var result = camundaClient.newProcessDefinitionQuery().send().join();
               assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
 
               final var processDefinitionKey =
-                  zeebeClient
+                  camundaClient
                       .newProcessDefinitionQuery()
                       .filter(f -> f.name("Process With Form"))
                       .send()
@@ -586,7 +595,7 @@ public class ProcessDefinitionQueryTest {
                       .getProcessDefinitionKey();
 
               final var resultForm =
-                  zeebeClient
+                  camundaClient
                       .newProcessDefinitionGetFormRequest(processDefinitionKey)
                       .send()
                       .join();

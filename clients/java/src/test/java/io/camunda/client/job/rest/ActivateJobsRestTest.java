@@ -23,8 +23,8 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsComman
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivateJobsResponse;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeObjectMapper;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.protocol.rest.ActivatedJob;
 import io.camunda.client.protocol.rest.JobActivationRequest;
@@ -46,14 +46,14 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     // given
     final ActivatedJob activatedJob1 =
         new ActivatedJob()
-            .jobKey(12L)
+            .jobKey("12")
             .type("foo")
-            .processInstanceKey(123L)
+            .processInstanceKey("123")
             .processDefinitionId("test1")
             .processDefinitionVersion(2)
-            .processDefinitionKey(23L)
+            .processDefinitionKey("23")
             .elementId("foo")
-            .elementInstanceKey(23213L)
+            .elementInstanceKey("23213")
             .customHeaders(singletonMap("version", "1"))
             .worker("worker1")
             .retries(34)
@@ -63,14 +63,14 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     final ActivatedJob activatedJob2 =
         new ActivatedJob()
-            .jobKey(42L)
+            .jobKey("42")
             .type("foo")
-            .processInstanceKey(333L)
+            .processInstanceKey("333")
             .processDefinitionId("test3")
             .processDefinitionVersion(23)
-            .processDefinitionKey(11L)
+            .processDefinitionKey("11")
             .elementId("bar")
-            .elementInstanceKey(111L)
+            .elementInstanceKey("111")
             .customHeaders(singletonMap("key", "value"))
             .worker("worker1")
             .retries(334)
@@ -97,15 +97,18 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(response.getJobs()).hasSize(2);
 
     io.camunda.client.api.response.ActivatedJob job = response.getJobs().get(0);
-    assertThat(job.getKey()).isEqualTo(activatedJob1.getJobKey());
+    assertThat(String.valueOf(job.getKey())).isEqualTo(activatedJob1.getJobKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob1.getElementId());
-    assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob1.getElementInstanceKey());
+    assertThat(String.valueOf(job.getElementInstanceKey()))
+        .isEqualTo(activatedJob1.getElementInstanceKey());
     assertThat(job.getProcessDefinitionVersion())
         .isEqualTo(activatedJob1.getProcessDefinitionVersion());
-    assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob1.getProcessDefinitionKey());
-    assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob1.getProcessInstanceKey());
+    assertThat(String.valueOf(job.getProcessDefinitionKey()))
+        .isEqualTo(activatedJob1.getProcessDefinitionKey());
+    assertThat(String.valueOf(job.getProcessInstanceKey()))
+        .isEqualTo(activatedJob1.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob1.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
@@ -114,15 +117,18 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
 
     job = response.getJobs().get(1);
-    assertThat(job.getKey()).isEqualTo(activatedJob2.getJobKey());
+    assertThat(String.valueOf(job.getKey())).isEqualTo(activatedJob2.getJobKey());
     assertThat(job.getType()).isEqualTo(activatedJob2.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob2.getElementId());
-    assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob2.getElementInstanceKey());
+    assertThat(String.valueOf(job.getElementInstanceKey()))
+        .isEqualTo(activatedJob2.getElementInstanceKey());
     assertThat(job.getProcessDefinitionVersion())
         .isEqualTo(activatedJob2.getProcessDefinitionVersion());
-    assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob2.getProcessDefinitionKey());
-    assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob2.getProcessInstanceKey());
+    assertThat(String.valueOf(job.getProcessDefinitionKey()))
+        .isEqualTo(activatedJob2.getProcessDefinitionKey());
+    assertThat(String.valueOf(job.getProcessInstanceKey()))
+        .isEqualTo(activatedJob2.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob2.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
@@ -251,7 +257,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     variables.put("b", 2);
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl(
-            new ZeebeObjectMapper(),
+            new CamundaObjectMapper(),
             new ActivatedJob().customHeaders(new HashMap<>()).variables(variables));
 
     // when
@@ -419,7 +425,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     // then
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
-    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
+    assertThat(request.getWorker()).isEqualTo(CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
   }
 
   private static final class VariablesPojo {

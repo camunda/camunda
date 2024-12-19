@@ -10,7 +10,7 @@ package io.camunda.operate.data;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.property.OperateProperties;
@@ -35,8 +35,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
   @Autowired
-  @Qualifier("zeebeClient")
-  protected ZeebeClient client;
+  @Qualifier("camundaClient")
+  protected CamundaClient client;
 
   @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;

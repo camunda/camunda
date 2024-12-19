@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.response.RemoveUserFromTenantResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,8 +52,8 @@ public final class RemoveUserFromTenantCommandImpl implements RemoveUserFromTena
   }
 
   @Override
-  public ZeebeFuture<RemoveUserFromTenantResponse> send() {
-    final HttpZeebeFuture<RemoveUserFromTenantResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<RemoveUserFromTenantResponse> send() {
+    final HttpCamundaFuture<RemoveUserFromTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%d/users/%d", tenantKey, userKey);
     httpClient.delete(endpoint, null, httpRequestConfig.build(), result);
     return result;

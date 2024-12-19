@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingToTenantResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,8 +52,8 @@ public final class AssignMappingToTenantCommandImpl implements AssignMappingToTe
   }
 
   @Override
-  public ZeebeFuture<AssignMappingToTenantResponse> send() {
-    final HttpZeebeFuture<AssignMappingToTenantResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<AssignMappingToTenantResponse> send() {
+    final HttpCamundaFuture<AssignMappingToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%d/mapping-rules/%d", tenantKey, mappingKey);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;

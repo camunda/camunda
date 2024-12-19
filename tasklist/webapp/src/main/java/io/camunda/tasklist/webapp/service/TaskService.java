@@ -13,10 +13,6 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
@@ -57,10 +53,6 @@ public class TaskService {
 
   @Autowired private UserReader userReader;
 
-  @Autowired
-  @Qualifier("tasklistZeebeClient")
-  private ZeebeClient zeebeClient;
-
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
   @Autowired private FormStore formStore;
@@ -73,6 +65,7 @@ public class TaskService {
   @Autowired private TaskMetricsStore taskMetricsStore;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
+  @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
 
   public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
@@ -176,19 +169,7 @@ public class TaskService {
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
     final String taskAssignee = determineTaskAssignee(assignee);
-
-    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        final AssignUserTaskResponse assigneeResponse =
-            zeebeClient
-                .newUserTaskAssignCommand(Long.parseLong(taskId))
-                .assignee(taskAssignee)
-                .send()
-                .join();
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
-    }
+    tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     updateClaimedMetric(claimedTask);
@@ -214,24 +195,7 @@ public class TaskService {
 
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
-
-      try {
-        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-          // complete
-          CompleteJobCommandStep1 completeJobCommand =
-              zeebeClient.newCompleteCommand(Long.parseLong(taskId));
-          completeJobCommand = completeJobCommand.variables(variablesMap);
-          completeJobCommand.send().join();
-        } else {
-          zeebeClient
-              .newUserTaskCompleteCommand(Long.parseLong(taskId))
-              .variables(variablesMap)
-              .send()
-              .join();
-        }
-      } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+      tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
       // persist completion and variables
       final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
@@ -287,13 +251,11 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
-    if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
-      try {
-        zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
-      } catch (final ClientException exception) {
-        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-        throw new TasklistRuntimeException(exception.getMessage());
-      }
+    try {
+      tasklistServicesAdapter.unassignUserTask(taskEntity);
+    } catch (final Exception e) {
+      taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+      throw e;
     }
     return TaskDTO.createFrom(taskEntity, objectMapper);
   }

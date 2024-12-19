@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -29,7 +29,7 @@ final class ClientCancelPendingCommandTest {
   @TestZeebe(initMethod = "initTestStandaloneBroker")
   private static TestStandaloneBroker zeebe;
 
-  @AutoCloseResource private final ZeebeClient client = zeebe.newClientBuilder().build();
+  @AutoCloseResource private final CamundaClient client = zeebe.newClientBuilder().build();
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {

@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.ProblemException;
@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 public final class CancelProcessInstanceTest {
 
   private static final String PROCESS_ID = "process";
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -126,7 +126,7 @@ public final class CancelProcessInstanceTest {
   }
 
   private CancelProcessInstanceCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long processIntanceKey) {
+      final CamundaClient client, final boolean useRest, final long processIntanceKey) {
     final CancelProcessInstanceCommandStep1 cancelCommand =
         client.newCancelInstanceCommand(processIntanceKey);
     return useRest ? cancelCommand.useRest() : cancelCommand.useGrpc();

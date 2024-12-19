@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
@@ -52,7 +52,7 @@ public class UserTaskListenersTest {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   private ZeebeResourcesHelper resourcesHelper;
 
@@ -252,7 +252,7 @@ public class UserTaskListenersTest {
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
 
     // when: invoke complete user task command
-    final ZeebeFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+    final CamundaFuture<CompleteUserTaskResponse> completeUserTaskFuture =
         client.newUserTaskCompleteCommand(userTaskKey).send();
 
     // TL job should be successfully completed with the result "denied" set correctly

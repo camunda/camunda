@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.search.response.DecisionDefinition;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.client.protocol.rest.DecisionDefinitionItem;
 import java.time.Duration;
@@ -46,8 +46,8 @@ public class DecisionDefinitionGetRequestImpl implements DecisionDefinitionGetRe
   }
 
   @Override
-  public ZeebeFuture<DecisionDefinition> send() {
-    final HttpZeebeFuture<DecisionDefinition> result = new HttpZeebeFuture<>();
+  public CamundaFuture<DecisionDefinition> send() {
+    final HttpCamundaFuture<DecisionDefinition> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/decision-definitions/%d", decisionDefinitionKey),
         httpRequestConfig.build(),

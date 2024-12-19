@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Zeebe API
+ * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Camunda API
  * conventions, e.g. errors are always {@link io.camunda.client.protocol.rest.ProblemDetail},
  * content type is always JSON, etc.
  */
@@ -107,7 +107,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     get(path, Collections.emptyMap(), requestConfig, responseType, transformer, result);
   }
 
@@ -117,7 +117,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
   }
@@ -126,7 +126,7 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     post(path, body, requestConfig, Void.class, r -> null, result);
   }
 
@@ -136,7 +136,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     post(path, Collections.emptyMap(), body, requestConfig, responseType, transformer, result);
   }
 
@@ -147,7 +147,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
 
     sendRequest(
         Method.POST, path, queryParams, body, requestConfig, responseType, transformer, result);
@@ -159,7 +159,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     postMultipart(
         path,
         Collections.emptyMap(),
@@ -177,7 +177,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
 
     final HttpEntity entity = multipartBuilder.build();
     sendRequest(
@@ -188,7 +188,7 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.PUT,
         path,
@@ -204,7 +204,7 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     patch(path, body, requestConfig, Void.class, r -> null, result);
   }
 
@@ -214,7 +214,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.PATCH,
         path,
@@ -227,7 +227,7 @@ public final class HttpClient implements AutoCloseable {
   }
 
   public <RespT> void delete(
-      final String path, final RequestConfig requestConfig, final HttpZeebeFuture<RespT> result) {
+      final String path, final RequestConfig requestConfig, final HttpCamundaFuture<RespT> result) {
     delete(path, Collections.emptyMap(), requestConfig, result);
   }
 
@@ -235,7 +235,7 @@ public final class HttpClient implements AutoCloseable {
       final String path,
       final Map<String, String> queryParams,
       final RequestConfig requestConfig,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
     sendRequest(
         Method.DELETE, path, queryParams, null, requestConfig, Void.class, r -> null, result);
   }
@@ -248,7 +248,7 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpZeebeFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result) {
 
     final URI target = buildRequestURI(path);
 

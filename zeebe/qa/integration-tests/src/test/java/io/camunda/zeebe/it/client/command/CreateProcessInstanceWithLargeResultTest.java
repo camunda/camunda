@@ -33,8 +33,7 @@ public final class CreateProcessInstanceWithLargeResultTest {
             cfg.getGateway().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));
           });
   private static final GrpcClientRule CLIENT_RULE =
-      new GrpcClientRule(
-          BROKER_RULE, zeebeClientBuilder -> zeebeClientBuilder.maxMessageSize(21 * ONE_MB));
+      new GrpcClientRule(BROKER_RULE, clientBuilder -> clientBuilder.maxMessageSize(21 * ONE_MB));
 
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);

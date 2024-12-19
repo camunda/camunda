@@ -22,8 +22,8 @@ import static org.mockito.Mockito.times;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeClientImpl;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.util.RecordingGatewayService;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -46,7 +46,7 @@ public final class CredentialsTest {
 
   private final RecordingInterceptor recordingInterceptor = new RecordingInterceptor();
   private final RecordingGatewayService gatewayService = new RecordingGatewayService();
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @Before
   public void setUp() {
@@ -69,7 +69,7 @@ public final class CredentialsTest {
   public void shouldAddTokenToCallHeaders() {
     // given
     final String bearerToken = "Bearer someToken";
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     builder
         .usePlaintext()
@@ -85,7 +85,7 @@ public final class CredentialsTest {
                 return false;
               }
             });
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
     client.newTopologyRequest().send().join();
@@ -97,7 +97,7 @@ public final class CredentialsTest {
   @Test
   public void shouldRetryRequest() {
     // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     recordingInterceptor.setInterceptAction(
         (call, headers) -> {
@@ -121,7 +121,7 @@ public final class CredentialsTest {
               }
             });
     builder.usePlaintext().credentialsProvider(provider);
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
     client.newTopologyRequest().send().join();
@@ -135,7 +135,7 @@ public final class CredentialsTest {
   public void shouldRetryMoreThanOnce() {
     // given
     final int retries = 2;
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     recordingInterceptor.setInterceptAction((call, headers) -> call.close(Status.UNKNOWN, headers));
 
@@ -156,7 +156,7 @@ public final class CredentialsTest {
               }
             });
     builder.usePlaintext().credentialsProvider(provider);
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when/then
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())
@@ -169,9 +169,9 @@ public final class CredentialsTest {
   @Test
   public void shouldNotChangeHeadersWithNoProvider() {
     // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.usePlaintext();
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
     client.newTopologyRequest().send().join();
@@ -183,7 +183,7 @@ public final class CredentialsTest {
   @Test
   public void shouldCredentialsProviderRunFromGRPCThreadPool() {
     // given
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     final AtomicReference<String> credentialsProviderThreadReference = new AtomicReference<>();
     builder
@@ -200,7 +200,7 @@ public final class CredentialsTest {
                 return false;
               }
             });
-    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+    client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
     client.newTopologyRequest().send().join();

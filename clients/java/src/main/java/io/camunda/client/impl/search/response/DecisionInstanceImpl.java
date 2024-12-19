@@ -24,6 +24,7 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.response.EvaluatedDecisionInputImpl;
 import io.camunda.client.impl.response.MatchedDecisionRuleImpl;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResponse;
 import io.camunda.client.protocol.rest.DecisionInstanceItem;
@@ -54,14 +55,14 @@ public class DecisionInstanceImpl implements DecisionInstance {
   public DecisionInstanceImpl(final DecisionInstanceItem item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
-        item.getDecisionInstanceKey(),
+        Long.parseLong(item.getDecisionInstanceKey()),
         item.getDecisionInstanceId(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),
-        item.getProcessDefinitionKey(),
-        item.getProcessInstanceKey(),
-        item.getDecisionDefinitionKey(),
+        Long.parseLong(item.getProcessDefinitionKey()),
+        Long.parseLong(item.getProcessInstanceKey()),
+        Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
@@ -75,14 +76,14 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final DecisionInstanceGetQueryResponse item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
-        item.getDecisionInstanceKey(),
+        Long.parseLong(item.getDecisionInstanceKey()),
         item.getDecisionInstanceId(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),
-        item.getProcessDefinitionKey(),
-        item.getProcessInstanceKey(),
-        item.getDecisionDefinitionKey(),
+        Long.parseLong(item.getProcessDefinitionKey()),
+        Long.parseLong(item.getProcessInstanceKey()),
+        Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
         item.getDecisionDefinitionName(),
         item.getDecisionDefinitionVersion(),
@@ -144,9 +145,12 @@ public class DecisionInstanceImpl implements DecisionInstance {
       case UNSPECIFIED:
         return DecisionDefinitionType.UNSPECIFIED;
       case UNKNOWN:
+        return DecisionDefinitionType.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
       default:
-        return DecisionDefinitionType.UNKNOWN;
+        EnumUtil.logUnknownEnumValue(
+            decisionDefinitionType, "decision definition type", DecisionDefinitionType.values());
+        return DecisionDefinitionType.UNKNOWN_ENUM_VALUE;
     }
   }
 
@@ -163,9 +167,12 @@ public class DecisionInstanceImpl implements DecisionInstance {
       case UNSPECIFIED:
         return DecisionInstanceState.UNSPECIFIED;
       case UNKNOWN:
+        return DecisionInstanceState.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
       default:
-        return DecisionInstanceState.UNKNOWN;
+        EnumUtil.logUnknownEnumValue(
+            decisionInstanceState, "decision instance state", DecisionInstanceState.values());
+        return DecisionInstanceState.UNKNOWN_ENUM_VALUE;
     }
   }
 

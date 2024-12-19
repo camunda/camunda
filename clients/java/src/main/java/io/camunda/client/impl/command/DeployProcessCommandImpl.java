@@ -19,7 +19,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import com.google.protobuf.ByteString;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
@@ -152,7 +152,7 @@ public final class DeployProcessCommandImpl
   }
 
   @Override
-  public ZeebeFuture<DeploymentEvent> send() {
+  public CamundaFuture<DeploymentEvent> send() {
     final DeployProcessRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<DeploymentEvent, DeployProcessResponse> future =

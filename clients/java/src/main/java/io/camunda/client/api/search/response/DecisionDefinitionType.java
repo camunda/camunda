@@ -20,4 +20,5 @@ public enum DecisionDefinitionType {
   LITERAL_EXPRESSION,
   UNSPECIFIED,
   UNKNOWN,
+  UNKNOWN_ENUM_VALUE;
 }

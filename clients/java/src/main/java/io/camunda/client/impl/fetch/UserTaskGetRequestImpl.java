@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.UserTaskItem;
 import java.time.Duration;
@@ -45,8 +45,8 @@ public class UserTaskGetRequestImpl implements UserTaskGetRequest {
   }
 
   @Override
-  public ZeebeFuture<UserTask> send() {
-    final HttpZeebeFuture<UserTask> result = new HttpZeebeFuture<>();
+  public CamundaFuture<UserTask> send() {
+    final HttpCamundaFuture<UserTask> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/user-tasks/%d", userTaskKey),
         httpRequestConfig.build(),

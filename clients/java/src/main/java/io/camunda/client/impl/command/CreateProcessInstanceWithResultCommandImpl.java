@@ -16,14 +16,14 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CreateProcessInstanceWithResultResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -85,7 +85,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
   }
 
   @Override
-  public ZeebeFuture<ProcessInstanceResult> send() {
+  public CamundaFuture<ProcessInstanceResult> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -93,8 +93,8 @@ public final class CreateProcessInstanceWithResultCommandImpl
     }
   }
 
-  private ZeebeFuture<ProcessInstanceResult> sendRestRequest() {
-    final HttpZeebeFuture<ProcessInstanceResult> result = new HttpZeebeFuture<>();
+  private CamundaFuture<ProcessInstanceResult> sendRestRequest() {
+    final HttpCamundaFuture<ProcessInstanceResult> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
@@ -105,7 +105,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
     return result;
   }
 
-  private ZeebeFuture<ProcessInstanceResult> sendGrpcRequest() {
+  private CamundaFuture<ProcessInstanceResult> sendGrpcRequest() {
     final CreateProcessInstanceWithResultRequest request =
         grpcRequestObject
             .setRequest(createProcessInstanceRequestBuilder)

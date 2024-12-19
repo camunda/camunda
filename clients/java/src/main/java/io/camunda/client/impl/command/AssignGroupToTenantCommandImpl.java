@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.response.AssignGroupToTenantResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -46,8 +46,8 @@ public final class AssignGroupToTenantCommandImpl implements AssignGroupToTenant
   }
 
   @Override
-  public ZeebeFuture<AssignGroupToTenantResponse> send() {
-    final HttpZeebeFuture<AssignGroupToTenantResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<AssignGroupToTenantResponse> send() {
+    final HttpCamundaFuture<AssignGroupToTenantResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
         "/tenants/" + tenantKey + "/groups/" + groupKey,
         null, // No request body needed

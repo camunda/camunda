@@ -46,9 +46,9 @@ public final class CorrelateMessageResponseImpl implements CorrelateMessageRespo
   }
 
   public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResponse response) {
-    key = response.getMessageKey();
+    key = Long.parseLong(response.getMessageKey());
     tenantId = response.getTenantId();
-    processInstanceKey = response.getProcessInstanceKey();
+    processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
     return this;
   }
 }

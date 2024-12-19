@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -46,7 +46,7 @@ final class BannedInstanceIT {
   private final BanningActuator actuator = BanningActuator.of(ZEEBE);
   private final ActorClockActuator clock = ActorClockActuator.of(ZEEBE);
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   @BeforeEach
   void beforeEach() {

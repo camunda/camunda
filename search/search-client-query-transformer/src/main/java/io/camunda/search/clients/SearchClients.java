@@ -22,9 +22,11 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -39,11 +41,13 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 
 public class SearchClients
@@ -62,7 +66,9 @@ public class SearchClients
         UserSearchClient,
         VariableSearchClient,
         MappingSearchClient,
-        GroupSearchClient {
+        GroupSearchClient,
+        UsageMetricsSearchClient,
+        CloseableSilently {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
@@ -224,5 +230,48 @@ public class SearchClients
   private SearchClientBasedQueryExecutor getSearchExecutor() {
     return new SearchClientBasedQueryExecutor(
         searchClient, transformers, new DocumentAuthorizationQueryStrategy(this), securityContext);
+  }
+
+  @Override
+  public void close() {
+    searchClient.close();
+  }
+
+  @Override
+  public Long countAssignees(final UsageMetricsQuery query) {
+    return distinctCountUsageMetricsFor("task_completed_by_assignee", query);
+  }
+
+  @Override
+  public Long countProcessInstances(final UsageMetricsQuery query) {
+    return distinctCountUsageMetricsFor("EVENT_PROCESS_INSTANCE_STARTED", query);
+  }
+
+  @Override
+  public Long countDecisionInstances(final UsageMetricsQuery query) {
+    return distinctCountUsageMetricsFor("EVENT_DECISION_INSTANCE_EVALUATED", query);
+  }
+
+  /*
+   * The distinct count is implemented here by using Java Stream API until aggregations are in place.
+   */
+  private Long distinctCountUsageMetricsFor(final String event, final UsageMetricsQuery query) {
+    final var filter =
+        new UsageMetricsQuery.Builder()
+            .filter(
+                new UsageMetricsFilter.Builder()
+                    .startTime(query.filter().startTime())
+                    .endTime(query.filter().endTime())
+                    .events(event)
+                    .build())
+            .build();
+    final List<UsageMetricsEntity> metrics =
+        new SearchClientBasedQueryExecutor(
+                searchClient,
+                transformers,
+                new DocumentAuthorizationQueryStrategy(this),
+                securityContext)
+            .findAll(filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+    return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
   }
 }

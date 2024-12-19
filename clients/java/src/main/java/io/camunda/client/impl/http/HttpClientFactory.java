@@ -16,8 +16,8 @@
 package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.ZeebeClientConfiguration;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
@@ -70,9 +70,9 @@ public class HttpClientFactory {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-  private final ZeebeClientConfiguration config;
+  private final CamundaClientConfiguration config;
 
-  public HttpClientFactory(final ZeebeClientConfiguration config) {
+  public HttpClientFactory(final CamundaClientConfiguration config) {
     this.config = config;
   }
 
@@ -187,7 +187,7 @@ public class HttpClientFactory {
   /**
    * Creates a {@link KeyStore} from a provided PEM certificate file. The file is expected to
    * contain a PEM encoded certificate chain. This is done to maintain backwards compatibility with
-   * how TLS configuration is done in the Zeebe Java client.
+   * how TLS configuration is done in the Camunda Java client.
    *
    * <p>When loading the certificate chain into the key store, the certificate entry alias is set to
    * the index of the certificate in the chain. This technique is also used by Netty for the gRPC

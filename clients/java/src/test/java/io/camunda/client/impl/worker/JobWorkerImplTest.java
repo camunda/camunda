@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.worker;
 
-import static io.camunda.client.impl.ZeebeClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeClientImpl;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentRule;
 import io.camunda.client.impl.util.ExecutorResource;
@@ -72,7 +72,7 @@ public final class JobWorkerImplTest {
   @Rule public final EnvironmentRule environmentRule = new EnvironmentRule();
 
   private MockedGateway gateway;
-  private ZeebeClient client;
+  private CamundaClient client;
   private ManagedChannel channel;
 
   @Before
@@ -93,7 +93,8 @@ public final class JobWorkerImplTest {
         grpcCleanup.register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
     client =
-        new ZeebeClientImpl(new ZeebeClientBuilderImpl(), channel, GatewayGrpc.newStub(channel));
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(), channel, GatewayGrpc.newStub(channel));
   }
 
   @Test
@@ -182,13 +183,13 @@ public final class JobWorkerImplTest {
     // given
     Environment.system().put(CAMUNDA_CLIENT_WORKER_STREAM_ENABLED, "false");
 
-    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.applyEnvironmentVariableOverrides(true).build();
-    final ZeebeClient zeebeClient =
-        new ZeebeClientImpl(builder, channel, GatewayGrpc.newStub(channel));
+    final CamundaClient camundaClient =
+        new CamundaClientImpl(builder, channel, GatewayGrpc.newStub(channel));
 
     final JobWorkerBuilderStep3 jobWorkerBuilderStep3 =
-        zeebeClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
+        camundaClient.newWorker().jobType("test").handler(NOOP_JOB_HANDLER).streamEnabled(true);
 
     // when
     try (final JobWorker ignored = jobWorkerBuilderStep3.open()) {
@@ -207,9 +208,9 @@ public final class JobWorkerImplTest {
     final ArrayList<io.camunda.client.api.response.ActivatedJob> jobs = new ArrayList<>();
     final CountDownLatch latch = new CountDownLatch(1);
 
-    try (final ZeebeClient client =
-        new ZeebeClientImpl(
-            new ZeebeClientBuilderImpl(),
+    try (final CamundaClient client =
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
             new ExecutorResource(executor, false))) {
@@ -247,9 +248,9 @@ public final class JobWorkerImplTest {
     // given
     final ScheduledExecutorService closedExecutor = Executors.newSingleThreadScheduledExecutor();
 
-    try (final ZeebeClient client =
-        new ZeebeClientImpl(
-            new ZeebeClientBuilderImpl(),
+    try (final CamundaClient client =
+        new CamundaClientImpl(
+            new CamundaClientBuilderImpl(),
             channel,
             GatewayGrpc.newStub(channel),
             new ExecutorResource(closedExecutor, false))) {

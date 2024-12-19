@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -114,9 +114,10 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    final var exception =
-        assertThrowsExactly(NotFoundException.class, () -> services.getByKey(key));
-    assertThat(exception.getMessage()).isEqualTo("Tenant with key 100 not found");
+
+    assertThatCode(() -> services.getByKey(key))
+        .isInstanceOf(NotFoundException.class)
+        .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found");
   }
 
   @Test

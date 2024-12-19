@@ -17,12 +17,12 @@ package io.camunda.client.impl.fetch;
 
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.client.ZeebeClientConfiguration;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
       final HttpClient httpClient,
       final String documentId,
       final String storeId,
-      final ZeebeClientConfiguration configuration) {
+      final CamundaClientConfiguration configuration) {
     ensureNotNull("documentId", documentId);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -57,8 +57,8 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
   }
 
   @Override
-  public ZeebeFuture<InputStream> send() {
-    final HttpZeebeFuture<InputStream> result = new HttpZeebeFuture<>();
+  public CamundaFuture<InputStream> send() {
+    final HttpCamundaFuture<InputStream> result = new HttpCamundaFuture<>();
     final Map<String, String> queryParams = new HashMap<>();
     if (storeId != null) {
       queryParams.put("storeId", storeId);
