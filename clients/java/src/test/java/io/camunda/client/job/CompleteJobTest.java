@@ -237,6 +237,31 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldCompleteJobWithResultDone() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult()
+        .deny(false)
+        .resultDone()
+        .variable("we_can", "still_set_vars")
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
+    assertThat(request.getResult().getDenied()).isFalse();
+    assertThat(request.getVariables()).isEqualTo("{\"we_can\":\"still_set_vars\"}");
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
   public void shouldCompleteJobWithResultCorrectionSet() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);

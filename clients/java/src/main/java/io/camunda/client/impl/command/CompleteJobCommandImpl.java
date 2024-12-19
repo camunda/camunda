@@ -193,6 +193,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     return this;
   }
 
+  @Override
+  public CompleteJobCommandStep1 resultDone() {
+    return this;
+  }
+
   private void onResultChange() {
     // grpcRequestObjectBuilder.setResult() makes immutable copy of passed value so we need to
     // refresh it everytime when we need to set another jobResult property

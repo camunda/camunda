@@ -144,5 +144,14 @@ public interface CompleteJobCommandStep1
      *     it to the broker.
      */
     CompleteJobCommandStep2 correctPriority(Integer priority);
+
+    /**
+     * Indicates that you are done setting up the result of the job. Allows to call methods
+     * unrelated to the job result like {@link #variables(Object)}. This method can be called
+     * optionally, it has no effect on the command.
+     *
+     * @return the builder for this command.
+     */
+    CompleteJobCommandStep1 resultDone();
   }
 }

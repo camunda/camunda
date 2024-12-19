@@ -28,6 +28,7 @@ import io.camunda.client.util.StringUtil;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -161,6 +162,31 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getDenied()).isEqualTo(denied);
+  }
+
+  @Test
+  void shouldCompleteJobWithResultDone() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .deny(false)
+        .resultDone()
+        .variable("we_can", "still_set_vars")
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(false);
+
+    final Map<String, String> expectedVariables = new HashMap<>();
+    expectedVariables.put("we_can", "still_set_vars");
+    assertThat(request.getVariables()).isEqualTo(expectedVariables);
   }
 
   @Test
