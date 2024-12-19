@@ -14,8 +14,8 @@ import static io.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUN
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import io.camunda.optimize.service.BackupService;
 import io.camunda.optimize.service.LocalizationService;
+import io.camunda.optimize.service.OptimizeBackupService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -46,19 +46,20 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @RestControllerEndpoint(id = "backups")
 public class BackupRestService {
 
-  private final BackupService backupService;
+  private final OptimizeBackupService optimizeBackupService;
   private final LocalizationService localizationService;
 
   public BackupRestService(
-      final BackupService backupService, final LocalizationService localizationService) {
-    this.backupService = backupService;
+      final OptimizeBackupService optimizeBackupService,
+      final LocalizationService localizationService) {
+    this.optimizeBackupService = optimizeBackupService;
     this.localizationService = localizationService;
   }
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public ResponseEntity<String> takeBackup(
       final @RequestBody @Valid BackupRequestDto backupRequestDto) {
-    backupService.triggerBackup(backupRequestDto.getBackupId());
+    optimizeBackupService.triggerBackup(backupRequestDto.getBackupId());
     return new ResponseEntity<>(
         String.format(
             "{\"message\" : "
@@ -69,18 +70,18 @@ public class BackupRestService {
 
   @GetMapping(value = "/{backupId}")
   public BackupInfoDto info(final @PathVariable("backupId") @Nullable Long backupId) {
-    return backupService.getSingleBackupInfo(backupId);
+    return optimizeBackupService.getSingleBackupInfo(backupId);
   }
 
   @GetMapping
   public List<BackupInfoDto> info() {
-    return backupService.getAllBackupInfo();
+    return optimizeBackupService.getAllBackupInfo();
   }
 
   @DeleteMapping(value = "/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(final @PathVariable("backupId") Long backupId) {
-    backupService.deleteBackup(backupId);
+    optimizeBackupService.deleteBackup(backupId);
   }
 
   @ExceptionHandler(OptimizeRuntimeException.class)

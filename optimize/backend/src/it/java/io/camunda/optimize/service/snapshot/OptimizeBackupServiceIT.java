@@ -13,14 +13,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
-import io.camunda.optimize.service.BackupService;
+import io.camunda.optimize.service.OptimizeBackupService;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-public class BackupServiceIT extends AbstractCCSMIT {
+public class OptimizeBackupServiceIT extends AbstractCCSMIT {
   private static final Long VALID_BACKUP_ID = 123L;
   private static final String VALID_REPOSITORY_NAME = "my_backup_1";
 
@@ -49,7 +49,9 @@ public class BackupServiceIT extends AbstractCCSMIT {
 
     // when
     final BackupInfoDto backupInfoDto =
-        embeddedOptimizeExtension.getBean(BackupService.class).getSingleBackupInfo(VALID_BACKUP_ID);
+        embeddedOptimizeExtension
+            .getBean(OptimizeBackupService.class)
+            .getSingleBackupInfo(VALID_BACKUP_ID);
 
     // then
     assertThat(backupInfoDto.getState()).isEqualTo(INCOMPLETE);
