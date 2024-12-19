@@ -63,10 +63,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
-  static {
-    System.setProperty("camunda.tasklist.database", "opensearch");
-  }
-
   @InjectMocks private IdentityProperties identityProperties;
 
   @MockBean private IdentityAuthorizationService identityAuthorizationService;
