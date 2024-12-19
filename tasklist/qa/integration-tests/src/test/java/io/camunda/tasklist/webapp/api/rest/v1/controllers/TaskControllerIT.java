@@ -75,6 +75,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   @BeforeEach
   public void setUp() {
+    setShouldWaitForImporters(false);
     mockMvcHelper =
         new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
   }
