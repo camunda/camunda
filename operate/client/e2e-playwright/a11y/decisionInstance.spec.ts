@@ -21,6 +21,7 @@ import {
 } from '../mocks/decisionInstance.mocks';
 import {Paths} from 'modules/Routes';
 import {validateResults} from './validateResults';
+import {URL_PATTERN} from '../constants';
 
 test.describe('decision detail', () => {
   for (const theme of ['light', 'dark']) {
@@ -32,7 +33,7 @@ test.describe('decision detail', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_PATTERN,
         mockResponses({
           decisionInstanceDetail: mockEvaluatedDecisionInstance,
           drdData: mockEvaluatedDrdData,
@@ -59,7 +60,7 @@ test.describe('decision detail', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_PATTERN,
         mockResponses({
           decisionInstanceDetail: mockFailedDecisionInstance,
           drdData: mockFailedDrdData,
@@ -86,7 +87,7 @@ test.describe('decision detail', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_PATTERN,
         mockResponses({
           decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
           drdData: mockEvaluatedDrdDataWithoutPanels,
