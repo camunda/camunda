@@ -9,14 +9,13 @@ package io.camunda.tasklist.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
@@ -41,25 +40,19 @@ public class ProcessService {
 
   @Autowired private TenantService tenantService;
 
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
-
   @Autowired private UserReader userReader;
 
   @Autowired private ProcessStore processStore;
 
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
 
+  @Autowired private TasklistPermissionServices permissionServices;
+
   public ProcessEntity getProcessByProcessDefinitionKeyAndAccessRestriction(
       final String processDefinitionKey) {
-
-    final ProcessEntity processEntity =
-        processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
-
-    final List<String> processReadAuthorizations =
-        identityAuthorizationService.getProcessReadFromAuthorization();
-
-    if (processReadAuthorizations.contains(processEntity.getBpmnProcessId())
-        || processReadAuthorizations.contains(IdentityProperties.ALL_RESOURCES)) {
+    final var processEntity = processStore.getProcessByProcessDefinitionKey(processDefinitionKey);
+    final var bpmnProcessId = processEntity.getBpmnProcessId();
+    if (permissionServices.hasPermissionToReadProcessDefinition(bpmnProcessId)) {
       return processEntity;
     } else {
       throw new ForbiddenActionException("Resource cannot be accessed");

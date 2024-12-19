@@ -11,8 +11,4 @@ import java.util.List;
 
 public interface IdentityAuthorizationService {
   List<String> getUserGroups();
-
-  List<String> getProcessReadFromAuthorization();
-
-  List<String> getProcessDefinitionsFromAuthorization();
 }
