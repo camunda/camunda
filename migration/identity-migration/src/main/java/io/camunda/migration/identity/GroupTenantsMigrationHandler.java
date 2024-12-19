@@ -12,11 +12,11 @@ import static io.camunda.migration.identity.midentity.ManagementIdentityTransfor
 import io.camunda.migration.identity.dto.GroupTenants;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.NoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -59,13 +59,16 @@ final class GroupTenantsMigrationHandler implements MigrationHandler {
 
   private MigrationStatusUpdateRequest createGroupTenants(final GroupTenants groupTenants) {
     final var groupName = groupTenants.name();
-    final var group = groupServices.findGroup(groupName);
-    if (group.isEmpty()) {
-      LOG.warn("Group {} not found", groupName);
-      return toMigrationStatusUpdateRequest(
-          groupTenants, new NoSuchElementException("Group %s not found".formatted(groupName)));
+    final long groupKey;
+    try {
+      groupKey =
+          groupServices
+              .findGroup(groupName)
+              .map(GroupEntity::groupKey)
+              .orElseGet(() -> groupServices.createGroup(groupName).join().getGroupKey());
+    } catch (final Exception e) {
+      return toMigrationStatusUpdateRequest(groupTenants, e);
     }
-    final var groupKey = group.get().groupKey();
     for (final var tenant : groupTenants.tenants()) {
       final var tenantId = tenant.tenantId();
       LOG.trace("Assigning group {} to tenant {}", groupName, tenantId);
