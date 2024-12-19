@@ -16,6 +16,7 @@ import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.optimize.OptimizeModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -46,7 +47,8 @@ public class StandaloneCamunda {
                 IdentityModuleConfiguration.class,
                 WebappsModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
-                GatewayModuleConfiguration.class)
+                GatewayModuleConfiguration.class,
+                OptimizeModuleConfiguration.class)
             .properties(defaultActiveProfiles)
             .initializers(
                 new DefaultAuthenticationInitializer(),

@@ -45,8 +45,7 @@ public class StandaloneOptimize {
                 CommonsModuleConfiguration.class,
                 OptimizeModuleConfiguration.class,
                 WebappsModuleConfiguration.class)
-            .profiles(
-                Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId(), Profile.AUTH_BASIC.getId())
+            .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .initializers(
                 new DefaultAuthenticationInitializer(), new WebappsConfigurationInitializer())
