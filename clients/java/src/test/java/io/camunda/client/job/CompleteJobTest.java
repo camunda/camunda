@@ -332,6 +332,50 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldCompleteJobWithResultCorrectionUsingNullExplicitly() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult()
+        .correctAssignee(null)
+        .correctDueDate(null)
+        .correctFollowUpDate(null)
+        .correctCandidateGroups(null)
+        .correctCandidateUsers(null)
+        .correctPriority(null)
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setCorrections(
+                        JobResultCorrections.newBuilder()
+                            .clearAssignee()
+                            .clearCandidateGroups()
+                            .clearCandidateUsers()
+                            .clearDueDate()
+                            .clearFollowUpDate()
+                            .clearPriority()
+                            .build())
+                    .build())
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
   public void shouldCompleteJobWithDefaultResultCorrection() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);

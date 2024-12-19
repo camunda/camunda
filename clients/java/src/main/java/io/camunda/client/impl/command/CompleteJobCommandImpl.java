@@ -122,7 +122,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 correctAssignee(final String assignee) {
     correctionsRest.setAssignee(assignee);
-    correctionsGrpc.setAssignee(assignee);
+    if (assignee == null) {
+      correctionsGrpc.clearAssignee();
+    } else {
+      correctionsGrpc.setAssignee(assignee);
+    }
     onCorrectionsChange();
     return this;
   }
@@ -130,7 +134,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 correctDueDate(final String dueDate) {
     correctionsRest.setDueDate(dueDate);
-    correctionsGrpc.setDueDate(dueDate);
+    if (dueDate == null) {
+      correctionsGrpc.clearDueDate();
+    } else {
+      correctionsGrpc.setDueDate(dueDate);
+    }
     onCorrectionsChange();
     return this;
   }
@@ -138,7 +146,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 correctFollowUpDate(final String followUpDate) {
     correctionsRest.setFollowUpDate(followUpDate);
-    correctionsGrpc.setFollowUpDate(followUpDate);
+    if (followUpDate == null) {
+      correctionsGrpc.clearFollowUpDate();
+    } else {
+      correctionsGrpc.setFollowUpDate(followUpDate);
+    }
     onCorrectionsChange();
     return this;
   }
@@ -146,7 +158,12 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 correctCandidateUsers(final List<String> candidateUsers) {
     correctionsRest.setCandidateUsers(candidateUsers);
-    correctionsGrpc.setCandidateUsers(StringList.newBuilder().addAllValues(candidateUsers).build());
+    if (candidateUsers == null) {
+      correctionsGrpc.clearCandidateUsers();
+    } else {
+      correctionsGrpc.setCandidateUsers(
+          StringList.newBuilder().addAllValues(candidateUsers).build());
+    }
     onCorrectionsChange();
     return this;
   }
@@ -154,16 +171,24 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep2 correctCandidateGroups(final List<String> candidateGroups) {
     correctionsRest.setCandidateGroups(candidateGroups);
-    correctionsGrpc.setCandidateGroups(
-        StringList.newBuilder().addAllValues(candidateGroups).build());
+    if (candidateGroups == null) {
+      correctionsGrpc.clearCandidateGroups();
+    } else {
+      correctionsGrpc.setCandidateGroups(
+          StringList.newBuilder().addAllValues(candidateGroups).build());
+    }
     onCorrectionsChange();
     return this;
   }
 
   @Override
-  public CompleteJobCommandStep2 correctPriority(final int priority) {
+  public CompleteJobCommandStep2 correctPriority(final Integer priority) {
     correctionsRest.setPriority(priority);
-    correctionsGrpc.setPriority(priority);
+    if (priority == null) {
+      correctionsGrpc.clearPriority();
+    } else {
+      correctionsGrpc.setPriority(priority);
+    }
     onCorrectionsChange();
     return this;
   }

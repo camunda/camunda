@@ -143,6 +143,6 @@ public interface CompleteJobCommandStep1
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    CompleteJobCommandStep2 correctPriority(int priority);
+    CompleteJobCommandStep2 correctPriority(Integer priority);
   }
 }

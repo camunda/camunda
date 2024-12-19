@@ -251,6 +251,43 @@ class CompleteJobRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldCompleteWithResultCorrectionsUsingNullExplicitly() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .correctAssignee(null)
+        .correctDueDate(null)
+        .correctFollowUpDate(null)
+        .correctCandidateGroups(null)
+        .correctCandidateUsers(null)
+        .correctPriority(null)
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new JobResultCorrections()
+                            .assignee(null)
+                            .dueDate(null)
+                            .followUpDate(null)
+                            .candidateUsers(null)
+                            .candidateGroups(null)
+                            .priority(null)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
   void shouldCompleteWithDefaultResultCorrections() {
     // given
     final long jobKey = 12;
