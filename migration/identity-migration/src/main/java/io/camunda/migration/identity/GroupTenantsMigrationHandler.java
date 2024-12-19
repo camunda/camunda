@@ -12,6 +12,7 @@ import static io.camunda.migration.identity.midentity.ManagementIdentityTransfor
 import io.camunda.migration.identity.dto.GroupTenants;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -29,12 +30,13 @@ final class GroupTenantsMigrationHandler implements MigrationHandler {
   private final TenantServices tenantServices;
 
   public GroupTenantsMigrationHandler(
+      final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices,
       final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
-    this.groupServices = groupServices;
-    this.tenantServices = tenantServices;
+    this.groupServices = groupServices.withAuthentication(authentication);
+    this.tenantServices = tenantServices.withAuthentication(authentication);
   }
 
   @Override
