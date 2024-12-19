@@ -15,17 +15,17 @@ import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,9 +43,7 @@ public class DocumentController {
     this.documentServices = documentServices;
   }
 
-  @PostMapping(
-      consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaPostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createDocument(
       @RequestParam(required = false) final String documentId,
       @RequestParam(required = false) final String storeId,
@@ -67,7 +65,7 @@ public class DocumentController {
         ResponseMapper::toDocumentReference);
   }
 
-  @GetMapping(
+  @CamundaGetMapping(
       path = "/{documentId}",
       produces = {
         MediaType.APPLICATION_OCTET_STREAM_VALUE,
@@ -110,9 +108,7 @@ public class DocumentController {
         .getDocumentContent(documentId, storeId);
   }
 
-  @DeleteMapping(
-      path = "/{documentId}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaDeleteMapping(path = "/{documentId}")
   public CompletableFuture<ResponseEntity<Object>> deleteDocument(
       @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
@@ -123,10 +119,7 @@ public class DocumentController {
                 .deleteDocument(documentId, storeId));
   }
 
-  @PostMapping(
-      path = "/{documentId}/links",
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaPostMapping(path = "/{documentId}/links")
   public CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,

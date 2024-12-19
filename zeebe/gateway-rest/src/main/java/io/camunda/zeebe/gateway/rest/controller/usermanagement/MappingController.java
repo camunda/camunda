@@ -21,14 +21,13 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -41,9 +40,7 @@ public class MappingController {
     this.mappingServices = mappingServices;
   }
 
-  @PostMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> create(
       @RequestBody final MappingRuleCreateRequest mappingRequest) {
     return RequestMapper.toMappingDTO(mappingRequest)
@@ -59,9 +56,7 @@ public class MappingController {
         ResponseMapper::toMappingCreateResponse);
   }
 
-  @DeleteMapping(
-      path = "/{mappingKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaDeleteMapping(path = "/{mappingKey}")
   public CompletableFuture<ResponseEntity<Object>> deleteMapping(
       @PathVariable final long mappingKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
@@ -71,9 +66,7 @@ public class MappingController {
                 .deleteMapping(mappingKey));
   }
 
-  @GetMapping(
-      path = "/{mappingKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping(path = "/{mappingKey}")
   public ResponseEntity<MappingItem> getMapping(@PathVariable final long mappingKey) {
     try {
       return ResponseEntity.ok()
@@ -83,10 +76,7 @@ public class MappingController {
     }
   }
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<MappingSearchQueryResponse> searchMappings(
       @RequestBody(required = false) final MappingSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)

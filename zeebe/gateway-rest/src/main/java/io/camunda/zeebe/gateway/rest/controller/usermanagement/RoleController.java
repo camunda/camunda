@@ -20,15 +20,14 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -41,9 +40,7 @@ public class RoleController {
     this.roleServices = roleServices;
   }
 
-  @PostMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createRole(
       @RequestBody final RoleCreateRequest createRoleRequest) {
     return RequestMapper.toRoleCreateRequest(createRoleRequest)
@@ -60,10 +57,7 @@ public class RoleController {
         ResponseMapper::toRoleCreateResponse);
   }
 
-  @PatchMapping(
-      path = "/{roleKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPatchMapping(path = "/{roleKey}")
   public CompletableFuture<ResponseEntity<Object>> updateRole(
       @PathVariable final long roleKey, @RequestBody final RoleUpdateRequest roleUpdateRequest) {
     return RequestMapper.toRoleUpdateRequest(roleUpdateRequest, roleKey)
@@ -79,18 +73,14 @@ public class RoleController {
                 .updateRole(updateRoleRequest.roleKey(), updateRoleRequest.name()));
   }
 
-  @DeleteMapping(
-      path = "/{roleKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaDeleteMapping(path = "/{roleKey}")
   public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final long roleKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleKey));
   }
 
-  @GetMapping(
-      path = "/{roleKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping(path = "/{roleKey}")
   public ResponseEntity<Object> getRole(@PathVariable final long roleKey) {
     try {
       return ResponseEntity.ok()
@@ -100,10 +90,7 @@ public class RoleController {
     }
   }
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<RoleSearchQueryResponse> searchRoles(
       @RequestBody(required = false) final RoleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toRoleQuery(query)

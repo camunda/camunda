@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
@@ -83,7 +84,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "jobKey": "2251799813685248",
+              "jobKey": "4503599627370496",
               "type": "TEST",
               "processInstanceKey": "123",
               "processDefinitionKey": "4532",
@@ -99,7 +100,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "worker": "bar"
             },
             {
-              "jobKey": "2251799813685249",
+              "jobKey": "4503599627370497",
               "type": "TEST",
               "processInstanceKey": "123",
               "processDefinitionKey": "4532",
@@ -128,6 +129,81 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verify(responseObserver, Mockito.times(1)).onNext(any());
+    Mockito.verify(responseObserver).onCompleted();
+  }
+
+  @Test
+  void shouldActivateJobsImmediatelyIfAvailableNumberKeys() {
+    // given
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.addAvailableJobs("TEST", 2);
+    stub.registerWith(stubbedBrokerClient);
+
+    final var request =
+        """
+        {
+          "type": "TEST",
+          "maxJobsToActivate": 2,
+          "requestTimeout": 100,
+          "timeout": 100,
+          "fetchVariable": [],
+          "tenantIds": ["default"],
+          "worker": "bar"
+        }""";
+    final var expectedBody =
+        """
+        {
+          "jobs": [
+            {
+              "jobKey": 2251799813685248,
+              "type": "TEST",
+              "processInstanceKey": 123,
+              "processDefinitionKey": 4532,
+              "processDefinitionVersion": 23,
+              "elementInstanceKey": 459,
+              "retries": 12,
+              "deadline": 123123123,
+              "tenantId": "default",
+              "variables": {"bar": "world", "foo": 13},
+              "customHeaders": {"bar": "val", "foo": 12},
+              "processDefinitionId": "stubProcess",
+              "elementId": "stubActivity",
+              "worker": "bar"
+            },
+            {
+              "jobKey": 2251799813685249,
+              "type": "TEST",
+              "processInstanceKey": 123,
+              "processDefinitionKey": 4532,
+              "processDefinitionVersion": 23,
+              "elementInstanceKey": 459,
+              "retries": 12,
+              "deadline": 123123123,
+              "tenantId": "default",
+              "variables": {"bar": "world", "foo": 13},
+              "customHeaders": {"bar": "val", "foo": 12},
+              "processDefinitionId": "stubProcess",
+              "elementId": "stubActivity",
+              "worker": "bar"
+            }
+          ]
+        }""";
+    // when / then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
         .expectBody()
         .json(expectedBody);
 
