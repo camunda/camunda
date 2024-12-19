@@ -43,6 +43,7 @@ services:
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
+      - cluster.max_shards_per_node=2000
       - discovery.type=single-node
       - plugins.security.disabled=true
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
