@@ -58,7 +58,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "Role Name",
-              "key": 100
+              "key": "100"
             }""");
 
     // then
@@ -130,15 +130,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "key": 100,
+                 "key": "100",
                  "name": "Role 1"
                },
                {
-                 "key": 200,
+                 "key": "200",
                  "name": "Role 2"
                },
                {
-                 "key": 300,
+                 "key": "300",
                  "name": "Role 12"
                }
              ],

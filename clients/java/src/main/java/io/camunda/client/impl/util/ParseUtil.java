@@ -13,21 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.response;
+package io.camunda.client.impl.util;
 
-import io.camunda.client.api.response.CreateTenantResponse;
-import io.camunda.client.protocol.rest.TenantCreateResponse;
+public class ParseUtil {
 
-public class CreateTenantResponseImpl implements CreateTenantResponse {
-  private long tenantKey;
-
-  @Override
-  public long getTenantKey() {
-    return tenantKey;
-  }
-
-  public CreateTenantResponseImpl setResponse(final TenantCreateResponse response) {
-    tenantKey = Long.parseLong(response.getTenantKey());
-    return this;
+  public static Long parseLongOrNull(final String input) {
+    return input == null ? null : Long.parseLong(input);
   }
 }
