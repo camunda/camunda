@@ -33,6 +33,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final String READY_ENDPOINT = "/ready";
 
   private static final String ACTIVE_SPRING_PROFILES = "operate,tasklist,broker,auth";
+  private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
   private static final String GRPC_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String REST_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_REST_API;
@@ -55,6 +56,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_GATEWAYADDRESS, GRPC_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_RESTADDRESS, REST_API)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_CSRF_PREVENTION_ENABLED, "false")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
             ContainerRuntimePorts.CAMUNDA_COMMAND_API,

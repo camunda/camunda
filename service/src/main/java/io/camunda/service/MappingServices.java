@@ -77,6 +77,17 @@ public class MappingServices
         .findFirst();
   }
 
+  public Optional<MappingEntity> findMapping(final MappingDTO request) {
+    return search(
+            SearchQueryBuilders.mappingSearchQuery()
+                .filter(f -> f.claimName(request.claimName()).claimValue(request.claimValue()))
+                .page(p -> p.size(1))
+                .build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
   public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
   }

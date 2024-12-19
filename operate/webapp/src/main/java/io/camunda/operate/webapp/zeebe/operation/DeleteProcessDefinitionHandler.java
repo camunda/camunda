@@ -72,7 +72,7 @@ public class DeleteProcessDefinitionHandler extends AbstractOperationHandler
             operation.getId(), processDefinitionKey));
     final var deleteResourceCommand =
         withOperationReference(
-            zeebeClient.newDeleteResourceCommand(processDefinitionKey), operation.getId());
+            camundaClient.newDeleteResourceCommand(processDefinitionKey), operation.getId());
     deleteResourceCommand.send().join();
     markAsSent(operation);
     LOGGER.info(

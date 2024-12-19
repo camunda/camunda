@@ -32,6 +32,8 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
   private static final String CONNECTORS_READY_ENDPOINT = "/actuator/health/readiness";
 
+  private static final String LOG_APPENDER_STACKDRIVER = "stackdriver";
+
   public ConnectorsContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
     applyDefaultConfiguration();
@@ -42,6 +44,7 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
         .waitingFor(newDefaultWaitStrategy())
         .withEnv("management.endpoints.web.exposure.include", "health")
         .withEnv("management.endpoint.health.probes.enabled", "true")
+        .withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
         .addExposedPorts(ContainerRuntimePorts.CONNECTORS_REST_API);
   }
 

@@ -10,12 +10,12 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -40,7 +40,7 @@ class UserTaskQueryTest {
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testStandaloneCamunda;
 
-  private static ZeebeClient camundaClient;
+  private static CamundaClient camundaClient;
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {

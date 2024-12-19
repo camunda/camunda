@@ -102,7 +102,7 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/backend -am install -Dquickly -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
+          parameters: -pl optimize/backend -am install -Dquickly -P skipFrontendBuild,runAssembly -T 1
 
       - name: Install
         uses: ./.github/actions/run-maven
@@ -170,7 +170,7 @@ jobs:
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/upgrade -am install -Dquickly -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T1
+          parameters: -pl optimize/upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
 
       - name: Install
         uses: ./.github/actions/run-maven
@@ -395,7 +395,7 @@ jobs:
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/upgrade -am install -Dquickly -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T1
+          parameters: -pl optimize/upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
 
       - name: Install
         uses: ./.github/actions/run-maven

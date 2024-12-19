@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -23,7 +24,6 @@ import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -46,14 +46,14 @@ import org.junit.platform.commons.util.ReflectionUtils;
  *
  * <ul>
  *   <li>Start the runtime
- *   <li>Inject a {@link ZeebeClient} to a field in the test class
+ *   <li>Inject a {@link CamundaClient} to a field in the test class
  *   <li>Inject a {@link CamundaProcessTestContext} to a field in the test class
  * </ul>
  *
  * <p>After each test method:
  *
  * <ul>
- *   <li>Close created {@link ZeebeClient}s
+ *   <li>Close created {@link CamundaClient}s
  *   <li>Stop the runtime
  * </ul>
  */
@@ -68,7 +68,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
-  private final List<ZeebeClient> createdClients = new ArrayList<>();
+  private final List<CamundaClient> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -116,10 +116,10 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
     // inject fields
     try {
-      injectField(context, ZeebeClient.class, camundaProcessTestContext::createClient);
+      injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
     } catch (final Exception e) {
-      createdClients.forEach(ZeebeClient::close);
+      createdClients.forEach(CamundaClient::close);
       containerRuntime.close();
       throw e;
     }
@@ -181,7 +181,7 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     // reset assertions
     CamundaAssert.reset();
     // close all created clients
-    createdClients.forEach(ZeebeClient::close);
+    createdClients.forEach(CamundaClient::close);
     // close the runtime
     containerRuntime.close();
 

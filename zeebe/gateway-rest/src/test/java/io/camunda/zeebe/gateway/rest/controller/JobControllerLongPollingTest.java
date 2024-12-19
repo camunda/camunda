@@ -83,33 +83,33 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         {
           "jobs": [
             {
-              "jobKey": 2251799813685248,
+              "jobKey": "2251799813685248",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
-              "variables": {},
-              "customHeaders": {},
+              "variables": {"bar": "world", "foo": 13},
+              "customHeaders": {"bar": "val", "foo": 12},
               "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
               "worker": "bar"
             },
             {
-              "jobKey": 2251799813685249,
+              "jobKey": "2251799813685249",
               "type": "TEST",
-              "processInstanceKey": 123,
-              "processDefinitionKey": 4532,
+              "processInstanceKey": "123",
+              "processDefinitionKey": "4532",
               "processDefinitionVersion": 23,
-              "elementInstanceKey": 459,
+              "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "default",
-              "variables": {},
-              "customHeaders": {},
+              "variables": {"bar": "world", "foo": 13},
+              "customHeaders": {"bar": "val", "foo": 12},
               "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
               "worker": "bar"
@@ -215,7 +215,8 @@ public class JobControllerLongPollingTest extends RestControllerTest {
             .returnResult()
             .getResponseBody();
 
-    final int basePartition = Protocol.decodePartitionId(JsonPath.read(result, "$.jobs[0].jobKey"));
+    final int basePartition =
+        Protocol.decodePartitionId(Long.parseLong(JsonPath.read(result, "$.jobs[0].jobKey")));
     final int partitionsCount =
         stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
 

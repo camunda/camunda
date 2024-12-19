@@ -34,8 +34,10 @@ public record UntypedOperation(Operator operator, List<Object> values, ValueType
     } else {
       typedValues = null;
     }
-    return new UntypedOperation(
-        operation.operator(), typedValues, ValueTypeUtil.getValueType(operation.value()));
+
+    final ValueTypeEnum valueType = ValueTypeUtil.getValueType(operation.value());
+    validateOrThrow(operation.operator(), valueType);
+    return new UntypedOperation(operation.operator(), typedValues, valueType);
   }
 
   public Object value() {
@@ -45,5 +47,26 @@ public record UntypedOperation(Operator operator, List<Object> values, ValueType
   @Override
   public List<Object> values() {
     return values;
+  }
+
+  private static void validateOrThrow(final Operator operator, final ValueTypeEnum type) {
+    switch (operator) {
+      case GREATER_THAN:
+      case GREATER_THAN_EQUALS:
+      case LOWER_THAN:
+      case LOWER_THAN_EQUALS:
+        if (type != ValueTypeEnum.LONG && type != ValueTypeEnum.DOUBLE) {
+          throw new IllegalArgumentException(
+              "Unsupported value type for number operator (<,<=,>,>=): " + type);
+        }
+        break;
+      case LIKE:
+        if (type != ValueTypeEnum.STRING) {
+          throw new IllegalArgumentException("Unsupported value type for like operator: " + type);
+        }
+        break;
+      default:
+        break;
+    }
   }
 }

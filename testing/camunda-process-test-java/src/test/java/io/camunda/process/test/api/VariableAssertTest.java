@@ -19,9 +19,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.VariableDto;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;

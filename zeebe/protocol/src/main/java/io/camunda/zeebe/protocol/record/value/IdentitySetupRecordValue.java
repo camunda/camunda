@@ -29,4 +29,6 @@ public interface IdentitySetupRecordValue extends RecordValue {
   List<UserRecordValue> getUsers();
 
   TenantRecordValue getDefaultTenant();
+
+  List<MappingRecordValue> getMappings();
 }

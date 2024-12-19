@@ -19,9 +19,9 @@ import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -45,7 +45,7 @@ public class ConnectorProcessTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  @Autowired private ZeebeClient client;
+  @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
   @Test

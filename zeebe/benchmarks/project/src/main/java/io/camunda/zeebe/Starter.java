@@ -18,9 +18,9 @@ package io.camunda.zeebe;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -64,7 +64,7 @@ public class Starter extends App {
     final String processId = starterCfg.getProcessId();
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
 
-    final ZeebeClient client = createZeebeClient();
+    final CamundaClient client = createCamundaClient();
 
     printTopology(client);
 
@@ -161,7 +161,7 @@ public class Starter extends App {
       final StarterCfg starterCfg,
       final String processId,
       final BlockingQueue<Future<?>> requestFutures,
-      final ZeebeClient client,
+      final CamundaClient client,
       final String variables,
       final BooleanSupplier shouldContinue,
       final CountDownLatch countDownLatch) {
@@ -192,7 +192,7 @@ public class Starter extends App {
       final StarterCfg starterCfg,
       final String processId,
       final BlockingQueue<Future<?>> requestFutures,
-      final ZeebeClient client,
+      final CamundaClient client,
       final String variables)
       throws InterruptedException {
     if (starterCfg.isWithResults()) {
@@ -216,9 +216,9 @@ public class Starter extends App {
     }
   }
 
-  private ZeebeClient createZeebeClient() {
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
+  private CamundaClient createCamundaClient() {
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(appCfg.getBrokerUrl())
             .numJobWorkerExecutionThreads(0)
             .withProperties(System.getProperties())
@@ -231,7 +231,7 @@ public class Starter extends App {
     return builder.build();
   }
 
-  private void deployProcess(final ZeebeClient client, final StarterCfg starterCfg) {
+  private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {
     final var deployCmd = constructDeploymentCommand(client, starterCfg);
 
     while (true) {
@@ -250,7 +250,7 @@ public class Starter extends App {
   }
 
   private static DeployResourceCommandStep2 constructDeploymentCommand(
-      final ZeebeClient client, final StarterCfg starterCfg) {
+      final CamundaClient client, final StarterCfg starterCfg) {
     final var deployCmd =
         client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
 

@@ -45,9 +45,9 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                   "flowNodeInstanceKey":1,
-                   "processInstanceKey":2,
-                   "processDefinitionKey":3,
+                   "flowNodeInstanceKey":"1",
+                   "processInstanceKey":"2",
+                   "processDefinitionKey":"3",
                    "processDefinitionId":"bpmnProcessId",
                    "startDate": "2023-05-17T00:00:00.000Z",
                    "endDate":"2023-05-23T00:00:00.000Z",
@@ -94,9 +94,9 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
   static final String EXPECTED_GET_RESPONSE =
       """
                  {
-                   "flowNodeInstanceKey":23,
-                   "processInstanceKey":5,
-                   "processDefinitionKey":17,
+                   "flowNodeInstanceKey":"23",
+                   "processInstanceKey":"5",
+                   "processDefinitionKey":"17",
                    "processDefinitionId":"complexProcess",
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
@@ -104,7 +104,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
-                   "incidentKey":1234,
+                   "incidentKey":"1234",
                    "tenantId":"tenantId"
                  }
           """;
@@ -199,16 +199,16 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         """
             {
               "filter":{
-                "flowNodeInstanceKey": 2251799813685996,
-                "processInstanceKey": 2251799813685989,
-                "processDefinitionKey": 3,
+                "flowNodeInstanceKey": "2251799813685996",
+                "processInstanceKey": "2251799813685989",
+                "processDefinitionKey": "3",
                 "processDefinitionId": "complexProcess",
                 "state": "ACTIVE",
                 "type": "SERVICE_TASK",
                 "flowNodeId": "StartEvent_1",
                 "flowNodeName": "name",
                 "hasIncident": true,
-                "incidentKey": 2251799813685320,
+                "incidentKey": "2251799813685320",
                 "tenantId": "default"
               }
             }

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
+import static io.camunda.search.filter.Operation.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
@@ -17,6 +18,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
@@ -322,7 +324,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     // given
     final VariableValueFilter.Builder variableValueFilterBuilder =
         new VariableValueFilter.Builder();
-    variableValueFilterBuilder.name("test").eq("test").build();
+    variableValueFilterBuilder.name("test").valueOperation(UntypedOperation.of(eq("test"))).build();
 
     final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
 

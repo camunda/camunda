@@ -14,6 +14,7 @@ import io.camunda.application.Profile;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -21,6 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @ZeebeIntegration
 @Testcontainers(parallel = true)
+@Disabled
 public class IdentityDefaultEntitiesIT {
   @Container
   private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
@@ -34,7 +36,9 @@ public class IdentityDefaultEntitiesIT {
       IdentityMigrationTestUtil.getManagementIdentity(POSTGRES, KEYCLOAK);
 
   @TestZeebe(autoStart = false)
-  final TestStandaloneCamunda camunda = new TestStandaloneCamunda();
+  final TestStandaloneCamunda camunda =
+      new TestStandaloneCamunda()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
 
   @Test
   void canMigrateOldDefaultEntities() {

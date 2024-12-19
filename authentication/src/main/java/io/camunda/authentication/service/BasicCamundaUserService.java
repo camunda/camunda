@@ -36,8 +36,7 @@ public class BasicCamundaUserService implements CamundaUserService {
         authenticatedUser.getRoles().stream().map(RoleEntity::name).toList(),
         authenticatedUser.getSalesPlanType(),
         authenticatedUser.getC8Links(),
-        authenticatedUser.canLogout(),
-        authenticatedUser.isApiUser());
+        authenticatedUser.canLogout());
   }
 
   @Override

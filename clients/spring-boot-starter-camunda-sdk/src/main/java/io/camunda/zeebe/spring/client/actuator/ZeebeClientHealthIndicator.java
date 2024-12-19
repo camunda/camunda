@@ -15,18 +15,18 @@
  */
 package io.camunda.zeebe.spring.client.actuator;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Topology;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 
 public class ZeebeClientHealthIndicator extends AbstractHealthIndicator {
 
-  private final ZeebeClient client;
+  private final CamundaClient client;
 
   @Autowired
-  public ZeebeClientHealthIndicator(final ZeebeClient client) {
+  public ZeebeClientHealthIndicator(final CamundaClient client) {
     this.client = client;
   }
 

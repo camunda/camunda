@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchSearchClient
-    implements DocumentBasedSearchClient, DocumentBasedWriteClient, AutoCloseable {
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSearchClient.class);
   private static final String SCROLL_KEEP_ALIVE_TIME = "1m";
@@ -172,7 +172,8 @@ public class ElasticsearchSearchClient
 
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
-    return client.scroll(r -> r.scrollId(scrollId), documentClass);
+    return client.scroll(
+        r -> r.scrollId(scrollId).scroll(t -> t.time(SCROLL_KEEP_ALIVE_TIME)), documentClass);
   }
 
   private void clearScroll(final String scrollId) {
@@ -240,7 +241,7 @@ public class ElasticsearchSearchClient
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (client != null) {
       try {
         client._transport().close();

@@ -7,9 +7,10 @@
  */
 package io.camunda.migration.identity;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,36 +19,40 @@ import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.GroupService;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import java.util.Collection;
+import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.List;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class GroupMigrationHandlerTest {
-  final ArgumentCaptor<Collection<MigrationStatusUpdateRequest>> migrationStatusCaptor =
-      ArgumentCaptor.forClass(Collection.class);
-  @Mock private ManagementIdentityClient managementIdentityClient;
-  @Mock private GroupService groupService;
-  private final ManagementIdentityTransformer managementIdentityTransformer =
-      new ManagementIdentityTransformer();
-  private GroupMigrationHandler migrationHandler;
+  private final ManagementIdentityClient managementIdentityClient;
 
-  @BeforeEach
-  void setUp() throws Exception {
-    MockitoAnnotations.openMocks(this).close();
+  private final GroupServices groupService;
+
+  private final GroupMigrationHandler migrationHandler;
+
+  public GroupMigrationHandlerTest(
+      @Mock final ManagementIdentityClient managementIdentityClient,
+      @Mock(answer = Answers.RETURNS_SELF) final GroupServices groupService) {
+    this.managementIdentityClient = managementIdentityClient;
+    this.groupService = groupService;
     migrationHandler =
         new GroupMigrationHandler(
-            managementIdentityClient, managementIdentityTransformer, groupService);
+            Authentication.none(),
+            managementIdentityClient,
+            new ManagementIdentityTransformer(),
+            groupService);
   }
-
-  @AfterEach
-  void tearDown() {}
 
   @Test
   void stopWhenNoMoreRecords() {
@@ -61,15 +66,22 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).create(any());
+    verify(groupService, times(2)).createGroup(any());
   }
 
   @Test
   void ignoreWhenGroupAlreadyExists() {
     // given
 
-    when(groupService.create(any()))
-        .thenThrow(new ProblemException(0, "Failed with code 409: 'Conflict'", null));
+    when(groupService.createGroup(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        GroupIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "group already exists"))));
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
         .thenReturn(List.of());
@@ -79,20 +91,21 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).create(any());
+    verify(groupService, times(2)).createGroup(any());
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .allMatch(MigrationStatusUpdateRequest::success),
-        "All requests should succeed");
+        .updateMigrationStatus(
+            assertArg(
+                migrationStatusUpdateRequests -> {
+                  assertThat(migrationStatusUpdateRequests)
+                      .describedAs("All migrations have succeeded")
+                      .allMatch(MigrationStatusUpdateRequest::success);
+                }));
   }
 
   @Test
   void setErrorWhenGroupCreationHasError() {
     // given
-    when(groupService.create(any())).thenThrow(new ProblemException(0, "runtime exception!", null));
+    when(groupService.createGroup(any())).thenThrow(new RuntimeException());
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
         .thenReturn(List.of());
@@ -102,13 +115,14 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(migrationStatusCaptor.capture());
-    assertTrue(
-        migrationStatusCaptor.getAllValues().stream()
-            .flatMap(Collection::stream)
-            .noneMatch(MigrationStatusUpdateRequest::success),
-        "All requests should failed");
+        .updateMigrationStatus(
+            assertArg(
+                statusUpdateRequests -> {
+                  assertThat(statusUpdateRequests)
+                      .describedAs("All migrations have failed")
+                      .noneMatch(MigrationStatusUpdateRequest::success);
+                }));
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).create(any());
+    verify(groupService, times(2)).createGroup(any());
   }
 }

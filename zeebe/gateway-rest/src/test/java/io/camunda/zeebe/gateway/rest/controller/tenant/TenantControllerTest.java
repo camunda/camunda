@@ -132,7 +132,7 @@ public class TenantControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "tenantKey": %d,
+              "tenantKey": "%d",
               "tenantId": "%s",
               "name": "%s"
             }

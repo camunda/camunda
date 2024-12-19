@@ -9,14 +9,14 @@ package io.camunda.tasklist.qa.util;
 
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.api.worker.JobWorker;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Random;
@@ -30,7 +30,7 @@ public abstract class ZeebeTestUtil {
   private static final Random RANDOM = new Random();
 
   public static String deployProcess(
-      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
+      final CamundaClient client, final BpmnModelInstance processModel, final String resourceName) {
     final DeployResourceCommandStep2 deployProcessCommandStep1 =
         client.newDeployResourceCommand().addProcessModel(processModel, resourceName);
     final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
@@ -38,8 +38,8 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
-  public static ZeebeFuture<ProcessInstanceEvent> startProcessInstanceAsync(
-      final ZeebeClient client, final String bpmnProcessId, final String payload) {
+  public static CamundaFuture<ProcessInstanceEvent> startProcessInstanceAsync(
+      final CamundaClient client, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
@@ -50,7 +50,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static long startProcessInstance(
-      final ZeebeClient client, final String bpmnProcessId, final String payload) {
+      final CamundaClient client, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
@@ -64,7 +64,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void completeTask(
-      final ZeebeClient client,
+      final CamundaClient client,
       final String jobType,
       final String workerName,
       final String payload,
@@ -101,7 +101,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void failTask(
-      final ZeebeClient client,
+      final CamundaClient client,
       final String jobType,
       final String workerName,
       final int incidentCount) {
@@ -109,7 +109,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void failTask(
-      final ZeebeClient client,
+      final CamundaClient client,
       final String jobType,
       final String workerName,
       final String errorMessage,

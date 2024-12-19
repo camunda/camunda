@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;

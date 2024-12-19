@@ -10,10 +10,10 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public class ModifyProcessInstanceTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -252,7 +252,7 @@ public class ModifyProcessInstanceTest {
   }
 
   private ModifyProcessInstanceCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long processInstanceKey) {
+      final CamundaClient client, final boolean useRest, final long processInstanceKey) {
     final ModifyProcessInstanceCommandStep1 modifyCommand =
         client.newModifyProcessInstanceCommand(processInstanceKey);
     return useRest ? modifyCommand.useRest() : modifyCommand.useGrpc();

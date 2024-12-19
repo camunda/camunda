@@ -7,14 +7,23 @@
  */
 package io.camunda.migration.identity;
 
+import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import java.util.concurrent.CompletionException;
+
 public interface MigrationHandler {
 
   int SIZE = 100;
 
   void migrate();
 
-  default boolean isConflictError(final Exception e) {
-    return e.getMessage().contains("Failed with code 409: 'Conflict'")
-        || e.getMessage().contains("the entity is already assigned to the tenant.");
+  default boolean isConflictError(final Throwable e) {
+    return (e instanceof final BrokerRejectionException rejectionException
+            && rejectionException.getRejection().type() == RejectionType.ALREADY_EXISTS)
+        || (e instanceof final CamundaBrokerException brokerException
+            && isConflictError(brokerException.getCause()))
+        || (e instanceof final CompletionException completionException
+            && isConflictError(completionException.getCause()));
   }
 }

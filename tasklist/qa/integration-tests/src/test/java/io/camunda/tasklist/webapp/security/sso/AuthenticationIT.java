@@ -90,6 +90,7 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.csrf-prevention-enabled=false",
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test"})

@@ -8,6 +8,10 @@
 package io.camunda.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.adapters.ClientAdapter;
@@ -43,6 +47,7 @@ final class CamundaExporterTest {
       new ExporterTestContext()
           .setConfiguration(new ExporterTestConfiguration<>("test", configuration));
   private final ExporterTestController testController = new ExporterTestController();
+  private ClientAdapter stubbedClientAdapterInUse;
 
   @SuppressWarnings("FieldCanBeLocal")
   @AutoCloseResource
@@ -50,9 +55,10 @@ final class CamundaExporterTest {
 
   @BeforeEach
   void beforeEach() {
+    stubbedClientAdapterInUse = new StubClientAdapter();
     mockedClientAdapterFactory
         .when(() -> ClientAdapter.of(configuration))
-        .thenReturn(new StubClientAdapter());
+        .thenReturn(stubbedClientAdapterInUse);
   }
 
   @AfterEach
@@ -79,7 +85,7 @@ final class CamundaExporterTest {
     private final ExporterEntityCacheProvider entityCacheProvider =
         new NoopExporterEntityCacheProvider();
     private final SearchEngineClient client =
-        Mockito.mock(
+        mock(
             SearchEngineClient.class,
             Mockito.withSettings().defaultAnswer(Answers.RETURNS_SMART_NULLS));
 
@@ -90,7 +96,7 @@ final class CamundaExporterTest {
 
     @Override
     public BatchRequest createBatchRequest() {
-      return Mockito.mock(
+      return mock(
           BatchRequest.class, Mockito.withSettings().defaultAnswer(Answers.RETURNS_SMART_NULLS));
     }
 
@@ -131,6 +137,10 @@ final class CamundaExporterTest {
       // given
       final var expected = new ExporterMetadata();
       exporter = new CamundaExporter(resourceProvider, expected);
+
+      final var exporterEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
+      when(exporterEngineClient.importersCompleted(anyInt(), any())).thenReturn(true);
+
       expected.setLastIncidentUpdatePosition(5);
 
       // when

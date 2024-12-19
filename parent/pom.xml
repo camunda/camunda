@@ -75,7 +75,7 @@
     <version.mockito>5.14.2</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.8</version.msgpack>
-    <version.netty>4.1.115.Final</version.netty>
+    <version.netty>4.1.116.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
     <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
@@ -84,7 +84,7 @@
     <version.protobuf-common>2.50.0</version.protobuf-common>
     <version.micrometer>1.14.2</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
-    <version.sbe>1.33.2</version.sbe>
+    <version.sbe>1.34.0</version.sbe>
     <version.scala>2.13.15</version.scala>
     <version.slf4j>2.0.16</version.slf4j>
     <version.snakeyaml>2.3</version.snakeyaml>
@@ -127,9 +127,9 @@
     <version.jnr-posix>3.1.20</version.jnr-posix>
     <version.zpt>8.6.6</version.zpt>
     <version.feign>13.5</version.feign>
-    <version.google-sdk>26.51.0</version.google-sdk>
+    <version.google-sdk>26.52.0</version.google-sdk>
     <version.azure-sdk>1.2.30</version.azure-sdk>
-    <version.awssdk>2.29.35</version.awssdk>
+    <version.awssdk>2.29.37</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -1391,12 +1391,6 @@
         <groupId>io.zeebe</groupId>
         <artifactId>zeebe-test-container</artifactId>
         <version>${version.zeebe-test-container}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.camunda</groupId>
-            <artifactId>zeebe-client-java</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -2638,6 +2632,23 @@
               <configuration>
                 <rules>
                   <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
+                </rules>
+              </configuration>
+            </execution>
+            <execution>
+              <id>forbid-banned-dependencies</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <!-- ban the direct usage of the zeebe-client-java dependency -->
+                  <bannedDependencies>
+                    <excludes>
+                      <exclude>io.camunda:zeebe-client-java</exclude>
+                    </excludes>
+                    <searchTransitive>false</searchTransitive>
+                  </bannedDependencies>
                 </rules>
               </configuration>
             </execution>
