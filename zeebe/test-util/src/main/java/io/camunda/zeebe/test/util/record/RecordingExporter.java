@@ -85,6 +85,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Duration;
 import java.util.Collection;
@@ -423,6 +424,10 @@ public final class RecordingExporter implements Exporter {
 
   public static FormRecordStream formRecords() {
     return new FormRecordStream(records(ValueType.FORM, Form.class));
+  }
+
+  public static ResourceRecordStream resourceRecords() {
+    return new ResourceRecordStream(records(ValueType.RESOURCE, Resource.class));
   }
 
   public static ErrorRecordStream errorRecords() {
