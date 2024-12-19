@@ -47,6 +47,7 @@ tags:
   - name: Signal
   - name: Tenant
   - name: User
+  - name: Usage metrics
   - name: User task
   - name: Variable
 
@@ -3599,7 +3600,50 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
+  /usage-metrics:
+    get:
+      tags:
+        - Usage metrics
+      operationId: getUsageMetrics
+      summary: Get usage metrics
+      description: Retrieve the usage metrics by given start and end date.
+      parameters:
+        - name: startTime
+          in: query
+          required: true
+          description: The start date for usage metrics, including this date.
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          required: true
+          description: The end date for usage metrics, including this date.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: >
+            The usage metrics search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageMetricsResponse"
+        "400":
+          description: >
+            The usage metrics request failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /deployments:
     post:
       tags:
@@ -5260,6 +5304,21 @@ components:
         decisionRequirementsKey:
           type: string
           description: The assigned key of the decision requirements graph that the decision definition is part of.
+    UsageMetricsResponse:
+      type: object
+      properties:
+        assignees:
+          description: The amount of unique active users.
+          type: integer
+          format: int64
+        processInstances:
+          description: The amount of created root process instances.
+          type: integer
+          format: int64
+        decisionInstances:
+          description: The amount of executed decision instances.
+          type: integer
+          format: int64
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       enum:

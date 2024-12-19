@@ -22,6 +22,7 @@ import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTran
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.RoleEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantEntityTransformer;
+import io.camunda.search.clients.transformers.entity.UsageMetricsEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
@@ -40,6 +41,7 @@ import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTran
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
+import io.camunda.search.clients.transformers.filter.UsageMetricsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
@@ -62,6 +64,7 @@ import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSorting
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
@@ -80,6 +83,7 @@ import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -98,6 +102,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -118,12 +123,14 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.TenantSort;
+import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -131,6 +138,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
@@ -141,6 +149,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
@@ -220,7 +229,8 @@ public final class ServiceTransformers {
             TenantQuery.class,
             UserTaskQuery.class,
             UserQuery.class,
-            VariableQuery.class)
+            VariableQuery.class,
+            UsageMetricsQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -240,6 +250,7 @@ public final class ServiceTransformers {
     mappers.put(GroupEntity.class, new GroupEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingEntity.class, new MappingEntityTransformer());
+    mappers.put(UsageMetricsEntity.class, new UsageMetricsEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
@@ -259,6 +270,7 @@ public final class ServiceTransformers {
     mappers.put(GroupSort.class, new GroupFieldSortingTransformer());
     mappers.put(UserSort.class, new UserFieldSortingTransformer());
     mappers.put(MappingSort.class, new MappingFieldSortingTransformer());
+    mappers.put(UsageMetricsSort.class, new UsageMetricsFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(
@@ -308,6 +320,11 @@ public final class ServiceTransformers {
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
+    mappers.put(
+        UsageMetricsFilter.class,
+        new UsageMetricsFilterTransformer(
+            indexDescriptors.get(TasklistMetricIndex.class),
+            indexDescriptors.get(MetricIndex.class)));
 
     // result config -> source config
     mappers.put(
