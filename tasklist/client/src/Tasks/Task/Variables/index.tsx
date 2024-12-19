@@ -128,10 +128,7 @@ const Variables: React.FC<Props> = ({
         } catch (error) {
           const errorMessage = parseJSON((error as Error)?.message);
 
-          if (
-            errorMessage?.status === 504 &&
-            errorMessage?.error_code === 'TASK_PROCESSING_TIMEOUT'
-          ) {
+          if (errorMessage?.title === 'TASK_PROCESSING_TIMEOUT') {
             onSubmitFailure(error as Error);
             return;
           }
