@@ -637,19 +637,19 @@ public class UserTaskHandlerTest {
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
-            .withChangedAttributes(
-                List.of(
-                    "priority",
-                    "dueDate",
-                    "followUpDate",
-                    "candidateUsersList",
-                    "candidateGroupsList"))
             .withProcessInstanceKey(processInstanceKey)
             .withPriority(99)
             .withDueDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
             .withFollowUpDate(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
             .withCandidateUsersList(Arrays.asList("user1", "user2"))
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
+            .withChangedAttributes(
+                List.of(
+                    UserTaskRecord.PRIORITY,
+                    UserTaskRecord.DUE_DATE,
+                    UserTaskRecord.FOLLOW_UP_DATE,
+                    UserTaskRecord.CANDIDATE_USERS,
+                    UserTaskRecord.CANDIDATE_GROUPS))
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -701,9 +701,9 @@ public class UserTaskHandlerTest {
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
-            .withChangedAttributes(List.of("priority"))
             .withProcessInstanceKey(processInstanceKey)
             .withPriority(99)
+            .addChangedAttribute(UserTaskRecord.PRIORITY)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
