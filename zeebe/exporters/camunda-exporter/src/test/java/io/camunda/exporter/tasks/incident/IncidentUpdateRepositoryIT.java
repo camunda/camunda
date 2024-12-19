@@ -868,7 +868,7 @@ abstract class IncidentUpdateRepositoryIT {
           .succeedsWithin(Duration.ofSeconds(10))
           .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
           .containsExactlyInAnyOrder(
-              new ActiveIncident("8", "PI_3/FNI_4"), new ActiveIncident("7", "PI_1/FNI_2"));
+              new ActiveIncident("8", "PI_3/FNI_4"), new ActiveIncident("7", "PI_1/FNI_2/PI_7"));
     }
   }
 
