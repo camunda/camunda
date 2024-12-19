@@ -69,7 +69,7 @@ final class GroupTenantsMigrationHandlerTest {
   }
 
   @Test
-  void setErrorWhenGroupNotFound() {
+  void setErrorWhenGroupCantBeCreated() {
     // given
     givenGroupTenants();
     when(groupServices.findGroup(anyString())).thenReturn(Optional.empty());
