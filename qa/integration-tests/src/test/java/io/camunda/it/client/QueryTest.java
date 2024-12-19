@@ -58,6 +58,16 @@ public class QueryTest {
         .join();
   }
 
+  public static DeploymentEvent deployResourceForTenant(
+      final CamundaClient camundaClient, final String resourceName, final String tenantId) {
+    return camundaClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath(resourceName)
+        .tenantId(tenantId)
+        .send()
+        .join();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId) {
     return startProcessInstance(camundaClient, bpmnProcessId, null);
