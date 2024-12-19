@@ -121,8 +121,7 @@ public class AuthenticationInterceptorTest {
         .hasValueSatisfying(
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription())
-                  .isEqualTo("Invalid credentials");
+              assertThat(status.getDescription()).isEqualTo("Invalid credentials");
             });
   }
 
@@ -147,8 +146,7 @@ public class AuthenticationInterceptorTest {
         .hasValueSatisfying(
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
-              assertThat(status.getDescription())
-                  .isEqualTo("Invalid credentials");
+              assertThat(status.getDescription()).isEqualTo("Invalid credentials");
             });
   }
 
