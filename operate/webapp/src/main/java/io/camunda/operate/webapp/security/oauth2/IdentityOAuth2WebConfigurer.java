@@ -10,6 +10,12 @@ package io.camunda.operate.webapp.security.oauth2;
 import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES384;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES512;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS384;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
@@ -19,7 +25,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -43,11 +48,20 @@ public class IdentityOAuth2WebConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityOAuth2WebConfigurer.class);
 
-  @Autowired private Environment env;
+  private final Environment env;
 
-  @Autowired private IdentityConfiguration identityConfiguration;
+  private final IdentityConfiguration identityConfiguration;
 
-  @Autowired private IdentityJwt2AuthenticationTokenConverter jwtConverter;
+  private final IdentityJwt2AuthenticationTokenConverter jwtConverter;
+
+  public IdentityOAuth2WebConfigurer(
+      final Environment env,
+      final IdentityConfiguration identityConfiguration,
+      final IdentityJwt2AuthenticationTokenConverter jwtConverter) {
+    this.env = env;
+    this.identityConfiguration = identityConfiguration;
+    this.jwtConverter = jwtConverter;
+  }
 
   public void configure(final HttpSecurity http) throws Exception {
     if (isJWTEnabled()) {
@@ -70,10 +84,20 @@ public class IdentityOAuth2WebConfigurer {
    */
   private JwtDecoder jwtDecoder() {
     return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty())
+        .jwsAlgorithms(
+            algorithms -> {
+              algorithms.add(RS256);
+              algorithms.add(RS384);
+              algorithms.add(RS512);
+              algorithms.add(ES256);
+              algorithms.add(ES384);
+              algorithms.add(ES512);
+            })
         .jwtProcessorCustomizer(
-            processor ->
-                processor.setJWSTypeVerifier(
-                    new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt"))))
+            processor -> {
+              processor.setJWSTypeVerifier(
+                  new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt")));
+            })
         .build();
   }
 
