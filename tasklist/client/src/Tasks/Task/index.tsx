@@ -152,10 +152,7 @@ const Task: React.FC = observer(() => {
 
   function handleSubmissionFailure(error: Error) {
     const errorMessage = parseJSON(error?.message);
-    if (
-      errorMessage?.status === 504 &&
-      errorMessage?.error_code === 'TASK_PROCESSING_TIMEOUT'
-    ) {
+    if (errorMessage?.title === 'TASK_PROCESSING_TIMEOUT') {
       tracking.track({eventName: 'task-completion-delayed-notification'});
       notificationsStore.displayNotification({
         kind: 'info',
@@ -166,10 +163,7 @@ const Task: React.FC = observer(() => {
       return;
     }
 
-    if (
-      errorMessage?.status === 409 &&
-      errorMessage?.error_code === 'TASK_ALREADY_IN_PROCESSING'
-    ) {
+    if (errorMessage?.title === 'INVALID_STATE') {
       tracking.track({eventName: 'task-completion-rejected-notification'});
       notificationsStore.displayNotification({
         kind: 'error',

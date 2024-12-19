@@ -139,10 +139,7 @@ const AssignButton: React.FC<{
       }
     } catch (error) {
       const errorMessage = parseJSON((error as Error).message);
-      if (
-        errorMessage?.status === 504 &&
-        errorMessage?.error_code === 'TASK_PROCESSING_TIMEOUT'
-      ) {
+      if (errorMessage?.title === 'TASK_PROCESSING_TIMEOUT') {
         tracking.track({
           eventName: isAssigned
             ? 'task-unassignment-delayed-notification'
@@ -162,10 +159,7 @@ const AssignButton: React.FC<{
       }
 
       setAssignmentStatus('off');
-      if (
-        errorMessage?.status === 409 &&
-        errorMessage?.error_code === 'TASK_ALREADY_IN_PROCESSING'
-      ) {
+      if (errorMessage?.title === 'INVALID_STATE') {
         tracking.track({
           eventName: isAssigned
             ? 'task-unassignment-rejected-notification'
