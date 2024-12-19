@@ -7,7 +7,7 @@
 
 import styled from "styled-components";
 import { TableContainer } from "@carbon/react";
-import { layer01, productiveHeading01, spacing04 } from "@carbon/themes";
+import { layer01, productiveHeading01, spacing04 } from "@carbon/elements";
 
 export const NoDataContainer = styled.div`
   padding: ${spacing04};

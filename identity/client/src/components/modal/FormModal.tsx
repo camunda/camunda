@@ -1,6 +1,6 @@
 import { FC, FormEvent } from "react";
 import { Form, Stack } from "@carbon/react";
-import { spacing04 } from "@carbon/themes";
+import { spacing04 } from "@carbon/elements";
 import styled from "styled-components";
 import Modal, { ModalProps } from "./Modal";
 import useTranslate from "../../utility/localization";

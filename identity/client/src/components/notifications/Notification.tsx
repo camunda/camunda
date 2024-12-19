@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from "react";
 import { CSSTransition } from "react-transition-group";
 import styled from "styled-components";
 import { ToastNotification } from "@carbon/react";
-import { spacing03 } from "@carbon/themes";
+import { spacing03 } from "@carbon/elements";
 import { NotificationOptions } from "./NotificationContext";
 
 const NOTIFICATION_TIMEOUT = 5000;

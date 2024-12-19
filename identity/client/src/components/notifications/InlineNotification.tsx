@@ -4,7 +4,7 @@ import {
   ActionableNotification,
   InlineNotification as CarbonInlineNotification,
 } from "@carbon/react";
-import { spacing05 } from "@carbon/themes";
+import { spacing05 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { NotificationOptions } from "./NotificationContext";
 
