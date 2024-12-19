@@ -359,7 +359,10 @@ final class CamundaExporterIT {
     final Record record = generateRecordWithSupportedBrokerVersion(valueType);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
-        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
     final var expectedHandlers =
         resourceProvider.getExportHandlers().stream()
             .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
@@ -449,7 +452,10 @@ final class CamundaExporterIT {
     final DefaultExporterResourceProvider defaultExporterResourceProvider =
         new DefaultExporterResourceProvider();
     defaultExporterResourceProvider.init(
-        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     return defaultExporterResourceProvider.getExportHandlers().stream()
         .map(handler -> (ExportHandler<T, R>) handler)
@@ -522,7 +528,11 @@ final class CamundaExporterIT {
       final Set<IndexTemplateDescriptor> templateDescriptors,
       final ExporterConfiguration config) {
     final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
-    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
