@@ -208,6 +208,7 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
       loading={loading}
       loadingDescription={t("Updating authorizations")}
       confirmLabel={t("Update authorizations")}
+      submitDisabled={!resourceType && !permissionType}
     >
       <Dropdown
         id="resource-type-dropdown"
@@ -218,7 +219,9 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
           setResourceType(item.selectedItem)
         }
         itemToString={(item: ResourceType) => (item ? t(item) : "")}
-        selectedItem={resourceTypeItems.find((item) => item === resourceType)}
+        selectedItem={
+          resourceTypeItems.find((item) => item === resourceType) || ""
+        }
       />
 
       <Dropdown
@@ -230,9 +233,9 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
         }
         items={permissionTypeItems}
         itemToString={(item: PermissionType) => (item ? t(item) : "")}
-        selectedItem={permissionTypeItems.find(
-          (item) => item === permissionType,
-        )}
+        selectedItem={
+          permissionTypeItems.find((item) => item === permissionType) || ""
+        }
       />
 
       <SelectedResources>

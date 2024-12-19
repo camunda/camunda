@@ -54,25 +54,25 @@ type AuthorizationsListProps = {
   loadingUser: boolean;
 };
 
+const ToolbarContent = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: ${spacing05};
+`;
+
+const StyledListItem = styled(ListItem)`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: ${spacing04};
+`;
+const StyledDivider = styled(Section)`
+  margin: ${spacing02} 0;
+  border-top: 1px solid ${gray30};
+`;
+
 const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
   const { t, Translate } = useTranslate();
-
-  const ToolbarContent = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    gap: ${spacing05};
-  `;
-
-  const StyledListItem = styled(ListItem)`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-left: ${spacing04};
-  `;
-  const StyledDivider = styled(Section)`
-    margin: ${spacing02} 0;
-    border-top: 1px solid ${gray30};
-  `;
 
   const {
     data: authorizations,
