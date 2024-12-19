@@ -47,6 +47,7 @@ import { useEntityModal } from "src/components/modal";
 import { Authorization } from "src/utility/api/authorizations";
 import { DataTableRenderProps } from "@carbon/react/lib/components/DataTable/DataTable";
 import styled from "styled-components";
+import { gray30, spacing02, spacing04, spacing05 } from "@carbon/elements";
 
 type AuthorizationsListProps = {
   user: User;
@@ -59,18 +60,18 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
   const ToolbarContent = styled.div`
     display: flex;
     justify-content: flex-end;
-    gap: 16px; /* Replace with the appropriate Carbon spacing token */
+    gap: ${spacing05};
   `;
 
   const StyledListItem = styled(ListItem)`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-left: 10px;
+    padding-left: ${spacing04};
   `;
   const StyledDivider = styled(Section)`
-    margin: 5px 0;
-    border-top: 1px solid #ccc;
+    margin: ${spacing02} 0;
+    border-top: 1px solid ${gray30};
   `;
 
   const {

@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { linkInverse, spacing04 } from "@carbon/themes";
+import { linkInverse, spacing04 } from "@carbon/elements";
 import { Link } from "@carbon/react";
 import { FC, ReactNode } from "react";
 import useTranslate from "../../utility/localization";
