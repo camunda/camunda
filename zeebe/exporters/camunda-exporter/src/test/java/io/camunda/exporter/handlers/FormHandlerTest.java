@@ -24,8 +24,6 @@ import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class FormHandlerTest {
@@ -62,22 +60,21 @@ public class FormHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final long expectedId = 123;
-
+    final long formKey = 123;
+    final long recordKey = 456;
     final Record<Form> decisionRecord =
         factory.generateRecord(
             ValueType.FORM,
             r ->
                 r.withIntent(FormIntent.CREATED)
-                    .withKey(expectedId)
-                    .withValue(
-                        factory.generateObject(ImmutableForm.class).withFormKey(expectedId)));
+                    .withKey(recordKey)
+                    .withValue(factory.generateObject(ImmutableForm.class).withFormKey(formKey)));
 
     // when
     final var idList = underTest.generateIds(decisionRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    assertThat(idList).containsExactly(String.valueOf(formKey));
   }
 
   @Test
@@ -100,8 +97,7 @@ public class FormHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, new HashMap<>());
+    verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
   @Test
@@ -114,9 +110,7 @@ public class FormHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(
-            indexName, String.valueOf(inputEntity.getId()), inputEntity, Map.of("isDeleted", true));
+    verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
   @Test
