@@ -1051,12 +1051,14 @@ public class ResourceDeletionTest {
             .getFirst()
             .getValue();
 
-    final var formDeletedRecord =
+    final Record<Form> record =
         RecordingExporter.formRecords()
             .withFormKey(formKey)
             .withIntent(FormIntent.DELETED)
-            .getFirst()
-            .getValue();
+            .getFirst();
+    final var formDeletedRecord = record.getValue();
+
+    assertThat(record.getKey()).isEqualTo(formKey);
 
     assertThat(formDeletedRecord)
         .describedAs("Expect deleted form to match the created form")
