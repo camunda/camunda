@@ -8,6 +8,7 @@
 package io.camunda.migration.identity.midentity;
 
 import io.camunda.migration.identity.dto.Group;
+import io.camunda.migration.identity.dto.GroupTenants;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
@@ -30,6 +31,8 @@ public class ManagementIdentityClient {
   private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migration/tenant?" + URL_PARAMS;
   private static final String MIGRATION_USER_TENANTS_ENDPOINT =
       "/api/migration/tenant/user?" + URL_PARAMS;
+  private static final String MIGRATION_GROUP_TENANTS_ENDPOINT =
+      "/api/migration/tenant/group?" + URL_PARAMS;
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
   private static final String MIGRATION_GROUPS_ENDPOINT =
@@ -66,6 +69,14 @@ public class ManagementIdentityClient {
             Objects.requireNonNull(
                 restTemplate.getForObject(
                     MIGRATION_USER_TENANTS_ENDPOINT, UserTenants[].class, pageSize)))
+        .toList();
+  }
+
+  public List<GroupTenants> fetchGroupTenants(final int pageSize) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_GROUP_TENANTS_ENDPOINT, GroupTenants[].class, pageSize)))
         .toList();
   }
 
