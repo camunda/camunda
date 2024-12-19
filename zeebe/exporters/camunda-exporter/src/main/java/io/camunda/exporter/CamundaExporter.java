@@ -95,7 +95,10 @@ public class CamundaExporter implements Exporter {
     clientAdapter = ClientAdapter.of(configuration);
     partitionId = context.getPartitionId();
     provider.init(
-        configuration, clientAdapter.getExporterEntityCacheProvider(), context.getMeterRegistry());
+        configuration,
+        clientAdapter.getExporterEntityCacheProvider(),
+        context.getMeterRegistry(),
+        metadata);
 
     taskManager =
         new BackgroundTaskManagerFactory(
