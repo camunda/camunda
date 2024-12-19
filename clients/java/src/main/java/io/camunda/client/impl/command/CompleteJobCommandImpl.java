@@ -99,7 +99,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep2 result() {
+  public CompleteJobCommandStep2 withResult() {
     resultRest = new io.camunda.client.protocol.rest.JobResult();
     httpRequestObject.setResult(resultRest);
 

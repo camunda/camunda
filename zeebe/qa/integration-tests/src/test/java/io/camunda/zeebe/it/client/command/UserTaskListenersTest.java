@@ -75,7 +75,7 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.completing().type("my_listener")));
 
     final JobHandler completeJobHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).result().denied(false).send().join();
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().denied(false).send().join();
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
@@ -250,7 +250,7 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.completing().type(listenerType)));
 
     final JobHandler completeJobHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).result().denied(true).send().join();
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().denied(true).send().join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
 
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
@@ -299,7 +299,7 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .result()
+                .withResult()
                 .corrections()
                 .assignee("Test")
                 .dueDate("due date")
@@ -367,7 +367,7 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .result()
+                .withResult()
                 .corrections()
                 .assignee("Test")
                 .followUpDate("follow up date")

@@ -155,7 +155,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).result().denied(denied).send().join();
+    client.newCompleteCommand(jobKey).withResult().denied(denied).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
@@ -169,7 +169,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).result().send().join();
+    client.newCompleteCommand(jobKey).withResult().send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
@@ -185,7 +185,7 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .result()
+        .withResult()
         .corrections()
         .assignee("Test")
         .dueDate("due date")
@@ -223,7 +223,7 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .result()
+        .withResult()
         .corrections()
         .assignee("Test")
         .dueDate("due date")
@@ -258,7 +258,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).result().corrections().send().join();
+    client.newCompleteCommand(jobKey).withResult().corrections().send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);

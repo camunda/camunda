@@ -192,7 +192,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).result().send().join();
+    client.newCompleteCommand(job).withResult().send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -209,7 +209,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).result().denied(false).send().join();
+    client.newCompleteCommand(job).withResult().denied(false).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -226,7 +226,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).result().denied(true).send().join();
+    client.newCompleteCommand(job).withResult().denied(true).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -245,7 +245,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .result()
+        .withResult()
         .corrections()
         .assignee("Test")
         .dueDate("due date")
@@ -296,7 +296,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .result()
+        .withResult()
         .corrections()
         .assignee("Test")
         .dueDate("due date")
@@ -340,7 +340,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).result().corrections().send().join();
+    client.newCompleteCommand(job).withResult().corrections().send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();

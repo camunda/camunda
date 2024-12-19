@@ -75,7 +75,7 @@ public interface CompleteJobCommandStep1
    *
    * @return the builder for this command.
    */
-  CompleteJobCommandStep2 result();
+  CompleteJobCommandStep2 withResult();
 
   interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
 
