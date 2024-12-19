@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -56,9 +56,9 @@ public class MigrationITInvocationProvider
   private final Map<DatabaseType, Map<String, String>> tasklistEnvironmentAfter = new HashMap<>();
 
   private final Map<DatabaseType, TestStandaloneBroker> testBrokers = new HashMap<>();
-  private BiConsumer<ZeebeClient, TasklistMigrationHelper> beforeMigrationFunc;
-  private BiConsumer<ZeebeClient, TasklistMigrationHelper> afterMigrationFunc;
-  private final Map<DatabaseType, ZeebeClient> zeebeClients = new HashMap<>();
+  private BiConsumer<CamundaClient, TasklistMigrationHelper> beforeMigrationFunc;
+  private BiConsumer<CamundaClient, TasklistMigrationHelper> afterMigrationFunc;
+  private final Map<DatabaseType, CamundaClient> camundaClients = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final Map<DatabaseType, TasklistMigrationHelper> tasklistContainer = new HashMap<>();
   private final Map<DatabaseType, ZeebeMigrationHelper> zeebeUtils = new HashMap<>();
@@ -121,7 +121,7 @@ public class MigrationITInvocationProvider
                   final ParameterContext parameterContext, final ExtensionContext extensionContext)
                   throws ParameterResolutionException {
                 return Set.of(
-                        ZeebeClient.class,
+                        CamundaClient.class,
                         TasklistMigrationHelper.class,
                         TasklistMigrationHelper.UserTaskArg.class)
                     .contains(parameterContext.getParameter().getType());
@@ -131,8 +131,8 @@ public class MigrationITInvocationProvider
               public Object resolveParameter(
                   final ParameterContext parameterContext, final ExtensionContext extensionContext)
                   throws ParameterResolutionException {
-                if (parameterContext.getParameter().getType().equals(ZeebeClient.class)) {
-                  return zeebeClients.get(databaseType);
+                if (parameterContext.getParameter().getType().equals(CamundaClient.class)) {
+                  return camundaClients.get(databaseType);
                 } else if (parameterContext
                     .getParameter()
                     .getType()
@@ -175,13 +175,13 @@ public class MigrationITInvocationProvider
   }
 
   public MigrationITInvocationProvider withRunBefore(
-      final BiConsumer<ZeebeClient, TasklistMigrationHelper> runBefore) {
+      final BiConsumer<CamundaClient, TasklistMigrationHelper> runBefore) {
     beforeMigrationFunc = runBefore;
     return this;
   }
 
   public MigrationITInvocationProvider withRunAfter(
-      final BiConsumer<ZeebeClient, TasklistMigrationHelper> runAfter) {
+      final BiConsumer<CamundaClient, TasklistMigrationHelper> runAfter) {
     afterMigrationFunc = runAfter;
     return this;
   }
@@ -253,7 +253,7 @@ public class MigrationITInvocationProvider
 
   private void beforeMigrationStartup(final DatabaseType db) {
     closeables.add(zeebeUtils.get(db).start86Broker(zeebeEnvironmentBefore.get(db), db));
-    zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
+    camundaClients.put(db, zeebeUtils.get(db).getCamundaClient());
 
     // Start Tasklist
     closeables.add(
@@ -262,7 +262,7 @@ public class MigrationITInvocationProvider
             .createTasklist(tasklistEnvironmentBefore.get(db), false, zeebeUtils.get(db), db));
 
     if (beforeMigrationFunc != null) {
-      beforeMigrationFunc.accept(zeebeClients.get(db), tasklistContainer.get(db));
+      beforeMigrationFunc.accept(camundaClients.get(db), tasklistContainer.get(db));
     }
   }
 
@@ -284,10 +284,10 @@ public class MigrationITInvocationProvider
             .createTasklist(tasklistEnvironmentAfter.get(db), true, zeebeUtils.get(db), db));
 
     testBrokers.put(db, broker);
-    zeebeClients.put(db, zeebeUtils.get(db).getZeebeClient());
+    camundaClients.put(db, zeebeUtils.get(db).getCamundaClient());
 
     if (afterMigrationFunc != null) {
-      afterMigrationFunc.accept(zeebeClients.get(db), tasklistContainer.get(db));
+      afterMigrationFunc.accept(camundaClients.get(db), tasklistContainer.get(db));
     }
 
     closeables.add(broker);
