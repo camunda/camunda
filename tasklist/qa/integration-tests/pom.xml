@@ -57,12 +57,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-870</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-mvc-auth-commons</artifactId>
       <scope>test</scope>
     </dependency>
@@ -360,12 +354,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-collections4</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
@@ -481,6 +469,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
 

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -86,16 +87,15 @@ public class OpenSearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
+      tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
     }
-    tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
-    if (tasklistProperties.getOpenSearch().isCreateSchema()) {
-      schemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("OpenSearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
-    }
+    /* Needed for the tasklist-user index */
+    schemaManager.createSchema();
   }
 
   @Override
@@ -178,41 +178,19 @@ public class OpenSearchTestExtension
       final TestCheck testCheck,
       final Supplier<Object> supplier,
       final Object... arguments) {
-    long shouldImportCount = 0;
     int waitingRound = 0;
     final int maxRounds = 50;
     boolean found = testCheck.test(arguments);
     final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
-      shouldImportCount = 0;
       try {
         if (supplier != null) {
           supplier.get();
         }
         refreshIndexesInElasticsearch();
-        shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
-      long imported = testImportListener.getImported();
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(500);
-          shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          shouldImportCount = 0;
-          LOGGER.error(e.getMessage(), e);
-        }
-        imported = testImportListener.getImported();
-        LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
-      }
-      refreshTasklistIndices();
       found = testCheck.test(arguments);
       if (!found) {
         sleepFor(500);
