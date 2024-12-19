@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
@@ -40,7 +41,7 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
             SearchBoolQuery.class,
             t -> {
               final var musts = t.must();
-              assertThat(musts).hasSize(3);
+              assertThat(musts).hasSize(2);
               final var eventSearchTermQuery =
                   new SearchTermQuery.Builder()
                       .field("event")
@@ -48,21 +49,17 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
                       .build()
                       .toSearchQuery();
               assertThat(musts).contains(eventSearchTermQuery);
-              final var rangeQueries =
+              final var rangeQuery =
                   musts.stream()
-                      .filter(
-                          q ->
-                              q.queryOption() instanceof SearchRangeQuery
-                                  && ((SearchRangeQuery) q.queryOption())
-                                      .field()
-                                      .equals("eventTime"))
-                      .map(q -> (SearchRangeQuery) q.queryOption())
-                      .toList();
-              assertThat(rangeQueries).hasSize(2);
-              assertThat(rangeQueries)
-                  .anySatisfy(q -> assertThat(q.gte()).isEqualTo("2021-01-01T00:00:00.000+0000"));
-              assertThat(rangeQueries)
-                  .anySatisfy(q -> assertThat(q.lte()).isEqualTo("2023-01-01T00:00:00.000+0000"));
+                      .map(SearchQuery::queryOption)
+                      .filter(SearchRangeQuery.class::isInstance)
+                      .findFirst();
+              assertThat(rangeQuery)
+                  .isPresent()
+                  .get()
+                  .extracting("field", "gte", "lte")
+                  .containsExactly(
+                      "eventTime", "2021-01-01T00:00:00.000+0000", "2023-01-01T00:00:00.000+0000");
             });
   }
 
