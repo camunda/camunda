@@ -31,16 +31,16 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BackupService {
+public class OptimizeBackupService {
 
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(BackupService.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(OptimizeBackupService.class);
 
   private final BackupReader backupReader;
   private final BackupWriter backupWriter;
   private final ConfigurationService configurationService;
 
-  public BackupService(
+  public OptimizeBackupService(
       final BackupReader backupReader,
       final BackupWriter backupWriter,
       final ConfigurationService configurationService) {

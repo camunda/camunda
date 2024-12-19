@@ -18,7 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
-import io.camunda.optimize.service.BackupService;
+import io.camunda.optimize.service.OptimizeBackupService;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.db.writer.BackupWriter;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -42,14 +42,14 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class BackupServiceTest {
+public class OptimizeBackupServiceTest {
 
   private static MockedStatic<StringUtils> stringUtils;
   @Mock private BackupReader backupReader;
   @Mock private BackupWriter backupWriter;
   @Mock private ElasticSearchConfiguration databaseConfiguration;
   @Mock private ConfigurationService configurationService;
-  @InjectMocks private BackupService backupService;
+  @InjectMocks private OptimizeBackupService optimizeBackupService;
 
   @BeforeAll
   public static void beforeAll() {
@@ -71,7 +71,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(OptimizeConfigurationException.class, () -> backupService.triggerBackup(123L));
+        assertThrows(
+            OptimizeConfigurationException.class, () -> optimizeBackupService.triggerBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -91,7 +92,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.triggerBackup(123L));
+        assertThrows(
+            OptimizeRuntimeException.class, () -> optimizeBackupService.triggerBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -111,7 +113,8 @@ public class BackupServiceTest {
 
     // when
     final OptimizeConflictException thrown =
-        assertThrows(OptimizeConflictException.class, () -> backupService.triggerBackup(123L));
+        assertThrows(
+            OptimizeConflictException.class, () -> optimizeBackupService.triggerBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
             "A backup with ID [123] already exists. Found snapshots: "
@@ -129,7 +132,8 @@ public class BackupServiceTest {
     // when/then
     final OptimizeConfigurationException thrown =
         assertThrows(
-            OptimizeConfigurationException.class, () -> backupService.getSingleBackupInfo(123L));
+            OptimizeConfigurationException.class,
+            () -> optimizeBackupService.getSingleBackupInfo(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -149,7 +153,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.getSingleBackupInfo(123L));
+        assertThrows(
+            OptimizeRuntimeException.class, () -> optimizeBackupService.getSingleBackupInfo(123L));
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -165,7 +170,8 @@ public class BackupServiceTest {
 
     // when/then
     final NotFoundException thrown =
-        assertThrows(NotFoundException.class, () -> backupService.getSingleBackupInfo(123L));
+        assertThrows(
+            NotFoundException.class, () -> optimizeBackupService.getSingleBackupInfo(123L));
     assertThat(thrown.getMessage()).isEqualTo("No Optimize backup with ID [123] could be found.");
   }
 
@@ -179,7 +185,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(OptimizeConfigurationException.class, () -> backupService.getAllBackupInfo());
+        assertThrows(
+            OptimizeConfigurationException.class, () -> optimizeBackupService.getAllBackupInfo());
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -199,7 +206,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.getAllBackupInfo());
+        assertThrows(
+            OptimizeRuntimeException.class, () -> optimizeBackupService.getAllBackupInfo());
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -213,7 +221,7 @@ public class BackupServiceTest {
     when(backupReader.getAllOptimizeSnapshotsByBackupId()).thenReturn(Collections.emptyMap());
 
     // when/then
-    assertThat(backupService.getAllBackupInfo()).isEmpty();
+    assertThat(optimizeBackupService.getAllBackupInfo()).isEmpty();
   }
 
   @Test
@@ -226,7 +234,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(OptimizeConfigurationException.class, () -> backupService.deleteBackup(123L));
+        assertThrows(
+            OptimizeConfigurationException.class, () -> optimizeBackupService.deleteBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -246,7 +255,8 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.deleteBackup(123L));
+        assertThrows(
+            OptimizeRuntimeException.class, () -> optimizeBackupService.deleteBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
