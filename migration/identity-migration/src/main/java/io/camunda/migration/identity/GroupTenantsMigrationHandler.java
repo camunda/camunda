@@ -7,10 +7,11 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.midentity.ManagementIdentityTransformer.toMigrationStatusUpdateRequest;
+
 import io.camunda.migration.identity.dto.GroupTenants;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.service.GroupServices;
 import io.camunda.service.TenantServices;
@@ -24,17 +25,14 @@ final class GroupTenantsMigrationHandler implements MigrationHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(GroupTenantsMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
-  private final ManagementIdentityTransformer managementIdentityTransformer;
   private final GroupServices groupServices;
   private final TenantServices tenantServices;
 
   public GroupTenantsMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
-      final ManagementIdentityTransformer managementIdentityTransformer,
       final GroupServices groupServices,
       final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
-    this.managementIdentityTransformer = managementIdentityTransformer;
     this.groupServices = groupServices;
     this.tenantServices = tenantServices;
   }
@@ -70,12 +68,12 @@ final class GroupTenantsMigrationHandler implements MigrationHandler {
       } catch (final Exception e) {
         if (!isConflictError(e)) {
           LOG.warn("Failed to assign group {} to tenant {}", groupName, tenantId, e);
-          return managementIdentityTransformer.toMigrationStatusUpdateRequest(groupTenants, e);
+          return toMigrationStatusUpdateRequest(groupTenants, e);
         }
         LOG.trace("Group {} is already assigned to tenant {}", groupName, tenantId);
       }
     }
 
-    return managementIdentityTransformer.toMigrationStatusUpdateRequest(groupTenants, null);
+    return toMigrationStatusUpdateRequest(groupTenants, null);
   }
 }

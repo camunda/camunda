@@ -7,11 +7,12 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.midentity.ManagementIdentityTransformer.toMigrationStatusUpdateRequest;
+
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserTenants;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -24,17 +25,14 @@ import org.springframework.stereotype.Component;
 public class UserTenantsMigrationHandler implements MigrationHandler {
   private static final String USERNAME_CLAIM = "sub";
   private final ManagementIdentityClient managementIdentityClient;
-  private final ManagementIdentityTransformer managementIdentityTransformer;
   private final TenantServices tenantServices;
   private final MappingServices mappingServices;
 
   public UserTenantsMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
-      final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices,
       final MappingServices mappingServices) {
     this.managementIdentityClient = managementIdentityClient;
-    this.managementIdentityTransformer = managementIdentityTransformer;
     this.tenantServices = tenantServices;
     this.mappingServices = mappingServices;
   }
@@ -65,9 +63,9 @@ public class UserTenantsMigrationHandler implements MigrationHandler {
         final var tenantKey = tenantServices.getById(userTenant.tenantId()).key();
         assignMemberToTenant(tenantKey, mappingKey);
       }
-      return managementIdentityTransformer.toMigrationStatusUpdateRequest(userTenants, null);
+      return toMigrationStatusUpdateRequest(userTenants, null);
     } catch (final Exception e) {
-      return managementIdentityTransformer.toMigrationStatusUpdateRequest(userTenants, e);
+      return toMigrationStatusUpdateRequest(userTenants, e);
     }
   }
 
