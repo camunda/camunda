@@ -13,16 +13,17 @@ import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AuthorizationHandler
+public class AuthorizationPermissionAddedHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
   private final String indexName;
 
-  public AuthorizationHandler(final String indexName) {
+  public AuthorizationPermissionAddedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -38,12 +39,15 @@ public class AuthorizationHandler
 
   @Override
   public boolean handlesRecord(final Record<AuthorizationRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return getHandledValueType().equals(record.getValueType())
+        && AuthorizationIntent.PERMISSION_ADDED.equals(record.getIntent());
   }
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(
+        String.format(
+            "%s-%s", record.getValue().getOwnerKey(), record.getValue().getResourceType().name()));
   }
 
   @Override
@@ -65,7 +69,7 @@ public class AuthorizationHandler
   @Override
   public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.addWithId(indexName, entity.getId(), entity);
   }
 
   @Override
