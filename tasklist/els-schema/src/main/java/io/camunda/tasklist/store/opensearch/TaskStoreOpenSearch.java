@@ -116,14 +116,16 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
+    final Query.Builder flowNodeInstanceQuery = new Query.Builder();
+    flowNodeInstanceQuery.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID));
+
+    final Query.Builder processInstanceIdQuery = new Query.Builder();
+    processInstanceIdQuery.term(
+        t -> t.field(TaskTemplate.PROCESS_INSTANCE_ID).value(FieldValue.of(processInstanceId)));
+
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .query(
-                q ->
-                    q.term(
-                        term ->
-                            term.field(TaskTemplate.PROCESS_INSTANCE_ID)
-                                .value(FieldValue.of(processInstanceId))))
+            .query(q -> joinQueryBuilderWithAnd(flowNodeInstanceQuery, processInstanceIdQuery))
             .fields(f -> f.field(TaskTemplate.KEY));
 
     try {
@@ -136,16 +138,17 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
+    final Query.Builder flowNodeInstanceQuery = new Query.Builder();
+    flowNodeInstanceQuery.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID));
+
+    final Query.Builder processInstanceIdQuery = new Query.Builder();
+    processInstanceIdQuery.term(
+        t -> t.field(TaskTemplate.PROCESS_DEFINITION_ID).value(FieldValue.of(processDefinitionId)));
+
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .query(
-                q ->
-                    q.term(
-                        term ->
-                            term.field(TaskTemplate.PROCESS_DEFINITION_ID)
-                                .value(FieldValue.of(processDefinitionId))))
+            .query(q -> joinQueryBuilderWithAnd(flowNodeInstanceQuery, processInstanceIdQuery))
             .fields(f -> f.field(TaskTemplate.KEY));
-
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
     } catch (final IOException e) {
