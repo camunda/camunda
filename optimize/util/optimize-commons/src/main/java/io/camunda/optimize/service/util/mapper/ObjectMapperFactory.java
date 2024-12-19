@@ -29,7 +29,6 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
@@ -41,7 +40,7 @@ public class ObjectMapperFactory {
           ConfigurationServiceBuilder.createDefaultConfiguration());
   public static final ObjectMapper OPTIMIZE_MAPPER = FACTORY.createOptimizeMapper();
   public static final ObjectMapper OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED =
-      FACTORY.createOptimizeMapper(false);
+      FACTORY.createOptimizeMapper();
 
   private final DateTimeFormatter optimizeDateTimeFormatter;
   private final ConfigurationService configurationService;
@@ -53,57 +52,24 @@ public class ObjectMapperFactory {
     this.configurationService = configurationService;
   }
 
-  @Qualifier("optimizeMapper")
-  @Bean
-  @Primary
+  @Bean("optimizeObjectMapper")
   public ObjectMapper createOptimizeMapper() {
-    return buildObjectMapper(optimizeDateTimeFormatter, true);
-  }
-
-  public ObjectMapper createOptimizeMapper(final boolean unknownPropsEnable) {
-    return buildObjectMapper(optimizeDateTimeFormatter, unknownPropsEnable);
+    return buildObjectMapper();
   }
 
   @Qualifier("engineMapper")
   @Bean
   public ObjectMapper createEngineMapper() {
-    return buildObjectMapper(createEngineDateTimeFormatter(), true);
+    return buildObjectMapper();
   }
 
   private DateTimeFormatter createEngineDateTimeFormatter() {
     return DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
   }
 
-  private ObjectMapper buildObjectMapper(
-      final DateTimeFormatter deserializationDateTimeFormatter,
-      final boolean unknownPropsFailEnable) {
-    final JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(
-        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(optimizeDateTimeFormatter));
-    javaTimeModule.addSerializer(
-        Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
-    javaTimeModule.addDeserializer(
-        OffsetDateTime.class,
-        new CustomOffsetDateTimeDeserializer(deserializationDateTimeFormatter));
-
+  private ObjectMapper buildObjectMapper() {
     final Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder =
-        Jackson2ObjectMapperBuilder.json()
-            .modules(new Jdk8Module(), javaTimeModule)
-            .featuresToDisable(
-                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-                DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-                DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
-                DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,
-                SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
-            .featuresToEnable(
-                JsonParser.Feature.ALLOW_COMMENTS,
-                DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
-                MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
-
-    if (unknownPropsFailEnable) {
-      jackson2ObjectMapperBuilder.featuresToDisable(
-          DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-    }
+        optimizeObjectMapperCustomizer();
 
     final ObjectMapper mapper = jackson2ObjectMapperBuilder.build();
 
@@ -119,5 +85,34 @@ public class ObjectMapperFactory {
     mapper.registerModule(module);
 
     return mapper;
+  }
+
+  @Bean("optimizeObjectMapperCustomizer")
+  public Jackson2ObjectMapperBuilder optimizeObjectMapperCustomizer() {
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
+    javaTimeModule.addSerializer(
+        OffsetDateTime.class, new CustomOffsetDateTimeSerializer(optimizeDateTimeFormatter));
+    javaTimeModule.addSerializer(
+        Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
+    javaTimeModule.addDeserializer(
+        OffsetDateTime.class,
+        new CustomOffsetDateTimeDeserializer(createEngineDateTimeFormatter()));
+
+    final Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder =
+        Jackson2ObjectMapperBuilder.json()
+            .modules(new Jdk8Module(), javaTimeModule)
+            .featuresToDisable(
+                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+                DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+                DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
+                DeserializationFeature.FAIL_ON_MISSING_EXTERNAL_TYPE_ID_PROPERTY,
+                SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
+            .featuresToEnable(
+                JsonParser.Feature.ALLOW_COMMENTS,
+                DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,
+                MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+
+    // jackson2ObjectMapperBuilder.featuresToDisable(true);
+    return jackson2ObjectMapperBuilder;
   }
 }

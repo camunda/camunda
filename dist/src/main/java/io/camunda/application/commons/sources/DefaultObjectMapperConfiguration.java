@@ -51,12 +51,15 @@ public class DefaultObjectMapperConfiguration {
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> operateCustomizer,
       @Qualifier("tasklistObjectMapperCustomizer")
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> tasklistCustomizer,
+      @Qualifier("optimizeObjectMapperCustomizer")
+          final Optional<Consumer<Jackson2ObjectMapperBuilder>> optimizeCustomizer,
       @Qualifier("gatewayRestObjectMapperCustomizer")
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> gatewayRestCustomizer) {
 
     final var builder = Jackson2ObjectMapperBuilder.json();
     standardCustomizer.ifPresent(c -> c.customize(builder));
     tasklistCustomizer.ifPresent(c -> c.accept(builder));
+    optimizeCustomizer.ifPresent(c -> c.accept(builder));
     operateCustomizer.ifPresent(c -> c.accept(builder));
     gatewayRestCustomizer.ifPresent(c -> c.accept(builder));
     return builder.build();
