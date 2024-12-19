@@ -356,7 +356,7 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
     underTest.updateEntity(taskRecord, taskEntity);
 
     // then
