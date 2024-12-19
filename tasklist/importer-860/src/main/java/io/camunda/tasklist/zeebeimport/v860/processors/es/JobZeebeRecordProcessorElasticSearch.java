@@ -112,7 +112,7 @@ public class JobZeebeRecordProcessorElasticSearch {
     entity.setFormKey(formKey);
 
     Optional.ofNullable(formKey)
-        .flatMap(formStore::getHighestVersionFormByKey)
+        .flatMap(formStore::getFormByKey)
         .ifPresentOrElse(
             linkedForm -> {
               entity.setFormVersion(linkedForm.version());
