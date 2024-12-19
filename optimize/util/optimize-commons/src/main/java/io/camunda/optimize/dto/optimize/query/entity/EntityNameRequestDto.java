@@ -7,17 +7,12 @@
  */
 package io.camunda.optimize.dto.optimize.query.entity;
 
-import jakarta.ws.rs.QueryParam;
-
 public class EntityNameRequestDto {
 
-  @QueryParam("collectionId")
   private String collectionId;
 
-  @QueryParam("dashboardId")
   private String dashboardId;
 
-  @QueryParam("reportId")
   private String reportId;
 
   public EntityNameRequestDto(

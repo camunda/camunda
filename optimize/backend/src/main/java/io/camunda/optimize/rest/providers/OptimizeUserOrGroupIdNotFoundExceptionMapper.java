@@ -10,12 +10,11 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class OptimizeUserOrGroupIdNotFoundExceptionMapper
@@ -26,7 +25,7 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper
   private final LocalizationService localizationService;
 
   public OptimizeUserOrGroupIdNotFoundExceptionMapper(
-      @Context final LocalizationService localizationService) {
+      final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -35,7 +34,7 @@ public class OptimizeUserOrGroupIdNotFoundExceptionMapper
     LOG.info("Mapping OptimizeIdNotFoundException");
 
     return Response.status(Response.Status.BAD_REQUEST)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(getErrorResponseDto(idNotFoundException))
         .build();
   }
