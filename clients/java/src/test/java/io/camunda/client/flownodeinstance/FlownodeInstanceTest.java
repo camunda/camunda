@@ -15,16 +15,15 @@
  */
 package io.camunda.client.flownodeinstance;
 
-import static io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest.StateEnum.ACTIVE;
-import static io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK;
+import static io.camunda.client.api.search.response.FlowNodeInstanceState.ACTIVE;
+import static io.camunda.client.api.search.response.FlowNodeInstanceType.SERVICE_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
-import io.camunda.client.protocol.rest.SortOrderEnum;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.FlowNodeInstanceType;
+import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;
 import java.util.Objects;
@@ -50,8 +49,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .filter(
             f ->
                 f.flowNodeInstanceKey(1L)
-                    .type("SERVICE_TASK")
-                    .state("ACTIVE")
+                    .type(SERVICE_TASK)
+                    .state(ACTIVE)
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
@@ -66,8 +65,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(FlowNodeInstanceSearchQueryRequest.class);
     final FlowNodeInstanceFilterRequest filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getFlowNodeInstanceKey()).isEqualTo(1L);
-    assertThat(filter.getType()).isEqualTo(SERVICE_TASK);
-    assertThat(filter.getState()).isEqualTo(ACTIVE);
+    assertThat(filter.getType()).isEqualTo(FlowNodeInstanceFilterRequest.TypeEnum.SERVICE_TASK);
+    assertThat(filter.getState()).isEqualTo(FlowNodeInstanceFilterRequest.StateEnum.ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo(3L);
@@ -132,6 +131,60 @@ public class FlownodeInstanceTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/flownode-instances/" + flowNodeInstanceKey);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  public void shouldConvertFlowNodeInstanceType() {
+
+    for (final FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
+      final FlowNodeInstanceFilterRequest.TypeEnum protocolValue =
+          FlowNodeInstanceType.toProtocolType(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == FlowNodeInstanceType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(FlowNodeInstanceFilterRequest.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final FlowNodeInstanceItem.TypeEnum protocolValue :
+        FlowNodeInstanceItem.TypeEnum.values()) {
+      final FlowNodeInstanceType value = FlowNodeInstanceType.fromProtocolType(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue == FlowNodeInstanceItem.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(FlowNodeInstanceType.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertFlowNodeInstanceState() {
+
+    for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
+      final FlowNodeInstanceFilterRequest.StateEnum protocolValue =
+          FlowNodeInstanceState.toProtocolState(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(FlowNodeInstanceFilterRequest.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final FlowNodeInstanceItem.StateEnum protocolValue :
+        FlowNodeInstanceItem.StateEnum.values()) {
+      final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue == FlowNodeInstanceItem.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
   }
 
   private void assertSort(

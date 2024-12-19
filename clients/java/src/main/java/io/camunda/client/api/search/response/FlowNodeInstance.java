@@ -48,11 +48,11 @@ public interface FlowNodeInstance {
   Long getIncidentKey();
 
   /** state of flow node instance */
-  String getState();
+  FlowNodeInstanceState getState();
 
   /** tenant id for flow node instance */
   String getTenantId();
 
   /** type of flow node instance */
-  String getType();
+  FlowNodeInstanceType getType();
 }

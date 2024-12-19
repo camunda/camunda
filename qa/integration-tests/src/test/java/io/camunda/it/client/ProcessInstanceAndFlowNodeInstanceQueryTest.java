@@ -969,7 +969,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var resultDesc =
         camundaClient.newFlownodeInstanceQuery().sort(s -> s.state().desc()).send().join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getState);
+    assertSorted(resultAsc, resultDesc, flowNodeInstance -> flowNodeInstance.getState().name());
   }
 
   @Test
@@ -1022,7 +1022,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .send()
             .join();
 
-    assertSorted(resultAsc, resultDesc, FlowNodeInstance::getType);
+    assertSorted(resultAsc, resultDesc, flowNodeInstance -> flowNodeInstance.getType().name());
   }
 
   @Test
