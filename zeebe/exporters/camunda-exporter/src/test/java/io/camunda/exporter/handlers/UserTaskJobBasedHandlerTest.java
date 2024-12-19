@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
@@ -36,6 +37,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class UserTaskJobBasedHandlerTest {
@@ -47,11 +49,18 @@ public class UserTaskJobBasedHandlerTest {
           JobIntent.MIGRATED,
           JobIntent.RECURRED_AFTER_BACKOFF,
           JobIntent.FAILED);
+
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
+  private final ExporterMetadata exporterMetadata = new ExporterMetadata();
   private final UserTaskJobBasedHandler underTest =
-      new UserTaskJobBasedHandler(indexName, formCache);
+      new UserTaskJobBasedHandler(indexName, formCache, exporterMetadata);
+
+  @BeforeEach
+  void resetMetadata() {
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, -1);
+  }
 
   @Test
   void testGetHandledValueType() {
@@ -116,18 +125,59 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldGenerateIdForNewVersionReferenceRecord() {
     // given
-    final long expectedId = 123;
+    /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 110;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
     final Record<JobRecordValue> jobRecord =
         factory.generateRecord(
-            ValueType.JOB, r -> r.withIntent(JobIntent.CREATED).withKey(expectedId));
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withElementInstanceKey(flowNodeInstanceKey)
+                            .build()));
 
     // when
     final var idList = underTest.generateIds(jobRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    assertThat(idList).containsExactly(String.valueOf(flowNodeInstanceKey));
+  }
+
+  @Test
+  void shouldGenerateIdForPreviousVersionReferenceRecord() {
+    // given
+    /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 90;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withElementInstanceKey(flowNodeInstanceKey)
+                            .build()));
+
+    // when
+    final var idList = underTest.generateIds(jobRecord);
+
+    // then
+    assertThat(idList).containsExactly(String.valueOf(recordKey));
   }
 
   @Test
@@ -141,9 +191,20 @@ public class UserTaskJobBasedHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldAddEntityOnFlushForNewVersionReferenceRecord() {
+
     // given
-    final TaskEntity inputEntity = new TaskEntity().setProcessInstanceId("111");
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 110;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
+    final TaskEntity inputEntity =
+        new TaskEntity()
+            .setId(String.valueOf(flowNodeInstanceKey))
+            .setKey(recordKey)
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -155,18 +216,51 @@ public class UserTaskJobBasedHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,
-            inputEntity.getId(),
+            String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
-            inputEntity.getProcessInstanceId());
+            String.valueOf(processInstanceKey));
   }
 
   @Test
+  void shouldAddEntityOnFlushForPreviousVersionReferenceRecord() {
+
+    // given
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 90;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
+    final TaskEntity inputEntity =
+        new TaskEntity()
+            .setId(String.valueOf(recordKey))
+            .setKey(recordKey)
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    final Map<String, Object> updateFieldsMap = new HashMap<>();
+
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            String.valueOf(recordKey),
+            inputEntity,
+            updateFieldsMap,
+            String.valueOf(recordKey));
+  }
+
   void shouldUpdateEntityFromRecord() {
     // given
-    final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final long processInstanceKey = 123;
-    final long jobKey = 456;
+    final long flowNodeInstanceKey = 456;
+    final long recordKey = 110;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
+    final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var assignee = "foo";
     final var formKey = "my-local-form-key";
 
@@ -184,6 +278,7 @@ public class UserTaskJobBasedHandlerTest {
             .from(factory.generateObject(JobRecordValue.class))
             .withCustomHeaders(customerHeaders)
             .withProcessInstanceKey(processInstanceKey)
+            .withElementInstanceKey(flowNodeInstanceKey)
             .build();
 
     final Record<JobRecordValue> jobRecord =
@@ -191,18 +286,18 @@ public class UserTaskJobBasedHandlerTest {
             ValueType.JOB,
             r ->
                 r.withIntent(JobIntent.CREATED)
-                    .withKey(jobKey)
+                    .withKey(recordKey)
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
     formCache.put(formKey, new CachedFormEntity("my-form", 987L));
 
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(jobKey));
+    final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));
     underTest.updateEntity(jobRecord, taskEntity);
 
     // then
-    assertThat(taskEntity.getId()).isEqualTo(String.valueOf(jobKey));
+    assertThat(taskEntity.getId()).isEqualTo(String.valueOf(recordKey));
     assertThat(taskEntity.getKey()).isEqualTo(jobRecord.getKey());
     assertThat(taskEntity.getTenantId()).isEqualTo(jobRecordValue.getTenantId());
     assertThat(taskEntity.getPartitionId()).isEqualTo(jobRecord.getPartitionId());

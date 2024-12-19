@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
@@ -44,11 +45,15 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.UPDATED);
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
+  private final ExporterMetadata exporterMetadata;
 
   public UserTaskHandler(
-      final String indexName, final ExporterEntityCache<String, CachedFormEntity> formCache) {
+      final String indexName,
+      final ExporterEntityCache<String, CachedFormEntity> formCache,
+      final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
     this.formCache = formCache;
+    this.exporterMetadata = exporterMetadata;
   }
 
   @Override
@@ -68,6 +73,13 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   @Override
   public List<String> generateIds(final Record<UserTaskRecordValue> record) {
+    if (record.getIntent().equals(UserTaskIntent.CREATED)) {
+      exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, record.getKey());
+    }
+
+    if (refersToPreviousVersionRecord(record.getKey())) {
+      return List.of(String.valueOf(record.getKey()));
+    }
     return List.of(String.valueOf(record.getValue().getElementInstanceKey()));
   }
 
@@ -80,6 +92,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
     entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
     entity.setAction(record.getValue().getAction());
+    entity.setKey(record.getKey());
+
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
       case UserTaskIntent.ASSIGNED -> {
@@ -131,7 +145,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
     joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
-    joinRelation.setParent(Long.valueOf(entity.getProcessInstanceId()));
+    joinRelation.setParent(Long.parseLong(entity.getProcessInstanceId()));
     entity.setJoin(joinRelation);
   }
 
@@ -140,8 +154,14 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     final Map<String, Object> updateFields = getUpdatedFields(entity);
 
+    final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
+
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, entity.getProcessInstanceId());
+        indexName,
+        previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getId(),
+        entity,
+        updateFields,
+        previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getProcessInstanceId());
   }
 
   @Override
@@ -203,8 +223,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-        .setId(String.valueOf(record.getValue().getElementInstanceKey()))
-        .setKey(record.getKey())
         .setState(TaskState.CREATED)
         .setAssignee(
             ExporterUtil.isEmpty(record.getValue().getAssignee())
@@ -248,5 +266,9 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           .get(formKey)
           .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
     }
+  }
+
+  private boolean refersToPreviousVersionRecord(final long key) {
+    return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
   }
 }

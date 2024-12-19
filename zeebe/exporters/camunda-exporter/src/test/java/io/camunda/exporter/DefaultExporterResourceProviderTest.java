@@ -29,7 +29,11 @@ public class DefaultExporterResourceProviderTest {
   void shouldHaveCorrectFullQualifiedNamesForIndexAndTemplates(final ExporterConfiguration config) {
     final var provider = new DefaultExporterResourceProvider();
 
-    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     provider
         .getIndexDescriptors()
