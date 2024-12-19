@@ -92,6 +92,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         } else {
           entity.setAssignee(record.getValue().getAssignee());
         }
+        updateChangedAttributes(record, entity);
       }
       case UserTaskIntent.UPDATED -> {
         for (final String attribute : record.getValue().getChangedAttributes()) {
@@ -115,11 +116,13 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           }
         }
       }
-      case UserTaskIntent.COMPLETED ->
-          entity
-              .setState(TaskState.COMPLETED)
-              .setCompletionTime(
-                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      case UserTaskIntent.COMPLETED -> {
+        entity
+            .setState(TaskState.COMPLETED)
+            .setCompletionTime(
+                ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+        updateChangedAttributes(record, entity);
+      }
       case UserTaskIntent.CANCELED ->
           entity
               .setState(TaskState.CANCELED)
