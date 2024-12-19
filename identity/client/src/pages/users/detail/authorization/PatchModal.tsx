@@ -239,15 +239,15 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
       />
 
       <SelectedResources>
-        {selectedResources.map((r) => (
+        {selectedResources.map((resource) => (
           <Tag
-            key={r}
-            onClose={onUnselectResource(r)}
+            key={resource}
+            onClose={onUnselectResource(resource)}
             size="md"
             type="blue"
             filter
           >
-            {r}
+            {resource}
           </Tag>
         ))}
       </SelectedResources>
