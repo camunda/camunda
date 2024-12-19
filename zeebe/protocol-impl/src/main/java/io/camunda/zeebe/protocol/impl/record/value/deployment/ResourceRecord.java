@@ -26,33 +26,36 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
+  private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty resourceProp = new StringProperty("resourceProp", "");
+  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
 
   public ResourceRecord() {
-    super(8);
+    super(9);
     declareProperty(resourceIdProp)
         .declareProperty(versionProp)
         .declareProperty(resourceKeyProp)
         .declareProperty(checksumProp)
+        .declareProperty(resourceNameProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
         .declareProperty(resourceProp);
   }
 
-  public ResourceRecord wrap(final ResourceMetadataRecord metadata, final String robotScript) {
+  public ResourceRecord wrap(final ResourceMetadataRecord metadata, final byte[] resource) {
     resourceIdProp.setValue(metadata.getResourceId());
     versionProp.setValue(metadata.getVersion());
     checksumProp.setValue(metadata.getChecksumBuffer());
     resourceKeyProp.setValue(metadata.getResourceKey());
+    resourceNameProp.setValue(metadata.getResourceNameBuffer());
     tenantIdProp.setValue(metadata.getTenantId());
     deploymentKeyProp.setValue(metadata.getDeploymentKey());
     versionTagProp.setValue(metadata.getVersionTag());
-    resourceProp.setValue(robotScript);
+    resourceProp.setValue(BufferUtil.wrapArray(resource));
     return this;
   }
 
@@ -97,6 +100,11 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
   }
 
   @Override
+  public String getResourceName() {
+    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+  }
+
+  @Override
   public boolean isDuplicate() {
     return false;
   }
@@ -111,6 +119,21 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return this;
   }
 
+  public ResourceRecord setResourceName(final String resourceName) {
+    resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public ResourceRecord setResourceName(final DirectBuffer resourceName) {
+    resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  public ResourceRecord setResourceKey(final long resourceKey) {
+    resourceKeyProp.setValue(resourceKey);
+    return this;
+  }
+
   public ResourceRecord setResourceId(final DirectBuffer resourceId) {
     resourceIdProp.setValue(resourceId);
     return this;
@@ -121,14 +144,14 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return this;
   }
 
-  public ResourceRecord setResourceKey(final long resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
-    return this;
-  }
-
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
     return checksumProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getResourceNameBuffer() {
+    return resourceNameProp.getValue();
   }
 
   @JsonIgnore
@@ -163,8 +186,9 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
     return bufferAsString(resourceProp.getValue());
   }
 
-  public ResourceRecord setResourceProp(final String robotScript) {
-    resourceProp.setValue(robotScript);
+  public ResourceRecord setResource(
+      final DirectBuffer resource, final int offset, final int length) {
+    resourceProp.setValue(resource, offset, length);
     return this;
   }
 }
