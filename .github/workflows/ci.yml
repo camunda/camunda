@@ -427,7 +427,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@7354c06fc7829b5843712046fd62893bcc3c04a1
         with:
           directory: identity/client
       - name: Install dependencies
@@ -566,7 +566,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@7354c06fc7829b5843712046fd62893bcc3c04a1
         with:
           directory: optimize/client
       - name: Install dependencies

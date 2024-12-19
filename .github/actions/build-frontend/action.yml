@@ -24,7 +24,7 @@ runs:
       shell: bash
       run: npm install -g yarn
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@5fc98a082c30ef7385519cdf1a8a9f11fc01006f
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@7354c06fc7829b5843712046fd62893bcc3c04a1
       with:
         directory: ${{ inputs.directory }}
 
