@@ -17,13 +17,15 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class TestInterPartitionCommandSender implements InterPartitionCommandSender {
 
-  private final Map<Integer, LogStreamWriter> writers = new HashMap<>();
+  private final Map<Integer, CompletableFuture<LogStreamWriter>> writers =
+      new ConcurrentHashMap<>();
   private final Function<Integer, LogStreamWriter> writerFactory;
   private CommandInterceptor interceptor = CommandInterceptor.SEND_ALL;
 
@@ -52,7 +54,7 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
     }
     final var metadata =
         new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
-    final var writer = writers.get(receiverPartitionId);
+    final var writer = writers.computeIfAbsent(receiverPartitionId, i -> new CompletableFuture<>());
     final LogAppendEntry entry;
     if (recordKey != null) {
       entry = LogAppendEntry.of(recordKey, metadata, command);
@@ -60,7 +62,7 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       entry = LogAppendEntry.of(metadata, command);
     }
 
-    writer.tryWrite(WriteContext.interPartition(), entry);
+    writer.thenAccept(w -> w.tryWrite(WriteContext.interPartition(), entry));
   }
 
   // Pre-initialize dedicated writers.
@@ -71,7 +73,7 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
     for (int i = Protocol.DEPLOYMENT_PARTITION;
         i < Protocol.DEPLOYMENT_PARTITION + partitionCount;
         i++) {
-      writers.put(i, writerFactory.apply(i));
+      writers.computeIfAbsent(i, k -> new CompletableFuture<>()).complete(writerFactory.apply(i));
     }
   }
 

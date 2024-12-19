@@ -15,7 +15,7 @@
  */
 package io.camunda.client.util;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -24,7 +24,7 @@ public abstract class ClientTest {
   @Rule public final TestEnvironmentRule rule = new TestEnvironmentRule();
 
   public RecordingGatewayService gatewayService;
-  public ZeebeClient client;
+  public CamundaClient client;
 
   @Before
   public void setUp() {

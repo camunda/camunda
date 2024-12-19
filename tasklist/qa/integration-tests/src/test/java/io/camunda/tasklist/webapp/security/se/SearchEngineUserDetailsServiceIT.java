@@ -54,6 +54,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + ".userId = user1",
       TasklistProperties.PREFIX + ".password = psw1",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {

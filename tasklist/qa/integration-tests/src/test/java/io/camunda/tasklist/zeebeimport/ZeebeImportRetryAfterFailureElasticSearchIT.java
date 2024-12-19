@@ -25,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ZeebeImportRetryAfterFailureElasticSearchIT extends ZeebeImportIT {

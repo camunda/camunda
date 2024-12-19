@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.response.UnassignUserTaskResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -44,8 +44,8 @@ public final class UnassignUserTaskCommandImpl implements UnassignUserTaskComman
   }
 
   @Override
-  public ZeebeFuture<UnassignUserTaskResponse> send() {
-    final HttpZeebeFuture<UnassignUserTaskResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<UnassignUserTaskResponse> send() {
+    final HttpCamundaFuture<UnassignUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/user-tasks/" + userTaskKey + "/assignee", httpRequestConfig.build(), result);
     return result;

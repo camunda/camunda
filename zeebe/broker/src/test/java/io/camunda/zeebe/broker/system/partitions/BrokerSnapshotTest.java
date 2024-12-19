@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -37,7 +37,7 @@ public class BrokerSnapshotTest {
 
   private RaftLogReader journalReader;
   private BrokerAdminService brokerAdminService;
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @Before
   public void setup() {
@@ -51,9 +51,9 @@ public class BrokerSnapshotTest {
     brokerAdminService = brokerRule.getBroker().getBrokerContext().getBrokerAdminService();
 
     final String contactPoint = NetUtil.toSocketAddressString(brokerRule.getGatewayAddress());
-    final ZeebeClientBuilder zeebeClientBuilder =
-        ZeebeClient.newClientBuilder().usePlaintext().gatewayAddress(contactPoint);
-    client = zeebeClientBuilder.build();
+    final CamundaClientBuilder camundaClientBuilder =
+        CamundaClient.newClientBuilder().usePlaintext().gatewayAddress(contactPoint);
+    client = camundaClientBuilder.build();
   }
 
   @After

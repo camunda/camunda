@@ -11,7 +11,7 @@ import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERS
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.Topology;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -50,7 +50,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
-  private ZeebeClient client;
+  private CamundaClient client;
 
   private String prefix;
   private boolean failed = false;
@@ -126,7 +126,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
             ConnectionTypes.OPENSEARCH.getType());
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
@@ -156,7 +156,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   }
 
   @Override
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 

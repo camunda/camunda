@@ -19,8 +19,8 @@ import static io.camunda.client.api.search.SearchRequestBuilders.decisionInstanc
 import static io.camunda.client.api.search.SearchRequestBuilders.decisionInstanceSort;
 import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
@@ -28,8 +28,8 @@ import io.camunda.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
@@ -107,8 +107,9 @@ public class DecisionInstanceQueryImpl
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<DecisionInstance>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<DecisionInstance>> result = new HttpZeebeFuture<>();
+  public CamundaFuture<SearchQueryResponse<DecisionInstance>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<DecisionInstance>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         "/decision-instances/search",
         jsonMapper.toJson(request),

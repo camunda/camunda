@@ -47,7 +47,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "items": [
                   {
                       "tenantId": "t",
-                      "decisionRequirementsKey": 0,
+                      "decisionRequirementsKey": "0",
                       "name": "name",
                       "version": 1,
                       "decisionRequirementsId": "id",
@@ -81,7 +81,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
       """
           {
             "tenantId": "t",
-            "decisionRequirementsKey": 1,
+            "decisionRequirementsKey": "1",
             "name": "name",
             "version": 1,
             "decisionRequirementsId": "id",

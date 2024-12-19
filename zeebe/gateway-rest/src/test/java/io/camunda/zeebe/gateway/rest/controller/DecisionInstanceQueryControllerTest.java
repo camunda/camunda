@@ -29,7 +29,6 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;
@@ -41,11 +40,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = DecisionInstanceController.class)
-@Import(JacksonConfig.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -53,13 +50,13 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           {
                "items": [
                    {
-                       "decisionInstanceKey": 123,
+                       "decisionInstanceKey": "123",
                        "decisionInstanceId": "123-1",
                        "state": "EVALUATED",
                        "evaluationDate": "2024-06-05T08:29:15.027Z",
-                       "processDefinitionKey": 2251799813688736,
-                       "processInstanceKey": 6755399441058457,
-                       "decisionDefinitionKey": 123456,
+                       "processDefinitionKey": "2251799813688736",
+                       "processInstanceKey": "6755399441058457",
+                       "decisionDefinitionKey": "123456",
                        "decisionDefinitionId": "ddi",
                        "decisionDefinitionName": "ddn",
                        "decisionDefinitionVersion": 0,
@@ -231,12 +228,12 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .json(
             """
                 {
-                     "decisionInstanceKey": 123,
+                     "decisionInstanceKey": "123",
                      "state": "EVALUATED",
                      "evaluationDate": "2024-06-05T08:29:15.027Z",
-                     "processDefinitionKey": 2251799813688736,
-                     "processInstanceKey": 6755399441058457,
-                     "decisionDefinitionKey": 123456,
+                     "processDefinitionKey": "2251799813688736",
+                     "processInstanceKey": "6755399441058457",
+                     "decisionDefinitionKey": "123456",
                      "decisionDefinitionId": "ddi",
                      "decisionDefinitionName": "ddn",
                      "decisionDefinitionVersion": 0,

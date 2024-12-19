@@ -11,7 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
@@ -36,7 +36,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public class UpdateJobTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -401,13 +401,13 @@ public class UpdateJobTest {
   }
 
   private UpdateTimeoutJobCommandStep1 getTimeoutCommand(
-      final ZeebeClient client, final boolean useRest, final long jobKey) {
+      final CamundaClient client, final boolean useRest, final long jobKey) {
     final UpdateTimeoutJobCommandStep1 timeoutCommand = client.newUpdateTimeoutCommand(jobKey);
     return useRest ? timeoutCommand.useRest() : timeoutCommand.useGrpc();
   }
 
   private UpdateRetriesJobCommandStep1 getRetriesCommand(
-      final ZeebeClient client, final boolean useRest, final long jobKey) {
+      final CamundaClient client, final boolean useRest, final long jobKey) {
     final UpdateRetriesJobCommandStep1 retriesCommand = client.newUpdateRetriesCommand(jobKey);
     return useRest ? retriesCommand.useRest() : retriesCommand.useGrpc();
   }
@@ -424,7 +424,7 @@ public class UpdateJobTest {
   }
 
   private ActivatedJob activateJob(
-      final ZeebeClient client, final boolean useRest, final String jobType) {
+      final CamundaClient client, final boolean useRest, final String jobType) {
     final var activateResponse =
         getActivateCommand(client, useRest)
             .jobType(jobType)
@@ -441,7 +441,7 @@ public class UpdateJobTest {
   }
 
   private ActivateJobsCommandStep1 getActivateCommand(
-      final ZeebeClient client, final boolean useRest) {
+      final CamundaClient client, final boolean useRest) {
     final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
     return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
   }

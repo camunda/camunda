@@ -42,12 +42,6 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
-      // If authorization is disabled we don't need to setup identity.
-      LOG.debug("Skipping identity setup as authorization is disabled");
-      return;
-    }
-
     if (context.getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
       // We should only create users on the deployment partition. The command will be distributed to
       // the other partitions using our command distribution mechanism.

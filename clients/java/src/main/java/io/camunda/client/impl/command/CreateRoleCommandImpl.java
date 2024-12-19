@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateRoleResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CreateRoleResponseImpl;
 import io.camunda.client.protocol.rest.RoleCreateRequest;
 import io.camunda.client.protocol.rest.RoleCreateResponse;
@@ -56,9 +56,9 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<CreateRoleResponse> send() {
+  public CamundaFuture<CreateRoleResponse> send() {
     ArgumentUtil.ensureNotNull("name", request.getName());
-    final HttpZeebeFuture<CreateRoleResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CreateRoleResponse> result = new HttpCamundaFuture<>();
     final CreateRoleResponseImpl response = new CreateRoleResponseImpl();
     httpClient.post(
         "/roles",

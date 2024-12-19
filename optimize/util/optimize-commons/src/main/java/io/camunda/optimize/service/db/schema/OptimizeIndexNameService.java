@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OptimizeIndexNameService implements ConfigurationReloadable {
 
+  public static String defaultIndexPrefix = "optimize";
   private String indexPrefix;
 
   @Autowired

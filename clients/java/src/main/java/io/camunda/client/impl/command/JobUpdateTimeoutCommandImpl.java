@@ -16,15 +16,15 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1.UpdateTimeoutJobCommandStep2;
 import io.camunda.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.UpdateTimeoutJobResponseImpl;
 import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
@@ -93,7 +93,7 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   @Override
-  public ZeebeFuture<UpdateTimeoutJobResponse> send() {
+  public CamundaFuture<UpdateTimeoutJobResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -101,14 +101,14 @@ public class JobUpdateTimeoutCommandImpl
     }
   }
 
-  private ZeebeFuture<UpdateTimeoutJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<UpdateTimeoutJobResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<UpdateTimeoutJobResponse> sendRestRequest() {
+    final HttpCamundaFuture<UpdateTimeoutJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
     return result;
   }
 
-  private ZeebeFuture<UpdateTimeoutJobResponse> sendGrpcRequest() {
+  private CamundaFuture<UpdateTimeoutJobResponse> sendGrpcRequest() {
     final UpdateJobTimeoutRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<UpdateTimeoutJobResponse, UpdateJobTimeoutResponse> future =

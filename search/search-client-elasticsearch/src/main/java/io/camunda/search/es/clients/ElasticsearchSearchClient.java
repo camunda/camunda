@@ -52,7 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchSearchClient
-    implements DocumentBasedSearchClient, DocumentBasedWriteClient, AutoCloseable {
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSearchClient.class);
   private static final String SCROLL_KEEP_ALIVE_TIME = "1m";
@@ -240,7 +240,7 @@ public class ElasticsearchSearchClient
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     if (client != null) {
       try {
         client._transport().close();

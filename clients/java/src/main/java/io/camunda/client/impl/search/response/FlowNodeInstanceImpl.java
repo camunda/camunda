@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.FlowNodeInstanceType;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 import java.util.Objects;
 
@@ -38,16 +39,16 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final FlowNodeInstanceType type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
-    flowNodeInstanceKey = item.getFlowNodeInstanceKey();
-    processDefinitionKey = item.getProcessDefinitionKey();
+    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
+    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
-    processInstanceKey = item.getProcessInstanceKey();
+    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     flowNodeId = item.getFlowNodeId();
     flowNodeName = item.getFlowNodeName();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     incident = item.getHasIncident();
-    incidentKey = item.getIncidentKey();
+    incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
     state = FlowNodeInstanceState.fromProtocolState(item.getState());
     tenantId = item.getTenantId();
     type = FlowNodeInstanceType.fromProtocolType(item.getType());

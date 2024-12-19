@@ -33,7 +33,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import io.camunda.client.CredentialsProvider.CredentialsApplier;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.response.Topology;
-import io.camunda.client.impl.ZeebeClientCredentials;
+import io.camunda.client.impl.CamundaClientCredentials;
 import io.camunda.client.impl.oauth.OAuthCredentialsCache;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -226,7 +226,7 @@ public final class OAuthCredentialsProviderTest {
     assertThat(shouldRetry).isTrue();
     assertThat(cache.readCache().get(CLIENT_ID))
         .get()
-        .returns("foo", ZeebeClientCredentials::getAccessToken);
+        .returns("foo", CamundaClientCredentials::getAccessToken);
   }
 
   @Test
@@ -269,7 +269,9 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     mockCredentials(ACCESS_TOKEN, null);
-    cache.put(CLIENT_ID, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE)).writeCache();
+    cache
+        .put(CLIENT_ID, new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+        .writeCache();
 
     // when - should not make any request, but use the cached credentials
     provider.applyCredentials(applier);
@@ -300,7 +302,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
     assertThat(cache.readCache().get(CLIENT_ID))
-        .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
+        .hasValue(new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
 
   @Test
@@ -317,7 +319,7 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     mockCredentials(ACCESS_TOKEN, null);
-    cache.put(CLIENT_ID, new ZeebeClientCredentials("invalid", EXPIRY, TOKEN_TYPE)).writeCache();
+    cache.put(CLIENT_ID, new CamundaClientCredentials("invalid", EXPIRY, TOKEN_TYPE)).writeCache();
 
     // when - should refresh on unauthorized and write new token
     provider.shouldRetryRequest(unauthorizedCode);
@@ -325,7 +327,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
     assertThat(cache.readCache().get(CLIENT_ID))
-        .hasValue(new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
+        .hasValue(new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE));
   }
 
   @Test
@@ -526,9 +528,9 @@ public final class OAuthCredentialsProviderTest {
     void shouldRetryRequestWithNewCredentialsGrpc() throws URISyntaxException, IOException {
       // given
       final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-      final ZeebeClientBuilder builder = clientBuilder();
+      final CamundaClientBuilder builder = clientBuilder();
       cache
-          .put(CLIENT_ID, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
+          .put(CLIENT_ID, new CamundaClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
           .writeCache();
       recordingInterceptor.setInterceptAction(
           (call, headers) -> {
@@ -540,7 +542,7 @@ public final class OAuthCredentialsProviderTest {
 
       // when
       final Future<Topology> topology;
-      try (final ZeebeClient client = builder.build()) {
+      try (final CamundaClient client = builder.build()) {
         topology = client.newTopologyRequest().useGrpc().send();
 
         // then
@@ -555,9 +557,9 @@ public final class OAuthCredentialsProviderTest {
     void shouldNotRetryRequestWithSameCredentialsGrpc() throws URISyntaxException, IOException {
       // given
       final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-      final ZeebeClientBuilder builder = clientBuilder();
+      final CamundaClientBuilder builder = clientBuilder();
       cache
-          .put(CLIENT_ID, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+          .put(CLIENT_ID, new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
           .writeCache();
       recordingInterceptor.setInterceptAction(
           (call, headers) -> call.close(Status.UNAUTHENTICATED, headers));
@@ -565,7 +567,7 @@ public final class OAuthCredentialsProviderTest {
 
       // when
       final Future<Topology> topology;
-      try (final ZeebeClient client = builder.build()) {
+      try (final CamundaClient client = builder.build()) {
         topology = client.newTopologyRequest().useGrpc().send();
 
         // then
@@ -583,17 +585,17 @@ public final class OAuthCredentialsProviderTest {
     void shouldRetryRequestWithNewCredentialsRest() throws URISyntaxException, IOException {
       // given
       final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-      final ZeebeClientBuilder builder = clientBuilder();
+      final CamundaClientBuilder builder = clientBuilder();
       mockUnauthorizedRestRequest();
       mockAuthorizedRestRequest();
       cache
-          .put(CLIENT_ID, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
+          .put(CLIENT_ID, new CamundaClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
           .writeCache();
       mockCredentials(ACCESS_TOKEN, null);
 
       // when
       final Future<Topology> topology;
-      try (final ZeebeClient client = builder.build()) {
+      try (final CamundaClient client = builder.build()) {
         topology = client.newTopologyRequest().useRest().send();
 
         // then
@@ -606,16 +608,16 @@ public final class OAuthCredentialsProviderTest {
     void shouldNotRetryRequestWithSameCredentialsRest() throws URISyntaxException, IOException {
       // given
       final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-      final ZeebeClientBuilder builder = clientBuilder();
+      final CamundaClientBuilder builder = clientBuilder();
       mockUnauthorizedRestRequest();
       cache
-          .put(CLIENT_ID, new ZeebeClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
+          .put(CLIENT_ID, new CamundaClientCredentials(ACCESS_TOKEN, EXPIRY, TOKEN_TYPE))
           .writeCache();
       mockCredentials(ACCESS_TOKEN, null);
 
       // when
       final Future<Topology> topology;
-      try (final ZeebeClient client = builder.build()) {
+      try (final CamundaClient client = builder.build()) {
         topology = client.newTopologyRequest().useRest().send();
 
         // then
@@ -658,8 +660,8 @@ public final class OAuthCredentialsProviderTest {
                               "application/problem+json; charset=utf-8")));
     }
 
-    private ZeebeClientBuilder clientBuilder() throws URISyntaxException {
-      return ZeebeClient.newClientBuilder()
+    private CamundaClientBuilder clientBuilder() throws URISyntaxException {
+      return CamundaClient.newClientBuilder()
           .usePlaintext()
           .grpcAddress(new URI("http://localhost:" + grpcServer.getPort()))
           .restAddress(new URI(currentWiremockRuntimeInfo.getHttpBaseUrl()))

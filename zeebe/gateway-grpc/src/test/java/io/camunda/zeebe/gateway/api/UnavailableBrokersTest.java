@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -50,7 +50,7 @@ class UnavailableBrokersTest {
   static Gateway gateway;
   static AtomixCluster cluster;
   static ActorScheduler actorScheduler;
-  static ZeebeClient client;
+  static CamundaClient client;
   static BrokerClient brokerClient;
   static JobStreamClient jobStreamClient;
   static BrokerTopologyManagerImpl topologyManager;
@@ -98,7 +98,7 @@ class UnavailableBrokersTest {
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
-    client = ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress).usePlaintext().build();
+    client = CamundaClient.newClientBuilder().gatewayAddress(gatewayAddress).usePlaintext().build();
   }
 
   @AfterAll
@@ -120,7 +120,7 @@ class UnavailableBrokersTest {
     // when
     // setting a lower timeout than the time we wait on the future ensures we see a result from the
     // gateway and not simply our future timing out
-    final ZeebeFuture<?> result = command.requestTimeout(Duration.ofSeconds(5)).send();
+    final CamundaFuture<?> result = command.requestTimeout(Duration.ofSeconds(5)).send();
 
     // then
     assertThatCode(() -> result.join(10, TimeUnit.SECONDS))

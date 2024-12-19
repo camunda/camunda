@@ -20,7 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import io.camunda.services.InventoryService;
@@ -36,7 +36,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 @CamundaSpringProcessTest
 public class ProcessIntegrationTest {
 
-  @Autowired private ZeebeClient client;
+  @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
   // mock services from job workers

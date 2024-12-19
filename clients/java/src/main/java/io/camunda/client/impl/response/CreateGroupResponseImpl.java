@@ -28,7 +28,7 @@ public class CreateGroupResponseImpl implements CreateGroupResponse {
   }
 
   public CreateGroupResponseImpl setResponse(final GroupCreateResponse response) {
-    groupKey = response.getGroupKey();
+    groupKey = Long.parseLong(response.getGroupKey());
     return this;
   }
 }

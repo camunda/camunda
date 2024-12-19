@@ -15,9 +15,9 @@
  */
 package io.camunda.client;
 
-import io.camunda.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2;
-import io.camunda.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3;
-import io.camunda.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -25,136 +25,136 @@ import java.util.List;
 public final class ClientProperties {
 
   /**
-   * @see ZeebeClientBuilder#applyEnvironmentVariableOverrides(boolean)
+   * @see CamundaClientBuilder#applyEnvironmentVariableOverrides(boolean)
    */
   public static final String APPLY_ENVIRONMENT_VARIABLES_OVERRIDES =
       "zeebe.client.applyEnvironmentVariableOverrides";
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link ClientProperties#GRPC_ADDRESS}
-   * @see ZeebeClientBuilder#gatewayAddress(String)
+   * @see CamundaClientBuilder#gatewayAddress(String)
    */
   @Deprecated public static final String GATEWAY_ADDRESS = "zeebe.client.gateway.address";
 
   /**
    * @deprecated since 8.5 for removal with 8.8, where toggling between both will not be possible
-   * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
+   * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
    */
   @Deprecated
   public static final String PREFER_REST_OVER_GRPC = "zeebe.client.gateway.preferRestOverGrpc";
 
   /**
-   * @see ZeebeClientBuilder#restAddress(URI)
+   * @see CamundaClientBuilder#restAddress(URI)
    */
   public static final String REST_ADDRESS = "zeebe.client.gateway.rest.address";
 
   /**
-   * @see ZeebeClientBuilder#grpcAddress(URI)
+   * @see CamundaClientBuilder#grpcAddress(URI)
    */
   public static final String GRPC_ADDRESS = "zeebe.client.gateway.grpc.address";
 
   /**
-   * @see ZeebeClientBuilder#defaultTenantId(String)
+   * @see CamundaClientBuilder#defaultTenantId(String)
    */
   public static final String DEFAULT_TENANT_ID = "zeebe.client.tenantId";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobWorkerTenantIds(List)
+   * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
    */
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS = "zeebe.client.worker.tenantIds";
 
   /**
-   * @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int)
+   * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
    */
   public static final String JOB_WORKER_EXECUTION_THREADS = "zeebe.client.worker.threads";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobWorkerMaxJobsActive(int)
+   * @see CamundaClientBuilder#defaultJobWorkerMaxJobsActive(int)
    */
   public static final String JOB_WORKER_MAX_JOBS_ACTIVE = "zeebe.client.worker.maxJobsActive";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobWorkerName(String)
+   * @see CamundaClientBuilder#defaultJobWorkerName(String)
    */
   public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.worker.name";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobTimeout(Duration)
+   * @see CamundaClientBuilder#defaultJobTimeout(Duration)
    */
   public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobPollInterval(Duration)
+   * @see CamundaClientBuilder#defaultJobPollInterval(Duration)
    */
   public static final String DEFAULT_JOB_POLL_INTERVAL = "zeebe.client.job.pollinterval";
 
   /**
-   * @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration)
+   * @see CamundaClientBuilder#defaultMessageTimeToLive(Duration)
    */
   public static final String DEFAULT_MESSAGE_TIME_TO_LIVE = "zeebe.client.message.timeToLive";
 
   /**
-   * @see ZeebeClientBuilder#defaultRequestTimeout(Duration)
+   * @see CamundaClientBuilder#defaultRequestTimeout(Duration)
    */
   public static final String DEFAULT_REQUEST_TIMEOUT = "zeebe.client.requestTimeout";
 
   /**
-   * @see ZeebeClientBuilder#usePlaintext()
+   * @see CamundaClientBuilder#usePlaintext()
    */
   public static final String USE_PLAINTEXT_CONNECTION = "zeebe.client.security.plaintext";
 
   /**
-   * @see ZeebeClientBuilder#caCertificatePath(String)
+   * @see CamundaClientBuilder#caCertificatePath(String)
    */
   public static final String CA_CERTIFICATE_PATH = "zeebe.client.security.certpath";
 
   /**
-   * @see ZeebeClientBuilder#keepAlive(Duration)
+   * @see CamundaClientBuilder#keepAlive(Duration)
    */
   public static final String KEEP_ALIVE = "zeebe.client.keepalive";
 
   /**
-   * @see ZeebeClientBuilder#overrideAuthority(String)
+   * @see CamundaClientBuilder#overrideAuthority(String)
    */
   public static final String OVERRIDE_AUTHORITY = "zeebe.client.overrideauthority";
 
   /**
-   * @see ZeebeClientBuilder#maxMessageSize(int) (String)
+   * @see CamundaClientBuilder#maxMessageSize(int) (String)
    */
   public static final String MAX_MESSAGE_SIZE = "zeebe.client.maxMessageSize";
 
   /**
-   * @see ZeebeClientBuilder#maxMetadataSize(int)
+   * @see CamundaClientBuilder#maxMetadataSize(int)
    */
   public static final String MAX_METADATA_SIZE = "zeebe.client.maxMetadataSize";
 
   /**
-   * @see ZeebeClientCloudBuilderStep1#withClusterId(String)
+   * @see CamundaClientCloudBuilderStep1#withClusterId(String)
    */
   public static final String CLOUD_CLUSTER_ID = "zeebe.client.cloud.clusterId";
 
   /**
-   * @see ZeebeClientCloudBuilderStep2#withClientId(String)
+   * @see CamundaClientCloudBuilderStep2#withClientId(String)
    */
   public static final String CLOUD_CLIENT_ID = "zeebe.client.cloud.clientId";
 
   /**
-   * @see ZeebeClientCloudBuilderStep3#withClientSecret( String)
+   * @see CamundaClientCloudBuilderStep3#withClientSecret( String)
    */
   public static final String CLOUD_CLIENT_SECRET = "zeebe.client.cloud.secret";
 
   /**
-   * @see ZeebeClientCloudBuilderStep4#withRegion(String)
+   * @see CamundaClientCloudBuilderStep4#withRegion(String)
    */
   public static final String CLOUD_REGION = "zeebe.client.cloud.region";
 
   /**
-   * @see ZeebeClientBuilder#defaultJobWorkerStreamEnabled(boolean)
+   * @see CamundaClientBuilder#defaultJobWorkerStreamEnabled(boolean)
    */
   public static final String STREAM_ENABLED = "zeebe.client.worker.stream.enabled";
 
   /**
-   * @see ZeebeClientBuilder#useDefaultRetryPolicy(boolean)
+   * @see CamundaClientBuilder#useDefaultRetryPolicy(boolean)
    */
   public static final String USE_DEFAULT_RETRY_POLICY = "zeebe.client.useDefaultRetryPolicy";
 

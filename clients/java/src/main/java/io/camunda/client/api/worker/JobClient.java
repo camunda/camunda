@@ -15,8 +15,8 @@
  */
 package io.camunda.client.api.worker;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.ExperimentalApi;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
@@ -182,7 +182,7 @@ public interface JobClient {
    *
    * <pre>{@code
    * final Consumer<ActivatedJob> consumer = ...; // do something with the consumed job
-   * final ZeebeFuture<StreamJobsResponse> stream = jobClient
+   * final CamundaFuture<StreamJobsResponse> stream = jobClient
    *  .newStreamJobsCommand()
    *  .jobType("payment")
    *  .consumer(consumer)
@@ -227,9 +227,9 @@ public interface JobClient {
    * <p>The stream can be explicitly cancelled by performing one of the following:
    *
    * <ul>
-   *   <li>Closing the Zeebe client
+   *   <li>Closing the Camunda client
    *   <li>Cancelling the result of {@link StreamJobsCommandStep3#send()} via {@link
-   *       ZeebeFuture#cancel(boolean)} (the argument is irrelevant)
+   *       CamundaFuture#cancel(boolean)} (the argument is irrelevant)
    *   <li>Setting a {@link StreamJobsCommandStep3#requestTimeout(Duration)}; the stream will be
    *       closed once this time out is reached. By default, there is no request time out at all.
    *       <strong>It's recommended to assign a long-ish time out and recreate your streams from

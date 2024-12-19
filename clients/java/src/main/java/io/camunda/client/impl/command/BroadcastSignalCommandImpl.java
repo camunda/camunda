@@ -15,17 +15,17 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.BroadcastSignalResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.BroadcastSignalResponseImpl;
 import io.camunda.client.protocol.rest.SignalBroadcastRequest;
 import io.camunda.client.protocol.rest.SignalBroadcastResponse;
@@ -53,7 +53,7 @@ public final class BroadcastSignalCommandImpl
 
   public BroadcastSignalCommandImpl(
       final GatewayStub asyncStub,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient) {
@@ -107,7 +107,7 @@ public final class BroadcastSignalCommandImpl
   }
 
   @Override
-  public ZeebeFuture<BroadcastSignalResponse> send() {
+  public CamundaFuture<BroadcastSignalResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -115,8 +115,8 @@ public final class BroadcastSignalCommandImpl
     }
   }
 
-  private ZeebeFuture<BroadcastSignalResponse> sendRestRequest() {
-    final HttpZeebeFuture<BroadcastSignalResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<BroadcastSignalResponse> sendRestRequest() {
+    final HttpCamundaFuture<BroadcastSignalResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/signals/broadcast",
         objectMapper.toJson(httpRequestObject),
@@ -127,7 +127,7 @@ public final class BroadcastSignalCommandImpl
     return result;
   }
 
-  public ZeebeFuture<BroadcastSignalResponse> sendGrpcRequest() {
+  public CamundaFuture<BroadcastSignalResponse> sendGrpcRequest() {
     final BroadcastSignalRequest request = grpcRequestObjectBuilder.build();
     final RetriableClientFutureImpl<
             BroadcastSignalResponse, GatewayOuterClass.BroadcastSignalResponse>

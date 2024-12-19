@@ -13,9 +13,19 @@ import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOp
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
+import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
+import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
+import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
+import io.camunda.optimize.service.db.os.schema.index.index.PositionBasedImportIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.index.TimestampBasedImportIndexOS;
+import io.camunda.optimize.service.db.schema.IndexMappingCreator;
+import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.webapps.profiles.ProfileOperateTasklist;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
@@ -52,6 +62,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebS
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -65,20 +76,24 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
-@ProfileOperateTasklist
+@ProfileWebApp
 public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
   private static final String NO_CONFIG_ERROR_MESSAGE =
-      "Expected operate or tasklist to be configured, but none of them is.";
+      "Expected operate, tasklist or optimize to be configured, but none of them are.";
 
+  final String[] profiles;
+  // all nullable
   final OperateProperties operateProperties;
   final TasklistProperties tasklistProperties;
-  final String[] profiles;
+  private final OptimizeIndexNameService optimizeIndexNameService;
+  private final Boolean optimizeIsElasticSearch;
 
   public BackupPriorityConfiguration(
       @Autowired(required = false) final OperateProperties operateProperties,
       @Autowired(required = false) final TasklistProperties tasklistProperties,
+      @Autowired(required = false) final OptimizeIndexNameService optimizeIndexNameService,
       @Autowired final Environment environment) {
     profiles = environment.getActiveProfiles();
     if (environment.matchesProfiles("operate")) {
@@ -91,6 +106,17 @@ public class BackupPriorityConfiguration {
     } else {
       this.tasklistProperties = null;
     }
+    if (environment.matchesProfiles("optimize") && optimizeIndexNameService != null) {
+      this.optimizeIndexNameService = optimizeIndexNameService;
+      optimizeIsElasticSearch =
+          ConfigurationService.getDatabaseType(environment)
+              .equals(io.camunda.optimize.service.util.configuration.DatabaseType.ELASTICSEARCH);
+    } else {
+      this.optimizeIndexNameService =
+          Optional.ofNullable(optimizeIndexNameService)
+              .orElse(new OptimizeIndexNameService(OptimizeIndexNameService.defaultIndexPrefix));
+      optimizeIsElasticSearch = null;
+    }
   }
 
   private <A> Function<Map<String, A>, String> differentConfigFor(final String field) {
@@ -102,37 +128,27 @@ public class BackupPriorityConfiguration {
 
   @Bean
   public BackupPriorities backupPriorities() {
-    final var indexPrefix =
-        allMatch(
-                NO_CONFIG_ERROR_MESSAGE,
-                differentConfigFor("indexPrefix"),
-                Map.of(
-                    "operate",
-                    Optional.ofNullable(operateProperties).map(OperateProperties::getIndexPrefix),
-                    "tasklist",
-                    Optional.ofNullable(tasklistProperties)
-                        .map(TasklistProperties::getIndexPrefix)),
-                skipEmptyOptional())
-            .get();
-    final var isElasticsearch =
-        allMatch(
-                NO_CONFIG_ERROR_MESSAGE,
-                differentConfigFor("database.type"),
-                Map.of(
-                    "operate",
-                    Optional.ofNullable(operateProperties)
-                        .map(ignored -> DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
-                    "tasklist",
-                    Optional.ofNullable(tasklistProperties)
-                        .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH))),
-                skipEmptyOptional())
-            .get();
+    final var indexPrefix = getIndexPrefix();
+
+    final boolean isElasticsearch = getIsElasticsearch();
+
     final List<Prio1Backup> prio1 =
         List.of(
             // OPERATE
             new ImportPositionIndex(indexPrefix, isElasticsearch),
             // TASKLIST
-            new TasklistImportPositionIndex(indexPrefix, isElasticsearch));
+            new TasklistImportPositionIndex(indexPrefix, isElasticsearch),
+            // OPTIMIZE
+            new OptimizePrio1Delegate<>(
+                isElasticsearch
+                    ? new PositionBasedImportIndexES()
+                    : new PositionBasedImportIndexOS(),
+                optimizeIndexNameService),
+            new OptimizePrio1Delegate<>(
+                isElasticsearch
+                    ? new TimestampBasedImportIndexES()
+                    : new TimestampBasedImportIndexOS(),
+                optimizeIndexNameService));
 
     final List<Prio2Backup> prio2 =
         List.of(
@@ -183,7 +199,8 @@ public class BackupPriorityConfiguration {
             new UserIndex(indexPrefix, isElasticsearch));
 
     // OPTIMIZE static indices
-    final List<Prio6Backup> prio6 = List.of();
+    final List<Prio6Backup> prio6 = getPrio6Backups(isElasticsearch);
+
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);
     LOG.debug("Prio3 are {}", prio3);
@@ -191,5 +208,91 @@ public class BackupPriorityConfiguration {
     LOG.debug("Prio5 are {}", prio5);
     LOG.debug("Prio6 are {}", prio6);
     return new BackupPriorities(prio1, prio2, prio3, prio4, prio5, prio6);
+  }
+
+  private boolean getIsElasticsearch() {
+    final Optional<Boolean> result =
+        allMatch(
+            Optional::empty,
+            differentConfigFor("database.type"),
+            Map.of(
+                "operate",
+                Optional.ofNullable(operateProperties)
+                    .map(ignored -> DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
+                "tasklist",
+                Optional.ofNullable(tasklistProperties)
+                    .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH)),
+                "optimize",
+                Optional.ofNullable(optimizeIsElasticSearch)),
+            skipEmptyOptional());
+    if (result.isEmpty()) {
+      throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
+    }
+    return result.get();
+  }
+
+  private List<Prio6Backup> getPrio6Backups(final Boolean isElasticsearch) {
+    final List<Prio6Backup> prio6 = new ArrayList<>();
+    {
+      final var indices =
+          isElasticsearch
+              ? ElasticSearchSchemaManager.getAllNonDynamicMappings()
+              : OpenSearchSchemaManager.getAllNonDynamicMappings();
+      if (isElasticsearch) {
+        for (final IndexMappingCreator<?> index : indices) {
+          // Optimize only has index with Priority 1 & 6, but it only has 1 static index with
+          // Priority 1. Here we can just focus on those with Prio6
+          if (index instanceof final Prio6Backup p) {
+            prio6.add(
+                new OptimizePrio6Delegate<>(
+                    (IndexMappingCreator<?> & Prio6Backup) p, optimizeIndexNameService));
+          }
+        }
+      }
+    }
+    return prio6;
+  }
+
+  private String getIndexPrefix() {
+    final var indexOptional =
+        allMatch(
+            Optional::empty,
+            differentConfigFor("indexPrefix"),
+            Map.of(
+                "operate",
+                Optional.ofNullable(operateProperties).map(OperateProperties::getIndexPrefix),
+                "tasklist",
+                Optional.ofNullable(tasklistProperties).map(TasklistProperties::getIndexPrefix)),
+            // optimize does not use the global index prefix as the other apps, so it's not included
+            // in this check.
+            skipEmptyOptional());
+    if (indexOptional.isEmpty()) {
+      throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
+    }
+    return indexOptional.get();
+  }
+
+  /**
+   * Optimize indices do not return the complete index name when {@link
+   * BackupPriority#getFullQualifiedName()} is called, they only return a part of the index name.
+   * For this reason, we need {@link OptimizeIndexNameService} to get the full index name.
+   */
+  record OptimizePrio6Delegate<I extends IndexMappingCreator<?> & Prio6Backup>(
+      I index, OptimizeIndexNameService indexService) implements Prio6Backup {
+
+    @Override
+    public String getFullQualifiedName() {
+      return indexService.getOptimizeIndexNameWithVersion(index);
+    }
+  }
+
+  /** Same reasoning as {@link OptimizePrio1Delegate} */
+  record OptimizePrio1Delegate<I extends IndexMappingCreator<?> & Prio1Backup>(
+      I index, OptimizeIndexNameService indexService) implements Prio1Backup {
+
+    @Override
+    public String getFullQualifiedName() {
+      return indexService.getOptimizeIndexNameWithVersion(index);
+    }
   }
 }

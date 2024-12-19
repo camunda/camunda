@@ -12,9 +12,9 @@ import static java.util.Arrays.asList;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.client.ZeebeClient;
-import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
-import io.camunda.it.utils.ZeebeClientTestFactory.User;
+import io.camunda.client.CamundaClient;
+import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
+import io.camunda.it.utils.CamundaClientTestFactory.User;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -70,7 +70,7 @@ public class BrokerITInvocationProvider
       };
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final Map<ExporterType, ZeebeClientTestFactory> zeebeClientTestFactories =
+  private final Map<ExporterType, CamundaClientTestFactory> camundaClientTestFactories =
       new HashMap<>();
   private final List<User> registeredUsers = new ArrayList<>();
 
@@ -157,10 +157,10 @@ public class BrokerITInvocationProvider
                   closeables.add(testBroker);
                   testBrokers.put(exporterType, testBroker);
                   testBroker.awaitCompleteTopology();
-                  final var zeebeClientTestFactory =
-                      new ZeebeClientTestFactory().withUsers(registeredUsers);
-                  zeebeClientTestFactories.put(exporterType, zeebeClientTestFactory);
-                  closeables.add(zeebeClientTestFactory);
+                  final var camundaClientTestFactory =
+                      new CamundaClientTestFactory().withUsers(registeredUsers);
+                  camundaClientTestFactories.put(exporterType, camundaClientTestFactory);
+                  closeables.add(camundaClientTestFactory);
                   addClientFactory(exporterType);
                 }
                 case RDBMS_EXPORTER_H2 -> {
@@ -211,7 +211,7 @@ public class BrokerITInvocationProvider
               @Override
               public boolean supportsParameter(
                   final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-                return Set.of(TestStandaloneBroker.class, ZeebeClient.class)
+                return Set.of(TestStandaloneBroker.class, CamundaClient.class)
                     .contains(parameterCtx.getParameter().getType());
               }
 
@@ -222,9 +222,9 @@ public class BrokerITInvocationProvider
                 final TestGateway<?> testGateway = testBrokers.get(exporterType);
                 if (TestStandaloneBroker.class.equals(parameter.getType())) {
                   return testGateway;
-                } else if (ZeebeClient.class.equals(parameter.getType())) {
-                  final var zeebeClientTestFactory = zeebeClientTestFactories.get(exporterType);
-                  return zeebeClientTestFactory.createZeebeClient(
+                } else if (CamundaClient.class.equals(parameter.getType())) {
+                  final var camundaClientTestFactory = camundaClientTestFactories.get(exporterType);
+                  return camundaClientTestFactory.createCamundaClient(
                       testGateway, parameter.getAnnotation(Authenticated.class));
                 }
                 throw new IllegalArgumentException(
@@ -249,9 +249,9 @@ public class BrokerITInvocationProvider
   }
 
   private void addClientFactory(final ExporterType exporterType) {
-    final var zeebeClientTestFactory = new ZeebeClientTestFactory().withUsers(registeredUsers);
-    zeebeClientTestFactories.put(exporterType, zeebeClientTestFactory);
-    closeables.add(zeebeClientTestFactory);
+    final var camundaClientTestFactory = new CamundaClientTestFactory().withUsers(registeredUsers);
+    camundaClientTestFactories.put(exporterType, camundaClientTestFactory);
+    closeables.add(camundaClientTestFactory);
   }
 
   public enum ExporterType {

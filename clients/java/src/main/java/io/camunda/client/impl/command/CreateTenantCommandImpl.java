@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateTenantResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CreateTenantResponseImpl;
 import io.camunda.client.protocol.rest.TenantCreateRequest;
 import io.camunda.client.protocol.rest.TenantCreateResponse;
@@ -61,9 +61,9 @@ public final class CreateTenantCommandImpl implements CreateTenantCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<CreateTenantResponse> send() {
+  public CamundaFuture<CreateTenantResponse> send() {
     ArgumentUtil.ensureNotNull("tenantId", request.getTenantId());
-    final HttpZeebeFuture<CreateTenantResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CreateTenantResponse> result = new HttpCamundaFuture<>();
     final CreateTenantResponseImpl response = new CreateTenantResponseImpl();
     httpClient.post(
         "/tenants",

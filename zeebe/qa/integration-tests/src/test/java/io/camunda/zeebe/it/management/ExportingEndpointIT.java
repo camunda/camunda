@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
@@ -36,7 +36,7 @@ final class ExportingEndpointIT {
   @TestZeebe(initMethod = "initTestCluster")
   private static TestCluster cluster;
 
-  @AutoCloseResource private final ZeebeClient client = cluster.newClientBuilder().build();
+  @AutoCloseResource private final CamundaClient client = cluster.newClientBuilder().build();
 
   @SuppressWarnings("unused")
   static void initTestCluster() {

@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2;
@@ -61,7 +61,7 @@ public final class StreamJobsCommandImpl
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate,
-      final ZeebeClientConfiguration config) {
+      final CamundaClientConfiguration config) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
@@ -81,7 +81,7 @@ public final class StreamJobsCommandImpl
   }
 
   @Override
-  public ZeebeFuture<StreamJobsResponse> send() {
+  public CamundaFuture<StreamJobsResponse> send() {
     builder.clearTenantIds();
     if (customTenantIds.isEmpty()) {
       builder.addAllTenantIds(defaultTenantIds);

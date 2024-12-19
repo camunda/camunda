@@ -25,8 +25,8 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -48,7 +48,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
-    classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
+    classes = {JsonMapperConfiguration.class, CamundaClientConfigurationImpl.class},
     properties = {
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
@@ -74,11 +74,6 @@ public class CredentialsProviderSelfManagedWithSSLTest {
           .getClassLoader()
           .getResource("idp-ssl/identity.p12")
           .getPath();
-  private static final String VALID_CLIENT_PATH =
-      CredentialsProviderSelfManagedWithSSLTest.class
-          .getClassLoader()
-          .getResource("idp-ssl/localhost.p12")
-          .getPath();
 
   @RegisterExtension
   static WireMockExtension wm =
@@ -92,11 +87,16 @@ public class CredentialsProviderSelfManagedWithSSLTest {
                   .dynamicHttpsPort())
           .build();
 
+  private static final String VALID_CLIENT_PATH =
+      CredentialsProviderSelfManagedWithSSLTest.class
+          .getClassLoader()
+          .getResource("idp-ssl/localhost.p12")
+          .getPath();
   private static final String ACCESS_TOKEN =
       JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
 
   @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
-  @Autowired ZeebeClientConfigurationImpl configuration;
+  @Autowired CamundaClientConfigurationImpl configuration;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {

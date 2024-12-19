@@ -35,7 +35,7 @@ public class ImportFieldsZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    updateVariableHandler.setZeebeClient(zeebeClient);
+    updateVariableHandler.setCamundaClient(camundaClient);
   }
 
   @Test

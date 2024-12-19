@@ -14,7 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -49,7 +49,7 @@ final class ControlledActorClockEndpointIT {
           .withRecordingExporter(true)
           .withProperty("zeebe.clock.controlled", true);
 
-  @AutoCloseResource private final ZeebeClient zeebeClient = broker.newClientBuilder().build();
+  @AutoCloseResource private final CamundaClient camundaClient = broker.newClientBuilder().build();
 
   private final HttpClient httpClient = HttpClient.newHttpClient();
 
@@ -65,7 +65,7 @@ final class ControlledActorClockEndpointIT {
     final var response = httpClient.send(request, newResponseHandler());
 
     // when - producing records
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    camundaClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
     RecordingExporter.records().limit(1).await();
 
     // then - records are exported with a timestamp matching the pinned time
@@ -92,7 +92,7 @@ final class ControlledActorClockEndpointIT {
     final var response = httpClient.send(request, newResponseHandler());
 
     // when - producing records
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    camundaClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
     RecordingExporter.records().limit(1).await();
 
     // then - records are exported with a timestamp matching the offset time

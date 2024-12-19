@@ -36,11 +36,13 @@ import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -77,6 +79,7 @@ class TaskControllerTest {
 
   @Mock private UserReader userReader;
   @Mock private IdentityAuthorizationService identityAuthorizationService;
+  @Mock private TasklistPermissionServices tasklistPermissionServices;
 
   @BeforeEach
   public void setUp() {
@@ -802,11 +805,17 @@ class TaskControllerTest {
     @Test
     void saveDraftTaskVariables() throws Exception {
       // Given
-      final var taskId = "taskId778800";
+      final var taskId = "778800";
       final var variables = List.of(new VariableInputDTO().setName("var_a").setValue("val_a"));
 
       when(taskService.getTask(taskId))
-          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+          .thenReturn(
+              new TaskDTO()
+                  .setId(taskId)
+                  .setImplementation(TaskImplementation.JOB_WORKER)
+                  .setCreationTime(Instant.now().toString()));
+      when(tasklistPermissionServices.hasPermissionToUpdateUserTask(any())).thenReturn(true);
+
       // When
       mockMvc
           .perform(
@@ -830,7 +839,7 @@ class TaskControllerTest {
     void saveDraftTaskVariablesWhenWhenInvalidJsonValueProvidedThen400ErrorExpected()
         throws Exception {
       // Given
-      final var taskId = "taskId778800";
+      final var taskId = "778800";
       final var saveVariablesRequest =
           new SaveVariablesRequest()
               .setVariables(
@@ -839,7 +848,12 @@ class TaskControllerTest {
                           .setName("invalid_variable")
                           .setValue("strWithoutQuotes")));
       when(taskService.getTask(taskId))
-          .thenReturn(new TaskDTO().setId(taskId).setImplementation(TaskImplementation.JOB_WORKER));
+          .thenReturn(
+              new TaskDTO()
+                  .setId(taskId)
+                  .setImplementation(TaskImplementation.JOB_WORKER)
+                  .setCreationTime(Instant.now().toString()));
+      when(tasklistPermissionServices.hasPermissionToUpdateUserTask(any())).thenReturn(true);
 
       // When
       doThrow(
@@ -1510,6 +1524,7 @@ class TaskControllerTest {
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
         when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(tasklistPermissionServices.hasPermissionToUpdateUserTask(any())).thenReturn(true);
 
         // When
         mockMvc

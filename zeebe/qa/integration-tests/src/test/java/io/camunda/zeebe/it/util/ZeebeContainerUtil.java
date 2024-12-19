@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.client.ZeebeClient;
-import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import io.zeebe.containers.engine.ContainerEngine;
@@ -19,16 +19,16 @@ public final class ZeebeContainerUtil {
     // utility class
   }
 
-  public static ZeebeClientBuilder newClientBuilder(final ZeebeCluster cluster) {
+  public static CamundaClientBuilder newClientBuilder(final ZeebeCluster cluster) {
     final ZeebeGatewayNode<?> gateway = cluster.getAvailableGateway();
 
-    return ZeebeClient.newClientBuilder()
+    return CamundaClient.newClientBuilder()
         .usePlaintext()
         .gatewayAddress(gateway.getExternalGatewayAddress());
   }
 
-  public static ZeebeClientBuilder newClientBuilder(final ContainerEngine containerEngine) {
-    return ZeebeClient.newClientBuilder()
+  public static CamundaClientBuilder newClientBuilder(final ContainerEngine containerEngine) {
+    return CamundaClient.newClientBuilder()
         .usePlaintext()
         .gatewayAddress(containerEngine.getGatewayAddress());
   }

@@ -13,6 +13,7 @@ import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOp
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ public class ConfigValidationTest {
 
   @Test
   public void shouldReturnValueWhenAllMatch() {
-    final var es = allMatch(null, null, Map.of("app-1", "ES", "app-2", "ES"));
+    final var es = allMatch(() -> null, null, Map.of("app-1", "ES", "app-2", "ES"));
     assertThat(es).isEqualTo("ES");
   }
 
@@ -30,7 +31,7 @@ public class ConfigValidationTest {
     assertThatThrownBy(
             () ->
                 allMatch(
-                    null,
+                    () -> null,
                     m -> String.format("Different: %s", m),
                     Map.of("app-1", "ES", "app-2", "OS")))
         .isInstanceOf(IllegalArgumentException.class)
@@ -42,40 +43,34 @@ public class ConfigValidationTest {
 
   @Test
   public void shouldThrowExceptionWhenEmpty() {
-    assertThatThrownBy(() -> allMatch("empty", null, Map.of()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("empty");
+    assertThat(allMatch(() -> null, null, new HashMap<String, String>())).isEqualTo(null);
   }
 
   @Test
   public void shouldSkipBasedOnPredicate() {
     final var es =
-        allMatch(null, null, Map.of("app-1", "ES", "app-2", "ES", "app-3", ""), skipEmpty);
+        allMatch(() -> null, null, Map.of("app-1", "ES", "app-2", "ES", "app-3", ""), skipEmpty);
     assertThat(es).isEqualTo("ES");
   }
 
   @Test
   public void shouldSkipEmptyOptionalIfToldTo() {
     final Object nullObj =
-        allMatch(null, null, Map.of("app-1", Optional.empty(), "app-2", Optional.empty()));
+        allMatch(() -> null, null, Map.of("app-1", Optional.empty(), "app-2", Optional.empty()));
     assertThat(nullObj).isEqualTo(Optional.empty());
 
-    assertThatThrownBy(
-            () ->
-                allMatch(
-                    "empty",
-                    null,
-                    Map.of("app-1", Optional.empty(), "app-2", Optional.empty()),
-                    skipEmptyOptional()))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("empty");
+    assertThat(
+            allMatch(
+                () -> null,
+                null,
+                Map.of("app-1", Optional.empty(), "app-2", Optional.empty()),
+                skipEmptyOptional()))
+        .isEqualTo(null);
   }
 
   @Test
   public void shouldThrowWhenAllAreSkipped() {
-    assertThatThrownBy(
-            () -> allMatch("empty", null, Map.of("app-1", "", "app-2", "", "app-3", ""), skipEmpty))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("empty");
+    assertThat(allMatch(() -> null, null, Map.of("app-1", "", "app-2", "", "app-3", ""), skipEmpty))
+        .isEqualTo(null);
   }
 }

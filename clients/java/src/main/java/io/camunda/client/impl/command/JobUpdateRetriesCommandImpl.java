@@ -16,15 +16,15 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
 import io.camunda.client.api.response.UpdateRetriesJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.UpdateRetriesJobResponseImpl;
 import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
@@ -89,7 +89,7 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   @Override
-  public ZeebeFuture<UpdateRetriesJobResponse> send() {
+  public CamundaFuture<UpdateRetriesJobResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -97,14 +97,14 @@ public final class JobUpdateRetriesCommandImpl
     }
   }
 
-  private ZeebeFuture<UpdateRetriesJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<UpdateRetriesJobResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<UpdateRetriesJobResponse> sendRestRequest() {
+    final HttpCamundaFuture<UpdateRetriesJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
     return result;
   }
 
-  private ZeebeFuture<UpdateRetriesJobResponse> sendGrpcRequest() {
+  private CamundaFuture<UpdateRetriesJobResponse> sendGrpcRequest() {
     final UpdateJobRetriesRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<UpdateRetriesJobResponse, UpdateJobRetriesResponse> future =

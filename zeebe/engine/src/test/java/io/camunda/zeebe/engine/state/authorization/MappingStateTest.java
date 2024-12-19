@@ -34,8 +34,13 @@ public class MappingStateTest {
     final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
+    final String name = "name";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setMappingKey(key)
+            .setClaimName(claimName)
+            .setName(name)
+            .setClaimValue(claimValue);
 
     // when
     mappingState.create(mapping);
@@ -44,6 +49,7 @@ public class MappingStateTest {
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
+    assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimValue()).isEqualTo(claimValue);
   }
 

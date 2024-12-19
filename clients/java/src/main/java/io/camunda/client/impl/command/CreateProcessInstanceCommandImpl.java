@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
@@ -26,8 +26,8 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreatePro
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -61,7 +61,7 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
-      final ZeebeClientConfiguration config,
+      final CamundaClientConfiguration config,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc) {
@@ -87,7 +87,7 @@ public final class CreateProcessInstanceCommandImpl
    *
    * @deprecated since 8.3.0, use {@link
    *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
-   *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
+   *     JsonMapper jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
    */
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -176,7 +176,7 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  public ZeebeFuture<ProcessInstanceEvent> send() {
+  public CamundaFuture<ProcessInstanceEvent> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -184,8 +184,8 @@ public final class CreateProcessInstanceCommandImpl
     }
   }
 
-  private ZeebeFuture<ProcessInstanceEvent> sendRestRequest() {
-    final HttpZeebeFuture<ProcessInstanceEvent> result = new HttpZeebeFuture<>();
+  private CamundaFuture<ProcessInstanceEvent> sendRestRequest() {
+    final HttpCamundaFuture<ProcessInstanceEvent> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
@@ -196,7 +196,7 @@ public final class CreateProcessInstanceCommandImpl
     return result;
   }
 
-  private ZeebeFuture<ProcessInstanceEvent> sendGrpcRequest() {
+  private CamundaFuture<ProcessInstanceEvent> sendGrpcRequest() {
     final CreateProcessInstanceRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResponse> future =

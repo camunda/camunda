@@ -10,7 +10,7 @@ package io.camunda.tasklist.qa.backup.generator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
 import io.camunda.tasklist.qa.backup.TasklistAPICaller;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
@@ -46,18 +46,18 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
       LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
 
   /**
-   * ZeebeClient must not be reused between different test fixtures, as this may be different
+   * CamundaClient must not be reused between different test fixtures, as this may be different
    * versions of client in the future.
    */
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
   private void init(final BackupRestoreTestContext testContext) {
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
+    camundaClient =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
@@ -175,9 +175,9 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void claimAllTasks();
 
   private void closeClients() {
-    if (zeebeClient != null) {
-      zeebeClient.close();
-      zeebeClient = null;
+    if (camundaClient != null) {
+      camundaClient.close();
+      camundaClient = null;
     }
   }
 
@@ -204,7 +204,8 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
       final String bpmnProcessId, final int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
-          ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
+          ZeebeTestUtil.startProcessInstance(
+              camundaClient, bpmnProcessId, "{\"var1\": \"value1\"}");
       LOGGER.debug("Started processInstance {} for process {}", processInstanceKey, bpmnProcessId);
       processInstanceKeys.add(processInstanceKey);
     }
@@ -215,7 +216,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   private void deployProcess(
       final BpmnModelInstance bpmnModelInstance, final String bpmnProcessId) {
     final String processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
+        ZeebeTestUtil.deployProcess(camundaClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
