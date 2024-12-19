@@ -50,7 +50,7 @@ public class CamundaUserDetailsServiceTest {
     MockitoAnnotations.openMocks(this).close();
     userDetailsService =
         new CamundaUserDetailsService(
-            userService, authorizationServices, roleServices, tenantServices);
+            userService, authorizationServices, roleServices, tenantServices, true);
   }
 
   @Test

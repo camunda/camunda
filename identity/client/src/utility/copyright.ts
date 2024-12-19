@@ -6,13 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {requestAndParse} from 'modules/request';
-
-const logout = async () => {
-  return requestAndParse({
-    url: '/logout',
-    method: 'POST',
-  });
-};
-
-export {logout};
+export function getCopyrightNoticeText() {
+  return `© Camunda Services GmbH ${new Date().getFullYear()}. All rights reserved. | ${
+    import.meta.env.VITE_APP_VERSION
+  }`;
+}
