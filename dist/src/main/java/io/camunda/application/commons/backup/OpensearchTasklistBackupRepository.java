@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Profile;
  */
 @Conditional(OpenSearchCondition.class)
 @Configuration
-@Profile("tasklist & !operate")
+@Profile("tasklist & !operate & standalone")
 // only active if standalone, otherwise the operate one is used
 public class OpensearchTasklistBackupRepository {
 

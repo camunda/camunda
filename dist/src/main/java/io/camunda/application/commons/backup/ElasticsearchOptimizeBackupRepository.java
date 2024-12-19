@@ -30,7 +30,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  */
 @Conditional(ElasticSearchCondition.class)
 @Configuration
-@Profile("optimize & !operate")
+@Profile("optimize & !operate & standalone")
 // only active if standalone, otherwise the operate one is used
 public class ElasticsearchOptimizeBackupRepository {
 
