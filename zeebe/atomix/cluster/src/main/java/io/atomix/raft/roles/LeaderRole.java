@@ -59,8 +59,10 @@ import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Scheduled;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -621,7 +623,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private IndexedRaftLogEntry appendWithRetry(final RaftLogEntry entry) {
     int retries = 0;
 
-    RuntimeException lastError = null;
+    Exception lastError = null;
     // we retry in a blocking fashion to avoid interleaving append requests; this however blocks the
     // raft thread.
     while (retries <= MAX_APPEND_ATTEMPTS) {
@@ -643,7 +645,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             retries,
             MAX_APPEND_ATTEMPTS,
             e);
-      } catch (final JournalException
+      } catch (final CheckedJournalException
+          | JournalException
           | UncheckedIOException e) { // JournalException will wrap most IOException
         lastError = e;
 
@@ -658,10 +661,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
 
     log.warn("Failed to append to local log after {} retries", retries, lastError);
-    throw lastError;
+    return Rethrow.rethrowUnchecked(lastError);
   }
 
-  private IndexedRaftLogEntry append(final RaftLogEntry entry) {
+  private IndexedRaftLogEntry append(final RaftLogEntry entry) throws CheckedJournalException {
     final var indexedEntry = raft.getLog().append(entry);
     raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
     log.trace("Appended {}", indexedEntry);

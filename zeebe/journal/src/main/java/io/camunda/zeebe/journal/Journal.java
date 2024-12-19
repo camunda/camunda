@@ -32,7 +32,7 @@ public interface Journal extends AutoCloseable {
    * @param recordDataWriter a writer that outputs the data of the record
    * @return the journal record that was appended
    */
-  JournalRecord append(BufferWriter recordDataWriter);
+  JournalRecord append(BufferWriter recordDataWriter) throws CheckedJournalException;
 
   /**
    * Appends a new {@link JournalRecord} that contains the data to be written by the
@@ -44,20 +44,20 @@ public interface Journal extends AutoCloseable {
    * @param recordDataWriter a writer that outputs the data of the record
    * @return the journal record that was appended
    */
-  JournalRecord append(long asqn, BufferWriter recordDataWriter);
+  JournalRecord append(long asqn, BufferWriter recordDataWriter) throws CheckedJournalException;
 
   /**
    * Appends a {@link JournalRecord}. If the index of the record is not the next expected index, the
    * append will fail.
    *
    * @deprecated This method was used to append entries received via replication. {@link
-   *     Journal#append(long, long, byte[])} must be used instead.
+   *     Journal#append(long, byte[])} must be used instead.
    * @param record the record to be appended
    * @exception InvalidIndex if the index of record is not the next expected index
    * @exception InvalidChecksum if the checksum in record does not match the checksum of the data
    */
   @Deprecated(since = "8.4.0")
-  void append(JournalRecord record);
+  void append(JournalRecord record) throws CheckedJournalException;
 
   /**
    * Appends already serialized journal record. See {@link JournalRecord#serializedRecord()}
@@ -65,7 +65,7 @@ public interface Journal extends AutoCloseable {
    * @param checksum checksum of serializedRecord
    * @param serializedRecord serializedRecord
    */
-  JournalRecord append(long checksum, byte[] serializedRecord);
+  JournalRecord append(long checksum, byte[] serializedRecord) throws CheckedJournalException;
 
   /**
    * Delete all records after indexExclusive. After a call to this method, {@link
@@ -73,7 +73,7 @@ public interface Journal extends AutoCloseable {
    *
    * @param indexExclusive the index after which the records will be deleted.
    */
-  void deleteAfter(long indexExclusive);
+  void deleteAfter(long indexExclusive) throws CheckedJournalException;
 
   /**
    * Attempts to delete all records until indexExclusive. The records may be immediately deleted or
@@ -83,7 +83,7 @@ public interface Journal extends AutoCloseable {
    *     deleted.
    * @return true if anything was deleted, false otherwise
    */
-  boolean deleteUntil(long indexExclusive);
+  boolean deleteUntil(long indexExclusive) throws CheckedJournalException;
 
   /**
    * Delete all records in the journal and reset the next index to nextIndex. The following calls to
@@ -94,7 +94,7 @@ public interface Journal extends AutoCloseable {
    *
    * @param nextIndex the next index of the journal.
    */
-  void reset(long nextIndex);
+  void reset(long nextIndex) throws CheckedJournalException;
 
   /**
    * Returns the index of last record in the journal
