@@ -30,12 +30,13 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
-public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
+public class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
@@ -43,37 +44,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
+    this(new Class<?>[0]);
+  }
 
-    config = new BrokerBasedProperties();
+  public TestStandaloneBroker(final Class<?>... springConfigurations) {
+    super(
+        ArrayUtils.addAll(
+            springConfigurations,
+            BrokerModuleConfiguration.class,
+            CommonsModuleConfiguration.class));
 
-    config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
-    config.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
-
-    // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
-    // for local development; also lower the watermarks for local testing
-    config.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
-    config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
-    config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
-
-    config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
-    config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
-
-    //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
-
-    securityConfig = new CamundaSecurityProperties();
-    securityConfig
-        .getInitialization()
-        .getUsers()
-        .add(
-            new ConfiguredUser(
-                InitializationConfiguration.DEFAULT_USER_USERNAME,
-                InitializationConfiguration.DEFAULT_USER_PASSWORD,
-                InitializationConfiguration.DEFAULT_USER_NAME,
-                InitializationConfiguration.DEFAULT_USER_EMAIL));
-    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    config = initializeBrokerProperties();
+    securityConfig = initializeCamundaSecurityProperties();
   }
 
   @Override
@@ -265,5 +247,45 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           cfg.setArgs(Map.of("flushInterval", "0"));
         });
     return this;
+  }
+
+  private BrokerBasedProperties initializeBrokerProperties() {
+    final BrokerBasedProperties brokerProperties = new BrokerBasedProperties();
+
+    brokerProperties.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
+    brokerProperties.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
+    brokerProperties.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().getPort());
+
+    // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
+    // for local development; also lower the watermarks for local testing
+    brokerProperties.getData().setLogSegmentSize(DataSize.ofMegabytes(16));
+    brokerProperties.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
+    brokerProperties.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
+
+    brokerProperties.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
+    brokerProperties.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+
+    withBean("config", brokerProperties, BrokerBasedProperties.class)
+        .withAdditionalProfile(Profile.BROKER);
+
+    return brokerProperties;
+  }
+
+  private CamundaSecurityProperties initializeCamundaSecurityProperties() {
+    final CamundaSecurityProperties securityConfig = new CamundaSecurityProperties();
+
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
+
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+
+    return securityConfig;
   }
 }
