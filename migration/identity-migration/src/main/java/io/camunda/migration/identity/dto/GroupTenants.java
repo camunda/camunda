@@ -9,4 +9,4 @@ package io.camunda.migration.identity.dto;
 
 import java.util.List;
 
-public record GroupTenants(String id, String groupName, List<Tenant> tenants) {}
+public record GroupTenants(String id, String name, List<Tenant> tenants) {}
