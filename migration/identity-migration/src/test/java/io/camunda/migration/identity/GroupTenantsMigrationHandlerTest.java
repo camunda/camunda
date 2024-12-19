@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,8 +38,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class GroupTenantsMigrationHandlerTest {
 
   @Mock private ManagementIdentityClient managementIdentityClient;
-  @Mock private GroupServices groupServices;
-  @Mock private TenantServices tenantServices;
+
+  @Mock(answer = Answers.RETURNS_SELF)
+  private GroupServices groupServices;
+
+  @Mock(answer = Answers.RETURNS_SELF)
+  private TenantServices tenantServices;
 
   @InjectMocks private GroupTenantsMigrationHandler handler;
 
