@@ -245,6 +245,7 @@ public class TasklistMigrationHelper {
         put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", "http://elasticsearch:9200");
         put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
         put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
+        put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true");
       }
     };
   }
@@ -259,6 +260,7 @@ public class TasklistMigrationHelper {
         put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", "http://opensearch:9200");
         put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
         put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
+        put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true");
       }
     };
   }
