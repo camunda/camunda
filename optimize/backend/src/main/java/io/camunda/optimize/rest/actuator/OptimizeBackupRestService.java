@@ -44,12 +44,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Component
 @RestControllerEndpoint(id = "backups")
-public class BackupRestService {
+public class OptimizeBackupRestService {
 
   private final OptimizeBackupService optimizeBackupService;
   private final LocalizationService localizationService;
 
-  public BackupRestService(
+  public OptimizeBackupRestService(
       final OptimizeBackupService optimizeBackupService,
       final LocalizationService localizationService) {
     this.optimizeBackupService = optimizeBackupService;
