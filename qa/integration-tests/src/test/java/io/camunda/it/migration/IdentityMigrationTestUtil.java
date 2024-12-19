@@ -14,8 +14,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
@@ -49,6 +51,7 @@ final class IdentityMigrationTestUtil {
         .withEnv("POSTGRES_DB", IDENTITY_DATABASE_NAME)
         .withEnv("POSTGRES_USER", IDENTITY_DATABASE_USERNAME)
         .withEnv("POSTGRES_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("postgres:16.6-alpine")))
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
@@ -66,6 +69,7 @@ final class IdentityMigrationTestUtil {
         .withEnv("KEYCLOAK_DATABASE_NAME", IDENTITY_DATABASE_NAME)
         .withEnv("KEYCLOAK_DATABASE_USER", IDENTITY_DATABASE_USERNAME)
         .withEnv("KEYCLOAK_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("bitnami/keycloak:25.0.2")))
         .waitingFor(
             new HttpWaitStrategy()
                 .forPort(KEYCLOAK_PORT)
@@ -110,6 +114,8 @@ final class IdentityMigrationTestUtil {
         .withEnv("MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", "true")
         .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
         .withEnv("MIGRATION", "true")
+        .withLogConsumer(
+            new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)))
         .waitingFor(
             new HttpWaitStrategy()
                 .forPort(8082)

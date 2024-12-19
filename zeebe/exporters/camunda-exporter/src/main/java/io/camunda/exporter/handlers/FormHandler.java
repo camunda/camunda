@@ -46,7 +46,7 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
 
   @Override
   public List<String> generateIds(final Record<Form> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(String.valueOf(record.getValue().getFormKey()));
   }
 
   @Override
