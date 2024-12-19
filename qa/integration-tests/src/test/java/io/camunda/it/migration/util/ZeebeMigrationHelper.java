@@ -7,7 +7,7 @@
  */
 package io.camunda.it.migration.util;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -30,7 +30,7 @@ public class ZeebeMigrationHelper {
   private final ZeebeVolume volume;
   private final Network network;
   private ZeebeContainer zeebeContainer;
-  private ZeebeClient zeebeClient;
+  private CamundaClient camundaClient;
   private TestStandaloneBroker broker;
   private final Path zeebeDataPath;
 
@@ -81,8 +81,8 @@ public class ZeebeMigrationHelper {
 
     zeebeContainer.start();
 
-    zeebeClient =
-        ZeebeClient.newClientBuilder()
+    camundaClient =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .restAddress(
                 URI.create(
@@ -96,13 +96,13 @@ public class ZeebeMigrationHelper {
     return zeebeContainer;
   }
 
-  public ZeebeClient getZeebeClient() {
-    return zeebeClient;
+  public CamundaClient getCamundaClient() {
+    return camundaClient;
   }
 
   public void stop() {
-    if (zeebeClient != null) {
-      zeebeClient.close();
+    if (camundaClient != null) {
+      camundaClient.close();
     }
     if (zeebeContainer != null) {
       zeebeContainer.stop();
@@ -151,7 +151,7 @@ public class ZeebeMigrationHelper {
     org.testcontainers.Testcontainers.exposeHostPorts(
         broker.mappedPort(TestZeebePort.GATEWAY), broker.mappedPort(TestZeebePort.REST));
 
-    zeebeClient = broker.newClientBuilder().build();
+    camundaClient = broker.newClientBuilder().build();
     return broker;
   }
 

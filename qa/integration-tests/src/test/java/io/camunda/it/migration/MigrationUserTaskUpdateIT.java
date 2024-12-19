@@ -9,7 +9,7 @@ package io.camunda.it.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.MigrationITInvocationProvider;
 import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
 import io.camunda.it.migration.util.TasklistMigrationHelper;
@@ -44,13 +44,13 @@ public class MigrationUserTaskUpdateIT {
   @TestTemplate
   @Order(1)
   void shouldAssignZeebeTask(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final TasklistMigrationHelper tasklistMigrationHelper,
       final TasklistMigrationHelper.UserTaskArg param)
       throws IOException, InterruptedException {
 
     if (API_V2.equals(param.apiVersion())) {
-      zeebeClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
+      camundaClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
     } else {
       final var res = tasklistMigrationHelper.assign(param.key(), "demo");
       assertThat(res.statusCode()).isEqualTo(200);
@@ -61,7 +61,7 @@ public class MigrationUserTaskUpdateIT {
         .until(
             () -> {
               final var task =
-                  zeebeClient
+                  camundaClient
                       .newUserTaskQuery()
                       .filter(f -> f.userTaskKey(param.key()))
                       .send()
@@ -77,7 +77,7 @@ public class MigrationUserTaskUpdateIT {
   @Order(1)
   @TestTemplate
   void shouldAssignJobWorker(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final TasklistMigrationHelper tasklistMigrationHelper,
       final TasklistMigrationHelper.UserTaskArg param)
       throws IOException, InterruptedException {
@@ -98,13 +98,13 @@ public class MigrationUserTaskUpdateIT {
   @Order(2)
   @TestTemplate
   void shouldUnassignZeebeTask(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final TasklistMigrationHelper tasklistMigrationHelper,
       final TasklistMigrationHelper.UserTaskArg param)
       throws IOException, InterruptedException {
 
     if (API_V2.equals(param.apiVersion())) {
-      zeebeClient.newUserTaskUnassignCommand(param.key()).send().join();
+      camundaClient.newUserTaskUnassignCommand(param.key()).send().join();
     } else {
       final var res = tasklistMigrationHelper.unassignTask(param.key());
       assertThat(res.statusCode()).isEqualTo(200);
@@ -115,7 +115,7 @@ public class MigrationUserTaskUpdateIT {
         .until(
             () -> {
               final var task =
-                  zeebeClient
+                  camundaClient
                       .newUserTaskQuery()
                       .filter(f -> f.userTaskKey(param.key()))
                       .send()
@@ -129,7 +129,7 @@ public class MigrationUserTaskUpdateIT {
   @Order(2)
   @TestTemplate
   void shouldUnAssignJobWorker(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final TasklistMigrationHelper tasklistMigrationHelper,
       final TasklistMigrationHelper.UserTaskArg param)
       throws IOException, InterruptedException {
@@ -149,10 +149,10 @@ public class MigrationUserTaskUpdateIT {
   @Order(3)
   @TestTemplate
   void shouldUpdateZeebeTask(
-      final ZeebeClient zeebeClient, final TasklistMigrationHelper.UserTaskArg param) {
+      final CamundaClient camundaClient, final TasklistMigrationHelper.UserTaskArg param) {
 
     if (API_V2.equals(param.apiVersion())) {
-      zeebeClient.newUserTaskUpdateCommand(param.key()).priority(88).send().join();
+      camundaClient.newUserTaskUpdateCommand(param.key()).priority(88).send().join();
     }
 
     Awaitility.await()
@@ -160,7 +160,7 @@ public class MigrationUserTaskUpdateIT {
         .until(
             () -> {
               final var task =
-                  zeebeClient
+                  camundaClient
                       .newUserTaskQuery()
                       .filter(f -> f.userTaskKey(param.key()))
                       .send()
@@ -174,14 +174,14 @@ public class MigrationUserTaskUpdateIT {
   @Order(4)
   @TestTemplate
   void shouldCompleteZeebeTask(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final TasklistMigrationHelper tasklistMigrationHelper,
       final TasklistMigrationHelper.UserTaskArg param)
       throws IOException, InterruptedException {
 
     if (API_V2.equals(param.apiVersion())) {
-      zeebeClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
-      zeebeClient.newUserTaskCompleteCommand(param.key()).send().join();
+      camundaClient.newUserTaskAssignCommand(param.key()).assignee("demo").send().join();
+      camundaClient.newUserTaskCompleteCommand(param.key()).send().join();
     } else {
       final var assignRes = tasklistMigrationHelper.assign(param.key(), "demo");
       assertThat(assignRes.statusCode()).isEqualTo(200);
@@ -194,7 +194,7 @@ public class MigrationUserTaskUpdateIT {
         .until(
             () -> {
               final var task =
-                  zeebeClient
+                  camundaClient
                       .newUserTaskQuery()
                       .filter(f -> f.userTaskKey(param.key()))
                       .send()
@@ -208,7 +208,7 @@ public class MigrationUserTaskUpdateIT {
   @Order(2)
   @TestTemplate
   void shouldCompleteJobWorker(
-      final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient,
       final TasklistMigrationHelper tasklistMigrationHelper,
       final TasklistMigrationHelper.UserTaskArg param)
       throws IOException, InterruptedException {
@@ -228,7 +228,7 @@ public class MigrationUserTaskUpdateIT {
   }
 
   private static void generate87Data(
-      final ZeebeClient zeebeClient, final TasklistMigrationHelper tasklistMigrationHelper) {
+      final CamundaClient camundaClient, final TasklistMigrationHelper tasklistMigrationHelper) {
 
     final List<String> instances = List.of("zeebeV187task", "zeebeV287task", "jobWorkerV187task");
 
@@ -254,13 +254,13 @@ public class MigrationUserTaskUpdateIT {
                     .done();
           }
 
-          zeebeClient
+          camundaClient
               .newDeployResourceCommand()
               .addProcessModel(process, i + ".bpmn")
               .send()
               .join();
 
-          zeebeClient
+          camundaClient
               .newCreateInstanceCommand()
               .bpmnProcessId(i + "-process")
               .latestVersion()
@@ -275,7 +275,7 @@ public class MigrationUserTaskUpdateIT {
         .until(
             () -> {
               // Check if Zeebe User Tasks are present
-              final var tasks = zeebeClient.newUserTaskQuery().send().join().items();
+              final var tasks = camundaClient.newUserTaskQuery().send().join().items();
               boolean zeebeTasksPresent = false;
               if (tasks.size() == 4) {
                 zeebeTasksPresent = true;
@@ -322,7 +322,7 @@ public class MigrationUserTaskUpdateIT {
   }
 
   private static void generateData(
-      final ZeebeClient zeebeClient, final TasklistMigrationHelper tasklistMigrationHelper) {
+      final CamundaClient camundaClient, final TasklistMigrationHelper tasklistMigrationHelper) {
 
     final List<String> instances = List.of("zeebeV186task", "zeebeV286task", "jobWorkerV186task");
 
@@ -348,13 +348,13 @@ public class MigrationUserTaskUpdateIT {
                     .done();
           }
 
-          zeebeClient
+          camundaClient
               .newDeployResourceCommand()
               .addProcessModel(process, i + ".bpmn")
               .send()
               .join();
 
-          zeebeClient
+          camundaClient
               .newCreateInstanceCommand()
               .bpmnProcessId(i + "-process")
               .latestVersion()
