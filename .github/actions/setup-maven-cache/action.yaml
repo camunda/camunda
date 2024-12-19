@@ -74,18 +74,33 @@ runs:
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-full-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}-full" >> $GITHUB_ENV
         fi
+
+      # Check if PR contains a label to disable the cache
+    - name: Check if cache is enabled
+      uses: camunda/infra-global-github-actions/is-cache-enabled@main
+      id: is-cache-enabled
+
+    - name: Detect branch type
+      id: branch-detect
+      shell: bash
+      env:
+        IS_MAIN_OR_STABLE_BRANCH: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      run: |
+        echo is-main-or-stable-branch="$IS_MAIN_OR_STABLE_BRANCH" | tee -a $GITHUB_OUTPUT
+
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
-      if: ${{ startsWith(github.ref_name, 'stable/') || github.ref_name == 'main' }}
+      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
       uses: actions/cache@v4
       with:
         path: ${{ env.MAVEN_CACHE_PATH }}
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+
     - name: Restore maven cache
-      # Restore cache (but don't save it) if we're not on main or stable/* branches
-      if: ${{ !(startsWith(github.ref_name, 'stable/') || github.ref_name == 'main') }}
+      # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
+      if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'false' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
       uses: actions/cache/restore@v4
       with:
         # This has to match the 'Cache local Maven repository' step above
