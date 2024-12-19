@@ -81,6 +81,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .findFirst();
   }
 
+  public Optional<GroupEntity> findGroup(final String groupName) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.name(groupName)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
   public CompletableFuture<GroupRecord> updateGroup(final long groupKey, final String name) {
     return sendBrokerRequest(new BrokerGroupUpdateRequest(groupKey).setName(name));
   }
