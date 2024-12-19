@@ -37,12 +37,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserTaskJobBasedHandlerTest {
   private static final Set<JobIntent> SUPPORTED_INTENTS =
@@ -64,21 +60,6 @@ public class UserTaskJobBasedHandlerTest {
   @BeforeEach
   void resetMetadata() {
     exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, -1);
-  }
-
-  private static Stream<Arguments> taskIdArguments() {
-    return Stream.of(
-        // First 8.7 UserTask key, Record Key, PI key, FNI key, expected id
-        Arguments.of(100, 110, 111, 211, 211), // 8.7 record
-        Arguments.of(100, 10, 111, 211, 10)); // Ref to 8.6 record
-  }
-
-  private static Stream<Arguments> taskRoutingArguments() {
-    // First 8.7 UserTask key, Record Key, PI key, FNI key, expected routing key
-    return Stream.of(
-        // First 8.7 UserTask key, Record Key, PI key, FNI key, expected routing key
-        Arguments.of(100, 110, 111, 211, 111), // 8.7 record
-        Arguments.of(100, 10, 111, 211, 10)); // Ref to 8.6 record
   }
 
   @Test
@@ -143,16 +124,15 @@ public class UserTaskJobBasedHandlerTest {
         });
   }
 
-  @ParameterizedTest
-  @MethodSource("taskIdArguments")
-  void shouldGenerateIds(
-      final long firstSeenKey,
-      final long recordKey,
-      final long processInstanceKey,
-      final long flowNodeInstanceKey,
-      final long expectedId) {
+  @Test
+  void shouldGenerateIdForNewVersionReferenceRecord() {
     // given
-    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstSeenKey);
+    /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 110;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
     final Record<JobRecordValue> jobRecord =
         factory.generateRecord(
             ValueType.JOB,
@@ -169,7 +149,35 @@ public class UserTaskJobBasedHandlerTest {
     final var idList = underTest.generateIds(jobRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    assertThat(idList).containsExactly(String.valueOf(flowNodeInstanceKey));
+  }
+
+  @Test
+  void shouldGenerateIdForPreviousVersionReferenceRecord() {
+    // given
+    /* For 8.7 Ingested records, the recordKey has to be greater than the firstIngestedUserTaskKey */
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 90;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withElementInstanceKey(flowNodeInstanceKey)
+                            .build()));
+
+    // when
+    final var idList = underTest.generateIds(jobRecord);
+
+    // then
+    assertThat(idList).containsExactly(String.valueOf(recordKey));
   }
 
   @Test
@@ -182,23 +190,18 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(result.getId()).isEqualTo("id");
   }
 
-  @ParameterizedTest
-  @MethodSource("taskRoutingArguments")
-  void shouldAddEntityOnFlush(
-      final long firstSeenKey,
-      final long recordKey,
-      final long processInstanceKey,
-      final long flowNodeInstanceKey,
-      final long expectedRoutingKey) {
+  @Test
+  void shouldAddEntityOnFlushForNewVersionReferenceRecord() {
 
     // given
-    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstSeenKey);
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 110;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
     final TaskEntity inputEntity =
         new TaskEntity()
-            .setId(
-                recordKey < firstSeenKey
-                    ? String.valueOf(recordKey)
-                    : String.valueOf(flowNodeInstanceKey))
+            .setId(String.valueOf(flowNodeInstanceKey))
             .setKey(recordKey)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
@@ -213,24 +216,50 @@ public class UserTaskJobBasedHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName,
-            recordKey < firstSeenKey
-                ? String.valueOf(recordKey)
-                : String.valueOf(flowNodeInstanceKey),
+            String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
-            String.valueOf(expectedRoutingKey));
+            String.valueOf(processInstanceKey));
   }
 
-  @ParameterizedTest
-  @MethodSource("taskRoutingArguments")
-  void shouldUpdateEntityFromRecord(
-      final long firstSeenKey,
-      final long recordKey,
-      final long processInstanceKey,
-      final long flowNodeInstanceKey,
-      final long ignore) {
+  @Test
+  void shouldAddEntityOnFlushForPreviousVersionReferenceRecord() {
+
     // given
-    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, firstSeenKey);
+    final long firstIngestedUserTaskKey = 100;
+    final long recordKey = 90;
+    final long processInstanceKey = 111;
+    final long flowNodeInstanceKey = 211;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, firstIngestedUserTaskKey);
+    final TaskEntity inputEntity =
+        new TaskEntity()
+            .setId(String.valueOf(recordKey))
+            .setKey(recordKey)
+            .setProcessInstanceId(String.valueOf(processInstanceKey))
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    final Map<String, Object> updateFieldsMap = new HashMap<>();
+
+    verify(mockRequest, times(1))
+        .upsertWithRouting(
+            indexName,
+            String.valueOf(recordKey),
+            inputEntity,
+            updateFieldsMap,
+            String.valueOf(recordKey));
+  }
+
+  void shouldUpdateEntityFromRecord() {
+    // given
+    final long processInstanceKey = 123;
+    final long flowNodeInstanceKey = 456;
+    final long recordKey = 110;
+    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var assignee = "foo";
     final var formKey = "my-local-form-key";
