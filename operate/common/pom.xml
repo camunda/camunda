@@ -126,7 +126,7 @@
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
-      <artifactId>apache-client</artifactId>
+      <artifactId>aws-crt-client</artifactId>
     </dependency>
 
     <dependency>
