@@ -113,42 +113,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity.setJoin(joinRelation);
   }
 
-  /**
-   * Applies changes to the user task fields based on the attributes in the {@link
-   * UserTaskRecordValue}.
-   *
-   * <p>This method can be used for updating fields either:
-   *
-   * <ul>
-   *   <li>As a result of user task corrections configured while completing task listener jobs.
-   *   <li>As a result of regular user task updates.
-   * </ul>
-   *
-   * @param record the record containing user task data and changed attributes
-   * @param entity the task entity to be updated
-   */
-  private void updateChangedAttributes(
-      final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    final var value = record.getValue();
-
-    for (final String attribute : value.getChangedAttributes()) {
-      entity.getChangedAttributes().add(attribute);
-
-      switch (attribute) {
-        case "assignee" -> entity.setAssignee(value.getAssignee());
-        case "candidateGroupsList" ->
-            entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
-        case "candidateUsersList" ->
-            entity.setCandidateUsers(value.getCandidateUsersList().toArray(new String[0]));
-        case "dueDate" -> entity.setDueDate(ExporterUtil.toOffsetDateTime(value.getDueDate()));
-        case "followUpDate" ->
-            entity.setFollowUpDate(ExporterUtil.toOffsetDateTime(value.getFollowUpDate()));
-        case "priority" -> entity.setPriority(value.getPriority());
-        default -> LOGGER.warn(UNMAPPED_USER_TASK_ATTRIBUTE_WARNING, attribute);
-      }
-    }
-  }
-
   @Override
   public void flush(final TaskEntity entity, final BatchRequest batchRequest) {
 
@@ -278,6 +242,42 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
 
     updateChangedAttributes(record, entity);
+  }
+
+  /**
+   * Applies changes to the user task fields based on the attributes in the {@link
+   * UserTaskRecordValue}.
+   *
+   * <p>This method can be used for updating fields either:
+   *
+   * <ul>
+   *   <li>As a result of user task corrections configured while completing task listener jobs.
+   *   <li>As a result of regular user task updates.
+   * </ul>
+   *
+   * @param record the record containing user task data and changed attributes
+   * @param entity the task entity to be updated
+   */
+  private void updateChangedAttributes(
+      final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    final var value = record.getValue();
+
+    for (final String attribute : value.getChangedAttributes()) {
+      entity.getChangedAttributes().add(attribute);
+
+      switch (attribute) {
+        case "assignee" -> entity.setAssignee(value.getAssignee());
+        case "candidateGroupsList" ->
+            entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
+        case "candidateUsersList" ->
+            entity.setCandidateUsers(value.getCandidateUsersList().toArray(new String[0]));
+        case "dueDate" -> entity.setDueDate(ExporterUtil.toOffsetDateTime(value.getDueDate()));
+        case "followUpDate" ->
+            entity.setFollowUpDate(ExporterUtil.toOffsetDateTime(value.getFollowUpDate()));
+        case "priority" -> entity.setPriority(value.getPriority());
+        default -> LOGGER.warn(UNMAPPED_USER_TASK_ATTRIBUTE_WARNING, attribute);
+      }
+    }
   }
 
   private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
