@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -364,6 +365,80 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getCompletionTime())
         .isEqualTo(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+    assertThat(taskEntity)
+        .describedAs(
+            "Expected not changed user task record fields to have `null` values in task entity")
+        .extracting(
+            TaskEntity::getAssignee,
+            TaskEntity::getDueDate,
+            TaskEntity::getFollowUpDate,
+            TaskEntity::getPriority,
+            TaskEntity::getCandidateGroups,
+            TaskEntity::getCandidateUsers)
+        .containsOnlyNulls();
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecordForCompletedIntentWithCorrectedData() {
+    // given
+    final long processInstanceKey = 1234;
+    final var dueDateTime =
+        OffsetDateTime.now().plusDays(2).format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    final var followUpDateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withProcessInstanceKey(processInstanceKey)
+            // corrected data
+            .withAssignee("corrected_assignee")
+            .withDueDate(dueDateTime)
+            .withFollowUpDate(followUpDateTime)
+            .withPriority(22)
+            .withCandidateGroupsList(List.of("corrected_group1"))
+            .withCandidateUsersList(List.of("corrected_user1", "corrected_user2"))
+            .withChangedAttributes(
+                List.of(
+                    UserTaskRecord.ASSIGNEE,
+                    UserTaskRecord.DUE_DATE,
+                    UserTaskRecord.FOLLOW_UP_DATE,
+                    UserTaskRecord.PRIORITY,
+                    UserTaskRecord.CANDIDATE_GROUPS,
+                    UserTaskRecord.CANDIDATE_USERS))
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.COMPLETED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity("id");
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity)
+        .describedAs("Expected task entity to contain corrected data from user task record")
+        .satisfies(
+            entity -> {
+              assertThat(entity.getAssignee()).isEqualTo("corrected_assignee");
+              assertThat(entity.getDueDate()).isEqualTo(dueDateTime);
+              assertThat(entity.getFollowUpDate()).isEqualTo(followUpDateTime);
+              assertThat(entity.getPriority()).isEqualTo(22);
+              assertThat(entity.getCandidateGroups()).contains("corrected_group1");
+              assertThat(entity.getCandidateUsers()).contains("corrected_user1", "corrected_user2");
+            })
+        .describedAs("Expected task entity to contain updated completion fields")
+        .satisfies(
+            entity -> {
+              assertThat(entity.getState()).isEqualTo(TaskState.COMPLETED);
+              assertThat(entity.getCompletionTime())
+                  .isEqualTo(
+                      ExporterUtil.toZonedOffsetDateTime(
+                          Instant.ofEpochMilli(taskRecord.getTimestamp())));
+            });
   }
 
   @Test
