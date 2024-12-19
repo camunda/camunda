@@ -8,6 +8,7 @@
 package io.camunda.migration.identity.midentity;
 
 import io.camunda.migration.identity.dto.Group;
+import io.camunda.migration.identity.dto.GroupTenants;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
@@ -50,5 +51,15 @@ public class ManagementIdentityTransformer {
       final Group group, final Exception e) {
     return new MigrationStatusUpdateRequest(
         group.id(), MigrationEntityType.GROUP, null, e == null, e == null ? null : e.getMessage());
+  }
+
+  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+      final GroupTenants groupTenants, final Exception e) {
+    return new MigrationStatusUpdateRequest(
+        groupTenants.id(),
+        MigrationEntityType.TENANT_GROUP,
+        null,
+        e == null,
+        e == null ? null : e.getMessage());
   }
 }
