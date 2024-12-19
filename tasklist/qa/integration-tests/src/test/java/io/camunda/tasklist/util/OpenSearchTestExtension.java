@@ -87,7 +87,7 @@ public class OpenSearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    indexPrefix = tasklistProperties.getOpenSearch().getIndexPrefix();
     if (indexPrefix.isBlank()) {
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);

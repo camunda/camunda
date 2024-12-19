@@ -60,7 +60,7 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Override
   protected String getZeebeExporterIndexPrefixConfigParameterName() {
-    return "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX";
+    return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX";
   }
 
   @Override
