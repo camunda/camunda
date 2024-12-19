@@ -10,14 +10,14 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
+import io.camunda.client.api.search.response.DecisionDefinitionType;
+import io.camunda.client.api.search.response.DecisionInstance;
+import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
-import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
-import io.camunda.zeebe.client.api.search.response.DecisionInstance;
-import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -46,25 +46,25 @@ class DecisionInstanceQueryTest {
   private boolean initialized;
 
   @BeforeEach
-  void setUp(final ZeebeClient zeebeClient) {
+  void setUp(final CamundaClient camundaClient) {
     if (!initialized) {
 
       List.of("decision_model.dmn", "invoiceBusinessDecisions_v_1.dmn")
           .forEach(
               dmn ->
-                  deployResource(zeebeClient, String.format("decisions/%s", dmn)).getDecisions());
+                  deployResource(camundaClient, String.format("decisions/%s", dmn)).getDecisions());
       evaluatedDecisions.put(
           DECISION_DEFINITION_ID_1,
           evaluateDecision(
-              zeebeClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
+              camundaClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
       evaluatedDecisions.put(
           DECISION_DEFINITION_ID_2,
           evaluateDecision(
-              zeebeClient,
+              camundaClient,
               DECISION_DEFINITION_ID_2,
               "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}"));
       waitForDecisionsToBeEvaluated(
-          zeebeClient,
+          camundaClient,
           evaluatedDecisions.values().stream()
               .mapToInt(v -> v.getEvaluatedDecisions().size())
               .sum());
@@ -73,10 +73,10 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  public void shouldRetrieveAllDecisionInstances(final ZeebeClient zeebeClient) {
+  public void shouldRetrieveAllDecisionInstances(final CamundaClient camundaClient) {
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .sort(b -> b.decisionInstanceKey().asc())
             .send()
@@ -96,18 +96,18 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  void shouldSearchByFromWithLimit(final ZeebeClient zeebeClient) {
+  void shouldSearchByFromWithLimit(final CamundaClient camundaClient) {
     // when
-    final var resultAll = zeebeClient.newDecisionInstanceQuery().send().join();
+    final var resultAll = camundaClient.newDecisionInstanceQuery().send().join();
 
     final var resultWithLimit =
-        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2)).send().join();
+        camundaClient.newDecisionInstanceQuery().page(p -> p.limit(2)).send().join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionInstanceKey();
 
     final var resultSearchFrom =
-        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newDecisionInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionInstanceKey())
@@ -115,12 +115,13 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(final ZeebeClient zeebeClient) {
+  public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(
+      final CamundaClient camundaClient) {
     // when
     final long decisionDefinitionKey =
         evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.decisionDefinitionKey(decisionDefinitionKey))
             .send()
@@ -135,12 +136,13 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn(final ZeebeClient zeebeClient) {
+  public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn(
+      final CamundaClient camundaClient) {
     // when
     final long decisionDefinitionKey =
         evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.decisionDefinitionKey(b -> b.in(Long.MAX_VALUE, decisionDefinitionKey)))
             .send()
@@ -155,12 +157,13 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  public void shouldRetrieveDecisionInstanceByDecisionInstanceKey(final ZeebeClient zeebeClient) {
+  public void shouldRetrieveDecisionInstanceByDecisionInstanceKey(
+      final CamundaClient camundaClient) {
     // when
     final long decisionInstanceKey =
         evaluatedDecisions.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.decisionInstanceKey(decisionInstanceKey))
             .send()
@@ -173,12 +176,12 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  public void shouldRetrieveDecisionInstanceByStateAndType(final ZeebeClient zeebeClient) {
+  public void shouldRetrieveDecisionInstanceByStateAndType(final CamundaClient camundaClient) {
     // when
     final DecisionInstanceState state = DecisionInstanceState.EVALUATED;
     final DecisionDefinitionType type = DecisionDefinitionType.DECISION_TABLE;
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.state(state).decisionDefinitionType(type))
             .send()
@@ -189,15 +192,15 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  public void shouldRetrieveDecisionInstanceByEvaluationDate(final ZeebeClient zeebeClient) {
+  public void shouldRetrieveDecisionInstanceByEvaluationDate(final CamundaClient camundaClient) {
     // given
     final var allResult =
-        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(1)).send().join();
+        camundaClient.newDecisionInstanceQuery().page(p -> p.limit(1)).send().join();
     final var di = allResult.items().getFirst();
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.evaluationDate(OffsetDateTime.parse(di.getEvaluationDate())))
             .send()
@@ -211,10 +214,10 @@ class DecisionInstanceQueryTest {
 
   @TestTemplate
   public void shouldRetrieveDecisionInstanceByEvaluationDateFilterGt(
-      final ZeebeClient zeebeClient) {
+      final CamundaClient camundaClient) {
     // given
     final var allResult =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .sort(s -> s.evaluationDate().asc())
             .page(p -> p.limit(1))
@@ -225,7 +228,7 @@ class DecisionInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.evaluationDate(b -> b.gt(requestDate)))
             .send()
@@ -243,10 +246,10 @@ class DecisionInstanceQueryTest {
 
   @TestTemplate
   public void shouldRetrieveDecisionInstanceByEvaluationDateFilterGte(
-      final ZeebeClient zeebeClient) {
+      final CamundaClient camundaClient) {
     // given
     final var allResult =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .sort(s -> s.evaluationDate().asc())
             .page(p -> p.limit(1))
@@ -257,7 +260,7 @@ class DecisionInstanceQueryTest {
 
     // when
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(f -> f.evaluationDate(b -> b.gte(requestDate)))
             .send()
@@ -275,13 +278,13 @@ class DecisionInstanceQueryTest {
 
   @TestTemplate
   public void shouldRetrieveDecisionInstanceByDmnDecisionIdAndDecisionVersion(
-      final ZeebeClient zeebeClient) {
+      final CamundaClient camundaClient) {
     // when
     final String dmnDecisionId = evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionId();
     final int decisionVersion =
         evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionVersion();
     final var result =
-        zeebeClient
+        camundaClient
             .newDecisionInstanceQuery()
             .filter(
                 f ->
@@ -297,12 +300,13 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  void shouldGetDecisionInstance(final ZeebeClient zeebeClient) {
+  void shouldGetDecisionInstance(final CamundaClient camundaClient) {
     // when
     final long decisionInstanceKey =
         evaluatedDecisions.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
     final var decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
-    final var result = zeebeClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+    final var result =
+        camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
     // then
     assertThat(result.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
@@ -310,21 +314,22 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
-  void shouldReturn404ForNotFoundDecisionInstance(final ZeebeClient zeebeClient) {
+  void shouldReturn404ForNotFoundDecisionInstance(final CamundaClient camundaClient) {
     // when
     final var decisionInstanceId = "not-existing";
     final var problemException =
         assertThrows(
             ProblemException.class,
-            () -> zeebeClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join());
+            () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join());
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .isEqualTo("Decision instance with key %s not found".formatted(decisionInstanceId));
   }
 
-  private DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {
-    return zeebeClient
+  private DeploymentEvent deployResource(
+      final CamundaClient camundaClient, final String resourceName) {
+    return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
         .send()
@@ -332,8 +337,10 @@ class DecisionInstanceQueryTest {
   }
 
   private EvaluateDecisionResponse evaluateDecision(
-      final ZeebeClient zeebeClient, final String decisionDefinitionId, final String variables) {
-    return zeebeClient
+      final CamundaClient camundaClient,
+      final String decisionDefinitionId,
+      final String variables) {
+    return camundaClient
         .newEvaluateDecisionCommand()
         .decisionId(decisionDefinitionId)
         .variables(variables)
@@ -342,13 +349,13 @@ class DecisionInstanceQueryTest {
   }
 
   private void waitForDecisionsToBeEvaluated(
-      final ZeebeClient zeebeClient, final int expectedCount) {
+      final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = zeebeClient.newDecisionInstanceQuery().send().join();
+              final var result = camundaClient.newDecisionInstanceQuery().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

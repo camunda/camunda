@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.ByteArrayInputStream;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class CreateDocumentTest {
 
-  private static ZeebeClient zeebeClient;
+  private static CamundaClient camundaClient;
 
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testStandaloneCamunda;
@@ -40,12 +40,12 @@ public class CreateDocumentTest {
   @Test
   public void shouldCreateDocumentFromInputStream() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = new ByteArrayInputStream("test".getBytes());
 
     // when
     final var documentReference =
-        zeebeClient.newCreateDocumentCommand().content(documentContent).send().join();
+        camundaClient.newCreateDocumentCommand().content(documentContent).send().join();
 
     // then
     assertThat(documentReference).isNotNull();
@@ -54,12 +54,12 @@ public class CreateDocumentTest {
   @Test
   public void shouldCreateDocumentFromByteArray() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test".getBytes();
 
     // when
     final var documentReference =
-        zeebeClient.newCreateDocumentCommand().content(documentContent).send().join();
+        camundaClient.newCreateDocumentCommand().content(documentContent).send().join();
 
     // then
     assertThat(documentReference).isNotNull();
@@ -68,13 +68,14 @@ public class CreateDocumentTest {
   @Test
   public void shouldThrowIfContentIsNull() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     final var exception =
         assertThrowsExactly(
             IllegalArgumentException.class,
-            () -> zeebeClient.newCreateDocumentCommand().content((InputStream) null).send().join());
+            () ->
+                camundaClient.newCreateDocumentCommand().content((InputStream) null).send().join());
 
     // then
     assertThat(exception).isInstanceOf(IllegalArgumentException.class);
@@ -84,13 +85,13 @@ public class CreateDocumentTest {
   @Test
   public void shouldUseTheProvidedDocumentId() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var documentId = "test";
 
     // when
     final var documentReference =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .documentId(documentId)
@@ -103,7 +104,7 @@ public class CreateDocumentTest {
 
     // when
     final var duplicateIdCommand =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .documentId(documentId)
@@ -120,13 +121,13 @@ public class CreateDocumentTest {
   @Test
   public void shouldUseTheProvidedStoreId() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var storeId = "in-memory";
 
     // when
     final var documentReference =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .storeId(storeId)
@@ -141,13 +142,13 @@ public class CreateDocumentTest {
   @Test
   public void shouldReturnBadRequestForNonExistingStoreId() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var storeId = "non-existing";
 
     // when
     final var createDocumentCommand =
-        zeebeClient.newCreateDocumentCommand().content(documentContent).storeId(storeId).send();
+        camundaClient.newCreateDocumentCommand().content(documentContent).storeId(storeId).send();
     final var exception = assertThrowsExactly(ProblemException.class, createDocumentCommand::join);
 
     // then
@@ -161,13 +162,13 @@ public class CreateDocumentTest {
   @Test
   public void shouldIncludeFileName() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var fileName = "test.txt";
 
     // when
     final var documentReference =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .fileName(fileName)
@@ -181,13 +182,13 @@ public class CreateDocumentTest {
   @Test
   public void shouldIncludeTimeToLive() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var timeToLive = Duration.ofMinutes(1);
 
     // when
     final var documentReference =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .timeToLive(timeToLive)
@@ -202,13 +203,13 @@ public class CreateDocumentTest {
   @Test
   public void shouldIncludeContentType() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final var contentType = "text/plain";
 
     // when
     final var documentReference =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .contentType(contentType)
@@ -223,12 +224,12 @@ public class CreateDocumentTest {
   @Test
   public void shouldCalculateSize() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
 
     // when
     final var documentReference =
-        zeebeClient.newCreateDocumentCommand().content(documentContent).send().join();
+        camundaClient.newCreateDocumentCommand().content(documentContent).send().join();
 
     // then
     assertThat(documentReference).isNotNull();
@@ -238,7 +239,7 @@ public class CreateDocumentTest {
   @Test
   public void shouldAddCustomMetadata() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = "test";
     final String key = "key1";
     final String value = "value1";
@@ -246,7 +247,7 @@ public class CreateDocumentTest {
 
     // when
     final var documentReference =
-        zeebeClient
+        camundaClient
             .newCreateDocumentCommand()
             .content(documentContent)
             .customMetadata(key, value)

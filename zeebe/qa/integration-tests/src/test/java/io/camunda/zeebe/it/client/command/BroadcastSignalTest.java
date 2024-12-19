@@ -11,10 +11,10 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.signalRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
-import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.BroadcastSignalCommandStep1;
+import io.camunda.client.api.response.BroadcastSignalResponse;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public class BroadcastSignalTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -151,7 +151,7 @@ public class BroadcastSignalTest {
     // when
     final var signalName = testInfo.getTestMethod().get().getName();
     deployProcess(signalName);
-    final ZeebeFuture<BroadcastSignalResponse> responseFuture =
+    final CamundaFuture<BroadcastSignalResponse> responseFuture =
         getCommand(client, useRest).signalName(signalName).send();
 
     final Record<SignalRecordValue> record =
@@ -163,7 +163,8 @@ public class BroadcastSignalTest {
     assertThat(response.getTenantId()).isEqualTo(record.getValue().getTenantId());
   }
 
-  private BroadcastSignalCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
+  private BroadcastSignalCommandStep1 getCommand(
+      final CamundaClient client, final boolean useRest) {
     final BroadcastSignalCommandStep1 broadcastSignalCommand = client.newBroadcastSignalCommand();
     return useRest ? broadcastSignalCommand.useRest() : broadcastSignalCommand.useGrpc();
   }

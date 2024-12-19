@@ -166,7 +166,15 @@ public class PermissionsService {
     final SecurityContext securityContext = getSecurityContext(authorization);
     final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
 
+    if (hasWildcardPermission(ids)) {
+      return ResourcesAllowed.all();
+    }
+
     return ResourcesAllowed.withIds(new LinkedHashSet<>(ids));
+  }
+
+  private boolean hasWildcardPermission(final List<String> resourceKeys) {
+    return resourceKeys != null && resourceKeys.contains("*");
   }
 
   /**

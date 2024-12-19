@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.clustering.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -59,14 +59,16 @@ final class Utils {
   }
 
   static void assertThatAllJobsCanBeCompleted(
-      final List<Long> processInstanceKeys, final ZeebeClient zeebeClient, final String jobType) {
+      final List<Long> processInstanceKeys,
+      final CamundaClient camundaClient,
+      final String jobType) {
     final Set<ActivatedJob> activatedJobs = new HashSet<>();
     Awaitility.await("Jobs from all partitions are activated")
         .timeout(Duration.ofSeconds(20))
         .untilAsserted(
             () -> {
               final var jobs =
-                  zeebeClient
+                  camundaClient
                       .newActivateJobsCommand()
                       .jobType(jobType)
                       .maxJobsToActivate(2 * processInstanceKeys.size())
@@ -83,7 +85,7 @@ final class Utils {
 
     final var jobCompleteFutures =
         activatedJobs.stream()
-            .map(job -> zeebeClient.newCompleteCommand(job).send().toCompletableFuture())
+            .map(job -> camundaClient.newCompleteCommand(job).send().toCompletableFuture())
             .toList();
     Assertions.assertThat(
             CompletableFuture.allOf(jobCompleteFutures.toArray(CompletableFuture[]::new)))
@@ -92,7 +94,7 @@ final class Utils {
   }
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
-      final ZeebeClient zeebeClient, final String jobType, final int partitionsCount) {
+      final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
     final var process =
         Bpmn.createExecutableProcess("processId")
             .startEvent()
@@ -100,13 +102,13 @@ final class Utils {
             .endEvent()
             .done();
     final var deploymentKey =
-        zeebeClient
+        camundaClient
             .newDeployResourceCommand()
             .addProcessModel(process, "process.bpmn")
             .send()
             .join()
             .getKey();
-    new ZeebeResourcesHelper(zeebeClient).waitUntilDeploymentIsDone(deploymentKey);
+    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
 
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")
@@ -116,7 +118,7 @@ final class Utils {
         .until(
             () -> {
               final var result =
-                  zeebeClient
+                  camundaClient
                       .newCreateInstanceCommand()
                       .bpmnProcessId("processId")
                       .latestVersion()

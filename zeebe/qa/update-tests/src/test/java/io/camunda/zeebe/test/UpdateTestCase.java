@@ -9,7 +9,7 @@ package io.camunda.zeebe.test;
 
 import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Map;
@@ -36,7 +36,7 @@ final class UpdateTestCase implements Arguments {
     return new TestCaseBuilder();
   }
 
-  long setUp(final ZeebeClient client) {
+  long setUp(final CamundaClient client) {
     builder.deployProcess.accept(client);
     return builder.createInstance.applyAsLong(client);
   }
@@ -51,8 +51,8 @@ final class UpdateTestCase implements Arguments {
 
   static class TestCaseBuilder {
     private String name;
-    private Consumer<ZeebeClient> deployProcess = c -> {};
-    private ToLongFunction<ZeebeClient> createInstance = c -> -1L;
+    private Consumer<CamundaClient> deployProcess = c -> {};
+    private ToLongFunction<CamundaClient> createInstance = c -> -1L;
     private ToLongFunction<ContainerState> before = r -> -1L;
     private TriConsumer<ContainerState, Long, Long> after = (r, processKey, k) -> {};
 

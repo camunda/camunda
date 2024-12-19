@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.zeebe.spring.client.actuator.ZeebeClientHealthIndicator;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
@@ -69,7 +69,7 @@ public class ZeebeActuatorConfiguration {
       matchIfMissing = true)
   @ConditionalOnClass(HealthIndicator.class)
   @ConditionalOnMissingBean(name = "zeebeClientHealthIndicator")
-  public ZeebeClientHealthIndicator zeebeClientHealthIndicator(final ZeebeClient client) {
+  public ZeebeClientHealthIndicator zeebeClientHealthIndicator(final CamundaClient client) {
     return new ZeebeClientHealthIndicator(client);
   }
 }

@@ -37,7 +37,7 @@ class ForceScaleDownBrokersTest {
   void shouldForceRemoveBrokers(final int oldClusterSize, final int newClusterSize) {
     // given
     try (final var cluster = createCluster(oldClusterSize, oldClusterSize);
-        final var zeebeClient = cluster.availableGateway().newClientBuilder().build()) {
+        final var camundaClient = cluster.availableGateway().newClientBuilder().build()) {
       final var brokersToShutdown =
           IntStream.range(newClusterSize, oldClusterSize)
               .mapToObj(String::valueOf)
@@ -48,7 +48,7 @@ class ForceScaleDownBrokersTest {
       final var brokersToKeep = IntStream.range(0, newClusterSize).boxed().toList();
 
       final var createdInstances =
-          createInstanceWithAJobOnAllPartitions(zeebeClient, JOB_TYPE, PARTITIONS_COUNT);
+          createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
       // when
       brokersToShutdown.forEach(TestApplication::close);
@@ -71,7 +71,7 @@ class ForceScaleDownBrokersTest {
       cluster.awaitCompleteTopology(
           newClusterSize, PARTITIONS_COUNT, newClusterSize, Duration.ofSeconds(20));
 
-      assertThatAllJobsCanBeCompleted(createdInstances, zeebeClient, JOB_TYPE);
+      assertThatAllJobsCanBeCompleted(createdInstances, camundaClient, JOB_TYPE);
     }
   }
 

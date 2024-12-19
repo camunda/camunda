@@ -32,6 +32,7 @@ import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -57,7 +58,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,6 +83,7 @@ public class TaskController extends ApiErrorController {
   @Autowired private UserReader userReader;
   @Autowired private IdentityAuthorizationService identityAuthorizationService;
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private TasklistPermissionServices permissionServices;
 
   @Operation(
       summary = "Search tasks",
@@ -288,7 +289,6 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/assign")
   public ResponseEntity<TaskResponse> assignTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
@@ -327,7 +327,6 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/unassign")
   public ResponseEntity<TaskResponse> unassignTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
@@ -370,7 +369,6 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PatchMapping("{taskId}/complete")
   public ResponseEntity<TaskResponse> completeTask(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
@@ -432,13 +430,14 @@ public class TaskController extends ApiErrorController {
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class)))
       })
-  @PreAuthorize("hasPermission('write')")
   @PostMapping("{taskId}/variables")
   public ResponseEntity<Void> saveDraftTaskVariables(
       @PathVariable @Parameter(description = "The ID of the task.", required = true)
           final String taskId,
       @RequestBody final SaveVariablesRequest saveVariablesRequest) {
-    if (!isUserRestrictionEnabled() || hasAccessToTask(getTaskSupplier(taskId))) {
+    final var taskSupplier = getTaskSupplier(taskId);
+    if (permissionServices.hasPermissionToUpdateUserTask(TaskDTO.toTaskEntity(taskSupplier.get()))
+        && (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier))) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
     } else {
       throw new ForbiddenActionException(USER_DOES_NOT_HAVE_ACCESS_TO_THIS_TASK_ERROR);

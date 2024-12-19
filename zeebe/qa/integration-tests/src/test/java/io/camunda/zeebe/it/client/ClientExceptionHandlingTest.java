@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import io.camunda.client.api.command.ClientException;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
@@ -30,7 +30,7 @@ public final class ClientExceptionHandlingTest {
   public final GrpcClientRule clientRule =
       new GrpcClientRule(
           brokerRule,
-          zeebeClientBuilder -> zeebeClientBuilder.gatewayAddress(getInvalidGatewayHostAndPort()));
+          clientBuilder -> clientBuilder.gatewayAddress(getInvalidGatewayHostAndPort()));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

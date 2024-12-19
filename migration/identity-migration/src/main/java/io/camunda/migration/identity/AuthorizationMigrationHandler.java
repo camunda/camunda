@@ -8,6 +8,7 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -20,27 +21,33 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AuthorizationMigrationHandler {
 
+  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
   private final AuthorizationServices authorizationService;
   private final ManagementIdentityProxy managementIdentityProxy;
 
   public AuthorizationMigrationHandler(
+      final Authentication authentication,
       final AuthorizationServices authorizationService,
       final ManagementIdentityProxy managementIdentityProxy) {
-    this.authorizationService = authorizationService;
+    this.authorizationService = authorizationService.withAuthentication(authentication);
     this.managementIdentityProxy = managementIdentityProxy;
   }
 
   public void migrate() {
+    LOG.debug("Migrating authorizations");
     UserResourceAuthorization lastRecord = null;
     while (true) {
       final List<UserResourceAuthorization> authorizations =
           managementIdentityProxy.fetchUserResourceAuthorizations(lastRecord, 100);
       if (authorizations.isEmpty()) {
+        LOG.debug("Finished migrating authorizations");
         return;
       }
       lastRecord = authorizations.getLast();
@@ -72,12 +79,14 @@ public class AuthorizationMigrationHandler {
                                   Collectors.flatMapping(
                                       e -> e.getValue().stream(), Collectors.toSet())));
                   final long ownerKey = getOwnerKeyForUsername(owner);
-                  authorizationService.patchAuthorization(
-                      new PatchAuthorizationRequest(
-                          ownerKey,
-                          PermissionAction.ADD,
-                          convertResourceType(resourceType),
-                          permissions));
+                  authorizationService
+                      .patchAuthorization(
+                          new PatchAuthorizationRequest(
+                              ownerKey,
+                              PermissionAction.ADD,
+                              convertResourceType(resourceType),
+                              permissions))
+                      .join();
 
                   final Collection<UserResourceAuthorization> migrated =
                       permissionAndResources.entrySet().stream()

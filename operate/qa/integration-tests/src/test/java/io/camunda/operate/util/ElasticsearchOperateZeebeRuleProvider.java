@@ -10,15 +10,15 @@ package io.camunda.operate.util;
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.Topology;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Duration;
@@ -60,7 +60,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private TestContainerUtil testContainerUtil;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
-  private ZeebeClient client;
+  private CamundaClient client;
 
   private String prefix;
   private boolean failed = false;
@@ -151,7 +151,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
             ConnectionTypes.ELASTICSEARCH.getType());
 
     client =
-        ZeebeClient.newClientBuilder()
+        CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
@@ -181,7 +181,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   }
 
   @Override
-  public ZeebeClient getClient() {
+  public CamundaClient getClient() {
     return client;
   }
 

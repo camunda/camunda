@@ -17,10 +17,11 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.index.IndexAliasRequest;
 import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.function.Function;
 
-public interface DocumentBasedSearchClient {
+public interface DocumentBasedSearchClient extends CloseableSilently {
 
   <T> SearchQueryResponse<T> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass);

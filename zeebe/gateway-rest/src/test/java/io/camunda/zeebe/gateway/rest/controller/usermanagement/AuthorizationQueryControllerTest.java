@@ -44,7 +44,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "ownerKey": 1,
+                 "ownerKey": "1",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
                  "permissions": [

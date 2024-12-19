@@ -55,7 +55,7 @@ jobs:
     - name: Build monorepo
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -pl optimize/backend -am  -Dquickly -DskipTests -Dskip.docker -PrunAssembly -T1
+        parameters: install -pl optimize/backend -am  -Dquickly -PrunAssembly -T1
 
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven

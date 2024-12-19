@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -31,7 +31,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public final class CompleteJobTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -200,7 +200,7 @@ public final class CompleteJobTest {
   }
 
   private CompleteJobCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest, final long jobKey) {
+      final CamundaClient client, final boolean useRest, final long jobKey) {
     final CompleteJobCommandStep1 completeJobCommandStep1 = client.newCompleteCommand(jobKey);
     return useRest ? completeJobCommandStep1.useRest() : completeJobCommandStep1.useGrpc();
   }

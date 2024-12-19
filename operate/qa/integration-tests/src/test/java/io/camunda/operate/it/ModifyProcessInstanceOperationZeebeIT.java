@@ -34,7 +34,7 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
   @Before
   public void before() {
     super.before();
-    modifyProcessInstanceHandler.setZeebeClient(super.getClient());
+    modifyProcessInstanceHandler.setCamundaClient(super.getClient());
     mockMvc = mockMvcTestRule.getMockMvc();
     tester.deployProcess("demoProcess_v_2.bpmn").waitUntil().processIsDeployed();
   }

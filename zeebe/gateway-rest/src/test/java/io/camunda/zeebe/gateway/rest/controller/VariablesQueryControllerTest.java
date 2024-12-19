@@ -23,7 +23,6 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,11 +34,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = VariableController.class)
-@Import(JacksonConfig.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;
@@ -48,12 +45,12 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static final String EXPECT_SINGLE_VARIABLE_RESPONSE =
       """
           {
-              "variableKey": 0,
+              "variableKey": "0",
               "name": "n",
               "value": "v",
               "fullValue": "v",
-              "scopeKey": 2,
-              "processInstanceKey": 3,
+              "scopeKey": "2",
+              "processInstanceKey": "3",
               "tenantId": "<default>",
               "isTruncated": false
           }""";
@@ -62,12 +59,12 @@ public class VariablesQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                        "variableKey": 0,
+                        "variableKey": "0",
                         "name": "n",
                         "value": "v",
                         "fullValue": "v",
-                        "scopeKey": 2,
-                        "processInstanceKey": 3,
+                        "scopeKey": "2",
+                        "processInstanceKey": "3",
                         "tenantId": "<default>",
                         "isTruncated": false
                   }

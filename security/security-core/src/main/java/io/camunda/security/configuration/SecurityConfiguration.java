@@ -9,11 +9,18 @@ package io.camunda.security.configuration;
 
 public class SecurityConfiguration {
 
+  private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
-
   private InitializationConfiguration initialization = new InitializationConfiguration();
-
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+
+  public AuthenticationConfiguration getAuthentication() {
+    return authentication;
+  }
+
+  public void setAuthentication(final AuthenticationConfiguration authentication) {
+    this.authentication = authentication;
+  }
 
   public AuthorizationsConfiguration getAuthorizations() {
     return authorizations;

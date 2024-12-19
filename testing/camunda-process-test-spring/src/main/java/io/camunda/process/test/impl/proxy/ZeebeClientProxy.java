@@ -15,20 +15,20 @@
  */
 package io.camunda.process.test.impl.proxy;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Dynamic proxy to delegate to a {@link ZeebeClient} which allows to swap the ZeebeClient object
+ * Dynamic proxy to delegate to a {@link CamundaClient} which allows to swap the ZeebeClient object
  * under the hood.
  */
 public class ZeebeClientProxy extends AbstractInvocationHandler {
 
-  private ZeebeClient delegate;
+  private CamundaClient delegate;
 
-  public void setZeebeClient(final ZeebeClient zeebeClient) {
-    delegate = zeebeClient;
+  public void setZeebeClient(final CamundaClient camundaClient) {
+    delegate = camundaClient;
   }
 
   public void removeZeebeClient() {

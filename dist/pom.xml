@@ -701,6 +701,11 @@
       <artifactId>optimize-backend</artifactId>
       <version>8.7.0-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -746,6 +751,10 @@
             <program>
               <id>migrate</id>
               <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
+            </program>
+            <program>
+              <id>schema</id>
+              <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
             </program>
             <program>
               <id>tasklist</id>

@@ -47,12 +47,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "items": [
                   {
                       "tenantId": "t",
-                      "decisionDefinitionKey": 0,
+                      "decisionDefinitionKey": "0",
                       "decisionDefinitionId": "dId",
                       "name": "name",
                       "version": 1,
                       "decisionRequirementsId": "drId",
-                      "decisionRequirementsKey": 2
+                      "decisionRequirementsKey": "2"
                   }
               ],
               "page": {
@@ -139,11 +139,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             {
               "filter":{
                 "tenantId": "t",
-                "decisionDefinitionKey": 0,
+                "decisionDefinitionKey": "0",
                 "name": "name",
                 "version": 1,
                 "decisionRequirementsId": "drId",
-                "decisionRequirementsKey": 2,
+                "decisionRequirementsKey": "2",
                 "decisionDefinitionId": "dId",
                 "decisionRequirementsName": "drName",
                 "decisionRequirementsVersion": 3
@@ -416,12 +416,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         """
             {
               "tenantId": "t",
-              "decisionDefinitionKey": 0,
+              "decisionDefinitionKey": "0",
               "decisionDefinitionId": "dId",
               "name": "name",
               "version": 1,
               "decisionRequirementsId": "drId",
-              "decisionRequirementsKey": 2
+              "decisionRequirementsKey": "2"
             }""";
     // when/then
     webClient

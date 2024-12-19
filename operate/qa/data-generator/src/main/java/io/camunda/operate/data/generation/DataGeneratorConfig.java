@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.data.generation;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import java.util.concurrent.ThreadFactory;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -26,10 +26,10 @@ public class DataGeneratorConfig {
 
   @Autowired private DataGeneratorProperties dataGeneratorProperties;
 
-  public ZeebeClient createZeebeClient() {
+  public CamundaClient createCamundaClient() {
     final String gatewayAddress = dataGeneratorProperties.getZeebeGatewayAddress();
-    final ZeebeClientBuilder builder =
-        ZeebeClient.newClientBuilder()
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
             .gatewayAddress(gatewayAddress)
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
             .usePlaintext();
@@ -37,8 +37,8 @@ public class DataGeneratorConfig {
   }
 
   @Bean
-  public ZeebeClient getZeebeClient() {
-    return createZeebeClient();
+  public CamundaClient getCamundaClient() {
+    return createCamundaClient();
   }
 
   @Bean
@@ -70,7 +70,7 @@ public class DataGeneratorConfig {
       public Thread newThread(final Runnable runnable) {
         final Thread thread =
             new DataGeneratorThread(
-                getThreadGroup(), runnable, nextThreadName(), createZeebeClient());
+                getThreadGroup(), runnable, nextThreadName(), createCamundaClient());
         thread.setPriority(getThreadPriority());
         thread.setDaemon(isDaemon());
         return thread;
@@ -80,47 +80,47 @@ public class DataGeneratorConfig {
 
   public class DataGeneratorThread extends Thread {
 
-    private final ZeebeClient zeebeClient;
+    private final CamundaClient camundaClient;
 
-    public DataGeneratorThread(final ZeebeClient zeebeClient) {
-      this.zeebeClient = zeebeClient;
+    public DataGeneratorThread(final CamundaClient camundaClient) {
+      this.camundaClient = camundaClient;
     }
 
-    public DataGeneratorThread(final Runnable target, final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(final Runnable target, final CamundaClient camundaClient) {
       super(target);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
     public DataGeneratorThread(
-        final ThreadGroup group, final Runnable target, final ZeebeClient zeebeClient) {
+        final ThreadGroup group, final Runnable target, final CamundaClient camundaClient) {
       super(group, target);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
-    public DataGeneratorThread(final String name, final ZeebeClient zeebeClient) {
+    public DataGeneratorThread(final String name, final CamundaClient camundaClient) {
       super(name);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
     public DataGeneratorThread(
-        final ThreadGroup group, final String name, final ZeebeClient zeebeClient) {
+        final ThreadGroup group, final String name, final CamundaClient camundaClient) {
       super(group, name);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
     public DataGeneratorThread(
-        final Runnable target, final String name, final ZeebeClient zeebeClient) {
+        final Runnable target, final String name, final CamundaClient camundaClient) {
       super(target, name);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
     public DataGeneratorThread(
         final ThreadGroup group,
         final Runnable target,
         final String name,
-        final ZeebeClient zeebeClient) {
+        final CamundaClient camundaClient) {
       super(group, target, name);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
     public DataGeneratorThread(
@@ -128,9 +128,9 @@ public class DataGeneratorConfig {
         final Runnable target,
         final String name,
         final long stackSize,
-        final ZeebeClient zeebeClient) {
+        final CamundaClient camundaClient) {
       super(group, target, name, stackSize);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
     public DataGeneratorThread(
@@ -139,13 +139,13 @@ public class DataGeneratorConfig {
         final String name,
         final long stackSize,
         final boolean inheritThreadLocals,
-        final ZeebeClient zeebeClient) {
+        final CamundaClient camundaClient) {
       super(group, target, name, stackSize, inheritThreadLocals);
-      this.zeebeClient = zeebeClient;
+      this.camundaClient = camundaClient;
     }
 
-    public ZeebeClient getZeebeClient() {
-      return zeebeClient;
+    public CamundaClient getCamundaClient() {
+      return camundaClient;
     }
   }
 }
