@@ -499,6 +499,27 @@ public class ProcessInstanceAssertTest {
 
       verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldFailWithSameElementName() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("B"))
+          .hasMessage(
+              "Process instance [key: %d] should have active elements ['B'] but the following elements were not active:\n"
+                  + "\t- 'B': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -518,6 +539,22 @@ public class ProcessInstanceAssertTest {
 
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
+    }
+
+    @Test
+    void shouldHasTwoCompletedElements() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceActive = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "A");
     }
 
     @Test
@@ -587,6 +624,27 @@ public class ProcessInstanceAssertTest {
 
       verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldFailWithSameElementName() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("B"))
+          .hasMessage(
+              "Process instance [key: %d] should have completed elements ['B'] but the following elements were not completed:\n"
+                  + "\t- 'B': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -606,6 +664,22 @@ public class ProcessInstanceAssertTest {
 
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
+    }
+
+    @Test
+    void shouldHasTwoTerminatedElements() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceActive = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "A");
     }
 
     @Test
@@ -674,6 +748,27 @@ public class ProcessInstanceAssertTest {
               PROCESS_INSTANCE_KEY);
 
       verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailWithSameElementName() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("B"))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated elements ['B'] but the following elements were not terminated:\n"
+                  + "\t- 'B': not activated",
+              PROCESS_INSTANCE_KEY);
     }
   }
 }

@@ -149,6 +149,8 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     final AtomicReference<List<FlowNodeInstanceDto>> reference =
         new AtomicReference<>(Collections.emptyList());
 
+    final List<String> elementNamesList = Arrays.asList(elementNames);
+
     try {
       Awaitility.await()
           .ignoreException(CamundaClientNotFoundException.class)
@@ -158,7 +160,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
                       .filter(waitCondition)
                       .map(FlowNodeInstanceDto::getFlowNodeName)
                       .collect(Collectors.toSet())
-                      .containsAll(Arrays.asList(elementNames)))
+                      .containsAll(elementNamesList))
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstanceDto> flowNodeInstances =
@@ -175,6 +177,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
       final Map<String, FlowNodeInstanceState> elementStateByName =
           reference.get().stream()
+              .filter(flowNode -> elementNamesList.contains(flowNode.getFlowNodeName()))
               .collect(
                   Collectors.toMap(
                       FlowNodeInstanceDto::getFlowNodeName, FlowNodeInstanceDto::getState));
