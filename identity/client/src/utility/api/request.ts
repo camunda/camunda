@@ -129,6 +129,8 @@ export const apiPut = apiRequestWrapper("PUT");
 
 export const apiDelete = apiRequestWrapper("DELETE");
 
+export const apiPatch = apiRequestWrapper("PATCH");
+
 export const namedErrorsReducer = (
   result: Record<string, string[]>,
   current: string,

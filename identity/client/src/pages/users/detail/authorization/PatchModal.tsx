@@ -212,6 +212,7 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
       <Dropdown
         id="resource-type-dropdown"
         label="Select Resource type"
+        titleText="Select Resource type"
         items={resourceTypeItems}
         onChange={(item: { selectedItem: ResourceType }) =>
           setResourceType(item.selectedItem)
@@ -223,6 +224,7 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
       <Dropdown
         id="permission-type-dropdown"
         label="Select Permission type"
+        titleText="Select Permission type"
         onChange={(item: { selectedItem: PermissionType }) =>
           setPermissionType(item.selectedItem)
         }

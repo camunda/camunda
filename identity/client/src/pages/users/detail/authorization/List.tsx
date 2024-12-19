@@ -92,7 +92,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
 
   const rows = rowsWithoutId.map((item, index) => ({
     ...item,
-    id: index,
+    id: String(index),
   }));
 
   // Create a lookup map for rows by ID
@@ -173,7 +173,10 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                   <TableRow>
                     <TableExpandHeader />
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>
+                      <TableHeader
+                        {...getHeaderProps({ header })}
+                        key={header.key}
+                      >
                         {header.header}
                       </TableHeader>
                     ))}
@@ -185,6 +188,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                       <React.Fragment key={row.id}>
                         <TableExpandRow
                           {...getRowProps({ row })}
+                          key={row.key}
                           onClick={() => handleExpand(row.id)}
                           isExpanded={expandedRows[row.id]}
                         >
@@ -215,7 +219,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                                           </div>
                                           <Button
                                             kind="ghost"
-                                            size="small"
+                                            size="sm"
                                             iconDescription={t(
                                               "Edit permission",
                                             )}
