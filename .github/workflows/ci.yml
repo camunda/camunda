@@ -69,7 +69,7 @@ jobs:
           ./actionlint -shellcheck '' -ignore 'property "vault_.+" is not defined in object type' -ignore 'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
-          ./conftest test -o github --policy .github/conftest-*.rego .github/workflows/*.yml
+          ./conftest test -o github --policy .github .github/workflows/*.yml
       - name: Observe build status
         if: always()
         continue-on-error: true
