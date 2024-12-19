@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessInstanceItem;
 import java.time.Duration;
@@ -45,8 +45,8 @@ public class ProcessInstanceGetRequestImpl implements ProcessInstanceGetRequest 
   }
 
   @Override
-  public ZeebeFuture<ProcessInstance> send() {
-    final HttpZeebeFuture<ProcessInstance> result = new HttpZeebeFuture<>();
+  public CamundaFuture<ProcessInstance> send() {
+    final HttpCamundaFuture<ProcessInstance> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/process-instances/%d", processInstanceKey),
         httpRequestConfig.build(),

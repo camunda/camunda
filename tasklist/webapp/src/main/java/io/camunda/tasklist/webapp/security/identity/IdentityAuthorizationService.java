@@ -12,8 +12,6 @@ import java.util.List;
 public interface IdentityAuthorizationService {
   List<String> getUserGroups();
 
-  boolean isAllowedToStartProcess(final String processDefinitionKey);
-
   List<String> getProcessReadFromAuthorization();
 
   List<String> getProcessDefinitionsFromAuthorization();

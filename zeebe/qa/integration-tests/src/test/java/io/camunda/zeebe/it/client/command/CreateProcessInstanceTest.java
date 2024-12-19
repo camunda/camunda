@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @AutoCloseResources
 public final class CreateProcessInstanceTest {
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -332,7 +332,7 @@ public final class CreateProcessInstanceTest {
   }
 
   private CreateProcessInstanceCommandStep1 getCommand(
-      final ZeebeClient client, final boolean useRest) {
+      final CamundaClient client, final boolean useRest) {
     final CreateProcessInstanceCommandStep1 createInstanceCommand =
         client.newCreateInstanceCommand();
     return useRest ? createInstanceCommand.useRest() : createInstanceCommand.useGrpc();

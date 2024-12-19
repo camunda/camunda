@@ -27,7 +27,7 @@ public class CreateRoleResponseImpl implements CreateRoleResponse {
   }
 
   public CreateRoleResponseImpl setResponse(final RoleCreateResponse response) {
-    roleKey = response.getRoleKey();
+    roleKey = Long.parseLong(response.getRoleKey());
     return this;
   }
 }

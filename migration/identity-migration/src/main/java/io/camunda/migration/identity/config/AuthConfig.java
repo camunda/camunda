@@ -17,7 +17,11 @@ public class AuthConfig {
 
   @Bean
   public Authentication servicesAuthentication() {
-    // TODO: implement later
-    return new Authentication.Builder().token(Authorization.jwtEncoder().build()).build();
+    return new Authentication.Builder()
+        .token(
+            Authorization.jwtEncoder()
+                .withClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true)
+                .build())
+        .build();
   }
 }

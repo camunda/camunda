@@ -84,7 +84,7 @@ public class MigrateProcessInstanceHandler extends AbstractOperationHandler
 
     final var migrateProcessInstanceCommand =
         withOperationReference(
-            zeebeClient
+            camundaClient
                 .newMigrateProcessInstanceCommand(processInstanceKey)
                 .migrationPlan(migrationPlan),
             operationId);

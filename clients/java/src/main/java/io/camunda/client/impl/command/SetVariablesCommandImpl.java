@@ -16,15 +16,15 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.SetVariablesResponseImpl;
 import io.camunda.client.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -82,7 +82,7 @@ public final class SetVariablesCommandImpl
   }
 
   @Override
-  public ZeebeFuture<SetVariablesResponse> send() {
+  public CamundaFuture<SetVariablesResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -90,8 +90,8 @@ public final class SetVariablesCommandImpl
     }
   }
 
-  private ZeebeFuture<SetVariablesResponse> sendRestRequest() {
-    final HttpZeebeFuture<SetVariablesResponse> result = new HttpZeebeFuture<>();
+  private CamundaFuture<SetVariablesResponse> sendRestRequest() {
+    final HttpCamundaFuture<SetVariablesResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
         "/element-instances/" + elementInstanceKey + "/variables",
         jsonMapper.toJson(httpRequestObject),
@@ -100,7 +100,7 @@ public final class SetVariablesCommandImpl
     return result;
   }
 
-  private ZeebeFuture<SetVariablesResponse> sendGrpcRequest() {
+  private CamundaFuture<SetVariablesResponse> sendGrpcRequest() {
     final SetVariablesRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>

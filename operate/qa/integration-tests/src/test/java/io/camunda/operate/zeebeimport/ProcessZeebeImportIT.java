@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.ProcessReader;
@@ -176,12 +176,12 @@ public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
   }
 
   private Long createAndDeployProcess(
-      final ZeebeClient zeebeClient, final String bpmnProcessId, final String name) {
+      final CamundaClient camundaClient, final String bpmnProcessId, final String name) {
     ProcessBuilder executableProcess = Bpmn.createExecutableProcess(bpmnProcessId);
     if (name != null) {
       executableProcess = executableProcess.name(name);
     }
     final BpmnModelInstance demoProcess = executableProcess.startEvent().endEvent().done();
-    return ZeebeTestUtil.deployProcess(zeebeClient, null, demoProcess, "resource.bpmn");
+    return ZeebeTestUtil.deployProcess(camundaClient, null, demoProcess, "resource.bpmn");
   }
 }

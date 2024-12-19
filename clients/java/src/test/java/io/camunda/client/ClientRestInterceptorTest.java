@@ -48,7 +48,7 @@ public class ClientRestInterceptorTest {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   @BeforeEach
   void setUp(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
@@ -110,8 +110,8 @@ public class ClientRestInterceptorTest {
         .hasMessageContaining("No user task requests while testing.");
   }
 
-  private ZeebeClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
-    return ZeebeClient.newClientBuilder()
+  private CamundaClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
+    return CamundaClient.newClientBuilder()
         .usePlaintext()
         .preferRestOverGrpc(true)
         .restAddress(new URI(mockInfo.getHttpBaseUrl()))

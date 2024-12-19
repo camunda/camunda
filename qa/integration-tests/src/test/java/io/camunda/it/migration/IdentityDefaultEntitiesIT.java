@@ -34,7 +34,9 @@ public class IdentityDefaultEntitiesIT {
       IdentityMigrationTestUtil.getManagementIdentity(POSTGRES, KEYCLOAK);
 
   @TestZeebe(autoStart = false)
-  final TestStandaloneCamunda camunda = new TestStandaloneCamunda();
+  final TestStandaloneCamunda camunda =
+      new TestStandaloneCamunda()
+          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
 
   @Test
   void canMigrateOldDefaultEntities() {

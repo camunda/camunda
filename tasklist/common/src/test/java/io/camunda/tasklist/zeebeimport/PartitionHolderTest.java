@@ -26,7 +26,7 @@ class PartitionHolderTest {
   private final PartitionHolder partitionHolder =
       new PartitionHolder() {
         @Override
-        protected List<Integer> extractCurrentNodePartitions(List<Integer> partitionIds) {
+        protected List<Integer> extractCurrentNodePartitions(final List<Integer> partitionIds) {
           return partitionIds;
         }
 
@@ -36,7 +36,7 @@ class PartitionHolderTest {
         }
 
         @Override
-        protected void sleepFor(long milliseconds) {
+        protected void sleepFor(final long milliseconds) {
           slept++;
         }
       };
@@ -58,7 +58,7 @@ class PartitionHolderTest {
   }
 
   @Test
-  void testGetZeebeClientPartitionIds() {
+  void testGetCamundaClientPartitionIds() {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(5, 10)));
     elasticSearchPartitionIds = Optional.empty();
 

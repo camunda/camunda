@@ -17,7 +17,7 @@ package io.camunda.client.util.assertions;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.impl.ZeebeObjectMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
@@ -25,7 +25,7 @@ import org.assertj.core.api.ObjectAssert;
 
 public class LoggedRequestAssert extends AbstractAssert<LoggedRequestAssert, LoggedRequest> {
 
-  private static final ZeebeObjectMapper JSON_MAPPER = new ZeebeObjectMapper();
+  private static final CamundaObjectMapper JSON_MAPPER = new CamundaObjectMapper();
 
   public LoggedRequestAssert(LoggedRequest actual) {
     super(actual, LoggedRequestAssert.class);

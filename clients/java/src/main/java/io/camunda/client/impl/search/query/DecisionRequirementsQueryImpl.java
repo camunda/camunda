@@ -27,8 +27,8 @@ import io.camunda.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -64,9 +64,9 @@ public class DecisionRequirementsQueryImpl
   }
 
   @Override
-  public HttpZeebeFuture<SearchQueryResponse<DecisionRequirements>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<DecisionRequirements>> result =
-        new HttpZeebeFuture<>();
+  public HttpCamundaFuture<SearchQueryResponse<DecisionRequirements>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<DecisionRequirements>> result =
+        new HttpCamundaFuture<>();
     httpClient.post(
         "/decision-requirements/search",
         jsonMapper.toJson(request),

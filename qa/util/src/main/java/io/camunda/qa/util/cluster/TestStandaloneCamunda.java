@@ -14,7 +14,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
-import io.camunda.client.ZeebeClientBuilder;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
@@ -63,8 +63,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
-  private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
   private final CamundaSecurityProperties securityConfig;
+  private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
 
   public TestStandaloneCamunda() {
     super(
@@ -98,19 +98,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
-
-    //noinspection resource
-    withBean("config", brokerProperties, BrokerBasedProperties.class)
-        .withBean("operate-config", operateProperties, OperateProperties.class)
-        .withBean("tasklist-config", tasklistProperties, TasklistProperties.class)
-        .withAdditionalProfile(Profile.BROKER)
-        .withAdditionalProfile(Profile.OPERATE)
-        .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer());
-
-    // default exporters
-    withRecordingExporter(true).withCamundaExporter();
-
     securityConfig = new CamundaSecurityProperties();
     securityConfig
         .getInitialization()
@@ -121,7 +108,19 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
                 InitializationConfiguration.DEFAULT_USER_PASSWORD,
                 InitializationConfiguration.DEFAULT_USER_NAME,
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
-    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+
+    //noinspection resource
+    withBean("config", brokerProperties, BrokerBasedProperties.class)
+        .withBean("operate-config", operateProperties, OperateProperties.class)
+        .withBean("tasklist-config", tasklistProperties, TasklistProperties.class)
+        .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
+        .withAdditionalProfile(Profile.BROKER)
+        .withAdditionalProfile(Profile.OPERATE)
+        .withAdditionalProfile(Profile.TASKLIST)
+        .withAdditionalInitializer(new WebappsConfigurationInitializer());
+
+    // default exporters
+    withRecordingExporter(true).withCamundaExporter();
   }
 
   @Override
@@ -177,6 +176,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return new TestRestOperateClient(restAddress(), username, password);
   }
 
+  public TestRestTasklistClient newTasklistClient() {
+    return new TestRestTasklistClient(restAddress(), getElasticSearchHostAddress());
+  }
+
   @Override
   public TestStandaloneCamunda self() {
     return this;
@@ -229,7 +232,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   @Override
-  public ZeebeClientBuilder newClientBuilder() {
+  public CamundaClientBuilder newClientBuilder() {
     if (!isGateway()) {
       throw new IllegalStateException(
           "Cannot create a new client for this broker, as it does not have an embedded gateway");

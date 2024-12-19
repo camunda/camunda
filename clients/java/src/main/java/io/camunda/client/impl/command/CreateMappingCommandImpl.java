@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateMappingCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateMappingResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CreateMappingResponseImpl;
 import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.client.protocol.rest.MappingRuleCreateResponse;
@@ -68,11 +68,11 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<CreateMappingResponse> send() {
+  public CamundaFuture<CreateMappingResponse> send() {
     ArgumentUtil.ensureNotNull("claimName", mappingRequest.getClaimName());
     ArgumentUtil.ensureNotNull("claimValue", mappingRequest.getClaimValue());
     ArgumentUtil.ensureNotNull("name", mappingRequest.getName());
-    final HttpZeebeFuture<CreateMappingResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CreateMappingResponse> result = new HttpCamundaFuture<>();
     final CreateMappingResponseImpl response = new CreateMappingResponseImpl();
     httpClient.post(
         "/mapping-rules",

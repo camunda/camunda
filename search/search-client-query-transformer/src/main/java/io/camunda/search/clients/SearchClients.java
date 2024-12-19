@@ -44,6 +44,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 
 public class SearchClients
@@ -62,7 +63,8 @@ public class SearchClients
         UserSearchClient,
         VariableSearchClient,
         MappingSearchClient,
-        GroupSearchClient {
+        GroupSearchClient,
+        CloseableSilently {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
@@ -224,5 +226,10 @@ public class SearchClients
   private SearchClientBasedQueryExecutor getSearchExecutor() {
     return new SearchClientBasedQueryExecutor(
         searchClient, transformers, new DocumentAuthorizationQueryStrategy(this), securityContext);
+  }
+
+  @Override
+  public void close() {
+    searchClient.close();
   }
 }

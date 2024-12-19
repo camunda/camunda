@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.protocol.rest.GroupChangeset;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
 import java.time.Duration;
@@ -64,8 +64,8 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
   }
 
   @Override
-  public ZeebeFuture<UpdateGroupResponse> send() {
-    final HttpZeebeFuture<UpdateGroupResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<UpdateGroupResponse> send() {
+    final HttpCamundaFuture<UpdateGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/groups/" + groupKey, jsonMapper.toJson(request), httpRequestConfig.build(), result);
     return result;

@@ -11,7 +11,7 @@ import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -52,7 +52,7 @@ public class JobBatchActivateAuthorizationIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static ZeebeClient defaultUserClient;
+  @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =

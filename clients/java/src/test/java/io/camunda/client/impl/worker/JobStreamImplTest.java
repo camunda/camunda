@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.impl.ZeebeClientBuilderImpl;
-import io.camunda.client.impl.ZeebeObjectMapper;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
@@ -77,8 +77,8 @@ final class JobStreamImplTest {
         new JobClientImpl(
             asyncStub,
             Mockito.mock(HttpClient.class),
-            new ZeebeClientBuilderImpl(),
-            new ZeebeObjectMapper(),
+            new CamundaClientBuilderImpl(),
+            new CamundaObjectMapper(),
             ignored -> false);
     jobStreamer = createStreamer();
   }

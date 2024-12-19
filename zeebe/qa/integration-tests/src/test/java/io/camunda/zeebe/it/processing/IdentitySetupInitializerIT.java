@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
@@ -45,7 +45,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 final class IdentitySetupInitializerIT {
 
   private static PasswordEncoder passwordEncoder;
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
   @AutoCloseResource private TestStandaloneBroker broker;
 
   @BeforeAll

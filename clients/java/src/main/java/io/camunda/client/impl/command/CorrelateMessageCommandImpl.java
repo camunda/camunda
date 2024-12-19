@@ -15,15 +15,15 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1.CorrelateMessageCommandStep2;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1.CorrelateMessageCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CorrelateMessageResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.CorrelateMessageResponseImpl;
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
 import io.camunda.client.protocol.rest.MessageCorrelationResponse;
@@ -78,8 +78,8 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
   }
 
   @Override
-  public ZeebeFuture<CorrelateMessageResponse> send() {
-    final HttpZeebeFuture<CorrelateMessageResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<CorrelateMessageResponse> send() {
+    final HttpCamundaFuture<CorrelateMessageResponse> result = new HttpCamundaFuture<>();
     final CorrelateMessageResponseImpl response = new CorrelateMessageResponseImpl(jsonMapper);
     httpClient.post(
         "/messages/correlation",

@@ -18,8 +18,8 @@ package io.camunda.client.impl.search.query;
 import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
 import static io.camunda.client.api.search.SearchRequestBuilders.variableSort;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
@@ -27,8 +27,8 @@ import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -66,8 +66,8 @@ public class UserTaskVariableQueryImpl
   }
 
   @Override
-  public ZeebeFuture<SearchQueryResponse<Variable>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<Variable>> result = new HttpZeebeFuture<>();
+  public CamundaFuture<SearchQueryResponse<Variable>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<Variable>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/user-tasks/%d/variables/search", userTaskKey),
         jsonMapper.toJson(request),

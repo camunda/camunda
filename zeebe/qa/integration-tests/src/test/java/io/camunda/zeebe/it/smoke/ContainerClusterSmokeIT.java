@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.smoke;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -39,7 +39,7 @@ final class ContainerClusterSmokeIT {
   @ContainerSmokeTest
   void connectSmokeTest() {
     // given
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       // when
       final var topology = client.newTopologyRequest().send();
 
@@ -54,7 +54,7 @@ final class ContainerClusterSmokeIT {
     // given
     final BpmnModelInstance processModel =
         Bpmn.createExecutableProcess("smoke").startEvent().endEvent().done();
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       // when
       final DeploymentEvent deploymentEvent =
           client
@@ -77,7 +77,7 @@ final class ContainerClusterSmokeIT {
     }
   }
 
-  private ZeebeClient createZeebeClient() {
+  private CamundaClient createCamundaClient() {
     // increased request timeout as container tests might be less responsive when emulation is
     // involved e.g. emulation of ARM64
     return newClientBuilder(cluster).defaultRequestTimeout(Duration.ofMinutes(1)).build();

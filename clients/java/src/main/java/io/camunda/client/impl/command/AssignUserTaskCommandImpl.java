@@ -15,13 +15,13 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserTaskResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.protocol.rest.UserTaskAssignmentRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -51,8 +51,8 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
   }
 
   @Override
-  public ZeebeFuture<AssignUserTaskResponse> send() {
-    final HttpZeebeFuture<AssignUserTaskResponse> result = new HttpZeebeFuture<>();
+  public CamundaFuture<AssignUserTaskResponse> send() {
+    final HttpCamundaFuture<AssignUserTaskResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/" + userTaskKey + "/assignment",
         jsonMapper.toJson(request),

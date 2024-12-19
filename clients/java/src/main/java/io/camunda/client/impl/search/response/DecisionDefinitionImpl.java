@@ -34,9 +34,9 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
         item.getDecisionDefinitionId(),
         item.getName(),
         item.getVersion(),
-        item.getDecisionDefinitionKey(),
+        Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionRequirementsId(),
-        item.getDecisionRequirementsKey(),
+        Long.parseLong(item.getDecisionRequirementsKey()),
         item.getTenantId());
   }
 

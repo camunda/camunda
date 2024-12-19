@@ -15,12 +15,12 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.FlowNodeInstanceGetRequest;
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 import java.time.Duration;
@@ -47,8 +47,8 @@ public class FlowNodeInstanceGetRequestImpl implements FlowNodeInstanceGetReques
   }
 
   @Override
-  public ZeebeFuture<FlowNodeInstance> send() {
-    final HttpZeebeFuture<FlowNodeInstance> result = new HttpZeebeFuture<>();
+  public CamundaFuture<FlowNodeInstance> send() {
+    final HttpCamundaFuture<FlowNodeInstance> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/flownode-instances/%d", flowNodeInstanceKey),
         httpRequestConfig.build(),

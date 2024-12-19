@@ -7,6 +7,13 @@
  */
 package io.camunda.webapps.schema.descriptors.backup;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
-public record SnapshotIndexCollection(List<String> indices) {}
+public record SnapshotIndexCollection(List<String> indices) {
+  public SnapshotIndexCollection addIndices(final Collection<String> newIndices) {
+    return new SnapshotIndexCollection(
+        Stream.concat(indices.stream(), newIndices.stream()).toList());
+  }
+}

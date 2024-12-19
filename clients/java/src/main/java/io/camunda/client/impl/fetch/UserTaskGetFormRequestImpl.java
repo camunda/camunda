@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.fetch;
 
-import io.camunda.client.api.ZeebeFuture;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.search.response.Form;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.response.FormImpl;
 import io.camunda.client.protocol.rest.FormItem;
 import java.time.Duration;
@@ -44,8 +44,8 @@ public class UserTaskGetFormRequestImpl implements UserTaskGetFormRequest {
   }
 
   @Override
-  public ZeebeFuture<Form> send() {
-    final HttpZeebeFuture<Form> result = new HttpZeebeFuture<>();
+  public CamundaFuture<Form> send() {
+    final HttpCamundaFuture<Form> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/user-tasks/%d/form", userTaskKey),
         httpRequestConfig.build(),

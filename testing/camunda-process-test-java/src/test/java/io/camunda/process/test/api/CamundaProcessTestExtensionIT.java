@@ -17,7 +17,7 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 public class CamundaProcessTestExtensionIT {
 
   // to be injected
-  private ZeebeClient client;
+  private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
 
   @Test

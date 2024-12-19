@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.clustering.topology;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionBrokerRole;
 import io.camunda.client.api.response.PartitionInfo;
@@ -54,7 +54,7 @@ public final class TopologyClusterTest {
   @ParameterizedTest
   @MethodSource("communicationApi")
   public void shouldContainAllBrokers(final boolean useRest) throws URISyntaxException {
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       // when
       final Topology topology = sendRequest(client, useRest);
 
@@ -69,7 +69,7 @@ public final class TopologyClusterTest {
   @ParameterizedTest
   @MethodSource("communicationApi")
   public void shouldContainAllPartitions(final boolean useRest) throws URISyntaxException {
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       // when
       final Topology topology = sendRequest(client, useRest);
 
@@ -92,7 +92,7 @@ public final class TopologyClusterTest {
   @ParameterizedTest
   @MethodSource("communicationApi")
   public void shouldExposeClusterSettings(final boolean useRest) throws URISyntaxException {
-    try (final var client = createZeebeClient()) {
+    try (final var client = createCamundaClient()) {
       // when
       final Topology topology = sendRequest(client, useRest);
 
@@ -122,7 +122,7 @@ public final class TopologyClusterTest {
             PartitionBrokerRole.LEADER, PartitionBrokerRole.FOLLOWER, PartitionBrokerRole.FOLLOWER);
   }
 
-  private static ZeebeClient createZeebeClient() {
+  private static CamundaClient createCamundaClient() {
     final var gateway = CLUSTER.anyGateway();
     return CLUSTER
         .newClientBuilder()
@@ -131,7 +131,7 @@ public final class TopologyClusterTest {
         .build();
   }
 
-  private Topology sendRequest(final ZeebeClient client, final boolean useRest) {
+  private Topology sendRequest(final CamundaClient client, final boolean useRest) {
     var request = client.newTopologyRequest();
     if (useRest) {
       request = request.useRest();

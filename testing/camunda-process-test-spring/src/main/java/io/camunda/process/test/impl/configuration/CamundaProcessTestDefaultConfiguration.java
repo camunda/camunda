@@ -19,7 +19,7 @@ import static io.camunda.zeebe.spring.client.configuration.CamundaAutoConfigurat
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.impl.ZeebeObjectMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
@@ -29,7 +29,7 @@ public class CamundaProcessTestDefaultConfiguration {
   @Bean(name = "zeebeJsonMapper")
   @ConditionalOnMissingBean
   public JsonMapper jsonMapper(final ObjectMapper objectMapper) {
-    return new ZeebeObjectMapper(objectMapper);
+    return new CamundaObjectMapper(objectMapper);
   }
 
   @Bean

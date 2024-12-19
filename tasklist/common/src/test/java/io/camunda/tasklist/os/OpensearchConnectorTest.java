@@ -83,7 +83,7 @@ class OpensearchConnectorTest {
   }
 
   @Test
-  void shouldApplyRequestInterceptorsForOSTasklistZeebeClient() throws Exception {
+  void shouldApplyRequestInterceptorsForOSTasklistCamundaClient() throws Exception {
     final var context = new BasicHttpContext();
     final var taskListProperties = new TasklistProperties();
     final PluginRepository pluginRepository = new PluginRepository();

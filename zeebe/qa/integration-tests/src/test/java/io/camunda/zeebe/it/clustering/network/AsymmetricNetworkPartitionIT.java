@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.HostConfig;
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
@@ -77,7 +77,7 @@ final class AsymmetricNetworkPartitionIT {
   @RegisterExtension
   final ContainerLogsDumper logsWatcher = new ContainerLogsDumper(CLUSTER::getBrokers, LOGGER);
 
-  private ZeebeClient client;
+  private CamundaClient client;
 
   static Stream<Arguments> provideTestCases() {
     return Stream.of(

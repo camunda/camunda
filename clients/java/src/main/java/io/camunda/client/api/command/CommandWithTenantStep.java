@@ -19,7 +19,7 @@ public interface CommandWithTenantStep<T> {
 
   /**
    * This identifier is used for entities that are created before multi-tenancy is enabled in the
-   * Zeebe cluster. After enabling multi-tenancy, these entities can still be interacted by using
+   * Camunda cluster. After enabling multi-tenancy, these entities can still be interacted by using
    * this identifier explicitly.
    */
   String DEFAULT_TENANT_IDENTIFIER = "<default>";
@@ -31,10 +31,10 @@ public interface CommandWithTenantStep<T> {
    *
    * <h1>Multi-tenancy</h1>
    *
-   * <p>Multiple tenants can share a Zeebe cluster. Entities can be assigned to a specific tenant
+   * <p>Multiple tenants can share a Camunda cluster. Entities can be assigned to a specific tenant
    * using an identifier. Only that tenant can access these entities.
    *
-   * <p>Any entities created before multi-tenancy has been enabled in the Zeebe cluster, are
+   * <p>Any entities created before multi-tenancy has been enabled in the Camunda cluster, are
    * assigned to the {@link #DEFAULT_TENANT_IDENTIFIER}.
    *
    * <p>If no tenant is explicitly specified, then the command is rejected.

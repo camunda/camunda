@@ -27,8 +27,8 @@ import io.camunda.client.api.search.query.UserTaskQuery;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.sort.UserTaskSort;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -64,8 +64,8 @@ public class UserTaskQueryImpl
   }
 
   @Override
-  public HttpZeebeFuture<SearchQueryResponse<UserTask>> send() {
-    final HttpZeebeFuture<SearchQueryResponse<UserTask>> result = new HttpZeebeFuture<>();
+  public HttpCamundaFuture<SearchQueryResponse<UserTask>> send() {
+    final HttpCamundaFuture<SearchQueryResponse<UserTask>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/search",
         jsonMapper.toJson(request),

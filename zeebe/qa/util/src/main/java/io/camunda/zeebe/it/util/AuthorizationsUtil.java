@@ -10,40 +10,41 @@ package io.camunda.zeebe.it.util;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.ZeebeClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.search.clients.SearchClients;
+import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UserQuery;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse.BodyHandlers;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 
-public class AuthorizationsUtil {
+public class AuthorizationsUtil implements CloseableSilently {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private final TestGateway<?> gateway;
-  private final ZeebeClient client;
-  private final String elasticsearchUrl;
+  private final CamundaClient client;
+  private final SearchClients searchClients;
 
   public AuthorizationsUtil(
-      final TestGateway<?> gateway, final ZeebeClient client, final String elasticsearchUrl) {
+      final TestGateway<?> gateway, final CamundaClient client, final String elasticsearchUrl) {
+    this(gateway, client, SearchClientsUtil.createSearchClients(elasticsearchUrl));
+  }
+
+  public AuthorizationsUtil(
+      final TestGateway<?> gateway, final CamundaClient client, final SearchClients searchClients) {
     this.gateway = gateway;
     this.client = client;
-    this.elasticsearchUrl = elasticsearchUrl;
+    this.searchClients = searchClients;
   }
 
   public static AuthorizationsUtil create(
@@ -52,7 +53,7 @@ public class AuthorizationsUtil {
         new AuthorizationsUtil(
             gateway,
             createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
-            elasticsearchUrl);
+            SearchClientsUtil.createSearchClients(elasticsearchUrl));
     authorizationUtil.awaitUserExistsInElasticsearch(DEFAULT_USER_USERNAME);
     return authorizationUtil;
   }
@@ -72,19 +73,24 @@ public class AuthorizationsUtil {
             .email("foo@bar.com")
             .send()
             .join();
+    awaitUserExistsInElasticsearch(username);
+    createPermissions(userCreateResponse.getUserKey(), permissions);
+    return userCreateResponse.getUserKey();
+  }
 
+  public void createPermissions(final long userKey, final Permissions... permissions) {
     for (final Permissions permission : permissions) {
       client
-          .newAddPermissionsCommand(userCreateResponse.getUserKey())
+          .newAddPermissionsCommand(userKey)
           .resourceType(permission.resourceType())
           .permission(permission.permissionType())
           .resourceIds(permission.resourceIds())
           .send()
           .join();
     }
-
-    awaitUserExistsInElasticsearch(username);
-    return userCreateResponse.getUserKey();
+    if (permissions != null && permissions.length > 0) {
+      awaitPermissionExistsInElasticsearch(userKey, Arrays.asList(permissions).getLast());
+    }
   }
 
   public long createTenant(final String tenantId, final String tenantName, final long... userKeys) {
@@ -103,17 +109,17 @@ public class AuthorizationsUtil {
     return tenantKey;
   }
 
-  public ZeebeClient createClient(final String username, final String password) {
+  public CamundaClient createClient(final String username, final String password) {
     return createClient(gateway, username, password);
   }
 
-  public ZeebeClient createUserAndClient(
+  public CamundaClient createUserAndClient(
       final String username, final String password, final Permissions... permissions) {
     createUserWithPermissions(username, password, permissions);
     return createClient(gateway, username, password);
   }
 
-  public static ZeebeClient createClient(
+  public static CamundaClient createClient(
       final TestGateway<?> gateway, final String username, final String password) {
     return gateway
         .newClientBuilder()
@@ -139,69 +145,53 @@ public class AuthorizationsUtil {
         .build();
   }
 
+  private void awaitTenantExistsInElasticsearch(final String tenantId) {
+    final var tenantQuery = TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId)));
+    awaitEntityExistsInElasticsearch(() -> searchClients.searchTenants(tenantQuery));
+  }
+
   public void awaitUserExistsInElasticsearch(final String username) {
-    awaitEntityExistsInElasticsearch(
-        new UserIndex("", true),
-        """
-                  {
-                    "query": {
-                      "match": {
-                        "username": "%s"
-                      }
-                    }
-                  }"""
-            .formatted(username));
+    final var userQuery = UserQuery.of(b -> b.filter(f -> f.username(username)));
+    awaitEntityExistsInElasticsearch(() -> searchClients.searchUsers(userQuery));
   }
 
-  public void awaitTenantExistsInElasticsearch(final String tenantId) {
-    awaitEntityExistsInElasticsearch(
-        new TenantIndex("", true),
-        """
-                  {
-                    "query": {
-                      "match": {
-                        "tenantId": "%s"
-                      }
-                    }
-                  }"""
-            .formatted(tenantId));
+  private void awaitPermissionExistsInElasticsearch(
+      final long userKey, final Permissions permissions) {
+    final var resourceType = permissions.resourceType().getValue();
+    final var permissionType = PermissionType.valueOf(permissions.permissionType().getValue());
+    final var resourceIds = permissions.resourceIds();
+
+    final var permissionQuery =
+        AuthorizationQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.ownerKeys(userKey)
+                            .resourceType(resourceType)
+                            .permissionType(permissionType)
+                            .resourceIds(resourceIds)));
+
+    awaitEntityExistsInElasticsearch(() -> searchClients.searchAuthorizations(permissionQuery));
   }
 
-  public void awaitEntityExistsInElasticsearch(
-      final IndexDescriptor indexDescriptor, final String query) {
-    final HttpRequest request;
-    try {
-      request =
-          HttpRequest.newBuilder()
-              .POST(BodyPublishers.ofString(query))
-              .uri(
-                  new URI(
-                      "http://%s/%s/_count/"
-                          .formatted(elasticsearchUrl, indexDescriptor.getFullQualifiedName())))
-              .header("Content-Type", "application/json")
-              .build();
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-
+  private void awaitEntityExistsInElasticsearch(
+      final Supplier<SearchQueryResult<?>> searchQueryResultSupplier) {
     Awaitility.await()
         .atMost(Duration.ofSeconds(15))
-        .until(
-            () -> {
-              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
-              final var entityExistsResponse =
-                  OBJECT_MAPPER.readValue(response.body(), EntityExistsResponse.class);
-              return entityExistsResponse.count > 0;
-            });
+        .ignoreExceptions()
+        .until(() -> searchQueryResultSupplier.get().total() > 0);
   }
 
-  public ZeebeClient getDefaultClient() {
+  public CamundaClient getDefaultClient() {
     return client;
+  }
+
+  @Override
+  public void close() {
+    client.close();
+    searchClients.close();
   }
 
   public record Permissions(
       ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private record EntityExistsResponse(int count) {}
 }

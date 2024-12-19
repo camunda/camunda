@@ -32,15 +32,17 @@ public class MappingTest {
   public void shouldCreateMapping() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var mappingRecord =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
+        engine.mapping().newMapping(claimName).withClaimValue(claimValue).withName(name).create();
 
     final var createMapping = mappingRecord.getValue();
     Assertions.assertThat(createMapping)
         .isNotNull()
         .hasFieldOrProperty("mappingKey")
         .hasFieldOrPropertyWithValue("claimName", claimName)
-        .hasFieldOrPropertyWithValue("claimValue", claimValue);
+        .hasFieldOrPropertyWithValue("claimValue", claimValue)
+        .hasFieldOrPropertyWithValue("name", name);
   }
 
   @Test
@@ -72,8 +74,15 @@ public class MappingTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var mappingKey =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getKey();
+        engine
+            .mapping()
+            .newMapping(claimName)
+            .withClaimValue(claimValue)
+            .withName(name)
+            .create()
+            .getKey();
 
     // when
     final var deletedMapping = engine.mapping().deleteMapping(mappingKey).delete().getValue();
