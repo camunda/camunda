@@ -339,6 +339,103 @@ public class UserTaskHandlerTest {
   }
 
   @Test
+  void shouldUpdateEntityFromRecordForAssignedIntent() {
+    // given
+    final long processInstanceKey = 123;
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withAssignee("provided_assignee")
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity = underTest.createNewEntity("id").setState(TaskState.CREATED);
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity)
+        .describedAs("Expected task entity to have provided assignee")
+        .satisfies(
+            entity -> {
+              assertThat(entity.getAssignee()).isEqualTo("provided_assignee");
+              assertThat(entity.getState()).isEqualTo(TaskState.CREATED);
+            })
+        .describedAs(
+            "Expected not changed user task record fields to have `null` values in task entity")
+        .extracting(
+            TaskEntity::getDueDate,
+            TaskEntity::getFollowUpDate,
+            TaskEntity::getPriority,
+            TaskEntity::getCandidateGroups,
+            TaskEntity::getCandidateUsers)
+        .containsOnlyNulls();
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecordForAssignedIntentWithCorrectedData() {
+    // given
+    final long processInstanceKey = 123;
+    final var dueDateTime =
+        OffsetDateTime.now().plusDays(2).format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    final var followUpDateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            // corrected data
+            .withAssignee("corrected_assignee")
+            .withDueDate(dueDateTime)
+            .withFollowUpDate(followUpDateTime)
+            .withPriority(88)
+            .withCandidateGroupsList(List.of("corrected_group1"))
+            .withCandidateUsersList(List.of("corrected_user1", "corrected_user2"))
+            .withChangedAttributes(
+                List.of(
+                    UserTaskRecord.ASSIGNEE,
+                    UserTaskRecord.DUE_DATE,
+                    UserTaskRecord.FOLLOW_UP_DATE,
+                    UserTaskRecord.PRIORITY,
+                    UserTaskRecord.CANDIDATE_GROUPS,
+                    UserTaskRecord.CANDIDATE_USERS))
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity =
+        underTest
+            .createNewEntity("id")
+            .setAssignee("existing_assignee")
+            .setState(TaskState.CREATED);
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity)
+        .describedAs("Expected task entity to contain corrected data from user task record")
+        .satisfies(
+            entity -> {
+              assertThat(entity.getAssignee()).isEqualTo("corrected_assignee");
+              assertThat(entity.getDueDate()).isEqualTo(dueDateTime);
+              assertThat(entity.getFollowUpDate()).isEqualTo(followUpDateTime);
+              assertThat(entity.getPriority()).isEqualTo(88);
+              assertThat(entity.getCandidateGroups()).contains("corrected_group1");
+              assertThat(entity.getCandidateUsers()).contains("corrected_user1", "corrected_user2");
+            });
+  }
+
+  @Test
   void shouldUpdateEntityFromRecordForCompletedIntent() {
     // given
     final long processInstanceKey = 123;
