@@ -45,6 +45,14 @@ public record PartitionState(State state, int priority, DynamicPartitionConfig c
     return new PartitionState(state, priority, configUpdater.apply(config));
   }
 
+  /**
+   * Please note that when <a href="https://github.com/camunda/camunda/issues/14786">order of
+   * priority in priority election</a> is changed, this method must be updated.
+   */
+  public boolean hasHigherPriority(final int priority) {
+    return this.priority > priority;
+  }
+
   public enum State {
     UNKNOWN,
     JOINING,

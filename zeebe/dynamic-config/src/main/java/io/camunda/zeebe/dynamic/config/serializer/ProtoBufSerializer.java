@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -427,7 +429,10 @@ public class ProtoBufSerializer
               Topology.PartitionBootstrapOperation.newBuilder()
                   .setPartitionId(bootstrapOperation.partitionId())
                   .setPriority(bootstrapOperation.priority())
+                  .setExporterConfig(encodeExportingConfig(bootstrapOperation.exporters()))
                   .build());
+      case final DeleteHistoryOperation deleteHistoryOperation ->
+          builder.setDeleteHistory(Topology.DeleteHistoryOperation.newBuilder().build());
       case StartPartitionScaleUpOperation(
               final var ignoredMemberId,
               final var desiredPartitionCount) ->
@@ -620,11 +625,15 @@ public class ProtoBufSerializer
       return new PartitionBootstrapOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
-          topologyChangeOperation.getPartitionBootstrap().getPriority());
+          topologyChangeOperation.getPartitionBootstrap().getPriority(),
+          decodeExportingConfig(
+              topologyChangeOperation.getPartitionBootstrap().getExporterConfig()));
     } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
       return new StartPartitionScaleUpOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getInitiateScaleUpPartitions().getDesiredPartitionCount());
+    } else if (topologyChangeOperation.hasDeleteHistory()) {
+      return new DeleteHistoryOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -701,6 +710,11 @@ public class ProtoBufSerializer
     scaleRequest.newReplicationFactor().ifPresent(builder::setNewReplicationFactor);
 
     return builder.build().toByteArray();
+  }
+
+  @Override
+  public byte[] encodePurgeRequest(final PurgeRequest req) {
+    return Requests.PurgeRequest.newBuilder().setDryRun(req.dryRun()).build().toByteArray();
   }
 
   @Override
@@ -953,6 +967,16 @@ public class ProtoBufSerializer
               .map(MemberId::from)
               .collect(Collectors.toSet()),
           forceRemoveBrokersRequest.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public PurgeRequest decodePurgeRequest(final byte[] encodedRequest) {
+    try {
+      final var purgeRequest = Requests.PurgeRequest.parseFrom(encodedRequest);
+      return new PurgeRequest(purgeRequest.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }

@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
@@ -139,7 +140,8 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var primary =
         newMetadata.getPrimary().orElse(newMetadata.members().stream().findAny().orElseThrow());
     operations.add(
-        new PartitionBootstrapOperation(primary, partitionId, newMetadata.getPriority(primary)));
+        new PartitionBootstrapOperation(
+            primary, partitionId, newMetadata.getPriority(primary), ExportersConfig.empty()));
 
     // Join each remaining members to the partition
     for (final MemberId member : newMetadata.members()) {

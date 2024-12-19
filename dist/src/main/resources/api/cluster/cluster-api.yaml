@@ -89,6 +89,30 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /purge:
+    post:
+      summary: Purge data from the cluster
+      description: Purges data from Zeebe cluster and all exporters.
+        This operation is irreversible and will remove all data from the cluster!
+        During this operation all brokers will leave their partitions, data will be deleted,
+        and then the brokers will rejoin their partition with empty state, restoring the
+        original topology.
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          $ref: "#/components/responses/ClusterConfigPurgeResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
   /:
     get:
       summary: Get current topology
@@ -185,6 +209,13 @@ components:
 
     ClusterConfigPatchResponse:
       description: Request to reconfigure cluster is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    ClusterConfigPurgeResponse:
+      description: Request to purge cluster data is accepted.
       content:
         application.json:
           schema:

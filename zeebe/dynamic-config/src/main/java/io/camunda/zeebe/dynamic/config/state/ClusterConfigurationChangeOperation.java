@@ -124,8 +124,19 @@ public sealed interface ClusterConfigurationChangeOperation {
      *
      * @param memberId the member id of the member that will apply this operation
      * @param partitionId id of the partition to bootstrap
+     * @param priority priority of the member in the partition
+     * @param exporters the exporters to initialize the partition with
      */
-    record PartitionBootstrapOperation(MemberId memberId, int partitionId, int priority)
+    record PartitionBootstrapOperation(
+        MemberId memberId, int partitionId, int priority, ExportersConfig exporters)
         implements PartitionChangeOperation {}
+
+    /**
+     * Operation to delete the history of the given member.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     */
+    record DeleteHistoryOperation(MemberId memberId)
+        implements ClusterConfigurationChangeOperation {}
   }
 }

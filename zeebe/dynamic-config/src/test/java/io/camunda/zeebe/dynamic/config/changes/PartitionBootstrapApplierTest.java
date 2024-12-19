@@ -16,6 +16,8 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +65,11 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId,
+                  priority,
+                  localMemberId,
+                  ExportersConfig.empty(),
+                  partitionChangeExecutor)
               .init(configurationWithActivePartition);
 
       // then
@@ -74,7 +81,11 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId + 1, priority, localMemberId, partitionChangeExecutor)
+                  partitionId + 1,
+                  priority,
+                  localMemberId,
+                  ExportersConfig.empty(),
+                  partitionChangeExecutor)
               .init(initialConfiguration);
 
       // then
@@ -89,7 +100,11 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId,
+                  priority,
+                  localMemberId,
+                  ExportersConfig.empty(),
+                  partitionChangeExecutor)
               .init(configurationWithInactiveMember);
 
       // then
@@ -109,7 +124,11 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId,
+                  priority,
+                  localMemberId,
+                  ExportersConfig.empty(),
+                  partitionChangeExecutor)
               .init(topologyWithPartitionBootstrapping);
 
       // then
@@ -124,7 +143,11 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId,
+                  priority,
+                  localMemberId,
+                  ExportersConfig.empty(),
+                  partitionChangeExecutor)
               .init(initialConfiguration);
 
       // then
@@ -137,6 +160,39 @@ final class PartitionBootstrapApplierTest {
               state ->
                   PartitionStateAssert.assertThat(state)
                       .hasConfig(partitionConfig)
+                      .hasState(State.BOOTSTRAPPING)
+                      .hasPriority(priority));
+    }
+
+    @Test
+    void shouldUpdatePartitionStateWithExporterToBootstrapping() {
+      // given
+      final ClusterConfiguration configWithoutPartition =
+          ClusterConfiguration.init()
+              .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
+      final ExportersConfig exportersConfig =
+          new ExportersConfig(
+              Map.of(
+                  "exporter",
+                  new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config"))));
+
+      // when
+      final var result =
+          new PartitionBootstrapApplier(
+                  1, priority, localMemberId, exportersConfig, partitionChangeExecutor)
+              .init(configWithoutPartition);
+
+      // then
+      EitherAssert.assertThat(result).isRight();
+      ClusterConfigurationAssert.assertThatClusterTopology(
+              result.get().apply(configWithoutPartition))
+          .describedAs("Partition added at state bootstrapping")
+          .member(localMemberId)
+          .hasPartitionSatisfying(
+              1,
+              state ->
+                  PartitionStateAssert.assertThat(state)
+                      .hasConfig(new DynamicPartitionConfig(exportersConfig))
                       .hasState(State.BOOTSTRAPPING)
                       .hasPriority(priority));
     }
@@ -156,10 +212,14 @@ final class PartitionBootstrapApplierTest {
                   localMemberId,
                   m -> m.addPartition(1, PartitionState.active(priority, partitionConfig)));
 
-      // when
       partitionBootstrapApplier =
           new PartitionBootstrapApplier(
-              partitionId, priority, localMemberId, partitionChangeExecutor);
+              partitionId,
+              priority,
+              localMemberId,
+              ExportersConfig.empty(),
+              partitionChangeExecutor);
+      // when
       operationInitialized =
           partitionBootstrapApplier.init(initialTopology).get().apply(initialTopology);
     }

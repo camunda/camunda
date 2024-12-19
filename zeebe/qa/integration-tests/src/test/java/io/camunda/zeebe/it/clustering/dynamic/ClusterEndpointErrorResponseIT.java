@@ -152,7 +152,10 @@ final class ClusterEndpointErrorResponseIT {
 
     static Stream<Arguments> provideRequests() {
       final List<Consumer<ClusterActuator>> operations =
-          List.of(ClusterActuator::getTopology, a -> a.scaleBrokers(List.of(0, 1)));
+          List.of(
+              actuator -> actuator.purge(false),
+              actuator -> actuator.scaleBrokers(List.of(0, 1)),
+              ClusterActuator::getTopology);
       return operations.stream().map(Arguments::of);
     }
   }

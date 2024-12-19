@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.util.Map.Entry;
 import java.util.function.UnaryOperator;
 
 public class PartitionBootstrapApplier implements MemberOperationApplier {
@@ -26,16 +28,19 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   private final int priority;
   private final MemberId memberId;
   private final PartitionChangeExecutor partitionChangeExecutor;
+  private final ExportersConfig exporters;
   private DynamicPartitionConfig partitionConfig;
 
   public PartitionBootstrapApplier(
       final int partitionId,
       final int priority,
       final MemberId memberId,
+      final ExportersConfig exporters,
       final PartitionChangeExecutor partitionChangeExecutor) {
     this.partitionId = partitionId;
     this.priority = priority;
     this.memberId = memberId;
+    this.exporters = exporters;
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -80,14 +85,16 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
                   .formatted(partitionId)));
     }
 
-    // Let's assume Partition 1 always exists
     partitionConfig =
         currentClusterConfiguration.members().values().stream()
             .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
+            .toList()
+            .stream()
             .findFirst()
-            .get()
-            .getValue()
-            .config();
+            .map(Entry::getValue)
+            .map(PartitionState::config)
+            .orElse(new DynamicPartitionConfig(exporters));
+
     return Either.right(
         memberState ->
             memberState.addPartition(
