@@ -155,7 +155,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).withResult().denied(denied).send().join();
+    client.newCompleteCommand(jobKey).withResult().deny(denied).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);

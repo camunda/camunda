@@ -209,7 +209,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().denied(false).send().join();
+    client.newCompleteCommand(job).withResult().deny(false).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -226,7 +226,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().denied(true).send().join();
+    client.newCompleteCommand(job).withResult().deny(true).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();

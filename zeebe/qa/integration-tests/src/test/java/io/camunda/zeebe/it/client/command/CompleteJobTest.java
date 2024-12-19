@@ -164,7 +164,7 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).withResult().denied(denied).send().join();
+    getCommand(client, useRest, jobKey).withResult().deny(denied).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(

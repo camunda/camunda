@@ -86,10 +86,10 @@ public interface CompleteJobCommandStep1
      * as denied. As a result, the completion request is rejected and the task remains active.
      * Defaults to false.
      *
-     * @param denied indicates if the worker has denied the reason for the job
+     * @param isDenied indicates if the worker has denied the reason for the job
      * @return the builder for this command.
      */
-    CompleteJobCommandStep2 denied(boolean denied);
+    CompleteJobCommandStep2 deny(boolean isDenied);
 
     /**
      * Attributes that were corrected by the worker. The below attributes can be corrected and

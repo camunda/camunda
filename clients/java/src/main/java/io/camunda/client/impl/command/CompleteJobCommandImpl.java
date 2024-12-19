@@ -109,9 +109,9 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep2 denied(final boolean denied) {
-    resultRest.setDenied(denied);
-    resultGrpc.setDenied(denied);
+  public CompleteJobCommandStep2 deny(final boolean isDenied) {
+    resultRest.setDenied(isDenied);
+    resultGrpc.setDenied(isDenied);
     onResultChange();
     return this;
   }
