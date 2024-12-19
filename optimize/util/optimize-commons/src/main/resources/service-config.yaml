@@ -351,7 +351,7 @@ opensearch:
       # the address/hostname under which the OpenSearch node is available.
       - host: '${CAMUNDA_OPTIMIZE_OPENSEARCH_HOST:localhost}'
         # A port number used by OpenSearch to accept HTTP connections.
-        httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9205}
+        httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9200}
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_OPENSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
     # Configuration relating to OS backup

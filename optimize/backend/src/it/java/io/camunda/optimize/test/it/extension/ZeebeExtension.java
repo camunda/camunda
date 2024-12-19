@@ -59,7 +59,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     final int databasePort;
     final String zeebeExporterClassName;
     if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.OPENSEARCH)) {
-      databasePort = 9205;
+      databasePort = 9200;
       zeebeExporterClassName = ZEEBE_OPENSEARCH_EXPORTER;
     } else {
       databasePort = 9200;

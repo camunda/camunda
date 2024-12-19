@@ -50,7 +50,7 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - 9205:9200
+      - 9200:9200
       - 9305:9300
     restart: always
     cpu_count: 4

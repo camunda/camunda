@@ -13,7 +13,7 @@ services:
     command: "sysctl -w vm.max_map_count=262144"
   opensearch:
     image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
-    container_name: opensearch-${OPENSEARCH_HTTP_PORT:-9205}
+    container_name: opensearch-${OPENSEARCH_HTTP_PORT:-9200}
     depends_on:
       - fixsysctl
     environment:
@@ -26,7 +26,7 @@ services:
         # internally make usage of scroll contexts and this leads to hitting the scroll limit.
         # Thus this increased scroll context limit.
       - search.max_open_scroll_context=1000
-      - http.port=${OPENSEARCH_HTTP_PORT:-9205}
+      - http.port=${OPENSEARCH_HTTP_PORT:-9200}
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - path.repo=/var/tmp
       - OPENSEARCH_JAVA_OPTS=-Xms${OPENSEARCH_JVM_MEMORY:-1}g -Xmx${OPENSEARCH_JVM_MEMORY:-1}g
@@ -39,11 +39,11 @@ services:
         soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
         hard: 65536
     ports:
-      - ${OPENSEARCH_HTTP_PORT:-9205}:${OPENSEARCH_HTTP_PORT:-9205}
+      - ${OPENSEARCH_HTTP_PORT:-9200}:${OPENSEARCH_HTTP_PORT:-9200}
     restart: always
     cpu_count: 4
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:${OPENSEARCH_HTTP_PORT:-9205}/_cat/health | grep -q -e yellow -e green" ] # A bug in OpenSearch 2.9+ can prevent green health for new single-node clusters, so we accept yellow here too: https://github.com/opensearch-project/opensearch-build/issues/4285
+      test: [ "CMD-SHELL", "curl -f http://localhost:${OPENSEARCH_HTTP_PORT:-9200}/_cat/health | grep -q -e yellow -e green" ] # A bug in OpenSearch 2.9+ can prevent green health for new single-node clusters, so we accept yellow here too: https://github.com/opensearch-project/opensearch-build/issues/4285
       interval: 30s
       timeout: 10s
       retries: 5
