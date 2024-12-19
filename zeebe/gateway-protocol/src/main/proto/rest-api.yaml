@@ -2895,7 +2895,7 @@ paths:
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
         The message is not buffered.
-        Use the publish message endpoint to send messaged that can be buffered. 
+        Use the publish message endpoint to send messages that can be buffered. 
       requestBody:
         required: true
         content:
