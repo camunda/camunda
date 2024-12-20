@@ -18,7 +18,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import jakarta.servlet.http.Part;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -105,9 +104,14 @@ public class DocumentController {
       final DocumentContentResponse contentResponse =
           getDocumentContentResponse(documentId, storeId);
       final MediaType mediaType = resolveMediaType(contentResponse);
-      try (final InputStream contentInputStream = contentResponse.content()) {
-        return ResponseEntity.ok().contentType(mediaType).body(contentInputStream::transferTo);
-      }
+      return ResponseEntity.ok()
+          .contentType(mediaType)
+          .body(
+              bodyStream -> {
+                try (final var contentInputStream = contentResponse.content()) {
+                  contentInputStream.transferTo(bodyStream);
+                }
+              });
     } catch (final Exception e) {
       // we can't return a generic Object type when streaming a response due to Spring MVC
       // limitations
