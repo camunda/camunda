@@ -22,7 +22,6 @@ import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -397,12 +396,12 @@ public class UserTaskHandlerTest {
             .withCandidateUsersList(List.of("corrected_user1", "corrected_user2"))
             .withChangedAttributes(
                 List.of(
-                    UserTaskRecord.ASSIGNEE,
-                    UserTaskRecord.DUE_DATE,
-                    UserTaskRecord.FOLLOW_UP_DATE,
-                    UserTaskRecord.PRIORITY,
-                    UserTaskRecord.CANDIDATE_GROUPS,
-                    UserTaskRecord.CANDIDATE_USERS))
+                    "assignee",
+                    "dueDate",
+                    "followUpDate",
+                    "priority",
+                    "candidateGroupsList",
+                    "candidateUsersList"))
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -495,12 +494,12 @@ public class UserTaskHandlerTest {
             .withCandidateUsersList(List.of("corrected_user1", "corrected_user2"))
             .withChangedAttributes(
                 List.of(
-                    UserTaskRecord.ASSIGNEE,
-                    UserTaskRecord.DUE_DATE,
-                    UserTaskRecord.FOLLOW_UP_DATE,
-                    UserTaskRecord.PRIORITY,
-                    UserTaskRecord.CANDIDATE_GROUPS,
-                    UserTaskRecord.CANDIDATE_USERS))
+                    "assignee",
+                    "dueDate",
+                    "followUpDate",
+                    "priority",
+                    "candidateGroupsList",
+                    "candidateUsersList"))
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
