@@ -34,7 +34,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
-/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
+/**
+ * Represents an instance of a plain broker (By using mainly the {@link BrokerModuleConfiguration}).
+ */
 @SuppressWarnings("UnusedReturnValue")
 public class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {

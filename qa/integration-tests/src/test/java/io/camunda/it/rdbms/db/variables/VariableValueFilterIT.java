@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.variables;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVariable;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariables;
@@ -225,15 +226,15 @@ public class VariableValueFilterIT {
       final CamundaRdbmsTestApplication testApplication) {
     // given 21 variables
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final var varName = prepareRandomVariablesAndReturnOne(testApplication).name();
+    prepareRandomVariablesAndReturnOne(testApplication);
     final VariableDbModel randomizedVariable =
-        VariableFixtures.createRandomized(b -> b.name(varName));
+        VariableFixtures.createRandomized(b -> b.name("unique-name" + generateRandomString(10)));
     createAndSaveVariable(rdbmsService, randomizedVariable);
 
     // and two name with value filters
     final var variableFilter =
         new VariableFilter.Builder()
-            .names(varName, "not there")
+            .names(randomizedVariable.name(), "not there")
             .values(randomizedVariable.value())
             .build();
 
