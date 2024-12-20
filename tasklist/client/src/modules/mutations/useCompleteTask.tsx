@@ -53,7 +53,7 @@ function useCompleteTask() {
   return useMutation<Task, CompletionError, Payload>({
     mutationFn: async (payload) => {
       const {response, error: errorResponse} = await request(
-        api.completeTask(payload),
+        api.v1.completeTask(payload),
       );
 
       if (response !== null) {

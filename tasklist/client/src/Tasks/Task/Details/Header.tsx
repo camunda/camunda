@@ -147,7 +147,7 @@ const AssignButton: React.FC<{
         return;
       }
 
-      if (error.name === assignmentErrorMap.taskIsNotActive) {
+      if (error.name === assignmentErrorMap.taskProcessingTimeout) {
         tracking.track({
           eventName: 'task-assignment-delayed-notification',
         });
@@ -161,7 +161,7 @@ const AssignButton: React.FC<{
       }
 
       setAssignmentStatus('off');
-      if (error.name === assignmentErrorMap.taskAlreadyAssigned) {
+      if (error.name === assignmentErrorMap.invalidState) {
         tracking.track({
           eventName: 'task-assignment-rejected-notification',
         });
@@ -204,7 +204,7 @@ const AssignButton: React.FC<{
         return;
       }
 
-      if (error.name === unassignmentErrorMap.taskIsNotActive) {
+      if (error.name === unassignmentErrorMap.taskProcessingTimeout) {
         tracking.track({
           eventName: 'task-unassignment-delayed-notification',
         });

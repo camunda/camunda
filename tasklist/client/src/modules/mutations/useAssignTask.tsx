@@ -15,17 +15,29 @@ import {buildServerErrorSchema} from 'modules/utils/buildServerErrorSchema';
 import {z} from 'zod';
 
 const messageResponseSchema = z.object({
-  title: z.enum(['TASK_ALREADY_ASSIGNED', 'TASK_IS_NOT_ACTIVE']),
+  title: z.enum([
+    'TASK_ALREADY_ASSIGNED',
+    'TASK_IS_NOT_ACTIVE',
+    'TASK_PROCESSING_TIMEOUT',
+    'INVALID_STATE',
+  ]),
   detail: z.string(),
 });
 const assignmentErrorSchema = buildServerErrorSchema(messageResponseSchema);
 const assignmentErrorMap = {
   taskAlreadyAssigned: 'TASK_ALREADY_ASSIGNED',
   taskIsNotActive: 'TASK_IS_NOT_ACTIVE',
+  taskProcessingTimeout: 'TASK_PROCESSING_TIMEOUT',
+  invalidState: 'INVALID_STATE',
 } as const;
 
 interface AssignmentError extends Error {
-  name: 'TASK_ALREADY_ASSIGNED' | 'TASK_IS_NOT_ACTIVE' | 'Error';
+  name:
+    | 'TASK_ALREADY_ASSIGNED'
+    | 'TASK_IS_NOT_ACTIVE'
+    | 'TASK_PROCESSING_TIMEOUT'
+    | 'INVALID_STATE'
+    | 'Error';
   message: string;
   stack?: string;
 }

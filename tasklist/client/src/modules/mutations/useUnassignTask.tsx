@@ -19,6 +19,8 @@ const messageResponseSchema = z.object({
     'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
     'TASK_NOT_ASSIGNED',
     'TASK_IS_NOT_ACTIVE',
+    'TASK_PROCESSING_TIMEOUT',
+    'INVALID_STATE',
   ]),
   detail: z.string(),
 });
@@ -27,6 +29,8 @@ const unassignmentErrorMap = {
   taskNotAssignedToCurrentUser: 'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
   taskNotAssigned: 'TASK_NOT_ASSIGNED',
   taskIsNotActive: 'TASK_IS_NOT_ACTIVE',
+  taskProcessingTimeout: 'TASK_PROCESSING_TIMEOUT',
+  invalidState: 'INVALID_STATE',
 } as const;
 
 interface UnassignmentError extends Error {
@@ -34,6 +38,8 @@ interface UnassignmentError extends Error {
     | 'TASK_NOT_ASSIGNED_TO_CURRENT_USER'
     | 'TASK_NOT_ASSIGNED'
     | 'TASK_IS_NOT_ACTIVE'
+    | 'TASK_PROCESSING_TIMEOUT'
+    | 'INVALID_STATE'
     | 'Error';
   message: string;
   stack?: string;
