@@ -56,6 +56,20 @@ message MemberState {
   map<int32, PartitionState> partitions = 4;
 }
 
+message PartitionsDistribution {
+  repeated PartitionDistribution partitions = 1;
+}
+
+message PartitionDistribution {
+  int32 partitionId = 1;
+  repeated PartitionMembers members = 2;
+}
+
+message PartitionMembers {
+  string memberId = 1;
+  int32 priority = 2;
+}
+
 message PartitionState {
   State state = 1;
   int32 priority = 2;
