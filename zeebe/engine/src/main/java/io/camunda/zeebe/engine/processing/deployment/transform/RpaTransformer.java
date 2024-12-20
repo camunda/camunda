@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
 
-public class ResourceTransformer implements DeploymentResourceTransformer {
+public class RpaTransformer implements DeploymentResourceTransformer {
   private static final int INITIAL_VERSION = 1;
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
@@ -35,7 +35,7 @@ public class ResourceTransformer implements DeploymentResourceTransformer {
   private final ChecksumGenerator checksumGenerator;
   private final ResourceState resourceState;
 
-  public ResourceTransformer(
+  public RpaTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,

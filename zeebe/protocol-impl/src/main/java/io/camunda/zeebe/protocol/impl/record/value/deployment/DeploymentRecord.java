@@ -218,12 +218,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public boolean hasResources() {
     return getResources().stream()
         .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
-        .anyMatch(
-            x ->
-                !x.endsWith(".form")
-                    && !x.endsWith(".xml")
-                    && !x.endsWith(".bpmn")
-                    && !x.endsWith(".dmn"));
+        .anyMatch(x -> x.endsWith(".rpa"));
   }
 
   public boolean hasDuplicatesOnly() {
