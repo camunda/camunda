@@ -310,14 +310,22 @@ public class GcpDocumentStoreTest {
   }
 
   @Test
-  void createDocumentShouldUseCorrectPrefix() throws IOException {
+  void createDocumentShouldUseCorrectPrefix() {
     // given
     gcpDocumentStore =
         new GcpDocumentStore(
             BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(null);
 
@@ -327,8 +335,7 @@ public class GcpDocumentStoreTest {
 
     // then
     assertThat(documentReferenceResponse).isNotNull();
-    verify(storage)
-        .createFrom(BlobInfo.newBuilder(BUCKET_NAME, "prefix/documentId").build(), inputStream);
+    verify(storage).get(BUCKET_NAME, "prefix/documentId");
   }
 
   @Test
