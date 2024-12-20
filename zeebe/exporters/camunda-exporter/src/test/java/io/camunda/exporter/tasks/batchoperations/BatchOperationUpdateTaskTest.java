@@ -11,11 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -59,9 +57,7 @@ public class BatchOperationUpdateTaskTest {
     assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(2);
     assertThat(repository.documentUpdates).hasSize(2);
     assertThat(repository.documentUpdates)
-        .contains(
-            new DocumentUpdate("1", Map.of(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT, 5L)),
-            new DocumentUpdate("2", Map.of(BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT, 6L)));
+        .contains(new DocumentUpdate("1", 5L), new DocumentUpdate("2", 6L));
   }
 
   private static final class TestRepository implements BatchOperationUpdateRepository {

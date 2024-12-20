@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.entities.operation.OperationState.FAILED
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -22,11 +23,14 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
+import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -133,13 +137,36 @@ public class ElasticsearchBatchOperationUpdateRepository implements BatchOperati
   }
 
   private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+    final Map<String, Object> params =
+        Map.of(
+            "operationsFinishedCount",
+            update.finishedOperationsCount(),
+            "endDate",
+            OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
-        .index(operationIndex)
+        .index(batchOperationIndex)
         .id(update.id())
         .retryOnConflict(RETRY_COUNT)
-        .action(a -> a.doc(update.doc()))
+        .action(a -> a.script(getBatchOperationUpdateScript(params)))
         .build()
         ._toBulkOperation();
+  }
+
+  private Script getBatchOperationUpdateScript(final Map<String, Object> params) {
+    final Map<String, JsonData> parameters =
+        params.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
+    return new Script.Builder()
+        .inline(
+            s ->
+                s.source(
+                        "if (ctx._source.operationsTotalCount <= params.operationsFinishedCount) { "
+                            + "   ctx._source.endDate = params.endDate; "
+                            + "} "
+                            + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;")
+                    .lang("painless")
+                    .params(parameters))
+        .build();
   }
 
   @Override
