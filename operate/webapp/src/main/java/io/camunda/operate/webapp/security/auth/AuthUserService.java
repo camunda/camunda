@@ -7,14 +7,16 @@
  */
 package io.camunda.operate.webapp.security.auth;
 
-import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
+import io.camunda.operate.webapp.security.Permission;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -28,26 +30,26 @@ import org.springframework.stereotype.Component;
 })
 public class AuthUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
 
-  @Autowired private RolePermissionService rolePermissionService;
+  @Autowired private CamundaUserService camundaUserService;
 
   @Override
-  public UserDto createUserDtoFrom(final UsernamePasswordAuthenticationToken authentication) {
-    final CamundaUser user = (CamundaUser) authentication.getPrincipal();
+  public UserDto getCurrentUser() {
+    final CamundaUserDTO currentUser = camundaUserService.getCurrentUser();
     return new UserDto()
-        .setUserId(user.getUserId())
-        .setDisplayName(user.getDisplayName())
-        .setCanLogout(true)
-        .setPermissions(
-            rolePermissionService.getPermissions(
-                user.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .map(Role::fromString)
-                    .toList()));
+        .setUserId(currentUser.userId())
+        .setDisplayName(currentUser.displayName())
+        .setPermissions(List.of(Permission.READ, Permission.WRITE))
+        .setCanLogout(currentUser.canLogout());
   }
 
   @Override
   public String getUserToken(final UsernamePasswordAuthenticationToken authentication) {
     throw new UnsupportedOperationException(
         "Get token is not supported for Elasticsearch authentication");
+  }
+
+  @Override
+  public UserDto createUserDtoFrom(final UsernamePasswordAuthenticationToken authentication) {
+    return null;
   }
 }
