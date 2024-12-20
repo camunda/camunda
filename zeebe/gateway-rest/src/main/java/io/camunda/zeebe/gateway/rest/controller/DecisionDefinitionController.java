@@ -22,13 +22,13 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -46,10 +46,7 @@ public class DecisionDefinitionController {
     this.multiTenancyCfg = multiTenancyCfg;
   }
 
-  @PostMapping(
-      path = "/evaluation",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       @RequestBody final EvaluateDecisionRequest evaluateDecisionRequest) {
     return RequestMapper.toEvaluateDecisionRequest(
@@ -57,19 +54,14 @@ public class DecisionDefinitionController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateDecision);
   }
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionDefinitionSearchQueryResponse> searchDecisionDefinitions(
       @RequestBody(required = false) final DecisionDefinitionSearchQueryRequest query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @GetMapping(
-      path = "/{decisionDefinitionKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping(path = "/{decisionDefinitionKey}")
   public ResponseEntity<DecisionDefinitionItem> getDecisionDefinitionByKey(
       @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
     try {
@@ -83,7 +75,7 @@ public class DecisionDefinitionController {
     }
   }
 
-  @GetMapping(
+  @CamundaGetMapping(
       path = "/{decisionDefinitionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionDefinitionXml(
