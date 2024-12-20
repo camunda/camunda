@@ -17,6 +17,11 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RequestLimiter extends AbstractLimiter<Intent> {
 
@@ -29,13 +34,25 @@ public final class RequestLimiter extends AbstractLimiter<Intent> {
           DeploymentIntent.DISTRIBUTE,
           DeploymentDistributionIntent.COMPLETE,
           CommandDistributionIntent.ACKNOWLEDGE);
+  private static final Logger LOG =
+      LoggerFactory.getLogger("io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter");
+
   private final LogStreamMetrics metrics;
+  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
   private RequestLimiter(final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
     super(builder);
     this.metrics = metrics;
     metrics.setInflightRequests(0);
     metrics.setRequestLimit(getLimit());
+
+    executor.scheduleAtFixedRate(
+        () -> {
+          LOG.info(metrics.getMetrics());
+        },
+        30,
+        30,
+        TimeUnit.SECONDS);
   }
 
   @Override
