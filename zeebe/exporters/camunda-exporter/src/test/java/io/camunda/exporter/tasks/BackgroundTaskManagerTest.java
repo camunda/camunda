@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -36,6 +37,7 @@ final class BackgroundTaskManagerTest {
             1,
             new NoopArchiverRepository(),
             new NoopIncidentUpdateRepository(),
+            new NoopBatchOperationUpdateRepository(),
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             // return unfinished futures to have a deterministic count of submitted tasks
@@ -92,11 +94,14 @@ final class BackgroundTaskManagerTest {
         new CloseableArchiverRepository();
     private final CloseableIncidentRepository incidentRepository =
         new CloseableIncidentRepository();
+    private final CloseableBatchOperationUpdateRepository batchOperationUpdateRepository =
+        new CloseableBatchOperationUpdateRepository();
     private final BackgroundTaskManager taskManager =
         new BackgroundTaskManager(
             1,
             archiverRepository,
             incidentRepository,
+            batchOperationUpdateRepository,
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             List.of());
@@ -153,6 +158,21 @@ final class BackgroundTaskManagerTest {
     }
 
     private static final class CloseableIncidentRepository extends NoopIncidentUpdateRepository {
+      private boolean isClosed;
+      private Exception exception;
+
+      @Override
+      public void close() throws Exception {
+        if (exception != null) {
+          throw exception;
+        }
+
+        isClosed = true;
+      }
+    }
+
+    private static final class CloseableBatchOperationUpdateRepository
+        extends NoopBatchOperationUpdateRepository {
       private boolean isClosed;
       private Exception exception;
 
