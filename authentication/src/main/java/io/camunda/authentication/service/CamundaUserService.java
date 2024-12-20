@@ -8,8 +8,10 @@
 package io.camunda.authentication.service;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import javax.annotation.Nullable;
 
 public interface CamundaUserService {
+  @Nullable
   CamundaUserDTO getCurrentUser();
 
   String getUserToken();

@@ -7,22 +7,22 @@
  */
 
 import { FC } from "react";
-import { Route, Routes as RouterRoutes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import Redirect from "src/components/router/Redirect";
+import { baseUrl } from "src/configuration";
 
 const GlobalRoutes: FC = () => {
   const routes = useGlobalRoutes();
   const indexRoute = routes[0].key;
-
   return (
-    <RouterRoutes>
-      <Route index element={<Redirect to={indexRoute} />} />
-      {routes.map(({ path, element }) => {
-        return <Route key={path} path={path} element={element} />;
-      })}
-      <Route path="*" element={<Redirect to="/" />} />
-    </RouterRoutes>
+    <Routes>
+      <Route index element={<Redirect to={baseUrl + indexRoute} />} />
+      {routes.map(({ key, path, element }) => (
+        <Route key={key} path={path} element={element} />
+      ))}
+      <Route path="*" element={<Redirect to={baseUrl} />} />
+    </Routes>
   );
 };
 

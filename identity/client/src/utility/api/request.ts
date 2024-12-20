@@ -1,3 +1,5 @@
+import {redirectToLogin} from "src/utility/auth";
+
 export type ApiResult<R> =
   | {
       data: R;
@@ -77,8 +79,12 @@ const apiRequest: <R, P>(
         body,
         headers,
         credentials: "include",
+        redirect: "manual",
       },
     );
+    if (response.status === 401) {
+      redirectToLogin();
+    }
     let data = null;
     try {
       data = await response.json();

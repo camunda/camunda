@@ -11,9 +11,9 @@
 import {Outlet} from 'react-router-dom';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'AuthenticationCheck';
-import {pages} from 'modules/routing';
 import {OSNotifications} from 'OSNotifications';
 import {C3Provider} from 'C3Provider';
+import {pages} from '../modules/routing';
 
 const Layout: React.FC = () => {
   return (

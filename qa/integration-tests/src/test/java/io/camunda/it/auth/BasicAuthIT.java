@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.client.protocol.rest.UserRequest;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -45,20 +46,26 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @SpringBootTest(
-    classes = {CommonsModuleConfiguration.class, BrokerModuleConfiguration.class},
-    properties = {"spring.profiles.active=broker,auth-basic"})
+    classes = {
+      CommonsModuleConfiguration.class,
+      BrokerModuleConfiguration.class,
+      WebSecurityConfig.class
+    })
+@ActiveProfiles({"broker", "auth-basic"})
 @WebAppConfiguration
 @AutoConfigureMockMvc
 public class BasicAuthIT {
-
   private static final String USERNAME = "correct_username";
   private static final String PASSWORD = "correct_password";
+  private static final String WRONG_PASSWORD = "incorrect_password";
+
   @MockBean UserServices userService;
   @MockBean AuthorizationServices authorizationServices;
   @MockBean RoleServices roleServices;
@@ -128,9 +135,28 @@ public class BasicAuthIT {
         MockMvcRequestBuilders.post("/v2/users")
             .accept("application/json")
             .contentType(MediaType.APPLICATION_JSON)
-            .header(
-                "Authorization", "Basic " + Base64Util.encode(USERNAME + ":" + PASSWORD + "Wrong"))
+            .header("Authorization", "Basic " + Base64Util.encode(USERNAME + ":" + WRONG_PASSWORD))
             .content(content);
-    mockMvc.perform(request).andExpect(status().isUnauthorized()).andReturn();
+    mockMvc.perform(request).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void loginWithValidCredentials() throws Exception {
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post("/login")
+                .param("username", USERNAME)
+                .param("password", PASSWORD))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
+  void loginWithInvalidCredentials() throws Exception {
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.post("/login")
+                .param("username", USERNAME)
+                .param("password", WRONG_PASSWORD))
+        .andExpect(status().isUnauthorized());
   }
 }

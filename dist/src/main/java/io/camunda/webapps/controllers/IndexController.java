@@ -20,7 +20,7 @@ public class IndexController {
 
   @Autowired private WebappsProperties webappsProperties;
 
-  @GetMapping("/index.html")
+  @GetMapping({"/", "/index.html"})
   public String index() {
     return "redirect:/" + webappsProperties.defaultApp();
   }
