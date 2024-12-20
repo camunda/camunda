@@ -102,7 +102,11 @@ public class TaskValidator {
           createErrorMessage(
               TASK_IS_NOT_ACTIVE,
               "Task is not active",
-              URI.create("/v1/tasks/%s/assign".formatted(taskBefore.getId()))));
+              URI.create(
+                  "/v1/tasks/%s/%s"
+                      .formatted(
+                          taskBefore.getId(),
+                          taskBefore.getAssignee() == null ? "assign" : "unassign"))));
     }
   }
 
