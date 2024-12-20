@@ -35,7 +35,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.test.annotation.DirtiesContext;
 
+/**
+ * ApplicationContext associated with this test gets dirty {@link
+ * #replaceIndexDescriptorsInValidator(Set)} and should therefore be closed and removed from the
+ * context cache.
+ */
+@DirtiesContext
 @Conditional(ElasticSearchCondition.class)
 public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
