@@ -11,6 +11,7 @@ export type Permission = {
   permissionType: string;
   resourceIds: string[];
 };
+
 export type Authorization = EntityData & {
   ownerKey: number;
   ownerType: string;
