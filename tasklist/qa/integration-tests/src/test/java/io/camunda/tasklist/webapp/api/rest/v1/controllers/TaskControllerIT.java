@@ -1113,7 +1113,11 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is already assigned");
+          .hasMessage("""
+                    { "title": "TASK_ALREADY_ASSIGNED",
+                      "detail": "Task is already assigned"
+                    }
+                    """);
     }
 
     @Test
@@ -1138,7 +1142,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                    { "title": "TASK_IS_NOT_ACTIVE",
+                      "detail": "Task is not active"
+                    }
+                    """);
     }
 
     @Test
@@ -1190,11 +1199,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                        { "title": "TASK_NOT_ASSIGNED",
-                         "detail": "Task is not assigned",
-                         "instance": "/v1/tasks/%s/unassign"
+                         "detail": "Task is not assigned"
                        }
-                       """
-                  .formatted(taskId));
+                       """);
     }
 
     @Test
@@ -1222,11 +1229,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                        { "title": "TASK_IS_NOT_ACTIVE",
-                         "detail": "Task is not active",
-                         "instance": "/v1/tasks/%s/unassign"
+                         "detail": "Task is not active"
                        }
-                       """
-                  .formatted(taskId));
+                       """);
     }
   }
 
@@ -1487,11 +1492,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                       { "title": "TASK_IS_NOT_ACTIVE",
-                        "detail": "Task is not active",
-                        "instance": "/v1/tasks/%s/unassign"
+                        "detail": "Task is not active"
                       }
-                      """
-                  .formatted(taskId));
+                      """);
     }
 
     @Test
@@ -1516,11 +1519,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                        { "title": "TASK_NOT_ASSIGNED",
-                         "detail": "Task is not assigned",
-                         "instance": "/v1/tasks/%s/unassign"
+                         "detail": "Task is not assigned"
                        }
-                       """
-                  .formatted(taskId));
+                       """);
     }
 
     @Test
@@ -1548,11 +1549,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                         { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
-                          "detail": "Task is not assigned to user_B",
-                          "instance": "/v1/tasks/%s/unassign"
+                          "detail": "Task is not assigned to user_B"
                         }
-                        """
-                  .formatted(taskId));
+                        """);
     }
   }
 
@@ -1605,11 +1604,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
            { "title": "TASK_IS_NOT_ACTIVE",
-             "detail": "Task is not active",
-             "instance": "/v1/tasks/%s/unassign"
+             "detail": "Task is not active"
            }
-           """
-                  .formatted(taskId));
+           """);
     }
 
     @Test
@@ -1635,11 +1632,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                       { "title": "TASK_NOT_ASSIGNED",
-                        "detail": "Task is not assigned",
-                        "instance": "/v1/tasks/%s/unassign"
+                        "detail": "Task is not assigned"
                       }
-                      """
-                  .formatted(taskId));
+                      """);
     }
 
     @Test
@@ -1691,11 +1686,9 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasMessage(
               """
                       { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
-                        "detail": "Task is not assigned to user_B",
-                        "instance": "/v1/tasks/%s/unassign"
+                        "detail": "Task is not assigned to user_B"
                       }
-                      """
-                  .formatted(taskId));
+                      """);
     }
 
     @Test

@@ -68,8 +68,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_IS_NOT_ACTIVE",
-              "detail": "Task is not active",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not active"
             }
             """);
   }
@@ -89,8 +88,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
-              "detail": "Task is not assigned to TestUser",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not assigned to TestUser"
             }
             """);
   }
@@ -108,8 +106,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_NOT_ASSIGNED",
-              "detail": "Task is not assigned",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not assigned"
             }
             """);
   }
@@ -153,8 +150,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_IS_NOT_ACTIVE",
-              "detail": "Task is not active",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not active"
             }
             """);
   }
@@ -174,8 +170,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
-              "detail": "Task is not assigned to TestUser",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not assigned to TestUser"
             }
             """);
   }
@@ -193,8 +188,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_NOT_ASSIGNED",
-              "detail": "Task is not assigned",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not assigned"
             }
             """);
   }
@@ -270,8 +264,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_ALREADY_ASSIGNED",
-              "detail": "Task is already assigned",
-              "instance": "/v1/tasks/123/assign"
+              "detail": "Task is already assigned"
             }
             """);
   }
@@ -291,8 +284,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_IS_NOT_ACTIVE",
-              "detail": "Task is not active",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not active"
             }
             """);
   }
@@ -310,8 +302,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_ALREADY_ASSIGNED",
-              "detail": "Task is already assigned",
-              "instance": "/v1/tasks/123/assign"
+              "detail": "Task is already assigned"
             }
             """);
   }
@@ -330,8 +321,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_ALREADY_ASSIGNED",
-              "detail": "Task is already assigned",
-              "instance": "/v1/tasks/123/assign"
+              "detail": "Task is already assigned"
             }
             """);
   }
@@ -349,8 +339,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_NOT_ASSIGNED",
-              "detail": "Task is not assigned",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not assigned"
             }
             """);
   }
@@ -370,8 +359,7 @@ public class TaskValidatorTest {
         .hasMessage(
             """
             { "title": "TASK_IS_NOT_ACTIVE",
-              "detail": "Task is not active",
-              "instance": "/v1/tasks/123/unassign"
+              "detail": "Task is not active"
             }
             """);
   }

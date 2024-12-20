@@ -9,7 +9,6 @@ package io.camunda.tasklist.util;
 
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
-import java.net.URI;
 import java.util.Objects;
 
 public abstract class ErrorHandlingUtils {
@@ -28,31 +27,25 @@ public abstract class ErrorHandlingUtils {
         && Objects.equals(ex.details().getStatus(), 409)
         && INVALID_STATE.equals(ex.details().getTitle())) {
       final ProblemDetail problemDetail = ex.details();
-      errorMessage =
-          createErrorMessage(
-              problemDetail.getTitle(), problemDetail.getDetail(), problemDetail.getInstance());
+      errorMessage = createErrorMessage(problemDetail.getTitle(), problemDetail.getDetail());
     } else if (isCausedByTimeoutException(exception)) {
       errorMessage =
           createErrorMessage(
-              "TASK_PROCESSING_TIMEOUT",
-              "The request timed out while processing the task.",
-              URI.create("/v2/user-tasks/%d/assignment".formatted(taskKey)));
+              "TASK_PROCESSING_TIMEOUT", "The request timed out while processing the task.");
     } else {
       errorMessage = exception.getMessage();
     }
     return errorMessage;
   }
 
-  public static String createErrorMessage(
-      final String title, final String detail, final URI instance) {
+  public static String createErrorMessage(final String title, final String detail) {
     return String.format(
         """
       { "title": "%s",
-        "detail": "%s",
-        "instance": "%s"
+        "detail": "%s"
       }
       """,
-        title, detail, instance);
+        title, detail);
   }
 
   public static boolean isCausedByTimeoutException(final Throwable throwable) {

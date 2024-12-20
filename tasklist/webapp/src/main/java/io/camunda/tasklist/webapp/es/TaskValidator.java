@@ -19,7 +19,6 @@ import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
-import java.net.URI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -68,8 +67,7 @@ public class TaskValidator {
       throw new InvalidRequestException(
           createErrorMessage(
               TASK_NOT_ASSIGNED_TO_CURRENT_USER,
-              "Task is not assigned to " + currentUser.getUserId(),
-              URI.create("/v1/tasks/%s/unassign".formatted(task.getId()))));
+              "Task is not assigned to " + currentUser.getUserId()));
     }
   }
 
@@ -84,10 +82,7 @@ public class TaskValidator {
 
     if (taskBefore.getAssignee() != null) {
       throw new InvalidRequestException(
-          createErrorMessage(
-              TASK_ALREADY_ASSIGNED,
-              "Task is already assigned",
-              URI.create("/v1/tasks/%s/assign".formatted(taskBefore.getId()))));
+          createErrorMessage(TASK_ALREADY_ASSIGNED, "Task is already assigned"));
     }
   }
 
@@ -99,24 +94,14 @@ public class TaskValidator {
   private static void validateTaskIsActive(final TaskEntity taskBefore) {
     if (!taskBefore.getState().equals(TaskState.CREATED)) {
       throw new InvalidRequestException(
-          createErrorMessage(
-              TASK_IS_NOT_ACTIVE,
-              "Task is not active",
-              URI.create(
-                  "/v1/tasks/%s/%s"
-                      .formatted(
-                          taskBefore.getId(),
-                          taskBefore.getAssignee() == null ? "assign" : "unassign"))));
+          createErrorMessage(TASK_IS_NOT_ACTIVE, "Task is not active"));
     }
   }
 
   private static void validateTaskIsAssigned(final TaskEntity taskBefore) {
     if (taskBefore.getAssignee() == null) {
       throw new InvalidRequestException(
-          createErrorMessage(
-              TASK_NOT_ASSIGNED,
-              "Task is not assigned",
-              URI.create("/v1/tasks/%s/unassign".formatted(taskBefore.getId()))));
+          createErrorMessage(TASK_NOT_ASSIGNED, "Task is not assigned"));
     }
   }
 

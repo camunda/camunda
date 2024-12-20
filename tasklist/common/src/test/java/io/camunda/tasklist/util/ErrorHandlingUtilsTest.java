@@ -14,7 +14,6 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import java.net.SocketTimeoutException;
-import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 class ErrorHandlingUtilsTest {
@@ -27,8 +26,7 @@ class ErrorHandlingUtilsTest {
         new ProblemDetail()
             .status(409)
             .title("INVALID_STATE")
-            .detail("Task is already in progress.")
-            .instance(URI.create("/v2/user-tasks/123/assignment"));
+            .detail("Task is already in progress.");
 
     final ProblemException problemException = mock(ProblemException.class);
     when(problemException.details()).thenReturn(problemDetail);
@@ -40,8 +38,7 @@ class ErrorHandlingUtilsTest {
     final String expectedMessage =
         """
           { "title": "INVALID_STATE",
-            "detail": "Task is already in progress.",
-            "instance": "/v2/user-tasks/123/assignment"
+            "detail": "Task is already in progress."
           }
           """;
     assertEquals(expectedMessage, result);
@@ -62,8 +59,7 @@ class ErrorHandlingUtilsTest {
     final String expectedMessage =
         """
           { "title": "TASK_PROCESSING_TIMEOUT",
-            "detail": "The request timed out while processing the task.",
-            "instance": "/v2/user-tasks/123/assignment"
+            "detail": "The request timed out while processing the task."
           }
           """;
     assertEquals(expectedMessage, result);
@@ -87,17 +83,15 @@ class ErrorHandlingUtilsTest {
     // Given
     final String title = "Internal Server Error";
     final String detail = "An unexpected error occurred.";
-    final URI instance = URI.create("/v2/user-tasks/unknown");
 
     // When
-    final String result = ErrorHandlingUtils.createErrorMessage(title, detail, instance);
+    final String result = ErrorHandlingUtils.createErrorMessage(title, detail);
 
     // Then
     final String expectedMessage =
         """
           { "title": "Internal Server Error",
-            "detail": "An unexpected error occurred.",
-            "instance": "/v2/user-tasks/unknown"
+            "detail": "An unexpected error occurred."
           }
           """;
     assertEquals(expectedMessage, result);
