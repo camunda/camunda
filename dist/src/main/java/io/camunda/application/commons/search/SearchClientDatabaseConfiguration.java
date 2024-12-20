@@ -9,10 +9,10 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
@@ -36,7 +36,7 @@ public class SearchClientDatabaseConfiguration {
   @ConditionalOnProperty(
       prefix = "camunda.database",
       name = "type",
-      havingValue = "elasticsearch",
+      havingValue = DatabaseConfig.ELASTICSEARCH,
       matchIfMissing = true)
   public ElasticsearchSearchClient elasticsearchSearchClient(
       final SearchClientProperties configuration) {
@@ -46,7 +46,10 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "opensearch")
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "type",
+      havingValue = DatabaseConfig.OPENSEARCH)
   public OpensearchSearchClient opensearchSearchClient(final SearchClientProperties configuration) {
     final var connector = new OpensearchConnector(configuration);
     final var elasticsearch = connector.createClient();
@@ -54,7 +57,10 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "rdbms")
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "type",
+      havingValue = DatabaseConfig.RDBMS)
   public RdbmsSearchClient rdbmsSearchClient(final RdbmsService rdbmsService) {
     return new RdbmsSearchClient(rdbmsService);
   }
@@ -67,7 +73,7 @@ public class SearchClientDatabaseConfiguration {
     final IndexDescriptors indexDescriptors =
         new IndexDescriptors(
             connectConfiguration.getIndexPrefix(),
-            ConnectionTypes.isElasticSearch(connectConfiguration.getType()));
+            connectConfiguration.getTypeEnum().isElasticSearch());
     return new SearchClients(searchClient, indexDescriptors);
   }
 
