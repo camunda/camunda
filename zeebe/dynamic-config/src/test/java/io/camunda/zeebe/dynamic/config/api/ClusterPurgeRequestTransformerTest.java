@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -54,17 +55,16 @@ final class ClusterPurgeRequestTransformerTest {
         .right()
         .satisfies(
             operations -> {
-              assertThat(operations).hasSize(10);
+              assertThat(operations).hasSize(9);
               assertThat(operations)
                   .containsExactly(
-                      new PartitionLeaveOperation(id0, 0),
-                      new PartitionLeaveOperation(id0, 1),
-                      new PartitionLeaveOperation(id1, 0),
-                      new PartitionLeaveOperation(id1, 1),
+                      new PartitionLeaveOperation(id0, 0, true),
+                      new PartitionLeaveOperation(id0, 1, true),
+                      new PartitionLeaveOperation(id1, 0, true),
+                      new PartitionLeaveOperation(id1, 1, true),
                       new DeleteHistoryOperation(id0),
-                      new DeleteHistoryOperation(id1),
-                      new PartitionBootstrapOperation(id0, 0, 2, ExportersConfig.empty()),
-                      new PartitionBootstrapOperation(id1, 1, 2, ExportersConfig.empty()),
+                      new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig)),
+                      new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig)),
                       new PartitionJoinOperation(id1, 0, 1),
                       new PartitionJoinOperation(id0, 1, 1));
             });
@@ -95,20 +95,19 @@ final class ClusterPurgeRequestTransformerTest {
         .right()
         .satisfies(
             operations -> {
-              assertThat(operations).hasSize(14);
+              assertThat(operations).hasSize(13);
               assertThat(operations)
                   .containsExactly(
-                      new PartitionLeaveOperation(id0, 0),
-                      new PartitionLeaveOperation(id0, 1),
-                      new PartitionLeaveOperation(id0, 2),
-                      new PartitionLeaveOperation(id1, 0),
-                      new PartitionLeaveOperation(id1, 1),
-                      new PartitionLeaveOperation(id1, 2),
+                      new PartitionLeaveOperation(id0, 0, true),
+                      new PartitionLeaveOperation(id0, 1, true),
+                      new PartitionLeaveOperation(id0, 2, true),
+                      new PartitionLeaveOperation(id1, 0, true),
+                      new PartitionLeaveOperation(id1, 1, true),
+                      new PartitionLeaveOperation(id1, 2, true),
                       new DeleteHistoryOperation(id0),
-                      new DeleteHistoryOperation(id1),
-                      new PartitionBootstrapOperation(id0, 0, 2, ExportersConfig.empty()),
-                      new PartitionBootstrapOperation(id1, 1, 2, ExportersConfig.empty()),
-                      new PartitionBootstrapOperation(id0, 2, 2, ExportersConfig.empty()),
+                      new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig)),
+                      new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig)),
+                      new PartitionBootstrapOperation(id0, 2, 2, Optional.of(partitionConfig)),
                       new PartitionJoinOperation(id1, 0, 1),
                       new PartitionJoinOperation(id0, 1, 1),
                       new PartitionJoinOperation(id1, 2, 1));
@@ -143,7 +142,49 @@ final class ClusterPurgeRequestTransformerTest {
         .satisfies(
             operations -> {
               assertThat(operations)
-                  .contains(new PartitionBootstrapOperation(id0, 0, 2, exportersConfig));
+                  .contains(
+                      new PartitionBootstrapOperation(
+                          id0, 0, 2, Optional.of(partitionConfigWithExporter)));
+            });
+  }
+
+  @Test
+  void shouldRecreatePartitionsWithDifferentConfig() {
+    // given
+    final var transformer = new PurgeRequestTransformer();
+    final DynamicPartitionConfig config0 =
+        DynamicPartitionConfig.init()
+            .updateExporting(
+                new ExportersConfig(
+                    Map.of(
+                        "exporter",
+                        new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config")))));
+    final DynamicPartitionConfig config1 =
+        DynamicPartitionConfig.init()
+            .updateExporting(
+                new ExportersConfig(
+                    Map.of(
+                        "exporter", new ExporterState(1, State.DISABLED, Optional.of("config")))));
+
+    final ClusterConfiguration currentTopology =
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(0, PartitionState.active(2, config0)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, config1)));
+
+    // when
+    final var result = transformer.operations(currentTopology);
+
+    // then
+    assertThat(result)
+        .isRight()
+        .right()
+        .satisfies(
+            operations -> {
+              assertThat(operations)
+                  .contains(new PartitionBootstrapOperation(id0, 0, 2, Optional.of(config0)))
+                  .contains(new PartitionBootstrapOperation(id1, 1, 2, Optional.of(config1)));
             });
   }
 }

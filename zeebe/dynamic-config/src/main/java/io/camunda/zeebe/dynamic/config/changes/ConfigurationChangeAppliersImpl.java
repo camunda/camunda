@@ -47,7 +47,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               partitionChangeExecutor);
       case final PartitionLeaveOperation leaveOperation ->
           new PartitionLeaveApplier(
-              leaveOperation.partitionId(), leaveOperation.memberId(), partitionChangeExecutor);
+              leaveOperation.partitionId(),
+              leaveOperation.memberId(),
+              leaveOperation.isClusterPurge(),
+              partitionChangeExecutor);
       case final MemberJoinOperation memberJoinOperation ->
           new MemberJoinApplier(memberJoinOperation.memberId(), clusterMembershipChangeExecutor);
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -87,7 +90,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               bootstrapOperation.partitionId(),
               bootstrapOperation.priority(),
               bootstrapOperation.memberId(),
-              bootstrapOperation.exporters(),
+              bootstrapOperation.config(),
               partitionChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId());

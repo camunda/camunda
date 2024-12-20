@@ -215,9 +215,7 @@ final class ClusterApiUtils {
               .partitionId(bootstrapOperation.partitionId())
               .priority(bootstrapOperation.priority());
       case final DeleteHistoryOperation deleteHistoryOperation ->
-          new Operation()
-              .operation(OperationEnum.DELETE_HISTORY)
-              .brokerId(Integer.parseInt(deleteHistoryOperation.memberId().id()));
+          new Operation().operation(OperationEnum.DELETE_HISTORY);
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }

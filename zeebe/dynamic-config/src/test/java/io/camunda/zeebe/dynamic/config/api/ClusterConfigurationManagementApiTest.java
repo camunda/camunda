@@ -189,7 +189,8 @@ final class ClusterConfigurationManagementApiTest {
     final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
-    assertThat(changeStatus.plannedChanges()).containsExactly(new PartitionLeaveOperation(id1, 1));
+    assertThat(changeStatus.plannedChanges())
+        .containsExactly(new PartitionLeaveOperation(id1, 1, false));
   }
 
   @Test
@@ -217,7 +218,7 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2));
+            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2, false));
   }
 
   @Test
@@ -239,7 +240,7 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2));
+            new PartitionLeaveOperation(id0, 2, false));
   }
 
   @Test
@@ -308,8 +309,8 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionLeaveOperation(id0, 2),
-            new PartitionLeaveOperation(id1, 1),
+            new PartitionLeaveOperation(id0, 2, false),
+            new PartitionLeaveOperation(id1, 1, false),
             new PartitionReconfigurePriorityOperation(id0, 1, 1),
             new PartitionReconfigurePriorityOperation(id1, 2, 1));
   }
@@ -362,8 +363,8 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2),
-            new PartitionBootstrapOperation(id0, 3, 1, ExportersConfig.empty()));
+            new PartitionLeaveOperation(id0, 2, false),
+            new PartitionBootstrapOperation(id0, 3, 1));
   }
 
   @Test
@@ -386,8 +387,8 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactly(
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2),
-            new PartitionBootstrapOperation(id0, 3, 1, ExportersConfig.empty()));
+            new PartitionLeaveOperation(id0, 2, false),
+            new PartitionBootstrapOperation(id0, 3, 1));
   }
 
   @Test

@@ -96,7 +96,9 @@ public final class ClusterConfigurationManagementRequestsHandler
             Either.right(
                 List.of(
                     new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(), leavePartitionRequest.partitionId()))));
+                        leavePartitionRequest.memberId(),
+                        leavePartitionRequest.partitionId(),
+                        false))));
   }
 
   @Override
