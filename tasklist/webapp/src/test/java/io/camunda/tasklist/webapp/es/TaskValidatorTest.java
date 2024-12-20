@@ -58,13 +58,20 @@ public class TaskValidatorTest {
   public void userShouldNotBeAbleToPersistDraftTaskVariablesIfTaskIsNotActive(
       final TaskState taskState) {
     // given
-    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
+    final TaskEntity task =
+        new TaskEntity().setAssignee(TEST_USER).setState(taskState).setId("123");
 
     // when - then
     verifyNoInteractions(userReader);
     assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not active");
+        .hasMessage(
+            """
+            { "title": "TASK_IS_NOT_ACTIVE",
+              "detail": "Task is not active",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
@@ -74,24 +81,37 @@ public class TaskValidatorTest {
     final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
-        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not assigned to TestUser");
+        .hasMessage(
+            """
+            { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+              "detail": "Task is not assigned to TestUser",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
   public void userCanNotPersistDraftTaskVariablesIfAssigneeIsNull() {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+    final TaskEntity task =
+        new TaskEntity().setAssignee(null).setState(TaskState.CREATED).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not assigned");
+        .hasMessage(
+            """
+            { "title": "TASK_NOT_ASSIGNED",
+              "detail": "Task is not assigned",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
@@ -123,13 +143,20 @@ public class TaskValidatorTest {
       names = {"COMPLETED", "CANCELED"})
   public void userShouldNotBeAbleToCompleteIfTaskIsNotActive(final TaskState taskState) {
     // given
-    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
+    final TaskEntity task =
+        new TaskEntity().setAssignee(TEST_USER).setState(taskState).setId("123");
 
     // when - then
     verifyNoInteractions(userReader);
     assertThatThrownBy(() -> instance.validateCanComplete(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not active");
+        .hasMessage(
+            """
+            { "title": "TASK_IS_NOT_ACTIVE",
+              "detail": "Task is not active",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
@@ -139,24 +166,37 @@ public class TaskValidatorTest {
     final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
-        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanComplete(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not assigned to TestUser");
+        .hasMessage(
+            """
+            { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+              "detail": "Task is not assigned to TestUser",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
   public void userCanNotCompleteTaskIfAssigneeIsNull() {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+    final TaskEntity task =
+        new TaskEntity().setAssignee(null).setState(TaskState.CREATED).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanComplete(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not assigned");
+        .hasMessage(
+            """
+            { "title": "TASK_NOT_ASSIGNED",
+              "detail": "Task is not assigned",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
@@ -219,12 +259,21 @@ public class TaskValidatorTest {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final TaskEntity taskBefore =
-        new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
+        new TaskEntity()
+            .setAssignee("previously assigned user")
+            .setState(TaskState.CREATED)
+            .setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(taskBefore, false))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is already assigned");
+        .hasMessage(
+            """
+            { "title": "TASK_ALREADY_ASSIGNED",
+              "detail": "Task is already assigned",
+              "instance": "/v1/tasks/123/assign"
+            }
+            """);
   }
 
   @ParameterizedTest
@@ -233,12 +282,19 @@ public class TaskValidatorTest {
       names = {"COMPLETED", "CANCELED"})
   public void userShouldNotBeAbleToClaimTaskIfTaskIsNotActive(final TaskState taskState) {
     // given
-    final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(taskState).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(task, true))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not active");
+        .hasMessage(
+            """
+            { "title": "TASK_IS_NOT_ACTIVE",
+              "detail": "Task is not active",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @Test
@@ -246,12 +302,18 @@ public class TaskValidatorTest {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task =
-        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(task, true))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is already assigned");
+        .hasMessage(
+            """
+            { "title": "TASK_ALREADY_ASSIGNED",
+              "detail": "Task is already assigned",
+              "instance": "/v1/tasks/123/assign"
+            }
+            """);
   }
 
   /** allowOverrideAssignment works only for API user case. */
@@ -260,24 +322,37 @@ public class TaskValidatorTest {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final TaskEntity task =
-        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+        new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanAssign(task, true))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is already assigned");
+        .hasMessage(
+            """
+            { "title": "TASK_ALREADY_ASSIGNED",
+              "detail": "Task is already assigned",
+              "instance": "/v1/tasks/123/assign"
+            }
+            """);
   }
 
   @Test
   public void usersShouldNotBeAbleToUnassignNotAssignedTask() {
     // given
-    final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
+    final TaskEntity task =
+        new TaskEntity().setAssignee(null).setState(TaskState.CREATED).setId("123");
 
     // when - then
     verifyNoInteractions(userReader);
     assertThatThrownBy(() -> instance.validateCanUnassign(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not assigned");
+        .hasMessage(
+            """
+            { "title": "TASK_NOT_ASSIGNED",
+              "detail": "Task is not assigned",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   @ParameterizedTest
@@ -286,12 +361,19 @@ public class TaskValidatorTest {
       names = {"COMPLETED", "CANCELED"})
   public void userShouldNotBeAbleToUnassignTaskIfTaskIsNotActive(final TaskState taskState) {
     // given
-    final TaskEntity task = new TaskEntity().setAssignee("AnotherTestUser").setState(taskState);
+    final TaskEntity task =
+        new TaskEntity().setAssignee("AnotherTestUser").setState(taskState).setId("123");
 
     // when - then
     assertThatThrownBy(() -> instance.validateCanUnassign(task))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Task is not active");
+        .hasMessage(
+            """
+            { "title": "TASK_IS_NOT_ACTIVE",
+              "detail": "Task is not active",
+              "instance": "/v1/tasks/123/unassign"
+            }
+            """);
   }
 
   protected UserDTO getTestUser() {
