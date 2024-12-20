@@ -18,8 +18,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 
-@ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
-@SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
+// @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
+// @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
 public class Main {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
