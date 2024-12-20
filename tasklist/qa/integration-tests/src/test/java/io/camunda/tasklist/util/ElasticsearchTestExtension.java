@@ -164,29 +164,12 @@ public class ElasticsearchTestExtension
 
   @Override
   public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), testCheck, supplier, arguments);
-  }
-
-  @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType, final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), testCheck, null, arguments);
+    processRecordsAndWaitFor(testCheck, null, arguments);
   }
 
   @Override
   public void processRecordsAndWaitFor(
-      final Collection<RecordsReader> readers,
-      final TestCheck testCheck,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
+      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
     int waitingRound = 0;
     final int maxRounds = 50;
     boolean found = testCheck.test(arguments);

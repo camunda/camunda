@@ -161,7 +161,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             .source(
                 SearchSourceBuilder.searchSource().query(finalQuery).fetchField(TaskTemplate.KEY));
     try {
-      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+      return ElasticsearchUtil.scrollUserTaskKeysToList(searchRequest, esClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -542,8 +542,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     if (query.getFollowUpDate() != null) {
       followUpQ =
           rangeQuery(TaskTemplate.FOLLOW_UP_DATE)
-              .from(query.getFollowUpDate().getFrom())
-              .to(query.getFollowUpDate().getTo());
+              .gte(query.getFollowUpDate().getFrom())
+              .lte(query.getFollowUpDate().getTo());
     }
 
     QueryBuilder dueDateQ = null;
@@ -551,7 +551,7 @@ public class TaskStoreElasticSearch implements TaskStore {
       dueDateQ =
           rangeQuery(TaskTemplate.DUE_DATE)
               .from(query.getDueDate().getFrom())
-              .to(query.getDueDate().getTo());
+              .lte(query.getDueDate().getTo());
     }
     QueryBuilder implementationQ = null;
     if (query.getImplementation() != null) {
