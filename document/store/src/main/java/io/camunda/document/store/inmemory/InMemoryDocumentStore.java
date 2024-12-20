@@ -50,6 +50,10 @@ public class InMemoryDocumentStore implements DocumentStore {
     final var fileName = Optional.ofNullable(request.metadata().fileName()).orElse(id);
     final var contentInputStream = request.contentInputStream();
     final byte[] content;
+    final var contentType =
+        Optional.ofNullable(request.metadata())
+            .map(DocumentMetadataModel::contentType)
+            .orElse(null);
     try {
       content = contentInputStream.readAllBytes();
       contentInputStream.close();
@@ -57,7 +61,7 @@ public class InMemoryDocumentStore implements DocumentStore {
       return CompletableFuture.completedFuture(
           Either.left(new DocumentError.InvalidInput("Failed to read content")));
     }
-    documents.put(id, new InMemoryDocumentContent(content, request.metadata().contentType()));
+    documents.put(id, new InMemoryDocumentContent(content, contentType));
     final var updatedMetadata =
         new DocumentMetadataModel(
             request.metadata().contentType(),
