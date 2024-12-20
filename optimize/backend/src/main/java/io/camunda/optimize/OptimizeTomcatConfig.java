@@ -177,4 +177,56 @@ public class OptimizeTomcatConfig {
     }
     return contextPath;
   }
+
+  private SSLHostConfig getSslHostConfig() {
+    final SSLHostConfig sslHostConfig = new SSLHostConfig();
+    sslHostConfig.setHostName(configurationService.getContainerHost());
+
+    final SSLHostConfigCertificate cert =
+        new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
+    cert.setCertificateKeystoreFile(configurationService.getContainerKeystoreLocation());
+    cert.setCertificateKeystorePassword(configurationService.getContainerKeystorePassword());
+    sslHostConfig.addCertificate(cert);
+
+    return sslHostConfig;
+  }
+
+  private void enableGzipSupport(final Connector connector) {
+    connector.setProperty("compression", "on");
+    connector.setProperty("compressionMinSize", "23");
+    connector.setProperty("compressionNoCompressionMethods", ""); // all methods
+    connector.setProperty("useSendfile", "false");
+    connector.setProperty("compressableMimeType", String.join(",", COMPRESSED_MIME_TYPES));
+  }
+
+  private void applyCommonConfiguration(final Connector connector) {
+    connector.setXpoweredBy(false); // do not send server version header
+    enableGzipSupport(connector);
+    connector.setProperty(
+        "maxHttpRequestHeaderSize",
+        String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
+    connector.setProperty(
+        "maxHttpResponseHeaderSize",
+        String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
+  }
+
+  private void configureHttpConnector(final Connector connector) {
+    applyCommonConfiguration(connector);
+    connector.setScheme("http");
+    connector.setSecure(false);
+  }
+
+  public void configureHttpsConnector(final Connector connector) {
+    applyCommonConfiguration(connector);
+    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
+    connector.setScheme("https");
+    connector.setSecure(true);
+
+    connector.setProperty("protocol", HTTP11_NIO_PROTOCOL);
+    if (configurationService.getContainerHttp2Enabled()) {
+      connector.addUpgradeProtocol(new Http2Protocol());
+    }
+
+    connector.addSslHostConfig(getSslHostConfig());
+  }
 }
