@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
@@ -32,7 +33,7 @@ public class AwsDocumentStoreProviderTest {
 
       // this mock is used to bypass the auto config of S3Client.create()
       mockedFactory
-          .when(() -> AwsDocumentStoreFactory.create(bucketName, bucketTtl, "", any()))
+          .when(() -> AwsDocumentStoreFactory.create(eq(bucketName), eq(bucketTtl), eq(""), any()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
