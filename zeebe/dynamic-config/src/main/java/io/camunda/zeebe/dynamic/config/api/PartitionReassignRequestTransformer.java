@@ -19,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
@@ -140,8 +139,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var primary =
         newMetadata.getPrimary().orElse(newMetadata.members().stream().findAny().orElseThrow());
     operations.add(
-        new PartitionBootstrapOperation(
-            primary, partitionId, newMetadata.getPriority(primary), ExportersConfig.empty()));
+        new PartitionBootstrapOperation(primary, partitionId, newMetadata.getPriority(primary)));
 
     // Join each remaining members to the partition
     for (final MemberId member : newMetadata.members()) {
@@ -170,7 +168,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var membersToLeave =
         oldMetadata.members().stream()
             .filter(member -> !newMetadata.members().contains(member))
-            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId))
+            .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId, false))
             .toList();
     final var membersToChangePriority =
         oldMetadata.members().stream()

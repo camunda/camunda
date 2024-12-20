@@ -65,11 +65,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId,
-                  priority,
-                  localMemberId,
-                  ExportersConfig.empty(),
-                  partitionChangeExecutor)
+                  partitionId, priority, localMemberId, partitionChangeExecutor)
               .init(configurationWithActivePartition);
 
       // then
@@ -81,11 +77,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId + 1,
-                  priority,
-                  localMemberId,
-                  ExportersConfig.empty(),
-                  partitionChangeExecutor)
+                  partitionId + 1, priority, localMemberId, partitionChangeExecutor)
               .init(initialConfiguration);
 
       // then
@@ -100,11 +92,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId,
-                  priority,
-                  localMemberId,
-                  ExportersConfig.empty(),
-                  partitionChangeExecutor)
+                  partitionId, priority, localMemberId, partitionChangeExecutor)
               .init(configurationWithInactiveMember);
 
       // then
@@ -124,11 +112,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId,
-                  priority,
-                  localMemberId,
-                  ExportersConfig.empty(),
-                  partitionChangeExecutor)
+                  partitionId, priority, localMemberId, partitionChangeExecutor)
               .init(topologyWithPartitionBootstrapping);
 
       // then
@@ -143,11 +127,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId,
-                  priority,
-                  localMemberId,
-                  ExportersConfig.empty(),
-                  partitionChangeExecutor)
+                  partitionId, priority, localMemberId, partitionChangeExecutor)
               .init(initialConfiguration);
 
       // then
@@ -165,21 +145,24 @@ final class PartitionBootstrapApplierTest {
     }
 
     @Test
-    void shouldUpdatePartitionStateWithExporterToBootstrapping() {
+    void shouldBootstrapWithGivenPartitionConfig() {
       // given
       final ClusterConfiguration configWithoutPartition =
           ClusterConfiguration.init()
               .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
-      final ExportersConfig exportersConfig =
-          new ExportersConfig(
-              Map.of(
-                  "exporter",
-                  new ExporterState(1, ExporterState.State.ENABLED, Optional.of("config"))));
+      final DynamicPartitionConfig partitionConfig =
+          DynamicPartitionConfig.init()
+              .updateExporting(
+                  new ExportersConfig(
+                      Map.of(
+                          "exporter",
+                          new ExporterState(
+                              1, ExporterState.State.ENABLED, Optional.of("config")))));
 
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  1, priority, localMemberId, exportersConfig, partitionChangeExecutor)
+                  1, priority, localMemberId, Optional.of(partitionConfig), partitionChangeExecutor)
               .init(configWithoutPartition);
 
       // then
@@ -192,7 +175,45 @@ final class PartitionBootstrapApplierTest {
               1,
               state ->
                   PartitionStateAssert.assertThat(state)
-                      .hasConfig(new DynamicPartitionConfig(exportersConfig))
+                      .hasConfig(partitionConfig)
+                      .hasState(State.BOOTSTRAPPING)
+                      .hasPriority(priority));
+    }
+
+    @Test
+    void shouldBootstrapWithConfigFromPartition1WhenNoConfigGiven() {
+      // given
+      final DynamicPartitionConfig nonEmptyPartitionConfig =
+          DynamicPartitionConfig.init()
+              .updateExporting(
+                  new ExportersConfig(
+                      Map.of(
+                          "exporter",
+                          new ExporterState(
+                              1, ExporterState.State.ENABLED, Optional.of("config")))));
+      final ClusterConfiguration clusterConfiguration =
+          ClusterConfiguration.init()
+              .addMember(localMemberId, MemberState.initializeAsActive(Map.of()))
+              .updateMember(
+                  localMemberId,
+                  m -> m.addPartition(1, PartitionState.active(priority, nonEmptyPartitionConfig)));
+
+      // when
+      final var result =
+          new PartitionBootstrapApplier(
+                  2, priority, localMemberId, Optional.empty(), partitionChangeExecutor)
+              .init(clusterConfiguration);
+
+      // then
+      EitherAssert.assertThat(result).isRight();
+      ClusterConfigurationAssert.assertThatClusterTopology(result.get().apply(clusterConfiguration))
+          .describedAs("Partition added at state bootstrapping")
+          .member(localMemberId)
+          .hasPartitionSatisfying(
+              2,
+              state ->
+                  PartitionStateAssert.assertThat(state)
+                      .hasConfig(nonEmptyPartitionConfig)
                       .hasState(State.BOOTSTRAPPING)
                       .hasPriority(priority));
     }
@@ -214,11 +235,7 @@ final class PartitionBootstrapApplierTest {
 
       partitionBootstrapApplier =
           new PartitionBootstrapApplier(
-              partitionId,
-              priority,
-              localMemberId,
-              ExportersConfig.empty(),
-              partitionChangeExecutor);
+              partitionId, priority, localMemberId, partitionChangeExecutor);
       // when
       operationInitialized =
           partitionBootstrapApplier.init(initialTopology).get().apply(initialTopology);

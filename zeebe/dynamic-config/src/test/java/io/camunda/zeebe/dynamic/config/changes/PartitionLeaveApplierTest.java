@@ -35,7 +35,7 @@ final class PartitionLeaveApplierTest {
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
   final PartitionLeaveApplier partitionLeaveApplier =
-      new PartitionLeaveApplier(1, localMemberId, partitionChangeExecutor);
+      new PartitionLeaveApplier(1, localMemberId, false, partitionChangeExecutor);
   private final ClusterConfiguration initialClusterConfiguration =
       ClusterConfiguration.init()
           .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
@@ -80,10 +80,15 @@ final class PartitionLeaveApplierTest {
             .updateMember(
                 localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .startConfigurationChange(List.of(new DeleteHistoryOperation(localMemberId)));
+    final var partitionLeaveApplierForPurge =
+        new PartitionLeaveApplier(1, localMemberId, true, partitionChangeExecutor);
 
     // when
     final var resultingTopology =
-        partitionLeaveApplier.init(topologyWithOneReplica).get().apply(topologyWithOneReplica);
+        partitionLeaveApplierForPurge
+            .init(topologyWithOneReplica)
+            .get()
+            .apply(topologyWithOneReplica);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(resultingTopology)

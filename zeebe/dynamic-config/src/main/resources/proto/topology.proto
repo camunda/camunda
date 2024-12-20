@@ -122,6 +122,7 @@ message PartitionJoinOperation {
 
 message PartitionLeaveOperation {
   int32 partitionId = 1;
+  bool isClusterPurge = 2;
 }
 
 message PartitionReconfigurePriorityOperation {
@@ -148,7 +149,7 @@ message PartitionEnableExporterOperation {
 message PartitionBootstrapOperation {
   int32 partitionId = 1;
   int32 priority = 2;
-  ExportersConfig exporterConfig = 3;
+  optional PartitionConfig config = 3;
 }
 
 message StartPartitionScaleUpOperation {

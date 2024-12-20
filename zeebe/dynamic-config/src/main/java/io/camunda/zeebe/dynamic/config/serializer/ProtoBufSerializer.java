@@ -392,7 +392,8 @@ public class ProtoBufSerializer
       case final PartitionLeaveOperation leaveOperation ->
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
-                  .setPartitionId(leaveOperation.partitionId()));
+                  .setPartitionId(leaveOperation.partitionId())
+                  .setIsClusterPurge(leaveOperation.isClusterPurge()));
       case final MemberJoinOperation memberJoinOperation ->
           builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -425,12 +426,7 @@ public class ProtoBufSerializer
           builder.setPartitionEnableExporter(
               encodeEnabledExporterOperation(enableExporterOperation));
       case final PartitionBootstrapOperation bootstrapOperation ->
-          builder.setPartitionBootstrap(
-              Topology.PartitionBootstrapOperation.newBuilder()
-                  .setPartitionId(bootstrapOperation.partitionId())
-                  .setPriority(bootstrapOperation.priority())
-                  .setExporterConfig(encodeExportingConfig(bootstrapOperation.exporters()))
-                  .build());
+          builder.setPartitionBootstrap(encodePartitionBootstrapOperation(bootstrapOperation));
       case final DeleteHistoryOperation deleteHistoryOperation ->
           builder.setDeleteHistory(Topology.DeleteHistoryOperation.newBuilder().build());
       case StartPartitionScaleUpOperation(
@@ -441,6 +437,18 @@ public class ProtoBufSerializer
                   .setDesiredPartitionCount(desiredPartitionCount)
                   .build());
     }
+    return builder.build();
+  }
+
+  private Topology.PartitionBootstrapOperation encodePartitionBootstrapOperation(
+      final PartitionBootstrapOperation bootstrapOperation) {
+    final var builder =
+        Topology.PartitionBootstrapOperation.newBuilder()
+            .setPartitionId(bootstrapOperation.partitionId())
+            .setPriority(bootstrapOperation.priority());
+    bootstrapOperation
+        .config()
+        .ifPresent(config -> builder.setConfig(encodePartitionConfig(config)));
     return builder.build();
   }
 
@@ -584,7 +592,8 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasPartitionLeave()) {
       return new PartitionLeaveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
-          topologyChangeOperation.getPartitionLeave().getPartitionId());
+          topologyChangeOperation.getPartitionLeave().getPartitionId(),
+          topologyChangeOperation.getPartitionLeave().getIsClusterPurge());
     } else if (topologyChangeOperation.hasMemberJoin()) {
       return new MemberJoinOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else if (topologyChangeOperation.hasMemberLeave()) {
@@ -622,12 +631,16 @@ public class ProtoBufSerializer
           enableExporterOperation.getExporterId(),
           initializeFrom);
     } else if (topologyChangeOperation.hasPartitionBootstrap()) {
+      final var bootstrapOperation = topologyChangeOperation.getPartitionBootstrap();
+      final Optional<DynamicPartitionConfig> partitionConfig =
+          bootstrapOperation.hasConfig()
+              ? Optional.of(decodePartitionConfig(bootstrapOperation.getConfig()))
+              : Optional.empty();
       return new PartitionBootstrapOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
-          topologyChangeOperation.getPartitionBootstrap().getPartitionId(),
-          topologyChangeOperation.getPartitionBootstrap().getPriority(),
-          decodeExportingConfig(
-              topologyChangeOperation.getPartitionBootstrap().getExporterConfig()));
+          bootstrapOperation.getPartitionId(),
+          bootstrapOperation.getPriority(),
+          partitionConfig);
     } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
       return new StartPartitionScaleUpOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
