@@ -41,12 +41,14 @@ import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -985,6 +987,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCompletionDate()).isNull();
                 assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
               });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
 
       final var resultUnassign =
           mockMvcHelper.doRequest(
