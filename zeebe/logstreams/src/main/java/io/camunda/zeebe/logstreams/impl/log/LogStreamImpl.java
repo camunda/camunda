@@ -21,6 +21,9 @@ import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 public final class LogStreamImpl implements LogStream, CommitListener {
@@ -37,6 +40,8 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private final FlowControl flowControl;
   private final Sequencer sequencer;
   private volatile boolean closed;
+
+  private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
   LogStreamImpl(
       final String logName,
@@ -60,6 +65,15 @@ public final class LogStreamImpl implements LogStream, CommitListener {
             new SequencerMetrics(partitionId),
             flowControl);
     logStorage.addCommitListener(this);
+
+    executor.scheduleAtFixedRate(
+        () -> {
+          LOG.info("Metrics for partition {} - Log {}", partitionId, logName);
+          LOG.info(logStreamMetrics.getMetrics());
+        },
+        30,
+        30,
+        TimeUnit.SECONDS);
   }
 
   @Override
@@ -69,6 +83,8 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     readers.forEach(LogStreamReader::close);
     logStorage.removeCommitListener(this);
     logStreamMetrics.remove();
+
+    executor.shutdownNow();
   }
 
   @Override

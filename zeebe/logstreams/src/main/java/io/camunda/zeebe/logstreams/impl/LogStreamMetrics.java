@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.logstreams.impl;
 
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForContext;
-import static io.camunda.zeebe.logstreams.impl.LogStreamMetrics.FlowControlOutComeLabels.labelForReason;
-
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -286,7 +283,7 @@ public final class LogStreamMetrics {
       receivedRequests.inc();
     }
     FLOW_CONTROL_OUTCOME
-        .labels(partitionLabel, labelForContext(context), "accepted")
+        .labels(partitionLabel, FlowControlOutComeLabels.labelForContext(context), "accepted")
         .inc(batchMetadata.size());
   }
 
@@ -301,7 +298,10 @@ public final class LogStreamMetrics {
       droppedRequests.inc();
     }
     FLOW_CONTROL_OUTCOME
-        .labels(partitionLabel, labelForContext(context), labelForReason(reason))
+        .labels(
+            partitionLabel,
+            FlowControlOutComeLabels.labelForContext(context),
+            FlowControlOutComeLabels.labelForReason(reason))
         .inc(batchMetadata.size());
   }
 
@@ -321,53 +321,105 @@ public final class LogStreamMetrics {
     writeRateLimit.set(value);
   }
 
-  static final class FlowControlOutComeLabels {
+  public String getMetrics() {
+    final StringBuilder sb =
+        new StringBuilder("Metrics for Partition ")
+            .append(partitionLabel)
+            .append("\nDropped Requests Count: ");
+    sb.append(droppedRequests.get());
 
-    private FlowControlOutComeLabels() {}
+    sb.append("\nRequest Limit: ");
+    sb.append(requestLimit.get());
 
-    static String[] allReasonLabels() {
-      return EnumSet.allOf(Rejection.class).stream()
-          .map(FlowControlOutComeLabels::labelForReason)
-          .toArray(String[]::new);
+    sb.append("\nTotal Received Requests: ");
+    sb.append(receivedRequests.get());
+
+    sb.append("\nInflight Requests: ");
+    sb.append(inflightRequests.get());
+
+    sb.append("\nDeferred Appends: ");
+    sb.append(deferredAppends.get());
+
+    sb.append("\nTried Appends: ");
+    sb.append(triedAppends.get());
+
+    sb.append("\nInflight Appends: ");
+    sb.append(inflightAppends.get());
+
+    sb.append("\nLast Committed: ");
+    sb.append(lastCommitted.get());
+
+    sb.append("\nLast Written: ");
+    sb.append(lastWritten.get());
+
+    sb.append("\nCommit Latency: ");
+    sb.append(commitLatency.get());
+
+    sb.append("\nAppend Latency: ");
+    sb.append(appendLatency.get());
+
+    sb.append("\nExporting Rate: ");
+    sb.append(exportingRate.get());
+
+    sb.append("\nWrite Rate Max Limit: ");
+    sb.append(writeRateMaxLimit.get());
+
+    sb.append("\nWrite Rate Limit: ");
+    sb.append(writeRateLimit.get());
+
+    sb.append("\nPartition Load: ");
+    sb.append(partitionLoad.get());
+
+    return sb.toString();
+  }
+}
+
+final class FlowControlOutComeLabels {
+
+  private FlowControlOutComeLabels() {}
+
+  static String[] allReasonLabels() {
+    return EnumSet.allOf(Rejection.class).stream()
+        .map(FlowControlOutComeLabels::labelForReason)
+        .toArray(String[]::new);
+  }
+
+  static String[] allContextLabels() {
+    final var labels = WriteContextLabel.values();
+    final var labelNames = new String[labels.length];
+    for (var i = 0; i < labels.length; i++) {
+      labelNames[i] = labels[i].labelName;
     }
+    return labelNames;
+  }
 
-    static String[] allContextLabels() {
-      final var labels = WriteContextLabel.values();
-      final var labelNames = new String[labels.length];
-      for (var i = 0; i < labels.length; i++) {
-        labelNames[i] = labels[i].labelName;
-      }
-      return labelNames;
-    }
+  static String labelForReason(final Rejection reason) {
+    return switch (reason) {
+      case WriteRateLimitExhausted -> "writeRateLimitExhausted";
+      case RequestLimitExhausted -> "requestLimitExhausted";
+    };
+  }
 
-    static String labelForReason(final Rejection reason) {
-      return switch (reason) {
-        case WriteRateLimitExhausted -> "writeRateLimitExhausted";
-        case RequestLimitExhausted -> "requestLimitExhausted";
-      };
-    }
+  static String labelForContext(final WriteContext context) {
+    return switch (context) {
+      case final UserCommand ignored -> WriteContextLabel.UserCommand.labelName;
+      case final ProcessingResult ignored -> WriteContextLabel.ProcessingResult.labelName;
+      case final InterPartition ignored -> WriteContextLabel.InterPartition.labelName;
+      case final Scheduled ignored -> WriteContextLabel.Scheduled.labelName;
+      case final Internal ignored -> WriteContextLabel.Internal.labelName;
+    };
+  }
 
-    static String labelForContext(final WriteContext context) {
-      return switch (context) {
-        case final UserCommand ignored -> WriteContextLabel.UserCommand.labelName;
-        case final ProcessingResult ignored -> WriteContextLabel.ProcessingResult.labelName;
-        case final InterPartition ignored -> WriteContextLabel.InterPartition.labelName;
-        case final Scheduled ignored -> WriteContextLabel.Scheduled.labelName;
-        case final Internal ignored -> WriteContextLabel.Internal.labelName;
-      };
-    }
+  private enum WriteContextLabel {
+    UserCommand("userCommand"),
+    ProcessingResult("processingResult"),
+    InterPartition("interPartition"),
+    Scheduled("scheduled"),
+    Internal("internal");
+    private final String labelName;
 
-    private enum WriteContextLabel {
-      UserCommand("userCommand"),
-      ProcessingResult("processingResult"),
-      InterPartition("interPartition"),
-      Scheduled("scheduled"),
-      Internal("internal");
-      private final String labelName;
-
-      WriteContextLabel(final String labelName) {
-        this.labelName = labelName;
-      }
+    WriteContextLabel(final String labelName) {
+      this.labelName = labelName;
     }
   }
 }
