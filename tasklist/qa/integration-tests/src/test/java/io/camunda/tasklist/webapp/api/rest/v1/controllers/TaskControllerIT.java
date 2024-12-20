@@ -1187,7 +1187,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                       { "title": "TASK_NOT_ASSIGNED",
+                         "detail": "Task is not assigned",
+                         "instance": "/v1/tasks/%s/unassign"
+                       }
+                       """
+                  .formatted(taskId));
     }
 
     @Test
@@ -1212,7 +1219,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                       { "title": "TASK_IS_NOT_ACTIVE",
+                         "detail": "Task is not active",
+                         "instance": "/v1/tasks/%s/unassign"
+                       }
+                       """
+                  .formatted(taskId));
     }
   }
 
@@ -1470,7 +1484,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                      { "title": "TASK_IS_NOT_ACTIVE",
+                        "detail": "Task is not active",
+                        "instance": "/v1/tasks/%s/unassign"
+                      }
+                      """
+                  .formatted(taskId));
     }
 
     @Test
@@ -1492,7 +1513,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                       { "title": "TASK_NOT_ASSIGNED",
+                         "detail": "Task is not assigned",
+                         "instance": "/v1/tasks/%s/unassign"
+                       }
+                       """
+                  .formatted(taskId));
     }
 
     @Test
@@ -1517,7 +1545,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned to user_B");
+          .hasMessage(
+              """
+                        { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+                          "detail": "Task is not assigned to user_B",
+                          "instance": "/v1/tasks/%s/unassign"
+                        }
+                        """
+                  .formatted(taskId));
     }
   }
 
@@ -1567,7 +1602,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+           { "title": "TASK_IS_NOT_ACTIVE",
+             "detail": "Task is not active",
+             "instance": "/v1/tasks/%s/unassign"
+           }
+           """
+                  .formatted(taskId));
     }
 
     @Test
@@ -1590,7 +1632,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                      { "title": "TASK_NOT_ASSIGNED",
+                        "detail": "Task is not assigned",
+                        "instance": "/v1/tasks/%s/unassign"
+                      }
+                      """
+                  .formatted(taskId));
     }
 
     @Test
@@ -1639,7 +1688,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned to user_B");
+          .hasMessage(
+              """
+                      { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+                        "detail": "Task is not assigned to user_B",
+                        "instance": "/v1/tasks/%s/unassign"
+                      }
+                      """
+                  .formatted(taskId));
     }
 
     @Test
