@@ -24,7 +24,7 @@ public class JobResultCorrections {
   private String followUpDate;
   private List<String> candidateGroups;
   private List<String> candidateUsers;
-  private int priority;
+  private Integer priority;
 
   /**
    * Correct the assignee of the task.
@@ -112,7 +112,7 @@ public class JobResultCorrections {
     return candidateUsers;
   }
 
-  public int getPriority() {
+  public Integer getPriority() {
     return priority;
   }
 }
