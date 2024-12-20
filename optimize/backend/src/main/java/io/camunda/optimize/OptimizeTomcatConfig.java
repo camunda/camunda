@@ -218,7 +218,6 @@ public class OptimizeTomcatConfig {
 
   private void configureHttpConnector(final Connector connector) {
     applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
     connector.setScheme("http");
     connector.setSecure(false);
   }
