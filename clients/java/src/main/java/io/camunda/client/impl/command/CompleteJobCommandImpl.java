@@ -121,6 +121,16 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
+  public CompleteJobCommandStep1 withResult(
+      final UnaryOperator<CompleteJobResult> jobResultModifier) {
+    final CompleteJobResult reconstructedJobResult =
+        new CompleteJobResult()
+            .deny(resultRest.getDenied() != null ? resultRest.getDenied() : false)
+            .correct(reconstructCorrections());
+    return withResult(jobResultModifier.apply(reconstructedJobResult));
+  }
+
+  @Override
   public CompleteJobCommandStep2 deny(final boolean isDenied) {
     resultRest.setDenied(isDenied);
     resultGrpc.setDenied(isDenied);
@@ -140,14 +150,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep2 correct(final UnaryOperator<JobResultCorrections> corrections) {
-    final JobResultCorrections reconstructedCorrections =
-        new JobResultCorrections()
-            .assignee(correctionsRest.getAssignee())
-            .candidateGroups(correctionsRest.getCandidateGroups())
-            .candidateUsers(correctionsRest.getCandidateUsers())
-            .dueDate(correctionsRest.getDueDate())
-            .followUpDate(correctionsRest.getFollowUpDate())
-            .priority(correctionsRest.getPriority());
+    final JobResultCorrections reconstructedCorrections = reconstructCorrections();
     return correct(corrections.apply(reconstructedCorrections));
   }
 
@@ -228,6 +231,16 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep1 resultDone() {
     return this;
+  }
+
+  private JobResultCorrections reconstructCorrections() {
+    return new JobResultCorrections()
+        .assignee(correctionsRest.getAssignee())
+        .candidateGroups(correctionsRest.getCandidateGroups())
+        .candidateUsers(correctionsRest.getCandidateUsers())
+        .dueDate(correctionsRest.getDueDate())
+        .followUpDate(correctionsRest.getFollowUpDate())
+        .priority(correctionsRest.getPriority());
   }
 
   private void onResultChange() {

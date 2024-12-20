@@ -96,6 +96,24 @@ public interface CompleteJobCommandStep1
    */
   CompleteJobCommandStep1 withResult(CompleteJobResult jobResult);
 
+  /**
+   * The result of the completed job as determined by the worker.
+   *
+   * <p>This is a convenience method for {@link #withResult(CompleteJobResult)} that allows you to
+   * set the result using a lambda expression. It provides the current job result as input, so you
+   * can easily modify it. If the job result has not been changed yet, it provides the default.
+   *
+   * <pre>{@code
+   * client.newCompleteJobCommand(jobKey)
+   *     .withResult(r -> r.deny(true))
+   *     .send();
+   * }</pre>
+   *
+   * @param jobResultModifier function to modify the job result
+   * @return the builder for this command.
+   */
+  CompleteJobCommandStep1 withResult(UnaryOperator<CompleteJobResult> jobResultModifier);
+
   interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
 
     /**
