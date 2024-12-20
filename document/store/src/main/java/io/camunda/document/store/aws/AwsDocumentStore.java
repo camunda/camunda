@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -129,17 +130,15 @@ public class AwsDocumentStore implements DocumentStore {
           GetObjectRequest.builder().key(resolveKey(documentId)).bucket(bucketName).build();
 
       final HeadObjectResponse documentInfo = getDocumentInfo(documentId);
-      if (documentInfo == null) {
-        return Either.left(new DocumentNotFound(documentId));
-      }
-      if (isDocumentExpired(documentInfo.metadata(), documentId)) {
+      if (documentInfo != null && isDocumentExpired(documentInfo.metadata(), documentId)) {
         return Either.left(new DocumentNotFound(documentId));
       }
 
       final ResponseInputStream<GetObjectResponse> responseResponseInputStream =
           client.getObject(getObjectRequest);
 
-      final String contentType = documentInfo.contentType();
+      final String contentType =
+          Optional.ofNullable(documentInfo).map(HeadObjectResponse::contentType).orElse(null);
 
       return Either.right(new DocumentContent(responseResponseInputStream, contentType));
     } catch (final Exception e) {
