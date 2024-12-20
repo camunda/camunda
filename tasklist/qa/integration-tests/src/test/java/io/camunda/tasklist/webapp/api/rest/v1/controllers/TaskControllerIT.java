@@ -1113,7 +1113,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("""
+          .hasMessage(
+              """
                     { "title": "TASK_ALREADY_ASSIGNED",
                       "detail": "Task is already assigned"
                     }
