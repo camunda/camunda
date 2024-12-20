@@ -238,6 +238,40 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldCompleteJobWithResultObjectDeniedFalse() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newCompleteCommand(job).withResult(new CompleteJobResult().deny(false)).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
+    assertThat(request.getResult().getDenied()).isFalse();
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultObjectDeniedTrue() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client.newCompleteCommand(job).withResult(new CompleteJobResult().deny(true)).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
+    assertThat(request.getResult().getDenied()).isTrue();
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
   public void shouldCompleteJobWithResultDone() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
@@ -412,6 +446,7 @@ public final class CompleteJobTest extends ClientTest {
         .newCompleteCommand(job)
         .withResult(
             new CompleteJobResult()
+                .deny(false)
                 .correctAssignee("Test")
                 .correctDueDate(null)
                 .correctFollowUpDate("")
@@ -428,6 +463,7 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setDenied(false)
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")

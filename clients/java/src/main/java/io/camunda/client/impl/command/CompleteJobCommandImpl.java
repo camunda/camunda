@@ -115,6 +115,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
     return withResult()
+        .deny(jobResult.isDenied())
         .correctAssignee(jobResult.getAssignee())
         .correctDueDate(jobResult.getDueDate())
         .correctFollowUpDate(jobResult.getFollowUpDate())

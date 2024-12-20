@@ -19,6 +19,8 @@ import java.util.List;
 
 public class CompleteJobResult {
 
+  private boolean isDenied;
+
   private String assignee;
   private String dueDate;
   private String followUpDate;
@@ -27,6 +29,21 @@ public class CompleteJobResult {
   private int priority;
 
   public CompleteJobResult() {}
+
+  /**
+   * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example,
+   * a Task Listener can deny the completion of a task by setting this flag to true. In this
+   * example, the completion of a task is represented by a job that the worker can complete as
+   * denied. As a result, the completion request is rejected and the task remains active. Defaults
+   * to false.
+   *
+   * @param isDenied true if the work must be denied, false otherwise
+   * @return this job result
+   */
+  public CompleteJobResult deny(final boolean isDenied) {
+    this.isDenied = isDenied;
+    return this;
+  }
 
   /**
    * Correct the assignee of the task.
@@ -92,6 +109,10 @@ public class CompleteJobResult {
   public CompleteJobResult correctPriority(final int priority) {
     this.priority = priority;
     return this;
+  }
+
+  public boolean isDenied() {
+    return isDenied;
   }
 
   public String getAssignee() {

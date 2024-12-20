@@ -165,6 +165,25 @@ class CompleteJobRestTest extends ClientRestTest {
     assertThat(request.getResult().getDenied()).isEqualTo(denied);
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCompleteWithResultObject(final boolean denied) {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(new CompleteJobResult().deny(denied))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+  }
+
   @Test
   void shouldCompleteJobWithResultDone() {
     // given
@@ -324,6 +343,7 @@ class CompleteJobRestTest extends ClientRestTest {
         .newCompleteCommand(jobKey)
         .withResult(
             new CompleteJobResult()
+                .deny(false)
                 .correctAssignee("Test")
                 .correctDueDate(null)
                 .correctFollowUpDate("")
@@ -339,6 +359,7 @@ class CompleteJobRestTest extends ClientRestTest {
         new JobCompletionRequest()
             .result(
                 new JobResult()
+                    .denied(false)
                     .corrections(
                         new JobResultCorrections()
                             .assignee("Test")
