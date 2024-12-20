@@ -1031,6 +1031,26 @@
         <version>${version.spring-boot}</version>
       </dependency>
 
+      <!-- TODO: remove when https://github.com/camunda/camunda/pull/25062 is merged -->
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>10.1.34</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>10.1.34</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-el</artifactId>
+        <version>10.1.34</version>
+      </dependency>
+      <!-- TODO: remove when https://github.com/camunda/camunda/pull/25062 is merged -->
+
       <!--
            In order resolve dependency issues with wiremock and spring-boot-dependencies
            make sure this is declared before spring boot dependencies.
