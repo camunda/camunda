@@ -8,7 +8,6 @@
 package io.camunda.tasklist.zeebeimport;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +17,11 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import java.time.Duration;
+import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +48,16 @@ public class ZeebeImportMultipleProcessesIT extends TasklistZeebeIntegrationTest
     final String bpmnProcessId1 = "Process_0diikxu";
     final String bpmnProcessId2 = "Process_18z2cdf";
 
-    tester.deployProcess("two_processes.bpmn").waitUntil().processIsDeployed();
+    tester.deployProcess("two_processes.bpmn");
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .until(
+            () ->
+                processStore
+                        .getProcesses(List.of(bpmnProcessId1, bpmnProcessId2), "<default>", null)
+                        .size()
+                    == 2);
 
     assertThat(mockMvcHelper.doRequest(get(TasklistURIs.PROCESSES_URL_V1)))
         .hasOkHttpStatus()
@@ -57,11 +69,21 @@ public class ZeebeImportMultipleProcessesIT extends TasklistZeebeIntegrationTest
             Tuple.tuple(bpmnProcessId2, "Business Operation B"));
 
     final ProcessEntity processEntity1 = processStore.getProcessByBpmnProcessId(bpmnProcessId1);
-    assertEquals(1, processEntity1.getFlowNodes().size());
-    assertEquals("Do task A", processEntity1.getFlowNodes().get(0).getName());
+    Assertions.assertThat(processEntity1.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getName().equals("Do task A"))
+        .isNotEmpty();
+
+    Assertions.assertThat(processEntity1.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getName().equals("Do task B"))
+        .isEmpty();
 
     final ProcessEntity processEntity2 = processStore.getProcessByBpmnProcessId(bpmnProcessId2);
-    assertEquals(1, processEntity2.getFlowNodes().size());
-    assertEquals("Do task B", processEntity2.getFlowNodes().get(0).getName());
+    Assertions.assertThat(processEntity2.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getName().equals("Do task B"))
+        .isNotEmpty();
+
+    Assertions.assertThat(processEntity2.getFlowNodes())
+        .filteredOn(flowNode -> flowNode.getName().equals("Do task A"))
+        .isEmpty();
   }
 }

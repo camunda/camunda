@@ -7,27 +7,72 @@
  */
 package io.camunda.migration.identity.config;
 
+import io.camunda.identity.sdk.Identity;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import java.io.IOException;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 
 @Configuration
 public class ManagementIdentityConnector {
 
-  @Bean // will be closed automatically
+  @Bean
+  public Identity identity(final IdentityMigrationProperties identityMigrationProperties) {
+    final var properties = identityMigrationProperties.getManagementIdentity();
+    final var configuration =
+        new IdentityConfiguration(
+            properties.getBaseUrl(),
+            properties.getIssuerBackendUrl(),
+            properties.getIssuerBackendUrl(),
+            properties.getClientId(),
+            properties.getClientSecret(),
+            properties.getAudience(),
+            properties.getIssuerType());
+    return new Identity(configuration);
+  }
+
+  @Bean
   public ManagementIdentityClient managementIdentityClient(
       final RestTemplateBuilder builder,
-      final IdentityMigrationProperties identityMigrationProperties) {
+      final IdentityMigrationProperties identityMigrationProperties,
+      final Identity identity) {
     final var properties = identityMigrationProperties.getManagementIdentity();
     final var restTemplate =
         builder
             .rootUri(properties.getBaseUrl())
-            .defaultHeader("Authorization", String.format("Bearer %s", properties.getM2mToken()))
+            .interceptors(new M2MTokenInterceptor(identity, properties.getAudience()))
             .defaultHeader("Content-Type", "application/json")
             .defaultHeader("Accept", "application/json")
             .build();
     return new ManagementIdentityClient(
         restTemplate, identityMigrationProperties.getOrganizationId());
+  }
+
+  public static final class M2MTokenInterceptor implements ClientHttpRequestInterceptor {
+
+    final Identity identity;
+    final String audience;
+
+    public M2MTokenInterceptor(final Identity identity, final String audience) {
+      this.identity = identity;
+      this.audience = audience;
+    }
+
+    @Override
+    public ClientHttpResponse intercept(
+        final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution)
+        throws IOException {
+      final String token = identity.authentication().requestToken(audience).getAccessToken();
+      final HttpHeaders headers = request.getHeaders();
+      headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+      return execution.execute(request, body);
+    }
   }
 }

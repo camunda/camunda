@@ -11,13 +11,15 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
 public class GcpDocumentStoreProvider implements DocumentStoreProvider {
 
   private static final String BUCKET_NAME_PROPERTY = "BUCKET";
 
   @Override
-  public DocumentStore createDocumentStore(final DocumentStoreConfigurationRecord configuration) {
+  public DocumentStore createDocumentStore(
+      final DocumentStoreConfigurationRecord configuration, final ExecutorService executor) {
     final String bucketName =
         Optional.ofNullable(configuration.properties().get(BUCKET_NAME_PROPERTY))
             .orElseThrow(
@@ -28,6 +30,6 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
                             + "': missing required property '"
                             + BUCKET_NAME_PROPERTY
                             + "'"));
-    return new GcpDocumentStore(bucketName);
+    return new GcpDocumentStore(bucketName, executor);
   }
 }

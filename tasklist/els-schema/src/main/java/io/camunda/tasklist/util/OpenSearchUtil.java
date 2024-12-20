@@ -18,6 +18,8 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import jakarta.json.JsonArray;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,6 +30,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -473,6 +476,25 @@ public abstract class OpenSearchUtil {
         (hits) -> result.addAll(map(hits, SEARCH_HIT_ID_TO_STRING));
 
     scrollWith(request, osClient, collectIds, null, null);
+    return result;
+  }
+
+  public static List<String> scrollUserTaskKeysToList(
+      final SearchRequest.Builder request, final OpenSearchClient osClient) throws IOException {
+    final List<String> result = new ArrayList<>();
+
+    final Consumer<List<Hit>> collectKeys =
+        (hits) ->
+            result.addAll(
+                map(
+                    hits,
+                    hit ->
+                        ((JsonData) hit.fields().get(TaskTemplate.KEY))
+                            .to(JsonArray.class)
+                            .getFirst()
+                            .toString()));
+
+    scrollWith(request, osClient, collectKeys, null, null);
     return result;
   }
 

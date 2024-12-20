@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Profile;
  */
 @Conditional(OpenSearchCondition.class)
 @Configuration
-@Profile("optimize & !operate")
+@Profile("optimize & !operate & standalone")
 // only active if standalone, otherwise the operate one is used
 public class OpensearchOptimizeBackupRepository {
 

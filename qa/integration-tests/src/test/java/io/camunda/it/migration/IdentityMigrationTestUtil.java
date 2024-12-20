@@ -7,15 +7,11 @@
  */
 package io.camunda.it.migration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
@@ -25,20 +21,20 @@ import org.testcontainers.utility.DockerImageName;
  */
 @SuppressWarnings("resource")
 final class IdentityMigrationTestUtil {
+  public static final String IDENTITY_CLIENT = "migration-app";
+  public static final String IDENTITY_CLIENT_SECRET = "secret";
+  public static final String CAMUNDA_IDENTITY_RESOURCE_SERVER = "camunda-identity-resource-server";
   private static final String POSTGRES_HOST = "postgres";
   private static final int POSTGRES_PORT = 5432;
-
   private static final int IDENTITY_PORT = 9999;
   private static final String IDENTITY_DATABASE_NAME = "identity";
   private static final String IDENTITY_DATABASE_USERNAME = "identity";
   private static final String IDENTITY_DATABASE_PASSWORD = "t2L@!AqSMg8%I%NmHM";
-
   private static final String KEYCLOAK_HOST = "keycloak";
   private static final int KEYCLOAK_PORT = 9784;
   private static final String KEYCLOAK_RELATIVE_PATH = "/auth";
   private static final String KEYCLOAK_USER = "admin";
   private static final String KEYCLOAK_PASSWORD = "admin";
-
   private static final Network NETWORK = Network.newNetwork();
 
   static GenericContainer<?> getPostgres() {
@@ -49,6 +45,7 @@ final class IdentityMigrationTestUtil {
         .withEnv("POSTGRES_DB", IDENTITY_DATABASE_NAME)
         .withEnv("POSTGRES_USER", IDENTITY_DATABASE_USERNAME)
         .withEnv("POSTGRES_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("postgres:16.6-alpine")))
         .withStartupTimeout(Duration.ofMinutes(5));
   }
 
@@ -66,6 +63,7 @@ final class IdentityMigrationTestUtil {
         .withEnv("KEYCLOAK_DATABASE_NAME", IDENTITY_DATABASE_NAME)
         .withEnv("KEYCLOAK_DATABASE_USER", IDENTITY_DATABASE_USERNAME)
         .withEnv("KEYCLOAK_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("bitnami/keycloak:25.0.2")))
         .waitingFor(
             new HttpWaitStrategy()
                 .forPort(KEYCLOAK_PORT)
@@ -99,17 +97,18 @@ final class IdentityMigrationTestUtil {
         .withEnv("KEYCLOAK_SETUP_PASSWORD", KEYCLOAK_PASSWORD)
         .withEnv("RESOURCE_PERMISSIONS_ENABLED", "true")
         .withEnv("MULTITENANCY_ENABLED", "true")
-        .withEnv("KEYCLOAK_CLIENTS_0_NAME", "migration-app")
-        .withEnv("KEYCLOAK_CLIENTS_0_ID", "migration-app")
-        .withEnv("KEYCLOAK_CLIENTS_0_SECRET", "secret")
+        .withEnv("KEYCLOAK_CLIENTS_0_NAME", IDENTITY_CLIENT)
+        .withEnv("KEYCLOAK_CLIENTS_0_ID", IDENTITY_CLIENT)
+        .withEnv("KEYCLOAK_CLIENTS_0_SECRET", IDENTITY_CLIENT_SECRET)
         .withEnv("KEYCLOAK_CLIENTS_0_TYPE", "m2m")
         .withEnv(
-            "KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID",
-            "camunda-identity-resource-server")
+            "KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID", CAMUNDA_IDENTITY_RESOURCE_SERVER)
         .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION", "write")
         .withEnv("MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", "true")
         .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
         .withEnv("MIGRATION", "true")
+        .withLogConsumer(
+            new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)))
         .waitingFor(
             new HttpWaitStrategy()
                 .forPort(8082)
@@ -132,27 +131,5 @@ final class IdentityMigrationTestUtil {
 
   static String externalIdentityUrl(final GenericContainer<?> identity) {
     return "http://%s:%d".formatted(identity.getHost(), identity.getMappedPort(IDENTITY_PORT));
-  }
-
-  static String getIdentityAccessToken(final GenericContainer<?> keycloak) {
-    final var objectMapper = new ObjectMapper();
-    try (final var client = HttpClient.newHttpClient()) {
-      final var request =
-          HttpRequest.newBuilder()
-              .uri(
-                  URI.create(
-                      externalKeycloakUrl(keycloak)
-                          + "/realms/camunda-platform/protocol/openid-connect/token?grant_type=client_credentials"))
-              .header("Content-Type", "application/x-www-form-urlencoded")
-              .POST(
-                  BodyPublishers.ofString(
-                      "grant_type=client_credentials&client_id=migration-app&client_secret=secret&audience=camunda-identity-resource-server"))
-              .build();
-
-      final var response = client.send(request, BodyHandlers.ofString());
-      return objectMapper.readTree(response.body()).get("access_token").asText();
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to request identity access token", e);
-    }
   }
 }

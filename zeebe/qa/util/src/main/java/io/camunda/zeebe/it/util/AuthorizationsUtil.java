@@ -94,6 +94,10 @@ public class AuthorizationsUtil implements CloseableSilently {
     return createClient(gateway, username, password);
   }
 
+  public CamundaClient createClientGrpc(final String username, final String password) {
+    return createClientGrpc(gateway, username, password);
+  }
+
   public CamundaClient createUserAndClient(
       final String username, final String password, final Permissions... permissions) {
     createUserWithPermissions(username, password, permissions);
@@ -106,6 +110,32 @@ public class AuthorizationsUtil implements CloseableSilently {
         .newClientBuilder()
         .preferRestOverGrpc(true)
         .defaultRequestTimeout(Duration.ofSeconds(15))
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put(
+                    "Authorization",
+                    "Basic %s"
+                        .formatted(
+                            Base64.getEncoder()
+                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
+                return false;
+              }
+            })
+        .build();
+  }
+
+  public static CamundaClient createClientGrpc(
+      final TestGateway<?> gateway, final String username, final String password) {
+    return gateway
+        .newClientBuilder()
+        .defaultRequestTimeout(Duration.ofSeconds(15))
+        .preferRestOverGrpc(false)
         .credentialsProvider(
             new CredentialsProvider() {
               @Override

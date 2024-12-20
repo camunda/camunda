@@ -20,6 +20,7 @@ import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.Either.Left;
@@ -29,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +59,15 @@ public class GcpDocumentStoreTest {
     // given
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(mock(Blob.class));
 
@@ -76,7 +87,15 @@ public class GcpDocumentStoreTest {
     // given
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
     when(storage.createFrom(BlobInfo.newBuilder(BUCKET_NAME, "documentId").build(), inputStream))
@@ -98,7 +117,15 @@ public class GcpDocumentStoreTest {
     // given
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
-        new DocumentCreationRequest("documentId", inputStream, null);
+        new DocumentCreationRequest(
+            "documentId",
+            inputStream,
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
 

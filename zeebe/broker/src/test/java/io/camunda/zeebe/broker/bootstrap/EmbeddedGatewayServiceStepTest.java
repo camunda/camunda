@@ -34,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 class EmbeddedGatewayServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
@@ -84,7 +85,8 @@ class EmbeddedGatewayServiceStepTest {
               Collections.emptyList(),
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
-              mock(UserServices.class));
+              mock(UserServices.class),
+              mock(PasswordEncoder.class));
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -155,7 +157,8 @@ class EmbeddedGatewayServiceStepTest {
               Collections.emptyList(),
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
-              mock(UserServices.class));
+              mock(UserServices.class),
+              mock(PasswordEncoder.class));
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
