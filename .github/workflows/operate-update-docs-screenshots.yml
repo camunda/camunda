@@ -31,7 +31,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@7354c06fc7829b5843712046fd62893bcc3c04a1
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@a6b3758b2f033a5227a4f4406ab16783c2656323
         with:
           directory: operate/client
       - name: Install node dependencies
