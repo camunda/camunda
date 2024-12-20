@@ -5,11 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.service;
+package io.camunda.migration.identity.transformer;
 
 import io.camunda.migration.identity.dto.Role.Permission;
-import io.camunda.security.auth.Authentication;
-import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
@@ -17,25 +15,19 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthorizationService {
-  private final AuthorizationServices authorizationService;
+public class AuthorizationTransformer {
 
-  public AuthorizationService(
-      final AuthorizationServices authorizationService,
-      final Authentication.Builder servicesAuthenticationBuilder) {
-    this.authorizationService =
-        authorizationService.withAuthentication(servicesAuthenticationBuilder.build());
-  }
-
-  public void patch(final long ownerKey, final List<Permission> oldPermissions) {
-
-    final var newPermissions =
+  public List<PatchAuthorizationRequest> transform(
+      final long ownerKey, final List<Permission> oldPermissions) {
+    final var groupedPermissions =
         oldPermissions.stream()
             .flatMap(this::transformToAuthorizations)
             .collect(
@@ -46,16 +38,16 @@ public class AuthorizationService {
                         Collectors.mapping(
                             ResourceTypePermissionTypeResourceId::resourceId,
                             Collectors.toSet()))));
+    return groupedPermissions.entrySet().stream()
+        .map(entry -> createPatchAuthorizationRequest(ownerKey, entry))
+        .toList();
+  }
 
-    final var futures =
-        newPermissions.entrySet().stream()
-            .map(
-                entry ->
-                    authorizationService.patchAuthorization(
-                        new PatchAuthorizationRequest(
-                            ownerKey, PermissionAction.ADD, entry.getKey(), entry.getValue())))
-            .toList();
-    futures.forEach(CompletableFuture::join);
+  private PatchAuthorizationRequest createPatchAuthorizationRequest(
+      final long ownerKey,
+      final Entry<AuthorizationResourceType, Map<PermissionType, Set<String>>> entry) {
+    return new PatchAuthorizationRequest(
+        ownerKey, PermissionAction.ADD, entry.getKey(), entry.getValue());
   }
 
   private Stream<ResourceTypePermissionTypeResourceId> transformToAuthorizations(

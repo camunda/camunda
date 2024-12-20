@@ -11,26 +11,33 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.service.AuthorizationService;
-import io.camunda.migration.identity.service.RoleService;
+import io.camunda.migration.identity.transformer.AuthorizationTransformer;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.auth.Authentication;
+import io.camunda.service.AuthorizationServices;
+import io.camunda.service.RoleServices;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RoleMigrationHandler implements MigrationHandler {
-  private final RoleService roleService;
-  private final AuthorizationService authorizationService;
+  private final RoleServices roleServices;
+  private final AuthorizationServices authorizationServices;
+  private final AuthorizationTransformer authorizationTransformer;
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
 
   public RoleMigrationHandler(
-      final RoleService roleService,
-      final AuthorizationService authorizationService,
+      final RoleServices roleServices,
+      final AuthorizationTransformer authorizationTransformer,
+      final Authentication servicesAuthentication,
+      final AuthorizationServices authorizationServices,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer) {
-    this.roleService = roleService;
-    this.authorizationService = authorizationService;
+    this.authorizationServices = authorizationServices;
+    this.roleServices = roleServices.withAuthentication(servicesAuthentication);
+    this.authorizationTransformer = authorizationTransformer;
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
   }
@@ -45,15 +52,21 @@ public class RoleMigrationHandler implements MigrationHandler {
   }
 
   private MigrationStatusUpdateRequest createRole(final Role role) {
-    final RoleEntity roleEntity;
+    final long roleKey;
     try {
-      roleEntity = roleService.createOrFetch(role.name());
+      roleKey =
+          roleServices
+              .findRole(role.name())
+              .map(RoleEntity::roleKey)
+              .orElseGet(() -> roleServices.createRole(role.name()).join().getRoleKey());
     } catch (final Exception e) {
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);
     }
 
     try {
-      authorizationService.patch(roleEntity.roleKey(), role.permissions());
+      authorizationTransformer.transform(roleKey, role.permissions()).stream()
+          .map(authorizationServices::patchAuthorization)
+          .forEach(CompletableFuture::join);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);
