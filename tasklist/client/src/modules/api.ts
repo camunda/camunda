@@ -26,7 +26,7 @@ function getFullURL(url: string) {
 const api = {
   v1: {
     login: (body: {username: string; password: string}) => {
-      return new Request(getFullURL('/api/login'), {
+      return new Request(getFullURL('/login'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',
         body: new URLSearchParams(body).toString(),
@@ -36,7 +36,7 @@ const api = {
       });
     },
     logout: () =>
-      new Request(getFullURL('/api/logout'), {
+      new Request(getFullURL('/logout'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'POST',
         headers: {
@@ -124,7 +124,7 @@ const api = {
       );
     },
     getCurrentUser: () =>
-      new Request(getFullURL('/v1/internal/users/current'), {
+      new Request(getFullURL('/v2/authentication/me'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'GET',
         headers: {

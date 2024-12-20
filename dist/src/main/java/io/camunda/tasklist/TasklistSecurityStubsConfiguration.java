@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.operate.webapp.security.UserService;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
@@ -43,21 +43,24 @@ public class TasklistSecurityStubsConfiguration {
 
   /** UserReader that gets user details using Operate's UserService */
   @Bean
-  public UserReader stubUserReader(final UserService userService) {
+  public UserReader stubUserReader(final CamundaUserService camundaUserService) {
     return new UserReader() {
 
       @Override
       public UserDTO getCurrentUser() {
-        final var operateUserDto = userService.getCurrentUser();
-        return new UserDTO()
-            .setUserId(operateUserDto.getUserId())
-            .setDisplayName(operateUserDto.getDisplayName())
-            .setPermissions(List.of(Permission.READ, Permission.WRITE));
+        return getCurrentUserBy(null).orElse(null);
       }
 
       @Override
       public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
-        return Optional.empty();
+        return Optional.ofNullable(camundaUserService.getCurrentUser())
+            .map(
+                currentUser ->
+                    new UserDTO()
+                        .setUserId(currentUser.userId())
+                        .setDisplayName(currentUser.displayName())
+                        .setRoles(currentUser.roles())
+                        .setPermissions(List.of(Permission.READ, Permission.WRITE)));
       }
 
       @Override
