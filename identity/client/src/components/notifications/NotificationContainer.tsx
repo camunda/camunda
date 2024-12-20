@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { spacing03 } from "@carbon/themes";
+import { spacing03 } from "@carbon/elements";
 import { FC, ReactNode } from "react";
 import { TransitionGroup } from "react-transition-group";
 
