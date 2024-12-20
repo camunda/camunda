@@ -129,7 +129,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             .fields(f -> f.field(TaskTemplate.KEY));
 
     try {
-      return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
+      return OpenSearchUtil.scrollUserTaskKeysToList(searchRequest, osClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -581,8 +581,8 @@ public class TaskStoreOpenSearch implements TaskStore {
       followUpQ.range(
           r ->
               r.field(TaskTemplate.FOLLOW_UP_DATE)
-                  .from(JsonData.of(query.getFollowUpDate().getFrom()))
-                  .to(JsonData.of(query.getFollowUpDate().getTo())));
+                  .gte(JsonData.of(query.getFollowUpDate().getFrom()))
+                  .lte(JsonData.of(query.getFollowUpDate().getTo())));
     }
 
     Query.Builder dueDateQ = null;
@@ -591,8 +591,8 @@ public class TaskStoreOpenSearch implements TaskStore {
       dueDateQ.range(
           r ->
               r.field(TaskTemplate.DUE_DATE)
-                  .from(JsonData.of(query.getDueDate().getFrom()))
-                  .to(JsonData.of(query.getDueDate().getTo())));
+                  .gte(JsonData.of(query.getDueDate().getFrom()))
+                  .lte(JsonData.of(query.getDueDate().getTo())));
     }
 
     Query.Builder implementationQ = null;
