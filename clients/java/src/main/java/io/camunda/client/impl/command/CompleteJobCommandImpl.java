@@ -22,6 +22,7 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
 import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpClient;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
@@ -57,7 +57,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final JsonMapper jsonMapper;
   private JobResult.Builder resultGrpc;
   private io.camunda.client.protocol.rest.JobResult resultRest;
-  private JobResultCorrections.Builder correctionsGrpc;
+  private io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.Builder
+      correctionsGrpc;
   private io.camunda.client.protocol.rest.JobResultCorrections correctionsRest;
 
   public CompleteJobCommandImpl(
@@ -106,7 +107,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     httpRequestObject.setResult(resultRest);
 
     resultGrpc = JobResult.newBuilder();
-    correctionsGrpc = JobResultCorrections.newBuilder();
+    correctionsGrpc =
+        io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.newBuilder();
     resultGrpc.setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
     return this;
@@ -114,15 +116,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
-    return withResult()
-        .deny(jobResult.isDenied())
-        .correctAssignee(jobResult.getAssignee())
-        .correctDueDate(jobResult.getDueDate())
-        .correctFollowUpDate(jobResult.getFollowUpDate())
-        .correctCandidateGroups(jobResult.getCandidateGroups())
-        .correctCandidateUsers(jobResult.getCandidateUsers())
-        .correctPriority(jobResult.getPriority())
-        .resultDone();
+    return withResult().deny(jobResult.isDenied()).correct(jobResult.getCorrections()).resultDone();
   }
 
   @Override
@@ -131,6 +125,16 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     resultGrpc.setDenied(isDenied);
     onResultChange();
     return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep2 correct(final JobResultCorrections corrections) {
+    return correctAssignee(corrections.getAssignee())
+        .correctCandidateGroups(corrections.getCandidateGroups())
+        .correctCandidateUsers(corrections.getCandidateUsers())
+        .correctDueDate(corrections.getDueDate())
+        .correctFollowUpDate(corrections.getFollowUpDate())
+        .correctPriority(corrections.getPriority());
   }
 
   @Override

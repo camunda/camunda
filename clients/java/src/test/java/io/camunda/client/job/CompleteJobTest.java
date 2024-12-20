@@ -485,6 +485,57 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldCompleteJobWithResultCorrectionsObject() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(
+            new CompleteJobResult()
+                .deny(false)
+                .correct(
+                    new io.camunda.client.api.command.JobResultCorrections()
+                        .assignee("Test")
+                        .dueDate(null)
+                        .followUpDate("")
+                        .candidateUsers(Arrays.asList("User A", "User B"))
+                        .priority(80)))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setDenied(false)
+                    .setCorrections(
+                        JobResultCorrections.newBuilder()
+                            .setAssignee("Test")
+                            .clearDueDate()
+                            .setFollowUpDate("")
+                            .setCandidateUsers(
+                                StringList.newBuilder()
+                                    .addAllValues(Arrays.asList("User A", "User B"))
+                                    .build())
+                            .clearCandidateGroups()
+                            .setPriority(80)
+                            .build())
+                    .build())
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
   public void shouldCompleteJobWithDefaultResultCorrection() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);

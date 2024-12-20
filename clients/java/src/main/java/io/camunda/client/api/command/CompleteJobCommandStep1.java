@@ -110,6 +110,14 @@ public interface CompleteJobCommandStep1
     CompleteJobCommandStep2 deny(boolean isDenied);
 
     /**
+     * Correct the task.
+     *
+     * @param corrections corrections to apply
+     * @return this job result
+     */
+    CompleteJobCommandStep2 correct(JobResultCorrections corrections);
+
+    /**
      * Correct the assignee of the task.
      *
      * @param assignee assignee of the task

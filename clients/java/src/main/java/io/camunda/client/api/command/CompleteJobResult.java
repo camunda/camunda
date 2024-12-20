@@ -20,15 +20,11 @@ import java.util.List;
 public class CompleteJobResult {
 
   private boolean isDenied;
+  private JobResultCorrections corrections;
 
-  private String assignee;
-  private String dueDate;
-  private String followUpDate;
-  private List<String> candidateGroups;
-  private List<String> candidateUsers;
-  private int priority;
-
-  public CompleteJobResult() {}
+  public CompleteJobResult() {
+    corrections = new JobResultCorrections();
+  }
 
   /**
    * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example,
@@ -46,13 +42,28 @@ public class CompleteJobResult {
   }
 
   /**
+   * Correct the task.
+   *
+   * @param corrections corrections to apply
+   * @return this job result
+   */
+  public CompleteJobResult correct(final JobResultCorrections corrections) {
+    if (corrections == null) {
+      this.corrections = new JobResultCorrections();
+    } else {
+      this.corrections = corrections;
+    }
+    return this;
+  }
+
+  /**
    * Correct the assignee of the task.
    *
    * @param assignee assignee of the task
    * @return this job result
    */
   public CompleteJobResult correctAssignee(final String assignee) {
-    this.assignee = assignee;
+    corrections.assignee(assignee);
     return this;
   }
 
@@ -63,7 +74,7 @@ public class CompleteJobResult {
    * @return this job result
    */
   public CompleteJobResult correctDueDate(final String dueDate) {
-    this.dueDate = dueDate;
+    corrections.dueDate(dueDate);
     return this;
   }
 
@@ -74,7 +85,7 @@ public class CompleteJobResult {
    * @return this job result
    */
   public CompleteJobResult correctFollowUpDate(final String followUpDate) {
-    this.followUpDate = followUpDate;
+    corrections.followUpDate(followUpDate);
     return this;
   }
 
@@ -85,7 +96,7 @@ public class CompleteJobResult {
    * @return this job result
    */
   public CompleteJobResult correctCandidateGroups(final List<String> candidateGroups) {
-    this.candidateGroups = candidateGroups;
+    corrections.candidateGroups(candidateGroups);
     return this;
   }
 
@@ -96,7 +107,7 @@ public class CompleteJobResult {
    * @return this job result
    */
   public CompleteJobResult correctCandidateUsers(final List<String> candidateUsers) {
-    this.candidateUsers = candidateUsers;
+    corrections.candidateUsers(candidateUsers);
     return this;
   }
 
@@ -107,7 +118,7 @@ public class CompleteJobResult {
    * @return this job result
    */
   public CompleteJobResult correctPriority(final int priority) {
-    this.priority = priority;
+    corrections.priority(priority);
     return this;
   }
 
@@ -115,27 +126,7 @@ public class CompleteJobResult {
     return isDenied;
   }
 
-  public String getAssignee() {
-    return assignee;
-  }
-
-  public String getDueDate() {
-    return dueDate;
-  }
-
-  public String getFollowUpDate() {
-    return followUpDate;
-  }
-
-  public List<String> getCandidateGroups() {
-    return candidateGroups;
-  }
-
-  public List<String> getCandidateUsers() {
-    return candidateUsers;
-  }
-
-  public int getPriority() {
-    return priority;
+  public JobResultCorrections getCorrections() {
+    return corrections;
   }
 }

@@ -18,11 +18,11 @@ package io.camunda.client.job.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.client.protocol.rest.JobResult;
-import io.camunda.client.protocol.rest.JobResultCorrections;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -249,7 +249,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResult()
                     .corrections(
-                        new JobResultCorrections()
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
                             .dueDate("due date")
                             .followUpDate("follow up date")
@@ -285,7 +285,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResult()
                     .corrections(
-                        new JobResultCorrections()
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
                             .dueDate("due date")
                             .followUpDate("")
@@ -322,7 +322,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResult()
                     .corrections(
-                        new JobResultCorrections()
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
                             .dueDate(null)
                             .followUpDate(null)
@@ -361,7 +361,47 @@ class CompleteJobRestTest extends ClientRestTest {
                 new JobResult()
                     .denied(false)
                     .corrections(
-                        new JobResultCorrections()
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(null)
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsObject() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            new CompleteJobResult()
+                .correct(
+                    new JobResultCorrections()
+                        .assignee("Test")
+                        .dueDate(null)
+                        .followUpDate("")
+                        .candidateUsers(Arrays.asList("User A", "User B"))
+                        .priority(80)))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .denied(false)
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
                             .dueDate(null)
                             .followUpDate("")
@@ -388,7 +428,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResult()
                     .corrections(
-                        new JobResultCorrections()
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
                             .dueDate(null)
                             .followUpDate(null)
