@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 @EnableConfigurationProperties(IdentityMigrationProperties.class)
 @Component("identity-migrator")
-public class MigrationRunner implements Migrator {
+final class MigrationRunner implements Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
 
@@ -26,16 +26,19 @@ public class MigrationRunner implements Migrator {
   private final TenantMigrationHandler tenantMigrationHandler;
   private final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler;
   private final UserTenantsMigrationHandler userTenantsMigrationHandler;
+  private final GroupTenantsMigrationHandler groupTenantsMigrationHandler;
 
   public MigrationRunner(
       final AuthorizationMigrationHandler authorizationMigrationHandler,
       final TenantMigrationHandler tenantMigrationHandler,
       final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler,
-      final UserTenantsMigrationHandler userTenantsMigrationHandler) {
+      final UserTenantsMigrationHandler userTenantsMigrationHandler,
+      final GroupTenantsMigrationHandler groupTenantsMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
     this.tenantMigrationHandler = tenantMigrationHandler;
     this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
     this.userTenantsMigrationHandler = userTenantsMigrationHandler;
+    this.groupTenantsMigrationHandler = groupTenantsMigrationHandler;
   }
 
   @Override
@@ -51,6 +54,7 @@ public class MigrationRunner implements Migrator {
         tenantMappingRuleMigrationHandler.migrate();
         userTenantsMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
+        groupTenantsMigrationHandler.migrate();
         break;
       } catch (final Exception e) {
         LOGGER.warn("Migration failed, let's retry!", e);
