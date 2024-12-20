@@ -102,16 +102,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep2 withResult() {
-    resultRest = new io.camunda.client.protocol.rest.JobResult();
-    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
-    resultRest.setCorrections(correctionsRest);
-    httpRequestObject.setResult(resultRest);
-
-    resultGrpc = JobResult.newBuilder();
-    correctionsGrpc =
-        io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.newBuilder();
-    resultGrpc.setCorrections(correctionsGrpc);
-    grpcRequestObjectBuilder.setResult(resultGrpc);
+    initJobResult();
     return this;
   }
 
@@ -123,11 +114,24 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   @Override
   public CompleteJobCommandStep1 withResult(
       final UnaryOperator<CompleteJobResult> jobResultModifier) {
+    initJobResult();
     final CompleteJobResult reconstructedJobResult =
         new CompleteJobResult()
             .deny(resultRest.getDenied() != null ? resultRest.getDenied() : false)
             .correct(reconstructCorrections());
     return withResult(jobResultModifier.apply(reconstructedJobResult));
+  }
+
+  private void initJobResult() {
+    resultRest = new io.camunda.client.protocol.rest.JobResult();
+    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
+    resultRest.setCorrections(correctionsRest);
+    httpRequestObject.setResult(resultRest);
+
+    resultGrpc = JobResult.newBuilder();
+    correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
+    resultGrpc.setCorrections(correctionsGrpc);
+    grpcRequestObjectBuilder.setResult(resultGrpc);
   }
 
   @Override
