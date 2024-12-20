@@ -44,8 +44,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -76,7 +76,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
   @BeforeEach
   public void beforeEach() throws IOException {
-    tasklistProperties.getImporter().setImportPositionUpdateInterval(5000);
+    tasklistProperties.getImporter().setImportPositionUpdateInterval(1000);
     CONFIG.url = tasklistProperties.getOpenSearch().getUrl();
     CONFIG.index.prefix = tasklistProperties.getZeebeOpenSearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
@@ -129,7 +129,11 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     // the import position for
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-job"));
+        .until(
+            () -> {
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordReaderIsCompleted("1-job");
+            });
   }
 
   @Test
@@ -355,14 +359,18 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
         .until(
             () -> {
               final var searchRequest =
-                  new CountRequest.Builder()
+                  new SearchRequest.Builder()
                       .index(importPositionIndex.getFullQualifiedName())
+                      .size(100)
                       .build();
-              final var documentCount = openSearchClient.count(searchRequest);
+              final var documents =
+                  openSearchClient.search(searchRequest, ImportPositionEntity.class);
 
-              // all initial import position documents created for each record reader
-
-              return documentCount.count() == recordsReaderHolder.getAllRecordsReaders().size();
+              return documents.hits().hits().stream()
+                      .map(hit -> hit.source())
+                      .filter(importPosition -> !importPosition.getCompleted())
+                      .count()
+                  == recordsReaderHolder.getAllRecordsReaders().size();
             });
   }
 
