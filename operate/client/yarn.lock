@@ -1234,9 +1234,9 @@
     react-markdown "8.0.7"
 
 "@camunda8/sdk@^8.6.8":
-  version "8.6.17"
-  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.17.tgz#4b87fe388c52c5a32c904f0f5f4fe76a2600d471"
-  integrity sha512-qf2Vw/qziFCWynmDvCgaUs+L1Xedu4fzjqX7LaUKTESp8cPfq8Y7vt5tdmek//Ed9Am4SEw6oEn5JQD5rqRuBg==
+  version "8.6.18"
+  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.18.tgz#1206641a9c3139718861493fad035946bdb6ae9c"
+  integrity sha512-WUnGT6+MgoFwh239eWqUkffK6t7P6xCNhXPXFmnijzwA9qujAQxzDL287LEac9eBufFYK52TyQzpk3rQknmH0Q==
   dependencies:
     "@grpc/grpc-js" "1.12.5"
     "@grpc/proto-loader" "0.7.13"
@@ -2991,10 +2991,10 @@
     "@types/prop-types" "*"
     csstype "^3.0.2"
 
-"@types/react@18.3.17":
-  version "18.3.17"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.17.tgz#d86ca0e081c7a5e979b7db175f9515a41038cea7"
-  integrity sha512-opAQ5no6LqJNo9TqnxBKsgnkIYHozW9KSTlFVoSUJYh1Fl/sswkEoqIugRSm7tbh6pABtYjGAjW+GOS23j8qbw==
+"@types/react@18.3.18":
+  version "18.3.18"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-18.3.18.tgz#9b382c4cd32e13e463f97df07c2ee3bbcd26904b"
+  integrity sha512-t4yC+vtgnkYjNSKlFx1jkAhH8LgTo2N/7Qvi83kdEaUtMDiwpbLAktKDaAMlRcJ5eSxZkH74eEGt1ky31d7kfQ==
   dependencies:
     "@types/prop-types" "*"
     csstype "^3.0.2"
