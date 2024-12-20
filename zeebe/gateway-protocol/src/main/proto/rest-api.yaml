@@ -3112,7 +3112,7 @@ paths:
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
         The message is not buffered.
-        Use the publish message endpoint to send messages that can be buffered. 
+        Use the publish message endpoint to send messages that can be buffered.
       requestBody:
         required: true
         content:
@@ -7320,6 +7320,13 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        processDefinitionId:
+          type: string
+          description: The ID of the process definition that created the document.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance that created the document.
         customProperties:
           type: object
           description: Custom properties of the document.

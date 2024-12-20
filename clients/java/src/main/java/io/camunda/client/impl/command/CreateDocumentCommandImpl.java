@@ -168,4 +168,16 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
     this.storeId = storeId;
     return this;
   }
+
+  @Override
+  public CreateDocumentCommandStep2 processDefinitionId(final String processDefinitionId) {
+    super.getMetadata().setProcessDefinitionId(processDefinitionId);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentCommandStep2 processInstanceKey(final long processInstanceKey) {
+    super.getMetadata().setProcessInstanceKey(processInstanceKey);
+    return this;
+  }
 }

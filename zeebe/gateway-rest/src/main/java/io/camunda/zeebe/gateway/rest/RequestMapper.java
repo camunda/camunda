@@ -607,7 +607,13 @@ public class RequestMapper {
 
     if (metadata == null) {
       return new DocumentMetadataModel(
-          file.getContentType(), file.getSubmittedFileName(), null, file.getSize(), Map.of());
+          file.getContentType(),
+          file.getSubmittedFileName(),
+          null,
+          file.getSize(),
+          null,
+          null,
+          Map.of());
     }
     final OffsetDateTime expiresAt;
     if (metadata.getExpiresAt() == null || metadata.getExpiresAt().isBlank()) {
@@ -621,7 +627,13 @@ public class RequestMapper {
         Optional.ofNullable(metadata.getContentType()).orElse(file.getContentType());
 
     return new DocumentMetadataModel(
-        contentType, fileName, expiresAt, file.getSize(), metadata.getCustomProperties());
+        contentType,
+        fileName,
+        expiresAt,
+        file.getSize(),
+        metadata.getProcessDefinitionId(),
+        metadata.getProcessInstanceKey(),
+        metadata.getCustomProperties());
   }
 
   private static DeployResourcesRequest createDeployResourceRequest(
