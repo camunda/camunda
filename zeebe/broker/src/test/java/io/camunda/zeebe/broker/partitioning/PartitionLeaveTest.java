@@ -224,6 +224,7 @@ final class PartitionLeaveTest {
             atomixCluster,
             brokerClient,
             new SecurityConfiguration(),
+            null,
             null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

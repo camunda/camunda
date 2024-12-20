@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
  * Entry point for the broker modules by using the the {@link io.camunda.application.Profile#BROKER}
@@ -55,6 +56,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   private Broker broker;
 
@@ -70,7 +72,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final PrometheusMeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       // The UserServices class is not available if you want to start-up the Standalone Broker
-      @Autowired(required = false) final UserServices userServices) {
+      @Autowired(required = false) final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -81,6 +84,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.meterRegistry = meterRegistry;
     this.securityConfiguration = securityConfiguration;
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Bean
@@ -106,7 +110,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             brokerClient,
             meterRegistry,
             securityConfiguration,
-            userServices);
+            userServices,
+            passwordEncoder);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

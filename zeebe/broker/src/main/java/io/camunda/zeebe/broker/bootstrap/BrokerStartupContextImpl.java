@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
@@ -60,6 +61,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -88,7 +90,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -103,6 +106,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.meterRegistry = requireNonNull(meterRegistry);
     this.securityConfiguration = requireNonNull(securityConfiguration);
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -119,7 +123,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final SecurityConfiguration securityConfiguration,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
 
     this(
         brokerInfo,
@@ -135,7 +140,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         shutdownTimeout,
         new SimpleMeterRegistry(),
         securityConfiguration,
-        userServices);
+        userServices,
+        passwordEncoder);
   }
 
   @Override
@@ -356,5 +362,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public UserServices getUserServices() {
     return userServices;
+  }
+
+  @Override
+  public PasswordEncoder getPasswordEncoder() {
+    return passwordEncoder;
   }
 }
