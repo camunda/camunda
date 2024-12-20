@@ -28,6 +28,7 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
@@ -80,6 +81,7 @@ class TaskServiceTest {
   @Mock private AssigneeMigrator assigneeMigrator;
   @Mock private TaskValidator taskValidator;
   @Mock private TasklistServicesAdapter tasklistServicesAdapter;
+  @Mock private TasklistProperties tasklistProperties;
 
   @InjectMocks private TaskService instance;
 
@@ -110,6 +112,36 @@ class TaskServiceTest {
             .setId("123")
             .setTaskState(TaskState.CREATED)
             .setSortValues(new String[] {"123", "456"})
+            .setImplementation(TaskImplementation.JOB_WORKER)
+            .setPriority(50);
+
+    when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(List.of(providedTask));
+
+    // When
+    final var result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).containsExactly(expectedTask);
+  }
+
+  @Test
+  void shouldConvertAssigneeToLowerCaseForSaaS() {
+    // Given
+    when(tasklistProperties.isSelfManaged()).thenReturn(false);
+    final var taskQuery = new TaskQueryDTO().setSearchAfter(new String[] {"123", "456"});
+    final var providedTask =
+        new TaskSearchView()
+            .setId("123")
+            .setState(TaskState.CREATED)
+            .setAssignee("tesT@camunda.com")
+            .setSortValues(new String[] {"123", "456"})
+            .setImplementation(TaskImplementation.JOB_WORKER);
+    final var expectedTask =
+        new TaskDTO()
+            .setId("123")
+            .setTaskState(TaskState.CREATED)
+            .setSortValues(new String[] {"123", "456"})
+            .setAssignee("test@camunda.com")
             .setImplementation(TaskImplementation.JOB_WORKER)
             .setPriority(50);
 
@@ -322,6 +354,7 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
+    when(tasklistProperties.isSelfManaged()).thenReturn(true);
 
     // When
     final var result =
@@ -329,7 +362,9 @@ class TaskServiceTest {
 
     // Then
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
-    assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
+    assertThat(result)
+        .isEqualTo(
+            TaskDTO.createFrom(assignedTask, objectMapper, tasklistProperties.isSelfManaged()));
   }
 
   @Test
@@ -338,6 +373,7 @@ class TaskServiceTest {
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
     when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
+    when(tasklistProperties.isSelfManaged()).thenReturn(true);
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -417,7 +453,7 @@ class TaskServiceTest {
 
     // Then
     verify(taskValidator).validateCanUnassign(taskBefore);
-    assertThat(result).isEqualTo(TaskDTO.createFrom(unassignedTask, objectMapper));
+    assertThat(result).isEqualTo(TaskDTO.createFrom(unassignedTask, objectMapper, true));
   }
 
   @Test
@@ -447,7 +483,7 @@ class TaskServiceTest {
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
     verify(variableService).persistTaskVariables(taskId, variables, true);
     verify(variableService).deleteDraftTaskVariables(taskId);
-    assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
+    assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper, true));
   }
 
   @Test
@@ -477,7 +513,7 @@ class TaskServiceTest {
     verify(tasklistServicesAdapter).completeUserTask(eq(taskBefore), any());
     verify(variableService).persistTaskVariables(taskId, variables, true);
     verify(variableService).deleteDraftTaskVariables(taskId);
-    assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper));
+    assertThat(result).isEqualTo(TaskDTO.createFrom(completedTask, objectMapper, true));
   }
 
   @Test
@@ -493,7 +529,7 @@ class TaskServiceTest {
 
     // Then
     verify(taskValidator).validateCanUnassign(taskBefore);
-    assertThat(result).isEqualTo(TaskDTO.createFrom(unassignedTask, objectMapper));
+    assertThat(result).isEqualTo(TaskDTO.createFrom(unassignedTask, objectMapper, true));
   }
 
   @Test
@@ -527,6 +563,7 @@ class TaskServiceTest {
 
     problemDetail.setDetail("detail");
 
+    when(tasklistProperties.isSelfManaged()).thenReturn(true);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     when(user.getUserId()).thenReturn(providedAssignee);
@@ -555,6 +592,7 @@ class TaskServiceTest {
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
 
+    when(tasklistProperties.isSelfManaged()).thenReturn(true);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
@@ -564,6 +602,6 @@ class TaskServiceTest {
 
     // Then
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
-    assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
+    assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper, true));
   }
 }

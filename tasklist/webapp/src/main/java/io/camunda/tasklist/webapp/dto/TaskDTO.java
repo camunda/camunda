@@ -290,12 +290,16 @@ public final class TaskDTO {
     return this;
   }
 
-  public static TaskDTO createFrom(final TaskEntity taskEntity, final ObjectMapper objectMapper) {
-    return createFrom(taskEntity, null, objectMapper);
+  public static TaskDTO createFrom(
+      final TaskEntity taskEntity, final ObjectMapper objectMapper, final Boolean isSelfManaged) {
+    return createFrom(taskEntity, null, objectMapper, isSelfManaged);
   }
 
   public static TaskDTO createFrom(
-      final TaskEntity taskEntity, final Object[] sortValues, final ObjectMapper objectMapper) {
+      final TaskEntity taskEntity,
+      final Object[] sortValues,
+      final ObjectMapper objectMapper,
+      final Boolean isSelfManaged) {
     final TaskDTO taskDTO =
         new TaskDTO()
             .setCreationTime(objectMapper.convertValue(taskEntity.getCreationTime(), String.class))
@@ -304,7 +308,12 @@ public final class TaskDTO {
             .setId(String.valueOf(taskEntity.getKey()))
             .setProcessInstanceId(taskEntity.getProcessInstanceId())
             .setTaskState(taskEntity.getState())
-            .setAssignee(taskEntity.getAssignee())
+            .setAssignee(
+                isSelfManaged
+                    ? taskEntity.getAssignee()
+                    : (taskEntity.getAssignee() != null
+                        ? taskEntity.getAssignee().toLowerCase()
+                        : null))
             .setBpmnProcessId(taskEntity.getBpmnProcessId())
             .setProcessDefinitionId(taskEntity.getProcessDefinitionId())
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
@@ -330,7 +339,8 @@ public final class TaskDTO {
   public static TaskDTO createFrom(
       final TaskSearchView taskSearchView,
       final VariableDTO[] variables,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final Boolean isSelfManaged) {
     return new TaskDTO()
         .setCreationTime(objectMapper.convertValue(taskSearchView.getCreationTime(), String.class))
         .setCompletionTime(
@@ -338,7 +348,12 @@ public final class TaskDTO {
         .setId(taskSearchView.getId())
         .setProcessInstanceId(taskSearchView.getProcessInstanceId())
         .setTaskState(taskSearchView.getState())
-        .setAssignee(taskSearchView.getAssignee())
+        .setAssignee(
+            isSelfManaged
+                ? taskSearchView.getAssignee()
+                : (taskSearchView.getAssignee() != null
+                    ? taskSearchView.getAssignee().toLowerCase()
+                    : null))
         .setBpmnProcessId(taskSearchView.getBpmnProcessId())
         .setProcessDefinitionId(taskSearchView.getProcessDefinitionId())
         .setFlowNodeBpmnId(taskSearchView.getFlowNodeBpmnId())

@@ -15,6 +15,7 @@ import static java.util.Objects.requireNonNullElse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.FormStore.FormIdView;
 import io.camunda.tasklist.store.TaskMetricsStore;
@@ -66,6 +67,7 @@ public class TaskService {
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
+  @Autowired private TasklistProperties tasklistProperties;
 
   public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
@@ -123,7 +125,8 @@ public class TaskService {
                     Optional.ofNullable(variablesPerTaskId.get(it.getId()))
                         .map(list -> list.toArray(new VariableDTO[list.size()]))
                         .orElse(null),
-                    objectMapper))
+                    objectMapper,
+                    tasklistProperties.isSelfManaged()))
         .toList();
   }
 
@@ -144,7 +147,7 @@ public class TaskService {
             task.setFormVersion(form.version());
           });
     }
-    return TaskDTO.createFrom(task, objectMapper);
+    return TaskDTO.createFrom(task, objectMapper, tasklistProperties.isSelfManaged());
   }
 
   public TaskDTO assignTask(
@@ -173,7 +176,7 @@ public class TaskService {
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     updateClaimedMetric(claimedTask);
-    return TaskDTO.createFrom(claimedTask, objectMapper);
+    return TaskDTO.createFrom(claimedTask, objectMapper, tasklistProperties.isSelfManaged());
   }
 
   private String determineTaskAssignee(final String assignee) {
@@ -212,7 +215,8 @@ public class TaskService {
             e.getMessage());
       }
 
-      return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+      return TaskDTO.createFrom(
+          completedTaskEntity, objectMapper, tasklistProperties.isSelfManaged());
     } catch (final HttpServerErrorException e) { // Track only internal server errors
       LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
       throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
@@ -257,7 +261,7 @@ public class TaskService {
       taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
       throw e;
     }
-    return TaskDTO.createFrom(taskEntity, objectMapper);
+    return TaskDTO.createFrom(taskEntity, objectMapper, tasklistProperties.isSelfManaged());
   }
 
   private UserDTO getCurrentUser() {
