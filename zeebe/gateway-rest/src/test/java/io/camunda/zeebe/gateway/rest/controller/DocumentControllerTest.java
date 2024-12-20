@@ -63,7 +63,7 @@ public class DocumentControllerTest extends RestControllerTest {
                     "documentId",
                     "default",
                     new DocumentMetadataModel(
-                        contentType.toString(), filename, timestamp, 0L, Map.of()))));
+                        contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
     multipartBodyBuilder.part("file", content).contentType(contentType).filename(filename);
@@ -131,7 +131,7 @@ public class DocumentControllerTest extends RestControllerTest {
                     "documentId",
                     "default",
                     new DocumentMetadataModel(
-                        contentType.toString(), filename, timestamp, 0L, Map.of()))));
+                        contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
     final var metadataToSend = new DocumentMetadata();
     metadataToSend.setContentType(contentType.toString());

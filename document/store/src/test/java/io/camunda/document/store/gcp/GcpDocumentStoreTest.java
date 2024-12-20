@@ -69,6 +69,8 @@ public class GcpDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                null,
+                null,
                 Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(mock(Blob.class));
@@ -97,6 +99,8 @@ public class GcpDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                null,
+                null,
                 Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
@@ -127,6 +131,8 @@ public class GcpDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                null,
+                null,
                 Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
@@ -325,6 +331,8 @@ public class GcpDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                null,
+                null,
                 Map.of("key", "value")));
 
     when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(null);
@@ -403,5 +411,65 @@ public class GcpDocumentStoreTest {
     assertThat(documentOperationResponse).isInstanceOf(Right.class);
     assertThat(((Right<DocumentError, DocumentLink>) documentOperationResponse).value().link())
         .isEqualTo("http://localhost");
+  }
+
+  @Test
+  void shouldStoreProcessDefinitionIdIfPresent() {
+    // given
+    final var documentId = "documentId";
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest(
+            documentId,
+            inputStream,
+            new DocumentMetadataModel(null, null, null, null, "processDefinitionId", null, null));
+
+    when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    assertThat(documentReferenceResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isNotNull();
+    assertThat(
+            ((Right<DocumentError, DocumentReference>) documentReferenceResponse)
+                .value()
+                .metadata()
+                .processDefinitionId())
+        .isEqualTo("processDefinitionId");
+  }
+
+  @Test
+  void shouldStoreProcessInstanceKeyIfPresent() {
+    // given
+    final var documentId = "documentId";
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest(
+            documentId,
+            inputStream,
+            new DocumentMetadataModel(null, null, null, null, null, 123L, null));
+
+    when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    assertThat(documentReferenceResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentReference>) documentReferenceResponse).value())
+        .isNotNull();
+    assertThat(
+            ((Right<DocumentError, DocumentReference>) documentReferenceResponse)
+                .value()
+                .metadata()
+                .processInstanceKey())
+        .isEqualTo(123L);
   }
 }

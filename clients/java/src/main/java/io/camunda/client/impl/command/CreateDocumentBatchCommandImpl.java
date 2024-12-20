@@ -55,6 +55,8 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
   private final RequestConfig.Builder httpRequestConfig;
 
   private final Map<String, String> queryParams = new HashMap<>();
+  private String processDefinitionId;
+  private Long processInstanceKey;
 
   public CreateDocumentBatchCommandImpl(
       final JsonMapper jsonMapper,
@@ -85,6 +87,12 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
         ensureNotNull("fileName", fileName);
         final InputStreamBody body =
             new InputStreamBody(document.getContent(), ContentType.DEFAULT_BINARY, fileName);
+        if (processDefinitionId != null) {
+          document.getMetadata().setProcessDefinitionId(processDefinitionId);
+        }
+        if (processInstanceKey != null) {
+          document.getMetadata().setProcessInstanceKey(processInstanceKey);
+        }
         final String metadataString = jsonMapper.toJson(document.getMetadata());
         final MultipartPart part =
             MultipartPartBuilder.create()
@@ -126,6 +134,19 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
   public CreateDocumentBatchCommandStep1 storeId(final String storeId) {
     ensureNotNull("storeId", storeId);
     queryParams.put("storeId", storeId);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentBatchCommandStep1 processDefinitionId(final String processDefinitionId) {
+    ensureNotNull("processDefinitionId", processDefinitionId);
+    this.processDefinitionId = processDefinitionId;
+    return this;
+  }
+
+  @Override
+  public CreateDocumentBatchCommandStep1 processInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 

@@ -57,6 +57,16 @@ public class DocumentMetadataImpl implements DocumentMetadata {
   }
 
   @Override
+  public String getProcessDefinitionId() {
+    return response.getProcessDefinitionId();
+  }
+
+  @Override
+  public Long getProcessInstanceKey() {
+    return response.getProcessInstanceKey();
+  }
+
+  @Override
   public Map<String, Object> getCustomProperties() {
     return response.getCustomProperties();
   }

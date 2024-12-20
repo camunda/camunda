@@ -53,6 +53,9 @@ public class AwsDocumentStore implements DocumentStore {
   private static final Tag NO_AUTO_DELETE_TAG =
       Tag.builder().key("NoAutoDelete").value("true").build();
 
+  private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
+  private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
+
   private final String bucketName;
   private final S3Client client;
   private final ExecutorService executor;
@@ -237,6 +240,8 @@ public class AwsDocumentStore implements DocumentStore {
             resolveFileName(request.metadata(), documentId),
             request.metadata().expiresAt(),
             request.metadata().size(),
+            request.metadata().processDefinitionId(),
+            request.metadata().processInstanceKey(),
             request.metadata().customProperties());
     return Either.right(new DocumentReference(documentId, updatedMetadata));
   }
@@ -259,6 +264,9 @@ public class AwsDocumentStore implements DocumentStore {
           .customProperties()
           .forEach((key, value) -> metadataMap.put(key, String.valueOf(value)));
     }
+
+    putIfPresent(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId(), metadataMap);
+    putIfPresent(METADATA_PROCESS_INSTANCE_KEY, metadata.processInstanceKey(), metadataMap);
 
     return metadataMap;
   }

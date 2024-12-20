@@ -34,6 +34,20 @@ public interface CreateDocumentBatchCommandStep1
    */
   CreateDocumentBatchCommandStep1 storeId(String storeId);
 
+  /**
+   * Sets the process definition that the document is associated with.
+   *
+   * @param processDefinitionId the process definition ID
+   */
+  CreateDocumentBatchCommandStep1 processDefinitionId(String processDefinitionId);
+
+  /**
+   * Sets the process instance key that the document is associated with.
+   *
+   * @param processInstanceKey the process instance key
+   */
+  CreateDocumentBatchCommandStep1 processInstanceKey(long processInstanceKey);
+
   /** Starts the creation of a new document in a batch. */
   CreateDocumentBatchCommandStep2 addDocument();
 

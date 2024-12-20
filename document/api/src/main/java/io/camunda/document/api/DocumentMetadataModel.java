@@ -15,4 +15,6 @@ public record DocumentMetadataModel(
     String fileName,
     OffsetDateTime expiresAt,
     Long size,
+    String processDefinitionId,
+    Long processInstanceKey,
     Map<String, Object> customProperties) {}
