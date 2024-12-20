@@ -87,7 +87,7 @@ public class JobResultCorrections {
    * @param priority priority of the task
    * @return this corrections
    */
-  public JobResultCorrections priority(final int priority) {
+  public JobResultCorrections priority(final Integer priority) {
     this.priority = priority;
     return this;
   }

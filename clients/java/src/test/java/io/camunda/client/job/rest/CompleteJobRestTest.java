@@ -18,7 +18,6 @@ package io.camunda.client.job.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.CompleteJobResult;
-import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
@@ -383,12 +382,12 @@ class CompleteJobRestTest extends ClientRestTest {
         .withResult(
             new CompleteJobResult()
                 .correct(
-                    new JobResultCorrections()
-                        .assignee("Test")
-                        .dueDate(null)
-                        .followUpDate("")
-                        .candidateUsers(Arrays.asList("User A", "User B"))
-                        .priority(80)))
+                    c ->
+                        c.assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .priority(80)))
         .send()
         .join();
 

@@ -19,6 +19,7 @@ import io.camunda.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 public interface CompleteJobCommandStep1
     extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
@@ -116,6 +117,19 @@ public interface CompleteJobCommandStep1
      * @return this job result
      */
     CompleteJobCommandStep2 correct(JobResultCorrections corrections);
+
+    /**
+     * Correct the task.
+     *
+     * <p>This is a convenience method for {@link #correct(JobResultCorrections)} that allows you to
+     * apply corrections using a lambda expression. It provides the current corrections as input, so
+     * you can easily modify them. If no corrections have been set yet, it provides the default
+     * corrections as input.
+     *
+     * @param corrections function to modify the corrections
+     * @return this job result
+     */
+    CompleteJobCommandStep2 correct(UnaryOperator<JobResultCorrections> corrections);
 
     /**
      * Correct the assignee of the task.

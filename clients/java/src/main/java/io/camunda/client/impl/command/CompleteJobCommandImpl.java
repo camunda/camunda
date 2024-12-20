@@ -40,6 +40,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
@@ -135,6 +136,19 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .correctDueDate(corrections.getDueDate())
         .correctFollowUpDate(corrections.getFollowUpDate())
         .correctPriority(corrections.getPriority());
+  }
+
+  @Override
+  public CompleteJobCommandStep2 correct(final UnaryOperator<JobResultCorrections> corrections) {
+    final JobResultCorrections reconstructedCorrections =
+        new JobResultCorrections()
+            .assignee(correctionsRest.getAssignee())
+            .candidateGroups(correctionsRest.getCandidateGroups())
+            .candidateUsers(correctionsRest.getCandidateUsers())
+            .dueDate(correctionsRest.getDueDate())
+            .followUpDate(correctionsRest.getFollowUpDate())
+            .priority(correctionsRest.getPriority());
+    return correct(corrections.apply(reconstructedCorrections));
   }
 
   @Override

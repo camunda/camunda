@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 public class CompleteJobResult {
 
@@ -54,6 +55,21 @@ public class CompleteJobResult {
       this.corrections = corrections;
     }
     return this;
+  }
+
+  /**
+   * Correct the task.
+   *
+   * <p>This is a convenience method for {@link #correct(JobResultCorrections)} that allows you to
+   * apply corrections using a lambda expression. It provides the current corrections as input, so
+   * you can easily modify them. If no corrections have been set yet, it provides the default
+   * corrections as input.
+   *
+   * @param corrections function to modify the corrections
+   * @return this job result
+   */
+  public CompleteJobResult correct(final UnaryOperator<JobResultCorrections> corrections) {
+    return correct(corrections.apply(this.corrections));
   }
 
   /**
@@ -117,7 +133,7 @@ public class CompleteJobResult {
    * @param priority priority of the task
    * @return this job result
    */
-  public CompleteJobResult correctPriority(final int priority) {
+  public CompleteJobResult correctPriority(final Integer priority) {
     corrections.priority(priority);
     return this;
   }

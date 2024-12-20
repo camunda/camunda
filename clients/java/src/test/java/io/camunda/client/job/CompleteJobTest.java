@@ -497,12 +497,12 @@ public final class CompleteJobTest extends ClientTest {
             new CompleteJobResult()
                 .deny(false)
                 .correct(
-                    new io.camunda.client.api.command.JobResultCorrections()
-                        .assignee("Test")
-                        .dueDate(null)
-                        .followUpDate("")
-                        .candidateUsers(Arrays.asList("User A", "User B"))
-                        .priority(80)))
+                    c ->
+                        c.assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .priority(80)))
         .send()
         .join();
 
