@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.indices.FlushRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
@@ -145,11 +146,16 @@ public class OpenSearchTestExtension
   @Override
   public void refreshTasklistIndices() {
     try {
-      osClient
-          .indices()
-          .refresh(r -> r.index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
+
+      final FlushRequest flush =
+          FlushRequest.of(
+              builder ->
+                  builder
+                      .force(true)
+                      .index(tasklistProperties.getOpenSearch().getIndexPrefix() + "*"));
+      osClient.indices().flush(flush);
     } catch (final Exception t) {
-      LOGGER.error("Could not refresh Tasklist OpenSearch indices", t);
+      LOGGER.error("Could not refresh Tasklist Opensearch indices", t);
     }
   }
 
@@ -169,7 +175,8 @@ public class OpenSearchTestExtension
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (final Exception t) {
         LOGGER.error(
-            "OpenSearch indices (min {}) are not created yet. Waiting {}/{}",
+            "OpenSearch {} indices (min {}) are not created yet. Waiting {}/{}",
+            indexPrefix,
             minCountOfIndices,
             checks,
             maxChecks);
