@@ -7,12 +7,17 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CreateGroupRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
@@ -98,6 +103,24 @@ public class GroupController {
   }
 
   @GetMapping(
+      path = "/{groupKey}/users",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<UserSearchResponse> usersByGroup(
+      @PathVariable("groupKey") final long groupKey) {
+    return searchUsersByGroupKey(groupKey);
+  }
+
+  private ResponseEntity<UserSearchResponse> searchUsersByGroupKey(final long groupKey) {
+    try {
+      // TODO - implement a usersearch by group key
+      final SearchQueryResult result = new Builder().build();
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  @GetMapping(
       path = "/{groupKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<Object> getGroup(@PathVariable final long groupKey) {
@@ -105,7 +128,7 @@ public class GroupController {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toGroup(groupServices.getGroup(groupKey)));
     } catch (final Exception exception) {
-      return RestErrorMapper.mapErrorToResponse(exception);
+      return mapErrorToResponse(exception);
     }
   }
 
@@ -113,18 +136,18 @@ public class GroupController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<GroupSearchQueryResponse> searchGroups(
+  public ResponseEntity<GroupSearchQueryResponse> getUsersByGroupKey(
       @RequestBody(required = false) final GroupSearchQueryRequest query) {
     return SearchQueryRequestMapper.toGroupQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchUsersByGroupKey);
   }
 
-  private ResponseEntity<GroupSearchQueryResponse> search(final GroupQuery query) {
+  private ResponseEntity<GroupSearchQueryResponse> searchUsersByGroupKey(final GroupQuery query) {
     try {
       final var result = groupServices.search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
-      return RestErrorMapper.mapErrorToResponse(e);
+      return mapErrorToResponse(e);
     }
   }
 
