@@ -52,12 +52,12 @@ if ! baseImageInfo="$(docker manifest inspect "${BASE_IMAGE}")"; then
 fi
 
 DIGEST_REGEX="BASE_SHA=\"(sha256\:[a-f0-9\:]+)\""
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../optimize.Dockerfile")
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../optimize-internal-test.Dockerfile")
 if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
     DIGEST="${BASH_REMATCH[1]}"
     echo "Digest found: $DIGEST"
 else
-    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILENAME)"
+    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILE)"
     exit 1
 fi
 
