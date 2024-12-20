@@ -10,12 +10,11 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.DefinitionExceptionResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeImportForbiddenException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class OptimizeImportForbiddenExceptionMapper
@@ -27,8 +26,7 @@ public class OptimizeImportForbiddenExceptionMapper
 
   private final LocalizationService localizationService;
 
-  public OptimizeImportForbiddenExceptionMapper(
-      @Context final LocalizationService localizationService) {
+  public OptimizeImportForbiddenExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -37,7 +35,7 @@ public class OptimizeImportForbiddenExceptionMapper
     LOG.info("Mapping OptimizeImportForbiddenException");
 
     return Response.status(Response.Status.FORBIDDEN)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(getForbiddenDefinitionResponseDto(exception))
         .build();
   }
