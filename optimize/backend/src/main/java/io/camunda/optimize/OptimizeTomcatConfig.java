@@ -79,52 +79,27 @@ public class OptimizeTomcatConfig {
   @Autowired private Environment environment;
 
   @Bean
-  WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatFactoryCustomizer() {
-    LOG.debug("Setting up server connectors...");
-    return new WebServerFactoryCustomizer<TomcatServletWebServerFactory>() {
+  ServletContextInitializer externalResourcesServlet() {
+    LOG.debug("Registering servlet 'externalResourcesServlet'...");
+    return new ServletContextInitializer() {
       @Override
-      public void customize(final TomcatServletWebServerFactory factory) {
-        final Optional<String> contextPath = getContextPath();
-        if (contextPath.isPresent()) {
-          factory.setContextPath(contextPath.get());
+      public void onStartup(final ServletContext servletContext) throws ServletException {
+        final URL webappURL = getClass().getClassLoader().getResource("webapp");
+        if (webappURL == null) {
+          LOG.debug("Static content directory 'webapp' not found. No bean will be registered.");
+          return;
         }
 
-        // NOTE: With the current implementation, we are always installing 2 connectors,
-        //   one for HTTP, one for HTTPs. The latter can be HTTP/1.1 or HTTP/2 depending
-        //   on the configuration.
+        final String webappPath = webappURL.toExternalForm();
+        final ServletRegistration.Dynamic webappServlet =
+            servletContext.addServlet("external-home", ExternalHomeServlet.class);
+        webappServlet.setInitParameter("resourceBase", "/webapp");
 
-        factory.addConnectorCustomizers(
-            connector -> {
-              configureHttpConnector(connector);
-            });
-
-        factory.addAdditionalTomcatConnectors(
-            new Connector() {
-              {
-                configureHttpsConnector(this);
-              }
-            });
+        webappServlet.addMapping("/optimize/external/*");
+        webappServlet.addMapping("/optimize/*");
+        webappServlet.setLoadOnStartup(1);
       }
     };
-  }
-
-  @Bean
-  /* redirect to /# when the endpoint is not valid. do this rather than showing an error page */
-  FilterRegistrationBean<URLRedirectFilter> urlRedirector() {
-    LOG.debug("Registering filter 'urlRedirector'...");
-
-    final String contextPath = getContextPath().orElse("");
-
-    // This regex includes all the URL suffixes that we allow.
-    // The list of suffixes is stored in ALLOWED_URL_EXTENSION, and the regex does not
-    // handle the home page URL: that is handled explicitly from within the URLRedirectFilter.
-    final String regex = "^(?!" + "(" + contextPath + ALLOWED_URL_EXTENSION + ")).+";
-
-    final URLRedirectFilter filter = new URLRedirectFilter(regex, contextPath + URL_BASE);
-    final FilterRegistrationBean<URLRedirectFilter> registration = new FilterRegistrationBean<>();
-    registration.addUrlPatterns("/*");
-    registration.setFilter(filter);
-    return registration;
   }
 
   @Bean
@@ -139,27 +114,6 @@ public class OptimizeTomcatConfig {
     return registrationBean;
   }
 
-  public int getPort(final String portType) {
-    final String portProperty = environment.getProperty(portType);
-    if (portProperty != null) {
-      try {
-        return Integer.parseInt(portProperty);
-      } catch (final NumberFormatException exception) {
-        throw new OptimizeConfigurationException("Error while determining container port");
-      }
-    }
-
-    if (portType.equals(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)) {
-      return configurationService.getContainerHttpsPort();
-    }
-
-    final Optional<Integer> httpPort = configurationService.getContainerHttpPort();
-    if (httpPort.isEmpty()) {
-      throw new OptimizeConfigurationException("HTTP port not configured");
-    }
-    return httpPort.get();
-  }
-
   public Optional<String> getContextPath() {
     // If the property is set by env var (the case when starting a new Optimize in ITs), this takes
     // precedence over config
@@ -168,57 +122,5 @@ public class OptimizeTomcatConfig {
       return configurationService.getContextPath();
     }
     return contextPath;
-  }
-
-  private SSLHostConfig getSslHostConfig() {
-    final SSLHostConfig sslHostConfig = new SSLHostConfig();
-    sslHostConfig.setHostName(configurationService.getContainerHost());
-
-    final SSLHostConfigCertificate cert =
-        new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
-    cert.setCertificateKeystoreFile(configurationService.getContainerKeystoreLocation());
-    cert.setCertificateKeystorePassword(configurationService.getContainerKeystorePassword());
-    sslHostConfig.addCertificate(cert);
-
-    return sslHostConfig;
-  }
-
-  private void enableGzipSupport(final Connector connector) {
-    connector.setProperty("compression", "on");
-    connector.setProperty("compressionMinSize", "23");
-    connector.setProperty("compressionNoCompressionMethods", ""); // all methods
-    connector.setProperty("useSendfile", "false");
-    connector.setProperty("compressableMimeType", String.join(",", COMPRESSED_MIME_TYPES));
-  }
-
-  private void applyCommonConfiguration(final Connector connector) {
-    connector.setXpoweredBy(false); // do not send server version header
-    enableGzipSupport(connector);
-    connector.setProperty(
-        "maxHttpRequestHeaderSize",
-        String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
-    connector.setProperty(
-        "maxHttpResponseHeaderSize",
-        String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
-  }
-
-  private void configureHttpConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setScheme("http");
-    connector.setSecure(false);
-  }
-
-  public void configureHttpsConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
-    connector.setScheme("https");
-    connector.setSecure(true);
-
-    connector.setProperty("protocol", HTTP11_NIO_PROTOCOL);
-    if (configurationService.getContainerHttp2Enabled()) {
-      connector.addUpgradeProtocol(new Http2Protocol());
-    }
-
-    connector.addSslHostConfig(getSslHostConfig());
   }
 }
