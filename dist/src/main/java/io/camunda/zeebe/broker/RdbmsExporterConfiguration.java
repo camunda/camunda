@@ -10,8 +10,10 @@ package io.camunda.zeebe.broker;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterFactory;
+import io.camunda.exporter.rdbms.metrics.RdbmsExporterMetrics;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -27,6 +29,11 @@ import org.springframework.context.annotation.Import;
 public class RdbmsExporterConfiguration {
 
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
+
+  @Bean
+  public RdbmsExporterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
+    return new RdbmsExporterMetrics(meterRegistry);
+  }
 
   @Bean
   public RdbmsExporterFactory rdbmsExporterFactory(final RdbmsService rdbmsService) {
