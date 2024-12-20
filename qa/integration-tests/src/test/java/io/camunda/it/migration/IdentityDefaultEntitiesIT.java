@@ -7,6 +7,9 @@
  */
 package io.camunda.it.migration;
 
+import static io.camunda.it.migration.IdentityMigrationTestUtil.CAMUNDA_IDENTITY_RESOURCE_SERVER;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
 
 import io.camunda.application.Profile;
@@ -21,6 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ZeebeIntegration
 @Testcontainers(parallel = true)
 public class IdentityDefaultEntitiesIT {
+
   @Container
   private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
 
@@ -51,11 +55,12 @@ public class IdentityDefaultEntitiesIT {
             "camunda.migration.identity.management-identity.issuer-backend-url",
             IdentityMigrationTestUtil.externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/")
         .withProperty("camunda.migration.identity.management-identity.issuer-type", "KEYCLOAK")
-        .withProperty("camunda.migration.identity.management-identity.client-id", "migration-app")
-        .withProperty("camunda.migration.identity.management-identity.client-secret", "secret")
+        .withProperty("camunda.migration.identity.management-identity.client-id", IDENTITY_CLIENT)
+        .withProperty(
+            "camunda.migration.identity.management-identity.client-secret", IDENTITY_CLIENT_SECRET)
         .withProperty(
             "camunda.migration.identity.management-identity.audience",
-            "camunda-identity-resource-server")
+            CAMUNDA_IDENTITY_RESOURCE_SERVER)
         .start();
 
     // then -- the migration did not fail
