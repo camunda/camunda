@@ -35,7 +35,7 @@ import {ResetForm} from './ResetForm';
 import type {FormValues} from './types';
 import styles from './styles.module.scss';
 import cn from 'classnames';
-import {parseJSON} from 'modules/utils/jsonUtils';
+import {completionErrorMap} from 'modules/mutations/useCompleteTask';
 
 const JSONEditorModal = lazy(async () => {
   const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
@@ -126,10 +126,11 @@ const Variables: React.FC<Props> = ({
 
           setSubmissionState('finished');
         } catch (error) {
-          const errorMessage = parseJSON((error as Error)?.message);
-
-          if (errorMessage?.title === 'TASK_PROCESSING_TIMEOUT') {
-            onSubmitFailure(error as Error);
+          if (
+            error instanceof Error &&
+            error.name === completionErrorMap.taskProcessingTimeout
+          ) {
+            onSubmitFailure(error);
             return;
           }
           onSubmitFailure(error as Error);
