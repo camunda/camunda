@@ -16,6 +16,7 @@ import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
@@ -27,7 +28,6 @@ import io.camunda.zeebe.util.Either.Left;
 import io.camunda.zeebe.util.Either.Right;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.OffsetDateTime;
@@ -153,7 +153,7 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
-    assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
+    assertThat(((Left<DocumentError, DocumentContent>) documentOperationResponse).value())
         .isInstanceOf(DocumentError.DocumentNotFound.class);
   }
 
@@ -171,7 +171,7 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Left.class);
-    assertThat(((Left<DocumentError, InputStream>) documentOperationResponse).value())
+    assertThat(((Left<DocumentError, DocumentContent>) documentOperationResponse).value())
         .isInstanceOf(UnknownDocumentError.class);
   }
 
@@ -191,7 +191,8 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Right.class);
-    assertThat(((Right<DocumentError, InputStream>) documentOperationResponse).value()).isNotNull();
+    assertThat(((Right<DocumentError, DocumentContent>) documentOperationResponse).value())
+        .isNotNull();
   }
 
   @Test

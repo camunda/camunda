@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -192,13 +193,14 @@ public class DocumentControllerTest extends RestControllerTest {
     final var content = new byte[] {1, 2, 3};
 
     when(documentServices.getDocumentContent("documentId", null))
-        .thenReturn(new ByteArrayInputStream(content));
+        .thenReturn(
+            new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf"));
 
     // when/then
     webClient
         .get()
         .uri(DOCUMENTS_BASE_URL + "/documentId")
-        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .accept(MediaType.APPLICATION_PDF)
         .exchange()
         .expectStatus()
         .isOk()
@@ -219,6 +221,26 @@ public class DocumentControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isNoContent();
+  }
+
+  @Test
+  void testNullContentTypeShouldReturnOctetStream() {
+    // given
+    final var content = new byte[] {1, 2, 3};
+
+    when(documentServices.getDocumentContent("documentId", null))
+        .thenReturn(new DocumentContentResponse(new ByteArrayInputStream(content), null));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/documentId")
+        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody(byte[].class)
+        .isEqualTo(content);
   }
 
   // TODO: test error cases
