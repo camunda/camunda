@@ -32,7 +32,16 @@ public class InMemoryDocumentStoreTest {
     final var content = "content".getBytes();
 
     // when
-    final var request = new DocumentCreationRequest(key, new ByteArrayInputStream(content), null);
+    final var request =
+        new DocumentCreationRequest(
+            key,
+            new ByteArrayInputStream(content),
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
     final var result = store.createDocument(request).join();
 
     assertThat(result).isInstanceOf(Either.Right.class);
@@ -76,7 +85,15 @@ public class InMemoryDocumentStoreTest {
 
     // when
     final var request =
-        new DocumentCreationRequest(id, new ByteArrayInputStream("content".getBytes()), null);
+        new DocumentCreationRequest(
+            id,
+            new ByteArrayInputStream("content".getBytes()),
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
     final var result = store.createDocument(request).join();
 
     // then
@@ -105,7 +122,15 @@ public class InMemoryDocumentStoreTest {
 
     // when
     final var request =
-        new DocumentCreationRequest(id, new ByteArrayInputStream("content".getBytes()), null);
+        new DocumentCreationRequest(
+            id,
+            new ByteArrayInputStream("content".getBytes()),
+            new DocumentMetadataModel(
+                "application/json",
+                "hello.json",
+                OffsetDateTime.now(),
+                10L,
+                Map.of("key", "value")));
 
     final var result = store.createDocument(request).join();
 

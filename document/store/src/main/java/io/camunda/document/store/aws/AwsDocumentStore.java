@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
@@ -60,14 +59,12 @@ public class AwsDocumentStore implements DocumentStore {
   private final Long defaultTTL;
   private final String bucketPath;
 
-  public AwsDocumentStore(final String bucketName, final Long defaultTTL, final String bucketPath) {
-    this(
-        bucketName,
-        defaultTTL,
-        bucketPath,
-        S3Client.create(),
-        Executors.newSingleThreadExecutor(),
-        S3Presigner.create());
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor) {
+    this(bucketName, defaultTTL, bucketPath, S3Client.create(), executor, S3Presigner.create());
   }
 
   public AwsDocumentStore(
@@ -217,11 +214,12 @@ public class AwsDocumentStore implements DocumentStore {
 
   private Either<DocumentError, DocumentReference> uploadDocument(
       final DocumentCreationRequest request, final String documentId) {
+    final String fileName = resolveFileName(request.metadata(), documentId);
     final PutObjectRequest putObjectRequest =
         PutObjectRequest.builder()
             .key(resolveKey(documentId))
             .bucket(bucketName)
-            .metadata(toS3MetaData(request.metadata()))
+            .metadata(toS3MetaData(request.metadata(), fileName))
             .tagging(generateExpiryTag(request.metadata().expiresAt()))
             .build();
 
@@ -229,10 +227,18 @@ public class AwsDocumentStore implements DocumentStore {
         putObjectRequest,
         RequestBody.fromInputStream(request.contentInputStream(), request.metadata().size()));
 
-    return Either.right(new DocumentReference(documentId, request.metadata()));
+    final var updatedMetadata =
+        new DocumentMetadataModel(
+            request.metadata().contentType(),
+            resolveFileName(request.metadata(), documentId),
+            request.metadata().expiresAt(),
+            request.metadata().size(),
+            request.metadata().customProperties());
+    return Either.right(new DocumentReference(documentId, updatedMetadata));
   }
 
-  private Map<String, String> toS3MetaData(final DocumentMetadataModel metadata) {
+  private Map<String, String> toS3MetaData(
+      final DocumentMetadataModel metadata, final String fileName) {
     if (metadata == null) {
       return Collections.emptyMap();
     }
@@ -241,7 +247,7 @@ public class AwsDocumentStore implements DocumentStore {
 
     putIfPresent("content-type", metadata.contentType(), metadataMap);
     putIfPresent("size", metadata.size(), metadataMap);
-    putIfPresent("filename", metadata.fileName(), metadataMap);
+    putIfPresent("filename", fileName, metadataMap);
     putIfPresent("expires-at", metadata.expiresAt(), metadataMap);
 
     if (metadata.customProperties() != null) {
@@ -284,5 +290,10 @@ public class AwsDocumentStore implements DocumentStore {
 
   private String resolveKey(final String documentId) {
     return bucketPath + documentId;
+  }
+
+  private String resolveFileName(
+      final DocumentMetadataModel documentMetadata, final String documentId) {
+    return documentMetadata.fileName() != null ? documentMetadata.fileName() : documentId;
   }
 }

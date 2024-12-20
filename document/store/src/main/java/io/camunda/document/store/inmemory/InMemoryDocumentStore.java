@@ -11,6 +11,7 @@ import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
@@ -46,6 +47,7 @@ public class InMemoryDocumentStore implements DocumentStore {
       return CompletableFuture.completedFuture(
           Either.left(new DocumentError.DocumentAlreadyExists(id)));
     }
+    final var fileName = Optional.ofNullable(request.metadata().fileName()).orElse(id);
     final var contentInputStream = request.contentInputStream();
     final byte[] content;
     try {
@@ -56,8 +58,15 @@ public class InMemoryDocumentStore implements DocumentStore {
           Either.left(new DocumentError.InvalidInput("Failed to read content")));
     }
     documents.put(id, content);
+    final var updatedMetadata =
+        new DocumentMetadataModel(
+            request.metadata().contentType(),
+            fileName,
+            request.metadata().expiresAt(),
+            request.metadata().size(),
+            request.metadata().customProperties());
     return CompletableFuture.completedFuture(
-        Either.right(new DocumentReference(id, request.metadata())));
+        Either.right(new DocumentReference(id, updatedMetadata)));
   }
 
   @Override

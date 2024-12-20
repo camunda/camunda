@@ -10,12 +10,15 @@ package io.camunda.document.store.aws;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import java.util.HashMap;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 
 public class AwsDocumentStoreProviderTest {
@@ -30,7 +33,7 @@ public class AwsDocumentStoreProviderTest {
 
       // this mock is used to bypass the auto config of S3Client.create()
       mockedFactory
-          .when(() -> AwsDocumentStoreFactory.create(bucketName, bucketTtl, ""))
+          .when(() -> AwsDocumentStoreFactory.create(eq(bucketName), eq(bucketTtl), eq(""), any()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -41,7 +44,8 @@ public class AwsDocumentStoreProviderTest {
       final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
 
       // when
-      final DocumentStore documentStore = provider.createDocumentStore(configuration);
+      final DocumentStore documentStore =
+          provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
       assertNotNull(documentStore);
@@ -59,7 +63,8 @@ public class AwsDocumentStoreProviderTest {
     // when / then
     final var ex =
         assertThrows(
-            IllegalArgumentException.class, () -> provider.createDocumentStore(configuration));
+            IllegalArgumentException.class,
+            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'my-aws': missing required property 'BUCKET'");
@@ -80,7 +85,8 @@ public class AwsDocumentStoreProviderTest {
     // when / then
     final var ex =
         assertThrows(
-            IllegalArgumentException.class, () -> provider.createDocumentStore(configuration));
+            IllegalArgumentException.class,
+            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'aws': 'BUCKET_TTL must be a number'");
@@ -102,7 +108,8 @@ public class AwsDocumentStoreProviderTest {
     // when / then
     final var ex =
         assertThrows(
-            IllegalArgumentException.class, () -> provider.createDocumentStore(configuration));
+            IllegalArgumentException.class,
+            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'aws': 'BUCKET_PATH is invalid. Must not contain \\ character'");
