@@ -16,6 +16,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
@@ -52,16 +53,18 @@ final class SegmentedJournalWriter {
     return currentWriter.getNextIndex();
   }
 
-  JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
+  JournalRecord append(final long asqn, final BufferWriter recordDataWriter)
+      throws CheckedJournalException {
     return appendInCurrentSegmentOrNext(
         segmentWriter -> segmentWriter.append(asqn, recordDataWriter));
   }
 
-  void append(final JournalRecord journalRecord) {
+  void append(final JournalRecord journalRecord) throws CheckedJournalException {
     appendInCurrentSegmentOrNext(segmentWriter -> segmentWriter.append(journalRecord));
   }
 
-  JournalRecord append(final long checksum, final byte[] serializedRecord) {
+  JournalRecord append(final long checksum, final byte[] serializedRecord)
+      throws CheckedJournalException {
     return appendInCurrentSegmentOrNext(
         segmentWriter -> segmentWriter.append(checksum, serializedRecord));
   }
@@ -75,7 +78,8 @@ final class SegmentedJournalWriter {
    * @return the appended journal record
    */
   private JournalRecord appendInCurrentSegmentOrNext(
-      final Function<SegmentWriter, Either<SegmentFull, JournalRecord>> inSegmentAppender) {
+      final Function<SegmentWriter, Either<SegmentFull, JournalRecord>> inSegmentAppender)
+      throws CheckedJournalException {
     final var appendResult = inSegmentAppender.apply(currentWriter);
     if (appendResult.isRight()) {
       return appendResult.get();
@@ -93,13 +97,13 @@ final class SegmentedJournalWriter {
     return appendResultOnNewSegment.get();
   }
 
-  void reset(final long index) {
+  void reset(final long index) throws CheckedJournalException {
     flusher.setLastFlushedIndex(index - 1);
     currentSegment = segments.resetSegments(index);
     currentWriter = currentSegment.writer();
   }
 
-  void deleteAfter(final long index) {
+  void deleteAfter(final long index) throws CheckedJournalException {
     // reset the last flushed index first to avoid corruption on restart in case of partial
     // truncation (e.g. the node crashed while deleting segments)
     flusher.setLastFlushedIndex(index);
@@ -126,7 +130,7 @@ final class SegmentedJournalWriter {
     flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()).values());
   }
 
-  private void createNewSegment() {
+  private void createNewSegment() throws CheckedJournalException {
     currentSegment.updateDescriptor();
     currentSegment = segments.getNextSegment();
     currentWriter = currentSegment.writer();

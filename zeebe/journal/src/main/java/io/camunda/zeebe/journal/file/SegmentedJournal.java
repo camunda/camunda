@@ -19,12 +19,14 @@ package io.camunda.zeebe.journal.file;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,7 +61,11 @@ public final class SegmentedJournal implements Journal {
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
     Objects.requireNonNull(segmentsFlusher, "must specify a segments flusher");
 
-    this.segments.open();
+    try {
+      this.segments.open();
+    } catch (final CheckedJournalException e) {
+      Rethrow.rethrowUnchecked(e);
+    }
     writer = new SegmentedJournalWriter(segments, segmentsFlusher, journalMetrics);
   }
 
@@ -73,33 +79,35 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
-  public JournalRecord append(final BufferWriter recordDataWriter) {
+  public JournalRecord append(final BufferWriter recordDataWriter) throws CheckedJournalException {
     return append(ASQN_IGNORE, recordDataWriter);
   }
 
   @Override
-  public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
+  public JournalRecord append(final long asqn, final BufferWriter recordDataWriter)
+      throws CheckedJournalException {
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(asqn, recordDataWriter);
     }
   }
 
   @Override
-  public void append(final JournalRecord record) {
+  public void append(final JournalRecord record) throws CheckedJournalException {
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       writer.append(record);
     }
   }
 
   @Override
-  public JournalRecord append(final long checksum, final byte[] serializedRecord) {
+  public JournalRecord append(final long checksum, final byte[] serializedRecord)
+      throws CheckedJournalException {
     try (final var ignored = journalMetrics.observeAppendLatency()) {
       return writer.append(checksum, serializedRecord);
     }
   }
 
   @Override
-  public void deleteAfter(final long indexExclusive) {
+  public void deleteAfter(final long indexExclusive) throws CheckedJournalException {
     journalMetrics.observeSegmentTruncation(
         () -> {
           final var stamp = rwlock.writeLock();
@@ -107,6 +115,8 @@ public final class SegmentedJournal implements Journal {
             writer.deleteAfter(indexExclusive);
             // Reset segment readers.
             resetAdvancedReaders(indexExclusive + 1);
+          } catch (final CheckedJournalException e) {
+            Rethrow.rethrowUnchecked(e);
           } finally {
             rwlock.unlockWrite(stamp);
           }
@@ -124,7 +134,7 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
-  public void reset(final long nextIndex) {
+  public void reset(final long nextIndex) throws CheckedJournalException {
     final var stamp = rwlock.writeLock();
     try {
       journalIndex.clear();

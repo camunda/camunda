@@ -71,7 +71,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendData() {
+  void shouldAppendData() throws CheckedJournalException {
     // when
     final var recordAppended = journal.append(1, recordDataWriter);
 
@@ -81,7 +81,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendJournalRecord() {
+  void shouldAppendJournalRecord() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()
@@ -104,7 +104,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendMultipleData() {
+  void shouldAppendMultipleData() throws CheckedJournalException {
     // when
     final var firstRecord = journal.append(10, recordDataWriter);
     final var secondRecord = journal.append(20, otherRecordDataWriter);
@@ -118,7 +118,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithAlreadyAppendedIndex() {
+  void shouldNotAppendRecordWithAlreadyAppendedIndex() throws CheckedJournalException {
     // given
     final var record = journal.append(recordDataWriter);
     journal.append(recordDataWriter);
@@ -133,7 +133,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithGapInIndex() {
+  void shouldNotAppendRecordWithGapInIndex() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()
@@ -155,7 +155,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendLastRecord() {
+  void shouldNotAppendLastRecord() throws CheckedJournalException {
     // given
     final var record = journal.append(recordDataWriter);
 
@@ -169,7 +169,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendRecordWithASQNToIgnore() {
+  void shouldAppendRecordWithASQNToIgnore() throws CheckedJournalException {
     // given
     final var firstIndex = journal.append(1, recordDataWriter).index();
 
@@ -181,7 +181,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithInvalidChecksum() {
+  void shouldNotAppendRecordWithInvalidChecksum() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()
@@ -203,7 +203,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithTooLowASQN() {
+  void shouldNotAppendRecordWithTooLowASQN() throws CheckedJournalException {
     // given
     journal.append(1, recordDataWriter);
 
@@ -213,7 +213,8 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendRecordWithTooLowASQNIfPreviousRecordIsIgnoreASQN() {
+  void shouldNotAppendRecordWithTooLowASQNIfPreviousRecordIsIgnoreASQN()
+      throws CheckedJournalException {
     // given
     journal.append(1, recordDataWriter);
 
@@ -226,7 +227,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendSerializedJournalRecord() {
+  void shouldAppendSerializedJournalRecord() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()
@@ -249,7 +250,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldAppendSerializedJournalRecordReturnedByReader() {
+  void shouldAppendSerializedJournalRecordReturnedByReader() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()
@@ -273,7 +274,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendSerializedRecordWithAlreadyAppendedIndex() {
+  void shouldNotAppendSerializedRecordWithAlreadyAppendedIndex() throws CheckedJournalException {
     // given
     final var record = journal.append(1, recordDataWriter);
     journal.append(recordDataWriter);
@@ -288,7 +289,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendSerializedRecordWithGapInIndex() {
+  void shouldNotAppendSerializedRecordWithGapInIndex() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()
@@ -309,7 +310,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendDuplicateSerializedRecord() {
+  void shouldNotAppendDuplicateSerializedRecord() throws CheckedJournalException {
     // given
     final var record = journal.append(1, recordDataWriter);
 
@@ -322,7 +323,7 @@ final class JournalAppendTest {
   }
 
   @Test
-  void shouldNotAppendSerializedRecordWithInvalidChecksum() {
+  void shouldNotAppendSerializedRecordWithInvalidChecksum() throws CheckedJournalException {
     // given
     try (final var receiverJournal =
         SegmentedJournal.builder()

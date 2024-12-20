@@ -43,6 +43,7 @@ import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import java.io.IOException;
@@ -65,7 +66,7 @@ public class LeaderRoleTest {
   private LogCompactor logCompactor;
 
   @Before
-  public void setup() {
+  public void setup() throws CheckedJournalException {
     context = Mockito.mock(RaftContext.class, RETURNS_DEEP_STUBS);
     logCompactor = mock(LogCompactor.class);
 
@@ -121,7 +122,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldRetryAppendEntryOnIOException() throws InterruptedException {
+  public void shouldRetryAppendEntryOnIOException()
+      throws InterruptedException, CheckedJournalException {
     // given
     when(log.append(any(RaftLogEntry.class)))
         .thenThrow(new JournalException(new IOException()))
@@ -151,7 +153,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldStopRetryAppendEntryAfterMaxRetries() throws InterruptedException {
+  public void shouldStopRetryAppendEntryAfterMaxRetries()
+      throws InterruptedException, CheckedJournalException {
     // given
     when(log.append(any(RaftLogEntry.class))).thenThrow(new JournalException(new IOException()));
 
@@ -178,7 +181,7 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldCompactOnOutOfDiskSpace() throws InterruptedException {
+  public void shouldCompactOnOutOfDiskSpace() throws InterruptedException, CheckedJournalException {
     // given - fail once with OOD then accept the next entry
     when(log.append(any(RaftLogEntry.class)))
         .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"))
@@ -209,7 +212,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
+  public void shouldStopAppendEntryOnOutOfDisk()
+      throws InterruptedException, CheckedJournalException {
     // given - fail once with OOD then accept the next entry
     when(log.append(any(RaftLogEntry.class)))
         .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"))
@@ -245,7 +249,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldTransitionToFollowerWhenAppendEntryException() throws InterruptedException {
+  public void shouldTransitionToFollowerWhenAppendEntryException()
+      throws InterruptedException, CheckedJournalException {
     // given
     when(log.append(any(RaftLogEntry.class))).thenThrow(new RuntimeException("expected"));
 
@@ -273,7 +278,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldNotAppendFollowingEntryOnException() throws InterruptedException {
+  public void shouldNotAppendFollowingEntryOnException()
+      throws InterruptedException, CheckedJournalException {
     // given
     when(log.append(any(RaftLogEntry.class))).thenThrow(new RuntimeException("expected"));
 
@@ -306,7 +312,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldRetryAppendEntriesInOrder() throws InterruptedException {
+  public void shouldRetryAppendEntriesInOrder()
+      throws InterruptedException, CheckedJournalException {
     // given
     when(log.append(any(RaftLogEntry.class)))
         .thenThrow(new JournalException(new IOException()))
@@ -343,7 +350,8 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldDetectInconsistencyWithLastEntry() throws InterruptedException {
+  public void shouldDetectInconsistencyWithLastEntry()
+      throws InterruptedException, CheckedJournalException {
     // given
     when(log.append(any(RaftLogEntry.class)))
         .then(
