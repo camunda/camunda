@@ -14,12 +14,14 @@ import java.util.Objects;
 
 public abstract class ErrorHandlingUtils {
 
-  public static String getErrorMessage(final String taskId, final Throwable exception) {
+  public static final String INVALID_STATE = "INVALID_STATE";
+
+  public static String getErrorMessage(final long taskKey, final Throwable exception) {
     final String errorMessage;
 
     if (exception instanceof final ProblemException ex
         && Objects.equals(ex.details().getStatus(), 409)
-        && "INVALID_STATE".equals(ex.details().getTitle())) {
+        && INVALID_STATE.equals(ex.details().getTitle())) {
       final ProblemDetail problemDetail = ex.details();
       errorMessage =
           createErrorMessage(
@@ -29,7 +31,7 @@ public abstract class ErrorHandlingUtils {
           createErrorMessage(
               "TASK_PROCESSING_TIMEOUT",
               "The request timed out while processing the task.",
-              URI.create("/v2/user-tasks/%s/assignment".formatted(taskId)));
+              URI.create("/v2/user-tasks/%d/assignment".formatted(taskKey)));
     } else {
       errorMessage = exception.getMessage();
     }

@@ -74,7 +74,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       try {
         camundaClient.newUserTaskAssignCommand(task.getKey()).assignee(assignee).send().join();
       } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(getErrorMessage(task.getId(), exception));
+        throw new TasklistRuntimeException(getErrorMessage(task.getKey(), exception));
       }
     }
   }
@@ -90,7 +90,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       try {
         camundaClient.newUserTaskUnassignCommand(task.getKey()).send().join();
       } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(getErrorMessage(task.getId(), exception));
+        throw new TasklistRuntimeException(getErrorMessage(task.getKey(), exception));
       }
     }
   }
@@ -109,7 +109,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
         camundaClient.newUserTaskCompleteCommand(task.getKey()).variables(variables).send().join();
       }
     } catch (final ClientException exception) {
-      throw new TasklistRuntimeException(getErrorMessage(task.getId(), exception));
+      throw new TasklistRuntimeException(getErrorMessage(task.getKey(), exception));
     }
   }
 
