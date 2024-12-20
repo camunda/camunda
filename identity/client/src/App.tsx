@@ -1,11 +1,11 @@
 import { FC, StrictMode } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { baseUrl } from "./configuration";
+import { getBaseUrl } from "./configuration";
 import AppRoot from "./components/global/AppRoot";
 import GlobalRoutes from "src/components/global/GlobalRoutes";
 
 const App: FC = () => (
-  <BrowserRouter basename={baseUrl}>
+  <BrowserRouter basename={getBaseUrl()}>
     <StrictMode>
       <AppRoot>
         <GlobalRoutes />
