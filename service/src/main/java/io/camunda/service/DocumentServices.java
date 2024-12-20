@@ -12,6 +12,7 @@ import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
+import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.Authentication;
@@ -60,10 +61,25 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                                 result.documentId(), storeRecord.storeId(), result.metadata())));
   }
 
-  public InputStream getDocumentContent(final String documentId, final String storeId) {
+  public InputStream getDocumentContent(
+      final String documentId, final String storeId, final String documentHash) {
 
     return getDocumentStore(storeId)
-        .thenCompose(storeRecord -> storeRecord.instance().getDocument(documentId))
+        .thenCompose(
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, documentHash)
+                  .thenCompose(
+                      verification -> {
+                        if (verification.isLeft()) {
+                          return CompletableFuture.completedFuture(
+                              Either.left(verification.getLeft()));
+                        }
+                        return storeRecordInstance.getDocument(documentId);
+                      });
+            })
         .thenApply(this::handleResponse)
         .join();
   }
@@ -77,17 +93,28 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentLink> createLink(
-      final String documentId, final String storeId, final DocumentLinkParams params) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final DocumentLinkParams params) {
 
     final long ttl = params.timeToLive().toMillis();
 
     return getDocumentStore(storeId)
         .thenCompose(
-            documentStoreRecord ->
-                documentStoreRecord
-                    .instance()
-                    .createLink(documentId, ttl)
-                    .thenApply(this::handleResponse));
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, contentHash)
+                  .thenCompose(
+                      verification ->
+                          verification.isLeft()
+                              ? CompletableFuture.completedFuture(
+                                  Either.left(verification.getLeft()))
+                              : storeRecordInstance.createLink(documentId, ttl))
+                  .thenApply(this::handleResponse);
+            });
   }
 
   private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {

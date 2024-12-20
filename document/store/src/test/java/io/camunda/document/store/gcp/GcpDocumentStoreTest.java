@@ -99,8 +99,11 @@ public class GcpDocumentStoreTest {
     final var inputStream = new ByteArrayInputStream("content".getBytes());
     final var documentCreationRequest =
         new DocumentCreationRequest("documentId", inputStream, null);
+    final Blob mockBlob = mock(Blob.class);
 
-    when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
+    when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null).thenReturn(mockBlob);
+
+    when(mockBlob.getBlobId()).thenReturn(mock());
 
     // when
     final var documentReferenceResponse =

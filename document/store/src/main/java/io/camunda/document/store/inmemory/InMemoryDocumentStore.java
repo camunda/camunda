@@ -17,6 +17,9 @@ import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +49,16 @@ public class InMemoryDocumentStore implements DocumentStore {
       return CompletableFuture.completedFuture(
           Either.left(new DocumentError.DocumentAlreadyExists(id)));
     }
-    final var contentInputStream = request.contentInputStream();
+    final MessageDigest md;
+    try {
+      md = MessageDigest.getInstance("SHA-256");
+    } catch (final Exception e) {
+      // should never happen
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.UnknownDocumentError("Failed to create document")));
+    }
+    final DigestInputStream contentInputStream =
+        new DigestInputStream(request.contentInputStream(), md);
     final byte[] content;
     try {
       content = contentInputStream.readAllBytes();
@@ -56,8 +68,9 @@ public class InMemoryDocumentStore implements DocumentStore {
           Either.left(new DocumentError.InvalidInput("Failed to read content")));
     }
     documents.put(id, content);
+    final String contentHash = HexFormat.of().formatHex(md.digest());
     return CompletableFuture.completedFuture(
-        Either.right(new DocumentReference(id, request.metadata())));
+        Either.right(new DocumentReference(id, contentHash, request.metadata())));
   }
 
   @Override
@@ -88,5 +101,32 @@ public class InMemoryDocumentStore implements DocumentStore {
         Either.left(
             new OperationNotSupported(
                 "The in-memory document store does not support creating links")));
+  }
+
+  @Override
+  public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      final String documentId, final String contentHash) {
+    final MessageDigest md;
+    try {
+      md = MessageDigest.getInstance("SHA-256");
+    } catch (final Exception e) {
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.UnknownDocumentError(e)));
+    }
+
+    final var content = documents.get(documentId);
+
+    if (content == null) {
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentNotFound(documentId)));
+    }
+
+    final var actualHash = HexFormat.of().formatHex(md.digest(content));
+
+    if (!actualHash.equals(contentHash)) {
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentHashMismatch(documentId, contentHash)));
+    }
+    return CompletableFuture.completedFuture(Either.right(null));
   }
 }
