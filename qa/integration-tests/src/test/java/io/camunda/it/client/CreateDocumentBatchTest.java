@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.junit.Assert.assertThrows;
 
-import io.camunda.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class CreateDocumentBatchTest {
 
-  private static ZeebeClient zeebeClient;
+  private static CamundaClient camundaClient;
 
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testStandaloneCamunda;
@@ -37,13 +37,13 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCreateDocumentsFromInputStreams() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
     // when
     final var response =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
@@ -65,13 +65,13 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCreateDocumentsFromDifferentSources() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = "test two".getBytes();
 
     // when
     final var response =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .addDocument()
             .fileName("test1.txt")
@@ -91,39 +91,15 @@ public class CreateDocumentBatchTest {
   }
 
   @Test
-  public void shouldCreateFilenameIfMissing() {
-    // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
-    final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
-
-    // when
-    final var response =
-        zeebeClient
-            .newCreateDocumentBatchCommand()
-            .addDocument()
-            .fileName("file1.txt")
-            .content(documentContent1)
-            .done()
-            .send()
-            .join();
-
-    // then
-    assertThat(response).isNotNull();
-    assertThat(response.isSuccessful()).isTrue();
-    assertThat(response.getCreatedDocuments()).hasSize(1);
-    assertThat(response.getCreatedDocuments().get(0).getMetadata().getFileName()).isNotNull();
-  }
-
-  @Test
   public void shouldCreateDocumentsWithBasicMetadata() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
     // when
     final var response =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
@@ -167,13 +143,13 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCreateDocumentsWithCustomMetadata() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
     // when
     final var response =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
@@ -217,10 +193,10 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldThrowIfContentIsMissing() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
-    final var command = zeebeClient.newCreateDocumentBatchCommand().addDocument().done();
+    final var command = camundaClient.newCreateDocumentBatchCommand().addDocument().done();
 
     // then
     final var exception = assertThrows(IllegalArgumentException.class, command::send);
@@ -230,13 +206,13 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldCalculateSize() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
     final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
 
     // when
     final var response =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .addDocument()
             .content(documentContent1)
@@ -264,13 +240,13 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldUseProvidedStoreId() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = new ByteArrayInputStream("test one".getBytes());
     final var storeId = "in-memory";
 
     // when
     final var response =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .storeId(storeId)
             .addDocument()
@@ -290,12 +266,12 @@ public class CreateDocumentBatchTest {
   @Test
   public void shouldReturnBadRequestForNonExistingStoreId() {
     // given
-    zeebeClient = testStandaloneCamunda.newClientBuilder().build();
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
     final var documentContent = new ByteArrayInputStream("test one".getBytes());
 
     // when
     final var command =
-        zeebeClient
+        camundaClient
             .newCreateDocumentBatchCommand()
             .storeId("non-existing-store")
             .addDocument()

@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class GcpDocumentStore implements DocumentStore {
@@ -44,8 +43,8 @@ public class GcpDocumentStore implements DocumentStore {
 
   private final ExecutorService executor;
 
-  public GcpDocumentStore(final String bucketName) {
-    this(bucketName, new ObjectMapper(), Executors.newSingleThreadExecutor());
+  public GcpDocumentStore(final String bucketName, final ExecutorService executor) {
+    this(bucketName, new ObjectMapper(), executor);
   }
 
   public GcpDocumentStore(

@@ -17,14 +17,14 @@ package io.camunda.client.impl.command;
 
 import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.client.ZeebeClientConfiguration;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.ZeebeFuture;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DocumentReferenceBatchResponse;
+import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.http.HttpZeebeFuture;
 import io.camunda.client.impl.response.DocumentReferenceBatchResponseImpl;
 import io.camunda.client.impl.util.DocumentBuilder;
 import io.camunda.client.protocol.rest.DocumentCreationBatchResponse;
@@ -59,7 +59,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
   public CreateDocumentBatchCommandImpl(
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
-      final ZeebeClientConfiguration configuration) {
+      final CamundaClientConfiguration configuration) {
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -75,7 +75,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
   }
 
   @Override
-  public ZeebeFuture<DocumentReferenceBatchResponse> send() {
+  public CamundaFuture<DocumentReferenceBatchResponse> send() {
     try {
       final MultipartEntityBuilder entityBuilder =
           MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
@@ -96,7 +96,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
         entityBuilder.addPart(part);
       }
 
-      final HttpZeebeFuture<DocumentReferenceBatchResponse> result = new HttpZeebeFuture<>();
+      final HttpCamundaFuture<DocumentReferenceBatchResponse> result = new HttpCamundaFuture<>();
       httpClient.postMultipart(
           "/documents/batch",
           queryParams,

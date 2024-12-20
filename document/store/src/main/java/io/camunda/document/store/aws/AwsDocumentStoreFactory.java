@@ -7,9 +7,14 @@
  */
 package io.camunda.document.store.aws;
 
+import java.util.concurrent.ExecutorService;
+
 public class AwsDocumentStoreFactory {
   public static AwsDocumentStore create(
-      final String bucketName, final Long defaultTTL, final String bucketPath) {
-    return new AwsDocumentStore(bucketName, defaultTTL, bucketPath);
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor) {
+    return new AwsDocumentStore(bucketName, defaultTTL, bucketPath, executor);
   }
 }

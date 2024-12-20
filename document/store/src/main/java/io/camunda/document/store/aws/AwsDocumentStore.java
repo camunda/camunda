@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
@@ -60,14 +59,12 @@ public class AwsDocumentStore implements DocumentStore {
   private final Long defaultTTL;
   private final String bucketPath;
 
-  public AwsDocumentStore(final String bucketName, final Long defaultTTL, final String bucketPath) {
-    this(
-        bucketName,
-        defaultTTL,
-        bucketPath,
-        S3Client.create(),
-        Executors.newSingleThreadExecutor(),
-        S3Presigner.create());
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor) {
+    this(bucketName, defaultTTL, bucketPath, S3Client.create(), executor, S3Presigner.create());
   }
 
   public AwsDocumentStore(
