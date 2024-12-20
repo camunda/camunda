@@ -16,6 +16,8 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.api.search.response.FlowNodeInstanceType;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
 import java.util.Objects;
@@ -32,9 +34,9 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String endDate;
   private final Boolean incident;
   private final Long incidentKey;
-  private final FlowNodeInstanceItem.StateEnum state;
+  private final FlowNodeInstanceState state;
   private final String tenantId;
-  private final FlowNodeInstanceItem.TypeEnum type;
+  private final FlowNodeInstanceType type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
@@ -47,9 +49,9 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     endDate = item.getEndDate();
     incident = item.getHasIncident();
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
-    state = item.getState();
+    state = FlowNodeInstanceState.fromProtocolState(item.getState());
     tenantId = item.getTenantId();
-    type = item.getType();
+    type = FlowNodeInstanceType.fromProtocolType(item.getType());
   }
 
   @Override
@@ -103,8 +105,8 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public String getState() {
-    return state.getValue();
+  public FlowNodeInstanceState getState() {
+    return state;
   }
 
   @Override
@@ -113,8 +115,8 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public String getType() {
-    return type.getValue();
+  public FlowNodeInstanceType getType() {
+    return type;
   }
 
   @Override

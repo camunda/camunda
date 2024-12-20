@@ -60,6 +60,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -151,14 +152,16 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
+    final var processInstanceQuery = termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
+    final var flownodeInstanceQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+    final var finalQuery =
+        ElasticsearchUtil.joinWithAnd(processInstanceQuery, flownodeInstanceQuery);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId))
-                    .fetchField(TaskTemplate.KEY));
+                SearchSourceBuilder.searchSource().query(finalQuery).fetchField(TaskTemplate.KEY));
     try {
-      return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
+      return ElasticsearchUtil.scrollUserTaskKeysToList(searchRequest, esClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -167,12 +170,15 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
+    final var processDefinitionQuery =
+        termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId);
+    final var flownodeInstanceQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
+    final var finalQuery =
+        ElasticsearchUtil.joinWithAnd(processDefinitionQuery, flownodeInstanceQuery);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
-                SearchSourceBuilder.searchSource()
-                    .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(TaskTemplate.KEY));
+                SearchSourceBuilder.searchSource().query(finalQuery).fetchField(TaskTemplate.KEY));
     try {
       return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
     } catch (final IOException e) {
@@ -480,8 +486,11 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
 
     TermsQueryBuilder taskIdsQuery = null;
+    ExistsQueryBuilder flowNodeInstanceExistsQuery = null;
     if (taskIds != null) {
       taskIdsQuery = termsQuery(TaskTemplate.KEY, taskIds);
+    } else {
+      flowNodeInstanceExistsQuery = existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID);
     }
 
     QueryBuilder taskDefinitionQ = null;
@@ -533,8 +542,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     if (query.getFollowUpDate() != null) {
       followUpQ =
           rangeQuery(TaskTemplate.FOLLOW_UP_DATE)
-              .from(query.getFollowUpDate().getFrom())
-              .to(query.getFollowUpDate().getTo());
+              .gte(query.getFollowUpDate().getFrom())
+              .lte(query.getFollowUpDate().getTo());
     }
 
     QueryBuilder dueDateQ = null;
@@ -542,7 +551,7 @@ public class TaskStoreElasticSearch implements TaskStore {
       dueDateQ =
           rangeQuery(TaskTemplate.DUE_DATE)
               .from(query.getDueDate().getFrom())
-              .to(query.getDueDate().getTo());
+              .lte(query.getDueDate().getTo());
     }
     QueryBuilder implementationQ = null;
     if (query.getImplementation() != null) {
@@ -558,6 +567,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             assigneeQ,
             assigneesQ,
             taskIdsQuery,
+            flowNodeInstanceExistsQuery,
             taskDefinitionQ,
             candidateGroupQ,
             candidateGroupsQ,

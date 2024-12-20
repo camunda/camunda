@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -91,17 +92,21 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
     final Map<String, String> parameters = new HashMap<>();
     parameters.put("startTime", now.minusSeconds(1L).format(FORMATTER));
     parameters.put("endTime", now.plusSeconds(1L).format(FORMATTER));
-    final ResponseEntity<UsageMetricDTO> response =
-        testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
-            UsageMetricDTO.class,
-            parameters);
 
     final UsageMetricDTO expectedDto =
         new UsageMetricDTO(List.of("Angela Merkel", "John Lennon")); // just repeat once
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isEqualTo(expectedDto);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final ResponseEntity<UsageMetricDTO> response =
+                  testRestTemplate.getForEntity(
+                      "http://localhost:" + managementPort + ASSIGNEE_ENDPOINT,
+                      UsageMetricDTO.class,
+                      parameters);
+              assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+              assertThat(response.getBody()).isEqualTo(expectedDto);
+            });
   }
 
   @Test

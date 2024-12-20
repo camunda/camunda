@@ -60,17 +60,21 @@ public class FormHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final long expectedId = 123;
-
+    final long formKey = 123;
+    final long recordKey = 456;
     final Record<Form> decisionRecord =
         factory.generateRecord(
-            ValueType.FORM, r -> r.withIntent(FormIntent.CREATED).withKey(expectedId));
+            ValueType.FORM,
+            r ->
+                r.withIntent(FormIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(factory.generateObject(ImmutableForm.class).withFormKey(formKey)));
 
     // when
     final var idList = underTest.generateIds(decisionRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(expectedId));
+    assertThat(idList).containsExactly(String.valueOf(formKey));
   }
 
   @Test
@@ -87,6 +91,19 @@ public class FormHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final FormEntity inputEntity = new FormEntity().setId("111");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1)).add(indexName, inputEntity);
+  }
+
+  @Test
+  void shouldAddEntityOnFlushForDeletion() {
+    // given
+    final FormEntity inputEntity = new FormEntity().setId("111").setKey(123L).setIsDeleted(true);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

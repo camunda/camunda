@@ -15,6 +15,6 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.migration.process"})
-@Profile("process-migration")
+@Profile("process-migration|tasklist")
 @Import({SearchClientDatabaseConfiguration.class})
 public class ProcessMigrationModuleConfiguration {}

@@ -22,6 +22,7 @@ import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -47,6 +48,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
@@ -62,6 +64,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
 public class CamundaServicesConfiguration {
+
+  @Bean
+  public UsageMetricsServices usageMetricsServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final UsageMetricsSearchClient usageMetricsSearchClient) {
+    return new UsageMetricsServices(
+        brokerClient, securityContextProvider, usageMetricsSearchClient, null);
+  }
 
   @Bean
   public JobServices<JobActivationResponse> jobServices(

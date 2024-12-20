@@ -20,4 +20,5 @@ public enum DecisionInstanceState {
   FAILED,
   UNSPECIFIED,
   UNKNOWN,
+  UNKNOWN_ENUM_VALUE;
 }

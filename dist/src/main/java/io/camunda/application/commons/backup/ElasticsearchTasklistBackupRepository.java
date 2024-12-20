@@ -32,7 +32,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  */
 @Conditional(ElasticSearchCondition.class)
 @Configuration
-@Profile("tasklist & !operate")
+@Profile("tasklist & !operate & standalone")
 // only active if standalone, otherwise the operate one is used
 public class ElasticsearchTasklistBackupRepository {
 

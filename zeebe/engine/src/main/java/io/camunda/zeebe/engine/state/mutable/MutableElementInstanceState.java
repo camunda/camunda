@@ -62,6 +62,19 @@ public interface MutableElementInstanceState extends ElementInstanceState {
       final long flowScopeKey, final DirectBuffer gatewayElementId);
 
   /**
+   * Decrements the numbers that counts how often a sequence flow of the given gateway has been
+   * taken.
+   *
+   * @param flowScopeKey the key of the flow scope that contains the gateway
+   * @param gatewayElementId the element id of the gateway that is the target of the sequence flow
+   * @param sequenceFlowElementId the element id of the sequence flow that is taken
+   */
+  void decrementNumberOfTakenSequenceFlows(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId);
+
+  /**
    * Inserts a new reference from process instance key to process definition key.
    *
    * <p>This makes it possible to query for all process instances of a specific process definition

@@ -7,6 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -20,7 +21,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,6 +105,23 @@ public class TestRestTasklistClient implements CloseableSilently {
     return sendRequest("PATCH", path, null);
   }
 
+  public HttpResponse<String> getProcessDefinition(final long processDefinitionKey) {
+    final var path = String.format("%sv1/internal/processes/%d", endpoint, processDefinitionKey);
+    return sendRequest("GET", path, null);
+  }
+
+  public List<ProcessDefinitionResponse> searchProcessDefinitions() {
+    try {
+      final var path = String.format("%sv1/internal/processes", endpoint);
+      final var response = sendRequest("GET", path, null);
+      final var result =
+          OBJECT_MAPPER.readValue(response.body(), ProcessDefinitionResponse[].class);
+      return Optional.ofNullable(result).map(Arrays::asList).orElseGet(Collections::emptyList);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private String mapToRequestBody(final String key, final Object value) {
     try {
       return OBJECT_MAPPER.writeValueAsString(Map.of(key, value));
@@ -150,6 +170,9 @@ public class TestRestTasklistClient implements CloseableSilently {
   }
 
   public record CreateProcessInstanceVariable(String name, Object value) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record ProcessDefinitionResponse(String bpmnProcessId) {}
 
   record BasicAuthentication(String username, String password) {}
 }

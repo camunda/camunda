@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
@@ -93,16 +94,15 @@ public class ElasticsearchTestExtension
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
+    if (indexPrefix == null || indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
+      tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
     }
-    tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    if (tasklistProperties.getElasticsearch().isCreateSchema()) {
-      elasticsearchSchemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 4, 5 * 60 /*sec*/))
-          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
-    }
+    /* Needed for the tasklist-user index */
+    elasticsearchSchemaManager.createSchema();
   }
 
   @Override
@@ -151,9 +151,12 @@ public class ElasticsearchTestExtension
   @Override
   public void refreshTasklistIndices() {
     try {
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+
+      final FlushRequest flush =
+          new FlushRequest(tasklistProperties.getElasticsearch().getIndexPrefix() + "*");
+      esClient
+          .indices()
+          .flush(flush, RequestOptions.DEFAULT.toBuilder().addParameter("force", "true").build());
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
     }
@@ -161,64 +164,25 @@ public class ElasticsearchTestExtension
 
   @Override
   public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), testCheck, null, arguments);
-  }
-
-  @Override
-  public void processAllRecordsAndWait(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(), testCheck, supplier, arguments);
-  }
-
-  @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType, final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), testCheck, null, arguments);
+    processRecordsAndWaitFor(testCheck, null, arguments);
   }
 
   @Override
   public void processRecordsAndWaitFor(
-      final Collection<RecordsReader> readers,
-      final TestCheck testCheck,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    long shouldImportCount = 0;
+      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
     int waitingRound = 0;
     final int maxRounds = 50;
     boolean found = testCheck.test(arguments);
     final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
-      shouldImportCount = 0;
       try {
         if (supplier != null) {
           supplier.get();
         }
         refreshIndexesInElasticsearch();
-        shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
-      long imported = testImportListener.getImported();
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(500);
-          shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          shouldImportCount = 0;
-          LOGGER.error(e.getMessage(), e);
-        }
-        imported = testImportListener.getImported();
-        LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
-      }
-      refreshTasklistIndices();
       found = testCheck.test(arguments);
       if (!found) {
         sleepFor(500);
@@ -253,7 +217,8 @@ public class ElasticsearchTestExtension
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (final Exception t) {
         LOGGER.error(
-            "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
+            "Elasticsearch {} indices (min {}) are not created yet. Waiting {}/{}",
+            indexPrefix,
             minCountOfIndices,
             checks,
             maxChecks);

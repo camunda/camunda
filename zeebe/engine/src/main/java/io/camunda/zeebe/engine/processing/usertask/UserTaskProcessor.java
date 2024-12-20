@@ -131,7 +131,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     switch (lifecycleState) {
       case COMPLETING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.COMPLETION_DENIED);
-      case ASSIGNING ->
+      case ASSIGNING, CLAIMING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.ASSIGNMENT_DENIED);
       default ->
           throw new IllegalArgumentException(

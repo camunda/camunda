@@ -44,8 +44,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -53,7 +53,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest {
-
   private static final OpensearchExporter EXPORTER = new OpensearchExporter();
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
@@ -76,7 +75,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   }
 
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach() throws IOException {
     tasklistProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.url = tasklistProperties.getOpenSearch().getUrl();
     CONFIG.index.prefix = tasklistProperties.getZeebeOpenSearch().getPrefix();
@@ -99,6 +98,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     recordsReaderHolder.resetCountEmptyBatches();
     recordsReaderHolder.resetPartitionsCompletedImporting();
     meterRegistry.clear();
+    createInitialImportPositionDocuments();
   }
 
   @Test
@@ -342,6 +342,10 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
   @Test
   public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    createInitialImportPositionDocuments();
+  }
+
+  private void createInitialImportPositionDocuments() {
     recordsReaderHolder.getAllRecordsReaders().stream()
         .map(RecordsReaderOpenSearch.class::cast)
         .forEach(RecordsReaderAbstract::postConstruct);
@@ -351,16 +355,14 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
         .until(
             () -> {
               final var searchRequest =
-                  new SearchRequest.Builder()
-                      .size(100)
+                  new CountRequest.Builder()
                       .index(importPositionIndex.getFullQualifiedName())
                       .build();
-              final var documents =
-                  openSearchClient.search(searchRequest, ImportPositionEntity.class);
+              final var documentCount = openSearchClient.count(searchRequest);
 
               // all initial import position documents created for each record reader
-              return documents.hits().hits().size()
-                  == recordsReaderHolder.getAllRecordsReaders().size();
+
+              return documentCount.count() == recordsReaderHolder.getAllRecordsReaders().size();
             });
   }
 
