@@ -9,6 +9,7 @@ package io.camunda.document.store.gcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +52,8 @@ public class GcpDocumentStoreTest {
   @BeforeEach
   void init() {
     gcpDocumentStore =
-        new GcpDocumentStore(BUCKET_NAME, storage, mapper, Executors.newSingleThreadExecutor());
+        new GcpDocumentStore(
+            BUCKET_NAME, null, storage, mapper, Executors.newSingleThreadExecutor());
   }
 
   @Test
@@ -293,6 +295,94 @@ public class GcpDocumentStoreTest {
     final var blob = mock(Blob.class);
 
     when(storage.get(BUCKET_NAME, documentId)).thenReturn(blob);
+    when(blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS))
+        .thenReturn(URI.create("http://localhost").toURL());
+
+    // when
+    final var documentOperationResponse =
+        gcpDocumentStore.createLink(documentId, durationInMillis).join();
+
+    // then
+    assertThat(documentOperationResponse).isNotNull();
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, DocumentLink>) documentOperationResponse).value().link())
+        .isEqualTo("http://localhost");
+  }
+
+  @Test
+  void createDocumentShouldUseCorrectPrefix() throws IOException {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var inputStream = new ByteArrayInputStream("content".getBytes());
+    final var documentCreationRequest =
+        new DocumentCreationRequest("documentId", inputStream, null);
+
+    when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(null);
+
+    // when
+    final var documentReferenceResponse =
+        gcpDocumentStore.createDocument(documentCreationRequest).join();
+
+    // then
+    assertThat(documentReferenceResponse).isNotNull();
+    verify(storage)
+        .createFrom(BlobInfo.newBuilder(BUCKET_NAME, "prefix/documentId").build(), inputStream);
+  }
+
+  @Test
+  void getDocumentShouldUseCorrectPrefix() {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var documentId = "documentId";
+    final var blob = mock(Blob.class);
+    final var readChannel = mock(ReadChannel.class);
+
+    when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(blob);
+    when(blob.reader()).thenReturn(readChannel);
+
+    // when
+    final var documentOperationResponse = gcpDocumentStore.getDocument(documentId).join();
+
+    // then
+    assertThat(documentOperationResponse).isNotNull();
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, InputStream>) documentOperationResponse).value()).isNotNull();
+  }
+
+  @Test
+  void deleteDocumentShouldUseCorrectPrefix() {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var documentId = "documentId";
+
+    when(storage.delete(BUCKET_NAME, "prefix/documentId")).thenReturn(true);
+
+    // when
+    final var documentOperationResponse = gcpDocumentStore.deleteDocument(documentId).join();
+
+    // then
+    assertThat(documentOperationResponse).isNotNull();
+    assertThat(documentOperationResponse).isInstanceOf(Right.class);
+    assertThat(((Right<DocumentError, Void>) documentOperationResponse).value()).isNull();
+  }
+
+  @Test
+  void createLinkShouldUseCorrectPrefix() throws MalformedURLException {
+    // given
+    gcpDocumentStore =
+        new GcpDocumentStore(
+            BUCKET_NAME, "prefix/", storage, mapper, Executors.newSingleThreadExecutor());
+    final var documentId = "documentId";
+    final var durationInMillis = 60 * 1000L;
+    final var blob = mock(Blob.class);
+
+    when(storage.get(BUCKET_NAME, "prefix/documentId")).thenReturn(blob);
     when(blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS))
         .thenReturn(URI.create("http://localhost").toURL());
 

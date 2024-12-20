@@ -53,4 +53,37 @@ public class GcpDocumentStoreProviderTest {
         .isEqualTo(
             "Failed to configure document store with id 'my-gcp': missing required property 'BUCKET'");
   }
+
+  @Test
+  public void shouldUseTempPrefixIfNotProvided() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "gcp", GcpDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucketName");
+    final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
+
+    // when
+    final DocumentStore documentStore = provider.createDocumentStore(configuration);
+
+    // then
+    assertNotNull(documentStore);
+  }
+
+  @Test
+  public void shouldUsePrefixIfProvided() {
+    // given
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "gcp", GcpDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", "bucketName");
+    configuration.properties().put("PREFIX", "prefix");
+    final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
+
+    // when
+    final DocumentStore documentStore = provider.createDocumentStore(configuration);
+
+    // then
+    assertNotNull(documentStore);
+  }
 }
