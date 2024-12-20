@@ -14,7 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Profile("auth-basic")
+@Profile({"auth-basic", "auth-oidc"})
 @CamundaRestController
 @RequestMapping("/v2/authentication")
 public class AuthenticationController {

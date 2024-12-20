@@ -5,14 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.authentication.entity;
 
-import {requestAndParse} from 'modules/request';
+public interface CamundaPrincipal {
+  String getEmail();
 
-const logout = async () => {
-  return requestAndParse({
-    url: '/logout',
-    method: 'POST',
-  });
-};
+  String getDisplayName();
 
-export {logout};
+  AuthenticationContext getAuthenticationContext();
+}

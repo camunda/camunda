@@ -8,49 +8,54 @@
 package io.camunda.authentication.service;
 
 import io.camunda.authentication.entity.AuthenticationContext;
-import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.entity.ClusterMetadata.AppName;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@Profile("auth-basic")
+@Profile("auth-oidc")
 @Service
-public class BasicCamundaUserService implements CamundaUserService {
-  private Optional<CamundaUser> getCurrentCamundaUser() {
+public class OidcCamundaUserService implements CamundaUserService {
+  private static final String SALES_PLAN_TYPE = "";
+  private static final Map<AppName, String> C8_LINKS = Map.of();
+
+  private Optional<CamundaOidcUser> getCamundaUser() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
         .map(Authentication::getPrincipal)
-        .map(principal -> principal instanceof final CamundaUser user ? user : null);
+        .map(principal -> principal instanceof final CamundaOidcUser user ? user : null);
   }
 
   @Override
   public CamundaUserDTO getCurrentUser() {
-    return getCurrentCamundaUser()
+    return getCamundaUser()
         .map(
             user -> {
               final AuthenticationContext auth = user.getAuthenticationContext();
               return new CamundaUserDTO(
-                  user.getUserId(),
-                  user.getUserKey(),
+                  user.getUserInfo().getSubject(),
+                  null,
                   user.getDisplayName(),
-                  user.getDisplayName(), // migrated for historical purposes username -> displayName
+                  user.getName(),
                   user.getEmail(),
                   auth.authorizedApplications(),
                   auth.tenants(),
                   auth.groups(),
                   auth.roles().stream().map(RoleEntity::name).toList(),
-                  user.getSalesPlanType(),
-                  user.getC8Links(),
-                  user.canLogout());
+                  SALES_PLAN_TYPE,
+                  C8_LINKS,
+                  true);
             })
         .orElse(null);
   }
 
   @Override
   public String getUserToken() {
-    return null;
+    return "";
   }
 }
