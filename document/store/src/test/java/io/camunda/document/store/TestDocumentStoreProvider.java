@@ -7,6 +7,7 @@
  */
 package io.camunda.document.store;
 
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentLink;
@@ -15,7 +16,6 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
 import io.camunda.document.api.DocumentStoreProvider;
 import io.camunda.zeebe.util.Either;
-import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
@@ -42,7 +42,7 @@ public class TestDocumentStoreProvider implements DocumentStoreProvider {
     }
 
     @Override
-    public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+    public CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(
         final String documentId) {
       throw new UnsupportedOperationException("Not implemented");
     }
