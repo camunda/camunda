@@ -11,6 +11,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -46,7 +47,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               partitionChangeExecutor);
       case final PartitionLeaveOperation leaveOperation ->
           new PartitionLeaveApplier(
-              leaveOperation.partitionId(), leaveOperation.memberId(), partitionChangeExecutor);
+              leaveOperation.partitionId(),
+              leaveOperation.memberId(),
+              leaveOperation.isClusterPurge(),
+              partitionChangeExecutor);
       case final MemberJoinOperation memberJoinOperation ->
           new MemberJoinApplier(memberJoinOperation.memberId(), clusterMembershipChangeExecutor);
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -86,7 +90,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               bootstrapOperation.partitionId(),
               bootstrapOperation.priority(),
               bootstrapOperation.memberId(),
+              bootstrapOperation.config(),
               partitionChangeExecutor);
+      case final DeleteHistoryOperation deleteHistoryOperation ->
+          new DeleteHistoryApplier(deleteHistoryOperation.memberId());
       case StartPartitionScaleUpOperation(
               final var ignoredMemberId,
               final var desiredPartitionCount) ->

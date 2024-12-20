@@ -143,7 +143,7 @@
     <version.h2>2.3.232</version.h2>
     <version.aws-signing>2.3.1</version.aws-signing>
     <version.reactor-netty>1.1.23</version.reactor-netty>
-    <version.tc-keycloak>3.3.1</version.tc-keycloak>
+    <version.tc-keycloak>3.5.1</version.tc-keycloak>
     <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
@@ -191,6 +191,7 @@
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
     <version.mybatis>3.5.17</version.mybatis>
     <version.mybatis-spring-boot-starter>3.0.4</version.mybatis-spring-boot-starter>
+    <version.javassist>3.30.2-GA</version.javassist>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
     <!--    <mockito.version>5.5.0</mockito.version>-->
@@ -2032,6 +2033,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>${version.javassist}</version>
+      </dependency>
+
+      <dependency>
         <groupId>joda-time</groupId>
         <artifactId>joda-time</artifactId>
         <version>${version.joda-time}</version>
@@ -2759,7 +2766,7 @@
         <plugin>
           <groupId>org.openapitools</groupId>
           <artifactId>openapi-generator-maven-plugin</artifactId>
-          <version>7.8.0</version>
+          <version>7.10.0</version>
           <configuration>
             <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
             <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/spring.md -->

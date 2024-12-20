@@ -317,6 +317,8 @@ schemas:
           - UNKNOWN
           - PARTITION_DISABLE_EXPORTER
           - PARTITION_ENABLE_EXPORTER
+          - PARTITION_BOOTSTRAP
+          - DELETE_HISTORY
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
