@@ -89,6 +89,11 @@ public final class UserClient {
       return expectation.apply(position);
     }
 
+    public Record<UserRecordValue> create(final long userKey) {
+      final long position = writer.writeCommand(UserIntent.CREATE, userCreationRecord, userKey);
+      return expectation.apply(position);
+    }
+
     public UserCreationClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
