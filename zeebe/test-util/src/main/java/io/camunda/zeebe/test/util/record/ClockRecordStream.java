@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import java.time.Instant;
 import java.util.stream.Stream;
 
 public class ClockRecordStream extends ExporterRecordStream<ClockRecordValue, ClockRecordStream> {
@@ -20,5 +21,9 @@ public class ClockRecordStream extends ExporterRecordStream<ClockRecordValue, Cl
   @Override
   protected ClockRecordStream supply(final Stream<Record<ClockRecordValue>> wrappedStream) {
     return new ClockRecordStream(wrappedStream);
+  }
+
+  public ClockRecordStream withTimestamp(final Instant instant) {
+    return valueFilter(v -> v.getTime() == instant.toEpochMilli());
   }
 }

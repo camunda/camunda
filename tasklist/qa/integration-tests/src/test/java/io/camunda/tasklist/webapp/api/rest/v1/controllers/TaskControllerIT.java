@@ -30,6 +30,7 @@ import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse.DraftSearchVariableValue;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
@@ -40,12 +41,14 @@ import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -175,8 +178,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // when
       final var result =
           mockMvcHelper.doRequest(
-              post(TasklistURIs.TASKS_URL_V1.concat("/search"))
-                  .param("state", TaskState.CREATED.name()));
+              post(TasklistURIs.TASKS_URL_V1.concat("/search")),
+              new TaskSearchRequest().setState(TaskState.CREATED));
 
       // then
       assertThat(result)
@@ -437,16 +440,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   "var_1",
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("1")
-                      .setPreviewValue("1")),
+                  new DraftSearchVariableValue().setValue("1").setPreviewValue("1")),
               tuple(
                   "var_2",
                   "2",
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("222")
-                      .setPreviewValue("222")));
+                  new DraftSearchVariableValue().setValue("222").setPreviewValue("222")));
     }
 
     @Test
@@ -650,15 +649,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   "128",
                   "128",
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
-                      .setValue("998")
-                      .setPreviewValue("998")),
+                  new DraftSearchVariableValue().setValue("998").setPreviewValue("998")),
               tuple(
                   "var_long_draft_str",
                   null,
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
+                  new DraftSearchVariableValue()
                       .setValue(null)
                       .setIsValueTruncated(true)
                       .setPreviewValue(longDraftVarValue.substring(0, variableSizeThreshold))),
@@ -673,7 +670,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                   null,
                   null,
                   false,
-                  new VariableSearchResponse.DraftSearchVariableValue()
+                  new DraftSearchVariableValue()
                       .setValue("{\"propA\": 12}")
                       .setPreviewValue("{\"propA\": 12}")));
     }
@@ -990,6 +987,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCompletionDate()).isNull();
                 assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
               });
+
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> tester.getTaskById(taskId).getAssignee() != null);
 
       final var resultUnassign =
           mockMvcHelper.doRequest(
@@ -1321,15 +1322,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String taskId =
           tester
               .createAndDeploySimpleProcess(
-                  bpmnProcessId,
-                  flowNodeBpmnId,
-                  AbstractUserTaskBuilder::zeebeUserTask,
-                  task -> task.zeebeAssignee("demo"))
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
               .processIsDeployed()
               .then()
               .startProcessInstance(bpmnProcessId)
               .then()
               .taskIsCreated(flowNodeBpmnId)
+              .claimHumanTask(flowNodeBpmnId)
               .getTaskId();
 
       final var saveVariablesRequest =

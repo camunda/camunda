@@ -285,6 +285,28 @@ public class StreamProcessingComposite implements CommandWriter {
 
   @Override
   public long writeCommand(
+      final long key,
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final long userKey,
+      final String... authorizedTenants) {
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .key(key)
+            .requestStreamId(requestStreamId)
+            .requestId(requestId)
+            .intent(intent)
+            .authorizationsWithUserKey(userKey, authorizedTenants)
+            .event(recordValue);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeCommand(
       final int requestStreamId,
       final long requestId,
       final Intent intent,
@@ -297,6 +319,25 @@ public class StreamProcessingComposite implements CommandWriter {
             .requestStreamId(requestStreamId)
             .intent(intent)
             .authorizations(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeCommand(
+      final int requestStreamId,
+      final long requestId,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final long userKey) {
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId)
+            .intent(intent)
+            .authorizationsWithUserKey(userKey, TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }

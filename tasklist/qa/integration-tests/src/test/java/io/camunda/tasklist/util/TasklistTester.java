@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
@@ -59,7 +60,7 @@ import org.springframework.web.context.WebApplicationContext;
 public class TasklistTester {
 
   private static final String REST_SEARCH_ENDPOINT = TasklistURIs.TASKS_URL_V1.concat("/search");
-  private static final String REST_GET_TASK = TasklistURIs.TASKS_URL_V1.concat("/search/{taskId}");
+  private static final String REST_GET_TASK = TasklistURIs.TASKS_URL_V1.concat("/{taskId}");
   private static final String REST_SEARCH_TASK_VARIABLES =
       TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search");
   private static final String REST_ASSIGN_ENDPOINT =
@@ -269,9 +270,9 @@ public class TasklistTester {
         result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
   }
 
-  public TaskSearchResponse getTaskById(final String taskId) throws IOException {
-    final var result = mockMvcHelper.doRequest(get(REST_GET_TASK), taskId);
-    return objectMapper.readValue(result.getContentAsString(), TaskSearchResponse.class);
+  public TaskResponse getTaskById(final String taskId) throws IOException {
+    final var result = mockMvcHelper.doRequest(get(REST_GET_TASK, taskId));
+    return objectMapper.readValue(result.getContentAsString(), TaskResponse.class);
   }
 
   public List<VariableSearchResponse> getTaskVariables() throws IOException {

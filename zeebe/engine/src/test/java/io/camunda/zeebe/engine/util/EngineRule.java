@@ -185,7 +185,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public EngineRule withSecurityConfig(final Consumer<SecurityConfiguration> modifier) {
-    securityConfigModifier = modifier;
+    securityConfigModifier = securityConfigModifier.andThen(modifier);
     return this;
   }
 
