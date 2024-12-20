@@ -284,6 +284,11 @@ public class BackupPriorityConfiguration {
     public String getFullQualifiedName() {
       return indexService.getOptimizeIndexNameWithVersion(index);
     }
+
+    @Override
+    public boolean required() {
+      return index.required();
+    }
   }
 
   /** Same reasoning as {@link OptimizePrio1Delegate} */
@@ -293,6 +298,11 @@ public class BackupPriorityConfiguration {
     @Override
     public String getFullQualifiedName() {
       return indexService.getOptimizeIndexNameWithVersion(index);
+    }
+
+    @Override
+    public boolean required() {
+      return index.required();
     }
   }
 }
