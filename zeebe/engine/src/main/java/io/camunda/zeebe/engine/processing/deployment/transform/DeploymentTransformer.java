@@ -36,10 +36,9 @@ import org.slf4j.Logger;
 public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-
+  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
+      new UnknownResourceTransformer();
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
-
-  private final ResourceTransformer defaultResourceTransformer;
 
   private final MessageDigest digestGenerator;
   // internal changes during processing
@@ -84,8 +83,8 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getFormState());
 
-    defaultResourceTransformer =
-        new ResourceTransformer(
+    final var resourceTransformer =
+        new RpaTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
     resourceTransformers =
@@ -93,7 +92,8 @@ public final class DeploymentTransformer {
             entry(".bpmn", bpmnResourceTransformer),
             entry(".xml", bpmnResourceTransformer),
             entry(".dmn", dmnResourceTransformer),
-            entry(".form", formResourceTransformer));
+            entry(".form", formResourceTransformer),
+            entry(".rpa", resourceTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
@@ -191,7 +191,7 @@ public final class DeploymentTransformer {
         .filter(entry -> resourceName.endsWith(entry.getKey()))
         .map(Entry::getValue)
         .findFirst()
-        .orElse(defaultResourceTransformer);
+        .orElse(UNKNOWN_RESOURCE);
   }
 
   private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
