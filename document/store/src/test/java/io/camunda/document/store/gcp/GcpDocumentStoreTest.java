@@ -350,7 +350,8 @@ public class GcpDocumentStoreTest {
     // then
     assertThat(documentOperationResponse).isNotNull();
     assertThat(documentOperationResponse).isInstanceOf(Right.class);
-    assertThat(((Right<DocumentError, InputStream>) documentOperationResponse).value()).isNotNull();
+    assertThat(((Right<DocumentError, DocumentContent>) documentOperationResponse).value())
+        .isNotNull();
   }
 
   @Test

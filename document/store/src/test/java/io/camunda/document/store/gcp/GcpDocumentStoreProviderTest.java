@@ -64,7 +64,8 @@ public class GcpDocumentStoreProviderTest {
     final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
 
     // when
-    final DocumentStore documentStore = provider.createDocumentStore(configuration);
+    final DocumentStore documentStore =
+        provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
     assertNotNull(documentStore);
@@ -81,7 +82,8 @@ public class GcpDocumentStoreProviderTest {
     final GcpDocumentStoreProvider provider = new GcpDocumentStoreProvider();
 
     // when
-    final DocumentStore documentStore = provider.createDocumentStore(configuration);
+    final DocumentStore documentStore =
+        provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
     assertNotNull(documentStore);
