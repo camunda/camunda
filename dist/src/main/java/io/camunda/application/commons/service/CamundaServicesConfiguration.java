@@ -178,15 +178,9 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
-      final PasswordEncoder passwordEncoder,
-      final GroupServices groupServices) {
+      final PasswordEncoder passwordEncoder) {
     return new UserServices(
-        brokerClient,
-        securityContextProvider,
-        userSearchClient,
-        null,
-        passwordEncoder,
-        groupServices);
+        brokerClient, securityContextProvider, userSearchClient, null, passwordEncoder);
   }
 
   @Bean

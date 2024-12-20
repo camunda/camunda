@@ -44,7 +44,6 @@ public class UserServiceTest {
     brokerClient = mock(BrokerClient.class);
     authentication = mock(Authentication.class);
     final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
-    final GroupServices groupServices = mock(GroupServices.class);
     userDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerUserDeleteRequest.class);
     services =
         new UserServices(
@@ -52,8 +51,7 @@ public class UserServiceTest {
             mock(SecurityContextProvider.class),
             client,
             authentication,
-            passwordEncoder,
-            groupServices);
+            passwordEncoder);
   }
 
   @Test
