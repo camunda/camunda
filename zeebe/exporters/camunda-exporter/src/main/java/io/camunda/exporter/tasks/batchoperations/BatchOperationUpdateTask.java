@@ -10,9 +10,7 @@ package io.camunda.exporter.tasks.batchoperations;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
@@ -42,13 +40,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
 
       final var documentUpdates =
           finishedSingleOperationsCount.stream()
-              .map(
-                  d ->
-                      new DocumentUpdate(
-                          d.batchOperationId(),
-                          Map.of(
-                              BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
-                              d.finishedOperationsCount())))
+              .map(d -> new DocumentUpdate(d.batchOperationId(), d.finishedOperationsCount()))
               .toList();
 
       if (documentUpdates.size() > 0) {

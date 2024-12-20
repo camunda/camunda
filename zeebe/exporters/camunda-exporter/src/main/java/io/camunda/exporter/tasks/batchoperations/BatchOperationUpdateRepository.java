@@ -9,7 +9,6 @@ package io.camunda.exporter.tasks.batchoperations;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
@@ -44,7 +43,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    *
    * <p>All fields are expected to be non-null, except routing.
    */
-  record DocumentUpdate(String id, Map<String, Object> doc) {}
+  record DocumentUpdate(String id, long finishedOperationsCount) {}
 
   record OperationsAggData(String batchOperationId, long finishedOperationsCount) {}
 
