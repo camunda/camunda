@@ -3071,6 +3071,7 @@ paths:
       description: |
         Publishes a single message.
         Messages are published to specific partitions computed from their correlation keys.
+        Messages can be buffered.
         The endpoint does not wait for a correlation result.
         Use the message correlation endpoint for such use cases.
       requestBody:
@@ -3110,6 +3111,8 @@ paths:
       description: |
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
+        The message is not buffered.
+        Use the publish message endpoint to send messages that can be buffered. 
       requestBody:
         required: true
         content:
