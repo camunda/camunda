@@ -42,6 +42,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -142,8 +143,9 @@ public class RdbmsConfiguration {
   @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper) {
-    return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper);
+      final ExporterPositionMapper exporterPositionMapper,
+      final RdbmsWriterMetrics metrics) {
+    return new RdbmsWriterFactory(sqlSessionFactory, exporterPositionMapper, metrics);
   }
 
   @Bean

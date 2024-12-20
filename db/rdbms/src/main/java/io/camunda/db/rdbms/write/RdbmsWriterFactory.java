@@ -16,16 +16,20 @@ public class RdbmsWriterFactory {
 
   private final SqlSessionFactory sqlSessionFactory;
   private final ExporterPositionMapper exporterPositionMapper;
+  private final RdbmsWriterMetrics metrics;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
-      final ExporterPositionMapper exporterPositionMapper) {
+      final ExporterPositionMapper exporterPositionMapper,
+      final RdbmsWriterMetrics metrics) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
+    this.metrics = metrics;
   }
 
   public RdbmsWriter createWriter(final long partitionId, final int queueSize) {
-    final var executionQueue = new DefaultExecutionQueue(sqlSessionFactory, partitionId, queueSize);
+    final var executionQueue = new DefaultExecutionQueue(sqlSessionFactory, partitionId, queueSize,
+        metrics);
     return new RdbmsWriter(
         executionQueue, new ExporterPositionService(executionQueue, exporterPositionMapper));
   }
