@@ -4291,6 +4291,8 @@ components:
           $ref: "#/components/schemas/DeploymentDecisionRequirements"
         form:
           $ref: "#/components/schemas/DeploymentForm"
+        resource:
+          $ref: "#/components/schemas/DeploymentRpa"
     DeploymentMetadataResult:
       type: object
       properties:
@@ -4302,6 +4304,8 @@ components:
           $ref: "#/components/schemas/DeploymentDecisionRequirementsResult"
         form:
           $ref: "#/components/schemas/DeploymentFormResult"
+        resource:
+          $ref: "#/components/schemas/DeploymentRpaNumberKeys"
     DeploymentProcessBase:
       description: Base properties for DeploymentProcess.
       type: object
@@ -4477,6 +4481,44 @@ components:
         formKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this form.
+    DeploymentRpaBase:
+      description: Base properties for DeploymentRpa.
+      type: object
+      properties:
+        resourceId:
+          type: string
+          description: |
+            The RPA ID, as parsed during deployment, together with the version forms a
+            unique identifier for a specific form.
+        version:
+          type: integer
+          format: int32
+          description: The assigned RPA version.
+        resourceName:
+          type: string
+          description: The resource name from which this RPA was parsed.
+        tenantId:
+          type: string
+          description: The tenant ID of the deployed form.
+    DeploymentRpaNumberKeys:
+      description: A deployed RPA.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentRpaBase"
+      properties:
+        resourceKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this RPA.
+    DeploymentRpa:
+      description: A deployed RPA.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentRpaBase"
+      properties:
+        resourceKey:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this RPA.
 
     CreateProcessInstanceRequestBase:
       description: Base properties for CreateProcessInstanceRequest
