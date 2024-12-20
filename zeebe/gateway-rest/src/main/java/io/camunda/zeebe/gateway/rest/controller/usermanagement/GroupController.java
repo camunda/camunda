@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
-
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -116,7 +114,7 @@ public class GroupController {
       final SearchQueryResult result = new Builder().build();
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
-      return mapErrorToResponse(e);
+      return RestErrorMapper.mapErrorToResponse(e);
     }
   }
 
@@ -128,7 +126,7 @@ public class GroupController {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toGroup(groupServices.getGroup(groupKey)));
     } catch (final Exception exception) {
-      return mapErrorToResponse(exception);
+      return RestErrorMapper.mapErrorToResponse(exception);
     }
   }
 
@@ -136,18 +134,18 @@ public class GroupController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<GroupSearchQueryResponse> getUsersByGroupKey(
+  public ResponseEntity<GroupSearchQueryResponse> searchGroups(
       @RequestBody(required = false) final GroupSearchQueryRequest query) {
     return SearchQueryRequestMapper.toGroupQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchUsersByGroupKey);
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<GroupSearchQueryResponse> searchUsersByGroupKey(final GroupQuery query) {
+  private ResponseEntity<GroupSearchQueryResponse> search(final GroupQuery query) {
     try {
       final var result = groupServices.search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
-      return mapErrorToResponse(e);
+      return RestErrorMapper.mapErrorToResponse(e);
     }
   }
 
