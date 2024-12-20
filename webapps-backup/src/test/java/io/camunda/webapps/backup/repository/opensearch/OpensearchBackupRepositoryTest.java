@@ -10,8 +10,11 @@ package io.camunda.webapps.backup.repository.opensearch;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.webapps.backup.BackupException;
@@ -33,7 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -56,6 +61,7 @@ class OpensearchBackupRepositoryTest {
   private final long incompleteCheckTimeoutLength =
       BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds() * 1000;
   private long now;
+  private final TestSnapshotProvider snapshotNameProvider = new TestSnapshotProvider();
 
   @BeforeEach
   public void setUp() {
@@ -113,7 +119,7 @@ class OpensearchBackupRepositoryTest {
         new BackupService.SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            new SnapshotIndexCollection(List.of("index-1", "index-2")),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> {};
     final Runnable onFailure = () -> fail("Should execute snapshot successfully.");
@@ -124,7 +130,7 @@ class OpensearchBackupRepositoryTest {
                 new SnapshotInfo.Builder()
                     .snapshot("snapshot")
                     .dataStreams(List.of())
-                    .indices(List.of("index-1", "index-2"))
+                    .indices(List.of("index-1", "index-2", "index-3"))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.toString())
                     .build())
@@ -141,7 +147,7 @@ class OpensearchBackupRepositoryTest {
         new SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            new SnapshotIndexCollection(List.of("index-1", "index-2")),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
     final Runnable onFailure = () -> {};
@@ -429,5 +435,58 @@ class OpensearchBackupRepositoryTest {
 
   private GetSnapshotResponse emptyResponse() {
     return GetSnapshotResponse.of(this::defaultFields);
+  }
+
+  @Test
+  public void shouldRetryBackupWithRequiredIndicesIfIndexNotFound() throws IOException {
+    final var missingIndex = "missing-index";
+    // given
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenAnswer(
+            new Answer<CompletableFuture<CreateSnapshotResponse>>() {
+
+              @Override
+              public CompletableFuture<CreateSnapshotResponse> answer(
+                  final InvocationOnMock invocation) throws Throwable {
+                final var request = (CreateSnapshotRequest) invocation.getArguments()[0];
+                if (request.indices().contains(missingIndex)) {
+                  return CompletableFuture.failedFuture(
+                      new OpenSearchException(
+                          ErrorResponse.of(
+                              b ->
+                                  b.error(
+                                          ErrorCause.of(
+                                              ec ->
+                                                  ec.type("index_not_found_exception")
+                                                      .reason("index not found")))
+                                      .status(1))));
+                } else {
+                  return CompletableFuture.completedFuture(
+                      CreateSnapshotResponse.of(
+                          b ->
+                              b.accepted(true)
+                                  .snapshot(
+                                      SnapshotInfo.of(
+                                          si ->
+                                              si.snapshot(request.snapshot())
+                                                  .uuid("uuid")
+                                                  .indices(request.indices())
+                                                  .state("SUCCESS")
+                                                  .dataStreams(List.of())))));
+                }
+              }
+            });
+
+    final var metadata = new Metadata(1L, "1", 1, 1);
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            snapshotNameProvider.getSnapshotName(metadata),
+            new SnapshotIndexCollection(List.of("required"), List.of(missingIndex)),
+            metadata);
+    repository.executeSnapshotting(
+        snapshotRequest, () -> {}, () -> fail("Expected snapshot to complete"));
+
+    verify(openSearchAsyncClient.snapshot(), times(2)).create((CreateSnapshotRequest) any());
   }
 }

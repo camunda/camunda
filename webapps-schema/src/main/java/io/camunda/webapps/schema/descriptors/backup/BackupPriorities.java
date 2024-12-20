@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.descriptors.backup;
 
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -40,8 +41,7 @@ public record BackupPriorities(
 
   private static <A extends BackupPriority> SnapshotIndexCollection fullQualifiedName(
       final Collection<A> backups) {
-    final var indices = backups.stream().map(BackupPriority::getFullQualifiedName).toList();
-    return new SnapshotIndexCollection(indices);
+    return SnapshotIndexCollection.of(backups);
   }
 
   private static <A extends BackupPriority> SnapshotIndexCollection fullQualifiedNameWithMatcher(
@@ -52,6 +52,6 @@ public record BackupPriorities(
             .map(BackupPriority::getFullQualifiedName)
             .flatMap(name -> Stream.of(name + "*", "-" + name))
             .toList();
-    return new SnapshotIndexCollection(indices);
+    return new SnapshotIndexCollection(indices, Collections.emptyList());
   }
 }
