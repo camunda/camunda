@@ -371,6 +371,7 @@ public class ClusteringRule extends ExternalResource {
             brokerClient,
             new SimpleMeterRegistry(),
             new SecurityConfiguration(),
+            null,
             null);
     systemContexts.put(nodeId, systemContext);
 
@@ -505,6 +506,7 @@ public class ClusteringRule extends ExternalResource {
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
+            null,
             null);
     gateway.start().join();
 
