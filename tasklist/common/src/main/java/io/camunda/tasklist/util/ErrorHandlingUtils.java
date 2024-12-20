@@ -15,6 +15,11 @@ import java.util.Objects;
 public abstract class ErrorHandlingUtils {
 
   public static final String INVALID_STATE = "INVALID_STATE";
+  public static final String TASK_ALREADY_ASSIGNED = "TASK_ALREADY_ASSIGNED";
+  public static final String TASK_IS_NOT_ACTIVE = "TASK_IS_NOT_ACTIVE";
+  public static final String TASK_NOT_ASSIGNED = "TASK_NOT_ASSIGNED";
+  public static final String TASK_NOT_ASSIGNED_TO_CURRENT_USER =
+      "TASK_NOT_ASSIGNED_TO_CURRENT_USER";
 
   public static String getErrorMessage(final long taskKey, final Throwable exception) {
     final String errorMessage;

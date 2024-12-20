@@ -7,12 +7,19 @@
  */
 package io.camunda.tasklist.webapp.es;
 
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_ALREADY_ASSIGNED;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_IS_NOT_ACTIVE;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
+import static io.camunda.tasklist.util.ErrorHandlingUtils.createErrorMessage;
+
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import java.net.URI;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,7 +65,11 @@ public class TaskValidator {
 
     final UserDTO currentUser = getCurrentUser();
     if (!task.getAssignee().equals(currentUser.getUserId())) {
-      throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
+      throw new InvalidRequestException(
+          createErrorMessage(
+              TASK_NOT_ASSIGNED_TO_CURRENT_USER,
+              "Task is not assigned to " + currentUser.getUserId(),
+              URI.create("/v1/tasks/%s/unassign".formatted(task.getId()))));
     }
   }
 
@@ -72,7 +83,11 @@ public class TaskValidator {
     }
 
     if (taskBefore.getAssignee() != null) {
-      throw new InvalidRequestException("Task is already assigned");
+      throw new InvalidRequestException(
+          createErrorMessage(
+              TASK_ALREADY_ASSIGNED,
+              "Task is already assigned",
+              URI.create("/v1/tasks/%s/assign".formatted(taskBefore.getId()))));
     }
   }
 
@@ -82,14 +97,22 @@ public class TaskValidator {
   }
 
   private static void validateTaskIsActive(final TaskEntity taskBefore) {
-    if (!taskBefore.getState().equals(TaskState.CREATED)) {
-      throw new InvalidRequestException("Task is not active");
+    if (taskBefore.getState().equals(TaskState.CREATED)) {
+      throw new InvalidRequestException(
+          createErrorMessage(
+              TASK_IS_NOT_ACTIVE,
+              "Task is not active",
+              URI.create("/v1/tasks/%s/assign".formatted(taskBefore.getId()))));
     }
   }
 
   private static void validateTaskIsAssigned(final TaskEntity taskBefore) {
     if (taskBefore.getAssignee() == null) {
-      throw new InvalidRequestException("Task is not assigned");
+      throw new InvalidRequestException(
+          createErrorMessage(
+              TASK_NOT_ASSIGNED,
+              "Task is not assigned",
+              URI.create("/v1/tasks/%s/unassign".formatted(taskBefore.getId()))));
     }
   }
 
