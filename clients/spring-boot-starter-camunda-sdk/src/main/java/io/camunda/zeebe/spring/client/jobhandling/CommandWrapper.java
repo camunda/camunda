@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.spring.client.jobhandling;
 
-import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.worker.BackoffSupplier;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import java.time.Instant;
 import java.util.concurrent.ScheduledExecutorService;

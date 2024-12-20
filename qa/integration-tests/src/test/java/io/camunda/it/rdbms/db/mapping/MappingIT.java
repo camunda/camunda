@@ -160,6 +160,7 @@ public class MappingIT {
                     .mappingKey(randomizedMapping.mappingKey())
                     .claimName(randomizedMapping.claimName())
                     .claimValue(randomizedMapping.claimValue())
+                    .name(randomizedMapping.name())
                     .build(),
                 MappingSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));

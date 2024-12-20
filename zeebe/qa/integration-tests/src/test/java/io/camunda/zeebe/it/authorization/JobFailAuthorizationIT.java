@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -46,7 +46,7 @@ public class JobFailAuthorizationIT {
 
   private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static ZeebeClient defaultUserClient;
+  @AutoCloseResource private static CamundaClient defaultUserClient;
   private static long jobKey;
 
   @TestZeebe(autoStart = false)
@@ -138,10 +138,10 @@ public class JobFailAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'",
               PROCESS_ID);
     }
   }

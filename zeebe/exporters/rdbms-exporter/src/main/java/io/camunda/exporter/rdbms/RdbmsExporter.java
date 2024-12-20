@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -31,12 +32,14 @@ public class RdbmsExporter {
   private final long partitionId;
   private final RdbmsWriter rdbmsWriter;
 
-  private ExporterPositionModel exporterRdbmsPosition;
-  private long lastPosition = -1;
-
   // configuration
   private final Duration flushInterval;
   private final int maxQueueSize;
+
+  // volatile runtime properties
+  private ExporterPositionModel exporterRdbmsPosition;
+  private long lastPosition = -1;
+  private ScheduledTask currentFlushTask = null;
 
   public RdbmsExporter(final RdbmsExporterConfig config) {
     rdbmsWriter = config.rdbmsWriter();
@@ -48,7 +51,8 @@ public class RdbmsExporter {
     maxQueueSize = config.maxQueueSize();
 
     if (!flushAfterEachRecord()) {
-      controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+      currentFlushTask =
+          controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
     }
 
     initializeRdbmsPosition();
@@ -68,6 +72,10 @@ public class RdbmsExporter {
 
   public void close() {
     try {
+      if (currentFlushTask != null) {
+        currentFlushTask.cancel();
+      }
+
       rdbmsWriter.flush();
     } catch (final Exception e) {
       LOG.warn("[RDBMS Exporter] Failed to flush records before closing exporter.", e);
@@ -108,6 +116,14 @@ public class RdbmsExporter {
     } else {
       LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());
     }
+  }
+
+  public void purge() {
+    if (currentFlushTask != null) {
+      currentFlushTask.cancel();
+    }
+
+    rdbmsWriter.getRdbmsPurger().purgeRdbms();
   }
 
   private void updatePositionInBroker() {
@@ -161,7 +177,7 @@ public class RdbmsExporter {
 
   private void flushAndReschedule() {
     flushExecutionQueue();
-    controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
+    currentFlushTask = controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
   }
 
   @VisibleForTesting(

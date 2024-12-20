@@ -16,8 +16,8 @@
 package io.camunda.zeebe;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Topology;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.AppConfigLoader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -80,7 +80,7 @@ abstract class App implements Runnable {
     }
   }
 
-  void printTopology(final ZeebeClient client) {
+  void printTopology(final CamundaClient client) {
     while (true) {
       try {
         final Topology topology = client.newTopologyRequest().send().join();

@@ -17,9 +17,9 @@ package io.camunda;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
@@ -34,7 +34,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @CamundaSpringProcessTest
 public class ProcessUnitTest {
 
-  @Autowired private ZeebeClient client;
+  @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
   @Test

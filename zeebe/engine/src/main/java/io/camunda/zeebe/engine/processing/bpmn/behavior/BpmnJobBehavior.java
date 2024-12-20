@@ -181,18 +181,13 @@ public final class BpmnJobBehavior {
       final TaskListener listener) {
     evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
         .thenDo(
-            listenerJobProperties -> {
-              final var taskHeaders =
-                  Collections.singletonMap(
-                      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
-                      Objects.toString(taskRecordValue.getUserTaskKey()));
-              writeJobCreatedEvent(
-                  context,
-                  listenerJobProperties,
-                  JobKind.TASK_LISTENER,
-                  fromTaskListenerEventType(listener.getEventType()),
-                  taskHeaders);
-            })
+            listenerJobProperties ->
+                writeJobCreatedEvent(
+                    context,
+                    listenerJobProperties,
+                    JobKind.TASK_LISTENER,
+                    fromTaskListenerEventType(listener.getEventType()),
+                    extractUserTaskHeaders(taskRecordValue)))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -328,6 +323,26 @@ public final class BpmnJobBehavior {
       headers.put(Protocol.USER_TASK_FORM_KEY_HEADER_NAME, formKey);
     }
     return headerEncoder.encode(headers);
+  }
+
+  private Map<String, String> extractUserTaskHeaders(final UserTaskRecord userTaskRecord) {
+    final var headers = new HashMap<String, String>();
+
+    if (userTaskRecord.getUserTaskKey() > 0) {
+      headers.put(
+          Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
+    }
+
+    if (userTaskRecord.getPriority() > 0) {
+      headers.put(
+          Protocol.USER_TASK_PRIORITY_HEADER_NAME, String.valueOf(userTaskRecord.getPriority()));
+    }
+
+    if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
+      headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
+    }
+
+    return Collections.unmodifiableMap(headers);
   }
 
   public void cancelJob(final BpmnElementContext context) {

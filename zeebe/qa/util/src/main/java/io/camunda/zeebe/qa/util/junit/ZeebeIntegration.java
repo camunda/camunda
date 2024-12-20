@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *     final Topology topology;
  *
  *     // when
- *     try (final ZeebeClient client = cluster.newClientBuilder().build()) {
+ *     try (final CamundaClient client = cluster.newClientBuilder().build()) {
  *       topology = c.newTopologyRequest().send().join();
  *     }
  *

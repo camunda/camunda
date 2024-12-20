@@ -360,7 +360,7 @@ public class RequestMapper {
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
-        () -> new MappingDTO(request.getClaimName(), request.getClaimValue()));
+        () -> new MappingDTO(request.getClaimName(), request.getClaimValue(), request.getName()));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
@@ -500,6 +500,18 @@ public class RequestMapper {
         .user(authenticatedUserKey)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
+        .build();
+  }
+
+  public static Authentication getAnonymousAuthentication() {
+    return new Builder()
+        .token(
+            Authorization.jwtEncoder()
+                .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+                .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+                .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+                .withClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true)
+                .build())
         .build();
   }
 
@@ -730,9 +742,7 @@ public class RequestMapper {
 
     if (jobResultCorrections.getAssignee() != null) {
       corrections.setAssignee(jobResultCorrections.getAssignee());
-      // `UserTaskRecord.ASSIGNEE` will be available after merging
-      // https://github.com/camunda/camunda/pull/25663 to the `main` branch
-      correctedAttributes.add("assignee");
+      correctedAttributes.add(UserTaskRecord.ASSIGNEE);
     }
     if (jobResultCorrections.getDueDate() != null) {
       corrections.setDueDate(jobResultCorrections.getDueDate());

@@ -10,8 +10,9 @@ package io.camunda.application.commons.backup;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
+import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.profiles.ProfileOperateTasklist;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -21,28 +22,35 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@ProfileOperateTasklist
+@ProfileWebApp
 public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupRepositoryProps;
   private final BackupRepository backupRepository;
+  private final DynamicIndicesProvider dynamicIndicesProvider;
 
   public HistoryBackupComponent(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
       final BackupRepositoryProps backupRepositoryProps,
-      final BackupRepository backupRepository) {
+      final BackupRepository backupRepository,
+      final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     this.backupRepositoryProps = backupRepositoryProps;
     this.backupRepository = backupRepository;
+    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Bean
   public BackupService backupService() {
     return new BackupServiceImpl(
-        threadPoolTaskExecutor, backupPriorities, backupRepositoryProps, backupRepository);
+        threadPoolTaskExecutor,
+        backupPriorities,
+        backupRepositoryProps,
+        backupRepository,
+        dynamicIndicesProvider);
   }
 }

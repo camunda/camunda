@@ -28,6 +28,8 @@ public class BackupServiceImpl implements BackupService {
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupProps;
 
+  private final DynamicIndicesProvider dynamicIndicesProvider;
+
   private final BackupRepository repository;
 
   private final List<SnapshotIndexCollection> indexPatternsOrdered;
@@ -35,13 +37,15 @@ public class BackupServiceImpl implements BackupService {
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
-      final BackupRepositoryProps operateProperties,
-      final BackupRepository repository) {
+      final BackupRepositoryProps backupProps,
+      final BackupRepository repository,
+      final DynamicIndicesProvider dynamicIndicesProvider) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     indexPatternsOrdered = backupPriorities.indicesSplitBySnapshot().toList();
     this.repository = repository;
-    backupProps = operateProperties;
+    this.backupProps = backupProps;
+    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Override
@@ -90,9 +94,14 @@ public class BackupServiceImpl implements BackupService {
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
     var index = 0;
-    for (final var indexCollection : indexPatternsOrdered) {
+    for (var indexCollection : indexPatternsOrdered) {
       final Metadata metadata = new Metadata(request.getBackupId(), version, index++, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
+      // Add all the dynamic indices in the last step
+      if (index == count) {
+        indexCollection = indexCollection.addIndices(dynamicIndicesProvider.getAllDynamicIndices());
+      }
+
       final SnapshotRequest snapshotRequest =
           new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
 

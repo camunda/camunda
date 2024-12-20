@@ -12,9 +12,9 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
@@ -25,35 +25,37 @@ import java.util.List;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
 public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
 
+  private static SchemaWithExporter schemaExporterHelper;
   @Autowired RichOpenSearchClient richOpenSearchClient;
 
   @Autowired
   @Qualifier("operateProcessIndex")
   ProcessIndex processIndex;
 
-  @Autowired SchemaManager schemaManager;
-
-  @Autowired OperateProperties operateProperties;
-  private String indexPrefix;
+  @BeforeClass
+  public static void beforeClass() {
+    schemaExporterHelper = new SchemaWithExporter("", false);
+  }
 
   @Before
   public void setUp() {
-    indexPrefix = "test-batch-request-" + TestUtil.createRandomString(5);
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
-    schemaManager.createSchema();
+    schemaExporterHelper.createSchema();
   }
 
   @After
   public void cleanUp() {
-    schemaManager.deleteIndicesFor(indexPrefix + "*");
+    TestUtil.removeAllIndices(richOpenSearchClient.index(), richOpenSearchClient.template(), "*");
   }
 
   @Test

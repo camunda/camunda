@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.search.filter.Operation.eq;
+import static io.camunda.zeebe.gateway.rest.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -33,6 +37,8 @@ import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UntypedOperation;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -52,6 +58,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQueryBuilder;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -89,6 +96,27 @@ import org.springframework.http.ProblemDetail;
 public final class SearchQueryRequestMapper {
 
   private SearchQueryRequestMapper() {}
+
+  public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
+      final String startTime, final String endTime) {
+    return getResult(
+        validate(
+            violations -> {
+              if (startTime == null || endTime == null) {
+                violations.add("The startTime and endTime must both be specified");
+              }
+              validateDate(startTime, "startTime", violations);
+              validateDate(endTime, "endTime", violations);
+            }),
+        () ->
+            new UsageMetricsQuery.Builder()
+                .filter(
+                    new UsageMetricsFilter.Builder()
+                        .startTime(toOffsetDateTime(startTime))
+                        .endTime(toOffsetDateTime(endTime))
+                        .build())
+                .build());
+  }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final ProcessDefinitionSearchQueryRequest request) {
@@ -739,6 +767,7 @@ public final class SearchQueryRequestMapper {
         case "mappingKey" -> builder.mappingKey();
         case "claimName" -> builder.claimName();
         case "claimValue" -> builder.claimValue();
+        case "name" -> builder.name();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -891,11 +920,13 @@ public final class SearchQueryRequestMapper {
     if (filters != null && !filters.isEmpty()) {
       return filters.stream()
           .map(
-              filter ->
-                  new VariableValueFilter.Builder()
-                      .name(filter.getName())
-                      .eq(filter.getValue())
-                      .build())
+              filter -> {
+                final var builder = new VariableValueFilter.Builder().name(filter.getName());
+                if (filter.getValue() != null) {
+                  builder.valueOperation(UntypedOperation.of(eq(filter.getValue())));
+                }
+                return builder.build();
+              })
           .toList();
     }
 
@@ -911,7 +942,7 @@ public final class SearchQueryRequestMapper {
               filter ->
                   new VariableValueFilter.Builder()
                       .name(filter.getName())
-                      .eq(filter.getValue())
+                      .valueOperation(UntypedOperation.of(eq(filter.getValue())))
                       .build())
           .toList();
     }
@@ -980,7 +1011,7 @@ public final class SearchQueryRequestMapper {
       validationErrors.addAll(page.getLeft());
     }
 
-    return RequestMapper.getResult(
+    return getResult(
         RequestValidator.createProblemDetail(validationErrors),
         () ->
             queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());

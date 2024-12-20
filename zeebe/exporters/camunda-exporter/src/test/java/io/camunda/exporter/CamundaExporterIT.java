@@ -336,6 +336,7 @@ final class CamundaExporterIT {
             "custom-prefix-operate-incident-8.3.1_",
             "custom-prefix-operate-list-view-8.3.0_",
             "custom-prefix-operate-metric-8.3.0_",
+            "custom-prefix-operate-message-8.5.0_",
             "custom-prefix-operate-operation-8.4.1_",
             "custom-prefix-operate-post-importer-queue-8.3.0_",
             "custom-prefix-operate-process-8.3.0_",
@@ -358,7 +359,10 @@ final class CamundaExporterIT {
     final Record record = generateRecordWithSupportedBrokerVersion(valueType);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
-        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
     final var expectedHandlers =
         resourceProvider.getExportHandlers().stream()
             .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
@@ -448,7 +452,10 @@ final class CamundaExporterIT {
     final DefaultExporterResourceProvider defaultExporterResourceProvider =
         new DefaultExporterResourceProvider();
     defaultExporterResourceProvider.init(
-        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     return defaultExporterResourceProvider.getExportHandlers().stream()
         .map(handler -> (ExportHandler<T, R>) handler)
@@ -521,7 +528,11 @@ final class CamundaExporterIT {
       final Set<IndexTemplateDescriptor> templateDescriptors,
       final ExporterConfiguration config) {
     final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
-    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
@@ -540,6 +551,7 @@ final class CamundaExporterIT {
     @BeforeEach
     void setup() {
       controller.resetScheduledTasks();
+      controller.resetLastRanAt();
     }
 
     @TestTemplate
@@ -547,25 +559,27 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      createSchemas(config, clientAdapter);
+      // adds a not complete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
       final var context = spy(getContextFromConfig(config));
       doReturn(partitionId).when(context).getPartitionId();
       camundaExporter.configure(context);
       camundaExporter.open(controller);
 
       // when
-
-      // adds a not complete position index document so exporter sees importing as not yet completed
-      indexImportPositionEntity("decision", false, clientAdapter);
-      clientAdapter.refresh();
-
-      controller.runScheduledTasks(Duration.ofMinutes(1));
-
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
               r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
 
       camundaExporter.export(record);
+
+      // if importers completed this would trigger scheduled flush which would result in the
+      // record being visible in ES/OS
+      controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
 
       // then
       assertThat(controller.getPosition()).isEqualTo(-1);
@@ -673,6 +687,15 @@ final class CamundaExporterIT {
               .setCompleted(completed);
 
       client.index(entity.getId(), importPositionIndexName, entity);
+    }
+
+    private void createSchemas(
+        final ExporterConfiguration config, final SearchClientAdapter adapter) throws IOException {
+      final var exporter = new CamundaExporter();
+      exporter.configure(getContextFromConfig(config));
+      exporter.open(new ExporterTestController());
+
+      adapter.refresh();
     }
   }
 }

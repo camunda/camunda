@@ -24,6 +24,7 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
+  private final StringProperty nameProp = new StringProperty("name", "");
   private final ArrayProperty<LongValue> roleKeysProp =
       new ArrayProperty<>("roleKeys", LongValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
@@ -32,10 +33,11 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
       new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(6);
+    super(7);
     declareProperty(mappingKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
+        .declareProperty(nameProp)
         .declareProperty(roleKeysProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(groupKeysProp);
@@ -65,6 +67,15 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
 
   public PersistedMapping setClaimValue(final String claimValue) {
     claimValueProp.setValue(claimValue);
+    return this;
+  }
+
+  public String getName() {
+    return BufferUtil.bufferAsString(nameProp.getValue());
+  }
+
+  public PersistedMapping setName(final String name) {
+    nameProp.setValue(name);
     return this;
   }
 

@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.application.Profile;
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -41,7 +41,7 @@ public class UserCreateAuthorizationIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static AuthorizationsUtil authUtil;
-  @AutoCloseResource private static ZeebeClient defaultUserClient;
+  @AutoCloseResource private static CamundaClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
@@ -132,9 +132,10 @@ public class UserCreateAuthorizationIT {
       // then
       assertThatThrownBy(response::join)
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("title: UNAUTHORIZED")
-          .hasMessageContaining("status: 401")
-          .hasMessageContaining("Unauthorized to perform operation 'CREATE' on resource 'USER'");
+          .hasMessageContaining("title: FORBIDDEN")
+          .hasMessageContaining("status: 403")
+          .hasMessageContaining(
+              "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
     }
   }
 }

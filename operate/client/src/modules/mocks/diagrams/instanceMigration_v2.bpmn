@@ -37,8 +37,8 @@
       <bpmn:incoming>SequenceFlow_1dq2rqw</bpmn:incoming>
       <bpmn:outgoing>Flow_0jjk1nl</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="Flow_0jjk1nl" sourceRef="shipArticles" targetRef="Gateway_1fr6z3f" />
-    <bpmn:parallelGateway id="Gateway_1fr6z3f">
+    <bpmn:sequenceFlow id="Flow_0jjk1nl" sourceRef="shipArticles" targetRef="ParallelGateway_1" />
+    <bpmn:parallelGateway id="ParallelGateway_1">
       <bpmn:incoming>Flow_0jjk1nl</bpmn:incoming>
       <bpmn:outgoing>Flow_19ap3af</bpmn:outgoing>
       <bpmn:outgoing>Flow_1u8201x</bpmn:outgoing>
@@ -48,7 +48,7 @@
       <bpmn:outgoing>Flow_0ww4tx0</bpmn:outgoing>
       <bpmn:outgoing>Flow_1l6gojp</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:parallelGateway id="Gateway_0wzi4n5">
+    <bpmn:parallelGateway id="ParallelGateway_2">
       <bpmn:incoming>Flow_10w6zi2</bpmn:incoming>
       <bpmn:incoming>Flow_1j1rioa</bpmn:incoming>
       <bpmn:incoming>Flow_0w9awk1</bpmn:incoming>
@@ -69,10 +69,10 @@
       <bpmn:outgoing>Flow_14ee2ym</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0wsooye" messageRef="Message_0so1os3" />
     </bpmn:boundaryEvent>
-    <bpmn:sequenceFlow id="Flow_19ap3af" sourceRef="Gateway_1fr6z3f" targetRef="TaskA" />
+    <bpmn:sequenceFlow id="Flow_19ap3af" sourceRef="ParallelGateway_1" targetRef="TaskA" />
     <bpmn:sequenceFlow id="Flow_1rxumvr" sourceRef="TaskA" targetRef="MessageIntermediateCatch" />
     <bpmn:sequenceFlow id="Flow_14ee2ym" sourceRef="MessageInterrupting" targetRef="Event_1q5nldo" />
-    <bpmn:sequenceFlow id="Flow_0r0cpho" sourceRef="Gateway_0wzi4n5" targetRef="Gateway_1mch53q" />
+    <bpmn:sequenceFlow id="Flow_0r0cpho" sourceRef="ParallelGateway_2" targetRef="ParallelGateway_3" />
     <bpmn:endEvent id="Event_1ptwud8">
       <bpmn:incoming>Flow_093zwcs</bpmn:incoming>
     </bpmn:endEvent>
@@ -87,14 +87,14 @@
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_093zwcs" sourceRef="TimerNonInterrupting" targetRef="Event_1ptwud8" />
-    <bpmn:sequenceFlow id="Flow_1u8201x" sourceRef="Gateway_1fr6z3f" targetRef="TaskD" />
-    <bpmn:sequenceFlow id="Flow_10w6zi2" sourceRef="TaskD" targetRef="Gateway_0wzi4n5" />
+    <bpmn:sequenceFlow id="Flow_1u8201x" sourceRef="ParallelGateway_1" targetRef="TaskD" />
+    <bpmn:sequenceFlow id="Flow_10w6zi2" sourceRef="TaskD" targetRef="ParallelGateway_2" />
     <bpmn:intermediateCatchEvent id="MessageIntermediateCatch" name="Message intermediate catch">
       <bpmn:incoming>Flow_1rxumvr</bpmn:incoming>
       <bpmn:outgoing>Flow_1j1rioa</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1kk3ypa" messageRef="Message_2tsgt52" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_1j1rioa" sourceRef="MessageIntermediateCatch" targetRef="Gateway_0wzi4n5" />
+    <bpmn:sequenceFlow id="Flow_1j1rioa" sourceRef="MessageIntermediateCatch" targetRef="ParallelGateway_2" />
     <bpmn:subProcess id="MessageEventSubProcess" name="Message event sub process" triggeredByEvent="true">
       <bpmn:endEvent id="Event_13rtwuo">
         <bpmn:incoming>Flow_006eqia</bpmn:incoming>
@@ -152,29 +152,29 @@
       <bpmn:incoming>Flow_0k6h50o</bpmn:incoming>
       <bpmn:outgoing>Flow_0w9awk1</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:sequenceFlow id="Flow_0k6h50o" sourceRef="Gateway_1fr6z3f" targetRef="MessageReceiveTask" />
-    <bpmn:sequenceFlow id="Flow_0w9awk1" sourceRef="MessageReceiveTask" targetRef="Gateway_0wzi4n5" />
-    <bpmn:sequenceFlow id="Flow_1xrxhdb" sourceRef="Gateway_1mch53q" targetRef="BusinessRuleTask" />
-    <bpmn:parallelGateway id="Gateway_1mch53q">
+    <bpmn:sequenceFlow id="Flow_0k6h50o" sourceRef="ParallelGateway_1" targetRef="MessageReceiveTask" />
+    <bpmn:sequenceFlow id="Flow_0w9awk1" sourceRef="MessageReceiveTask" targetRef="ParallelGateway_2" />
+    <bpmn:sequenceFlow id="Flow_1xrxhdb" sourceRef="ParallelGateway_3" targetRef="BusinessRuleTask" />
+    <bpmn:parallelGateway id="ParallelGateway_3">
       <bpmn:incoming>Flow_0r0cpho</bpmn:incoming>
       <bpmn:outgoing>Flow_1xrxhdb</bpmn:outgoing>
       <bpmn:outgoing>Flow_096x6qz</bpmn:outgoing>
       <bpmn:outgoing>Flow_0vszv2n</bpmn:outgoing>
       <bpmn:outgoing>Flow_1tamaxe</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:sequenceFlow id="Flow_12ojgh1" sourceRef="Gateway_1qwalm2" targetRef="EndEvent_042s0oc" />
-    <bpmn:parallelGateway id="Gateway_1qwalm2">
+    <bpmn:sequenceFlow id="Flow_12ojgh1" sourceRef="ParallelGateway_4" targetRef="EndEvent_042s0oc" />
+    <bpmn:parallelGateway id="ParallelGateway_4">
       <bpmn:incoming>Flow_1o3euza</bpmn:incoming>
       <bpmn:incoming>Flow_1a97986</bpmn:incoming>
       <bpmn:incoming>Flow_1kp87ma</bpmn:incoming>
       <bpmn:incoming>Flow_12cuk8u</bpmn:incoming>
       <bpmn:outgoing>Flow_12ojgh1</bpmn:outgoing>
     </bpmn:parallelGateway>
-    <bpmn:sequenceFlow id="Flow_1o3euza" sourceRef="BusinessRuleTask" targetRef="Gateway_1qwalm2" />
-    <bpmn:sequenceFlow id="Flow_096x6qz" sourceRef="Gateway_1mch53q" targetRef="ScriptTask" />
-    <bpmn:sequenceFlow id="Flow_0vszv2n" sourceRef="Gateway_1mch53q" targetRef="SendTask" />
-    <bpmn:sequenceFlow id="Flow_1a97986" sourceRef="ScriptTask" targetRef="Gateway_1qwalm2" />
-    <bpmn:sequenceFlow id="Flow_1kp87ma" sourceRef="SendTask" targetRef="Gateway_1qwalm2" />
+    <bpmn:sequenceFlow id="Flow_1o3euza" sourceRef="BusinessRuleTask" targetRef="ParallelGateway_4" />
+    <bpmn:sequenceFlow id="Flow_096x6qz" sourceRef="ParallelGateway_3" targetRef="ScriptTask" />
+    <bpmn:sequenceFlow id="Flow_0vszv2n" sourceRef="ParallelGateway_3" targetRef="SendTask" />
+    <bpmn:sequenceFlow id="Flow_1a97986" sourceRef="ScriptTask" targetRef="ParallelGateway_4" />
+    <bpmn:sequenceFlow id="Flow_1kp87ma" sourceRef="SendTask" targetRef="ParallelGateway_4" />
     <bpmn:businessRuleTask id="BusinessRuleTask" name="Business rule task">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="foo" />
@@ -196,7 +196,7 @@
       <bpmn:incoming>Flow_0vszv2n</bpmn:incoming>
       <bpmn:outgoing>Flow_1kp87ma</bpmn:outgoing>
     </bpmn:sendTask>
-    <bpmn:sequenceFlow id="Flow_1dj6oc6" sourceRef="Gateway_1fr6z3f" targetRef="EventBasedGateway" />
+    <bpmn:sequenceFlow id="Flow_1dj6oc6" sourceRef="ParallelGateway_1" targetRef="EventBasedGateway" />
     <bpmn:eventBasedGateway id="EventBasedGateway">
       <bpmn:incoming>Flow_1dj6oc6</bpmn:incoming>
       <bpmn:outgoing>Flow_0w6241b</bpmn:outgoing>
@@ -209,14 +209,14 @@
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_0w6241b" sourceRef="EventBasedGateway" targetRef="IntermediateTimerEvent" />
-    <bpmn:sequenceFlow id="Flow_0ff6mia" sourceRef="IntermediateTimerEvent" targetRef="Gateway_0wzi4n5" />
-    <bpmn:sequenceFlow id="Flow_0jgmxvl" sourceRef="Gateway_1fr6z3f" targetRef="SignalIntermediateCatch" />
+    <bpmn:sequenceFlow id="Flow_0ff6mia" sourceRef="IntermediateTimerEvent" targetRef="ParallelGateway_2" />
+    <bpmn:sequenceFlow id="Flow_0jgmxvl" sourceRef="ParallelGateway_1" targetRef="SignalIntermediateCatch" />
     <bpmn:task id="Activity_1rksrko">
       <bpmn:incoming>Flow_05m0l61</bpmn:incoming>
       <bpmn:outgoing>Flow_02hggoh</bpmn:outgoing>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_05m0l61" sourceRef="SignalIntermediateCatch" targetRef="Activity_1rksrko" />
-    <bpmn:sequenceFlow id="Flow_02hggoh" sourceRef="Activity_1rksrko" targetRef="Gateway_0wzi4n5" />
+    <bpmn:sequenceFlow id="Flow_02hggoh" sourceRef="Activity_1rksrko" targetRef="ParallelGateway_2" />
     <bpmn:intermediateCatchEvent id="SignalIntermediateCatch" name="Signal intermediate catch">
       <bpmn:incoming>Flow_0jgmxvl</bpmn:incoming>
       <bpmn:outgoing>Flow_05m0l61</bpmn:outgoing>
@@ -277,8 +277,8 @@
         </bpmn:multiInstanceLoopCharacteristics>
       </bpmn:serviceTask>
     </bpmn:subProcess>
-    <bpmn:sequenceFlow id="Flow_0ww4tx0" sourceRef="Gateway_1fr6z3f" targetRef="MultiInstanceSubProcess" />
-    <bpmn:sequenceFlow id="Flow_0kehygf" sourceRef="MultiInstanceSubProcess" targetRef="Gateway_0wzi4n5" />
+    <bpmn:sequenceFlow id="Flow_0ww4tx0" sourceRef="ParallelGateway_1" targetRef="MultiInstanceSubProcess" />
+    <bpmn:sequenceFlow id="Flow_0kehygf" sourceRef="MultiInstanceSubProcess" targetRef="ParallelGateway_2" />
     <bpmn:subProcess id="SubProcess" name="Sub Process">
       <bpmn:incoming>Flow_1l6gojp</bpmn:incoming>
       <bpmn:outgoing>Flow_0xowmx0</bpmn:outgoing>
@@ -290,8 +290,8 @@
         <bpmn:incoming>Flow_1ut40vs</bpmn:incoming>
       </bpmn:endEvent>
     </bpmn:subProcess>
-    <bpmn:sequenceFlow id="Flow_1l6gojp" sourceRef="Gateway_1fr6z3f" targetRef="SubProcess" />
-    <bpmn:sequenceFlow id="Flow_0xowmx0" sourceRef="SubProcess" targetRef="Gateway_0wzi4n5" />
+    <bpmn:sequenceFlow id="Flow_1l6gojp" sourceRef="ParallelGateway_1" targetRef="SubProcess" />
+    <bpmn:sequenceFlow id="Flow_0xowmx0" sourceRef="SubProcess" targetRef="ParallelGateway_2" />
     <bpmn:subProcess id="EscalationEventSubProcess" name="Escalation event sub process" triggeredByEvent="true">
       <bpmn:startEvent id="EscalationStartEvent" name="Escalation start event">
         <bpmn:outgoing>Flow_02u1eyw</bpmn:outgoing>
@@ -312,8 +312,8 @@
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_07uyd0k" />
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_00k6q4q" sourceRef="CompensationTask" targetRef="CompensationThrowEvent" />
-    <bpmn:sequenceFlow id="Flow_1tamaxe" sourceRef="Gateway_1mch53q" targetRef="CompensationTask" />
-    <bpmn:sequenceFlow id="Flow_12cuk8u" sourceRef="CompensationThrowEvent" targetRef="Gateway_1qwalm2" />
+    <bpmn:sequenceFlow id="Flow_1tamaxe" sourceRef="ParallelGateway_3" targetRef="CompensationTask" />
+    <bpmn:sequenceFlow id="Flow_12cuk8u" sourceRef="CompensationThrowEvent" targetRef="ParallelGateway_4" />
     <bpmn:serviceTask id="CompensationTask" name="Compensation task">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="foo" />
@@ -368,10 +368,10 @@
       <bpmndi:BPMNShape id="Activity_08ac618_di" bpmnElement="shipArticles">
         <dc:Bounds x="630" y="98" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_1o28q8h" bpmnElement="Gateway_1fr6z3f">
+      <bpmndi:BPMNShape id="BPMNShape_1o28q8h" bpmnElement="ParallelGateway_1">
         <dc:Bounds x="775" y="113" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="BPMNShape_03hi8di" bpmnElement="Gateway_0wzi4n5">
+      <bpmndi:BPMNShape id="BPMNShape_03hi8di" bpmnElement="ParallelGateway_2">
         <dc:Bounds x="1195" y="113" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="BPMNShape_1fyji1z" bpmnElement="TaskA">
@@ -393,19 +393,6 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1058" y="163" width="90" height="27" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_08of8yc_di" bpmnElement="UndoTask">
-        <dc:Bounds x="1470" y="620" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0le9j9k_di" bpmnElement="CompensationThrowEvent">
-        <dc:Bounds x="1522" y="522" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1505" y="565" width="71" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1toltrh_di" bpmnElement="CompensationTask">
-        <dc:Bounds x="1330" y="500" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0tgxt6v_di" bpmnElement="MessageEventSubProcess" isExpanded="true">
         <dc:Bounds x="319" y="380" width="350" height="200" />
@@ -486,10 +473,10 @@
         <dc:Bounds x="910" y="480" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1kw4l9v_di" bpmnElement="Gateway_1mch53q">
+      <bpmndi:BPMNShape id="Gateway_1kw4l9v_di" bpmnElement="ParallelGateway_3">
         <dc:Bounds x="1285" y="113" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0kcdob5_di" bpmnElement="Gateway_1qwalm2">
+      <bpmndi:BPMNShape id="Gateway_0kcdob5_di" bpmnElement="ParallelGateway_4">
         <dc:Bounds x="1565" y="113" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_14p4e46_di" bpmnElement="BusinessRuleTask">
@@ -595,11 +582,25 @@
         <di:waypoint x="395" y="1450" />
         <di:waypoint x="571" y="1450" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_1fdbv3h_di" bpmnElement="Association_1fdbv3h">
-        <di:waypoint x="1400" y="598" />
-        <di:waypoint x="1400" y="660" />
-        <di:waypoint x="1470" y="660" />
-      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_08of8yc_di" bpmnElement="UndoTask">
+        <dc:Bounds x="1470" y="620" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0le9j9k_di" bpmnElement="CompensationThrowEvent">
+        <dc:Bounds x="1522" y="522" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1505" y="565" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1toltrh_di" bpmnElement="CompensationTask">
+        <dc:Bounds x="1330" y="500" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0eq4ysp_di" bpmnElement="CompensationBoundaryEvent">
+        <dc:Bounds x="1382" y="562" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1363" y="605" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0ztghtl_di" bpmnElement="SignalBoundaryEvent">
         <dc:Bounds x="1012" y="772" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -616,12 +617,6 @@
         <dc:Bounds x="962" y="160" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="912" y="187" width="56" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0eq4ysp_di" bpmnElement="CompensationBoundaryEvent">
-        <dc:Bounds x="1382" y="562" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1363" y="605" width="76" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0j6tsnn_di" bpmnElement="SequenceFlow_0j6tsnn">
@@ -803,6 +798,11 @@
         <di:waypoint x="1558" y="540" />
         <di:waypoint x="1590" y="540" />
         <di:waypoint x="1590" y="163" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1fdbv3h_di" bpmnElement="Association_1fdbv3h">
+        <di:waypoint x="1400" y="598" />
+        <di:waypoint x="1400" y="660" />
+        <di:waypoint x="1470" y="660" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

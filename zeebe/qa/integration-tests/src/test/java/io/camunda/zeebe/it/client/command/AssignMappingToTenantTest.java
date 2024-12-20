@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -30,11 +30,12 @@ class AssignMappingToTenantTest {
   private static final String TENANT_ID = "tenant-id";
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
+  private static final String NAME = "name";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   private long tenantKey;
   private long mappingKey;
@@ -59,6 +60,7 @@ class AssignMappingToTenantTest {
             .newCreateMappingCommand()
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
+            .name(NAME)
             .send()
             .join()
             .getMappingKey();

@@ -76,7 +76,7 @@ jobs:
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
-          ./conftest test -o github --policy .github/conftest-*.rego .github/workflows/*.yml
+          ./conftest test -o github --policy .github .github/workflows/*.yml
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -575,7 +575,7 @@ jobs:
         run: yarn test:ci
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
         with:
           name: optimize-unit-tests-frontend-junit
           path: |
@@ -616,14 +616,19 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f build-tools/pom.xml install
+      - name: Build optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -pl optimize/backend -am install -Dquickly -PskipFrontendBuild
+          threads: .5C
       - name: Test
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml test -Dskip.fe.build -Dskip.docker
+          parameters: -f optimize/pom.xml  test -PskipFrontendBuild -Dskip.docker
           threads: .5C
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
         with:
           name: optimize-unit-tests-backend-junit
           path: |
@@ -777,7 +782,7 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.5.0
+      - uses: actions/setup-java@v4.6.0
         with:
           distribution: 'temurin'
           java-version: '21'

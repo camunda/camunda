@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -32,25 +32,26 @@ import java.util.stream.Stream;
 
 public final class AuthorizationCheckBehavior {
 
-  public static final String UNAUTHORIZED_ERROR_MESSAGE =
-      "Unauthorized to perform operation '%s' on resource '%s'";
-  public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
-      UNAUTHORIZED_ERROR_MESSAGE + " with %s";
+  public static final String FORBIDDEN_ERROR_MESSAGE =
+      "Insufficient permissions to perform operation '%s' on resource '%s'";
+  public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
+      FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
   public static final String WILDCARD_PERMISSION = "*";
+  private static final String UNAUTHORIZED_ERROR_MESSAGE =
+      "Unauthorized to perform operation '%s' on resource '%s'";
   private final AuthorizationState authorizationState;
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
   private final MappingState mappingState;
-  private final TenantState tenantState;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
-    tenantState = processingState.getTenantState();
+    processingState.getTenantState();
     this.securityConfig = securityConfig;
   }
 
@@ -66,7 +67,7 @@ public final class AuthorizationCheckBehavior {
    * @return a {@link Either} containing a {@link RejectionType} if the user is not authorized or
    *     {@link Void} if the user is authorized
    */
-  public Either<RejectionType, Void> isAuthorized(final AuthorizationRequest request) {
+  public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
       return Either.right(null);
     }
@@ -85,11 +86,16 @@ public final class AuthorizationCheckBehavior {
     if (userKey.isPresent()) {
       final var userOptional = userState.getUser(userKey.get());
       if (userOptional.isEmpty()) {
-        return Either.left(RejectionType.UNAUTHORIZED);
+        return Either.left(
+            new Rejection(
+                RejectionType.UNAUTHORIZED,
+                UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                    request.getPermissionType(), request.getResourceType())));
       }
       // verify if the user is authorized for the tenant
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-        return Either.left(RejectionType.NOT_FOUND);
+        return Either.left(
+            new Rejection(RejectionType.NOT_FOUND, request.getForbiddenErrorMessage()));
       }
 
       authorizedResourceIdentifiers =
@@ -104,7 +110,8 @@ public final class AuthorizationCheckBehavior {
     if (hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers)) {
       return Either.right(null);
     } else {
-      return Either.left(RejectionType.UNAUTHORIZED);
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
     }
   }
 
@@ -349,22 +356,32 @@ public final class AuthorizationCheckBehavior {
     public String getTenantId() {
       return tenantId;
     }
+
+    public String getForbiddenErrorMessage() {
+      final var resourceIdsContainsOnlyWildcard =
+          resourceIds.size() == 1 && resourceIds.contains(WILDCARD_PERMISSION);
+      return resourceIdsContainsOnlyWildcard
+          ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
+          : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              permissionType, resourceType, resourceIds.stream().sorted().toList());
+    }
   }
 
-  public static class UnauthorizedException extends RuntimeException {
+  public static class ForbiddenException extends RuntimeException {
 
-    public UnauthorizedException(
-        final AuthorizationRequest authRequest, final String resourceMessage) {
-      super(
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType(), resourceMessage));
+    public ForbiddenException(final AuthorizationRequest authRequest) {
+      super(authRequest.getForbiddenErrorMessage());
+    }
+
+    public RejectionType getRejectionType() {
+      return RejectionType.FORBIDDEN;
     }
   }
 
   public static class NotFoundException extends RuntimeException {
 
-    public NotFoundException(final AuthorizationRequest authRequest, final String resourceMessage) {
-      super(NOT_FOUND_ERROR_MESSAGE.formatted(resourceMessage, authRequest.getTenantId()));
+    public NotFoundException(final String message) {
+      super(message);
     }
   }
 

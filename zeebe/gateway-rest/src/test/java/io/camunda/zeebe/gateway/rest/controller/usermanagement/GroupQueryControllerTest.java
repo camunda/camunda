@@ -42,17 +42,17 @@ public class GroupQueryControllerTest extends RestControllerTest {
       {
         "items":[
           {
-            "groupKey":111,
+            "groupKey":"111",
             "name":"Group 1",
             "assignedMemberKeys":[]
           },
           {
-            "groupKey":222,
+            "groupKey":"222",
             "name":"Group 2",
             "assignedMemberKeys":[]
           },
           {
-            "groupKey":333,
+            "groupKey":"333",
             "name":"Group 3",
             "assignedMemberKeys":[]
           }
@@ -95,7 +95,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "%s",
-              "groupKey": %d
+              "groupKey": "%d"
             }"""
                 .formatted(groupName, groupKey));
 
@@ -174,15 +174,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "groupKey": %d,
+                 "groupKey": "%d",
                  "name": "%s"
                },
                {
-                 "groupKey": %d,
+                 "groupKey": "%d",
                  "name": "%s"
                },
                {
-                 "groupKey": %d,
+                 "groupKey": "%d",
                  "name": "%s"
                }
              ],

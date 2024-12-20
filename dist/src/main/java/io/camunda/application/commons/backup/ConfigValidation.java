@@ -8,10 +8,11 @@
 package io.camunda.application.commons.backup;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public final class ConfigValidation {
 
@@ -19,35 +20,44 @@ public final class ConfigValidation {
 
   private ConfigValidation() {}
 
-  public static <A> Predicate<A> skipNull() {
-    return Objects::isNull;
-  }
-
   public static <A> Predicate<Optional<A>> skipEmptyOptional() {
     return Optional::isEmpty;
   }
 
   public static <A> A allMatch(
-      final String messageIfEmpty,
+      final Supplier<A> whenEmpty,
       final Function<Map<String, A>, String> messageIfDifferent,
       final Map<String, A> props) {
-    return allMatch(messageIfEmpty, messageIfDifferent, props, (ignored) -> false);
+    return allMatch(whenEmpty, messageIfDifferent, props, (ignored) -> false);
   }
 
   public static <A> A allMatch(
-      final String messageIfEmpty,
+      final Supplier<A> whenEmpty,
       final Function<Map<String, A>, String> messageIfDifferent,
       final Map<String, A> props,
       final Predicate<A> skip) {
-    final var filtered = props.values().stream().filter(a -> !skip.test(a)).toList();
+    return allMatchHaving(whenEmpty, messageIfDifferent, props, Function.identity(), skip);
+  }
+
+  public static <From, To> From allMatchHaving(
+      final Supplier<From> whenEmpty,
+      final Function<Map<String, To>, String> messageIfDifferent,
+      final Map<String, From> props,
+      final Function<From, To> extract,
+      final Predicate<To> skip) {
+    final var filtered = props.values().stream().filter(a -> !skip.test(extract.apply(a))).toList();
+
     if (filtered.isEmpty()) {
-      throw new IllegalArgumentException(messageIfEmpty);
+      return whenEmpty.get();
     }
-    final A firstPrefix = filtered.getFirst();
-    if (filtered.stream().allMatch(p -> p.equals(firstPrefix))) {
+    final From firstPrefix = filtered.getFirst();
+    if (filtered.stream().map(extract).allMatch(p -> p.equals(extract.apply(firstPrefix)))) {
       return firstPrefix;
     } else {
-      throw new IllegalArgumentException(messageIfDifferent.apply(props));
+      final Map<String, To> mappedProps =
+          props.entrySet().stream()
+              .collect(Collectors.toMap(Map.Entry::getKey, e -> extract.apply(e.getValue())));
+      throw new IllegalArgumentException(messageIfDifferent.apply(mappedProps));
     }
   }
 }

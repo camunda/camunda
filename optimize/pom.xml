@@ -107,8 +107,8 @@
     <!-- testing config -->
     <mockito.version>5.14.2</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.11.3</junit.jupiter.version>
-    <junit.platform.version>1.11.3</junit.platform.version>
+    <junit.jupiter.version>5.11.4</junit.jupiter.version>
+    <junit.platform.version>1.11.4</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.26.3</assertj.version>
     <google-java-format.plugin.version>1.25.2</google-java-format.plugin.version>
@@ -124,7 +124,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.3.4</spring-boot.version>
+    <spring-boot.version>3.3.5</spring-boot.version>
   </properties>
 
   <dependencyManagement>

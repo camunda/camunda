@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -27,8 +27,9 @@ public class CreateMappingTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
+  public static final String NAME = "Map Name";
 
-  @AutoCloseResource ZeebeClient client;
+  @AutoCloseResource CamundaClient client;
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
@@ -46,12 +47,16 @@ public class CreateMappingTest {
             .newCreateMappingCommand()
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
+            .name(NAME)
             .send()
             .join();
 
     // then
     assertThat(response.getMappingKey()).isGreaterThan(0);
-    ZeebeAssertHelper.assertMappingCreated(CLAIM_NAME, CLAIM_VALUE);
+    ZeebeAssertHelper.assertMappingCreated(
+        CLAIM_NAME,
+        CLAIM_VALUE,
+        mappingRecordValue -> assertThat(mappingRecordValue.getName()).isEqualTo(NAME));
   }
 
   @Test
@@ -65,15 +70,37 @@ public class CreateMappingTest {
   @Test
   void shouldRejectIfMissingClaimValue() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateMappingCommand().claimName(CLAIM_NAME).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateMappingCommand().claimName(CLAIM_NAME).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }
 
   @Test
+  void shouldRejectIfMissingName() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateMappingCommand()
+                    .claimName(CLAIM_NAME)
+                    .claimValue(CLAIM_VALUE)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name");
+  }
+
+  @Test
   void shouldRejectIfMappingAlreadyExists() {
     // given
-    client.newCreateMappingCommand().claimName(CLAIM_NAME).claimValue(CLAIM_VALUE).send().join();
+    client
+        .newCreateMappingCommand()
+        .claimName(CLAIM_NAME)
+        .claimValue(CLAIM_VALUE)
+        .name(NAME)
+        .send()
+        .join();
 
     // when / then
     assertThatThrownBy(
@@ -82,6 +109,7 @@ public class CreateMappingTest {
                     .newCreateMappingCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
+                    .name(NAME)
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)

@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +29,12 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
   public PersistedGroup() {
     super(3);
     declareProperty(groupKeyProp).declareProperty(nameProp).declareProperty(tenantIdsProp);
+  }
+
+  public void wrap(final GroupRecord group) {
+    groupKeyProp.setValue(group.getGroupKey());
+    nameProp.setValue(group.getNameBuffer());
+    tenantIdsProp.reset();
   }
 
   public long getGroupKey() {

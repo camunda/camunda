@@ -8,17 +8,17 @@
 package io.camunda.migration.identity.config;
 
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ManagementIdentityConnector {
-  @Autowired private IdentityMigrationProperties identityMigrationProperties;
 
   @Bean // will be closed automatically
-  public ManagementIdentityClient managementIdentityClient(final RestTemplateBuilder builder) {
+  public ManagementIdentityClient managementIdentityClient(
+      final RestTemplateBuilder builder,
+      final IdentityMigrationProperties identityMigrationProperties) {
     final var properties = identityMigrationProperties.getManagementIdentity();
     final var restTemplate =
         builder
@@ -27,6 +27,7 @@ public class ManagementIdentityConnector {
             .defaultHeader("Content-Type", "application/json")
             .defaultHeader("Accept", "application/json")
             .build();
-    return new ManagementIdentityClient(restTemplate);
+    return new ManagementIdentityClient(
+        restTemplate, identityMigrationProperties.getOrganizationId());
   }
 }

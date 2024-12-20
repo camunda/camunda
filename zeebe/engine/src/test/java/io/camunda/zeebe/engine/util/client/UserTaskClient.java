@@ -24,6 +24,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class UserTaskClient {
   private static final long DEFAULT_KEY = -1L;
+  private static final int DEFAULT_REQUEST_STREAM_ID = 1;
+  private static final long DEFAULT_REQUEST_ID = 1L;
 
   private static final Function<Long, Record<UserTaskRecordValue>> SUCCESS_SUPPLIER =
       (position) ->
@@ -122,6 +124,8 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.ASSIGN,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
@@ -136,6 +140,8 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.ASSIGN,
             taskRecord,
             authorizedTenantIds.toArray(new String[0]));
@@ -147,6 +153,8 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.CLAIM,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
@@ -158,6 +166,8 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.COMPLETE,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
@@ -186,6 +196,8 @@ public final class UserTaskClient {
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.UPDATE,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));
@@ -197,13 +209,16 @@ public final class UserTaskClient {
         .setCandidateGroupsChanged()
         .setCandidateUsersChanged()
         .setDueDateChanged()
-        .setFollowUpDateChanged();
+        .setFollowUpDateChanged()
+        .setPriorityChanged();
     userTaskRecord.wrapChangedAttributes(changes, true);
 
     final long userTaskKey = findUserTaskKey();
     final long position =
         writer.writeCommand(
             userTaskKey,
+            DEFAULT_REQUEST_STREAM_ID,
+            DEFAULT_REQUEST_ID,
             UserTaskIntent.UPDATE,
             userTaskRecord.setUserTaskKey(userTaskKey),
             authorizedTenantIds.toArray(new String[0]));

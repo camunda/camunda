@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -82,8 +83,9 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(tenantId);
-    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest, tenantId);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return;
     }
 
@@ -199,15 +201,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command,
-      final AuthorizationRequest authorizationRequest,
-      final String tenantId) {
-    final var errorMessage =
-        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-            authorizationRequest.getPermissionType(),
-            authorizationRequest.getResourceType(),
-            "tenant id '%s'".formatted(tenantId));
-    rejectCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+      final TypedRecord<TenantRecord> command, final Rejection rejection) {
+    rejectCommand(command, rejection.type(), rejection.reason());
   }
 
   private void rejectCommand(

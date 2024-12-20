@@ -14,12 +14,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
-import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.CompleteUserTaskResponse;
+import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -52,7 +52,7 @@ public class UserTaskListenersTest {
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
-  @AutoCloseResource private ZeebeClient client;
+  @AutoCloseResource private CamundaClient client;
 
   private ZeebeResourcesHelper resourcesHelper;
 
@@ -213,10 +213,10 @@ public class UserTaskListenersTest {
             incident ->
                 assertThat(incident)
                     .hasJobKey(jobKey)
-                    .hasErrorType(ErrorType.JOB_NO_RETRIES)
+                    .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
                     .extracting(
                         IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
-                    .startsWith("io.camunda.zeebe.client.api.command.ClientStatusException:")
+                    .startsWith("io.camunda.client.api.command.ClientStatusException:")
                     .contains("Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT':")
                     .contains(rejectionReason));
 
@@ -252,7 +252,7 @@ public class UserTaskListenersTest {
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
 
     // when: invoke complete user task command
-    final ZeebeFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+    final CamundaFuture<CompleteUserTaskResponse> completeUserTaskFuture =
         client.newUserTaskCompleteCommand(userTaskKey).send();
 
     // TL job should be successfully completed with the result "denied" set correctly

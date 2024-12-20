@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
@@ -76,7 +77,8 @@ public class IndexDescriptors {
                 new TasklistMetricIndex(indexPrefix, isElasticsearch),
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),
-                new VariableTemplate(indexPrefix, isElasticsearch))
+                new VariableTemplate(indexPrefix, isElasticsearch),
+                new MessageTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

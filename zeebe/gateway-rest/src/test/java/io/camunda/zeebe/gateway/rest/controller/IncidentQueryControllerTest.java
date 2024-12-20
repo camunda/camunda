@@ -42,17 +42,17 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           {
               "items": [
                   {
-                      "incidentKey": 5,
-                      "processDefinitionKey": 23,
+                      "incidentKey": "5",
+                      "processDefinitionKey": "23",
                       "processDefinitionId": "complexProcess",
-                      "processInstanceKey": 42,
+                      "processInstanceKey": "42",
                       "errorType": "JOB_NO_RETRIES",
                       "errorMessage": "No retries left.",
                       "flowNodeId": "flowNodeId",
-                      "flowNodeInstanceKey": 17,
+                      "flowNodeInstanceKey": "17",
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
-                      "jobKey": 101,
+                      "jobKey": "101",
                       "tenantId": "tenantId"
                   }
               ],
@@ -90,17 +90,17 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   static final String EXPECTED_GET_RESPONSE =
       """
             {
-                          "incidentKey": 5,
-                          "processDefinitionKey": 23,
+                          "incidentKey": "5",
+                          "processDefinitionKey": "23",
                           "processDefinitionId": "complexProcess",
-                          "processInstanceKey": 42,
+                          "processInstanceKey": "42",
                           "errorType": "JOB_NO_RETRIES",
                           "errorMessage": "No retries left.",
                           "flowNodeId": "flowNodeId",
-                          "flowNodeInstanceKey": 17,
+                          "flowNodeInstanceKey": "17",
                           "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
-                          "jobKey": 101,
+                          "jobKey": "101",
                           "tenantId": "tenantId"
                       }
           """;
