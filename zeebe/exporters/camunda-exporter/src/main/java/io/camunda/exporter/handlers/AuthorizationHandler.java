@@ -18,8 +18,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.Permissio
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class AuthorizationHandler
+public final class AuthorizationHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
+
   private final String indexName;
 
   public AuthorizationHandler(final String indexName) {
@@ -43,7 +44,8 @@ public class AuthorizationHandler
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(
+        "%s-%s".formatted(record.getValue().getOwnerKey(), record.getValue().getResourceType()));
   }
 
   @Override
