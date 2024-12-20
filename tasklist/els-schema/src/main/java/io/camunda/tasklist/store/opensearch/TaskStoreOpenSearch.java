@@ -60,6 +60,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.Query.Builder;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -115,18 +116,20 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
+    final Query.Builder flowNodeInstanceQuery = new Query.Builder();
+    flowNodeInstanceQuery.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID));
+
+    final Query.Builder processInstanceIdQuery = new Query.Builder();
+    processInstanceIdQuery.term(
+        t -> t.field(TaskTemplate.PROCESS_INSTANCE_ID).value(FieldValue.of(processInstanceId)));
+
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .query(
-                q ->
-                    q.term(
-                        term ->
-                            term.field(TaskTemplate.PROCESS_INSTANCE_ID)
-                                .value(FieldValue.of(processInstanceId))))
+            .query(q -> joinQueryBuilderWithAnd(flowNodeInstanceQuery, processInstanceIdQuery))
             .fields(f -> f.field(TaskTemplate.KEY));
 
     try {
-      return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
+      return OpenSearchUtil.scrollUserTaskKeysToList(searchRequest, osClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -135,16 +138,17 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
+    final Query.Builder flowNodeInstanceQuery = new Query.Builder();
+    flowNodeInstanceQuery.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID));
+
+    final Query.Builder processInstanceIdQuery = new Query.Builder();
+    processInstanceIdQuery.term(
+        t -> t.field(TaskTemplate.PROCESS_DEFINITION_ID).value(FieldValue.of(processDefinitionId)));
+
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
-            .query(
-                q ->
-                    q.term(
-                        term ->
-                            term.field(TaskTemplate.PROCESS_DEFINITION_ID)
-                                .value(FieldValue.of(processDefinitionId))))
+            .query(q -> joinQueryBuilderWithAnd(flowNodeInstanceQuery, processInstanceIdQuery))
             .fields(f -> f.field(TaskTemplate.KEY));
-
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
     } catch (final IOException e) {
@@ -481,10 +485,14 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
 
     Query.Builder taskIdsQuery = null;
+    Query.Builder flowNodeInstanceExistsQuery = null;
     if (taskIds != null) {
       final var terms = taskIds.stream().map(FieldValue::of).toList();
       taskIdsQuery = new Query.Builder();
       taskIdsQuery.terms(t -> t.field(TaskTemplate.KEY).terms(v -> v.value(terms)));
+    } else {
+      flowNodeInstanceExistsQuery = new Builder();
+      flowNodeInstanceExistsQuery.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID));
     }
 
     Query.Builder taskDefinitionQ = null;
@@ -573,8 +581,8 @@ public class TaskStoreOpenSearch implements TaskStore {
       followUpQ.range(
           r ->
               r.field(TaskTemplate.FOLLOW_UP_DATE)
-                  .from(JsonData.of(query.getFollowUpDate().getFrom()))
-                  .to(JsonData.of(query.getFollowUpDate().getTo())));
+                  .gte(JsonData.of(query.getFollowUpDate().getFrom()))
+                  .lte(JsonData.of(query.getFollowUpDate().getTo())));
     }
 
     Query.Builder dueDateQ = null;
@@ -583,8 +591,8 @@ public class TaskStoreOpenSearch implements TaskStore {
       dueDateQ.range(
           r ->
               r.field(TaskTemplate.DUE_DATE)
-                  .from(JsonData.of(query.getDueDate().getFrom()))
-                  .to(JsonData.of(query.getDueDate().getTo())));
+                  .gte(JsonData.of(query.getDueDate().getFrom()))
+                  .lte(JsonData.of(query.getDueDate().getTo())));
     }
 
     Query.Builder implementationQ = null;
@@ -605,6 +613,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             assigneeQ,
             assigneesQ,
             taskIdsQuery,
+            flowNodeInstanceExistsQuery,
             taskDefinitionQ,
             candidateGroupQ,
             candidateGroupsQ,
