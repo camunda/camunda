@@ -97,7 +97,7 @@ public class TaskValidator {
   }
 
   private static void validateTaskIsActive(final TaskEntity taskBefore) {
-    if (taskBefore.getState().equals(TaskState.CREATED)) {
+    if (!taskBefore.getState().equals(TaskState.CREATED)) {
       throw new InvalidRequestException(
           createErrorMessage(
               TASK_IS_NOT_ACTIVE,
