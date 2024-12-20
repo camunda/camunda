@@ -358,7 +358,7 @@ jobs:
   upgrade-tests:
     name: Upgrade
     runs-on: gcp-core-8-default
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       matrix:
         database: [ elasticsearch, opensearch ]
