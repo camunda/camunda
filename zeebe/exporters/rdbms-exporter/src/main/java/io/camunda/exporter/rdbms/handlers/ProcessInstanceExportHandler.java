@@ -48,6 +48,8 @@ public class ProcessInstanceExportHandler
           value.getProcessInstanceKey(),
           ProcessInstanceState.CANCELED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_MIGRATED)) {
+      processInstanceWriter.update(map(record));
     }
   }
 
