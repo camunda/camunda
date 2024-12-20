@@ -22,6 +22,10 @@ message JoinPartitionRequest {
   bool dryRun = 4;
 }
 
+message PurgeRequest {
+  bool dryRun = 1;
+}
+
 message LeavePartitionRequest {
   string memberId = 1;
   int32 partitionId = 2;

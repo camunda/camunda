@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.management.cluster.Error;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -359,6 +361,19 @@ public class ClusterEndpoint {
           };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
+  }
+
+  @PostMapping(path = "/purge", produces = "application/json")
+  public CompletableFuture<ResponseEntity<?>> purge(
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      return requestSender
+          .purge(new PurgeRequest(dryRun))
+          .thenApply(ClusterApiUtils::mapOperationResponse)
+          .exceptionally(ClusterApiUtils::mapError);
+    } catch (final Exception error) {
+      return CompletableFuture.completedFuture(ClusterApiUtils.mapError(error));
+    }
   }
 
   public record PartitionAddRequest(int priority) {}
