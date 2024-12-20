@@ -7,9 +7,6 @@
  */
 package io.camunda.optimize;
 
-import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
-
-import io.camunda.optimize.tomcat.JavaScriptMainLicenseEnricherFilter;
 import io.camunda.optimize.tomcat.NoCachingFilter;
 import jakarta.servlet.DispatcherType;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -23,11 +20,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class FilterBeansConfig {
-
-  @Bean
-  public JavaScriptMainLicenseEnricherFilter javaScriptMainLicenseEnricherFilter() {
-    return new JavaScriptMainLicenseEnricherFilter();
-  }
 
   @Bean
   public NoCachingFilter noCachingFilter() {
@@ -45,22 +37,6 @@ public class FilterBeansConfig {
         DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC);
 
     registrationBean.setName("noCachingFilter");
-
-    return registrationBean;
-  }
-
-  @Bean
-  public FilterRegistrationBean<JavaScriptMainLicenseEnricherFilter>
-      javaScriptMainLicenseEnricherFilterRegistrationBean(
-          final JavaScriptMainLicenseEnricherFilter javaScriptMainLicenseEnricherFilter) {
-    final FilterRegistrationBean<JavaScriptMainLicenseEnricherFilter> registrationBean =
-        new FilterRegistrationBean<>();
-
-    registrationBean.setFilter(javaScriptMainLicenseEnricherFilter);
-    registrationBean.addUrlPatterns(STATIC_RESOURCE_PATH + "/*");
-    registrationBean.setDispatcherTypes(
-        DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR, DispatcherType.ASYNC);
-    registrationBean.setName("javaScriptMainLicenseEnricherFilter");
 
     return registrationBean;
   }
