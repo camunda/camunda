@@ -629,8 +629,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @FunctionalInterface
-  interface RequestHandler<
-      RequestT extends GeneratedMessage, ResponseT extends GeneratedMessage> {
+  interface RequestHandler<RequestT extends GeneratedMessage, ResponseT extends GeneratedMessage> {
     ResponseT handle(RequestT request) throws Exception;
 
     default Collection<ResponseT> handleMultiple(final RequestT request) throws Exception {
