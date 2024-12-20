@@ -26,7 +26,7 @@ public class OptimizeIndexController {
   @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
 
   @GetMapping("/optimize")
-  public String tasklist(final Model model) {
+  public String optimize(final Model model) {
     model.addAttribute("contextPath", context.getContextPath() + "/optimize/");
     return "optimize/index";
   }
