@@ -107,7 +107,7 @@ public class BackupServiceImplTest {
     assertThat(backupState.getBackupId()).isEqualTo(1L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
     final var snapshotRequests = backupRepository.snapshotRequests.get(1L);
-    assertThat(snapshotRequests.stream().map(i -> i.indices().indices()))
+    assertThat(snapshotRequests.stream().map(i -> i.indices().allIndices()))
         .containsExactly(
             List.of("prio1"),
             List.of("prio2"),
@@ -180,7 +180,10 @@ public class BackupServiceImplTest {
 
     @Override
     public void executeSnapshotting(
-        final SnapshotRequest snapshotRequest, final Runnable onSuccess, final Runnable onFailure) {
+        final SnapshotRequest snapshotRequest,
+        final boolean onlyRequired,
+        final Runnable onSuccess,
+        final Runnable onFailure) {
       validateRepositoryExists(snapshotRequest.repositoryName());
       final var id = snapshotNameProvider.extractBackupId(snapshotRequest.snapshotName());
       final var backup = backups.getOrDefault(id, new GetBackupStateResponseDto(id));

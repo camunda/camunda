@@ -30,7 +30,17 @@ public interface BackupRepository {
   List<GetBackupStateResponseDto> getBackups(String repositoryName);
 
   void executeSnapshotting(
-      BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
+      BackupService.SnapshotRequest snapshotRequest,
+      boolean onlyRequired,
+      Runnable onSuccess,
+      Runnable onFailure);
+
+  default void executeSnapshotting(
+      final BackupService.SnapshotRequest snapshotRequest,
+      final Runnable onSuccess,
+      final Runnable onFailure) {
+    executeSnapshotting(snapshotRequest, false, onSuccess, onFailure);
+  }
 
   default boolean isIncompleteCheckTimedOut(
       final long incompleteCheckTimeoutInSeconds, final long lastSnapshotFinishedTime) {
