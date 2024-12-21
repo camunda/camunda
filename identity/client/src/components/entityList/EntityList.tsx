@@ -105,7 +105,7 @@ type EntityListProps<D extends EntityData> = (
 ) & {
   description?: ReactNode | string;
   documentationPath?: string;
-  data: D[] | null;
+  data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
   filter?: DataTableFilter<D>;
   addEntityLabel?: string | null;
