@@ -361,15 +361,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/react@npm:1.71.0":
-  version: 1.71.0
-  resolution: "@carbon/react@npm:1.71.0"
+"@carbon/react@npm:1.72.0":
+  version: 1.72.0
+  resolution: "@carbon/react@npm:1.72.0"
   dependencies:
     "@babel/runtime": "npm:^7.24.7"
     "@carbon/feature-flags": "npm:^0.24.0"
     "@carbon/icons-react": "npm:^11.53.0"
     "@carbon/layout": "npm:^11.28.0"
-    "@carbon/styles": "npm:^1.70.0"
+    "@carbon/styles": "npm:^1.71.0"
     "@floating-ui/react": "npm:^0.26.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     classnames: "npm:2.5.1"
@@ -378,7 +378,6 @@ __metadata:
     flatpickr: "npm:4.6.13"
     invariant: "npm:^2.2.3"
     lodash.debounce: "npm:^4.0.8"
-    lodash.findlast: "npm:^4.5.0"
     lodash.omit: "npm:^4.5.0"
     lodash.throttle: "npm:^4.1.1"
     prop-types: "npm:^15.7.2"
@@ -391,13 +390,13 @@ __metadata:
     react: ^16.8.6 || ^17.0.1 || ^18.2.0
     react-dom: ^16.8.6 || ^17.0.1 || ^18.2.0
     sass: ^1.33.0
-  checksum: 10c0/397e80b40b396dcb5e5b161c5c520555bdcf3808482a9a9ca0f2ac819f69b29f5f70157cceca2f032f637d93d02c0ef1ee17e9e504be2801e73ef7bb315e0ffc
+  checksum: 10c0/f08b7261ff792e95c6226f8c72280d8111996ba710a9e88bdb2bfe9828ebb9410fc427492b89a2f5b07afc42f9e66ed1f6fa3f666af87005a278572cdbadc499
   languageName: node
   linkType: hard
 
-"@carbon/styles@npm:^1.70.0":
-  version: 1.70.0
-  resolution: "@carbon/styles@npm:1.70.0"
+"@carbon/styles@npm:^1.71.0":
+  version: 1.71.0
+  resolution: "@carbon/styles@npm:1.71.0"
   dependencies:
     "@carbon/colors": "npm:^11.28.0"
     "@carbon/feature-flags": "npm:^0.24.0"
@@ -421,7 +420,7 @@ __metadata:
   peerDependenciesMeta:
     sass:
       optional: true
-  checksum: 10c0/020d94f3c34d95695b05e26556648ee5e155fe796c862048e6c8db3d5529dab4a079d050c03962ab20243161b542bc42389ffebd23f6ca0e11baf0308c867974
+  checksum: 10c0/a057da72de5cfb49b23973d928ef33f412cfe64c4ede341a281349e5ab42232b7cc5e78a13e85d3615bddd7c548afd29bd15a635e9361fbe4497390f23f870a6
   languageName: node
   linkType: hard
 
@@ -2961,7 +2960,7 @@ __metadata:
   dependencies:
     "@camunda/camunda-composite-components": "npm:0.11.0"
     "@carbon/elements": "npm:^11.57.0"
-    "@carbon/react": "npm:1.71.0"
+    "@carbon/react": "npm:1.72.0"
     "@types/carbon-components-react": "npm:^7.55.13"
     "@types/carbon__elements": "npm:^11.10.3"
     "@types/event-source-polyfill": "npm:1.0.5"
@@ -3344,13 +3343,6 @@ __metadata:
   version: 4.0.8
   resolution: "lodash.debounce@npm:4.0.8"
   checksum: 10c0/762998a63e095412b6099b8290903e0a8ddcb353ac6e2e0f2d7e7d03abd4275fe3c689d88960eb90b0dde4f177554d51a690f22a343932ecbc50a5d111849987
-  languageName: node
-  linkType: hard
-
-"lodash.findlast@npm:^4.5.0":
-  version: 4.6.0
-  resolution: "lodash.findlast@npm:4.6.0"
-  checksum: 10c0/1b3f084694c19348d78eaf05399ad5f464024af864bfb6514654cfd22e3a6709402505ca04645a99461faadfedf7e2b347c52b18989621b0aeec631aaf00ce74
   languageName: node
   linkType: hard
 
