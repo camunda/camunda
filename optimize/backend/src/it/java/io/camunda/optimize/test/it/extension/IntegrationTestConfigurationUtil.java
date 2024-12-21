@@ -37,7 +37,6 @@ public class IntegrationTestConfigurationUtil {
     return "http://localhost:"
         + applicationContext
             .getBean(OptimizeTomcatConfig.class)
-            .getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
         + applicationContext.getBean(OptimizeTomcatConfig.class).getContextPath().orElse("");
   }
 

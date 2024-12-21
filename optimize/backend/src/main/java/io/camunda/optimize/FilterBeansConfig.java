@@ -20,6 +20,7 @@ import io.camunda.optimize.tomcat.MaxRequestSizeFilter;
 import io.camunda.optimize.tomcat.NoCachingFilter;
 import jakarta.servlet.DispatcherType;
 import java.util.concurrent.Callable;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -99,7 +100,8 @@ public class FilterBeansConfig {
   @Bean
   public FilterRegistrationBean<MaxRequestSizeFilter>
       variableIngestionRequestLimitFilterRegistrationBean(
-          final ConfigurationService configurationService, final ObjectMapper objectMapper) {
+          final ConfigurationService configurationService,
+          @Qualifier("optimizeObjectMapper") final ObjectMapper objectMapper) {
 
     final MaxRequestSizeFilter variableIngestionRequestLimitFilter =
         new MaxRequestSizeFilter(
