@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl;
 
-import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.GeneratedMessage;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
@@ -32,9 +32,9 @@ import java.util.function.Function;
 public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
     implements CamundaFuture<ClientResponse>,
-        ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
+        ClientResponseObserver<GeneratedMessage, BrokerResponse> {
 
-  protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;
+  protected ClientCallStreamObserver<GeneratedMessage> clientCall;
   private final Function<BrokerResponse, ClientResponse> responseMapper;
 
   public CamundaClientFutureImpl() {
@@ -98,7 +98,7 @@ public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
   }
 
   @Override
-  public void beforeStart(final ClientCallStreamObserver<GeneratedMessageV3> requestStream) {
+  public void beforeStart(final ClientCallStreamObserver<GeneratedMessage> requestStream) {
     if (isDone()) {
       requestStream.cancel("Call was completed by the client before it was started", null);
       return;
