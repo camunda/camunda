@@ -9,6 +9,7 @@ package io.camunda.document.store.inmemory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentLink;
@@ -17,7 +18,6 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -142,7 +142,8 @@ public class InMemoryDocumentStoreTest {
 
     // then
     assertThat(result2).isInstanceOf(Either.Right.class);
-    final var stream = ((Either.Right<DocumentError, InputStream>) result2).value();
+    final var stream =
+        ((Either.Right<DocumentError, DocumentContent>) result2).value().inputStream();
     assertThat(stream).isNotNull();
     final var content = new String(stream.readAllBytes());
     assertThat(content).isEqualTo("content");
@@ -152,7 +153,7 @@ public class InMemoryDocumentStoreTest {
 
     // then
     assertThat(result3).isInstanceOf(Either.Left.class);
-    assertThat(((Either.Left<DocumentError, InputStream>) result3).value())
+    assertThat(((Either.Left<DocumentError, DocumentContent>) result3).value())
         .isInstanceOf(DocumentError.DocumentNotFound.class);
   }
 
@@ -169,5 +170,25 @@ public class InMemoryDocumentStoreTest {
     assertThat(result).isInstanceOf(Either.Left.class);
     assertThat(((Either.Left<DocumentError, DocumentLink>) result).value())
         .isInstanceOf(DocumentError.OperationNotSupported.class);
+  }
+
+  @Test
+  public void shouldStoreContentType() {
+    // given
+    final InMemoryDocumentStore store = new InMemoryDocumentStore();
+    final String id = "key";
+    final DocumentMetadataModel metadata =
+        new DocumentMetadataModel("application/json", null, null, null, null);
+
+    // when
+    final var request =
+        new DocumentCreationRequest(id, new ByteArrayInputStream("content".getBytes()), metadata);
+
+    final var result = store.createDocument(request).join();
+
+    // then
+    assertThat(result).isInstanceOf(Either.Right.class);
+    final var reference = ((Either.Right<DocumentError, DocumentReference>) result).value();
+    assertThat(reference).isNotNull();
   }
 }

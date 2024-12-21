@@ -14,6 +14,7 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
@@ -22,7 +23,6 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
-import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -73,7 +73,7 @@ public class GcpDocumentStore implements DocumentStore {
   }
 
   @Override
-  public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+  public CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(
       final String documentId) {
     return CompletableFuture.supplyAsync(() -> getDocumentContentInternal(documentId), executor);
   }
@@ -130,14 +130,16 @@ public class GcpDocumentStore implements DocumentStore {
     return Either.right(documentReference);
   }
 
-  private Either<DocumentError, InputStream> getDocumentContentInternal(final String documentId) {
+  private Either<DocumentError, DocumentContent> getDocumentContentInternal(
+      final String documentId) {
     try {
       final Blob blob = storage.get(bucketName, documentId);
       if (blob == null) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
       final var inputStream = Channels.newInputStream(blob.reader());
-      return Either.right(inputStream);
+      final var contentType = blob.getContentType();
+      return Either.right(new DocumentContent(inputStream, contentType));
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }

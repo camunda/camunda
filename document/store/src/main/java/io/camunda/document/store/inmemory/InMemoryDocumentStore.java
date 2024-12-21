@@ -7,6 +7,7 @@
  */
 package io.camunda.document.store.inmemory;
 
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
@@ -17,7 +18,6 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryDocumentStore implements DocumentStore {
 
-  private final Map<String, byte[]> documents;
+  private final Map<String, InMemoryDocumentContent> documents;
 
   public InMemoryDocumentStore() {
     documents = new ConcurrentHashMap<>();
@@ -50,6 +50,10 @@ public class InMemoryDocumentStore implements DocumentStore {
     final var fileName = Optional.ofNullable(request.metadata().fileName()).orElse(id);
     final var contentInputStream = request.contentInputStream();
     final byte[] content;
+    final var contentType =
+        Optional.ofNullable(request.metadata())
+            .map(DocumentMetadataModel::contentType)
+            .orElse(null);
     try {
       content = contentInputStream.readAllBytes();
       contentInputStream.close();
@@ -57,7 +61,7 @@ public class InMemoryDocumentStore implements DocumentStore {
       return CompletableFuture.completedFuture(
           Either.left(new DocumentError.InvalidInput("Failed to read content")));
     }
-    documents.put(id, content);
+    documents.put(id, new InMemoryDocumentContent(content, contentType));
     final var updatedMetadata =
         new DocumentMetadataModel(
             request.metadata().contentType(),
@@ -70,14 +74,16 @@ public class InMemoryDocumentStore implements DocumentStore {
   }
 
   @Override
-  public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+  public CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(
       final String documentId) {
     final var content = documents.get(documentId);
     if (content == null) {
       return CompletableFuture.completedFuture(
           Either.left(new DocumentError.DocumentNotFound(documentId)));
     }
-    return CompletableFuture.completedFuture(Either.right(new ByteArrayInputStream(content)));
+    final var stream = new ByteArrayInputStream(content.content);
+    return CompletableFuture.completedFuture(
+        Either.right(new DocumentContent(stream, content.contentType)));
   }
 
   @Override
@@ -98,4 +104,6 @@ public class InMemoryDocumentStore implements DocumentStore {
             new OperationNotSupported(
                 "The in-memory document store does not support creating links")));
   }
+
+  private record InMemoryDocumentContent(byte[] content, String contentType) {}
 }

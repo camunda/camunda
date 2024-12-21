@@ -160,6 +160,7 @@ class AwsDocumentStoreTest {
     final var inputStream = new ByteArrayInputStream(new byte[0]);
     final var responseInputStream =
         new ResponseInputStream<>(GetObjectResponse.builder().build(), inputStream);
+    final var expectedResponse = new DocumentContent(responseInputStream, null);
 
     when(s3Client.getObject(any(GetObjectRequest.class))).thenReturn(responseInputStream);
 
@@ -168,7 +169,7 @@ class AwsDocumentStoreTest {
 
     // then
     assertTrue(result.isRight());
-    assertEquals(responseInputStream, result.get());
+    assertEquals(expectedResponse, result.get());
   }
 
   @Test
