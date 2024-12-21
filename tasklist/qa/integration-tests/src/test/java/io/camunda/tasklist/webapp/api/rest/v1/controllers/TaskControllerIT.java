@@ -1113,7 +1113,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is already assigned");
+          .hasMessage(
+              """
+                    { "title": "TASK_ALREADY_ASSIGNED",
+                      "detail": "Task is already assigned"
+                    }
+                    """);
     }
 
     @Test
@@ -1138,7 +1143,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                    { "title": "TASK_IS_NOT_ACTIVE",
+                      "detail": "Task is not active"
+                    }
+                    """);
     }
 
     @Test
@@ -1187,7 +1197,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                       { "title": "TASK_NOT_ASSIGNED",
+                         "detail": "Task is not assigned"
+                       }
+                       """);
     }
 
     @Test
@@ -1212,7 +1227,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                       { "title": "TASK_IS_NOT_ACTIVE",
+                         "detail": "Task is not active"
+                       }
+                       """);
     }
   }
 
@@ -1470,7 +1490,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+                      { "title": "TASK_IS_NOT_ACTIVE",
+                        "detail": "Task is not active"
+                      }
+                      """);
     }
 
     @Test
@@ -1492,7 +1517,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                       { "title": "TASK_NOT_ASSIGNED",
+                         "detail": "Task is not assigned"
+                       }
+                       """);
     }
 
     @Test
@@ -1517,7 +1547,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned to user_B");
+          .hasMessage(
+              """
+                        { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+                          "detail": "Task is not assigned to user_B"
+                        }
+                        """);
     }
   }
 
@@ -1567,7 +1602,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not active");
+          .hasMessage(
+              """
+           { "title": "TASK_IS_NOT_ACTIVE",
+             "detail": "Task is not active"
+           }
+           """);
     }
 
     @Test
@@ -1590,7 +1630,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned");
+          .hasMessage(
+              """
+                      { "title": "TASK_NOT_ASSIGNED",
+                        "detail": "Task is not assigned"
+                      }
+                      """);
     }
 
     @Test
@@ -1639,7 +1684,12 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingErrorContent(objectMapper)
           .hasStatus(HttpStatus.BAD_REQUEST)
           .hasInstanceId()
-          .hasMessage("Task is not assigned to user_B");
+          .hasMessage(
+              """
+                      { "title": "TASK_NOT_ASSIGNED_TO_CURRENT_USER",
+                        "detail": "Task is not assigned to user_B"
+                      }
+                      """);
     }
 
     @Test

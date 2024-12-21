@@ -8,8 +8,41 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {type RequestError, request} from 'modules/request';
+import {request} from 'modules/request';
 import type {Task, Variable} from 'modules/types';
+import {buildServerErrorSchema} from 'modules/utils/buildServerErrorSchema';
+import {z} from 'zod';
+
+const messageResponseSchema = z.object({
+  title: z.enum([
+    'TASK_NOT_ASSIGNED',
+    'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
+    'TASK_IS_NOT_ACTIVE',
+    'INVALID_STATE',
+    'TASK_PROCESSING_TIMEOUT',
+  ]),
+  detail: z.string(),
+});
+const completionErrorSchema = buildServerErrorSchema(messageResponseSchema);
+const completionErrorMap = {
+  invalidState: 'INVALID_STATE',
+  taskProcessingTimeout: 'TASK_PROCESSING_TIMEOUT',
+  taskNotAssigned: 'TASK_NOT_ASSIGNED',
+  taskNotAssignedToCurrentUser: 'TASK_NOT_ASSIGNED_TO_CURRENT_USER',
+  taskIsNotActive: 'TASK_IS_NOT_ACTIVE',
+} as const;
+
+interface CompletionError extends Error {
+  name:
+    | 'TASK_NOT_ASSIGNED'
+    | 'TASK_NOT_ASSIGNED_TO_CURRENT_USER'
+    | 'TASK_IS_NOT_ACTIVE'
+    | 'INVALID_STATE'
+    | 'TASK_PROCESSING_TIMEOUT'
+    | 'Error';
+  message: string;
+  stack?: string;
+}
 
 type Payload = {
   taskId: Task['id'];
@@ -17,17 +50,37 @@ type Payload = {
 };
 
 function useCompleteTask() {
-  return useMutation<Task, RequestError | Error, Payload>({
+  return useMutation<Task, CompletionError, Payload>({
     mutationFn: async (payload) => {
-      const {response, error} = await request(api.v1.completeTask(payload));
+      const {response, error: errorResponse} = await request(
+        api.v1.completeTask(payload),
+      );
 
       if (response !== null) {
         return response.json();
       }
 
-      throw error ?? new Error('Could not complete task');
+      if (errorResponse.variant === 'network-error') {
+        throw new Error('Unexpected network error', {
+          cause: errorResponse.networkError,
+        });
+      }
+
+      const error = new Error('Failed to complete task');
+      const errorResult = completionErrorSchema.safeParse(
+        await errorResponse.response.json(),
+      );
+
+      if (!errorResult.success) {
+        throw error;
+      }
+
+      error.name = errorResult.data.message.title;
+
+      throw error;
     },
   });
 }
 
-export {useCompleteTask};
+export {useCompleteTask, completionErrorMap};
+export type {CompletionError};
