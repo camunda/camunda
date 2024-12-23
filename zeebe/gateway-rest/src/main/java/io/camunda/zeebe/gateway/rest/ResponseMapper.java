@@ -78,11 +78,13 @@ import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -90,6 +92,8 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public final class ResponseMapper {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
   /**
    * Date format <code>uuuu-MM-dd'T'HH:mm:ss.SSS[SSSSSS]Z</code>, always creating
@@ -128,17 +132,30 @@ public final class ResponseMapper {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
+    long currentResponseSize = 0L;
     final JobActivationResponse response = new JobActivationResponse();
+
+    final List<ActivatedJob> sizeExceedingJobs = new ArrayList<>();
+    final List<ActivatedJob> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
       final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
 
-      response.addJobsItem(activatedJob);
+      // This is the message size of the message from the broker, not the size of the REST message
+      final int activatedJobSize = job.getLength();
+      if (currentResponseSize + activatedJobSize <= activationResponse.maxResponseSize()) {
+        responseJobs.add(activatedJob);
+        currentResponseSize += activatedJobSize;
+      } else {
+        sizeExceedingJobs.add(activatedJob);
+      }
     }
 
-    return new RestJobActivationResult(response);
+    response.setJobs(responseJobs);
+
+    return new RestJobActivationResult(response, sizeExceedingJobs);
   }
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
@@ -535,9 +552,13 @@ public final class ResponseMapper {
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {
 
     private final JobActivationResponse response;
+    private final List<io.camunda.zeebe.gateway.protocol.rest.ActivatedJob> sizeExceedingJobs;
 
-    RestJobActivationResult(final JobActivationResponse response) {
+    RestJobActivationResult(
+        final JobActivationResponse response,
+        final List<io.camunda.zeebe.gateway.protocol.rest.ActivatedJob> sizeExceedingJobs) {
       this.response = response;
+      this.sizeExceedingJobs = sizeExceedingJobs;
     }
 
     @Override
@@ -559,7 +580,19 @@ public final class ResponseMapper {
 
     @Override
     public List<ActivatedJob> getJobsToDefer() {
-      return Collections.emptyList();
+      final var result = new ArrayList<ActivatedJob>(sizeExceedingJobs.size());
+      for (final var job : sizeExceedingJobs) {
+        try {
+          final var key = Long.parseLong(job.getJobKey());
+          result.add(new ActivatedJob(key, job.getRetries()));
+        } catch (final NumberFormatException ignored) {
+          // could happen
+          LOG.warn(
+              "Expected job key to be numeric, but was {}. The job cannot be returned to the broker, but it will be retried after timeout",
+              job.getJobKey());
+        }
+      }
+      return result;
     }
   }
 }
