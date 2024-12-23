@@ -339,6 +339,7 @@
               <dep>software.amazon.awssdk:sdk-core</dep>
               <dep>software.amazon.awssdk:sts</dep>
               <dep>org.javassist:javassist</dep>
+              <dep>org.springframework.boot:spring-boot-autoconfigure</dep>
 
               <!-- test dependencies -->
               <dep>com.sun.mail:jakarta.mail</dep>

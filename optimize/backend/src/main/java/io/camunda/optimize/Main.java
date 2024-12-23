@@ -13,9 +13,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import org.slf4j.Logger;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
 
 // @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 // @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
@@ -24,8 +21,6 @@ public class Main {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
 
   public static void main(final String[] args) {
-    // Temporarily hardcoding this property until we merge into a singleapp
-    System.setProperty("spring.web.resources.static-locations", "classpath:/webapp/");
     final SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();

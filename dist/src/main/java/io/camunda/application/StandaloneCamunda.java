@@ -30,7 +30,11 @@ public class StandaloneCamunda {
 
   private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
   private static final String DEFAULT_CAMUNDA_PROFILES =
-      String.join(",", Profile.OPERATE.getId(), Profile.OPTIMIZE.getId(), Profile.TASKLIST.getId(),
+      String.join(
+          ",",
+          Profile.OPERATE.getId(),
+          Profile.OPTIMIZE.getId(),
+          Profile.TASKLIST.getId(),
           Profile.BROKER.getId());
 
   public static void main(final String[] args) {
