@@ -10,10 +10,12 @@ package io.camunda.authentication.config;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 import io.camunda.authentication.CamundaUserDetailsService;
+import io.camunda.authentication.filters.OrganizationAuthorizationFilter;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -37,6 +39,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -99,26 +102,40 @@ public class WebSecurityConfig {
   public HttpSecurity oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
-      final ClientRegistrationRepository clientRegistrationRepository)
+      final ClientRegistrationRepository clientRegistrationRepository,
+      final SecurityConfiguration configuration)
       throws Exception {
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2.jwt(
-                    jwtConfigurer ->
-                        jwtConfigurer.jwkSetUri(
-                            clientRegistrationRepository
-                                .findByRegistrationId("oidcclient")
-                                .getProviderDetails()
-                                .getJwkSetUri())))
-        .oauth2Login(oauthLoginConfigurer -> {})
-        .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
-        .logout(
-            (logout) ->
-                logout
-                    .logoutUrl(LOGOUT_URL)
-                    .logoutSuccessHandler(this::genericSuccessHandler)
-                    .deleteCookies());
+    final var security =
+        baseHttpSecurity(httpSecurity, authFailureHandler)
+            .oauth2ResourceServer(
+                oauth2 ->
+                    oauth2.jwt(
+                        jwtConfigurer ->
+                            jwtConfigurer.jwkSetUri(
+                                clientRegistrationRepository
+                                    .findByRegistrationId("oidcclient")
+                                    .getProviderDetails()
+                                    .getJwkSetUri())))
+            .oauth2Login(oauthLoginConfigurer -> {})
+            .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
+            .logout(
+                (logout) ->
+                    logout
+                        .logoutUrl(LOGOUT_URL)
+                        .logoutSuccessHandler(this::genericSuccessHandler)
+                        .deleteCookies());
+    return withOrganizationIdFilter(security, configuration);
+  }
+
+  private HttpSecurity withOrganizationIdFilter(
+      final HttpSecurity httpSecurity, final SecurityConfiguration configuration) {
+    final var organizationId = configuration.getOrganizationId();
+    if (organizationId == null) {
+      return httpSecurity;
+    }
+    return httpSecurity.addFilterAfter(
+        new OrganizationAuthorizationFilter(organizationId),
+        SecurityContextHolderAwareRequestFilter.class);
   }
 
   private void genericSuccessHandler(
