@@ -87,8 +87,7 @@ public class CredentialsProviderSelfManagedWithSSLTest {
   private static final String ACCESS_TOKEN =
       JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
 
-  @MockBean
-  CamundaClientExecutorService zeebeClientExecutorService;
+  @MockBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CamundaClientConfigurationImpl configuration;
 
   @DynamicPropertySource
