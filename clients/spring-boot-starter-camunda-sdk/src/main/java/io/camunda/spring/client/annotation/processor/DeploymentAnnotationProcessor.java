@@ -1,26 +1,20 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.annotation.processor;
+package io.camunda.spring.client.annotation.processor;
+
+import static io.camunda.spring.client.annotation.AnnotationUtil.getDeploymentValue;
+import static io.camunda.spring.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.spring.client.annotation.Deployment;
-import io.camunda.zeebe.spring.client.annotation.value.ZeebeDeploymentValue;
-import io.camunda.zeebe.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.annotation.value.DeploymentValue;
+import io.camunda.spring.client.bean.ClassInfo;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -32,26 +26,26 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationProcessor {
+public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ZeebeDeploymentAnnotationProcessor.class);
+      LoggerFactory.getLogger(DeploymentAnnotationProcessor.class);
 
   private static final ResourcePatternResolver RESOURCE_RESOLVER =
       new PathMatchingResourcePatternResolver();
 
-  private final List<ZeebeDeploymentValue> deploymentValues = new ArrayList<>();
+  private final List<DeploymentValue> deploymentValues = new ArrayList<>();
 
-  public ZeebeDeploymentAnnotationProcessor() {}
+  public DeploymentAnnotationProcessor() {}
 
   @Override
   public boolean isApplicableFor(final ClassInfo beanInfo) {
-    return beanInfo.hasClassAnnotation(Deployment.class);
+    return isDeployment(beanInfo);
   }
 
   @Override
   public void configureFor(final ClassInfo beanInfo) {
-    final Optional<ZeebeDeploymentValue> zeebeDeploymentValue = readAnnotation(beanInfo);
+    final Optional<DeploymentValue> zeebeDeploymentValue = getDeploymentValue(beanInfo);
     if (zeebeDeploymentValue.isPresent()) {
       LOGGER.info("Configuring deployment: {}", zeebeDeploymentValue.get());
       deploymentValues.add(zeebeDeploymentValue.get());
@@ -107,17 +101,7 @@ public class ZeebeDeploymentAnnotationProcessor extends AbstractZeebeAnnotationP
     // noop for deployment
   }
 
-  public Optional<ZeebeDeploymentValue> readAnnotation(final ClassInfo beanInfo) {
-    final Optional<Deployment> annotation = beanInfo.getAnnotation(Deployment.class);
-    if (annotation.isEmpty()) {
-      return Optional.empty();
-    } else {
-      final List<String> resources =
-          Arrays.stream(annotation.get().resources()).collect(Collectors.toList());
-      return Optional.of(
-          ZeebeDeploymentValue.builder().beanInfo(beanInfo).resources(resources).build());
-    }
-  }
+
 
   public Resource[] getResources(final String resources) {
     try {
