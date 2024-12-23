@@ -14,8 +14,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.GroupSearchClient;
+import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -38,8 +41,10 @@ import org.junit.jupiter.api.Test;
 
 public class GroupServiceTest {
 
-  private GroupServices services;
-  private GroupSearchClient client;
+  private GroupServices groupServices;
+  private UserServices userServices;
+  private GroupSearchClient groupClient;
+  private UserSearchClient userClient;
   private Authentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
 
@@ -47,11 +52,17 @@ public class GroupServiceTest {
   public void before() {
     authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
     stubbedBrokerClient = new StubbedBrokerClient();
-    client = mock(GroupSearchClient.class);
-    when(client.withSecurityContext(any())).thenReturn(client);
-    services =
+    groupClient = mock(GroupSearchClient.class);
+    when(groupClient.withSecurityContext(any())).thenReturn(groupClient);
+    userClient = mock(UserSearchClient.class);
+    when(userClient.withSecurityContext(any())).thenReturn(userClient);
+    groupServices =
         new GroupServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+            stubbedBrokerClient,
+            mock(SecurityContextProvider.class),
+            groupClient,
+            userClient,
+            authentication);
   }
 
   @Test
@@ -60,7 +71,7 @@ public class GroupServiceTest {
     final var groupName = "testGroup";
 
     // when
-    services.createGroup(groupName);
+    groupServices.createGroup(groupName);
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -75,13 +86,13 @@ public class GroupServiceTest {
   public void shouldEmptyQueryReturnGroups() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchGroups(any())).thenReturn(result);
+    when(groupClient.searchGroups(any())).thenReturn(result);
 
     final GroupFilter filter = new GroupFilter.Builder().build();
     final var searchQuery = SearchQueryBuilders.groupSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = groupServices.search(searchQuery);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -92,7 +103,7 @@ public class GroupServiceTest {
     // given
     final var entity = mock(GroupEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
-    when(client.searchGroups(any())).thenReturn(result);
+    when(groupClient.searchGroups(any())).thenReturn(result);
   }
 
   @Test
@@ -100,10 +111,10 @@ public class GroupServiceTest {
     // given
     final var entity = mock(GroupEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
-    when(client.searchGroups(any())).thenReturn(result);
+    when(groupClient.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findGroup(1L);
+    final var searchQueryResult = groupServices.findGroup(1L);
 
     // then
     assertThat(searchQueryResult).contains(entity);
@@ -113,10 +124,11 @@ public class GroupServiceTest {
   public void shouldThrowExceptionIfGroupNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+    when(groupClient.searchGroups(any()))
+        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // when / then
-    assertThat(services.findGroup(key)).isEmpty();
+    assertThat(groupServices.findGroup(key)).isEmpty();
   }
 
   @Test
@@ -126,10 +138,10 @@ public class GroupServiceTest {
     final var group2 = mock(GroupEntity.class);
     final var result =
         new SearchQueryResult<>(2, List.of(group1, group2), Arrays.array(), Arrays.array());
-    when(client.searchGroups(any())).thenReturn(result);
+    when(groupClient.searchGroups(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getGroupsByUserKey(1L);
+    final var searchQueryResult = groupServices.getGroupsByUserKey(1L);
 
     // then
     assertThat(searchQueryResult).contains(group1, group2);
@@ -142,7 +154,7 @@ public class GroupServiceTest {
     final var name = "UpdatedName";
 
     // when
-    services.updateGroup(groupKey, name);
+    groupServices.updateGroup(groupKey, name);
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -161,7 +173,7 @@ public class GroupServiceTest {
     final var groupKey = Protocol.encodePartitionId(1, 123L);
 
     // when
-    services.deleteGroup(groupKey);
+    groupServices.deleteGroup(groupKey);
 
     // then
     final BrokerGroupDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -181,7 +193,7 @@ public class GroupServiceTest {
     final var memberType = EntityType.USER;
 
     // when
-    services.assignMember(groupKey, memberKey, memberType);
+    groupServices.assignMember(groupKey, memberKey, memberType);
 
     // then
     final BrokerGroupMemberAddRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -203,7 +215,7 @@ public class GroupServiceTest {
     final var memberType = EntityType.USER;
 
     // when
-    services.removeMember(groupKey, memberKey, memberType);
+    groupServices.removeMember(groupKey, memberKey, memberType);
 
     // then
     final BrokerGroupMemberRemoveRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -215,5 +227,26 @@ public class GroupServiceTest {
     assertThat(record).hasGroupKey(groupKey);
     assertThat(record).hasEntityKey(memberKey);
     assertThat(record).hasEntityType(EntityType.USER);
+  }
+
+  @Test
+  public void shouldReturnListOfUsersForGetByGroupKey() {
+    // given
+    final var group = mock(GroupEntity.class);
+    when(groupClient.searchGroups(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(group), Arrays.array(), Arrays.array()));
+    final var user1 = mock(UserEntity.class);
+    final var user2 = mock(UserEntity.class);
+    final var result =
+        new SearchQueryResult<>(2, List.of(user1, user2), Arrays.array(), Arrays.array());
+    when(userClient.searchUsers(any())).thenReturn(result);
+    final UserFilter filter = new UserFilter.Builder().build();
+    final var searchQuery = SearchQueryBuilders.userSearchQuery((b) -> b.filter(filter));
+
+    // when
+    final var searchQueryResult = groupServices.getUsersByGroupKey(searchQuery);
+
+    // then
+    assertThat(searchQueryResult).isEqualTo(result);
   }
 }
