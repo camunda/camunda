@@ -1,26 +1,18 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.annotation.value;
+package io.camunda.spring.client.annotation.value;
 
-import io.camunda.zeebe.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
-public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
+public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
 
   private String type;
 
@@ -47,9 +39,9 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
   private Duration streamTimeout;
   private int maxRetries;
 
-  public ZeebeWorkerValue() {}
+  public JobWorkerValue() {}
 
-  public ZeebeWorkerValue(
+  public JobWorkerValue(
       final String type,
       final String name,
       final Duration timeout,
@@ -235,7 +227,7 @@ public class ZeebeWorkerValue implements ZeebeAnnotationValue<MethodInfo> {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final ZeebeWorkerValue that = (ZeebeWorkerValue) o;
+    final JobWorkerValue that = (JobWorkerValue) o;
     return Objects.equals(type, that.type)
         && Objects.equals(name, that.name)
         && Objects.equals(timeout, that.timeout)
