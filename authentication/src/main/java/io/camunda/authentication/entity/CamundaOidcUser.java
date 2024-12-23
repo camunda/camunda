@@ -19,12 +19,15 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
   private final OidcUser user;
   private final AuthenticationContext authentication;
   private final Set<Long> mappingKeys;
+  private final Set<String> organizationIds;
 
   public CamundaOidcUser(
       final OidcUser oidcUser,
+      final Set<String> organizationIds,
       final Set<Long> mappingKeys,
       final AuthenticationContext authentication) {
     user = oidcUser;
+    this.organizationIds = organizationIds;
     this.mappingKeys = mappingKeys;
     this.authentication = authentication;
   }
@@ -42,6 +45,11 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
   @Override
   public AuthenticationContext getAuthenticationContext() {
     return authentication;
+  }
+
+  @Override
+  public Set<String> getOrganizationIds() {
+    return organizationIds;
   }
 
   @Override
