@@ -2937,12 +2937,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:23.16.8":
-  version: 23.16.8
-  resolution: "i18next@npm:23.16.8"
+"i18next@npm:24.2.0":
+  version: 24.2.0
+  resolution: "i18next@npm:24.2.0"
   dependencies:
     "@babel/runtime": "npm:^7.23.2"
-  checksum: 10c0/57d249191e8a39bbbbe190cfa2e2bb651d0198e14444fe80453d3df8d02927de3c147c77724e9ae6c72fa241898cd761e3fdcd55d053db373471f1ac084bf345
+  peerDependencies:
+    typescript: ^5
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10c0/3c41a4e214b8191e7c579db776a9dd6a5f02a0925bb5788c11e522f51c5e581546f53db22ba8cccb398d69cc463438aaca4660bad2990d5ffc854434bc9a72be
   languageName: node
   linkType: hard
 
@@ -2977,7 +2982,7 @@ __metadata:
     eslint-plugin-react-hooks: "npm:4.6.2"
     eslint-plugin-react-refresh: "npm:0.4.14"
     event-source-polyfill: "npm:1.0.31"
-    i18next: "npm:23.16.8"
+    i18next: "npm:24.2.0"
     license-checker: "npm:25.0.1"
     prettier: "npm:3.3.3"
     react: "npm:18.3.1"
