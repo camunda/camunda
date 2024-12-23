@@ -78,6 +78,7 @@ public class OptimizeTomcatConfig {
   @Autowired private ConfigurationService configurationService;
   @Autowired private Environment environment;
 
+  /*
   @Bean
   ServletContextInitializer externalResourcesServlet() {
     LOG.debug("Registering servlet 'externalResourcesServlet'...");
@@ -101,6 +102,7 @@ public class OptimizeTomcatConfig {
       }
     };
   }
+  */
 
   @Bean
   FilterRegistrationBean<ResponseSecurityHeaderFilter> responseHeadersInjector() {
