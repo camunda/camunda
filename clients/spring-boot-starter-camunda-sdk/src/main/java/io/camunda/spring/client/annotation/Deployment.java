@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.jobhandling.parameter;
+package io.camunda.spring.client.annotation;
 
-import io.camunda.zeebe.spring.client.bean.ParameterInfo;
+import java.lang.annotation.*;
 
-public interface ParameterResolverStrategy {
-  ParameterResolver createResolver(ParameterInfo parameterInfo);
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited // has to be inherited to work on spring aop beans
+public @interface Deployment {
+
+  String[] resources() default {};
 }
