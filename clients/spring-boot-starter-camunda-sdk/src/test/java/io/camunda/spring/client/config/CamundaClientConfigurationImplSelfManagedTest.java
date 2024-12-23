@@ -33,8 +33,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 public class CamundaClientConfigurationImplSelfManagedTest {
   @Autowired CamundaClientConfiguration camundaClientConfiguration;
   @Autowired JsonMapper jsonMapper;
-  @Autowired
-  CamundaClientExecutorService zeebeClientExecutorService;
+  @Autowired CamundaClientExecutorService zeebeClientExecutorService;
 
   @Test
   void shouldContainsZeebeClientConfiguration() {
