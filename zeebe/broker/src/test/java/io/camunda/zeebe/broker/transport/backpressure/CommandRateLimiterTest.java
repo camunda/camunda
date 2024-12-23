@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.limit.SettableLimit;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -17,6 +18,12 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -108,5 +115,78 @@ class CommandRateLimiterTest {
         Arguments.of(DeploymentIntent.DISTRIBUTE),
         Arguments.of(DeploymentDistributionIntent.COMPLETE),
         Arguments.of(CommandDistributionIntent.ACKNOWLEDGE));
+  }
+
+  @Test
+  void shouldNotAllowInFlightHigherThanLimitWithNormalCommands() throws InterruptedException {
+    // given
+    final int numThreads = 3000;
+    final int poolSize = 300;
+    final int limit = 100;
+    final Limit myLimit = new SettableLimit(limit);
+    final CommandRateLimiter myRateLimiter = CommandRateLimiter.builder().limit(myLimit).build(0);
+    final ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
+
+    final Collection<Callable<Object>> tasks =
+        IntStream.range(0, numThreads)
+            .mapToObj(
+                i ->
+                    (Callable<Object>)
+                        () -> {
+                          final int sleepTime = ThreadLocalRandom.current().nextInt(limit);
+                          myRateLimiter.tryAcquire(0, i, context);
+                          Thread.sleep(sleepTime);
+                          assertThat(myRateLimiter.getInflightCount()).isLessThanOrEqualTo(limit);
+                          myRateLimiter.onResponse(0, i);
+                          return null;
+                        })
+            .collect(Collectors.toList());
+    try {
+      threadPool.invokeAll(tasks);
+    } finally {
+      // when
+      threadPool.shutdown();
+    }
+
+    // then
+    assertThat(myRateLimiter.getInflightCount()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldAllowInFlightHigherThanLimitWithWhitelistedCommands() throws InterruptedException {
+    // given
+    final int numThreads = 3000;
+    final int poolSize = 300;
+    final int limit = 100;
+    final Limit myLimit = new SettableLimit(limit);
+    final CommandRateLimiter myRateLimiter = CommandRateLimiter.builder().limit(myLimit).build(0);
+    final ExecutorService threadPool = Executors.newFixedThreadPool(poolSize);
+    final JobIntent whitelistedIntentContext = JobIntent.COMPLETE;
+
+    final Collection<Callable<Object>> tasks =
+        IntStream.range(0, numThreads)
+            .mapToObj(
+                i ->
+                    (Callable<Object>)
+                        () -> {
+                          final int sleepTime = ThreadLocalRandom.current().nextInt(limit);
+                          myRateLimiter.tryAcquire(
+                              0, i, i % 2 == 0 ? context : whitelistedIntentContext);
+                          Thread.sleep(sleepTime);
+                          assertThat(myRateLimiter.getInflightCount())
+                              .isLessThanOrEqualTo(2 * limit);
+                          myRateLimiter.onResponse(0, i);
+                          return null;
+                        })
+            .collect(Collectors.toList());
+    try {
+      threadPool.invokeAll(tasks);
+    } finally {
+      // when
+      threadPool.shutdown();
+    }
+
+    // then
+    assertThat(myRateLimiter.getInflightCount()).isEqualTo(0);
   }
 }
