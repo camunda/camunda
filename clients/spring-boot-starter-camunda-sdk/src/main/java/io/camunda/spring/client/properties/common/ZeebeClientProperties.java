@@ -1,26 +1,21 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.properties.common;
+package io.camunda.spring.client.properties.common;
 
-import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.properties.CamundaClientDeploymentProperties;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+@Deprecated(forRemoval = true, since = "8.7")
 public class ZeebeClientProperties extends ApiProperties {
   private Integer executionThreads;
   private Duration messageTimeToLive;
@@ -30,29 +25,32 @@ public class ZeebeClientProperties extends ApiProperties {
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
-  @NestedConfigurationProperty private ZeebeWorkerValue defaults;
-  @NestedConfigurationProperty private Map<String, ZeebeWorkerValue> override;
+  @NestedConfigurationProperty private JobWorkerValue defaults;
+  @NestedConfigurationProperty private Map<String, JobWorkerValue> override;
   private boolean preferRestOverGrpc;
   private URI grpcAddress;
   private URI restAddress;
-  @NestedConfigurationProperty private ZeebeClientDeploymentProperties deployment;
+  @NestedConfigurationProperty private CamundaClientDeploymentProperties deployment;
 
-  public ZeebeWorkerValue getDefaults() {
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults")
+  public JobWorkerValue getDefaults() {
     return defaults;
   }
 
-  public void setDefaults(final ZeebeWorkerValue defaults) {
+  public void setDefaults(final JobWorkerValue defaults) {
     this.defaults = defaults;
   }
 
-  public Map<String, ZeebeWorkerValue> getOverride() {
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.override")
+  public Map<String, JobWorkerValue> getOverride() {
     return override;
   }
 
-  public void setOverride(final Map<String, ZeebeWorkerValue> override) {
+  public void setOverride(final Map<String, JobWorkerValue> override) {
     this.override = override;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.execution-threads")
   public Integer getExecutionThreads() {
     return executionThreads;
   }
@@ -61,6 +59,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.executionThreads = executionThreads;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.message-time-to-live")
   public Duration getMessageTimeToLive() {
     return messageTimeToLive;
   }
@@ -69,6 +68,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.messageTimeToLive = messageTimeToLive;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.request-timeout")
   public Duration getRequestTimeout() {
     return requestTimeout;
   }
@@ -77,6 +77,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.requestTimeout = requestTimeout;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.ca-certificate-path")
   public String getCaCertificatePath() {
     return caCertificatePath;
   }
@@ -85,6 +86,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.caCertificatePath = caCertificatePath;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.keep-alive")
   public Duration getKeepAlive() {
     return keepAlive;
   }
@@ -93,6 +95,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.keepAlive = keepAlive;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.override-authority")
   public String getOverrideAuthority() {
     return overrideAuthority;
   }
@@ -101,6 +104,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.overrideAuthority = overrideAuthority;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.max-message-size")
   public Integer getMaxMessageSize() {
     return maxMessageSize;
   }
@@ -109,6 +113,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.maxMessageSize = maxMessageSize;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.max-metadata-size")
   public Integer getMaxMetadataSize() {
     return maxMetadataSize;
   }
@@ -117,6 +122,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.maxMetadataSize = maxMetadataSize;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.prefer-rest-over-grpc")
   public boolean isPreferRestOverGrpc() {
     return preferRestOverGrpc;
   }
@@ -125,6 +131,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.preferRestOverGrpc = preferRestOverGrpc;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
   public URI getGrpcAddress() {
     return grpcAddress;
   }
@@ -133,6 +140,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.grpcAddress = grpcAddress;
   }
 
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.rest-address")
   public URI getRestAddress() {
     return restAddress;
   }
@@ -141,11 +149,12 @@ public class ZeebeClientProperties extends ApiProperties {
     this.restAddress = restAddress;
   }
 
-  public ZeebeClientDeploymentProperties getDeployment() {
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.deployment")
+  public CamundaClientDeploymentProperties getDeployment() {
     return deployment;
   }
 
-  public void setDeployment(final ZeebeClientDeploymentProperties deployment) {
+  public void setDeployment(final CamundaClientDeploymentProperties deployment) {
     this.deployment = deployment;
   }
 }
