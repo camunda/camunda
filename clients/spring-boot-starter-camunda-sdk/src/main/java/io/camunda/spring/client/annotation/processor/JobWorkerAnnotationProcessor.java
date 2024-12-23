@@ -27,7 +27,8 @@ import org.springframework.util.ReflectionUtils;
  * Always created by {@link AnnotationProcessorConfiguration}
  *
  * <p>Triggered by {@link CamundaAnnotationProcessorRegistry#postProcessAfterInitialization(Object,
- * String)} to add Handler subscriptions for {@link io.camunda.spring.client.annotation.JobWorker} method-annotations.
+ * String)} to add Handler subscriptions for {@link io.camunda.spring.client.annotation.JobWorker}
+ * method-annotations.
  */
 public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProcessor {
 
