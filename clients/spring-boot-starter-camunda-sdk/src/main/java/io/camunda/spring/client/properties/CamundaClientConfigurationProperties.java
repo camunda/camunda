@@ -1,25 +1,17 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.properties;
+package io.camunda.spring.client.properties;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.ClientProperties;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.util.Environment;
-import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import jakarta.annotation.PostConstruct;
 import java.net.URI;
 import java.time.Duration;
@@ -37,15 +29,15 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties(prefix = "zeebe.client")
-@Deprecated
-public class ZeebeClientConfigurationProperties {
+@Deprecated(since = "8.6", forRemoval = true)
+public class CamundaClientConfigurationProperties {
   // Used to read default config values
   public static final CamundaClientBuilderImpl DEFAULT =
       (CamundaClientBuilderImpl) new CamundaClientBuilderImpl().withProperties(new Properties());
   public static final String CONNECTION_MODE_CLOUD = "CLOUD";
   public static final String CONNECTION_MODE_ADDRESS = "ADDRESS";
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ZeebeClientConfigurationProperties.class);
+      LoggerFactory.getLogger(CamundaClientConfigurationProperties.class);
   private final org.springframework.core.env.Environment environment;
 
   /**
@@ -83,7 +75,7 @@ public class ZeebeClientConfigurationProperties {
   private Duration requestTimeout = DEFAULT.getDefaultRequestTimeout();
 
   @Autowired
-  public ZeebeClientConfigurationProperties(
+  public CamundaClientConfigurationProperties(
       final org.springframework.core.env.Environment environment) {
     this.environment = environment;
   }
@@ -94,7 +86,6 @@ public class ZeebeClientConfigurationProperties {
    * read only if no real property is set
    */
   @PostConstruct
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "no overrides are applied anymore")
   public void applyOverrides() {
     if (isApplyEnvironmentVariableOverrides()) {
@@ -142,7 +133,6 @@ public class ZeebeClientConfigurationProperties {
     }
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "nested property is deprecated")
   public Broker getBroker() {
     return broker;
@@ -152,7 +142,6 @@ public class ZeebeClientConfigurationProperties {
     this.broker = broker;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "nested property is deprecated")
   public Cloud getCloud() {
     return cloud;
@@ -162,7 +151,6 @@ public class ZeebeClientConfigurationProperties {
     this.cloud = cloud;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "nested property is deprecated")
   public Worker getWorker() {
     return worker;
@@ -172,7 +160,6 @@ public class ZeebeClientConfigurationProperties {
     this.worker = worker;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "nested property is deprecated")
   public Message getMessage() {
     return message;
@@ -182,7 +169,6 @@ public class ZeebeClientConfigurationProperties {
     this.message = message;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "nested property is deprecated")
   public Security getSecurity() {
     return security;
@@ -192,7 +178,6 @@ public class ZeebeClientConfigurationProperties {
     this.security = security;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "nested property is deprecated")
   public Job getJob() {
     return job;
@@ -202,8 +187,7 @@ public class ZeebeClientConfigurationProperties {
     this.job = job;
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.request-timeout")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.request-timeout")
   public Duration getRequestTimeout() {
     return requestTimeout;
   }
@@ -212,8 +196,7 @@ public class ZeebeClientConfigurationProperties {
     this.requestTimeout = requestTimeout;
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.enabled")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.enabled")
   public boolean isEnabled() {
     return enabled;
   }
@@ -222,7 +205,6 @@ public class ZeebeClientConfigurationProperties {
     this.enabled = enabled;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "not required")
   public boolean isApplyEnvironmentVariableOverrides() {
     return applyEnvironmentVariableOverrides;
@@ -237,7 +219,6 @@ public class ZeebeClientConfigurationProperties {
     this.ownsJobWorkerExecutor = ownsJobWorkerExecutor;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(
       replacement = "always true, unless custom zeebe client executor service is registered")
   public boolean ownsJobWorkerExecutor() {
@@ -246,11 +227,10 @@ public class ZeebeClientConfigurationProperties {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     ZeebeClientConfigurationProperties#getGrpcAddress()}
+   *     CamundaClientConfigurationProperties#getGrpcAddress()}
    * @see CamundaClientConfiguration#getGatewayAddress()
    */
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
   public String getGatewayAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe", connectionMode);
@@ -268,8 +248,7 @@ public class ZeebeClientConfigurationProperties {
     }
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
   public URI getGrpcAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe GRPC", connectionMode);
@@ -287,8 +266,7 @@ public class ZeebeClientConfigurationProperties {
     }
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.rest-address")
   public URI getRestAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe REST", connectionMode);
@@ -306,7 +284,6 @@ public class ZeebeClientConfigurationProperties {
     }
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(
       replacement = "camunda.client.tenant-ids",
       reason = "the first provided tenant id is applied")
@@ -318,7 +295,6 @@ public class ZeebeClientConfigurationProperties {
     this.defaultTenantId = defaultTenantId;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "camunda.client.tenant-ids")
   public List<String> getDefaultJobWorkerTenantIds() {
     return defaultJobWorkerTenantIds;
@@ -328,8 +304,7 @@ public class ZeebeClientConfigurationProperties {
     this.defaultJobWorkerTenantIds = defaultJobWorkerTenantIds;
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.stream-enabled")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.stream-enabled")
   public boolean getDefaultJobWorkerStreamEnabled() {
     return defaultJobWorkerStreamEnabled;
   }
@@ -338,13 +313,11 @@ public class ZeebeClientConfigurationProperties {
     this.defaultJobWorkerStreamEnabled = defaultJobWorkerStreamEnabled;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(replacement = "not required")
   public boolean useDefaultRetryPolicy() {
     return false;
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(
       replacement = "camunda.client.mode",
       reason = "There are client modes now")
@@ -356,82 +329,70 @@ public class ZeebeClientConfigurationProperties {
     this.connectionMode = connectionMode;
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.request-timeout")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.request-timeout")
   public Duration getDefaultRequestTimeout() {
     return getRequestTimeout();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.execution-threads")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.execution-threads")
   public int getNumJobWorkerExecutionThreads() {
     return worker.getThreads();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.max-jobs-active")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.max-jobs-active")
   public int getDefaultJobWorkerMaxJobsActive() {
     return worker.getMaxJobsActive();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.name")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.name")
   public String getDefaultJobWorkerName() {
     return worker.getDefaultName();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.type")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.type")
   public String getDefaultJobWorkerType() {
     return worker.getDefaultType();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.timeout")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.timeout")
   public Duration getDefaultJobTimeout() {
     return job.getTimeout();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.poll-interval")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.poll-interval")
   public Duration getDefaultJobPollInterval() {
     return job.getPollInterval();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.message-time-to-live")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.message-time-to-live")
   public Duration getDefaultMessageTimeToLive() {
     return message.getTimeToLive();
   }
 
-  @Deprecated
   @DeprecatedConfigurationProperty(
-      replacement = "camunda.client.zeebe.grpc-address",
+      replacement = "camunda.client.grpc-address",
       reason = "plaintext is determined by the url protocol (http/https) now")
   public Boolean isPlaintextConnectionEnabled() {
     return security.isPlaintext();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.ca-certificate-path")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.ca-certificate-path")
   public String getCaCertificatePath() {
     return security.getCertPath();
   }
 
   @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.override-authority")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.override-authority")
   public String getOverrideAuthority() {
     return security.getOverrideAuthority();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.keep-alive")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.keep-alive")
   public Duration getKeepAlive() {
     return broker.getKeepAlive();
   }
 
-  @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.max-message-size")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.max-message-size")
   public int getMaxMessageSize() {
     return message.getMaxMessageSize();
   }
@@ -449,7 +410,7 @@ public class ZeebeClientConfigurationProperties {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final ZeebeClientConfigurationProperties that = (ZeebeClientConfigurationProperties) o;
+    final CamundaClientConfigurationProperties that = (CamundaClientConfigurationProperties) o;
     return Objects.equals(broker, that.broker)
         && Objects.equals(cloud, that.cloud)
         && Objects.equals(worker, that.worker)
@@ -511,7 +472,7 @@ public class ZeebeClientConfigurationProperties {
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
      * @see CamundaClientConfiguration#getGatewayAddress()
      */
-    @Deprecated private String gatewayAddress;
+    private String gatewayAddress;
 
     private URI grpcAddress;
     private URI restAddress;
@@ -521,8 +482,7 @@ public class ZeebeClientConfigurationProperties {
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
      * @see CamundaClientConfiguration#getGatewayAddress()
      */
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
     public String getGatewayAddress() {
       return gatewayAddress;
     }
@@ -531,40 +491,33 @@ public class ZeebeClientConfigurationProperties {
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Broker#getGrpcAddress()}
      * @see CamundaClientConfiguration#getGatewayAddress()
      */
-    @Deprecated
     public void setGatewayAddress(final String gatewayAddress) {
       this.gatewayAddress = gatewayAddress;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
     public URI getGrpcAddress() {
       return grpcAddress;
     }
 
-    @Deprecated
     public void setGrpcAddress(final URI grpcAddress) {
       this.grpcAddress = grpcAddress;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.rest-address")
     public URI getRestAddress() {
       return restAddress;
     }
 
-    @Deprecated
     public void setRestAddress(final URI restAddress) {
       this.restAddress = restAddress;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.keep-alive")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.keep-alive")
     public Duration getKeepAlive() {
       return keepAlive;
     }
 
-    @Deprecated
     public void setKeepAlive(final Duration keepAlive) {
       this.keepAlive = keepAlive;
     }
@@ -616,7 +569,6 @@ public class ZeebeClientConfigurationProperties {
     private int port = 443;
     private String credentialsCachePath;
 
-    @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.cluster-id")
     public String getClusterId() {
       return clusterId;
@@ -626,7 +578,6 @@ public class ZeebeClientConfigurationProperties {
       this.clusterId = clusterId;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.auth.client-id")
     public String getClientId() {
       return clientId;
@@ -636,7 +587,6 @@ public class ZeebeClientConfigurationProperties {
       this.clientId = clientId;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.auth.client-secret")
     public String getClientSecret() {
       return clientSecret;
@@ -646,7 +596,6 @@ public class ZeebeClientConfigurationProperties {
       this.clientSecret = clientSecret;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.region")
     public String getRegion() {
       return region;
@@ -656,8 +605,7 @@ public class ZeebeClientConfigurationProperties {
       this.region = region;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.scope")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.scope")
     public String getScope() {
       return scope;
     }
@@ -666,9 +614,8 @@ public class ZeebeClientConfigurationProperties {
       this.scope = scope;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.grpc-address",
+        replacement = "camunda.client.grpc-address",
         reason = "The zeebe client url is now configured as http/https url")
     public String getBaseUrl() {
       return baseUrl;
@@ -678,7 +625,6 @@ public class ZeebeClientConfigurationProperties {
       this.baseUrl = baseUrl;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(replacement = "camunda.client.auth.issuer")
     public String getAuthUrl() {
       return authUrl;
@@ -688,9 +634,8 @@ public class ZeebeClientConfigurationProperties {
       this.authUrl = authUrl;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.grpc-address",
+        replacement = "camunda.client.grpc-address",
         reason = "The zeebe client url is now configured as http/https url")
     public int getPort() {
       return port;
@@ -700,7 +645,6 @@ public class ZeebeClientConfigurationProperties {
       this.port = port;
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(
         replacement = "not required",
         reason = "the identity credentials provider will not use a credentials cache file")
@@ -712,13 +656,11 @@ public class ZeebeClientConfigurationProperties {
       this.credentialsCachePath = credentialsCachePath;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.audience")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.auth.audience")
     public String getAudience() {
       return String.format("%s.%s.%s", clusterId, region, baseUrl);
     }
 
-    @Deprecated
     @DeprecatedConfigurationProperty(
         replacement = "not required",
         reason = "This is determined by 'camunda.client.mode'")
@@ -730,22 +672,19 @@ public class ZeebeClientConfigurationProperties {
      * @deprecated since 8.5 for removal with 8.8, replaced by {@link Cloud#getGrpcAddress()}
      * @see CamundaClientConfiguration#getGatewayAddress()
      */
-    @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.grpc-address",
+        replacement = "camunda.client.grpc-address",
         reason = "The zeebe client url is now configured as http/https url")
     public String getGatewayAddress() {
       return String.format("%s.%s.%s:%d", clusterId, region, baseUrl, port);
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
     public URI getGrpcAddress() {
       return URI.create(String.format("https://%s.%s.%s:%d", clusterId, region, baseUrl, port));
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.rest-address")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.rest-address")
     public URI getRestAddress() {
       return URI.create(String.format("https://%s.%s:%d/%s", region, baseUrl, port, clusterId));
     }
@@ -823,20 +762,18 @@ public class ZeebeClientConfigurationProperties {
     private String defaultName =
         null; // setting NO default in Spring, as bean/method name is used as default
     private String defaultType = null;
-    private Map<String, ZeebeWorkerValue> override = new HashMap<>();
+    private Map<String, JobWorkerValue> override = new HashMap<>();
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.override")
-    public Map<String, ZeebeWorkerValue> getOverride() {
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.override")
+    public Map<String, JobWorkerValue> getOverride() {
       return override;
     }
 
-    public void setOverride(final Map<String, ZeebeWorkerValue> override) {
+    public void setOverride(final Map<String, JobWorkerValue> override) {
       this.override = override;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.max-jobs-active")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.max-jobs-active")
     public Integer getMaxJobsActive() {
       return maxJobsActive;
     }
@@ -845,8 +782,7 @@ public class ZeebeClientConfigurationProperties {
       this.maxJobsActive = maxJobsActive;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.execution-threads")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.execution-threads")
     public Integer getThreads() {
       return threads;
     }
@@ -855,8 +791,7 @@ public class ZeebeClientConfigurationProperties {
       this.threads = threads;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.name")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.name")
     public String getDefaultName() {
       return defaultName;
     }
@@ -865,8 +800,7 @@ public class ZeebeClientConfigurationProperties {
       this.defaultName = defaultName;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.type")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.type")
     public String getDefaultType() {
       return defaultType;
     }
@@ -920,8 +854,7 @@ public class ZeebeClientConfigurationProperties {
     private Duration timeout = DEFAULT.getDefaultJobTimeout();
     private Duration pollInterval = DEFAULT.getDefaultJobPollInterval();
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.timeout")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.timeout")
     public Duration getTimeout() {
       return timeout;
     }
@@ -930,8 +863,7 @@ public class ZeebeClientConfigurationProperties {
       this.timeout = timeout;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.defaults.poll-interval")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.poll-interval")
     public Duration getPollInterval() {
       return pollInterval;
     }
@@ -968,8 +900,7 @@ public class ZeebeClientConfigurationProperties {
     private Duration timeToLive = DEFAULT.getDefaultMessageTimeToLive();
     private int maxMessageSize = DEFAULT.getMaxMessageSize();
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.message-time-to-live")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.message-time-to-live")
     public Duration getTimeToLive() {
       return timeToLive;
     }
@@ -978,8 +909,7 @@ public class ZeebeClientConfigurationProperties {
       this.timeToLive = timeToLive;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.max-message-size")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.max-message-size")
     public int getMaxMessageSize() {
       return maxMessageSize;
     }
@@ -1017,9 +947,8 @@ public class ZeebeClientConfigurationProperties {
     private String overrideAuthority = DEFAULT.getOverrideAuthority();
     private String certPath = DEFAULT.getCaCertificatePath();
 
-    @Deprecated
     @DeprecatedConfigurationProperty(
-        replacement = "camunda.client.zeebe.grpc-address",
+        replacement = "camunda.client.grpc-address",
         reason = "plaintext is determined by the url protocol (http/https) now")
     public Boolean isPlaintext() {
       return plaintext;
@@ -1029,8 +958,7 @@ public class ZeebeClientConfigurationProperties {
       this.plaintext = plaintext;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.ca-certificate-path")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.ca-certificate-path")
     public String getCertPath() {
       return certPath;
     }
@@ -1039,8 +967,7 @@ public class ZeebeClientConfigurationProperties {
       this.certPath = certPath;
     }
 
-    @Deprecated
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.override-authority")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.override-authority")
     public String getOverrideAuthority() {
       return overrideAuthority;
     }
