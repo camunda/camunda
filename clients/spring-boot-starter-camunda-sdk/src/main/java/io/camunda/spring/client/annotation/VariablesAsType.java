@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.jobhandling.parameter;
+package io.camunda.spring.client.annotation;
 
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
+import java.lang.annotation.*;
 
-public class VariablesAsTypeResolver implements ParameterResolver {
-  private final Class<?> variablesType;
-
-  public VariablesAsTypeResolver(final Class<?> variablesType) {
-    this.variablesType = variablesType;
-  }
-
-  @Override
-  public Object resolve(final JobClient jobClient, final ActivatedJob job) {
-    return job.getVariablesAsType(variablesType);
-  }
-}
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface VariablesAsType {}
