@@ -248,6 +248,7 @@ final class JsonSerializableToJsonTest {
               }
             ],
             "decisionsMetadata": [],
+            "resourceMetadata":[],
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
             "tenantId": "<default>",
@@ -297,6 +298,7 @@ final class JsonSerializableToJsonTest {
               "resources": [],
               "decisionRequirementsMetadata": [],
               "processesMetadata": [],
+              "resourceMetadata":[],
               "decisionsMetadata": [],
               "formMetadata": [],
               "tenantId": "<default>",
@@ -435,6 +437,7 @@ final class JsonSerializableToJsonTest {
               "versionTag": "v1.0"
             }
           ],
+          "resourceMetadata":[],
           "tenantId": "<default>",
           "deploymentKey": 1234
         }
@@ -470,6 +473,7 @@ final class JsonSerializableToJsonTest {
           "decisionsMetadata": [],
           "decisionRequirementsMetadata": [],
           "formMetadata": [],
+          "resourceMetadata":[],
           "tenantId": "<default>",
           "deploymentKey": -1
         }
@@ -2268,6 +2272,7 @@ final class JsonSerializableToJsonTest {
             "decisionsMetadata": [],
             "decisionRequirementsMetadata": [],
             "formMetadata": [],
+            "resourceMetadata":[],
             "tenantId": "<default>",
             "deploymentKey": -1
           }
