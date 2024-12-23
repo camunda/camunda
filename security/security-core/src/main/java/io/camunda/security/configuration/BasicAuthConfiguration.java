@@ -5,14 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.security.configuration;
 
-import {requestAndParse} from 'modules/request';
+public class BasicAuthConfiguration {
+  private boolean httpBasicAuthEnabled = true;
 
-const logout = async () => {
-  return requestAndParse({
-    url: '/logout',
-    method: 'POST',
-  });
-};
+  public boolean isHttpBasicAuthEnabled() {
+    return httpBasicAuthEnabled;
+  }
 
-export {logout};
+  public void setHttpBasicAuthEnabled(final boolean httpBasicAuthEnabled) {
+    this.httpBasicAuthEnabled = httpBasicAuthEnabled;
+  }
+}

@@ -34,16 +34,19 @@ public class CamundaUserDetailsService implements UserDetailsService {
   private final AuthorizationServices authorizationServices;
   private final RoleServices roleServices;
   private final TenantServices tenantServices;
+  private final boolean canLogout;
 
   public CamundaUserDetailsService(
       final UserServices userServices,
       final AuthorizationServices authorizationServices,
       final RoleServices roleServices,
-      final TenantServices tenantServices) {
+      final TenantServices tenantServices,
+      final boolean canLogout) {
     this.userServices = userServices;
     this.authorizationServices = authorizationServices;
     this.roleServices = roleServices;
     this.tenantServices = tenantServices;
+    this.canLogout = canLogout;
   }
 
   @Override
@@ -91,6 +94,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withAuthorizedApplications(authorizedApplications)
         .withRoles(roles)
         .withTenants(tenants)
+        .withCanLogout(canLogout)
         .build();
   }
 }

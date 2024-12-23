@@ -11,6 +11,8 @@ public class SecurityConfiguration {
 
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
+  private BasicAuthConfiguration basicAuth = new BasicAuthConfiguration();
+
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
 
@@ -44,5 +46,13 @@ public class SecurityConfiguration {
 
   public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
     this.multiTenancy = multiTenancy;
+  }
+
+  public BasicAuthConfiguration getBasicAuth() {
+    return basicAuth;
+  }
+
+  public void setBasicAuth(final BasicAuthConfiguration basicAuth) {
+    this.basicAuth = basicAuth;
   }
 }

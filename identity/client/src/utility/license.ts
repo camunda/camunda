@@ -6,13 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {requestAndParse} from 'modules/request';
+import { checkLicense, License } from "src/utility/api/headers";
+import { useApi } from "src/utility/api";
 
-const logout = async () => {
-  return requestAndParse({
-    url: '/logout',
-    method: 'POST',
-  });
-};
-
-export {logout};
+export function useLicense(): License | null {
+  const { data } = useApi(checkLicense);
+  return data;
+}
