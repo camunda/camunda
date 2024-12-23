@@ -43,7 +43,9 @@ public class AuthorizationHandler
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(
+        String.format(
+            "%s-%s", record.getValue().getOwnerKey(), record.getValue().getResourceType().name()));
   }
 
   @Override
