@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class TenantRequestAttributeFilter extends OncePerRequestFilter {
@@ -55,13 +54,10 @@ public class TenantRequestAttributeFilter extends OncePerRequestFilter {
     if (!multiTenancyCfg.isEnabled()) {
       return Set.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
-    if (!(principal instanceof final Authentication auth)) {
+    final var camundaPrincipal = CamundaPrincipal.fromPrincipal(principal);
+    if (camundaPrincipal == null) {
       LOG.error(
           "cannot find tenants: unsupported principal type: {}", principal.getClass().getName());
-      return null;
-    }
-    if (!(auth.getPrincipal() instanceof final CamundaPrincipal camundaPrincipal)) {
-      LOG.error("cannot find tenants: unsupported principal type: {}", auth.getClass().getName());
       return null;
     }
     return camundaPrincipal.getAuthenticationContext().tenants().stream()
