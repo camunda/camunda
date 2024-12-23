@@ -13,18 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.annotation;
+package io.camunda.spring.client.annotation;
 
 import io.camunda.client.CamundaClientConfiguration;
 import java.lang.annotation.*;
 
-/**
- * @deprecated please use {@link io.camunda.spring.client.annotation.JobWorker}
- */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Deprecated(forRemoval = true, since = "8.7")
 public @interface JobWorker {
 
   /**
