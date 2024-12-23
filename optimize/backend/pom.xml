@@ -656,7 +656,7 @@
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
-      <version>2.9.2</version>
+      <version>3.0.0</version>
     </dependency>
 
     <dependency>
