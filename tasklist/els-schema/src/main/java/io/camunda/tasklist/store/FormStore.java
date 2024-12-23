@@ -17,7 +17,7 @@ public interface FormStore {
 
   List<String> getFormIdsByProcessDefinitionId(String processDefinitionId);
 
-  Optional<FormIdView> getHighestVersionFormByKey(String formKey);
+  Optional<FormIdView> getFormByKey(String formKey);
 
   record FormIdView(String id, String bpmnId, Long version) {}
 }

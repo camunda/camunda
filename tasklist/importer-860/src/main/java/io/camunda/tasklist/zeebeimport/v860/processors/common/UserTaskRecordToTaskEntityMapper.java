@@ -129,15 +129,13 @@ public class UserTaskRecordToTaskEntityMapper {
       final String strFromKey = String.valueOf(formKey);
       entity.setFormKey(strFromKey).setIsFormEmbedded(false);
       formStore
-          .getHighestVersionFormByKey(strFromKey)
+          .getFormByKey(strFromKey)
           .ifPresentOrElse(
               linkedForm -> {
                 entity.setFormVersion(linkedForm.version());
                 entity.setFormId(linkedForm.bpmnId());
               },
-              () -> {
-                LOGGER.warn("Form with key={} cannot be found", strFromKey);
-              });
+              () -> LOGGER.warn("Form with key={} cannot be found", strFromKey));
     }
 
     // TODO handle removal of attributes in Zeebe https://github.com/camunda/tasklist/issues/4306
