@@ -58,8 +58,7 @@ public class CredentialsProviderSaasTest {
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
   private static final String ACCESS_TOKEN = "access-token";
-  @MockBean
-  CamundaClientExecutorService zeebeClientExecutorService;
+  @MockBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CamundaClientConfigurationImpl configuration;
 
   @DynamicPropertySource
