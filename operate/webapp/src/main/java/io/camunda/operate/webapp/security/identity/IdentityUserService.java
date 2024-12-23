@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile(IDENTITY_AUTH_PROFILE)
+// TODO replace with OIDC implementation
 public class IdentityUserService extends AbstractUserService<AbstractAuthenticationToken> {
 
   private final Identity identity;
@@ -32,7 +33,8 @@ public class IdentityUserService extends AbstractUserService<AbstractAuthenticat
   private final PermissionConverter permissionConverter;
 
   @Autowired
-  public IdentityUserService(Identity identity, PermissionConverter permissionConverter) {
+  public IdentityUserService(
+      final Identity identity, final PermissionConverter permissionConverter) {
     this.identity = identity;
     this.permissionConverter = permissionConverter;
   }
