@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-function shouldFetchMore(errorCode: string) {
-  const ERROR_CODE_PATTERN =
-    /task is not assigned|task is not assigned to|task is not active/gi;
+import {completionErrorMap} from 'modules/mutations/useCompleteTask';
 
-  return ERROR_CODE_PATTERN.test(errorCode);
-}
+const ERRORS_THAT_SHOULD_FETCH_MORE: string[] = [
+  completionErrorMap.taskNotAssigned,
+  completionErrorMap.taskNotAssignedToCurrentUser,
+  completionErrorMap.taskIsNotActive,
+];
 
-export {shouldFetchMore};
+export {ERRORS_THAT_SHOULD_FETCH_MORE};
