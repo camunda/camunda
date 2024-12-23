@@ -20,7 +20,7 @@ public abstract class ErrorHandlingUtils {
   public static final String TASK_NOT_ASSIGNED_TO_CURRENT_USER =
       "TASK_NOT_ASSIGNED_TO_CURRENT_USER";
 
-  public static String getErrorMessage(final long taskKey, final Throwable exception) {
+  public static String getErrorMessage(final Throwable exception) {
     final String errorMessage;
 
     if (exception instanceof final ProblemException ex

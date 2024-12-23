@@ -21,7 +21,6 @@ class ErrorHandlingUtilsTest {
   @Test
   void testGetErrorMessageWithInvalidStateProblem() {
     // Given
-    final long taskKey = 123;
     final ProblemDetail problemDetail =
         new ProblemDetail()
             .status(409)
@@ -32,7 +31,7 @@ class ErrorHandlingUtilsTest {
     when(problemException.details()).thenReturn(problemDetail);
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(taskKey, problemException);
+    final String result = ErrorHandlingUtils.getErrorMessage(problemException);
 
     // Then
     final String expectedMessage =
@@ -47,13 +46,12 @@ class ErrorHandlingUtilsTest {
   @Test
   void testGetErrorMessageWithTimeoutException() {
     // Given
-    final long taskKey = 123;
     final SocketTimeoutException socketTimeoutException = new SocketTimeoutException("10 SECONDS");
     final Throwable timeoutException =
         new ClientException("Timeout occurred", new ClientException(socketTimeoutException));
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(taskKey, timeoutException);
+    final String result = ErrorHandlingUtils.getErrorMessage(timeoutException);
 
     // Then
     final String expectedMessage =
@@ -68,11 +66,10 @@ class ErrorHandlingUtilsTest {
   @Test
   void testGetErrorMessageWithGenericException() {
     // Given
-    final long taskKey = 123;
     final ClientException genericException = new ClientException("Generic error occurred");
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(taskKey, genericException);
+    final String result = ErrorHandlingUtils.getErrorMessage(genericException);
 
     // Then
     assertEquals("Generic error occurred", result);
