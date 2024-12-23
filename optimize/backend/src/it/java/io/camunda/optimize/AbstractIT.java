@@ -80,8 +80,6 @@ public abstract class AbstractIT {
   }
 
   private String[] prepareArgs(final Map<String, String> argMap) {
-    final String httpsPort = getPortArg(HTTPS_PORT_KEY);
-    final String httpPort = getPortArg(HTTP_PORT_KEY);
     final String actuatorPort =
         getArg(
             ACTUATOR_PORT_PROPERTY_KEY,
@@ -98,16 +96,9 @@ public abstract class AbstractIT {
             .map(e -> getArg(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
 
-    Collections.addAll(argList, httpsPort, httpPort, actuatorPort, contextPath);
+    Collections.addAll(argList, actuatorPort, contextPath);
 
     return argList.toArray(String[]::new);
-  }
-
-  private String getPortArg(final String portKey) {
-    return getArg(
-        portKey,
-        String.valueOf(
-            embeddedOptimizeExtension.getBean(OptimizeTomcatConfig.class).getPort(portKey) + 100));
   }
 
   private String getArg(final String key, final String value) {
