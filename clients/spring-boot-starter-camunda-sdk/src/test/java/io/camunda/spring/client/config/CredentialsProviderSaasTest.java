@@ -1,19 +1,11 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.config;
+package io.camunda.spring.client.config;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
@@ -26,11 +18,11 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
-import io.camunda.zeebe.spring.client.configuration.CamundaClientConfigurationImpl;
-import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
-import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
-import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
+import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
+import io.camunda.spring.client.configuration.JsonMapperConfiguration;
+import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.spring.client.properties.CamundaClientConfigurationProperties;
+import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -56,7 +48,7 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
       "camunda.client.auth.client-secret=my-client-secret"
     })
 @EnableConfigurationProperties({
-  ZeebeClientConfigurationProperties.class,
+  CamundaClientConfigurationProperties.class,
   CamundaClientProperties.class
 })
 public class CredentialsProviderSaasTest {
@@ -66,7 +58,8 @@ public class CredentialsProviderSaasTest {
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
   private static final String ACCESS_TOKEN = "access-token";
-  @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
+  @MockBean
+  CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CamundaClientConfigurationImpl configuration;
 
   @DynamicPropertySource
