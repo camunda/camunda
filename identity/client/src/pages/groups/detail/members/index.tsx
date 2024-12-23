@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getGroupMembers } from "src/utility/api/membership";
+import { getMembersByGroup } from "src/utility/api/membership";
 import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
@@ -32,16 +32,16 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-  } = useApi(getGroupMembers, {
+  } = useApi(getMembersByGroup, {
     groupId: groupId,
   });
 
-  const areNoUsersAssigned = !users || users.length === 0;
+  const areNoUsersAssigned = !users || users.items?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     AssignMembersModal,
     reload,
     {
-      assignedUsers: users || [],
+      assignedUsers: users?.items || [],
     },
   );
   const openAssignModal = () => assignUsers({ id: groupId });
@@ -88,7 +88,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     <>
       <EntityList
         title={t("Assigned members")}
-        data={users}
+        data={users?.items}
         headers={[
           { header: t("Username"), key: "username" },
           { header: t("Email"), key: "email" },
