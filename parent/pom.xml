@@ -606,12 +606,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>operate-importer-8_7</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>operate-data-generator</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -731,12 +725,6 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>tasklist-importer-860</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-870</artifactId>
         <version>${project.version}</version>
       </dependency>
 
