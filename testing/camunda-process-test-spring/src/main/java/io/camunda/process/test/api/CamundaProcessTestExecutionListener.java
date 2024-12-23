@@ -28,8 +28,8 @@ import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
-import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientClosingEvent;
+import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,13 +46,13 @@ import org.springframework.test.context.TestExecutionListener;
  *   <li>Start the runtime
  *   <li>Create a {@link CamundaClient} to inject in the test class
  *   <li>Create a {@link CamundaProcessTestContext} to inject in the test class
- *   <li>Publish a {@link ZeebeClientCreatedEvent}
+ *   <li>Publish a {@link CamundaClientCreatedEvent}
  * </ul>
  *
  * <p>After each test method:
  *
  * <ul>
- *   <li>Publish a {@link ZeebeClientClosingEvent}
+ *   <li>Publish a {@link CamundaClientClosingEvent}
  *   <li>Close created {@link CamundaClient}s
  *   <li>Stop the runtime
  * </ul>
@@ -100,7 +100,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .setContext(camundaProcessTestContext);
 
     // publish Zeebe client
-    testContext.getApplicationContext().publishEvent(new ZeebeClientCreatedEvent(this, client));
+    testContext.getApplicationContext().publishEvent(new CamundaClientCreatedEvent(this, client));
 
     // initialize assertions
     final CamundaDataSource dataSource = createDataSource(containerRuntime);
@@ -119,7 +119,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     CamundaAssert.reset();
 
     // close Zeebe clients
-    testContext.getApplicationContext().publishEvent(new ZeebeClientClosingEvent(this, client));
+    testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
 
     createdClients.forEach(CamundaClient::close);
 
