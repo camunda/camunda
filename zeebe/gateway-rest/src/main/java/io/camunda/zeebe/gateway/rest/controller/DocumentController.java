@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.service.DocumentServices;
+import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
@@ -17,11 +18,11 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import jakarta.servlet.http.Part;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -95,20 +96,22 @@ public class DocumentController {
         ResponseMapper::toDocumentReferenceBatch);
   }
 
-  @GetMapping(
-      path = "/{documentId}",
-      produces = {
-        MediaType.APPLICATION_OCTET_STREAM_VALUE,
-        MediaType.APPLICATION_PROBLEM_JSON_VALUE
-      })
+  @GetMapping(path = "/{documentId}") // produces arbitrary content type
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
       @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
     try {
-      final InputStream contentInputStream = getDocumentContentStream(documentId, storeId);
+      final DocumentContentResponse contentResponse =
+          getDocumentContentResponse(documentId, storeId);
+      final MediaType mediaType = resolveMediaType(contentResponse);
       return ResponseEntity.ok()
-          .contentType(MediaType.APPLICATION_OCTET_STREAM)
-          .body(contentInputStream::transferTo);
+          .contentType(mediaType)
+          .body(
+              bodyStream -> {
+                try (final var contentInputStream = contentResponse.content()) {
+                  contentInputStream.transferTo(bodyStream);
+                }
+              });
     } catch (final Exception e) {
       // we can't return a generic Object type when streaming a response due to Spring MVC
       // limitations
@@ -117,6 +120,18 @@ public class DocumentController {
         throw new DocumentContentFetchException("Failed to get document content", ce.getCause());
       }
       throw new DocumentContentFetchException("Failed to get document content", e);
+    }
+  }
+
+  private MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
+    try {
+      final var contentType = contentResponse.contentType();
+      if (contentType == null) {
+        return MediaType.APPLICATION_OCTET_STREAM;
+      }
+      return MediaType.parseMediaType(contentResponse.contentType());
+    } catch (final InvalidMediaTypeException e) {
+      return MediaType.APPLICATION_OCTET_STREAM;
     }
   }
 
@@ -132,7 +147,8 @@ public class DocumentController {
     }
   }
 
-  private InputStream getDocumentContentStream(final String documentId, final String storeId) {
+  private DocumentContentResponse getDocumentContentResponse(
+      final String documentId, final String storeId) {
     return documentServices
         .withAuthentication(RequestMapper.getAuthentication())
         .getDocumentContent(documentId, storeId);

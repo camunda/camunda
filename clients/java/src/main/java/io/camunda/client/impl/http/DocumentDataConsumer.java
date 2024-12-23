@@ -83,12 +83,10 @@ public class DocumentDataConsumer<T>
         entityDetails != null ? ContentType.parse(entityDetails.getContentType()) : null;
     if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
       problemDetail = true;
-    } else if (ContentType.APPLICATION_OCTET_STREAM.isSameMimeType(contentType)) {
+    } else {
       problemDetail = false;
       inputStream.setCapacityCallback(this);
       resultCallback.completed((ApiEntity<T>) ApiEntity.of(inputStream));
-    } else {
-      resultCallback.failed(new IOException("Unexpected content type: " + contentType));
     }
   }
 

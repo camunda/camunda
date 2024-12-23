@@ -229,6 +229,37 @@ public class DocumentDataConsumerTest {
     verifyNoMoreInteractions(callback);
   }
 
+  @Test
+  void canConsumeArbitraryContentType() throws IOException {
+    // given
+    final byte[] data = "Test content".getBytes();
+    final DocumentDataConsumer<InputStream> consumer =
+        new DocumentDataConsumer<>(data.length, objectMapper);
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType()).thenReturn("application/pdf");
+    when(entityDetails.getContentLength()).thenReturn((long) data.length);
+    final Callback callback = spy(new Callback());
+
+    // when
+    consumer.streamStart(entityDetails, callback);
+
+    // then
+    // stream is returned immediately
+    verify(callback).completed(any());
+    assertThat(callback).isNotNull();
+
+    consumer.consume(ByteBuffer.wrap(data));
+    consumer.streamEnd(Collections.emptyList());
+
+    final byte[] content = new byte[data.length];
+    final int dataRead = callback.inputStream.read(content);
+    assertThat(dataRead).isEqualTo(data.length);
+    assertThat(content).isEqualTo(data);
+    assertThat(callback.inputStream.read()).isEqualTo(-1);
+
+    verifyNoMoreInteractions(callback);
+  }
+
   static class Callback implements FutureCallback<ApiEntity<InputStream>> {
 
     public InputStream inputStream;

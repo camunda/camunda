@@ -7,6 +7,7 @@
  */
 package io.camunda.document.store.aws;
 
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
@@ -18,7 +19,6 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
-import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -89,7 +90,7 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   @Override
-  public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+  public CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(
       final String documentId) {
     return CompletableFuture.supplyAsync(() -> getDocumentInternal(documentId), executor);
   }
@@ -123,7 +124,7 @@ public class AwsDocumentStore implements DocumentStore {
     }
   }
 
-  private Either<DocumentError, InputStream> getDocumentInternal(final String documentId) {
+  private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {
     try {
       final GetObjectRequest getObjectRequest =
           GetObjectRequest.builder().key(resolveKey(documentId)).bucket(bucketName).build();
@@ -136,7 +137,10 @@ public class AwsDocumentStore implements DocumentStore {
       final ResponseInputStream<GetObjectResponse> responseResponseInputStream =
           client.getObject(getObjectRequest);
 
-      return Either.right(responseResponseInputStream);
+      final String contentType =
+          Optional.ofNullable(documentInfo).map(HeadObjectResponse::contentType).orElse(null);
+
+      return Either.right(new DocumentContent(responseResponseInputStream, contentType));
     } catch (final Exception e) {
       return Either.left(getDocumentError(documentId, e));
     }
