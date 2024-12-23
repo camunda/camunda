@@ -1,29 +1,21 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.config;
+package io.camunda.spring.client.config;
 
-import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
+import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
-import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
+import io.camunda.spring.client.configuration.CamundaClientAllAutoConfiguration;
+import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
+import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @SpringBootTest(
-    classes = {ZeebeClientAllAutoConfiguration.class, ZeebeClientProdAutoConfiguration.class},
+    classes = {CamundaClientAllAutoConfiguration.class, CamundaClientProdAutoConfiguration.class},
     properties = {
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
@@ -41,7 +33,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 public class CamundaClientConfigurationImplSelfManagedTest {
   @Autowired CamundaClientConfiguration camundaClientConfiguration;
   @Autowired JsonMapper jsonMapper;
-  @Autowired ZeebeClientExecutorService zeebeClientExecutorService;
+  @Autowired
+  CamundaClientExecutorService zeebeClientExecutorService;
 
   @Test
   void shouldContainsZeebeClientConfiguration() {
