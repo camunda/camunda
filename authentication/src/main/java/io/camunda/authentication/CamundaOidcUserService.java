@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Profile("auth-oidc")
 public class CamundaOidcUserService extends OidcUserService {
+  public static final String ORGANIZATION_CLAIM_NAME = "https://camunda.com/orgs";
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOidcUserService.class);
   private final MappingServices mappingServices;
   private final TenantServices tenantServices;
@@ -67,6 +69,7 @@ public class CamundaOidcUserService extends OidcUserService {
 
     return new CamundaOidcUser(
         oidcUser,
+        getOrganizationIds(claims),
         mappingKeys,
         new AuthenticationContext(
             roleServices.getRolesByMemberKeys(mappingKeys),
@@ -77,5 +80,24 @@ public class CamundaOidcUserService extends OidcUserService {
             groupServices.getGroupsByMemberKeys(mappingKeys).stream()
                 .map(GroupEntity::name)
                 .toList()));
+  }
+
+  private static Set<String> getOrganizationIds(final Map<String, Object> claims) {
+    final var organizationClaim = claims.get(ORGANIZATION_CLAIM_NAME);
+    if (!(organizationClaim instanceof final List<?> orgs)) {
+      return Set.of();
+    }
+    return orgs.stream()
+        .flatMap(
+            org -> {
+              if (org instanceof final Map<?, ?> map) {
+                final var id = map.get("id");
+                if (id instanceof final String idString) {
+                  return Stream.of(idString);
+                }
+              }
+              return Stream.of();
+            })
+        .collect(Collectors.toSet());
   }
 }
