@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.jobhandling.result;
+package io.camunda.spring.client.jobhandling.result;
 
 public class DefaultResultProcessor implements ResultProcessor {
   @Override
