@@ -36,7 +36,22 @@ public class IdentityDefaultEntitiesIT {
 
   @Container
   private static final GenericContainer<?> IDENTITY =
-      IdentityMigrationTestUtil.getManagementIdentity(POSTGRES, KEYCLOAK);
+      IdentityMigrationTestUtil.getManagementIdentity(POSTGRES, KEYCLOAK)
+          .withEnv("KEYCLOAK_GROUPS_0_NAME", "group0")
+          .withEnv("KEYCLOAK_GROUPS_1_NAME", "group1")
+          .withEnv("KEYCLOAK_GROUPS_2_NAME", "group2")
+          .withEnv("IDENTITY_TENANTS_0_NAME", "tenant0")
+          .withEnv("IDENTITY_TENANTS_0_TENANTID", "tenant0")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_0_TYPE", "GROUP")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_0_GROUPNAME", "group0")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_1_TYPE", "GROUP")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_1_GROUPNAME", "group1")
+          .withEnv("IDENTITY_TENANTS_1_NAME", "tenant1")
+          .withEnv("IDENTITY_TENANTS_1_TENANTID", "tenant1")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_0_TYPE", "GROUP")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_0_GROUPNAME", "group1")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_1_TYPE", "GROUP")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_1_GROUPNAME", "group2");
 
   @TestZeebe(autoStart = false)
   final TestStandaloneCamunda camunda =

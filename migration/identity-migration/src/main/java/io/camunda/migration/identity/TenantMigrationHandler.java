@@ -7,10 +7,11 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.midentity.ManagementIdentityTransformer.toMigrationStatusUpdateRequest;
+
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -24,16 +25,13 @@ public class TenantMigrationHandler implements MigrationHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(TenantMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
-  private final ManagementIdentityTransformer managementIdentityTransformer;
   private final TenantServices tenantServices;
 
   public TenantMigrationHandler(
       final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
-    this.managementIdentityTransformer = managementIdentityTransformer;
     this.tenantServices = tenantServices.withAuthentication(authentication);
   }
 
@@ -54,9 +52,9 @@ public class TenantMigrationHandler implements MigrationHandler {
       tenantServices.createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name())).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
-        return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);
+        return toMigrationStatusUpdateRequest(tenant, e);
       }
     }
-    return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, null);
+    return toMigrationStatusUpdateRequest(tenant, null);
   }
 }
