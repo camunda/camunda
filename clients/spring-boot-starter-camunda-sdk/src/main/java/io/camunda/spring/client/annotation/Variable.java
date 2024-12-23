@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.properties;
+package io.camunda.spring.client.annotation;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import java.lang.annotation.*;
 
-@SpringBootTest(classes = CamundaClientPropertiesTestConfig.class)
-public class ZeebeClientPropertiesNoProfileTest {
-  @Autowired CamundaClientProperties camundaClientProperties;
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Variable {
+  String DEFAULT_NAME = "$NULL$";
 
-  @Test
-  void shouldWork() {}
+  String name() default DEFAULT_NAME;
+
+  String value() default DEFAULT_NAME;
 }
