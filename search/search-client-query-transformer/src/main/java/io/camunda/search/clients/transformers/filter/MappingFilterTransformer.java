@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_NAME;
@@ -30,6 +31,14 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
         stringTerms(CLAIM_NAME, filter.claimNames()),
         filter.claimName() == null ? null : term(CLAIM_NAME, filter.claimName()),
         filter.claimValue() == null ? null : term(CLAIM_VALUE, filter.claimValue()),
-        filter.name() == null ? null : term(NAME, filter.name()));
+        filter.name() == null ? null : term(NAME, filter.name()),
+        filter.claims() == null
+            ? null
+            : or(
+                filter.claims().stream()
+                    .map(
+                        claim ->
+                            and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
+                    .toList()));
   }
 }

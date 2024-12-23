@@ -6,19 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import type {Permissions} from 'modules/types';
 
-const usePermissions = (scopes: Permissions) => {
-  const {data: currentUser} = useCurrentUser();
-
-  const permissions = currentUser?.permissions;
-
-  const hasPermission =
-    permissions !== undefined &&
-    permissions.some((permission) => scopes?.includes(permission));
-
-  return {hasPermission};
+const usePermissions = (_: Permissions) => {
+  return {hasPermission: true};
 };
 
 export {usePermissions};

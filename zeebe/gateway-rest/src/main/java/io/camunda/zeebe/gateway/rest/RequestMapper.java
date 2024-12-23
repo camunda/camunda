@@ -32,6 +32,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -518,7 +519,7 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    Long authenticatedUserKey = null;
+    final Long authenticatedUserKey = null;
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
@@ -534,11 +535,14 @@ public class RequestMapper {
     if (requestAuthentication != null) {
 
       if (requestAuthentication.getPrincipal()
-          instanceof final CamundaUser authenticatedPrincipal) {
-        authenticatedUserKey = authenticatedPrincipal.getUserKey();
+          instanceof final CamundaPrincipal authenticatedPrincipal) {
         authenticatedRoleKeys.addAll(
-            authenticatedPrincipal.getRoles().stream().map(RoleEntity::roleKey).toList());
-        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
+            authenticatedPrincipal.getAuthenticationContext().roles().stream()
+                .map(RoleEntity::roleKey)
+                .toList());
+        if (authenticatedPrincipal instanceof final CamundaUser user) {
+          token.withClaim(Authorization.AUTHORIZED_USER_KEY, user.getUserKey());
+        }
       }
 
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {

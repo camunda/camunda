@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.authentication.entity;
 
-import {requestAndParse} from 'modules/request';
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.service.TenantServices.TenantDTO;
+import java.util.List;
 
-const logout = async () => {
-  return requestAndParse({
-    url: '/logout',
-    method: 'POST',
-  });
-};
-
-export {logout};
+public record AuthenticationContext(
+    List<RoleEntity> roles,
+    List<String> authorizedApplications,
+    List<TenantDTO> tenants,
+    List<String> groups) {}

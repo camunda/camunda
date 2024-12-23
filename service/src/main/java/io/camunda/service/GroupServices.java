@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class GroupServices extends SearchQueryService<GroupServices, GroupQuery, GroupEntity> {
@@ -51,6 +52,14 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .searchGroups(query);
   }
 
+  public List<GroupEntity> findAll(final GroupQuery query) {
+    return groupSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.group().read())))
+        .findAllGroups(query);
+  }
+
   @Override
   public GroupServices withAuthentication(final Authentication authentication) {
     return new GroupServices(
@@ -72,6 +81,11 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .items()
         .stream()
         .toList();
+  }
+
+  public List<GroupEntity> getGroupsByMemberKeys(final Set<Long> memberKeys) {
+    return findAll(
+        SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKeys(memberKeys)).build());
   }
 
   public Optional<GroupEntity> findGroup(final Long groupKey) {
