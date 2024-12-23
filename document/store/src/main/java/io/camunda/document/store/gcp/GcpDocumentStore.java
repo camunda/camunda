@@ -37,19 +37,25 @@ import java.util.concurrent.TimeUnit;
 public class GcpDocumentStore implements DocumentStore {
 
   private final String bucketName;
+  private final String prefix;
   private final Storage storage;
 
   private final ObjectMapper objectMapper;
 
   private final ExecutorService executor;
 
-  public GcpDocumentStore(final String bucketName, final ExecutorService executor) {
-    this(bucketName, new ObjectMapper(), executor);
+  public GcpDocumentStore(
+      final String bucketName, final String prefix, final ExecutorService executor) {
+    this(bucketName, prefix, new ObjectMapper(), executor);
   }
 
   public GcpDocumentStore(
-      final String bucketName, final ObjectMapper objectMapper, final ExecutorService executor) {
+      final String bucketName,
+      final String prefix,
+      final ObjectMapper objectMapper,
+      final ExecutorService executor) {
     this.bucketName = bucketName;
+    this.prefix = prefix;
     storage = StorageOptions.getDefaultInstance().getService();
     this.objectMapper = objectMapper;
     this.executor = executor;
@@ -57,10 +63,12 @@ public class GcpDocumentStore implements DocumentStore {
 
   public GcpDocumentStore(
       final String bucketName,
+      final String prefix,
       final Storage storage,
       final ObjectMapper objectMapper,
       final ExecutorService executor) {
     this.bucketName = bucketName;
+    this.prefix = prefix;
     this.storage = storage;
     this.objectMapper = objectMapper;
     this.executor = executor;
@@ -94,18 +102,19 @@ public class GcpDocumentStore implements DocumentStore {
       final DocumentCreationRequest request) {
     final String documentId =
         Optional.ofNullable(request.documentId()).orElse(UUID.randomUUID().toString());
+    final String fullBlobName = getFullBlobName(documentId);
     final String fileName = Optional.ofNullable(request.metadata().fileName()).orElse(documentId);
 
     final Blob existingBlob;
     try {
-      existingBlob = storage.get(bucketName, documentId);
+      existingBlob = storage.get(bucketName, fullBlobName);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
     if (existingBlob != null) {
       return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
     }
-    final BlobId blobId = BlobId.of(bucketName, documentId);
+    final BlobId blobId = BlobId.of(bucketName, fullBlobName);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
     try {
       applyMetadata(blobInfoBuilder, request.metadata(), fileName);
@@ -133,7 +142,8 @@ public class GcpDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentContent> getDocumentContentInternal(
       final String documentId) {
     try {
-      final Blob blob = storage.get(bucketName, documentId);
+      final String fullBlobName = getFullBlobName(documentId);
+      final Blob blob = storage.get(bucketName, fullBlobName);
       if (blob == null) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
@@ -147,7 +157,8 @@ public class GcpDocumentStore implements DocumentStore {
 
   private Either<DocumentError, Void> deleteDocumentInternal(final String documentId) {
     try {
-      final boolean result = storage.delete(bucketName, documentId);
+      final String fullBlobName = getFullBlobName(documentId);
+      final boolean result = storage.delete(bucketName, fullBlobName);
       if (!result) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
@@ -160,7 +171,8 @@ public class GcpDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentLink> createLinkInternal(
       final String documentId, final long durationInMillis) {
     try {
-      final Blob blob = storage.get(bucketName, documentId);
+      final String fullBlobName = getFullBlobName(documentId);
+      final Blob blob = storage.get(bucketName, fullBlobName);
       if (blob == null) {
         return Either.left(new DocumentError.DocumentNotFound(documentId));
       }
@@ -171,6 +183,10 @@ public class GcpDocumentStore implements DocumentStore {
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
+  }
+
+  private String getFullBlobName(final String documentId) {
+    return Optional.ofNullable(prefix).orElse("") + documentId;
   }
 
   private void applyMetadata(
