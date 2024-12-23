@@ -1,48 +1,37 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.bean.factory;
+package io.camunda.spring.client.bean.factory;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.camunda.zeebe.spring.client.annotation.processor.ZeebeWorkerAnnotationProcessor;
-import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
-import io.camunda.zeebe.spring.client.bean.ClassInfo;
-import io.camunda.zeebe.spring.client.bean.ClassInfoTest;
-import io.camunda.zeebe.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.annotation.AnnotationUtil;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.bean.ClassInfoTest;
+import io.camunda.spring.client.bean.MethodInfo;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-public class ReadZeebeWorkerValueTest {
+public class ReadJobWorkerValueTest {
 
   @Test
   public void applyOnWithZeebeWorker() {
     // given
-    final ZeebeWorkerAnnotationProcessor annotationProcessor = createDefaultAnnotationProcessor();
     final MethodInfo methodInfo = extract(ClassInfoTest.WithZeebeWorker.class);
 
     // when
-    final Optional<ZeebeWorkerValue> zeebeWorkerValue =
-        annotationProcessor.readJobWorkerAnnotationForMethod(methodInfo);
+    final Optional<JobWorkerValue> zeebeWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
     assertTrue(zeebeWorkerValue.isPresent());
@@ -61,12 +50,10 @@ public class ReadZeebeWorkerValueTest {
   @Test
   void shouldReadTenantIds() {
     // given
-    final ZeebeWorkerAnnotationProcessor annotationProcessor = createDefaultAnnotationProcessor();
     final MethodInfo methodInfo = extract(ClassInfoTest.TenantBound.class);
 
     // when
-    final Optional<ZeebeWorkerValue> zeebeWorkerValue =
-        annotationProcessor.readJobWorkerAnnotationForMethod(methodInfo);
+    final Optional<JobWorkerValue> zeebeWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
     assertTrue(zeebeWorkerValue.isPresent());
@@ -76,12 +63,10 @@ public class ReadZeebeWorkerValueTest {
   @Test
   public void applyOnWithZeebeWorkerAllValues() {
     // given
-    final ZeebeWorkerAnnotationProcessor annotationProcessor = createDefaultAnnotationProcessor();
     final MethodInfo methodInfo = extract(ClassInfoTest.WithZeebeWorkerAllValues.class);
 
     // when
-    final Optional<ZeebeWorkerValue> zeebeWorkerValue =
-        annotationProcessor.readJobWorkerAnnotationForMethod(methodInfo);
+    final Optional<JobWorkerValue> zeebeWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
 
     // then
     assertTrue(zeebeWorkerValue.isPresent());
@@ -94,10 +79,6 @@ public class ReadZeebeWorkerValueTest {
     assertEquals(true, zeebeWorkerValue.get().getAutoComplete());
     assertEquals(List.of("foo"), zeebeWorkerValue.get().getFetchVariables());
     assertEquals(methodInfo, zeebeWorkerValue.get().getMethodInfo());
-  }
-
-  private ZeebeWorkerAnnotationProcessor createDefaultAnnotationProcessor() {
-    return new ZeebeWorkerAnnotationProcessor(null, new ArrayList<>());
   }
 
   private MethodInfo extract(final Class<?> clazz) {
