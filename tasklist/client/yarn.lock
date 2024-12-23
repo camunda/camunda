@@ -4670,10 +4670,10 @@ mitt@^3.0.0:
   resolved "https://registry.yarnpkg.com/mitt/-/mitt-3.0.1.tgz#ea36cf0cc30403601ae074c8f77b7092cdab36d1"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
 
-mixpanel-browser@2.57.1:
-  version "2.57.1"
-  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.57.1.tgz#6becd3ff0767219d113ce62cea8b80f66022a61f"
-  integrity sha512-Qd3S+hu1zocN+AQgKYYoBDYhFaRXaKXtVRLuaApB5j5Qhe25eqSDKtMzkki5AmmuXH68O9i2FW5HkgCWgzJLyg==
+mixpanel-browser@2.58.0:
+  version "2.58.0"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.58.0.tgz#bf2e7575152f6e43b78194bb4a2d38558dc726c0"
+  integrity sha512-ZayNE4augjSJh5RxYKRPhFe1jzS9HZnoowvZaN4DaUeCezbLGVck46L+N9X8VLtK74UgLUYfehPgCr41rtgpRA==
   dependencies:
     rrweb "2.0.0-alpha.13"
 
