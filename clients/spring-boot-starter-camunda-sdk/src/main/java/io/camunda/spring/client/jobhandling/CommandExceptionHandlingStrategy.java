@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.jobhandling;
+package io.camunda.spring.client.jobhandling;
 
 public interface CommandExceptionHandlingStrategy {
 
-  public void handleCommandError(CommandWrapper command, Throwable throwable);
+  void handleCommandError(CommandWrapper command, Throwable throwable);
 }
