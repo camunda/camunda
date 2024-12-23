@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.spring.client.configuration;
+package io.camunda.spring.client.configuration;
 
 import java.util.List;
 import java.util.Map;
@@ -28,19 +28,19 @@ public class PropertyUtil {
    * Returns the property in the given relevance: legacyProperty, property,defaultProperty
    *
    * @param propertyName the name of the property, used for logging
-   * @param propertySupplier a function to supply the property, may throw
-   * @param legacyPropertySupplier a function to supply the legacy property, may throw
+   * @param propertySuppliers a list of functions to supply the property, may throw, first has the
+   *     highest priority
    * @param defaultProperty the default to apply if nothing else suits, may be null
    * @param configCache the cache to save the property to, may be null
    * @return the property resolved
    * @param <T> the type of the property
    */
-  public static <T> T getOrLegacyOrDefault(
+  @SafeVarargs
+  public static <T> T getProperty(
       final String propertyName,
-      final Supplier<T> propertySupplier,
-      final Supplier<T> legacyPropertySupplier,
+      final Map<String, Object> configCache,
       final T defaultProperty,
-      final Map<String, Object> configCache) {
+      final Supplier<T>... propertySuppliers) {
 
     if (configCache != null && configCache.containsKey(propertyName)) {
       final Object propertyValue = configCache.get(propertyName);
@@ -48,9 +48,11 @@ public class PropertyUtil {
           "Property {} loading from cache. Property is set to {}", propertyName, propertyValue);
       return (T) propertyValue;
     }
-    T property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
-    if (property == null || property.equals(defaultProperty)) {
-      property = getPropertyFromSupplier(propertySupplier, propertyName, "property");
+    T property = null;
+    for (final Supplier<T> supplier : propertySuppliers) {
+      if (property == null || property.equals(defaultProperty)) {
+        property = getPropertyFromSupplier(supplier, propertyName);
+      }
     }
     if (property == null || property.equals(defaultProperty)) {
       LOG.debug("Property {}: not set or default, using default", propertyName);
@@ -59,28 +61,8 @@ public class PropertyUtil {
     if (configCache != null) {
       configCache.put(propertyName, property);
     }
-
     LOG.debug("Property {} set to {}", propertyName, property);
     return property;
-  }
-
-  /**
-   * Returns the property in the given relevance: property, defaultProperty
-   *
-   * @param propertyName the name of the property, used for logging
-   * @param propertySupplier a function to supply the property, may throw
-   * @param defaultProperty the default to apply if nothing else suits, may be null
-   * @param configCache the cache to save the property to, may be null
-   * @return the property resolved
-   * @param <T> the type of the property
-   */
-  public static <T> T getOrDefault(
-      final String propertyName,
-      final Supplier<T> propertySupplier,
-      final T defaultProperty,
-      final Map<String, Object> configCache) {
-    return getOrLegacyOrDefault(
-        propertyName, propertySupplier, noPropertySupplier(), defaultProperty, configCache);
   }
 
   private static <T> Supplier<T> noPropertySupplier() {
@@ -88,14 +70,13 @@ public class PropertyUtil {
   }
 
   private static <T> T getPropertyFromSupplier(
-      final Supplier<T> supplier, final String propertyName, final String propertyType) {
+      final Supplier<T> supplier, final String propertyName) {
     T property = null;
     try {
-      LOG.debug(
-          "Property {}: not set or default, applying {} property", propertyName, propertyType);
+      LOG.debug("Property {}: not set or default, applying next property", propertyName);
       property = supplier.get();
     } catch (final Exception e) {
-      LOG.debug("Error while loading {} property {}", propertyType, propertyName, e);
+      LOG.debug("Error while loading next property {}", propertyName, e);
     }
     return property;
   }
