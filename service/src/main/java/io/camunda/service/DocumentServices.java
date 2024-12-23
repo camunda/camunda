@@ -90,11 +90,15 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         .thenApply((ignoredRes) -> results);
   }
 
-  public InputStream getDocumentContent(final String documentId, final String storeId) {
+  public DocumentContentResponse getDocumentContent(final String documentId, final String storeId) {
 
     return getDocumentStore(storeId)
         .thenCompose(storeRecord -> storeRecord.instance().getDocument(documentId))
         .thenApply(this::requireRightOrThrow)
+        .thenApply(
+            documentContent ->
+                new DocumentContentResponse(
+                    documentContent.inputStream(), documentContent.contentType()))
         .join();
   }
 
@@ -165,6 +169,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public record DocumentReferenceResponse(
       String documentId, String storeId, DocumentMetadataModel metadata) {}
+
+  public record DocumentContentResponse(InputStream content, String contentType) {}
 
   public record DocumentLinkParams(Duration timeToLive) {}
 
