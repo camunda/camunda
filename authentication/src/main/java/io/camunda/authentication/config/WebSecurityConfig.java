@@ -64,7 +64,11 @@ public class WebSecurityConfig {
         "/startup",
         // deprecated Tasklist v1 Public Endpoints
         "/v1/external/process/**",
-        "/new/**"
+        "/new/**",
+        // static assets are public
+        "/identity/assets/**",
+        "/tasklist/assets/**",
+        "/operate/static/**",
       };
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
@@ -117,13 +121,12 @@ public class WebSecurityConfig {
                                     .getProviderDetails()
                                     .getJwkSetUri())))
             .oauth2Login(oauthLoginConfigurer -> {})
-            .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
             .logout(
                 (logout) ->
                     logout
                         .logoutUrl(LOGOUT_URL)
                         .logoutSuccessHandler(this::genericSuccessHandler)
-                        .deleteCookies());
+                        .deleteCookies(SESSION_COOKIE));
     return withOrganizationIdFilter(security, configuration);
   }
 
