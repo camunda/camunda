@@ -1,29 +1,21 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.spring.client.configuration;
+package io.camunda.spring.client.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.ExecutorResource;
+import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.spring.client.properties.CamundaClientConfigurationProperties;
+import io.camunda.spring.client.properties.CamundaClientProperties;
+import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
-import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
-import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
-import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import java.util.List;
@@ -41,29 +33,30 @@ import org.springframework.context.annotation.Bean;
  * All configurations that will only be used in production code - meaning NO TEST cases
  */
 @ConditionalOnProperty(
-    prefix = "zeebe.client",
+    prefix = "camunda.client",
     name = "enabled",
     havingValue = "true",
     matchIfMissing = true)
-@ConditionalOnMissingBean(SpringZeebeTestContext.class)
+@ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
 @ImportAutoConfiguration({
   ExecutorServiceConfiguration.class,
-  ZeebeActuatorConfiguration.class,
+  CamundaActuatorConfiguration.class,
   JsonMapperConfiguration.class,
 })
-@AutoConfigureBefore(ZeebeClientAllAutoConfiguration.class)
-public class ZeebeClientProdAutoConfiguration {
+@AutoConfigureBefore(CamundaClientAllAutoConfiguration.class)
+public class CamundaClientProdAutoConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CamundaClientProdAutoConfiguration.class);
 
   @Bean
   public CamundaClientConfigurationImpl zeebeClientConfiguration(
-      final ZeebeClientConfigurationProperties properties,
+      final CamundaClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      final ZeebeClientExecutorService zeebeClientExecutorService) {
+      final CamundaClientExecutorService zeebeClientExecutorService) {
     return new CamundaClientConfigurationImpl(
         properties,
         camundaClientProperties,
@@ -74,7 +67,7 @@ public class ZeebeClientProdAutoConfiguration {
   }
 
   @Bean(destroyMethod = "close")
-  public CamundaClient zeebeClient(final CamundaClientConfigurationImpl configuration) {
+  public CamundaClient camundaClient(final CamundaClientConfigurationImpl configuration) {
     LOG.info("Creating ZeebeClient using ZeebeClientConfigurationImpl [" + configuration + "]");
     final ScheduledExecutorService jobWorkerExecutor = configuration.jobWorkerExecutor();
     if (jobWorkerExecutor != null) {
