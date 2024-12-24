@@ -37,8 +37,8 @@ public class PaginationScrollableDto extends PaginationDto {
     final PaginationScrollableDto paginationDto = new PaginationScrollableDto();
     paginationDto.setLimit(paginationRequestDto.getLimit());
     paginationDto.setOffset(null);
-    paginationDto.setScrollId(paginationRequestDto.getScrollId());
-    paginationDto.setScrollTimeout(paginationRequestDto.getScrollTimeout());
+    paginationDto.setScrollId(paginationRequestDto.getSearchRequestId());
+    paginationDto.setScrollTimeout(paginationRequestDto.getPaginationTimeout());
     return paginationDto;
   }
 
@@ -58,18 +58,12 @@ public class PaginationScrollableDto extends PaginationDto {
     this.scrollTimeout = scrollTimeout;
   }
 
+  @JsonIgnore
   @Override
-  public String toString() {
-    return "PaginationScrollableDto(scrollId="
-        + getScrollId()
-        + ", scrollTimeout="
-        + getScrollTimeout()
-        + ")";
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public boolean isValid() {
+    return limit != null
+        && ((offset != null && scrollTimeout == null && scrollId == null)
+            || (offset == null && scrollTimeout != null));
   }
 
   @Override
@@ -82,11 +76,17 @@ public class PaginationScrollableDto extends PaginationDto {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
-  @JsonIgnore
   @Override
-  public boolean isValid() {
-    return limit != null
-        && ((offset != null && scrollTimeout == null && scrollId == null)
-            || (offset == null && scrollTimeout != null));
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
+  public String toString() {
+    return "PaginationScrollableDto(scrollId="
+        + getScrollId()
+        + ", scrollTimeout="
+        + getScrollTimeout()
+        + ")";
   }
 }

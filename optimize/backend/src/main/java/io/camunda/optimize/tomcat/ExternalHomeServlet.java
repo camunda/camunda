@@ -41,8 +41,14 @@ public class ExternalHomeServlet extends HttpServlet {
       filename = INDEX_FILE;
     }
 
-    final String resourcePath = webappPath + filename;
-    final InputStream fileStream = this.getClass().getResourceAsStream(resourcePath);
+    String resourcePath = webappPath + filename;
+    InputStream fileStream = this.getClass().getResourceAsStream(resourcePath);
+    if (fileStream == null) {
+      filename = INDEX_FILE;
+      resourcePath = webappPath + filename;
+      fileStream = this.getClass().getResourceAsStream(resourcePath);
+    }
+
     final String mimeType = getServletContext().getMimeType(resourcePath);
     response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
     StreamUtils.copy(fileStream, response.getOutputStream());

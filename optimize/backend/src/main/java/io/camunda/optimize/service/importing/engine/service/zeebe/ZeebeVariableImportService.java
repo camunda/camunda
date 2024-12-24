@@ -33,7 +33,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import jakarta.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +41,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 public class ZeebeVariableImportService
     extends ZeebeProcessInstanceSubEntityImportService<ZeebeVariableRecordDto> {
