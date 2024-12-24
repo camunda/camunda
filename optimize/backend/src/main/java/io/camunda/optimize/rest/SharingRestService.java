@@ -121,7 +121,7 @@ public class SharingRestService {
   @GetMapping(DASHBOARD_SUB_PATH + "/{dashboardId}")
   public DashboardShareRestDto findShareForDashboard(
       @PathVariable("dashboardId") final String dashboardId) {
-    return sharingService.findShareForDashboard(dashboardId).orElse(null);
+    return sharingService.findShareForDashboard(dashboardId).orElse(new DashboardShareRestDto());
   }
 
   @PostMapping(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
