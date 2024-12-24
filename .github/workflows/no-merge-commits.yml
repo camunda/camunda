@@ -1,0 +1,17 @@
+name: No merge commits
+on: [pull_request]
+
+jobs:
+  check-for-merge-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - id: depth
+        name: Determine fetch depth for checkout
+        run: echo "depth=$(expr ${{ github.event.pull_request.commits }} + 1)" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ steps.depth.outputs.depth }}
+      - uses: NexusPHP/no-merge-commits@v2.1.0
+        with:
+          token: ${{ github.token }}
