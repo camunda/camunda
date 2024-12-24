@@ -54,7 +54,7 @@ public class CreateDocumentLinkTest {
             ProblemException.class,
             () ->
                 camundaClient
-                    .newCreateDocumentLinkCommand(documentReference.getDocumentId())
+                    .newCreateDocumentLinkCommand(documentReference)
                     .storeId(storeId)
                     .send()
                     .join());
@@ -70,6 +70,7 @@ public class CreateDocumentLinkTest {
   public void shouldReturnMethodNotAllowedWhenStoreIsInMemory() {
     // given
     final var storeId = "in-memory";
+    final var documentId = documentReference.getDocumentId();
     camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
@@ -78,8 +79,9 @@ public class CreateDocumentLinkTest {
             ProblemException.class,
             () ->
                 camundaClient
-                    .newCreateDocumentLinkCommand(documentReference.getDocumentId())
+                    .newCreateDocumentLinkCommand(documentId)
                     .storeId(storeId)
+                    .contentHash(documentReference.getContentHash())
                     .send()
                     .join());
 

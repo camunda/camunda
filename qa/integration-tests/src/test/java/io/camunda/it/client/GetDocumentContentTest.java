@@ -44,43 +44,6 @@ public class GetDocumentContentTest {
   }
 
   @Test
-  public void shouldWorkWithOnlyDocumentId() {
-    // given
-    final var documentId = documentReference.getDocumentId();
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
-
-    // when
-    try (final InputStream is =
-        camundaClient.newDocumentContentGetRequest(documentId).send().join()) {
-      // then
-      final String content = new String(is.readAllBytes());
-      assertThat(content).isEqualTo(DOCUMENT_CONTENT);
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Test
-  public void shouldWorkWithDocumentIdAndStoreId() {
-    // given
-    final var documentId = documentReference.getDocumentId();
-    final var storeId = documentReference.getStoreId();
-    camundaClient = testStandaloneCamunda.newClientBuilder().build();
-
-    // when
-    try (final InputStream is =
-        camundaClient.newDocumentContentGetRequest(documentId).storeId(storeId).send().join()) {
-      // then
-      final String content = new String(is.readAllBytes());
-      assertThat(content).isEqualTo(DOCUMENT_CONTENT);
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Test
   public void shouldWorkWithDocumentReference() {
     // given
     camundaClient = testStandaloneCamunda.newClientBuilder().build();

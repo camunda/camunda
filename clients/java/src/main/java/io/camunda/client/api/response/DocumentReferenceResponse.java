@@ -43,6 +43,13 @@ public interface DocumentReferenceResponse {
   String getStoreId();
 
   /**
+   * The hash of the associated document
+   *
+   * @return the hash value of the document
+   */
+  String getContentHash();
+
+  /**
    * @return the metadata of the document reference
    */
   DocumentMetadata getMetadata();

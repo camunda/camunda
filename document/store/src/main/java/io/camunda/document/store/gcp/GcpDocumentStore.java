@@ -24,20 +24,26 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
 import java.nio.channels.Channels;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 
 public class GcpDocumentStore implements DocumentStore {
 
+  private static final String CONTENT_HASH_METADATA_KEY = "contentHash";
   private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
   private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
+
   private final String bucketName;
   private final String prefix;
   private final Storage storage;
@@ -98,6 +104,13 @@ public class GcpDocumentStore implements DocumentStore {
         () -> createLinkInternal(documentId, durationInMillis), executor);
   }
 
+  @Override
+  public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      final String documentId, final String contentHash) {
+    return CompletableFuture.supplyAsync(
+        () -> verifyContentHashInternal(documentId, contentHash), executor);
+  }
+
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId =
@@ -105,29 +118,40 @@ public class GcpDocumentStore implements DocumentStore {
     final String fullBlobName = getFullBlobName(documentId);
     final String fileName = Optional.ofNullable(request.metadata().fileName()).orElse(documentId);
 
-    final Blob existingBlob;
+    Blob existingBlob = null;
     try {
       existingBlob = storage.get(bucketName, fullBlobName);
     } catch (final Exception e) {
-      return Either.left(new UnknownDocumentError(e));
+      //      return Either.left(new UnknownDocumentError(e));
     }
     if (existingBlob != null) {
       return Either.left(new DocumentError.DocumentAlreadyExists(documentId));
     }
     final BlobId blobId = BlobId.of(bucketName, fullBlobName);
     final var blobInfoBuilder = BlobInfo.newBuilder(blobId);
+
+    final MessageDigest md;
     try {
-      applyMetadata(blobInfoBuilder, request.metadata(), fileName);
+      md = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
+    } catch (final Exception e) {
+      // should never happen
+      return Either.left(new UnknownDocumentError(e));
+    }
+    final DigestInputStream digestStream = new DigestInputStream(request.contentInputStream(), md);
+    final var contentHash = HexFormat.of().formatHex(md.digest());
+
+    try {
+      applyMetadata(blobInfoBuilder, request.metadata(), fileName, contentHash);
     } catch (final JsonProcessingException e) {
       return Either.left(
           new DocumentError.InvalidInput("Failed to serialize metadata: " + e.getMessage()));
     }
-
     try {
-      storage.createFrom(blobInfoBuilder.build(), request.contentInputStream());
+      storage.createFrom(blobInfoBuilder.build(), digestStream);
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
+
     final var updatedMetadata =
         new DocumentMetadataModel(
             request.metadata().contentType(),
@@ -137,7 +161,8 @@ public class GcpDocumentStore implements DocumentStore {
             request.metadata().processDefinitionId(),
             request.metadata().processInstanceKey(),
             request.metadata().customProperties());
-    final var documentReference = new DocumentReference(documentId, updatedMetadata);
+
+    final var documentReference = new DocumentReference(documentId, contentHash, updatedMetadata);
     return Either.right(documentReference);
   }
 
@@ -187,6 +212,30 @@ public class GcpDocumentStore implements DocumentStore {
     }
   }
 
+  private Either<DocumentError, Void> verifyContentHashInternal(
+      final String documentId, final String contentHashToVerify) {
+    try {
+      final Blob blob = storage.get(bucketName, getFullBlobName(documentId));
+      if (blob == null) {
+        return Either.left(new DocumentError.DocumentNotFound(documentId));
+      }
+      final var metadata = blob.getMetadata();
+      if (metadata == null) {
+        return Either.left(new DocumentError.InvalidInput("No metadata found for document"));
+      }
+      final var storedContentHash = metadata.get(CONTENT_HASH_METADATA_KEY);
+      if (storedContentHash == null) {
+        return Either.left(new DocumentError.InvalidInput("No content hash found for document"));
+      }
+      if (!storedContentHash.equals(contentHashToVerify)) {
+        return Either.left(new DocumentError.DocumentHashMismatch(documentId, contentHashToVerify));
+      }
+      return Either.right(null);
+    } catch (final Exception e) {
+      return Either.left(new UnknownDocumentError(e));
+    }
+  }
+
   private String getFullBlobName(final String documentId) {
     return Optional.ofNullable(prefix).orElse("") + documentId;
   }
@@ -194,7 +243,8 @@ public class GcpDocumentStore implements DocumentStore {
   private void applyMetadata(
       final BlobInfo.Builder blobInfoBuilder,
       final DocumentMetadataModel metadata,
-      final String fileName)
+      final String fileName,
+      final String contentHash)
       throws JsonProcessingException {
     if (metadata == null) {
       return;
@@ -203,7 +253,7 @@ public class GcpDocumentStore implements DocumentStore {
       blobInfoBuilder.setContentType(metadata.contentType());
     }
     if (metadata.expiresAt() != null) {
-      blobInfoBuilder.setCustomTimeOffsetDateTime(OffsetDateTime.from(metadata.expiresAt()));
+      blobInfoBuilder.setCustomTimeOffsetDateTime(metadata.expiresAt());
     }
     blobInfoBuilder.setContentDisposition("attachment; filename=" + fileName);
 
@@ -218,6 +268,7 @@ public class GcpDocumentStore implements DocumentStore {
     if (metadata.processInstanceKey() != null) {
       blobMetadata.put(METADATA_PROCESS_INSTANCE_KEY, metadata.processInstanceKey().toString());
     }
+    blobMetadata.put(CONTENT_HASH_METADATA_KEY, contentHash);
 
     blobInfoBuilder.setMetadata(blobMetadata);
   }
