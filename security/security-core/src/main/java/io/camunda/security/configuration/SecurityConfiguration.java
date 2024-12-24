@@ -13,6 +13,7 @@ public class SecurityConfiguration {
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+  private String organizationId;
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
@@ -44,5 +45,13 @@ public class SecurityConfiguration {
 
   public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
     this.multiTenancy = multiTenancy;
+  }
+
+  public String getOrganizationId() {
+    return organizationId;
+  }
+
+  public void setOrganizationId(final String organizationId) {
+    this.organizationId = organizationId;
   }
 }

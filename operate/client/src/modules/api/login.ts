@@ -20,7 +20,7 @@ const login = async ({username, password}: Credentials) => {
   ]).toString();
 
   return requestAndParse({
-    url: '/api/login',
+    url: '/login',
     method: 'POST',
     body,
     headers: {
