@@ -36,12 +36,12 @@ import java.util.concurrent.TimeUnit;
 
 public class GcpDocumentStore implements DocumentStore {
 
+  private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
+  private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
   private final String bucketName;
   private final String prefix;
   private final Storage storage;
-
   private final ObjectMapper objectMapper;
-
   private final ExecutorService executor;
 
   public GcpDocumentStore(
@@ -134,6 +134,8 @@ public class GcpDocumentStore implements DocumentStore {
             fileName,
             request.metadata().expiresAt(),
             request.metadata().size(),
+            request.metadata().processDefinitionId(),
+            request.metadata().processInstanceKey(),
             request.metadata().customProperties());
     final var documentReference = new DocumentReference(documentId, updatedMetadata);
     return Either.right(documentReference);
@@ -204,11 +206,19 @@ public class GcpDocumentStore implements DocumentStore {
       blobInfoBuilder.setCustomTimeOffsetDateTime(OffsetDateTime.from(metadata.expiresAt()));
     }
     blobInfoBuilder.setContentDisposition("attachment; filename=" + fileName);
+
+    final Map<String, String> blobMetadata = new HashMap<>();
+    final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
     if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
-      final Map<String, String> blobMetadata = new HashMap<>();
-      final var valueAsString = objectMapper.writeValueAsString(metadata.customProperties());
       metadata.customProperties().forEach((key, value) -> blobMetadata.put(key, valueAsString));
-      blobInfoBuilder.setMetadata(blobMetadata);
     }
+    if (metadata.processDefinitionId() != null) {
+      blobMetadata.put(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId());
+    }
+    if (metadata.processInstanceKey() != null) {
+      blobMetadata.put(METADATA_PROCESS_INSTANCE_KEY, metadata.processInstanceKey().toString());
+    }
+
+    blobInfoBuilder.setMetadata(blobMetadata);
   }
 }

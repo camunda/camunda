@@ -41,6 +41,8 @@ public class InMemoryDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                "myProcessDefinition",
+                123L,
                 Map.of("key", "value")));
     final var result = store.createDocument(request).join();
 
@@ -62,7 +64,13 @@ public class InMemoryDocumentStoreTest {
     final String key = "key";
     final var metadata =
         new DocumentMetadataModel(
-            "application/json", "hello.json", OffsetDateTime.now(), 10L, Map.of("key", "value"));
+            "application/json",
+            "hello.json",
+            OffsetDateTime.now(),
+            10L,
+            null,
+            null,
+            Map.of("key", "value"));
 
     // when
     final var request =
@@ -93,6 +101,8 @@ public class InMemoryDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                null,
+                null,
                 Map.of("key", "value")));
     final var result = store.createDocument(request).join();
 
@@ -130,6 +140,8 @@ public class InMemoryDocumentStoreTest {
                 "hello.json",
                 OffsetDateTime.now(),
                 10L,
+                null,
+                null,
                 Map.of("key", "value")));
 
     final var result = store.createDocument(request).join();
@@ -178,7 +190,7 @@ public class InMemoryDocumentStoreTest {
     final InMemoryDocumentStore store = new InMemoryDocumentStore();
     final String id = "key";
     final DocumentMetadataModel metadata =
-        new DocumentMetadataModel("application/json", null, null, null, null);
+        new DocumentMetadataModel("application/json", null, null, null, null, null, null);
 
     // when
     final var request =

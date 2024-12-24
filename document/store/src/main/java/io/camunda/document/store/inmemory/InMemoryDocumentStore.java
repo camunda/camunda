@@ -68,6 +68,8 @@ public class InMemoryDocumentStore implements DocumentStore {
             fileName,
             request.metadata().expiresAt(),
             request.metadata().size(),
+            request.metadata().processDefinitionId(),
+            request.metadata().processInstanceKey(),
             request.metadata().customProperties());
     return CompletableFuture.completedFuture(
         Either.right(new DocumentReference(id, updatedMetadata)));

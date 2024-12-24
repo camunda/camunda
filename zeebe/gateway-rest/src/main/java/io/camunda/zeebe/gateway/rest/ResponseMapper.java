@@ -273,7 +273,9 @@ public final class ResponseMapper {
                     .orElse(null))
             .fileName(internalMetadata.fileName())
             .size(internalMetadata.size())
-            .contentType(internalMetadata.contentType());
+            .contentType(internalMetadata.contentType())
+            .processDefinitionId(internalMetadata.processDefinitionId())
+            .processInstanceKey(internalMetadata.processInstanceKey());
     Optional.ofNullable(internalMetadata.customProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
     return new DocumentReference()

@@ -284,4 +284,47 @@ public class CreateDocumentBatchTest {
     final var exception = assertThrows(Exception.class, command::join);
     assertThat(exception).hasMessageContaining("non-existing-store");
   }
+
+  @Test
+  public void shouldUseProvidedProcessDefinitionIdAndProcessInstanceKey() {
+    // given
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
+    final var documentContent1 = new ByteArrayInputStream("test one".getBytes());
+    final var documentContent2 = new ByteArrayInputStream("test two".getBytes());
+
+    final var processDefinitionId = "test-process-definition";
+    final var processInstanceKey = 123L;
+
+    // when
+    final var response =
+        camundaClient
+            .newCreateDocumentBatchCommand()
+            .processDefinitionId(processDefinitionId)
+            .processInstanceKey(processInstanceKey)
+            .addDocument()
+            .fileName("test1.txt")
+            .content(documentContent1)
+            .done()
+            .addDocument()
+            .fileName("test2.txt")
+            .content(documentContent2)
+            .done()
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.isSuccessful()).isTrue();
+    assertThat(response.getCreatedDocuments()).hasSize(2);
+
+    response
+        .getCreatedDocuments()
+        .forEach(
+            document -> {
+              assertThat(document.getMetadata().getProcessDefinitionId())
+                  .isEqualTo(processDefinitionId);
+              assertThat(document.getMetadata().getProcessInstanceKey())
+                  .isEqualTo(processInstanceKey);
+            });
+  }
 }

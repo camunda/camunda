@@ -70,7 +70,13 @@ class AwsDocumentStoreTest {
 
     final var metadata =
         new DocumentMetadataModel(
-            "text/plain", "test-file.txt", null, (long) content.length, Collections.emptyMap());
+            "text/plain",
+            "test-file.txt",
+            null,
+            (long) content.length,
+            null,
+            null,
+            Collections.emptyMap());
 
     final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
 
@@ -120,6 +126,8 @@ class AwsDocumentStoreTest {
             "given-test-document.jpeg",
             expiryTime,
             10000L,
+            null,
+            null,
             Collections.emptyMap());
 
     final var request = new DocumentCreationRequest(documentId, inputStream, metadata);

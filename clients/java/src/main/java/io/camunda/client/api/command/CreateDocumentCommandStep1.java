@@ -103,6 +103,20 @@ public interface CreateDocumentCommandStep1 extends DocumentBuilderStep1 {
     CreateDocumentCommandStep2 timeToLive(Duration timeToLive);
 
     /**
+     * Sets the process definition that the document is associated with.
+     *
+     * @param processDefinitionId the process definition ID
+     */
+    CreateDocumentCommandStep2 processDefinitionId(String processDefinitionId);
+
+    /**
+     * Sets the process instance key that the document is associated with.
+     *
+     * @param processInstanceKey the process instance key
+     */
+    CreateDocumentCommandStep2 processInstanceKey(long processInstanceKey);
+
+    /**
      * Adds a custom key-value pair to the document metadata.
      *
      * @param key custom metadata key
