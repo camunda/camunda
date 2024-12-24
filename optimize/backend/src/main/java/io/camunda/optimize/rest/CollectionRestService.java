@@ -50,8 +50,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/collection")
+@RequestMapping(REST_API_PATH + CollectionRestService.COLLECTION_PATH)
 public class CollectionRestService {
+
+  public static final String COLLECTION_PATH = "/collection";
 
   private final SessionService sessionService;
   private final CollectionService collectionService;

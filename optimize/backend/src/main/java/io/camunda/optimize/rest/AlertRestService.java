@@ -26,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/alert")
+@RequestMapping(REST_API_PATH + AlertRestService.ALERT_PATH)
 public class AlertRestService {
+
+  public static final String ALERT_PATH = "/alert";
 
   private final AlertService alertService;
   private final SessionService sessionService;

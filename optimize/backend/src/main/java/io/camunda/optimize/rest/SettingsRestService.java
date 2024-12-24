@@ -21,8 +21,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/settings")
+@RequestMapping(REST_API_PATH + SettingsRestService.SETTINGS_PATH)
 public class SettingsRestService {
+
+  public static final String SETTINGS_PATH = "/settings";
 
   private final SessionService sessionService;
   private final SettingsService settingsService;

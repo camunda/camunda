@@ -43,8 +43,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/analysis")
+@RequestMapping(REST_API_PATH + AnalysisRestService.ANALYSIS_PATH)
 public class AnalysisRestService {
+
+  public static final String ANALYSIS_PATH = "/analysis";
 
   private final BranchAnalysisService branchAnalysisService;
   private final OutlierAnalysisService outlierAnalysisService;

@@ -10,6 +10,7 @@ package io.camunda.optimize.rest;
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 import static io.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -46,8 +47,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/report")
+@RequestMapping(REST_API_PATH + ReportRestService.REPORT_PATH)
 public class ReportRestService {
+  public static final String REPORT_PATH = "/report";
   private final ReportService reportService;
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
