@@ -109,7 +109,7 @@ public class FormStoreOpenSearch implements FormStore {
       }
     } catch (final OpenSearchException e) {
       if (e.response().status() == HttpURLConnection.HTTP_NOT_FOUND) {
-        LOG.debug("Form with key {} not found, opensearch related exception {}", formKey, e);
+        LOG.debug("Form with key {} not found.", formKey, e);
         return Optional.empty();
       }
       throw new TasklistRuntimeException(e);
