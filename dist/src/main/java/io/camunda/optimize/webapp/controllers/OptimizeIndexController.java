@@ -31,7 +31,7 @@ public class OptimizeIndexController {
   @GetMapping("/optimize")
   public String optimize(final Model model) {
     model.addAttribute("contextPath", context.getContextPath() + "/optimize/");
-    return "optimize/index.html";
+    return "optimize/index";
   }
 
   @RequestMapping(value = {"/optimize/{regex:[\\w-]+}", "/optimize/**/{regex:[\\w-]+}"})
