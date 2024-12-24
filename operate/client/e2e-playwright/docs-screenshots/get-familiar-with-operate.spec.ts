@@ -27,6 +27,7 @@ import {
   runningOrderProcessInstance,
 } from '../mocks/processInstance';
 import {open} from 'modules/mocks/diagrams';
+import {URL_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -36,7 +37,7 @@ test.beforeEach(async ({page, commonPage, context}) => {
 test.describe('get familiar with operate', () => {
   test('view dashboard', async ({page, dashboardPage}) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockDashboardResponses({
         statistics: mockDashboardStatistics,
         incidentsByError: mockIncidentsByError,
@@ -58,7 +59,7 @@ test.describe('get familiar with operate', () => {
     processesPage: {filtersPanel},
   }) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
@@ -114,7 +115,7 @@ test.describe('get familiar with operate', () => {
 
   test('view process instance detail', async ({page, processInstancePage}) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_PATTERN,
       mockProcessInstanceDetailResponses({
         processInstanceDetail: runningOrderProcessInstance.detail,
         flowNodeInstances: runningOrderProcessInstance.flowNodeInstances,

@@ -119,44 +119,6 @@ describe('<ListView /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not show delete button when user has no permissions', async () => {
-    const queryString = '?process=demoProcess';
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
-      search: queryString,
-    }));
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<ListView />, {
-      wrapper: createWrapper(`/processes${queryString}`),
-    });
-
-    expect(
-      await screen.findByRole('heading', {name: 'New demo process'}),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Process Instances',
-      }),
-    );
-    expect(
-      screen.queryByRole('button', {
-        name: /delete process definition/i,
-      }),
-    ).not.toBeInTheDocument();
-  });
-
   it('should not show delete button when user has no resource based permissions', async () => {
     const queryString = '?process=demoProcess&version=1';
 
@@ -167,7 +129,6 @@ describe('<ListView /> - operations', () => {
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
