@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
+import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.RANDOM_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,6 +26,7 @@ import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -39,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
@@ -52,16 +55,19 @@ public class SchemaManagerIT {
   public void refresh() throws IOException {
     indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name",
+            "index_name-" + RANDOM_STRING,
             "test*",
-            "template_alias",
+            "template_alias-" + RANDOM_STRING,
             Collections.emptyList(),
             CONFIG_PREFIX + "-template_name",
             "/mappings.json");
 
     index =
         SchemaTestUtil.mockIndex(
-            CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
+            CONFIG_PREFIX + "-qualified_name-" + RANDOM_STRING,
+            "alias-" + RANDOM_STRING,
+            "index_name-" + RANDOM_STRING,
+            "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName())
         .thenReturn(CONFIG_PREFIX + "-template-index-qualified-name");
@@ -140,8 +146,8 @@ public class SchemaManagerIT {
     final var properties = new ExporterConfiguration();
     properties.getIndex().setNumberOfReplicas(10);
     properties.getIndex().setNumberOfShards(10);
-    properties.getIndex().setReplicasByIndexName(Map.of("index_name", 5));
-    properties.getIndex().setShardsByIndexName(Map.of("index_name", 5));
+    properties.getIndex().setReplicasByIndexName(Map.of("index_name-" + RANDOM_STRING, 5));
+    properties.getIndex().setShardsByIndexName(Map.of("index_name-" + RANDOM_STRING, 5));
 
     final var schemaManager =
         new SchemaManager(
@@ -320,6 +326,10 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "This test overrides properties for whole cluster, thus not recommended")
   void shouldCreateLifeCyclePoliciesOnStartupIfEnabled(
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {

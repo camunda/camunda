@@ -17,12 +17,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: 
+        group:
         - os-exporter
         - search-client-os
+        - camunda-exporter
         include:
           - group: os-exporter
-            name: "Zeebe OS Exporter Integration Tests"
+            name: "Zeebe AWS OS Exporter Integration Tests"
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
@@ -30,6 +31,12 @@ jobs:
           - group: search-client-os
             name: "Search Client AWS OS Integration Tests"
             maven-modules: "'io.camunda:camunda-search-client-connect'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+          - group: camunda-exporter
+            name: "Camunda Exporter AWS OS Integration Tests"
+            maven-modules: "'io.camunda:camunda-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
@@ -65,6 +72,12 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: aws-actions/configure-aws-credentials@v4
+        name: Pre-login to AWS
+        with:
+          aws-region: eu-central-1 #${{env.AWS_REGION}}
+          web-identity-token-file: /var/run/secrets/eks.amazonaws.com/serviceaccount/token #${{env.AWS_WEB_IDENTITY_TOKEN_FILE}}
+          role-to-assume: ${{env.AWS_ROLE_ARN}}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:

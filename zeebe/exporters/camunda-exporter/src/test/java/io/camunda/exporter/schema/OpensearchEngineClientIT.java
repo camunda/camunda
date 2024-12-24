@@ -12,63 +12,55 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 public class OpensearchEngineClientIT {
-  @Container
-  private static final OpensearchContainer<?> CONTAINER =
-      TestSearchContainers.createDefaultOpensearchContainer();
+
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;
 
   @BeforeAll
   public static void init() {
-    final var config = new ExporterConfiguration();
-    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    openSearchClient = new OpensearchConnector(config.getConnect()).createClient();
-
+    openSearchClient = searchDB.osClient();
     opensearchEngineClient = new OpensearchEngineClient(openSearchClient);
-  }
-
-  @BeforeEach
-  public void refresh() throws IOException {
-    openSearchClient.indices().delete(req -> req.index("*"));
-    openSearchClient.indices().deleteIndexTemplate(req -> req.name("*"));
   }
 
   @Test
   void shouldCreateIndexNormally() throws IOException {
     // given
+    final var randomIdxIdentifier = UUID.randomUUID().toString();
     final var descriptor =
-        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
+        SchemaTestUtil.mockIndex(
+            "qualified_name-" + randomIdxIdentifier,
+            "alias-" + randomIdxIdentifier,
+            "index_name-" + randomIdxIdentifier,
+            "/mappings.json");
 
     // when
     final var indexSettings = new IndexSettings();
@@ -76,11 +68,14 @@ public class OpensearchEngineClientIT {
 
     // then
     final var index =
-        openSearchClient.indices().get(req -> req.index("qualified_name")).get("qualified_name");
+        openSearchClient
+            .indices()
+            .get(req -> req.index("qualified_name-" + randomIdxIdentifier))
+            .get("qualified_name-" + randomIdxIdentifier);
 
     SchemaTestUtil.validateMappings(index.mappings(), "/mappings.json");
 
-    assertThat(index.aliases().keySet()).isEqualTo(Set.of("alias"));
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of("alias-" + randomIdxIdentifier));
     assertThat(index.settings().index().numberOfReplicas())
         .isEqualTo(indexSettings.getNumberOfReplicas().toString());
     assertThat(index.settings().index().numberOfShards())
@@ -186,14 +181,18 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     // given
+    final var indexSuffix = UUID.randomUUID().toString();
     final var index =
         SchemaTestUtil.mockIndex(
-            "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
+            "index_qualified_name",
+            "alias",
+            "index_name-" + indexSuffix,
+            "/mappings-complex-property.json");
 
     opensearchEngineClient.createIndex(index, new IndexSettings());
 
     // when
-    final var mappings = opensearchEngineClient.getMappings("*", MappingSource.INDEX);
+    final var mappings = opensearchEngineClient.getMappings(indexSuffix, MappingSource.INDEX);
 
     // then
     assertThat(mappings.size()).isEqualTo(1);
@@ -282,6 +281,10 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "This test overrides properties for whole cluster, thus not recommended")
   void shouldCreateIndexLifeCyclePolicy() throws IOException {
     // given, when
     opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");

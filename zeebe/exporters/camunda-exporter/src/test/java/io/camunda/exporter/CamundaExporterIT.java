@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter;
 
-import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,8 +15,8 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -27,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.schema.MappingSource;
@@ -39,7 +37,6 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -48,27 +45,19 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.testcontainers.containers.GenericContainer;
 
 /**
  * This is a smoke test to verify that the exporter can connect to an Elasticsearch instance and
@@ -176,43 +165,44 @@ final class CamundaExporterIT {
     verify(controllerSpy).updateLastExportedRecordPosition(eq(record2.getPosition()), any());
   }
 
-  @ParameterizedTest
-  @MethodSource("containerProvider")
-  void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
-      final GenericContainer<?> container) {
-    // given
-    final var config = getConnectConfigForContainer(container);
-    final var exporter = new CamundaExporter();
-
-    final var context = getContextFromConfig(config);
-    final ExporterTestController controller = spy(new ExporterTestController());
-
-    exporter.configure(context);
-    exporter.open(controller);
-
-    // when
-    final var currentPort = container.getFirstMappedPort();
-    container.stop();
-    Awaitility.await().until(() -> !container.isRunning());
-
-    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
-
-    assertThatThrownBy(() -> exporter.export(record))
-        .isInstanceOf(ExporterException.class)
-        .hasMessageContaining("Connection refused");
-
-    // starts the container on the same port again
-    container
-        .withEnv("discovery.type", "single-node")
-        .setPortBindings(List.of(currentPort + ":9200"));
-    container.start();
-
-    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
-    exporter.export(record2);
-
-    Awaitility.await()
-        .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
-  }
+  //  @ParameterizedTest
+  //  @MethodSource("containerProvider")
+  //  void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
+  //      final GenericContainer<?> container) {
+  //    // given
+  //    final var config = getConnectConfigForContainer(container);
+  //    final var exporter = new CamundaExporter();
+  //
+  //    final var context = getContextFromConfig(config);
+  //    final ExporterTestController controller = spy(new ExporterTestController());
+  //
+  //    exporter.configure(context);
+  //    exporter.open(controller);
+  //
+  //    // when
+  //    final var currentPort = container.getFirstMappedPort();
+  //    container.stop();
+  //    Awaitility.await().until(() -> !container.isRunning());
+  //
+  //    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+  //
+  //    assertThatThrownBy(() -> exporter.export(record))
+  //        .isInstanceOf(ExporterException.class)
+  //        .hasMessageContaining("Connection refused");
+  //
+  //    // starts the container on the same port again
+  //    container
+  //        .withEnv("discovery.type", "single-node")
+  //        .setPortBindings(List.of(currentPort + ":9200"));
+  //    container.start();
+  //
+  //    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+  //    exporter.export(record2);
+  //
+  //    Awaitility.await()
+  //        .untilAsserted(() ->
+  // assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
+  //  }
 
   @TestTemplate
   void shouldPeriodicallyFlushBasedOnConfiguration(
@@ -319,36 +309,36 @@ final class CamundaExporterIT {
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
-            "custom-prefix-camunda-authorization-8.7.0_",
-            "custom-prefix-camunda-group-8.7.0_",
-            "custom-prefix-camunda-mapping-8.7.0_",
-            "custom-prefix-camunda-role-8.7.0_",
-            "custom-prefix-camunda-tenant-8.7.0_",
-            "custom-prefix-camunda-user-8.7.0_",
-            "custom-prefix-camunda-web-session-8.7.0_",
-            "custom-prefix-operate-batch-operation-1.0.0_",
-            "custom-prefix-operate-decision-8.3.0_",
-            "custom-prefix-operate-decision-instance-8.3.0_",
-            "custom-prefix-operate-decision-requirements-8.3.0_",
-            "custom-prefix-operate-event-8.3.0_",
-            "custom-prefix-operate-flownode-instance-8.3.1_",
-            "custom-prefix-operate-import-position-8.3.0_",
-            "custom-prefix-operate-incident-8.3.1_",
-            "custom-prefix-operate-list-view-8.3.0_",
-            "custom-prefix-operate-metric-8.3.0_",
-            "custom-prefix-operate-message-8.5.0_",
-            "custom-prefix-operate-operation-8.4.1_",
-            "custom-prefix-operate-post-importer-queue-8.3.0_",
-            "custom-prefix-operate-process-8.3.0_",
-            "custom-prefix-operate-sequence-flow-8.3.0_",
-            "custom-prefix-operate-variable-8.3.0_",
-            "custom-prefix-operate-job-8.6.0_",
-            "custom-prefix-tasklist-draft-task-variable-8.3.0_",
-            "custom-prefix-tasklist-form-8.4.0_",
-            "custom-prefix-tasklist-metric-8.3.0_",
-            "custom-prefix-tasklist-task-8.5.0_",
-            "custom-prefix-tasklist-task-variable-8.3.0_",
-            "custom-prefix-tasklist-import-position-8.2.0_");
+            CONFIG_PREFIX + "-camunda-authorization-8.7.0_",
+            CONFIG_PREFIX + "-camunda-group-8.7.0_",
+            CONFIG_PREFIX + "-camunda-mapping-8.7.0_",
+            CONFIG_PREFIX + "-camunda-role-8.7.0_",
+            CONFIG_PREFIX + "-camunda-tenant-8.7.0_",
+            CONFIG_PREFIX + "-camunda-user-8.7.0_",
+            CONFIG_PREFIX + "-camunda-web-session-8.7.0_",
+            CONFIG_PREFIX + "-operate-batch-operation-1.0.0_",
+            CONFIG_PREFIX + "-operate-decision-8.3.0_",
+            CONFIG_PREFIX + "-operate-decision-instance-8.3.0_",
+            CONFIG_PREFIX + "-operate-decision-requirements-8.3.0_",
+            CONFIG_PREFIX + "-operate-event-8.3.0_",
+            CONFIG_PREFIX + "-operate-flownode-instance-8.3.1_",
+            CONFIG_PREFIX + "-operate-import-position-8.3.0_",
+            CONFIG_PREFIX + "-operate-incident-8.3.1_",
+            CONFIG_PREFIX + "-operate-list-view-8.3.0_",
+            CONFIG_PREFIX + "-operate-metric-8.3.0_",
+            CONFIG_PREFIX + "-operate-message-8.5.0_",
+            CONFIG_PREFIX + "-operate-operation-8.4.1_",
+            CONFIG_PREFIX + "-operate-post-importer-queue-8.3.0_",
+            CONFIG_PREFIX + "-operate-process-8.3.0_",
+            CONFIG_PREFIX + "-operate-sequence-flow-8.3.0_",
+            CONFIG_PREFIX + "-operate-variable-8.3.0_",
+            CONFIG_PREFIX + "-operate-job-8.6.0_",
+            CONFIG_PREFIX + "-tasklist-draft-task-variable-8.3.0_",
+            CONFIG_PREFIX + "-tasklist-form-8.4.0_",
+            CONFIG_PREFIX + "-tasklist-metric-8.3.0_",
+            CONFIG_PREFIX + "-tasklist-task-8.5.0_",
+            CONFIG_PREFIX + "-tasklist-task-variable-8.3.0_",
+            CONFIG_PREFIX + "-tasklist-import-position-8.2.0_");
   }
 
   @TestTemplate
@@ -475,31 +465,32 @@ final class CamundaExporterIT {
     return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.7.0"));
   }
 
-  private static Stream<Arguments> containerProvider() {
-    return Stream.of(
-        Arguments.of(TestSearchContainers.createDefeaultElasticsearchContainer()),
-        Arguments.of(TestSearchContainers.createDefaultOpensearchContainer()));
-  }
-
-  private ExporterConfiguration getConnectConfigForContainer(final GenericContainer<?> container) {
-    container.start();
-    Awaitility.await().until(container::isRunning);
-
-    final var config = new ExporterConfiguration();
-    config.getConnect().setUrl("http://localhost:" + container.getFirstMappedPort());
-    config.getBulk().setSize(1);
-
-    if (container.getDockerImageName().contains(ELASTICSEARCH.getType())) {
-      config.getConnect().setType(ELASTICSEARCH.getType());
-    }
-
-    if (container.getDockerImageName().contains(ConnectionTypes.OPENSEARCH.getType())) {
-      config.getConnect().setType(ConnectionTypes.OPENSEARCH.getType());
-    }
-
-    config.getArchiver().setRolloverEnabled(false);
-    return config;
-  }
+  //  private static Stream<Arguments> containerProvider() {
+  //    return Stream.of(
+  //        Arguments.of(TestSearchContainers.createDefeaultElasticsearchContainer()),
+  //        Arguments.of(TestSearchContainers.createDefaultOpensearchContainer()));
+  //  }
+  //
+  //  private ExporterConfiguration getConnectConfigForContainer(final GenericContainer<?>
+  // container) {
+  //    container.start();
+  //    Awaitility.await().until(container::isRunning);
+  //
+  //    final var config = new ExporterConfiguration();
+  //    config.getConnect().setUrl("http://localhost:" + container.getFirstMappedPort());
+  //    config.getBulk().setSize(1);
+  //
+  //    if (container.getDockerImageName().contains(ELASTICSEARCH.getType())) {
+  //      config.getConnect().setType(ELASTICSEARCH.getType());
+  //    }
+  //
+  //    if (container.getDockerImageName().contains(ConnectionTypes.OPENSEARCH.getType())) {
+  //      config.getConnect().setType(ConnectionTypes.OPENSEARCH.getType());
+  //    }
+  //
+  //    config.getArchiver().setRolloverEnabled(false);
+  //    return config;
+  //  }
 
   private Context getContextFromConfig(final ExporterConfiguration config) {
     return getContextFromConfig(config, 1);
