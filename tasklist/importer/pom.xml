@@ -40,12 +40,6 @@
       <scope>runtime</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-870</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
     <!-- ZEEBE -->
 
     <dependency>
@@ -188,7 +182,6 @@
         <configuration>
           <usedDependencies>
             <dependency>io.camunda:tasklist-importer-860</dependency>
-            <dependency>io.camunda:tasklist-importer-870</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
