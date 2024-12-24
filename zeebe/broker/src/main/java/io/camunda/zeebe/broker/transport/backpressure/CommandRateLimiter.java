@@ -50,11 +50,17 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
 
   @Override
   public Optional<Listener> acquire(final Intent intent) {
-    if (getInflight() >= getLimit() && !WHITE_LISTED_COMMANDS.contains(intent)) {
-      return createRejectedListener();
+    if (WHITE_LISTED_COMMANDS.contains(intent)) {
+      return Optional.of(createListener());
     }
-    final Listener listener = createListener();
-    return Optional.of(listener);
+
+    synchronized (this) {
+      if (getInflight() < getLimit()) {
+        return Optional.of(createListener());
+      }
+    }
+
+    return createRejectedListener();
   }
 
   private void registerListener(final int streamId, final long requestId, final Listener listener) {
