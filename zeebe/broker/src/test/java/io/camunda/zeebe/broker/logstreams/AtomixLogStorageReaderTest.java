@@ -10,12 +10,15 @@ package io.camunda.zeebe.broker.logstreams;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.File;
 import java.nio.ByteBuffer;
 import org.agrona.CloseHelper;
@@ -172,10 +175,15 @@ final class AtomixLogStorageReaderTest {
 
     @Override
     public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
-      final var indexed = log.append(new RaftLogEntry(1, entry));
-      appendListener.onWrite(indexed);
-      log.setCommitIndex(indexed.index());
-      appendListener.onCommit(indexed.index(), entry.highestPosition());
+      final IndexedRaftLogEntry indexed;
+      try {
+        indexed = log.append(new RaftLogEntry(1, entry));
+        appendListener.onWrite(indexed);
+        log.setCommitIndex(indexed.index());
+        appendListener.onCommit(indexed.index(), entry.highestPosition());
+      } catch (final CheckedJournalException e) {
+        Rethrow.rethrowUnchecked(e);
+      }
     }
   }
 }
