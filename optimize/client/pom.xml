@@ -8,11 +8,20 @@
     <version>8.7.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>client</artifactId>
-  <packaging>pom</packaging>
-  <name>Optimize Client</name>
+  <groupId>io.camunda.optimize</groupId>
+  <artifactId>optimize-webjar</artifactId>
+  <version>8.7.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>Optimize Webjar</name>
 
   <build>
+    <resources>
+      <resource>
+        <directory>dist</directory>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources/optimize</targetPath>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>com.github.eirslett</groupId>
