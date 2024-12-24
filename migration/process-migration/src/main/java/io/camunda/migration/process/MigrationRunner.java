@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -181,6 +182,9 @@ public class MigrationRunner implements Migrator {
    */
   private boolean shouldThrowException(final Exception exception) {
     if (exception.getCause() instanceof final ElasticsearchException ex) {
+      return ex.error().reason() != null
+          && !MigrationUtil.MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
+    } else if (exception.getCause() instanceof final OpenSearchException ex) {
       return ex.error().reason() != null
           && !MigrationUtil.MIGRATION_REPOSITORY_NOT_EXISTS.matcher(ex.error().reason()).find();
     }
