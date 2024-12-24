@@ -33,6 +33,8 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -41,6 +43,8 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class FormStoreOpenSearch implements FormStore {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FormStoreOpenSearch.class);
 
   @Autowired private FormIndex formIndex;
 
@@ -105,6 +109,7 @@ public class FormStoreOpenSearch implements FormStore {
       }
     } catch (final OpenSearchException e) {
       if (e.response().status() == HttpURLConnection.HTTP_NOT_FOUND) {
+        LOG.debug("Form with key {} not found, opensearch related exception {}", formKey, e);
         return Optional.empty();
       }
       throw new TasklistRuntimeException(e);
