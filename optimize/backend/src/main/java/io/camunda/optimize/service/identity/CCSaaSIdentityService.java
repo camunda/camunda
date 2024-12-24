@@ -19,8 +19,8 @@ import io.camunda.optimize.rest.cloud.CCSaaSUserCache;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.container.ContainerRequestContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +51,7 @@ public class CCSaaSIdentityService extends AbstractIdentityService {
 
   @Override
   public Optional<UserDto> getCurrentUserById(
-      final String userId, final ContainerRequestContext requestContext) {
+      final String userId, final HttpServletRequest request) {
     return getUserById(userId);
   }
 
