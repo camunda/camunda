@@ -135,7 +135,9 @@ public class GcpDocumentStoreTest {
                 null,
                 Map.of("key", "value")));
 
-    when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null);
+    final Blob mockBlob = mock(Blob.class);
+
+    when(storage.get(BUCKET_NAME, "documentId")).thenReturn(null).thenReturn(mockBlob);
 
     // when
     final var documentReferenceResponse =

@@ -18,6 +18,9 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,8 +50,18 @@ public class InMemoryDocumentStore implements DocumentStore {
       return CompletableFuture.completedFuture(
           Either.left(new DocumentError.DocumentAlreadyExists(id)));
     }
+    final MessageDigest md;
+    try {
+      md = MessageDigest.getInstance("SHA-256");
+    } catch (final Exception e) {
+      // should never happen
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.UnknownDocumentError("Failed to create document")));
+    }
+    final DigestInputStream contentInputStream =
+        new DigestInputStream(request.contentInputStream(), md);
+
     final var fileName = Optional.ofNullable(request.metadata().fileName()).orElse(id);
-    final var contentInputStream = request.contentInputStream();
     final byte[] content;
     final var contentType =
         Optional.ofNullable(request.metadata())
@@ -62,6 +75,7 @@ public class InMemoryDocumentStore implements DocumentStore {
           Either.left(new DocumentError.InvalidInput("Failed to read content")));
     }
     documents.put(id, new InMemoryDocumentContent(content, contentType));
+    final String contentHash = HexFormat.of().formatHex(md.digest());
     final var updatedMetadata =
         new DocumentMetadataModel(
             request.metadata().contentType(),
@@ -72,7 +86,7 @@ public class InMemoryDocumentStore implements DocumentStore {
             request.metadata().processInstanceKey(),
             request.metadata().customProperties());
     return CompletableFuture.completedFuture(
-        Either.right(new DocumentReference(id, updatedMetadata)));
+        Either.right(new DocumentReference(id, contentHash, updatedMetadata)));
   }
 
   @Override
@@ -105,6 +119,33 @@ public class InMemoryDocumentStore implements DocumentStore {
         Either.left(
             new OperationNotSupported(
                 "The in-memory document store does not support creating links")));
+  }
+
+  @Override
+  public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      final String documentId, final String contentHash) {
+    final MessageDigest md;
+    try {
+      md = MessageDigest.getInstance("SHA-256");
+    } catch (final Exception e) {
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.UnknownDocumentError(e)));
+    }
+
+    final var content = documents.get(documentId);
+
+    if (content == null) {
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentNotFound(documentId)));
+    }
+
+    final var actualHash = HexFormat.of().formatHex(md.digest(content.content));
+
+    if (!actualHash.equals(contentHash)) {
+      return CompletableFuture.completedFuture(
+          Either.left(new DocumentError.DocumentHashMismatch(documentId, contentHash)));
+    }
+    return CompletableFuture.completedFuture(Either.right(null));
   }
 
   private record InMemoryDocumentContent(byte[] content, String contentType) {}
