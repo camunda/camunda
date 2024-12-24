@@ -21,6 +21,7 @@ import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -271,11 +272,15 @@ public class FormStoreOpenSearch implements FormStore {
       final GetResponse<FormIdView> response = osClient.get(request, FormIdView.class);
       if (response.found() && response.source() != null) {
         return Optional.of(response.source());
-      } else {
+      }
+    } catch (final OpenSearchException e) {
+      if (e.response().status() == HttpURLConnection.HTTP_NOT_FOUND) {
         return Optional.empty();
       }
+      throw new TasklistRuntimeException(e);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
+    return Optional.empty();
   }
 }
