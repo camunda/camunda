@@ -18,8 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/token")
+@RequestMapping(REST_API_PATH + TokenRestService.TOKEN_PATH)
 public class TokenRestService {
+
+  public static final String TOKEN_PATH = "/token";
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TokenRestService.class);
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;

@@ -51,8 +51,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/definition")
+@RequestMapping(REST_API_PATH + DefinitionRestService.DEFINITION_PATH)
 public class DefinitionRestService {
+
+  public static final String DEFINITION_PATH = "/definition";
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionRestService.class);
   private final DefinitionService definitionService;

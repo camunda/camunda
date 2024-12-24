@@ -10,6 +10,7 @@ package io.camunda.optimize.rest;
 import static io.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto.SORT_BY;
 import static io.camunda.optimize.dto.optimize.rest.sorting.SortRequestDto.SORT_ORDER;
 import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
@@ -34,8 +35,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/process")
+@RequestMapping(REST_API_PATH + ProcessOverviewRestService.PROCESS_PATH)
 public class ProcessOverviewRestService {
+  public static final String PROCESS_PATH = "/process";
+
   private final ProcessOverviewService processOverviewService;
   private final SessionService sessionService;
 

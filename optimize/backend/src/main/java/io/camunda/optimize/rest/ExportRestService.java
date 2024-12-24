@@ -50,8 +50,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/export")
+@RequestMapping(REST_API_PATH + ExportRestService.EXPORT_PATH)
 public class ExportRestService {
+
+  public static final String EXPORT_PATH = "/export";
+
   private final CsvExportService csvExportService;
   private final EntityExportService entityExportService;
   private final SessionService sessionService;

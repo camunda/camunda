@@ -26,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(REST_API_PATH + "/import")
+@RequestMapping(REST_API_PATH + ImportRestService.IMPORT_PATH)
 public class ImportRestService {
+
+  public static final String IMPORT_PATH = "/import";
 
   private final SessionService sessionService;
   private final EntityImportService entityImportService;
