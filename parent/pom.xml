@@ -1522,12 +1522,6 @@
 
       <dependency>
         <groupId>org.wiremock</groupId>
-        <artifactId>wiremock</artifactId>
-        <version>${version.wiremock}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.wiremock</groupId>
         <artifactId>wiremock-standalone</artifactId>
         <version>${version.wiremock}</version>
       </dependency>

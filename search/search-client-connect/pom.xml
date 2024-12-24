@@ -181,9 +181,10 @@
 
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
