@@ -170,7 +170,6 @@
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.13.0</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
-    <version.jetty>11.0.24</version.jetty>
     <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
     <!-- Auth0 Dependencies -->
@@ -1022,14 +1021,6 @@
            In order resolve dependency issues with wiremock and spring-boot-dependencies
            make sure this is declared before spring boot dependencies.
       -->
-
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-bom</artifactId>
-        <version>${version.jetty}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
 
       <dependency>
         <!-- Import dependency management from Spring Boot -->
