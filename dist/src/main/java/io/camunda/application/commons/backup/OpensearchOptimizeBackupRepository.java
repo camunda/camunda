@@ -12,6 +12,7 @@ import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -27,7 +28,8 @@ import org.springframework.context.annotation.Profile;
  */
 @Conditional(OpenSearchCondition.class)
 @Configuration
-@Profile("optimize & !operate & standalone")
+@Profile("optimize")
+@ConditionalOnMissingBean({OpensearchBackupRepository.class, OpensearchTasklistBackupRepository.class})
 // only active if standalone, otherwise the operate one is used
 public class OpensearchOptimizeBackupRepository {
 
