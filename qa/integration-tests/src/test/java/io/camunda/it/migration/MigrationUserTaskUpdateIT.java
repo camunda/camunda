@@ -35,7 +35,7 @@ public class MigrationUserTaskUpdateIT {
   @RegisterExtension
   static final MigrationITInvocationProvider PROVIDER =
       new MigrationITInvocationProvider()
-          .withDatabaseTypes(DatabaseType.ELASTICSEARCH)
+          .withDatabaseTypes(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH)
           .withRunBefore(MigrationUserTaskUpdateIT::generateData)
           .withRunAfter(MigrationUserTaskUpdateIT::generate87Data);
 
