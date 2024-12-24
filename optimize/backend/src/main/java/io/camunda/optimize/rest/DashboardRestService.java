@@ -101,7 +101,7 @@ public class DashboardRestService {
 
   @GetMapping(path = "/{id}")
   public AuthorizedDashboardDefinitionResponseDto getDashboard(
-      @RequestParam(name = "id", required = false) final String dashboardId,
+      @PathVariable(name = "id") final String dashboardId,
       final HttpServletRequest request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
