@@ -57,5 +57,11 @@ public class TestDocumentStoreProvider implements DocumentStoreProvider {
         final String documentId, final long durationInMillis) {
       throw new UnsupportedOperationException("Not implemented");
     }
+
+    @Override
+    public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+        final String documentId, final String contentHash) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
   }
 }

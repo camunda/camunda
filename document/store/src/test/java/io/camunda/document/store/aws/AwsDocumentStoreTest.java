@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.document.api.*;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
+import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
@@ -209,6 +210,58 @@ class AwsDocumentStoreTest {
 
     // when
     final var result = documentStore.getDocument(documentId).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+  }
+
+  @Test
+  void verifyContentHashShouldSucceed() {
+    // given
+    final var documentId = "existing-document-id";
+    final var contentHash = "randomhash";
+    final var metadata = Map.of("content-hash", contentHash);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
+
+    // when
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
+
+    // then
+    assertTrue(result.isRight());
+  }
+
+  @Test
+  void verifyContentHashShouldFailForDifferentHash() {
+    // given
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
+    final var metadata = Map.of("content-hash", contentHash);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
+
+    // when
+    final var result = documentStore.verifyContentHash(documentId, "wronHash").join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(DocumentHashMismatch.class, result.getLeft());
+  }
+
+  @Test
+  void verifyContentHashShouldFailIfDocumentDoesNotExist() {
+    // given
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+
+    // when
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
     assertTrue(result.isLeft());

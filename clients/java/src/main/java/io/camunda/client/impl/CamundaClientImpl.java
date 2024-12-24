@@ -803,14 +803,18 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, null, config);
   }
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(
       final DocumentReferenceResponse documentReference) {
     return new DocumentContentGetRequestImpl(
-        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
+        httpClient,
+        documentReference.getDocumentId(),
+        documentReference.getStoreId(),
+        documentReference.getContentHash(),
+        config);
   }
 
   @Override

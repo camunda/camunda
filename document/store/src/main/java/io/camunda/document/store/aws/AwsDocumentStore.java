@@ -19,18 +19,22 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
@@ -50,6 +54,11 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 
 public class AwsDocumentStore implements DocumentStore {
 
+  public static final String CONTENT_HASH_METADATA_KEY = "content-hash";
+  public static final String EXPIRES_AT_METADATA_KEY = "expires-at";
+  public static final String FILENAME_METADATA_KEY = "filename";
+  public static final String SIZE_METADATA_KEY = "size";
+  public static final String CONTENT_TYPE_METADATA_KEY = "content-type";
   private static final Tag NO_AUTO_DELETE_TAG =
       Tag.builder().key("NoAutoDelete").value("true").build();
 
@@ -108,6 +117,13 @@ public class AwsDocumentStore implements DocumentStore {
       final String documentId, final long durationInMillis) {
     return CompletableFuture.supplyAsync(
         () -> linkDocumentInternal(documentId, durationInMillis), executor);
+  }
+
+  @Override
+  public CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      final String documentId, final String contentHash) {
+    return CompletableFuture.supplyAsync(
+        () -> verifyContentHashInternal(documentId, contentHash), executor);
   }
 
   private Either<DocumentError, DocumentReference> createDocumentInternal(
@@ -193,6 +209,33 @@ public class AwsDocumentStore implements DocumentStore {
     }
   }
 
+  private Either<DocumentError, Void> verifyContentHashInternal(
+      final String documentId, final String contentHashToVerify) {
+    try {
+      final HeadObjectResponse documentInfo = getDocumentInfo(documentId);
+      if (documentInfo == null) {
+        return Either.left(new DocumentNotFound(documentId));
+      }
+      if (!documentInfo.hasMetadata()) {
+        return Either.left(new DocumentError.InvalidInput("No metadata found for document"));
+      }
+
+      if (!documentInfo.metadata().containsKey(CONTENT_HASH_METADATA_KEY)) {
+        return Either.left(new DocumentError.InvalidInput("No content hash found for document"));
+      }
+
+      if (!documentInfo
+          .metadata()
+          .get(CONTENT_HASH_METADATA_KEY.toLowerCase())
+          .equals(contentHashToVerify)) {
+        return Either.left(new DocumentError.DocumentHashMismatch(documentId, contentHashToVerify));
+      }
+      return Either.right(null);
+    } catch (final Exception e) {
+      return Either.left(new UnknownDocumentError(e));
+    }
+  }
+
   private HeadObjectResponse getDocumentInfo(final String documentId) {
     try {
       final HeadObjectRequest headObjectRequest =
@@ -209,7 +252,7 @@ public class AwsDocumentStore implements DocumentStore {
 
   private boolean isDocumentExpired(final Map<String, String> metadata, final String documentId) {
     if (metadata != null) {
-      final String expiresAt = metadata.get("expires-at");
+      final String expiresAt = metadata.get(EXPIRES_AT_METADATA_KEY);
 
       if (expiresAt != null && OffsetDateTime.parse(expiresAt).isBefore(OffsetDateTime.now())) {
         deleteDocumentInternal(documentId);
@@ -222,17 +265,27 @@ public class AwsDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentReference> uploadDocument(
       final DocumentCreationRequest request, final String documentId) {
     final String fileName = resolveFileName(request.metadata(), documentId);
+
+    final MessageDigest md;
+    try {
+      md = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
+    } catch (final Exception e) {
+      // should never happen
+      return Either.left(new UnknownDocumentError(e));
+    }
+    final DigestInputStream digestStream = new DigestInputStream(request.contentInputStream(), md);
+    final String contentHash = HexFormat.of().formatHex(md.digest());
+
     final PutObjectRequest putObjectRequest =
         PutObjectRequest.builder()
             .key(resolveKey(documentId))
             .bucket(bucketName)
-            .metadata(toS3MetaData(request.metadata(), fileName))
+            .metadata(toS3MetaData(request.metadata(), fileName, contentHash))
             .tagging(generateExpiryTag(request.metadata().expiresAt()))
             .build();
 
     client.putObject(
-        putObjectRequest,
-        RequestBody.fromInputStream(request.contentInputStream(), request.metadata().size()));
+        putObjectRequest, RequestBody.fromInputStream(digestStream, request.metadata().size()));
 
     final var updatedMetadata =
         new DocumentMetadataModel(
@@ -243,21 +296,23 @@ public class AwsDocumentStore implements DocumentStore {
             request.metadata().processDefinitionId(),
             request.metadata().processInstanceKey(),
             request.metadata().customProperties());
-    return Either.right(new DocumentReference(documentId, updatedMetadata));
+    return Either.right(new DocumentReference(documentId, contentHash, updatedMetadata));
   }
 
   private Map<String, String> toS3MetaData(
-      final DocumentMetadataModel metadata, final String fileName) {
+      final DocumentMetadataModel metadata, final String fileName, final String contentHash) {
     if (metadata == null) {
       return Collections.emptyMap();
     }
 
     final Map<String, String> metadataMap = new HashMap<>();
 
-    putIfPresent("content-type", metadata.contentType(), metadataMap);
-    putIfPresent("size", metadata.size(), metadataMap);
-    putIfPresent("filename", fileName, metadataMap);
-    putIfPresent("expires-at", metadata.expiresAt(), metadataMap);
+    putIfPresent(CONTENT_TYPE_METADATA_KEY, metadata.contentType(), metadataMap);
+    putIfPresent(SIZE_METADATA_KEY, metadata.size(), metadataMap);
+    putIfPresent(FILENAME_METADATA_KEY, fileName, metadataMap);
+    putIfPresent(EXPIRES_AT_METADATA_KEY, metadata.expiresAt(), metadataMap);
+
+    metadataMap.put(CONTENT_HASH_METADATA_KEY, contentHash);
 
     if (metadata.customProperties() != null) {
       metadata

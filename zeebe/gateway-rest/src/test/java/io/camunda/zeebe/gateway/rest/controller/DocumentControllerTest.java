@@ -62,6 +62,7 @@ public class DocumentControllerTest extends RestControllerTest {
                 new DocumentReferenceResponse(
                     "documentId",
                     "default",
+                    "dummy_hash",
                     new DocumentMetadataModel(
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
@@ -130,6 +131,7 @@ public class DocumentControllerTest extends RestControllerTest {
                 new DocumentReferenceResponse(
                     "documentId",
                     "default",
+                    "dummy_hash",
                     new DocumentMetadataModel(
                         contentType.toString(), filename, timestamp, 0L, null, null, Map.of()))));
 
@@ -192,7 +194,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent("documentId", null))
+    when(documentServices.getDocumentContent("documentId", null, null))
         .thenReturn(
             new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf"));
 
@@ -228,7 +230,7 @@ public class DocumentControllerTest extends RestControllerTest {
     // given
     final var content = new byte[] {1, 2, 3};
 
-    when(documentServices.getDocumentContent("documentId", null))
+    when(documentServices.getDocumentContent("documentId", null, null))
         .thenReturn(new DocumentContentResponse(new ByteArrayInputStream(content), null));
 
     // when/then
