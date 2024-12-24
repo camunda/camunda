@@ -29,7 +29,10 @@ import org.springframework.context.annotation.Profile;
 @Conditional(OpenSearchCondition.class)
 @Configuration
 @Profile("optimize")
-@ConditionalOnMissingBean({OpensearchBackupRepository.class, OpensearchTasklistBackupRepository.class})
+@ConditionalOnMissingBean({
+  OpensearchBackupRepository.class,
+  OpensearchTasklistBackupRepository.class
+})
 // only active if standalone, otherwise the operate one is used
 public class OpensearchOptimizeBackupRepository {
 

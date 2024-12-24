@@ -32,7 +32,10 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 @Conditional(ElasticSearchCondition.class)
 @Configuration
 @Profile("optimize")
-@ConditionalOnMissingBean({ElasticsearchBackupRepository.class, ElasticsearchTasklistBackupRepository.class})
+@ConditionalOnMissingBean({
+  ElasticsearchBackupRepository.class,
+  ElasticsearchTasklistBackupRepository.class
+})
 // only active if standalone, otherwise the operate one is used
 public class ElasticsearchOptimizeBackupRepository {
 
