@@ -1,5 +1,5 @@
 ---
-name: Deploy Camunda Docker Image to SaaS registry
+name: Deploy Camunda Docker Images to SaaS registry
 
 on:
   workflow_dispatch:
@@ -57,8 +57,9 @@ jobs:
         run: |
           # Replace dots and slashes with dashes
           branch=${BRANCH/[\/\.]/-}
+          branch_git_sha=$(git rev-parse --short=8 HEAD)
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
-          echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "image-tag=$version-$branch-$branch_git_sha" >> $GITHUB_OUTPUT
         env:
           BRANCH: ${{ inputs.branch }}
       - uses: ./.github/actions/build-zeebe
@@ -72,4 +73,39 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
-
+      - uses: ./.github/actions/build-platform-docker
+        id: build-push-zeebe-docker
+        with:
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
+          version: ${{ steps.image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: Dockerfile
+          push: true
+      - uses: ./.github/actions/build-platform-docker
+        id: build-push-operate-docker
+        with:
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/operate
+          version: ${{ steps.image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: operate.Dockerfile
+          push: true
+      - uses: ./.github/actions/build-platform-docker
+        id: build-push-tasklist-docker
+        with:
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/tasklist
+          version: ${{ steps.image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: tasklist.Dockerfile
+          push: true
+      - uses: ./.github/actions/build-platform-docker
+        id: build-push-optimize-docker
+        with:
+          repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/optimize
+          version: ${{ steps.image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          dockerfile: optimize.Dockerfile
+          push: true
