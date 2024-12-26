@@ -120,22 +120,24 @@ public class SharingRestService {
   @GetMapping(REPORT_SUB_PATH + "/{reportId}")
   public ReportShareRestDto findShareForReport(@PathVariable("reportId") final String reportId) {
     final Optional<ReportShareRestDto> result = sharingService.findShareForReport(reportId);
-    if(!result.isPresent()) {
-      throw new ResponseStatusException(HttpStatus.NO_CONTENT);
+    if(result.isPresent()) {
+      return result.get();
     }
 
-    return result.get();
+    // not a crash: will return 204 no content to the client
+    throw new ResponseStatusException(HttpStatus.NO_CONTENT);
   }
 
   @GetMapping(DASHBOARD_SUB_PATH + "/{dashboardId}")
   public DashboardShareRestDto findShareForDashboard(
       @PathVariable("dashboardId") final String dashboardId) {
     final Optional<DashboardShareRestDto> result = sharingService.findShareForDashboard(dashboardId);
-    if(!result.isPresent()) {
-      throw new ResponseStatusException(HttpStatus.NO_CONTENT);
+    if(result.isPresent()) {
+      return result.get();
     }
 
-    return result.get();
+    // not a crash: will return 204 no content to the client
+    throw new ResponseStatusException(HttpStatus.NO_CONTENT);
   }
 
   @PostMapping(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
