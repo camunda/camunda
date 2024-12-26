@@ -1,0 +1,128 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.spring.client.jobhandling;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.spring.client.metrics.CamundaClientMetricsBridge;
+import io.camunda.spring.client.metrics.MetricsRecorder;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class JobWorkerManager {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerManager.class);
+
+  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final MetricsRecorder metricsRecorder;
+  private final ParameterResolverStrategy parameterResolverStrategy;
+  private final ResultProcessorStrategy resultProcessorStrategy;
+
+  private List<JobWorker> openedWorkers = new ArrayList<>();
+  private final List<JobWorkerValue> workerValues = new ArrayList<>();
+
+  public JobWorkerManager(
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder,
+      final ParameterResolverStrategy parameterResolverStrategy,
+      final ResultProcessorStrategy resultProcessorStrategy) {
+    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.metricsRecorder = metricsRecorder;
+    this.parameterResolverStrategy = parameterResolverStrategy;
+    this.resultProcessorStrategy = resultProcessorStrategy;
+  }
+
+  public JobWorker openWorker(final CamundaClient client, final JobWorkerValue jobWorkerValue) {
+    return openWorker(
+        client,
+        jobWorkerValue,
+        new JobHandlerInvokingSpringBeans(
+            jobWorkerValue,
+            commandExceptionHandlingStrategy,
+            metricsRecorder,
+            parameterResolverStrategy,
+            resultProcessorStrategy));
+  }
+
+  public JobWorker openWorker(
+      final CamundaClient client, final JobWorkerValue jobWorkerValue, final JobHandler handler) {
+
+    final JobWorkerBuilderStep1.JobWorkerBuilderStep3 builder =
+        client
+            .newWorker()
+            .jobType(jobWorkerValue.getType())
+            .handler(handler)
+            .name(jobWorkerValue.getName())
+            .metrics(new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType()));
+
+    if (jobWorkerValue.getMaxJobsActive() != null && jobWorkerValue.getMaxJobsActive() > 0) {
+      builder.maxJobsActive(jobWorkerValue.getMaxJobsActive());
+    }
+    if (isValidDuration(jobWorkerValue.getTimeout())) {
+      builder.timeout(jobWorkerValue.getTimeout());
+    }
+    if (isValidDuration(jobWorkerValue.getPollInterval())) {
+      builder.pollInterval(jobWorkerValue.getPollInterval());
+    }
+    if (isValidDuration(jobWorkerValue.getRequestTimeout())) {
+      builder.requestTimeout(jobWorkerValue.getRequestTimeout());
+    }
+    if (jobWorkerValue.getFetchVariables() != null
+        && !jobWorkerValue.getFetchVariables().isEmpty()) {
+      builder.fetchVariables(jobWorkerValue.getFetchVariables());
+    }
+    if (jobWorkerValue.getTenantIds() != null && !jobWorkerValue.getTenantIds().isEmpty()) {
+      builder.tenantIds(jobWorkerValue.getTenantIds());
+    }
+    if (jobWorkerValue.getStreamEnabled() != null) {
+      builder.streamEnabled(jobWorkerValue.getStreamEnabled());
+    }
+    if (isValidDuration(jobWorkerValue.getStreamTimeout())) {
+      builder.streamTimeout(jobWorkerValue.getStreamTimeout());
+    }
+
+    final JobWorker jobWorker = builder.open();
+    openedWorkers.add(jobWorker);
+    workerValues.add(jobWorkerValue);
+    LOGGER.info(". Starting job worker: {}", jobWorkerValue);
+    return jobWorker;
+  }
+
+  private boolean isValidDuration(final Duration duration) {
+    return duration != null && !duration.isNegative();
+  }
+
+  public void closeAllOpenWorkers() {
+    openedWorkers.forEach(worker -> worker.close());
+    openedWorkers = new ArrayList<>();
+  }
+
+  public void closeWorker(final JobWorker worker) {
+    worker.close();
+    final int i = openedWorkers.indexOf(worker);
+    openedWorkers.remove(i);
+    workerValues.remove(i);
+  }
+
+  public Optional<JobWorkerValue> findJobWorkerConfigByName(final String name) {
+    return workerValues.stream().filter(worker -> worker.getName().equals(name)).findFirst();
+  }
+
+  public Optional<JobWorkerValue> findJobWorkerConfigByType(final String type) {
+    return workerValues.stream().filter(worker -> worker.getType().equals(type)).findFirst();
+  }
+}
