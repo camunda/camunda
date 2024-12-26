@@ -38,7 +38,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -120,7 +119,7 @@ public class SharingRestService {
   @GetMapping(REPORT_SUB_PATH + "/{reportId}")
   public ReportShareRestDto findShareForReport(@PathVariable("reportId") final String reportId) {
     final Optional<ReportShareRestDto> result = sharingService.findShareForReport(reportId);
-    if(result.isPresent()) {
+    if (result.isPresent()) {
       return result.get();
     }
 
@@ -131,8 +130,9 @@ public class SharingRestService {
   @GetMapping(DASHBOARD_SUB_PATH + "/{dashboardId}")
   public DashboardShareRestDto findShareForDashboard(
       @PathVariable("dashboardId") final String dashboardId) {
-    final Optional<DashboardShareRestDto> result = sharingService.findShareForDashboard(dashboardId);
-    if(result.isPresent()) {
+    final Optional<DashboardShareRestDto> result =
+        sharingService.findShareForDashboard(dashboardId);
+    if (result.isPresent()) {
       return result.get();
     }
 
