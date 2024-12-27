@@ -19,6 +19,7 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
@@ -116,7 +117,7 @@ public class JobHandlerInvokingSpringBeans implements JobHandler {
     return parameterResolvers.stream().map(resolver -> resolver.resolve(jobClient, job)).toList();
   }
 
-  private FinalCommandStep createCompleteCommand(
+  private FinalCommandStep<CompleteJobResponse> createCompleteCommand(
       final JobClient jobClient, final ActivatedJob job, final Object result) {
     CompleteJobCommandStep1 completeCommand = jobClient.newCompleteCommand(job.getKey());
     if (result != null) {
