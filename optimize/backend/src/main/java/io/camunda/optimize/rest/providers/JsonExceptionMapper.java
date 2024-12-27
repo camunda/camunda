@@ -21,26 +21,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Order() // This mapper takes precedence over GenericExceptionMapper
 public class JsonExceptionMapper {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(JsonExceptionMapper.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JsonExceptionMapper.class);
 
   @ExceptionHandler(JsonMappingException.class)
-  public ResponseEntity<String> handleJsonMappingException(
-      final JsonMappingException exception) {
+  public ResponseEntity<String> handleJsonMappingException(final JsonMappingException exception) {
     LOG.debug("Mapping handleJsonMappingException");
     return badRequestResponse();
   }
 
   @ExceptionHandler(JsonParseException.class)
-  public ResponseEntity<String> handleJsonParseException(
-      final JsonParseException exception) {
+  public ResponseEntity<String> handleJsonParseException(final JsonParseException exception) {
     LOG.debug("Mapping handleJsonParseException");
     return badRequestResponse();
   }
 
   private ResponseEntity<String> badRequestResponse() {
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        .contentType(MediaType.TEXT_PLAIN)
-        .build();
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_PLAIN).build();
   }
 }
