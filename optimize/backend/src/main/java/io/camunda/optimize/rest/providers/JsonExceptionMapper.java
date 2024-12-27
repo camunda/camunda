@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.providers;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import org.slf4j.Logger;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
-@Order() // This mapper takes precedence over GenericExceptionMapper
+@Order(Ordered.HIGHEST_PRECEDENCE) // This mapper takes precedence over GenericExceptionMapper
 public class JsonExceptionMapper {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JsonExceptionMapper.class);
