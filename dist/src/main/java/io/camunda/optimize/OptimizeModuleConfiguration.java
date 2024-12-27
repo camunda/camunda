@@ -9,17 +9,18 @@ package io.camunda.optimize;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the Operate modules by using the the {@link
- * io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate application
+ * Entry point for the Optimize modules by using the the {@link
+ * io.camunda.application.Profile#OPTIMIZE} profile, so that the appropriate Optimize application
  * properties are applied.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
     basePackages = "io.camunda.optimize",
-    excludeFilters = {})
+    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("optimize")
 public class OptimizeModuleConfiguration {
 
