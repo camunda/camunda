@@ -10,32 +10,31 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@Provider
-public class ForbiddenExceptionMapper implements ExceptionMapper<ForbiddenException> {
+@ControllerAdvice
+@Order(Ordered.HIGHEST_PRECEDENCE) // This mapper takes precedence over GenericExceptionMapper
+public class ForbiddenExceptionMapper {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ForbiddenExceptionMapper.class);
   private static final String FORBIDDEN_ERROR_CODE = "forbiddenError";
-  private final LocalizationService localizationService;
+  @Autowired private LocalizationService localizationService;
 
-  public ForbiddenExceptionMapper(final LocalizationService localizationService) {
-    this.localizationService = localizationService;
-  }
-
-  @Override
-  public Response toResponse(final ForbiddenException forbiddenException) {
+  @ExceptionHandler(ForbiddenException.class)
+  public ResponseEntity<ErrorResponseDto> handleForbiddenException(
+      final ForbiddenException forbiddenException) {
     LOG.info("Mapping ForbiddenException");
-
-    return Response.status(Response.Status.FORBIDDEN)
-        .type(MediaType.APPLICATION_JSON_VALUE)
-        .entity(getErrorResponseDto(forbiddenException))
-        .build();
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(forbiddenException));
   }
 
   private ErrorResponseDto getErrorResponseDto(final ForbiddenException exception) {
