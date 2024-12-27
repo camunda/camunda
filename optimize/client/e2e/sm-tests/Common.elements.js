@@ -64,6 +64,7 @@ export const notificationCloseButton = notification.find(
   '.cds--actionable-notification__close-button'
 );
 export const shareButton = Selector('.share-button button');
+export const test = Selector('.share-button button');
 export const shareSwitch = Selector('.ShareEntity .cds--toggle__switch');
 export const shareHeader = Selector('.Sharing .header');
 export const shareTitle = shareHeader.find('.name-container');
