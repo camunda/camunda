@@ -23,6 +23,7 @@ import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
-@Order() // This mapper takes precedence over GenericExceptionMapper
+@Order(Ordered.HIGHEST_PRECEDENCE) // This mapper takes precedence over GenericExceptionMapper
 public class OptimizeExceptionMapper {
 
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeExceptionMapper.class);
