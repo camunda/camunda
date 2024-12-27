@@ -13,14 +13,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.rest.AlertEmailValidationResponseDto;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import io.camunda.optimize.rest.providers.OptimizeAlertEmailValidationExceptionMapper;
+import io.camunda.optimize.rest.providers.OptimizeExceptionMapper;
 import io.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
-import jakarta.ws.rs.core.Response;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-public class OptimizeAlertEmailValidationExceptionMapperTest {
+public class OptimizeExceptionMapperTest {
 
   @Test
   public void exceptionContainsListOfInvalidEmails() {
@@ -28,16 +29,16 @@ public class OptimizeAlertEmailValidationExceptionMapperTest {
     final Set<String> invalidEmails = Set.of("invalid@email.com", "another@bademail.com");
     final OptimizeAlertEmailValidationException emailValidationException =
         new OptimizeAlertEmailValidationException(invalidEmails);
-    final OptimizeAlertEmailValidationExceptionMapper underTest =
-        new OptimizeAlertEmailValidationExceptionMapper();
+    final OptimizeExceptionMapper underTest = new OptimizeExceptionMapper();
 
     // when
-    final Response response = underTest.toResponse(emailValidationException);
+    final ResponseEntity<AlertEmailValidationResponseDto> response =
+        underTest.handleOptimizeAlertEmailValidationException(emailValidationException);
     final Map<String, Object> mappedResponse =
-        new ObjectMapper().convertValue(response.getEntity(), new TypeReference<>() {});
+        new ObjectMapper().convertValue(response.getBody(), new TypeReference<>() {});
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     assertThat(mappedResponse.get(ErrorResponseDto.Fields.errorCode))
         .asString()
         .isEqualTo(OptimizeAlertEmailValidationException.ERROR_CODE);
