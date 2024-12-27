@@ -173,7 +173,7 @@ test('sharing', async (t) => {
 
   await t.expect(Common.shareButton.hasAttribute('disabled')).notOk();
 
-  await t.click(Common.shareButton);
+  await t.click(Common.shareButton).wait(1000);
   await t.click(Common.shareSwitch);
 
   await t.takeScreenshot('img/dashboard-sharingPopover.png', {fullPage: true});
