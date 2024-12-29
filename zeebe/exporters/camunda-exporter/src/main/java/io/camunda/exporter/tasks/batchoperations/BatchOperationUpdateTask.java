@@ -9,12 +9,10 @@ package io.camunda.exporter.tasks.batchoperations;
 
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
-import java.util.Map;
+import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class BatchOperationUpdateTask implements BackgroundTask {
@@ -33,25 +31,16 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   @Override
   public CompletionStage<Integer> execute() {
 
-    final var batchOperations = batchOperationUpdateRepository.getNotFinishedBatchOperations();
+    final var batchOperationIds = batchOperationUpdateRepository.getNotFinishedBatchOperations();
 
-    if (batchOperations.size() > 0) {
+    if (!batchOperationIds.isEmpty()) {
 
-      final var finishedSingleOperationsCount =
-          batchOperationUpdateRepository.getFinishedOperationsCount(
-              batchOperations.stream()
-                  .map(BatchOperationEntity::getId)
-                  .collect(Collectors.toList()));
+      final List<OperationsAggData> finishedSingleOperationsCount =
+          batchOperationUpdateRepository.getFinishedOperationsCount((List) batchOperationIds);
 
       final var documentUpdates =
           finishedSingleOperationsCount.stream()
-              .map(
-                  d ->
-                      new DocumentUpdate(
-                          d.batchOperationId(),
-                          Map.of(
-                              BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
-                              d.finishedOperationsCount())))
+              .map(d -> new DocumentUpdate(d.batchOperationId(), d.finishedOperationsCount()))
               .toList();
 
       if (documentUpdates.size() > 0) {
