@@ -41,7 +41,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   /**
    * Represents a specific document store agnostic update to execute.
    *
-   * <p>All fields are expected to be non-null, except routing.
+   * <p>All fields are expected to be non-null.
    */
   record DocumentUpdate(String id, long finishedOperationsCount) {}
 
