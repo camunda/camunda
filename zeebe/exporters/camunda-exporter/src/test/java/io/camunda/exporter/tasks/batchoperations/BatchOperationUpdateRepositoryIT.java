@@ -17,7 +17,9 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -44,17 +47,17 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @AutoCloseResources
-abstract sealed class ElasticsearchBatchOperationUpdateRepositoryIT {
+abstract sealed class BatchOperationUpdateRepositoryIT {
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ElasticsearchBatchOperationUpdateRepositoryIT.class);
+      LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
-  @AutoCloseResource private final ClientAdapter clientAdapter;
-  private final SearchEngineClient engineClient;
+  @AutoCloseResource protected final ClientAdapter clientAdapter;
+  protected final SearchEngineClient engineClient;
+  protected final ExporterConfiguration config;
 
-  public ElasticsearchBatchOperationUpdateRepositoryIT(
-      final String databaseUrl, final boolean isElastic) {
-    final var config = new ExporterConfiguration();
+  public BatchOperationUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
+    config = new ExporterConfiguration();
     final var indexPrefix = UUID.randomUUID().toString();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
@@ -75,16 +78,23 @@ abstract sealed class ElasticsearchBatchOperationUpdateRepositoryIT {
 
   protected abstract BatchOperationUpdateRepository createRepository();
 
-  static final class ElasticsearchIT extends ElasticsearchBatchOperationUpdateRepositoryIT {
+  protected abstract void indexBatchOperation(BatchOperationEntity batchOperationEntity)
+      throws PersistenceException;
+
+  protected abstract BatchOperationEntity getBatchOperationEntity(final String id);
+
+  static final class ElasticsearchIT extends BatchOperationUpdateRepositoryIT {
     @Container
     private static final ElasticsearchContainer CONTAINER =
         TestSearchContainers.createDefeaultElasticsearchContainer();
 
     @AutoCloseResource private final RestClientTransport transport = createTransport();
-    private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
+    private final ElasticsearchAsyncClient client;
 
     public ElasticsearchIT() {
       super("http://" + CONTAINER.getHttpHostAddress(), true);
+      final var connector = new ElasticsearchConnector(config.getConnect());
+      client = connector.createAsyncClient();
     }
 
     @Override
@@ -95,6 +105,31 @@ abstract sealed class ElasticsearchBatchOperationUpdateRepositoryIT {
           batchOperationTemplate.getFullQualifiedName(),
           operationTemplate.getFullQualifiedName(),
           LOGGER);
+    }
+
+    @Override
+    protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
+        throws PersistenceException {
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
+      batchRequest.executeWithRefresh();
+    }
+
+    @Override
+    protected BatchOperationEntity getBatchOperationEntity(final String id) {
+      try {
+        return client
+            .get(
+                r -> r.index(batchOperationTemplate.getFullQualifiedName()).id(id),
+                BatchOperationEntity.class)
+            .get()
+            .source();
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      } catch (final ExecutionException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     private RestClientTransport createTransport() {
@@ -143,13 +178,6 @@ abstract sealed class ElasticsearchBatchOperationUpdateRepositoryIT {
       final var batchOperationEntity = new BatchOperationEntity().setId(id).setEndDate(endTime);
       indexBatchOperation(batchOperationEntity);
       return batchOperationEntity;
-    }
-
-    private void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
-        throws PersistenceException {
-      final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
-      batchRequest.executeWithRefresh();
     }
   }
 
@@ -211,6 +239,48 @@ abstract sealed class ElasticsearchBatchOperationUpdateRepositoryIT {
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
       batchRequest.executeWithRefresh();
+    }
+  }
+
+  @Nested
+  final class BulkUpdateTest {
+
+    @Test
+    public void shouldUpdateBatchOperations() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      createBatchOperationEntity("1", 2);
+      createBatchOperationEntity("2", 100);
+      createBatchOperationEntity("3", 55);
+
+      // when
+      final var updated =
+          repository.bulkUpdate(List.of(new DocumentUpdate("1", 2), new DocumentUpdate("2", 50)));
+
+      // then
+      assertThat(updated).isEqualTo(2);
+
+      final BatchOperationEntity batchOperationEntity1 = getBatchOperationEntity("1");
+      assertThat(batchOperationEntity1.getEndDate()).isNotNull();
+      assertThat(batchOperationEntity1.getOperationsFinishedCount())
+          .isEqualTo(batchOperationEntity1.getOperationsTotalCount())
+          .isEqualTo(2);
+
+      final BatchOperationEntity batchOperationEntity2 = getBatchOperationEntity("2");
+      assertThat(batchOperationEntity2.getEndDate()).isNull();
+      assertThat(batchOperationEntity2.getOperationsFinishedCount()).isEqualTo(50);
+
+      final BatchOperationEntity batchOperationEntity3 = getBatchOperationEntity("3");
+      assertThat(batchOperationEntity3.getEndDate()).isNull();
+      assertThat(batchOperationEntity3.getOperationsFinishedCount()).isEqualTo(0);
+    }
+
+    private BatchOperationEntity createBatchOperationEntity(
+        final String id, final int operationsTotalCount) throws PersistenceException {
+      final var batchOperationEntity =
+          new BatchOperationEntity().setId(id).setOperationsTotalCount(operationsTotalCount);
+      indexBatchOperation(batchOperationEntity);
+      return batchOperationEntity;
     }
   }
 }
