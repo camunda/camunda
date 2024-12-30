@@ -720,8 +720,9 @@
           <assembleDirectory>${project.build.directory}/camunda-zeebe</assembleDirectory>
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
+          <!-- opening jdk.internal.misc is required by Agrona for direct memory access -->
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+            -Dfile.encoding=UTF-8 -Xshare:auto --add-opens java.base/jdk.internal.misc=ALL-UNNAMED</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
