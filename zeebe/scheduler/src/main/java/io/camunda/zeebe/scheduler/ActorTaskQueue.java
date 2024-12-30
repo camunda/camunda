@@ -10,7 +10,6 @@ package io.camunda.zeebe.scheduler;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
-import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
@@ -172,7 +171,6 @@ class ActorTaskQueueNode {
 class ActorTaskQueuePadding1 {
   protected static final VarHandle HEAD_VAR;
   protected static final VarHandle TAIL_VAR;
-  protected static final VarHandle STATE_COUNT_VAR;
 
   static {
     try {
@@ -182,8 +180,6 @@ class ActorTaskQueuePadding1 {
       TAIL_VAR =
           MethodHandles.lookup()
               .findVarHandle(ActorTaskQueueTail.class, "tail", ActorTaskQueueNode.class);
-      STATE_COUNT_VAR =
-          MethodHandles.lookup().findVarHandle(ActorTask.class, "stateCount", AtomicLong.class);
     } catch (final Exception ex) {
       throw new UnsupportedOperationException(ex);
     }
