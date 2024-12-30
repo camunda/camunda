@@ -2722,12 +2722,12 @@ __metadata:
   linkType: hard
 
 "@storybook/addon-webpack5-compiler-swc@npm:^1.0.2":
-  version: 1.0.5
-  resolution: "@storybook/addon-webpack5-compiler-swc@npm:1.0.5"
+  version: 1.0.6
+  resolution: "@storybook/addon-webpack5-compiler-swc@npm:1.0.6"
   dependencies:
     "@swc/core": "npm:^1.7.3"
     swc-loader: "npm:^0.2.3"
-  checksum: 10c0/8e3035b12f8381277f767d8eb41090525a1244b697540591be0b3d1583aa939d703b3705ef11350a7d780ccc1eb5129891107d363654a0f89cab5885a72d2a8f
+  checksum: 10c0/1f5e2f9415f84962bd28cc2e81b3ca18aaa795009c49acf1d1e168354b208fa78c37eab545caa9de9c03d4135115b119b7e35e1ae78425a679bb584fa206b989
   languageName: node
   linkType: hard
 
