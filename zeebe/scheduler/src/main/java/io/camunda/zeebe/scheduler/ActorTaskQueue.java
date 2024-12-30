@@ -7,21 +7,22 @@
  */
 package io.camunda.zeebe.scheduler;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 @SuppressWarnings("restriction")
 public final class ActorTaskQueue extends ActorTaskQueueHead {
   @SuppressWarnings("unused")
-  protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+  private long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
   public ActorTaskQueue() {
     headOrdered(empty);
-    UNSAFE.putOrderedObject(this, TAIL_OFFSET, empty);
+    TAIL_VAR.setRelease(this, empty);
   }
 
   /** appends a task at the end (tail) of the list */
@@ -108,28 +109,32 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   }
 
   private void headOrdered(final ActorTaskQueueNode head) {
-    UNSAFE.putOrderedObject(this, HEAD_OFFSET, head);
+    HEAD_VAR.setRelease(this, head);
   }
 
   private ActorTaskQueueNode swapTail(final ActorTaskQueueNode newTail) {
-    return (ActorTaskQueueNode) UNSAFE.getAndSetObject(this, TAIL_OFFSET, newTail);
+    return (ActorTaskQueueNode) TAIL_VAR.getAndSet(this, newTail);
   }
 
   private boolean casTail(
       final ActorTaskQueueNode expectedNode, final ActorTaskQueueNode updateNode) {
-    return UNSAFE.compareAndSwapObject(this, TAIL_OFFSET, expectedNode, updateNode);
+    return TAIL_VAR.compareAndSet(this, expectedNode, updateNode);
   }
 }
 
 @SuppressWarnings("restriction")
 class ActorTaskQueueNode {
-  protected static final long PREV_OFFSET;
-  protected static final long NEXT_OFFSET;
+  protected static final VarHandle PREV_VAR;
+  protected static final VarHandle NEXT_VAR;
 
   static {
     try {
-      PREV_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
+      PREV_VAR =
+          MethodHandles.lookup()
+              .findVarHandle(ActorTaskQueueNode.class, "prev", ActorTaskQueueNode.class);
+      NEXT_VAR =
+          MethodHandles.lookup()
+              .findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -137,12 +142,12 @@ class ActorTaskQueueNode {
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UNSAFE (see NEXT_OFFSET usage)")
+      justification = "Written using VarHandle NEXT_VAR")
   volatile ActorTaskQueueNode next;
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UNSAFE (see PREV_OFFSET usage)")
+      justification = "Written using VarHandle PREV_VAR")
   volatile ActorTaskQueueNode prev;
 
   long stateCount;
@@ -150,12 +155,12 @@ class ActorTaskQueueNode {
 
   void nextOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UNSAFE.putOrderedObject(this, NEXT_OFFSET, t);
+    NEXT_VAR.setRelease(this, t);
   }
 
   void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UNSAFE.putObjectVolatile(this, PREV_OFFSET, t);
+    PREV_VAR.setRelease(this, t);
   }
 
   public void setTask(final ActorTask task) {
@@ -165,21 +170,22 @@ class ActorTaskQueueNode {
 
 @SuppressWarnings("restriction")
 class ActorTaskQueuePadding1 {
-  protected static final long HEAD_OFFSET;
-  protected static final long TAIL_OFFSET;
-  protected static final long PREV_OFFSET;
-  protected static final long NEXT_OFFSET;
-  protected static final long STATE_COUNT_OFFSET;
+  protected static final VarHandle HEAD_VAR;
+  protected static final VarHandle TAIL_VAR;
+  protected static final VarHandle STATE_COUNT_VAR;
 
   static {
     try {
-      HEAD_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueHead.class.getDeclaredField("head"));
-      TAIL_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueTail.class.getDeclaredField("tail"));
-      PREV_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
-      STATE_COUNT_OFFSET = UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
+      HEAD_VAR =
+          MethodHandles.lookup()
+              .findVarHandle(ActorTaskQueueHead.class, "head", ActorTaskQueueNode.class);
+      TAIL_VAR =
+          MethodHandles.lookup()
+              .findVarHandle(ActorTaskQueueTail.class, "tail", ActorTaskQueueNode.class);
+      STATE_COUNT_VAR =
+          MethodHandles.lookup().findVarHandle(ActorTask.class, "stateCount", AtomicLong.class);
     } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      throw new UnsupportedOperationException(ex);
     }
   }
 

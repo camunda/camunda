@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.scheduler.future;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -30,7 +30,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
 public final class CompletableActorFuture<V> implements ActorFuture<V> {
-  private static final long STATE_OFFSET;
+  private static final VarHandle STATE_VAR;
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -40,10 +40,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   static {
     try {
-      STATE_OFFSET =
-          UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
+      STATE_VAR =
+          MethodHandles.lookup().findVarHandle(CompletableActorFuture.class, "state", int.class);
     } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      throw new UnsupportedOperationException(ex);
     }
   }
 
@@ -157,7 +157,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void complete(final V value) {
-    if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (STATE_VAR.compareAndSet(this, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
       state = COMPLETED;
       completedAt = System.nanoTime();
@@ -178,7 +178,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     // important for other actors that consume this by #runOnCompletion
     ensureValidThrowable(throwable);
 
-    if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (STATE_VAR.compareAndSet(this, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
       failureCause = throwable;
       state = COMPLETED_EXCEPTIONALLY;
@@ -357,7 +357,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   /** future is reusable after close */
   public boolean close() {
-    final int prevState = UNSAFE.getAndSetInt(this, STATE_OFFSET, CLOSED);
+    final int prevState = (int) STATE_VAR.getAndSet(this, CLOSED);
 
     if (prevState != CLOSED) {
       value = null;
