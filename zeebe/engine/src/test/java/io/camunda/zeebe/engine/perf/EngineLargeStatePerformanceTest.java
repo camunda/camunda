@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 @Measurement(iterations = 50, time = 1, timeUnit = TimeUnit.SECONDS)
 @Fork(
     value = 1,
-    jvmArgs = {"-Xmx4g", "-Xms4g"})
+    jvmArgs = {"-Xmx4g", "-Xms4g", "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"})
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
