@@ -62,15 +62,6 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: Build frontend
-        uses: ./.github/actions/build-frontend
-        with:
-          directory: ./optimize/client
-
-      - name: Start frontend
-        working-directory: ./optimize/client
-        run: yarn start &
-
       - name: Start zeebe, operate, keycloak, identity and Elasticsearch
         uses: ./.github/actions/compose
         with:
@@ -78,13 +69,13 @@ jobs:
           project_name: e2e
           additional_flags: "--profile self-managed"
 
-      - name: Build backend
-        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl optimize/backend -am -P skipFrontendBuild
+      - name: Build Camunda
+        run: mvn clean install -pl dist -am -DskipTests -Dskip.fe.build=false
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
 
-      - name: Start back-end
+      - name: Start Optimize
         working-directory: ./optimize/client
         run: |
           yarn run start-backend ci &> ./build/backendLogs.log &
