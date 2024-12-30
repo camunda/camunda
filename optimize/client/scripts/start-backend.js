@@ -113,7 +113,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `mvn -f ../../../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda"`,
+      `java -cp ${classPaths}  -Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m -Dfile.encoding=UTF-8 io.camunda.optimize.Main`,
       {
         cwd: _resolve(__dirname, '..', '..', 'backend', 'target'),
         shell: true,
