@@ -7,12 +7,13 @@
  */
 package io.camunda.security.configuration;
 
-public class AuthorizationsConfiguration {
+public class OidcConfiguration {
 
-  private static final boolean DEFAULT_AUTHORIZATIONS_ENABLED = false;
+  private static final boolean DEFAULT_OIDC_ENABLED = false;
+  private static final String DEFAULT_USERNAME_CLAIM = "username";
 
-  private boolean enabled = DEFAULT_AUTHORIZATIONS_ENABLED;
-  private OidcConfiguration oidc = new OidcConfiguration();
+  private boolean enabled = DEFAULT_OIDC_ENABLED;
+  private String username = DEFAULT_USERNAME_CLAIM;
 
   public boolean isEnabled() {
     return enabled;
@@ -22,11 +23,11 @@ public class AuthorizationsConfiguration {
     this.enabled = enabled;
   }
 
-  public OidcConfiguration getOidc() {
-    return oidc;
+  public String getUsername() {
+    return username;
   }
 
-  public void setOidc(final OidcConfiguration oidc) {
-    this.oidc = oidc;
+  public void setUsername(final String username) {
+    this.username = username;
   }
 }
