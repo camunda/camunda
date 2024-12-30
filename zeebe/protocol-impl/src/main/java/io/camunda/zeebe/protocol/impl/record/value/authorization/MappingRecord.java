@@ -16,13 +16,15 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public class MappingRecord extends UnifiedRecordValue implements MappingRecordValue {
 
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
+  private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
 
   public MappingRecord() {
-    super(4);
+    super(5);
     declareProperty(mappingKeyProp)
+        .declareProperty(mappingIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp);
@@ -35,6 +37,16 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
 
   public MappingRecord setMappingKey(final long mappingKey) {
     mappingKeyProp.setValue(mappingKey);
+    return this;
+  }
+
+  @Override
+  public String getMappingId() {
+    return BufferUtil.bufferAsString(mappingIdProp.getValue());
+  }
+
+  public MappingRecord setMappingId(final String mappingId) {
+    mappingIdProp.setValue(mappingId);
     return this;
   }
 

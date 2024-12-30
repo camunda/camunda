@@ -23,15 +23,17 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
   private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final StringProperty entityIdProp = new StringProperty("entityId", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
   public TenantRecord() {
-    super(5);
+    super(6);
     declareProperty(tenantKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(nameProp)
         .declareProperty(entityKeyProp)
+        .declareProperty(entityIdProp)
         .declareProperty(entityTypeProp);
   }
 
@@ -88,6 +90,16 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
 
   public TenantRecord setEntityKey(final long entityKey) {
     entityKeyProp.setValue(entityKey);
+    return this;
+  }
+
+  @Override
+  public String getEntityId() {
+    return bufferAsString(entityIdProp.getValue());
+  }
+
+  public TenantRecord setEntityId(final String entityId) {
+    entityIdProp.setValue(entityId);
     return this;
   }
 

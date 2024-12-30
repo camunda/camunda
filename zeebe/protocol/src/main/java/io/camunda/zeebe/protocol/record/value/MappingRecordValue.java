@@ -26,6 +26,8 @@ public interface MappingRecordValue extends RecordValue {
   /** The unique identifier of the mapping within our system. */
   long getMappingKey();
 
+  String getMappingId();
+
   /** The name of the claim in the user token. */
   String getClaimName();
 

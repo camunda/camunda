@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -19,6 +22,7 @@ import java.util.List;
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
   private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
+  private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(
           "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
@@ -28,9 +32,10 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new ArrayProperty<>("permissions", Permission::new);
 
   public AuthorizationRecord() {
-    super(4);
+    super(5);
     declareProperty(ownerTypeProp)
         .declareProperty(ownerKeyProp)
+        .declareProperty(ownerIdProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionsProp);
   }
@@ -38,6 +43,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   public void wrap(final AuthorizationRecord record) {
     ownerTypeProp.setValue(record.getOwnerType());
     ownerKeyProp.setValue(record.getOwnerKey());
+    ownerIdProp.setValue(record.getOwnerId());
     resourceTypeProp.setValue(record.getResourceType());
     record.getPermissions().forEach(this::addPermission);
   }
@@ -45,6 +51,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   public AuthorizationRecord copy() {
     final AuthorizationRecord copy = new AuthorizationRecord();
     copy.ownerKeyProp.setValue(getOwnerKey());
+    copy.ownerIdProp.setValue(getOwnerId());
     copy.ownerTypeProp.setValue(getOwnerType());
     copy.resourceTypeProp.setValue(getResourceType());
     getPermissions().forEach(copy::addPermission);
@@ -58,6 +65,16 @@ public final class AuthorizationRecord extends UnifiedRecordValue
 
   public AuthorizationRecord setOwnerKey(final Long ownerKey) {
     ownerKeyProp.setValue(ownerKey);
+    return this;
+  }
+
+  @Override
+  public String getOwnerId() {
+    return bufferAsString(ownerIdProp.getValue());
+  }
+
+  public AuthorizationRecord setOwnerId(final String ownerId) {
+    ownerIdProp.setValue(ownerId);
     return this;
   }
 

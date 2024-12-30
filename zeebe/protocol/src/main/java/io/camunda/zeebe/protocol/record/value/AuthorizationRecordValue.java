@@ -27,6 +27,8 @@ public interface AuthorizationRecordValue extends RecordValue {
 
   Long getOwnerKey();
 
+  String getOwnerId();
+
   AuthorizationOwnerType getOwnerType();
 
   AuthorizationResourceType getResourceType();
