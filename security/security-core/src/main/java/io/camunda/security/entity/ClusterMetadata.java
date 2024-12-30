@@ -75,10 +75,48 @@ public class ClusterMetadata implements Serializable {
 
   @Override
   public String toString() {
-    return "ClusterMetadata{uuid='%s', name='%s', urls='%s'}".formatted(uuid, name, urls);
+    return String.format("ClusterMetadata{uuid='%s', name='%s', urls='%s'}", uuid, name, urls);
   }
 
-  public record C8AppLink(String name, String link) {}
+  public static final class C8AppLink {
+    private final String name;
+    private final String link;
+
+    public C8AppLink(final String name, final String link) {
+      this.name = name;
+      this.link = link;
+    }
+
+    public String name() {
+      return name;
+    }
+
+    public String link() {
+      return link;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, link);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (obj == this) {
+        return true;
+      }
+      if (obj == null || obj.getClass() != getClass()) {
+        return false;
+      }
+      final C8AppLink that = (C8AppLink) obj;
+      return Objects.equals(name, that.name) && Objects.equals(link, that.link);
+    }
+
+    @Override
+    public String toString() {
+      return "C8AppLink[" + "name=" + name + ", " + "link=" + link + ']';
+    }
+  }
 
   public enum AppName {
     @JsonProperty("console")

@@ -7,6 +7,7 @@
  */
 package io.camunda.security.auth;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -17,7 +18,15 @@ import java.util.function.Function;
  * <p><strong>Note:</strong> For now, we only support a single authorization check. This will be
  * later extended to more than one authorization (for composite permissions checks).
  */
-public record SecurityContext(Authentication authentication, Authorization authorization) {
+public final class SecurityContext {
+  private final Authentication authentication;
+  private final Authorization authorization;
+
+  /** */
+  public SecurityContext(final Authentication authentication, final Authorization authorization) {
+    this.authentication = authentication;
+    this.authorization = authorization;
+  }
 
   public boolean requiresAuthorizationChecks() {
     return authentication != null && authorization != null;
@@ -29,6 +38,43 @@ public record SecurityContext(Authentication authentication, Authorization autho
 
   public static SecurityContext withoutAuthentication() {
     return new Builder().build();
+  }
+
+  public Authentication authentication() {
+    return authentication;
+  }
+
+  public Authorization authorization() {
+    return authorization;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(authentication, authorization);
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj == null || obj.getClass() != getClass()) {
+      return false;
+    }
+    final SecurityContext that = (SecurityContext) obj;
+    return Objects.equals(authentication, that.authentication)
+        && Objects.equals(authorization, that.authorization);
+  }
+
+  @Override
+  public String toString() {
+    return "SecurityContext["
+        + "authentication="
+        + authentication
+        + ", "
+        + "authorization="
+        + authorization
+        + ']';
   }
 
   public static class Builder {
