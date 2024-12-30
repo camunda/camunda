@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
@@ -27,11 +28,16 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private String elementId;
   private long processInstanceKey;
   private String tenantId;
+
   private BpmnEventType bpmnEventType;
   private List<List<Long>> elementInstancePath;
   private List<Long> processDefinitionPath;
 
-  public ZeebeProcessInstanceDataDto() {}
+  public ZeebeProcessInstanceDataDto() {
+    bpmnEventType = BpmnEventType.UNSPECIFIED;
+    elementInstancePath = new ArrayList<>();
+    processDefinitionPath = new ArrayList<>();
+  }
 
   @Override
   public String toJson() {
