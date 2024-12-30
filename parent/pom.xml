@@ -2186,6 +2186,8 @@
             <compilerArgs>
               <!-- ensure we generate a class file for package-info.java files to avoid recompiling every time -->
               <arg>-Xpkginfo:always</arg>
+              <!-- required by agrona -->
+              <arg>-J--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</arg>
             </compilerArgs>
             <useIncrementalCompilation>false</useIncrementalCompilation>
           </configuration>
@@ -2327,6 +2329,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
+            <!-- required by agrona -->
+            <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
             <!-- by default, exclude performance and strace tests -->
             <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
@@ -2365,6 +2369,8 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.version.failsafe}</version>
           <configuration>
+            <!-- required by agrona -->
+            <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
