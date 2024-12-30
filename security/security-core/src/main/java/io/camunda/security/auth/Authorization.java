@@ -24,19 +24,25 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TA
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_USER_TASK;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Objects;
 import java.util.function.Function;
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public final class Authorization {
 
   public static final String WILDCARD = "*";
   private final AuthorizationResourceType resourceType;
   private final PermissionType permissionType;
 
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
   public Authorization(
-      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+      final @JsonProperty("resource_type") AuthorizationResourceType resourceType,
+      final @JsonProperty("permission_type") PermissionType permissionType) {
     this.resourceType = resourceType;
     this.permissionType = permissionType;
   }

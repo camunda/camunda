@@ -7,15 +7,22 @@
  */
 package io.camunda.security.entity;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Objects;
 import java.util.Set;
 
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public final class Permission {
   private final PermissionType type;
   private final Set<String> resourceIds;
 
-  public Permission(final PermissionType type, final Set<String> resourceIds) {
+  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+  public Permission(
+      final @JsonProperty("type") PermissionType type,
+      final @JsonProperty("resource_ids") Set<String> resourceIds) {
     this.type = type;
     this.resourceIds = resourceIds;
   }

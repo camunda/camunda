@@ -7,6 +7,8 @@
  */
 package io.camunda.security.entity;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -78,11 +80,14 @@ public class ClusterMetadata implements Serializable {
     return String.format("ClusterMetadata{uuid='%s', name='%s', urls='%s'}", uuid, name, urls);
   }
 
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
   public static final class C8AppLink {
     private final String name;
     private final String link;
 
-    public C8AppLink(final String name, final String link) {
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public C8AppLink(
+        final @JsonProperty("name") String name, final @JsonProperty("link") String link) {
       this.name = name;
       this.link = link;
     }

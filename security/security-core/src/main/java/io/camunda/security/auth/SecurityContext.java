@@ -7,6 +7,9 @@
  */
 package io.camunda.security.auth;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -18,12 +21,16 @@ import java.util.function.Function;
  * <p><strong>Note:</strong> For now, we only support a single authorization check. This will be
  * later extended to more than one authorization (for composite permissions checks).
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public final class SecurityContext {
   private final Authentication authentication;
   private final Authorization authorization;
 
   /** */
-  public SecurityContext(final Authentication authentication, final Authorization authorization) {
+  @JsonCreator
+  public SecurityContext(
+      final @JsonProperty("authentication") Authentication authentication,
+      final @JsonProperty("authorization") Authorization authorization) {
     this.authentication = authentication;
     this.authorization = authorization;
   }
