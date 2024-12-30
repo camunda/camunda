@@ -25,7 +25,8 @@ public class Main {
 
   public static void main(final String[] args) {
     // Temporarily hardcoding this property until we merge into a singleapp
-    System.setProperty("spring.web.resources.static-locations", "classpath:/webapp/");
+    System.setProperty(
+        "spring.web.resources.static-locations", "classpath:/META-INF/resources/optimize/");
     final SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();

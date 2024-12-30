@@ -37,7 +37,7 @@ import java.time.ZoneId;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,7 +45,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping(REST_API_PATH + SharingRestService.SHARE_PATH)
@@ -117,27 +116,26 @@ public class SharingRestService {
   }
 
   @GetMapping(REPORT_SUB_PATH + "/{reportId}")
-  public ReportShareRestDto findShareForReport(@PathVariable("reportId") final String reportId) {
+  public ResponseEntity<ReportShareRestDto> findShareForReport(
+      @PathVariable("reportId") final String reportId) {
     final Optional<ReportShareRestDto> result = sharingService.findShareForReport(reportId);
     if (result.isPresent()) {
-      return result.get();
+      return ResponseEntity.ok(result.get());
     }
 
-    // not a crash: will return 204 no content to the client
-    throw new ResponseStatusException(HttpStatus.NO_CONTENT);
+    return ResponseEntity.noContent().build();
   }
 
   @GetMapping(DASHBOARD_SUB_PATH + "/{dashboardId}")
-  public DashboardShareRestDto findShareForDashboard(
+  public ResponseEntity<DashboardShareRestDto> findShareForDashboard(
       @PathVariable("dashboardId") final String dashboardId) {
     final Optional<DashboardShareRestDto> result =
         sharingService.findShareForDashboard(dashboardId);
     if (result.isPresent()) {
-      return result.get();
+      return ResponseEntity.ok(result.get());
     }
 
-    // not a crash: will return 204 no content to the client
-    throw new ResponseStatusException(HttpStatus.NO_CONTENT);
+    return ResponseEntity.noContent().build();
   }
 
   @PostMapping(REPORT_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
