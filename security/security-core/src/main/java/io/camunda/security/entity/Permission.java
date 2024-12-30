@@ -42,8 +42,7 @@ public final class Permission {
       return false;
     }
     final Permission that = (Permission) obj;
-    return Objects.equals(type, that.type)
-        && Objects.equals(resourceIds, that.resourceIds);
+    return Objects.equals(type, that.type) && Objects.equals(resourceIds, that.resourceIds);
   }
 
   @Override

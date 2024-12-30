@@ -35,7 +35,8 @@ public final class Authorization {
   private final AuthorizationResourceType resourceType;
   private final PermissionType permissionType;
 
-  public Authorization(final AuthorizationResourceType resourceType, final PermissionType permissionType) {
+  public Authorization(
+      final AuthorizationResourceType resourceType, final PermissionType permissionType) {
     this.resourceType = resourceType;
     this.permissionType = permissionType;
   }
