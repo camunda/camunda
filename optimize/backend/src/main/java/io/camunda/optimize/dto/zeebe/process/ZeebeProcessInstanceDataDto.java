@@ -27,6 +27,9 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private String elementId;
   private long processInstanceKey;
   private String tenantId;
+  private BpmnEventType bpmnEventType;
+  private List<List<Long>> elementInstancePath;
+  private List<Long> processDefinitionPath;
 
   public ZeebeProcessInstanceDataDto() {}
 
@@ -91,17 +94,17 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
 
   @Override
   public BpmnEventType getBpmnEventType() {
-    throw new UnsupportedOperationException("Operation not supported");
+    return bpmnEventType;
   }
 
   @Override
   public List<List<Long>> getElementInstancePath() {
-    throw new UnsupportedOperationException("Operation not supported");
+    return elementInstancePath;
   }
 
   @Override
   public List<Long> getProcessDefinitionPath() {
-    throw new UnsupportedOperationException("Operation not supported");
+    return processDefinitionPath;
   }
 
   @Override
