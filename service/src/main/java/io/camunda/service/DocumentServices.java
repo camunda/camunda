@@ -13,6 +13,7 @@ import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
+import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.Authentication;
@@ -61,7 +62,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                     .thenApply(
                         result ->
                             new DocumentReferenceResponse(
-                                result.documentId(), storeRecord.storeId(), result.metadata())));
+                                result.documentId(),
+                                storeRecord.storeId(),
+                                result.contentHash(),
+                                result.metadata())));
   }
 
   /** Will never return a failed future; an Either type is returned instead */
@@ -90,10 +94,25 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         .thenApply((ignoredRes) -> results);
   }
 
-  public DocumentContentResponse getDocumentContent(final String documentId, final String storeId) {
+  public DocumentContentResponse getDocumentContent(
+      final String documentId, final String storeId, final String contentHash) {
 
     return getDocumentStore(storeId)
-        .thenCompose(storeRecord -> storeRecord.instance().getDocument(documentId))
+        .thenCompose(
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, contentHash)
+                  .thenCompose(
+                      verification -> {
+                        if (verification.isLeft()) {
+                          return CompletableFuture.completedFuture(
+                              Either.left(verification.getLeft()));
+                        }
+                        return storeRecordInstance.getDocument(documentId);
+                      });
+            })
         .thenApply(this::requireRightOrThrow)
         .thenApply(
             documentContent ->
@@ -114,17 +133,28 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentLink> createLink(
-      final String documentId, final String storeId, final DocumentLinkParams params) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final DocumentLinkParams params) {
 
     final long ttl = params.timeToLive().toMillis();
 
     return getDocumentStore(storeId)
         .thenCompose(
-            documentStoreRecord ->
-                documentStoreRecord
-                    .instance()
-                    .createLink(documentId, ttl)
-                    .thenApply(this::requireRightOrThrow));
+            storeRecord -> {
+              final DocumentStore storeRecordInstance = storeRecord.instance();
+
+              return storeRecordInstance
+                  .verifyContentHash(documentId, contentHash)
+                  .thenCompose(
+                      verification ->
+                          verification.isLeft()
+                              ? CompletableFuture.completedFuture(
+                                  Either.left(verification.getLeft()))
+                              : storeRecordInstance.createLink(documentId, ttl))
+                  .thenApply(this::requireRightOrThrow);
+            });
   }
 
   private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {
@@ -150,7 +180,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     final var reference = rawResult.get();
     return Either.right(
         new DocumentReferenceResponse(
-            reference.documentId(), request.storeId, reference.metadata()));
+            reference.documentId(),
+            request.storeId,
+            reference.contentHash(),
+            reference.metadata()));
   }
 
   private <T> T requireRightOrThrow(final Either<DocumentError, T> response) {
@@ -168,7 +201,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       DocumentMetadataModel metadata) {}
 
   public record DocumentReferenceResponse(
-      String documentId, String storeId, DocumentMetadataModel metadata) {}
+      String documentId, String storeId, String contentHash, DocumentMetadataModel metadata) {}
 
   public record DocumentContentResponse(InputStream content, String contentType) {}
 
