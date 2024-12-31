@@ -2328,9 +2328,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
-          <configuration>
+          <configuration combine.children="append">
             <!-- required by agrona -->
-            <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
+            <argLine combine.children="append">--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
             <!-- by default, exclude performance and strace tests -->
             <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
@@ -2368,9 +2368,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.version.failsafe}</version>
-          <configuration>
+          <configuration  combine.children="append">
             <!-- required by agrona -->
-            <argLine>--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
+            <argLine  combine.children="append">--add-opens java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
