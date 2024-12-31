@@ -7,11 +7,12 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.transformer.AuthorizationTransformer.transform;
+
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.migration.identity.transformer.AuthorizationTransformer;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
@@ -24,20 +25,17 @@ import org.springframework.stereotype.Component;
 public class RoleMigrationHandler implements MigrationHandler {
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
-  private final AuthorizationTransformer authorizationTransformer;
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
 
   public RoleMigrationHandler(
       final RoleServices roleServices,
-      final AuthorizationTransformer authorizationTransformer,
-      final Authentication servicesAuthentication,
       final AuthorizationServices authorizationServices,
+      final Authentication servicesAuthentication,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer) {
-    this.authorizationServices = authorizationServices;
+    this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
     this.roleServices = roleServices.withAuthentication(servicesAuthentication);
-    this.authorizationTransformer = authorizationTransformer;
     this.managementIdentityClient = managementIdentityClient;
     this.managementIdentityTransformer = managementIdentityTransformer;
   }
@@ -64,7 +62,7 @@ public class RoleMigrationHandler implements MigrationHandler {
     }
 
     try {
-      authorizationTransformer.transform(roleKey, role.permissions()).stream()
+      transform(roleKey, role.permissions()).stream()
           .map(authorizationServices::patchAuthorization)
           .forEach(CompletableFuture::join);
     } catch (final Exception e) {

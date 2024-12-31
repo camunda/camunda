@@ -12,7 +12,6 @@ import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -20,16 +19,20 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.springframework.stereotype.Component;
 
-@Component
 public class AuthorizationTransformer {
 
-  public List<PatchAuthorizationRequest> transform(
+  static final List<AuthorizationResourceType> RESOURCE_TYPES =
+      Arrays.asList(
+          AuthorizationResourceType.PROCESS_DEFINITION,
+          AuthorizationResourceType.DECISION_DEFINITION,
+          AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION);
+
+  public static List<PatchAuthorizationRequest> transform(
       final long ownerKey, final List<Permission> oldPermissions) {
     final var groupedPermissions =
         oldPermissions.stream()
-            .flatMap(this::transformToAuthorizations)
+            .flatMap(AuthorizationTransformer::transformToAuthorizations)
             .collect(
                 Collectors.groupingBy(
                     ResourceTypePermissionTypeResourceId::resourceType,
@@ -43,55 +46,48 @@ public class AuthorizationTransformer {
         .toList();
   }
 
-  private PatchAuthorizationRequest createPatchAuthorizationRequest(
+  private static PatchAuthorizationRequest createPatchAuthorizationRequest(
       final long ownerKey,
       final Entry<AuthorizationResourceType, Map<PermissionType, Set<String>>> entry) {
     return new PatchAuthorizationRequest(
         ownerKey, PermissionAction.ADD, entry.getKey(), entry.getValue());
   }
 
-  private Stream<ResourceTypePermissionTypeResourceId> transformToAuthorizations(
+  private static Stream<ResourceTypePermissionTypeResourceId> transformToAuthorizations(
       final Permission permission) {
-    if (permission.apiName().toLowerCase().contains("operate")) {
-      if (permission.definition().toLowerCase().contains("read")) {
-        return Stream.of(
-            new ResourceTypePermissionTypeResourceId(
-                AuthorizationResourceType.APPLICATION, PermissionType.ACCESS, "operate"),
-            new ResourceTypePermissionTypeResourceId(
-                AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ, "*"),
-            new ResourceTypePermissionTypeResourceId(
-                AuthorizationResourceType.DECISION_DEFINITION, PermissionType.READ, "*"),
-            new ResourceTypePermissionTypeResourceId(
-                AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                PermissionType.READ,
-                "*"));
-      } else if (permission.definition().toLowerCase().contains("write")) {
-        return Stream.concat(
-            Stream.concat(
-                Stream.concat(
-                    Stream.of(
-                        new ResourceTypePermissionTypeResourceId(
-                            AuthorizationResourceType.APPLICATION,
-                            PermissionType.ACCESS,
-                            "operate")),
-                    Arrays.stream(PermissionType.values())
-                        .map(
-                            pt ->
-                                new ResourceTypePermissionTypeResourceId(
-                                    AuthorizationResourceType.PROCESS_DEFINITION, pt, "*"))),
+
+    final List<String> applications = List.of("operate", "tasklist");
+    return applications.stream()
+        .filter(a -> permission.apiName().toLowerCase().contains(a))
+        .flatMap(
+            a -> {
+              final var applicationAccess =
+                  Stream.of(
+                      new ResourceTypePermissionTypeResourceId(
+                          AuthorizationResourceType.APPLICATION, PermissionType.ACCESS, a));
+              if (permission.definition().toLowerCase().contains("read")) {
+                return Stream.concat(applicationAccess, transformReadPermissions());
+              } else if (permission.definition().toLowerCase().contains("write")) {
+                return Stream.concat(applicationAccess, transformWritePermissions());
+              } else {
+                return Stream.empty();
+              }
+            });
+  }
+
+  private static Stream<ResourceTypePermissionTypeResourceId> transformWritePermissions() {
+    return RESOURCE_TYPES.stream()
+        .flatMap(
+            resourceType ->
                 Arrays.stream(PermissionType.values())
-                    .map(
-                        pt ->
-                            new ResourceTypePermissionTypeResourceId(
-                                AuthorizationResourceType.DECISION_DEFINITION, pt, "*"))),
-            Arrays.stream(PermissionType.values())
-                .map(
-                    pt ->
-                        new ResourceTypePermissionTypeResourceId(
-                            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION, pt, "*")));
-      }
-    }
-    return new ArrayList<ResourceTypePermissionTypeResourceId>().stream();
+                    .map(pt -> new ResourceTypePermissionTypeResourceId(resourceType, pt, "*")));
+  }
+
+  private static Stream<ResourceTypePermissionTypeResourceId> transformReadPermissions() {
+    return RESOURCE_TYPES.stream()
+        .map(
+            resourceType ->
+                new ResourceTypePermissionTypeResourceId(resourceType, PermissionType.READ, "*"));
   }
 
   private record ResourceTypePermissionTypeResourceId(
