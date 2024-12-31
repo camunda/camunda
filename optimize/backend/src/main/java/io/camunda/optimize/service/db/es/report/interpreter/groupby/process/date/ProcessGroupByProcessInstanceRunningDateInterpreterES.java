@@ -41,9 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -57,7 +57,8 @@ public class ProcessGroupByProcessInstanceRunningDateInterpreterES
   private final ProcessViewInterpreterFacadeES viewInterpreter;
 
   public ProcessGroupByProcessInstanceRunningDateInterpreterES(
-      @Qualifier("io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory") final DateTimeFormatter formatter,
+      @Qualifier("io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory")
+          final DateTimeFormatter formatter,
       final DateAggregationServiceES dateAggregationService,
       final MinMaxStatsServiceES minMaxStatsService,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,

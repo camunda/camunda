@@ -269,11 +269,18 @@ public final class ElasticsearchReaderUtil {
         final T mappedHit = mappingFunction.apply(hit);
         results.add(mappedHit);
       } catch (final Exception e) {
-        final String reason =
-            "While mapping search results to class {} "
-                + "it was not possible to deserialize a hit from Elasticsearch!";
-        LOG.error(reason, itemClass.getSimpleName(), e);
-        throw new OptimizeRuntimeException(reason);
+        String reason =
+            "While mapping search results to class "
+                + itemClass.getSimpleName()
+                + ": it was not possible to deserialize a hit from Elasticsearch!";
+        if (e instanceof IllegalArgumentException) {
+          // This happens when the object cannot be built because of no constructor.
+          reason = reason + " (no constructor)";
+          LOG.warn(reason);
+        } else {
+          LOG.error(reason);
+          throw new OptimizeRuntimeException(reason, e);
+        }
       }
     }
     return results;

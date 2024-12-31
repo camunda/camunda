@@ -13,9 +13,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
 import org.slf4j.Logger;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.freemarker.FreeMarkerAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
 
 // @ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 // @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
