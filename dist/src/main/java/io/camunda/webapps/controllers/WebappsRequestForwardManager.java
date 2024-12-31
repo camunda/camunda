@@ -33,6 +33,7 @@ public class WebappsRequestForwardManager {
     if (webappsProperties.loginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request);
     } else {
+      System.out.println("forwarding request to " + app);
       return "forward:/" + app;
     }
   }

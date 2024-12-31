@@ -46,7 +46,8 @@ public class ObjectMapperFactory {
   private final ConfigurationService configurationService;
 
   public ObjectMapperFactory(
-      @Qualifier("io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory") final DateTimeFormatter optimizeDateTimeFormatter,
+      @Qualifier("io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory")
+          final DateTimeFormatter optimizeDateTimeFormatter,
       final ConfigurationService configurationService) {
     this.optimizeDateTimeFormatter = optimizeDateTimeFormatter;
     this.configurationService = configurationService;
