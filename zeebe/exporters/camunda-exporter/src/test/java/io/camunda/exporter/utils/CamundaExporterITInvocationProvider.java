@@ -7,19 +7,13 @@
  */
 package io.camunda.exporter.utils;
 
-import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
-import static io.camunda.exporter.config.ConnectionTypes.OPENSEARCH;
+import static io.camunda.exporter.utils.AWSOpenSearchDatabaseCallbackDelegate.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
 import static java.util.Arrays.asList;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -31,9 +25,6 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class CamundaExporterITInvocationProvider
     implements TestTemplateInvocationContextProvider,
@@ -42,58 +33,28 @@ public class CamundaExporterITInvocationProvider
         AfterEachCallback {
 
   public static final String CONFIG_PREFIX = "custom-prefix";
-  protected SearchClientAdapter elsClientAdapter;
-  protected SearchClientAdapter osClientAdapter;
-  private final ElasticsearchContainer elsContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
-  private final OpensearchContainer<?> osContainer =
-      TestSearchContainers.createDefaultOpensearchContainer();
-  private ElasticsearchClient elsClient;
-  private OpenSearchClient osClient;
-  private final List<AutoCloseable> closeables = new ArrayList<>();
+  public static final String RANDOM_STRING = UUID.randomUUID().toString();
+  private final SearchDatabaseCallbackDelegate callbackDelegate;
 
-  protected ExporterConfiguration getConfigWithConnectionDetails(
-      final ConnectionTypes connectionType) {
-    final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(CONFIG_PREFIX);
-    config.getBulk().setSize(1); // force flushing on the first record
-    if (connectionType == ELASTICSEARCH) {
-      config.getConnect().setUrl(elsContainer.getHttpHostAddress());
-
-    } else if (connectionType == OPENSEARCH) {
-      config.getConnect().setUrl(osContainer.getHttpHostAddress());
-    }
-    config.getConnect().setClusterName(connectionType.name());
-    config.getConnect().setType(connectionType.getType());
-    return config;
-  }
-
-  @Override
-  public void afterEach(final ExtensionContext context) throws IOException {
-    if (context.getDisplayName().equals(ELASTICSEARCH.getType())) {
-      elsClient.indices().delete(req -> req.index("*"));
-      elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
-    } else if (context.getDisplayName().equals(OPENSEARCH.getType())) {
-      osClient.indices().delete(req -> req.index("*"));
-      osClient.indices().deleteIndexTemplate(req -> req.name("*"));
+  public CamundaExporterITInvocationProvider() {
+    final var shouldRunAgainstAWSOS =
+        Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY))
+            .isPresent();
+    if (shouldRunAgainstAWSOS) {
+      callbackDelegate = new AWSOpenSearchDatabaseCallbackDelegate();
+    } else {
+      callbackDelegate = new ContainerizedSearchDatabaseCallbackDelegate();
     }
   }
 
   @Override
-  public void beforeAll(final ExtensionContext context) {
-    elsContainer.start();
-    osContainer.start();
+  public void afterEach(final ExtensionContext context) throws Exception {
+    callbackDelegate.afterEach(context);
+  }
 
-    final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
-    osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
-    osClientAdapter = new SearchClientAdapter(osClient);
-
-    final var elsConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
-    elsClient = new ElasticsearchConnector(elsConfig.getConnect()).createClient();
-    elsClientAdapter = new SearchClientAdapter(elsClient);
-
-    closeables.add(elsContainer);
-    closeables.add(osContainer);
+  @Override
+  public void beforeAll(final ExtensionContext context) throws Exception {
+    callbackDelegate.beforeAll(context);
   }
 
   @Override
@@ -112,10 +73,12 @@ public class CamundaExporterITInvocationProvider
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext extensionContext) {
-
-    return Stream.of(
-        invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter),
-        invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
+    return callbackDelegate.contextAdapterRegistration().entrySet().stream()
+        .map(
+            entry ->
+                invocationContext(
+                    callbackDelegate.getConfigWithConnectionDetails(entry.getKey()),
+                    entry.getValue()));
   }
 
   protected ParameterResolver exporterConfigResolver(final ExporterConfiguration config) {
@@ -171,15 +134,7 @@ public class CamundaExporterITInvocationProvider
   }
 
   @Override
-  public void afterAll(final ExtensionContext context) {
-    closeables.parallelStream()
-        .forEach(
-            c -> {
-              try {
-                c.close();
-              } catch (final Exception e) {
-                throw new RuntimeException(e);
-              }
-            });
+  public void afterAll(final ExtensionContext context) throws Exception {
+    callbackDelegate.afterAll(context);
   }
 }
