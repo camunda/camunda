@@ -98,11 +98,13 @@ public class DocumentController {
 
   @GetMapping(path = "/{documentId}") // produces arbitrary content type
   public ResponseEntity<StreamingResponseBody> getDocumentContent(
-      @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
+      @PathVariable final String documentId,
+      @RequestParam(required = false) final String storeId,
+      @RequestParam(required = false) final String contentHash) {
 
     try {
       final DocumentContentResponse contentResponse =
-          getDocumentContentResponse(documentId, storeId);
+          getDocumentContentResponse(documentId, storeId, contentHash);
       final MediaType mediaType = resolveMediaType(contentResponse);
       return ResponseEntity.ok()
           .contentType(mediaType)
@@ -148,10 +150,10 @@ public class DocumentController {
   }
 
   private DocumentContentResponse getDocumentContentResponse(
-      final String documentId, final String storeId) {
+      final String documentId, final String storeId, final String contentHash) {
     return documentServices
         .withAuthentication(RequestMapper.getAuthentication())
-        .getDocumentContent(documentId, storeId);
+        .getDocumentContent(documentId, storeId, contentHash);
   }
 
   @DeleteMapping(
@@ -174,22 +176,26 @@ public class DocumentController {
   public CompletableFuture<ResponseEntity<Object>> createDocumentLink(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
+      @RequestParam(required = false) final String contentHash,
       @RequestBody final DocumentLinkRequest linkRequest) {
 
     return RequestMapper.toDocumentLinkParams(linkRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
-            params -> createDocumentLink(documentId, storeId, params));
+            params -> createDocumentLink(documentId, storeId, contentHash, params));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createDocumentLink(
-      final String documentId, final String storeId, final DocumentLinkParams params) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final DocumentLinkParams params) {
 
     return RequestMapper.executeServiceMethod(
         () ->
             documentServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createLink(documentId, storeId, params),
+                .createLink(documentId, storeId, contentHash, params),
         ResponseMapper::toDocumentLinkResponse);
   }
 

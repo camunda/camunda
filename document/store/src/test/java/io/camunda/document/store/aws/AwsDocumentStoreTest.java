@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.document.api.*;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
+import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
@@ -19,7 +20,9 @@ import java.io.ByteArrayInputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -216,66 +219,68 @@ class AwsDocumentStoreTest {
   }
 
   @Test
-  void deleteDocumentShouldSucceed() {
+  void verifyContentHashShouldSucceed() {
     // given
-    final var documentId = "test-document-id";
+    final var documentId = "existing-document-id";
+    final var contentHash = "randomhash";
+    final var metadata = Map.of("content-hash", contentHash);
 
-    when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
-        .thenReturn(mock(DeleteObjectResponse.class));
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
 
     // when
-    final var result = documentStore.deleteDocument(documentId).join();
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertFalse(result.isLeft());
+    assertTrue(result.isRight());
   }
 
   @Test
-  void deleteDocumentShouldFailForException() {
+  void verifyContentHashShouldFailForDifferentHash() {
     // given
-    final var documentId = "test-document-id";
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
+    final var metadata = Map.of("content-hash", contentHash);
 
-    when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
-        .thenThrow(new RuntimeException("Something went wrong"));
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
 
     // when
-    final var result = documentStore.deleteDocument(documentId).join();
+    final var result = documentStore.verifyContentHash(documentId, "wronHash").join();
 
     // then
     assertTrue(result.isLeft());
-    assertInstanceOf(UnknownDocumentError.class, result.getLeft());
+    assertInstanceOf(DocumentHashMismatch.class, result.getLeft());
   }
 
   @Test
-  void createDocumentLinkShouldSucceed() throws MalformedURLException {
+  void verifyContentHashShouldFailIfDocumentDoesNotExist() {
     // given
-    final var documentId = "test-document-id";
-    final var linkUrl = URI.create("http://awsurl/" + documentId).toURL();
-    final String expiresAt = OffsetDateTime.now().plus(Duration.ofDays(10)).toString();
-    final var metadata = Map.of("expires-at", expiresAt);
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
 
-    final var objectRequestMock = mock(PresignedGetObjectRequest.class);
     when(s3Client.headObject(any(HeadObjectRequest.class)))
-        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
-    when(preSigner.presignGetObject(any(GetObjectPresignRequest.class)))
-        .thenReturn(objectRequestMock);
-    when(objectRequestMock.url()).thenReturn(linkUrl);
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
 
     // when
-    final var result = documentStore.createLink(documentId, 10000).join();
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertFalse(result.isLeft());
-    assertEquals(linkUrl.toString(), result.get().link());
+    assertTrue(result.isLeft());
+    assertInstanceOf(DocumentNotFound.class, result.getLeft());
   }
 
   @Test
-  void createDocumentLinkShouldFailForInvalidDuration() {
+  void verifyContentHashShouldFailIfContentHashDoesNotExist() {
     // given
-    final var documentId = "test-document-id";
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().build());
 
     // when
-    final var result = documentStore.createLink(documentId, -1).join();
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
     assertTrue(result.isLeft());
@@ -283,15 +288,32 @@ class AwsDocumentStoreTest {
   }
 
   @Test
-  void createDocumentLinkShouldFailForException() {
+  void verifyContentHashShouldFailIfMetadataDoesNotExist() {
     // given
-    final var documentId = "test-document-id";
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
 
     when(s3Client.headObject(any(HeadObjectRequest.class)))
-        .thenThrow(new RuntimeException("Something went wrong"));
+        .thenReturn(HeadObjectResponse.builder().metadata(Collections.emptyMap()).build());
 
     // when
-    final var result = documentStore.createLink(documentId, 10000).join();
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(InvalidInput.class, result.getLeft());
+  }
+
+  @Test
+  void verifyContentHashShouldFailForGeneralException() {
+    // given
+    final var documentId = "existing-document-id";
+    final var contentHash = "contentHash";
+
+    when(s3Client.headObject(any(HeadObjectRequest.class))).thenThrow(new RuntimeException());
+
+    // when
+    final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
     assertTrue(result.isLeft());
@@ -299,20 +321,105 @@ class AwsDocumentStoreTest {
   }
 
   @Test
-  void createDocumentLinkShouldFailForExpiredDocument() {
+  void createLinkShouldFailForInvalidDuration() {
     // given
-    final var documentId = "test-document-id";
-    final String expiresAt = OffsetDateTime.now().minus(Duration.ofDays(10)).toString();
-    final var metadata = Map.of("expires-at", expiresAt);
-
-    when(s3Client.headObject(any(HeadObjectRequest.class)))
-        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
+    final var documentId = "valid-document-id";
+    final var durationInMillis = -1L; // Invalid duration
 
     // when
-    final var result = documentStore.createLink(documentId, 10000).join();
+    final var result = documentStore.createLink(documentId, durationInMillis).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(InvalidInput.class, result.getLeft());
+    assertEquals("Duration must be greater than 0", ((InvalidInput) result.getLeft()).message());
+  }
+
+  @Test
+  void createLinkShouldFailForDocumentNotFound() {
+    // given
+    final var documentId = "non-existing-document-id";
+    final var durationInMillis = 10000L;
+
+    when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(null);
+
+    // when
+    final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
     assertTrue(result.isLeft());
     assertInstanceOf(DocumentNotFound.class, result.getLeft());
+  }
+
+  @Test
+  void createLinkShouldFailForExpiredDocument() {
+    // given
+    final var documentId = "expired-document-id";
+    final var durationInMillis = 10000L; // Valid duration
+    final var metadata =
+        Map.of("expires-at", OffsetDateTime.now().minusDays(1).toString()); // yesterday
+
+    final HeadObjectResponse documentInfo = HeadObjectResponse.builder().metadata(metadata).build();
+    when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(documentInfo);
+
+    // when
+    final var result = documentStore.createLink(documentId, durationInMillis).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+  }
+
+  @Test
+  void createLinkShouldSucceedWithValidDocument() throws MalformedURLException {
+    // given
+    final var documentId = "valid-document-id";
+    final var durationInMillis = 10000L; // Valid duration
+    final var metadata = Map.of("expires-at", OffsetDateTime.now().plusDays(1).toString());
+
+    final HeadObjectResponse documentInfo = HeadObjectResponse.builder().metadata(metadata).build();
+    when(s3Client.headObject(any(HeadObjectRequest.class))).thenReturn(documentInfo);
+
+    final PresignedGetObjectRequest preSignedRequest = mock(PresignedGetObjectRequest.class);
+    when(preSigner.presignGetObject(any(GetObjectPresignRequest.class)))
+        .thenReturn(preSignedRequest);
+    when(preSignedRequest.url()).thenReturn(URI.create("https://example.com").toURL());
+
+    final Instant expiration = Instant.now().plusMillis(durationInMillis);
+
+    // when
+    final var result = documentStore.createLink(documentId, durationInMillis).join();
+
+    // then
+    assertTrue(result.isRight());
+    final DocumentLink documentLink = result.get();
+    assertEquals("https://example.com", documentLink.link());
+
+    // Assert expiration time is within 1 second of the expected expiration time
+    final OffsetDateTime expectedExpiration =
+        OffsetDateTime.ofInstant(expiration, ZoneId.systemDefault());
+    final OffsetDateTime actualExpiration = documentLink.expiresAt();
+    final Duration durationBetween = Duration.between(expectedExpiration, actualExpiration);
+
+    // Assert that the difference between expected and actual expiration is within 1 second
+    assertTrue(
+        durationBetween.abs().getSeconds() <= 1, "Expiration times differ by more than 1 second");
+  }
+
+  @Test
+  void createLinkShouldHandleGeneralException() {
+    // given
+    final var documentId = "valid-document-id";
+    final var durationInMillis = 10000L; // Valid duration
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(new RuntimeException("Unexpected error"));
+
+    // when
+    final var result = documentStore.createLink(documentId, durationInMillis).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(UnknownDocumentError.class, result.getLeft());
   }
 }
