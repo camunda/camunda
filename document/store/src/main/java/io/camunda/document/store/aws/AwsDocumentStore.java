@@ -7,6 +7,7 @@
  */
 package io.camunda.document.store.aws;
 
+import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
@@ -18,7 +19,6 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.zeebe.util.Either;
-import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
@@ -53,6 +53,9 @@ public class AwsDocumentStore implements DocumentStore {
   private static final Tag NO_AUTO_DELETE_TAG =
       Tag.builder().key("NoAutoDelete").value("true").build();
 
+  private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
+  private static final String METADATA_PROCESS_INSTANCE_KEY = "camunda.processInstanceKey";
+
   private final String bucketName;
   private final S3Client client;
   private final ExecutorService executor;
@@ -60,14 +63,12 @@ public class AwsDocumentStore implements DocumentStore {
   private final Long defaultTTL;
   private final String bucketPath;
 
-  public AwsDocumentStore(final String bucketName, final Long defaultTTL, final String bucketPath) {
-    this(
-        bucketName,
-        defaultTTL,
-        bucketPath,
-        S3Client.create(),
-        Executors.newSingleThreadExecutor(),
-        S3Presigner.create());
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor) {
+    this(bucketName, defaultTTL, bucketPath, S3Client.create(), executor, S3Presigner.create());
   }
 
   public AwsDocumentStore(
@@ -92,7 +93,7 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   @Override
-  public CompletableFuture<Either<DocumentError, InputStream>> getDocument(
+  public CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(
       final String documentId) {
     return CompletableFuture.supplyAsync(() -> getDocumentInternal(documentId), executor);
   }
@@ -126,7 +127,7 @@ public class AwsDocumentStore implements DocumentStore {
     }
   }
 
-  private Either<DocumentError, InputStream> getDocumentInternal(final String documentId) {
+  private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {
     try {
       final GetObjectRequest getObjectRequest =
           GetObjectRequest.builder().key(resolveKey(documentId)).bucket(bucketName).build();
@@ -139,7 +140,10 @@ public class AwsDocumentStore implements DocumentStore {
       final ResponseInputStream<GetObjectResponse> responseResponseInputStream =
           client.getObject(getObjectRequest);
 
-      return Either.right(responseResponseInputStream);
+      final String contentType =
+          Optional.ofNullable(documentInfo).map(HeadObjectResponse::contentType).orElse(null);
+
+      return Either.right(new DocumentContent(responseResponseInputStream, contentType));
     } catch (final Exception e) {
       return Either.left(getDocumentError(documentId, e));
     }
@@ -217,11 +221,12 @@ public class AwsDocumentStore implements DocumentStore {
 
   private Either<DocumentError, DocumentReference> uploadDocument(
       final DocumentCreationRequest request, final String documentId) {
+    final String fileName = resolveFileName(request.metadata(), documentId);
     final PutObjectRequest putObjectRequest =
         PutObjectRequest.builder()
             .key(resolveKey(documentId))
             .bucket(bucketName)
-            .metadata(toS3MetaData(request.metadata()))
+            .metadata(toS3MetaData(request.metadata(), fileName))
             .tagging(generateExpiryTag(request.metadata().expiresAt()))
             .build();
 
@@ -229,10 +234,20 @@ public class AwsDocumentStore implements DocumentStore {
         putObjectRequest,
         RequestBody.fromInputStream(request.contentInputStream(), request.metadata().size()));
 
-    return Either.right(new DocumentReference(documentId, request.metadata()));
+    final var updatedMetadata =
+        new DocumentMetadataModel(
+            request.metadata().contentType(),
+            resolveFileName(request.metadata(), documentId),
+            request.metadata().expiresAt(),
+            request.metadata().size(),
+            request.metadata().processDefinitionId(),
+            request.metadata().processInstanceKey(),
+            request.metadata().customProperties());
+    return Either.right(new DocumentReference(documentId, updatedMetadata));
   }
 
-  private Map<String, String> toS3MetaData(final DocumentMetadataModel metadata) {
+  private Map<String, String> toS3MetaData(
+      final DocumentMetadataModel metadata, final String fileName) {
     if (metadata == null) {
       return Collections.emptyMap();
     }
@@ -241,7 +256,7 @@ public class AwsDocumentStore implements DocumentStore {
 
     putIfPresent("content-type", metadata.contentType(), metadataMap);
     putIfPresent("size", metadata.size(), metadataMap);
-    putIfPresent("filename", metadata.fileName(), metadataMap);
+    putIfPresent("filename", fileName, metadataMap);
     putIfPresent("expires-at", metadata.expiresAt(), metadataMap);
 
     if (metadata.customProperties() != null) {
@@ -249,6 +264,9 @@ public class AwsDocumentStore implements DocumentStore {
           .customProperties()
           .forEach((key, value) -> metadataMap.put(key, String.valueOf(value)));
     }
+
+    putIfPresent(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId(), metadataMap);
+    putIfPresent(METADATA_PROCESS_INSTANCE_KEY, metadata.processInstanceKey(), metadataMap);
 
     return metadataMap;
   }
@@ -284,5 +302,10 @@ public class AwsDocumentStore implements DocumentStore {
 
   private String resolveKey(final String documentId) {
     return bucketPath + documentId;
+  }
+
+  private String resolveFileName(
+      final DocumentMetadataModel documentMetadata, final String documentId) {
+    return documentMetadata.fileName() != null ? documentMetadata.fileName() : documentId;
   }
 }

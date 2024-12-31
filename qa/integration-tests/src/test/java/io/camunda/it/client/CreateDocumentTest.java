@@ -262,4 +262,48 @@ public class CreateDocumentTest {
     assertThat(documentReference.getMetadata().getCustomProperties().get("key2"))
         .isEqualTo("value2");
   }
+
+  @Test
+  public void shouldAddProcessDefinitionId() {
+    // given
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
+    final var documentContent = "test";
+    final String processDefinitionId = "test";
+
+    // when
+    final var documentReference =
+        camundaClient
+            .newCreateDocumentCommand()
+            .content(documentContent)
+            .processDefinitionId(processDefinitionId)
+            .send()
+            .join();
+
+    // then
+    assertThat(documentReference).isNotNull();
+    assertThat(documentReference.getMetadata().getProcessDefinitionId())
+        .isEqualTo(processDefinitionId);
+  }
+
+  @Test
+  public void shouldAddProcessInstanceKey() {
+    // given
+    camundaClient = testStandaloneCamunda.newClientBuilder().build();
+    final var documentContent = "test";
+    final long processInstanceKey = 1;
+
+    // when
+    final var documentReference =
+        camundaClient
+            .newCreateDocumentCommand()
+            .content(documentContent)
+            .processInstanceKey(processInstanceKey)
+            .send()
+            .join();
+
+    // then
+    assertThat(documentReference).isNotNull();
+    assertThat(documentReference.getMetadata().getProcessInstanceKey())
+        .isEqualTo(processInstanceKey);
+  }
 }

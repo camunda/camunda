@@ -38,7 +38,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 /** This tests: authentication and security over REST API /currentUser to get current user */
-@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
   private static final String REST_CURRENT_USER = TasklistURIs.USERS_URL_V1.concat("/current");

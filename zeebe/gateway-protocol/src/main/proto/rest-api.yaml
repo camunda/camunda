@@ -3112,7 +3112,7 @@ paths:
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
         The message is not buffered.
-        Use the publish message endpoint to send messages that can be buffered. 
+        Use the publish message endpoint to send messages that can be buffered.
       requestBody:
         required: true
         content:
@@ -3201,6 +3201,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentReference"
+        "400":
+          description: >
+            The document upload failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /documents/batch:
+    post:
+      tags:
+        - Document
+      operationId: createDocuments
+      summary: Upload multiple documents (alpha)
+      description: |
+        Upload multiple documents to the Camunda 8 cluster.
+
+        The caller must provide a file name for each document, which will be used in case of a multi-status response
+        to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
+        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        takes precedence.
+
+        In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
+        each of which contains the file name of the document that failed to upload and the reason for the failure.
+        The client can choose to retry the whole batch or individual documents based on the response.
+
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        :::note
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
+        :::
+      parameters:
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to upload the documents to.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+              required:
+                - files
+            encoding:
+              files:
+                headers:
+                  X-Document-Metadata:
+                    schema:
+                      $ref: "#/components/schemas/DocumentMetadata"
+                  X-Document-Id:
+                    schema:
+                      type: string
+      responses:
+        "201":
+          description: All documents were uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
+        "207":
+          description: >
+            Not all documents were uploaded successfully. More details are provided in the response body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
@@ -7201,6 +7278,30 @@ components:
           description: The ID of the document.
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
+
+    DocumentCreationFailureDetail:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: The name of the file.
+        detail:
+          type: string
+          description: The detail of the failure.
+
+    DocumentCreationBatchResponse:
+      allOf:
+        - type: object
+          properties:
+            createdDocuments:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentReference"
+            failedDocuments:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentCreationFailureDetail"
+
     DocumentMetadata:
       description: Information about the document.
       type: object
@@ -7219,6 +7320,13 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        processDefinitionId:
+          type: string
+          description: The ID of the process definition that created the document.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance that created the document.
         customProperties:
           type: object
           description: Custom properties of the document.

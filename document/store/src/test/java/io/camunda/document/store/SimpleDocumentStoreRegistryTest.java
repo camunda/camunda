@@ -15,6 +15,7 @@ import io.camunda.document.store.inmemory.InMemoryDocumentStore;
 import io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadPoolExecutor;
 import org.junit.jupiter.api.Test;
 
 public class SimpleDocumentStoreRegistryTest {
@@ -26,7 +27,7 @@ public class SimpleDocumentStoreRegistryTest {
         new DocumentStoreConfiguration.DocumentStoreConfigurationRecord(
             "custom-in-memory", InMemoryDocumentStoreProvider.class, Map.of());
     final DocumentStoreConfiguration configuration =
-        new DocumentStoreConfiguration("custom-in-memory", List.of(configurationRecord));
+        new DocumentStoreConfiguration("custom-in-memory", null, List.of(configurationRecord));
 
     // when
     final var registry = new SimpleDocumentStoreRegistry(() -> configuration);
@@ -46,7 +47,7 @@ public class SimpleDocumentStoreRegistryTest {
         new DocumentStoreConfiguration.DocumentStoreConfigurationRecord(
             "custom-in-memory", InMemoryDocumentStoreProvider.class, Map.of());
     final DocumentStoreConfiguration configuration =
-        new DocumentStoreConfiguration("custom-in-memory", List.of(configurationRecord));
+        new DocumentStoreConfiguration("custom-in-memory", null, List.of(configurationRecord));
 
     // when
     final var registry = new SimpleDocumentStoreRegistry(() -> configuration);
@@ -64,7 +65,7 @@ public class SimpleDocumentStoreRegistryTest {
         new DocumentStoreConfiguration.DocumentStoreConfigurationRecord(
             "custom-in-memory", InMemoryDocumentStoreProvider.class, Map.of());
     final DocumentStoreConfiguration configuration =
-        new DocumentStoreConfiguration("custom-in-memory", List.of(configurationRecord));
+        new DocumentStoreConfiguration("custom-in-memory", null, List.of(configurationRecord));
 
     // when
     final var registry = new SimpleDocumentStoreRegistry(() -> configuration);
@@ -82,12 +83,52 @@ public class SimpleDocumentStoreRegistryTest {
         new DocumentStoreConfiguration.DocumentStoreConfigurationRecord(
             "custom-in-memory", InMemoryDocumentStoreProvider.class, Map.of());
     final DocumentStoreConfiguration configuration =
-        new DocumentStoreConfiguration(null, List.of(configurationRecord));
+        new DocumentStoreConfiguration(null, null, List.of(configurationRecord));
 
     // when
     // then
     assertThatThrownBy(() -> new SimpleDocumentStoreRegistry(() -> configuration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("No default document store ID configured.");
+  }
+
+  @Test
+  public void shouldUseDefaultExecutorWhenSizeNotSpecified() {
+    // given
+    final DocumentStoreConfiguration.DocumentStoreConfigurationRecord configurationRecord =
+        new DocumentStoreConfiguration.DocumentStoreConfigurationRecord(
+            "custom-in-memory", TestDocumentStoreProvider.class, Map.of());
+    final DocumentStoreConfiguration configuration =
+        new DocumentStoreConfiguration("custom-in-memory", null, List.of(configurationRecord));
+
+    // when
+    final var registry = new SimpleDocumentStoreRegistry(() -> configuration);
+    final var store = registry.getDocumentStore("custom-in-memory").instance();
+
+    // then
+    assertThat(store).isInstanceOf(TestDocumentStoreProvider.DummyDocumentStore.class);
+    final var executor = ((TestDocumentStoreProvider.DummyDocumentStore) store).executorService();
+    assertThat(executor).isInstanceOf(ThreadPoolExecutor.class);
+    assertThat(((ThreadPoolExecutor) executor).getMaximumPoolSize()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldUseSpecifiedExecutorSize() {
+    // given
+    final DocumentStoreConfiguration.DocumentStoreConfigurationRecord configurationRecord =
+        new DocumentStoreConfiguration.DocumentStoreConfigurationRecord(
+            "custom-in-memory", TestDocumentStoreProvider.class, Map.of());
+    final DocumentStoreConfiguration configuration =
+        new DocumentStoreConfiguration("custom-in-memory", 10, List.of(configurationRecord));
+
+    // when
+    final var registry = new SimpleDocumentStoreRegistry(() -> configuration);
+    final var store = registry.getDocumentStore("custom-in-memory").instance();
+
+    // then
+    assertThat(store).isInstanceOf(TestDocumentStoreProvider.DummyDocumentStore.class);
+    final var executor = ((TestDocumentStoreProvider.DummyDocumentStore) store).executorService();
+    assertThat(executor).isInstanceOf(ThreadPoolExecutor.class);
+    assertThat(((ThreadPoolExecutor) executor).getMaximumPoolSize()).isEqualTo(10);
   }
 }

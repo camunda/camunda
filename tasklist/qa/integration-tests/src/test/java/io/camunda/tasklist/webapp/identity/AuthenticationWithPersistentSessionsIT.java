@@ -52,7 +52,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       "camunda.tasklist.archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({TasklistProfileService.IDENTITY_AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationWithPersistentSessionsIT implements AuthenticationTestable {
 
   @LocalServerPort private int randomServerPort;

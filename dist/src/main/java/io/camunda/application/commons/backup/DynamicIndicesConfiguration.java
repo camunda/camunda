@@ -18,8 +18,6 @@ import org.springframework.context.annotation.Configuration;
 @ProfileWebApp
 public class DynamicIndicesConfiguration {
 
-  private static final String ELASTICSEARCH_TYPE = "elasticsearch";
-
   private final ConnectConfiguration connectConfiguration;
   private final DocumentBasedSearchClient searchClient;
 
@@ -34,7 +32,7 @@ public class DynamicIndicesConfiguration {
   public DynamicIndicesProvider dynamicIndicesProvider() {
     return new SearchDynamicIndicesProvider(
         searchClient,
-        connectConfiguration.getType().equals(ELASTICSEARCH_TYPE),
+        connectConfiguration.getTypeEnum().isElasticSearch(),
         connectConfiguration.getIndexPrefix());
   }
 }

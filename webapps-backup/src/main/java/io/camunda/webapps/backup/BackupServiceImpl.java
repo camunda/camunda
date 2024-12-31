@@ -99,7 +99,8 @@ public class BackupServiceImpl implements BackupService {
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
       // Add all the dynamic indices in the last step
       if (index == count) {
-        indexCollection = indexCollection.addIndices(dynamicIndicesProvider.getAllDynamicIndices());
+        indexCollection =
+            indexCollection.addSkippableIndices(dynamicIndicesProvider.getAllDynamicIndices());
       }
 
       final SnapshotRequest snapshotRequest =
@@ -120,7 +121,7 @@ public class BackupServiceImpl implements BackupService {
       threadPoolTaskExecutor.execute(
           () ->
               repository.executeSnapshotting(
-                  nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
+                  nextRequest, false, this::scheduleNextSnapshot, requestsQueue::clear));
       LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
     }
   }

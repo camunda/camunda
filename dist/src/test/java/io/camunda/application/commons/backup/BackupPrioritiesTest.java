@@ -22,6 +22,7 @@ import io.camunda.application.commons.backup.BackupPriorityConfiguration.Optimiz
 import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio6Delegate;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.Arrays;
@@ -146,27 +147,27 @@ class BackupPrioritiesTest {
 
     assertThat(indices.size()).isEqualTo(8);
     // PRIO 1
-    assertThat(indices.get(0).indices())
+    assertThat(indices.get(0).allIndices())
         .containsExactlyInAnyOrder(
             "operate-import-position-8.3.0_",
             "tasklist-import-position-8.2.0_",
             "optimize-position-based-import-index_v3",
             "optimize-timestamp-based-import-index_v5");
     // PRIO 2
-    assertThat(indices.get(1).indices())
+    assertThat(indices.get(1).allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.0_");
     // PRIO 2 TEMPLATES
-    assertThat(indices.get(2).indices())
+    assertThat(indices.get(2).allIndices())
         .containsExactlyInAnyOrder(
             "operate-list-view-8.3.0_*",
             "-operate-list-view-8.3.0_",
             "tasklist-task-8.5.0_*",
             "-tasklist-task-8.5.0_");
     // PRIO 3
-    assertThat(indices.get(3).indices())
+    assertThat(indices.get(3).allIndices())
         .containsExactlyInAnyOrder("operate-batch-operation-1.0.0_", "operate-operation-8.4.1_");
     // PRIO 4
-    assertThat(indices.get(4).indices())
+    assertThat(indices.get(4).allIndices())
         .containsExactlyInAnyOrder(
             "operate-decision-8.3.0_",
             "operate-decision-instance-8.3.0_",
@@ -182,7 +183,7 @@ class BackupPrioritiesTest {
             "tasklist-task-variable-8.3.0_");
 
     // PRIO 4 TEMPLATES
-    assertThat(indices.get(5).indices())
+    assertThat(indices.get(5).allIndices())
         .containsExactlyInAnyOrder(
             "operate-event-8.3.0_*",
             "-operate-event-8.3.0_",
@@ -208,7 +209,7 @@ class BackupPrioritiesTest {
             "tasklist-task-variable-8.3.0_*");
 
     // PRIO 5
-    assertThat(indices.get(6).indices())
+    assertThat(indices.get(6).allIndices())
         .containsExactlyInAnyOrder(
             "operate-decision-requirements-8.3.0_",
             "operate-metric-8.3.0_",
@@ -224,7 +225,7 @@ class BackupPrioritiesTest {
             "camunda-user-8.7.0_");
 
     // PRIO6
-    assertThat(indices.get(7).indices())
+    assertThat(indices.get(7).allIndices())
         .containsExactlyInAnyOrder(
             "optimize-single-decision-report_v10",
             "optimize-process-overview_v2",
@@ -246,6 +247,13 @@ class BackupPrioritiesTest {
             "optimize-external-process-variable_v2-000001",
             "optimize-process-definition_v6",
             "optimize-alert_v4");
+
+    for (final var indexList : indices) {
+      assertThat(indexList.skippableIndices())
+          .allSatisfy(i -> assertThat(i).startsWith("optimize"));
+      assertThat(indexList.requiredIndices())
+          .allSatisfy(i -> assertThat(i).doesNotStartWith("optimize"));
+    }
   }
 
   @Test
@@ -278,7 +286,7 @@ class BackupPrioritiesTest {
             });
     when(environment.getActiveProfiles()).thenReturn(profiles);
     when(environment.getProperty(eq(CAMUNDA_OPTIMIZE_DATABASE), (String) any()))
-        .thenReturn("elasticsearch");
+        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
     return environment;
   }
 }

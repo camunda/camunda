@@ -8,8 +8,13 @@
 package io.camunda.migration.process.util;
 
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import java.util.regex.Pattern;
 
 public class MigrationUtil {
+
+  public static final Pattern MIGRATION_REPOSITORY_NOT_EXISTS =
+      Pattern.compile(
+          "no such index \\[[a-zA-Z0-9\\-]+-migration-steps-repository-[0-9]+\\.[0-9]+\\.[0-9]+_]");
 
   public static ProcessEntity migrate(final ProcessEntity entity) {
     final ProcessEntity processEntity = new ProcessEntity();

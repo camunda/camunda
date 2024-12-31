@@ -41,7 +41,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-@ActiveProfiles({IDENTITY_AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({IDENTITY_AUTH_PROFILE, "tasklist", "test", "standalone"})
 public abstract class IdentityTester extends SessionlessTasklistZeebeIntegrationTest {
   public static TestContext testContext;
   protected static final String USER = KEYCLOAK_USERNAME;

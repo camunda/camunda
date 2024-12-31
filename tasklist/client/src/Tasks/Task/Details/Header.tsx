@@ -15,14 +15,20 @@ import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {Restricted} from 'modules/components/Restricted';
 import type {CurrentUser, Task} from 'modules/types';
-import {useAssignTask} from 'modules/mutations/useAssignTask';
-import {useUnassignTask} from 'modules/mutations/useUnassignTask';
+import {
+  useAssignTask,
+  assignmentErrorMap,
+} from 'modules/mutations/useAssignTask';
+import {
+  useUnassignTask,
+  unassignmentErrorMap,
+} from 'modules/mutations/useUnassignTask';
 import {notificationsStore} from 'modules/stores/notifications';
 import {tracking} from 'modules/tracking';
-import {shouldFetchMore} from '../shouldFetchMore';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import styles from './Header.module.scss';
+import {ERRORS_THAT_SHOULD_FETCH_MORE} from '../constants';
 
 const getAssignmentToggleLabels = () =>
   ({
@@ -123,39 +129,129 @@ const AssignButton: React.FC<{
     useUnassignTask();
   const isLoading = (assignIsPending || unassignIsPending) ?? false;
 
-  const handleClick = async () => {
+  const handleAssignmentClick = async () => {
     try {
-      if (isAssigned) {
-        setAssignmentStatus('unassigning');
-        await unassignTask(id);
-        setAssignmentStatus('unassignmentSuccessful');
-        tracking.track({eventName: 'task-unassigned'});
-      } else {
-        setAssignmentStatus('assigning');
-        await assignTask(id);
-        setAssignmentStatus('assignmentSuccessful');
-        tracking.track({eventName: 'task-assigned'});
-      }
+      setAssignmentStatus('assigning');
+      await assignTask(id);
+      setAssignmentStatus('assignmentSuccessful');
+      tracking.track({eventName: 'task-assigned'});
     } catch (error) {
-      const errorMessage = (error as Error).message ?? '';
-
-      setAssignmentStatus('off');
-
-      if (shouldDisplayNotification(errorMessage)) {
+      if (!(error instanceof Error)) {
         notificationsStore.displayNotification({
           kind: 'error',
-          title: isAssigned
-            ? t('taskDetailsTaskUnassignmentError')
-            : t('taskDetailsTaskAssignmentError'),
-          subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
+          title: t('taskDetailsTaskAssignmentError'),
+          isDismissable: true,
+        });
+
+        setAssignmentStatus('off');
+        return;
+      }
+
+      if (error.name === assignmentErrorMap.taskProcessingTimeout) {
+        tracking.track({
+          eventName: 'task-assignment-delayed-notification',
+        });
+        notificationsStore.displayNotification({
+          kind: 'info',
+          title: t('taskDetailsAssignmentDelayInfoTitle'),
+          subtitle: t('taskDetailsAssignmentDelayInfoSubtitle'),
+          isDismissable: true,
+        });
+        return;
+      }
+
+      setAssignmentStatus('off');
+      if (error.name === assignmentErrorMap.invalidState) {
+        tracking.track({
+          eventName: 'task-assignment-rejected-notification',
+        });
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskAssignmentError'),
+          subtitle: t('taskDetailsTaskAssignmentRejectionErrorSubtitle'),
+          isDismissable: true,
+        });
+      } else if (shouldDisplayNotification(error.message)) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskAssignmentError'),
+          subtitle: getTaskAssignmentChangeErrorMessage(error.message),
           isDismissable: true,
         });
       }
 
-      // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getTaskAssignmentChangeErrorMessage
-      if (shouldFetchMore(errorMessage)) {
+      if (ERRORS_THAT_SHOULD_FETCH_MORE.includes(error.name)) {
         onAssignmentError();
       }
+    }
+  };
+
+  const handleUnassignmentClick = async () => {
+    try {
+      setAssignmentStatus('unassigning');
+      await unassignTask(id);
+      setAssignmentStatus('unassignmentSuccessful');
+      tracking.track({eventName: 'task-unassigned'});
+    } catch (error) {
+      if (!(error instanceof Error)) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskUnassignmentError'),
+          isDismissable: true,
+        });
+
+        setAssignmentStatus('off');
+        return;
+      }
+
+      if (error.name === unassignmentErrorMap.taskProcessingTimeout) {
+        tracking.track({
+          eventName: 'task-unassignment-delayed-notification',
+        });
+        notificationsStore.displayNotification({
+          kind: 'info',
+          title: t('taskDetailsUnassignmentDelayInfoTitle'),
+          subtitle: t('taskDetailsUnassignmentDelayInfoSubtitle'),
+          isDismissable: true,
+        });
+        return;
+      }
+
+      setAssignmentStatus('off');
+      if (
+        error.name === unassignmentErrorMap.taskNotAssigned ||
+        error.name === unassignmentErrorMap.taskNotAssignedToCurrentUser
+      ) {
+        tracking.track({
+          eventName: 'task-unassignment-rejected-notification',
+        });
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskUnassignmentError'),
+          subtitle: t('taskDetailsTaskUnassignmentRejectionErrorSubtitle'),
+
+          isDismissable: true,
+        });
+      } else if (shouldDisplayNotification(error.message)) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskUnassignmentError'),
+          subtitle: getTaskAssignmentChangeErrorMessage(error.message),
+          isDismissable: true,
+        });
+      }
+
+      if (ERRORS_THAT_SHOULD_FETCH_MORE.includes(error.name)) {
+        onAssignmentError();
+      }
+    }
+  };
+
+  const handleClick = async () => {
+    if (isAssigned) {
+      handleUnassignmentClick();
+    } else {
+      handleAssignmentClick();
     }
   };
 

@@ -17,14 +17,18 @@ package io.camunda.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
+import io.camunda.client.protocol.rest.JobResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
 import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -152,7 +156,22 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).result().denied(denied).send().join();
+    client.newCompleteCommand(jobKey).withResult().deny(denied).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCompleteWithResultObject(final boolean denied) {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).withResult(r -> r.deny(denied)).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
@@ -161,16 +180,257 @@ class CompleteJobRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldCompleteJobWithResultDone() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .deny(false)
+        .resultDone()
+        .variable("we_can", "still_set_vars")
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(false);
+
+    final Map<String, String> expectedVariables = new HashMap<>();
+    expectedVariables.put("we_can", "still_set_vars");
+    assertThat(request.getVariables()).isEqualTo(expectedVariables);
+  }
+
+  @Test
   void shouldCompleteWithResultDeniedNotSet() {
     // given
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).result().send().join();
+    client.newCompleteCommand(jobKey).withResult().send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getDenied()).isNull();
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsSet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .correctAssignee("Test")
+        .correctDueDate("due date")
+        .correctFollowUpDate("follow up date")
+        .correctCandidateUsers(Arrays.asList("User A", "User B"))
+        .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
+        .correctPriority(80)
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate("due date")
+                            .followUpDate("follow up date")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(Arrays.asList("Group A", "Group B"))
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsPartiallySet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .correctAssignee("Test")
+        .correctDueDate("due date")
+        .correctFollowUpDate("")
+        .correctCandidateUsers(Arrays.asList("User A", "User B"))
+        .correctPriority(80)
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate("due date")
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(null)
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsUsingNullExplicitly() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .correctAssignee(null)
+        .correctDueDate(null)
+        .correctFollowUpDate(null)
+        .correctCandidateGroups(null)
+        .correctCandidateUsers(null)
+        .correctPriority(null)
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee(null)
+                            .dueDate(null)
+                            .followUpDate(null)
+                            .candidateUsers(null)
+                            .candidateGroups(null)
+                            .priority(null)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultPartiallySet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            new CompleteJobResult()
+                .deny(false)
+                .correctAssignee("Test")
+                .correctDueDate(null)
+                .correctFollowUpDate("")
+                .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                .correctPriority(80))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .denied(false)
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(null)
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsObject() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            new CompleteJobResult()
+                .correct(
+                    c ->
+                        c.assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .priority(80)))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .denied(false)
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee("Test")
+                            .dueDate(null)
+                            .followUpDate("")
+                            .candidateUsers(Arrays.asList("User A", "User B"))
+                            .candidateGroups(null)
+                            .priority(80)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithDefaultResultCorrections() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).withResult().send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResult()
+                    .corrections(
+                        new io.camunda.client.protocol.rest.JobResultCorrections()
+                            .assignee(null)
+                            .dueDate(null)
+                            .followUpDate(null)
+                            .candidateUsers(null)
+                            .candidateGroups(null)
+                            .priority(null)));
+
+    assertThat(request).isEqualTo(expectedRequest);
   }
 }

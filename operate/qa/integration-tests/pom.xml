@@ -432,7 +432,7 @@
 
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -498,7 +498,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>10.1.34</version>
+      <version>11.0.2</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
