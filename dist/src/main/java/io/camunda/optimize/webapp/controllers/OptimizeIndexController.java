@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class OptimizeIndexController {
 
   @Autowired private ServletContext context;
-
   @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
 
   @GetMapping("/optimize")
@@ -35,5 +34,9 @@ public class OptimizeIndexController {
   public String forwardToOptimize(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "optimize");
   }
-}
 
+  @GetMapping({"/static/*"})
+  public String redirectOldRoutes(final HttpServletRequest request) {
+    return "redirect:/optimize" + getRequestedUrl(request);
+  }
+}
