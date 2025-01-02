@@ -5,19 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.service;
+package io.camunda.tasklist.zeebe;
 
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import java.util.Map;
 
 public interface TasklistServicesAdapter {
 
-  ProcessInstanceCreationRecord createProcessInstance(
+  ProcessInstanceCreationRecordValue createProcessInstance(
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId);
 
-  ProcessInstanceCreationRecord createProcessInstanceWithoutAuthentication(
+  ProcessInstanceCreationRecordValue createProcessInstanceWithoutAuthentication(
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId);
 
   void assignUserTask(final TaskEntity task, final String assignee);
@@ -29,4 +29,6 @@ public interface TasklistServicesAdapter {
   default boolean isJobBasedUserTask(final TaskEntity task) {
     return task.getImplementation().equals(TaskImplementation.JOB_WORKER);
   }
+
+  void deployResourceWithoutAuthentication(final String classpathResource, final String tenantId);
 }

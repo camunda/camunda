@@ -32,6 +32,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
+import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.io.IOException;
