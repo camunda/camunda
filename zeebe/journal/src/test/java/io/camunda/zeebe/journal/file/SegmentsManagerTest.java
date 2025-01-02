@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.File;
@@ -40,7 +41,7 @@ class SegmentsManagerTest {
   }
 
   @Test
-  void shouldDeleteFilesMarkedForDeletionsOnLoad() {
+  void shouldDeleteFilesMarkedForDeletionsOnLoad() throws CheckedJournalException {
     // given
     segments = journalFactory.segmentsManager(directory);
     segments.open();
@@ -127,7 +128,7 @@ class SegmentsManagerTest {
   }
 
   @Test
-  void shouldDetectMissingEntryAsCorruption() {
+  void shouldDetectMissingEntryAsCorruption() throws CheckedJournalException {
     // given
     final var journal = openJournal();
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
@@ -201,7 +202,8 @@ class SegmentsManagerTest {
   }
 
   @Test
-  void shouldHandleCrashOnResetAfterDeletionBeforeSegmentIsCreated() throws IOException {
+  void shouldHandleCrashOnResetAfterDeletionBeforeSegmentIsCreated()
+      throws IOException, CheckedJournalException {
     // given
     try (final var journal = openJournal()) {
       journal.append(1, journalFactory.entry()).index();
@@ -222,7 +224,8 @@ class SegmentsManagerTest {
   }
 
   @Test
-  void shouldHandleCrashOnTruncateAfterDeletionBeforeSegmentIsCreated() {
+  void shouldHandleCrashOnTruncateAfterDeletionBeforeSegmentIsCreated()
+      throws CheckedJournalException {
     // given
     try (final var journal = openJournal()) {
       journal.append(1, journalFactory.entry()).index();
@@ -258,7 +261,7 @@ class SegmentsManagerTest {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/12754")
-  void shouldDeleteSegmentsInReverseOrderOnReset() {
+  void shouldDeleteSegmentsInReverseOrderOnReset() throws CheckedJournalException {
     // given
     final var loader = Mockito.spy(journalFactory.segmentLoader());
     final var metaStore = Mockito.spy(journalFactory.metaStore());

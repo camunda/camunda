@@ -9,9 +9,11 @@ package io.camunda.zeebe.journal.file;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.util.exception.Rethrow;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.File;
 import java.io.IOException;
@@ -117,8 +119,10 @@ final class SegmentsManager implements AutoCloseable {
    *
    * @return The next segment.
    * @throws IllegalStateException if the segment manager is not open
+   * @throws CheckedJournalException if it's not possible to create a new segment because of an
+   *     error in the journal
    */
-  Segment getNextSegment() {
+  Segment getNextSegment() throws CheckedJournalException {
 
     final Segment lastSegment = getLastSegment();
     final var lastWrittenAsqn = lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN;
@@ -215,7 +219,7 @@ final class SegmentsManager implements AutoCloseable {
    * @param index the starting index of the journal
    * @return the first segment
    */
-  Segment resetSegments(final long index) {
+  Segment resetSegments(final long index) throws CheckedJournalException {
     // reset the last flushed index before deleting data to avoid data corruption on start up in
     // case of node crash
     // setting the last flushed index to a semantic-null value will let us know on start up that
@@ -254,7 +258,7 @@ final class SegmentsManager implements AutoCloseable {
    *
    * @param segment The segment to remove.
    */
-  void removeSegment(final Segment segment) {
+  void removeSegment(final Segment segment) throws CheckedJournalException {
     //noinspection resource
     segments.remove(segment.index());
     journalMetrics.decSegmentCount();
@@ -263,7 +267,7 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   /** Resets the current segment, creating a new segment if necessary. */
-  private void resetCurrentSegment() {
+  private void resetCurrentSegment() throws CheckedJournalException {
     final Segment lastSegment = getLastSegment();
     if (lastSegment != null) {
       currentSegment = lastSegment;
@@ -283,7 +287,7 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   /** Loads existing segments from the disk */
-  void open() {
+  void open() throws CheckedJournalException {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final Segment segment : loadSegments()) {
@@ -323,7 +327,15 @@ final class SegmentsManager implements AutoCloseable {
             .withIndex(INITIAL_INDEX)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-    nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
+    nextSegment =
+        CompletableFuture.supplyAsync(
+            () -> {
+              try {
+                return createUninitializedSegment(descriptor);
+              } catch (final CheckedJournalException e) {
+                return Rethrow.rethrowUnchecked(e);
+              }
+            });
   }
 
   SortedMap<Long, Segment> getTailSegments(final long index) {
@@ -335,12 +347,14 @@ final class SegmentsManager implements AutoCloseable {
     return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)); // inclusive
   }
 
-  private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
+  private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor)
+      throws CheckedJournalException {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createUninitializedSegment(segmentFile.toPath(), descriptor, journalIndex);
   }
 
-  private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
+  private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn)
+      throws CheckedJournalException {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
         segmentFile.toPath(), descriptor, lastWrittenAsqn, journalIndex);

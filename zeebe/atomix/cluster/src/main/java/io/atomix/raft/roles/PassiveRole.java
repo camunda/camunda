@@ -725,7 +725,11 @@ public class PassiveRole extends InactiveRole {
       // Reset the log to the previous index plus one.
       if (request.prevLogTerm() == 0) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
-        raft.getLog().reset(request.prevLogIndex() + 1);
+        try {
+          raft.getLog().reset(request.prevLogIndex() + 1);
+        } catch (final CheckedJournalException e) {
+          failAppend(request.prevLogIndex(), future);
+        }
       }
 
       // Iterate through entries and append them.
@@ -809,7 +813,7 @@ public class PassiveRole extends InactiveRole {
         if (lastEntry.term() != entry.term()) {
           try {
             raft.getLog().deleteAfter(index - 1);
-          } catch (final FlushException e) {
+          } catch (final CheckedJournalException e) {
             return !failAppend(index - 1, future);
           }
 
@@ -868,7 +872,7 @@ public class PassiveRole extends InactiveRole {
       if (existingEntry.term() != entry.term()) {
         try {
           raft.getLog().deleteAfter(index - 1);
-        } catch (final FlushException e) {
+        } catch (final CheckedJournalException e) {
           return failAppend(index - 1, future);
         }
 
@@ -975,7 +979,8 @@ public class PassiveRole extends InactiveRole {
     return succeeded;
   }
 
-  private void resetLogOnReceivingSnapshot(final long snapshotIndex) {
+  private void resetLogOnReceivingSnapshot(final long snapshotIndex)
+      throws CheckedJournalException {
     final var raftLog = raft.getLog();
 
     log.info(

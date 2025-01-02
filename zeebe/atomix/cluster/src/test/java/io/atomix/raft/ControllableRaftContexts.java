@@ -39,6 +39,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.testing.TestFileBasedSnapshotStore;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;
@@ -365,7 +366,10 @@ public final class ControllableRaftContexts {
           raftContext.getCommitIndex());
     }
 
-    raftContext.getThreadContext().execute(() -> raftContext.getLog().deleteUntil(snapshotIndex));
+    raftContext
+        .getThreadContext()
+        .execute(
+            CheckedRunnable.toUnchecked(() -> raftContext.getLog().deleteUntil(snapshotIndex)));
   }
 
   public void restart(final MemberId memberId) {
