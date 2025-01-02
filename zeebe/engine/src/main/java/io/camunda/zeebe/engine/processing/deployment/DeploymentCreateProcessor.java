@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -45,12 +46,15 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -74,6 +78,7 @@ public final class DeploymentCreateProcessor
   private final ProcessState processState;
   private final DecisionState decisionState;
   private final FormState formState;
+  private final ResourceState resourceState;
   private final TimerInstanceState timerInstanceState;
   private final CatchEventBehavior catchEventBehavior;
   private final KeyGenerator keyGenerator;
@@ -99,6 +104,7 @@ public final class DeploymentCreateProcessor
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     formState = processingState.getFormState();
+    resourceState = processingState.getResourceState();
     timerInstanceState = processingState.getTimerState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -175,6 +181,9 @@ public final class DeploymentCreateProcessor
     if (command.getValue().hasForms()) {
       formState.clearCache();
     }
+    if (command.getValue().hasResources()) {
+      resourceState.clearCache();
+    }
 
     if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
@@ -225,6 +234,7 @@ public final class DeploymentCreateProcessor
     createBpmnResources(deploymentEvent);
     createDmnResources(deploymentEvent);
     createFormResources(deploymentEvent);
+    createResources(deploymentEvent);
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     stateWriter.appendFollowUpEvent(
         command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
@@ -280,6 +290,24 @@ public final class DeploymentCreateProcessor
                       metadata.getFormKey(),
                       FormIntent.CREATED,
                       new FormRecord().wrap(metadata, resource.getResource()));
+                }
+              }
+            });
+  }
+
+  private void createResources(final DeploymentRecord deploymentEvent) {
+    deploymentEvent.resourceMetadata().stream()
+        .filter(not(ResourceMetadataRecord::isDuplicate))
+        .forEach(
+            metadata -> {
+              for (final DeploymentResource resource : deploymentEvent.getResources()) {
+                final var resourceChecksum =
+                    deploymentTransformer.getChecksum(resource.getResource());
+                if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
+                  stateWriter.appendFollowUpEvent(
+                      metadata.getResourceKey(),
+                      ResourceIntent.CREATED,
+                      new ResourceRecord().wrap(metadata, resource.getResource()));
                 }
               }
             });

@@ -3071,6 +3071,7 @@ paths:
       description: |
         Publishes a single message.
         Messages are published to specific partitions computed from their correlation keys.
+        Messages can be buffered.
         The endpoint does not wait for a correlation result.
         Use the message correlation endpoint for such use cases.
       requestBody:
@@ -3110,6 +3111,8 @@ paths:
       description: |
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
+        The message is not buffered.
+        Use the publish message endpoint to send messages that can be buffered.
       requestBody:
         required: true
         content:
@@ -3205,6 +3208,83 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+  /documents/batch:
+    post:
+      tags:
+        - Document
+      operationId: createDocuments
+      summary: Upload multiple documents (alpha)
+      description: |
+        Upload multiple documents to the Camunda 8 cluster.
+
+        The caller must provide a file name for each document, which will be used in case of a multi-status response
+        to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
+        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        takes precedence.
+
+        In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
+        each of which contains the file name of the document that failed to upload and the reason for the failure.
+        The client can choose to retry the whole batch or individual documents based on the response.
+
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        :::note
+        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        in future releases.
+        :::
+      parameters:
+        - name: storeId
+          in: query
+          required: false
+          description: The ID of the document store to upload the documents to.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+              required:
+                - files
+            encoding:
+              files:
+                headers:
+                  X-Document-Metadata:
+                    schema:
+                      $ref: "#/components/schemas/DocumentMetadata"
+                  X-Document-Id:
+                    schema:
+                      type: string
+      responses:
+        "201":
+          description: All documents were uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
+        "207":
+          description: >
+            Not all documents were uploaded successfully. More details are provided in the response body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
+        "400":
+          description: >
+            The document upload failed. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /documents/{documentId}:
     get:
       tags:
@@ -3231,6 +3311,16 @@ paths:
           description: The ID of the document store to download the document from.
           schema:
             type: string
+        - name: contentHash
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            The hash of the document content that was computed by the document store during upload.
+            The hash is part of the document reference that is returned when uploading a document.
+            This header is required when hash verification is enabled for the document store.
+            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
       responses:
         "200":
           description: The document was downloaded successfully.
@@ -3313,6 +3403,16 @@ paths:
           description: The ID of the document store to link the document from.
           schema:
             type: string
+        - name: contentHash
+          in: query
+          required: false
+          schema:
+            type: string
+          description: >
+            The hash of the document content that was computed by the document store during upload.
+            The hash is part of the document reference that is returned when uploading a document.
+            This header is required when hash verification is enabled for the document store.
+            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
       requestBody:
         required: false
         content:
@@ -6215,27 +6315,27 @@ components:
       properties:
         type:
           description: >
-            the job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
-            type="payment-service" />)
+            The job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
+            type="payment-service" />).
           type: string
         worker:
-          description: the name of the worker activating the jobs, mostly used for logging purposes
+          description: The name of the worker activating the jobs, mostly used for logging purposes.
           type: string
           nullable: true
         timeout:
           description: >
-            a job returned after this call will not be activated by another call until the
-            timeout (in ms) has been reached
+            A job returned after this call will not be activated by another call until the
+            timeout (in ms) has been reached.
           type: integer
           format: int64
         maxJobsToActivate:
-          description: the maximum jobs to activate by this request
+          description: The maximum jobs to activate by this request.
           type: integer
           format: int32
         fetchVariable:
           description: >
-            a list of variables to fetch as the job variables; if empty, all visible variables at
-            the time of activation for the scope of the job will be returned
+            A list of variables to fetch as the job variables; if empty, all visible variables at
+            the time of activation for the scope of the job will be returned.
           type: array
           nullable: true
           items:
@@ -6251,7 +6351,7 @@ components:
           default: 0
           nullable: true
         tenantIds:
-          description: a list of IDs of tenants for which to activate jobs
+          description: A list of IDs of tenants for which to activate jobs.
           type: array
           items:
             type: string
@@ -6282,39 +6382,39 @@ components:
       type: object
       properties:
         type:
-          description: the type of the job (should match what was requested)
+          description: The type of the job (should match what was requested).
           type: string
         processDefinitionId:
-          description: the bpmn process ID of the job's process definition
+          description: The bpmn process ID of the job's process definition.
           type: string
         processDefinitionVersion:
-          description: the version of the job's process definition
+          description: The version of the job's process definition.
           type: integer
           format: int32
         elementId:
-          description: the associated task element ID
+          description: The associated task element ID.
           type: string
         customHeaders:
-          description: a set of custom headers defined during modelling; returned as a serialized JSON document
+          description: A set of custom headers defined during modelling; returned as a serialized JSON document.
           type: object
           additionalProperties: true
         worker:
-          description: the name of the worker which activated this job
+          description: The name of the worker which activated this job.
           type: string
         retries:
-          description: the amount of retries left to this job (should always be positive)
+          description: The amount of retries left to this job (should always be positive).
           type: integer
           format: int32
         deadline:
-          description: when the job can be activated again, sent as a UNIX epoch timestamp
+          description: When the job can be activated again, sent as a UNIX epoch timestamp.
           type: integer
           format: int64
         variables:
-          description: All variables visible to the task scope, computed at activation time
+          description: All variables visible to the task scope, computed at activation time.
           type: object
           additionalProperties: true
         tenantId:
-          description: The ID of the tenant that owns the job
+          description: The ID of the tenant that owns the job.
           type: string
     ActivatedJobNumberKeys:
       type: object
@@ -6322,21 +6422,21 @@ components:
         - $ref: "#/components/schemas/ActivatedJobBase"
       properties:
         jobKey:
-          description: the key, a unique identifier for the job
+          description: The key, a unique identifier for the job.
           type: integer
           format: int64
         processInstanceKey:
-          description: the job's process instance key
+          description: The job's process instance key.
           type: integer
           format: int64
         processDefinitionKey:
-          description: the key of the job's process definition
+          description: The key of the job's process definition.
           type: integer
           format: int64
         elementInstanceKey:
           description: >
-            the unique key identifying the associated task, unique within the scope of the
-            process instance
+            The unique key identifying the associated task, unique within the scope of the
+            process instance.
           type: integer
           format: int64
     ActivatedJob:
@@ -6345,18 +6445,18 @@ components:
         - $ref: "#/components/schemas/ActivatedJobBase"
       properties:
         jobKey:
-          description: the key, a unique identifier for the job
+          description: The key, a unique identifier for the job.
           type: string
         processInstanceKey:
-          description: the job's process instance key
+          description: The job's process instance key.
           type: string
         processDefinitionKey:
-          description: the key of the job's process definition
+          description: The key of the job's process definition.
           type: string
         elementInstanceKey:
           description: >
-            the unique key identifying the associated task, unique within the scope of the
-            process instance
+            The unique key identifying the associated task, unique within the scope of the
+            process instance.
           type: string
     JobFailRequest:
       type: object
@@ -7196,8 +7296,35 @@ components:
         documentId:
           type: string
           description: The ID of the document.
+        contentHash:
+          type: string
+          description: The hash of the document.
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
+
+    DocumentCreationFailureDetail:
+      type: object
+      properties:
+        filename:
+          type: string
+          description: The name of the file.
+        detail:
+          type: string
+          description: The detail of the failure.
+
+    DocumentCreationBatchResponse:
+      allOf:
+        - type: object
+          properties:
+            createdDocuments:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentReference"
+            failedDocuments:
+              type: array
+              items:
+                $ref: "#/components/schemas/DocumentCreationFailureDetail"
+
     DocumentMetadata:
       description: Information about the document.
       type: object
@@ -7216,6 +7343,13 @@ components:
           type: integer
           format: int64
           description: The size of the document in bytes.
+        processDefinitionId:
+          type: string
+          description: The ID of the process definition that created the document.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance that created the document.
         customProperties:
           type: object
           description: Custom properties of the document.

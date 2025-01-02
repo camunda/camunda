@@ -15,8 +15,6 @@
  */
 package io.camunda.client.impl.command;
 
-import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNull;
-
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.ExperimentalApi;
@@ -28,15 +26,12 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
-import io.camunda.client.protocol.rest.DocumentMetadata;
+import io.camunda.client.impl.util.DocumentBuilder;
 import io.camunda.client.protocol.rest.DocumentReference;
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.entity.mime.StringBody;
@@ -45,15 +40,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-public class CreateDocumentCommandImpl
+public class CreateDocumentCommandImpl extends DocumentBuilder
     implements CreateDocumentCommandStep1, CreateDocumentCommandStep2 {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateDocumentCommandImpl.class);
 
   private String documentId;
   private String storeId;
-  private InputStream content;
-  private final DocumentMetadata metadata;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -62,7 +55,6 @@ public class CreateDocumentCommandImpl
       final JsonMapper jsonMapper,
       final HttpClient httpClient,
       final CamundaClientConfiguration configuration) {
-    metadata = new DocumentMetadata();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -82,11 +74,10 @@ public class CreateDocumentCommandImpl
       final MultipartEntityBuilder entityBuilder =
           MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
 
-      final String name =
-          Optional.ofNullable(metadata.getFileName()).orElse("document-" + documentId);
-      entityBuilder.addBinaryBody("file", content, ContentType.DEFAULT_BINARY, name);
+      final String name = getMetadata().getFileName(); // can be null but is handled by the gateway
+      entityBuilder.addBinaryBody("file", getContent(), ContentType.DEFAULT_BINARY, name);
 
-      final String metadataString = jsonMapper.toJson(metadata);
+      final String metadataString = jsonMapper.toJson(getMetadata());
       entityBuilder.addPart(
           "metadata", new StringBody(metadataString, ContentType.APPLICATION_JSON));
 
@@ -110,7 +101,7 @@ public class CreateDocumentCommandImpl
       return result;
     } finally {
       try {
-        content.close();
+        getContent().close();
       } catch (final Exception e) {
         // log but otherwise ignore
         LOGGER.warn("Failed to close content stream", e);
@@ -120,22 +111,49 @@ public class CreateDocumentCommandImpl
 
   @Override
   public CreateDocumentCommandStep2 content(final InputStream content) {
-    ensureNotNull("content", content);
-    this.content = content;
+    super.content(content);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 content(final byte[] content) {
-    ensureNotNull("content", content);
-    this.content = new ByteArrayInputStream(content);
+    super.content(content);
     return this;
   }
 
   @Override
   public CreateDocumentCommandStep2 content(final String content) {
-    ensureNotNull("content", content);
-    this.content = new ByteArrayInputStream(content.getBytes());
+    super.content(content);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentCommandStep2 contentType(final String contentType) {
+    super.contentType(contentType);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentCommandStep2 fileName(final String name) {
+    super.fileName(name);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentCommandStep2 timeToLive(final Duration timeToLive) {
+    super.timeToLive(timeToLive);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentCommandStep2 customMetadata(final String key, final Object value) {
+    super.customMetadata(key, value);
+    return this;
+  }
+
+  @Override
+  public CreateDocumentCommandStep2 customMetadata(final Map<String, Object> customMetadata) {
+    super.customMetadata(customMetadata);
     return this;
   }
 
@@ -152,42 +170,14 @@ public class CreateDocumentCommandImpl
   }
 
   @Override
-  public CreateDocumentCommandStep2 contentType(final String contentType) {
-    metadata.setContentType(contentType);
+  public CreateDocumentCommandStep2 processDefinitionId(final String processDefinitionId) {
+    super.getMetadata().setProcessDefinitionId(processDefinitionId);
     return this;
   }
 
   @Override
-  public CreateDocumentCommandStep2 fileName(final String name) {
-    metadata.setFileName(name);
-    return this;
-  }
-
-  @Override
-  public CreateDocumentCommandStep2 timeToLive(final Duration timeToLive) {
-    final OffsetDateTime expiresAt = OffsetDateTime.now().plus(timeToLive);
-    metadata.setExpiresAt(expiresAt.toString());
-    return this;
-  }
-
-  @Override
-  public CreateDocumentCommandStep2 customMetadata(final String key, final Object value) {
-    ensureNotNull("key", key);
-    ensureNotNull("value", value);
-    if (metadata.getCustomProperties() == null) {
-      metadata.setCustomProperties(new HashMap<>());
-    }
-    metadata.getCustomProperties().put(key, value);
-    return this;
-  }
-
-  @Override
-  public CreateDocumentCommandStep2 customMetadata(final Map<String, Object> customMetadata) {
-    ensureNotNull("customMetadata", customMetadata);
-    if (metadata.getCustomProperties() == null) {
-      metadata.setCustomProperties(new HashMap<>());
-    }
-    metadata.getCustomProperties().putAll(customMetadata);
+  public CreateDocumentCommandStep2 processInstanceKey(final long processInstanceKey) {
+    super.getMetadata().setProcessInstanceKey(processInstanceKey);
     return this;
   }
 }

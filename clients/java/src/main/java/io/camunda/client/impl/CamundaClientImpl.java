@@ -35,6 +35,7 @@ import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
@@ -109,6 +110,7 @@ import io.camunda.client.impl.command.ClockPinCommandImpl;
 import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
+import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
@@ -795,20 +797,30 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand() {
+    return new CreateDocumentBatchCommandImpl(jsonMapper, httpClient, config);
+  }
+
+  @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, null, config);
   }
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(
       final DocumentReferenceResponse documentReference) {
     return new DocumentContentGetRequestImpl(
-        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
+        httpClient,
+        documentReference.getDocumentId(),
+        documentReference.getStoreId(),
+        documentReference.getContentHash(),
+        config);
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
-    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient, config);
+    return new CreateDocumentLinkCommandImpl(
+        documentId, null, null, jsonMapper, httpClient, config);
   }
 
   @Override
@@ -817,6 +829,7 @@ public final class CamundaClientImpl implements CamundaClient {
     return new CreateDocumentLinkCommandImpl(
         documentReference.getDocumentId(),
         documentReference.getStoreId(),
+        documentReference.getContentHash(),
         jsonMapper,
         httpClient,
         config);

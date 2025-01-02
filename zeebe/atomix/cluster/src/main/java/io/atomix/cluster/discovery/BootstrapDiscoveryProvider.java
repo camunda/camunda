@@ -95,13 +95,13 @@ public final class BootstrapDiscoveryProvider
 
   @Override
   public CompletableFuture<Void> join(final BootstrapService bootstrap, final Node localNode) {
-    LOGGER.info("Local node {} joined the bootstrap service", localNode);
+    LOGGER.debug("Local node {} joined the bootstrap service", localNode);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public CompletableFuture<Void> leave(final Node localNode) {
-    LOGGER.info("Local node {} left the bootstrap servide", localNode);
+    LOGGER.debug("Local node {} left the bootstrap servide", localNode);
     return CompletableFuture.completedFuture(null);
   }
 

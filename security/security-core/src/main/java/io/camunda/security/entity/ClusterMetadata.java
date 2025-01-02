@@ -7,6 +7,8 @@
  */
 package io.camunda.security.entity;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.HashMap;
@@ -75,10 +77,51 @@ public class ClusterMetadata implements Serializable {
 
   @Override
   public String toString() {
-    return "ClusterMetadata{uuid='%s', name='%s', urls='%s'}".formatted(uuid, name, urls);
+    return String.format("ClusterMetadata{uuid='%s', name='%s', urls='%s'}", uuid, name, urls);
   }
 
-  public record C8AppLink(String name, String link) {}
+  @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+  public static final class C8AppLink {
+    private final String name;
+    private final String link;
+
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public C8AppLink(
+        final @JsonProperty("name") String name, final @JsonProperty("link") String link) {
+      this.name = name;
+      this.link = link;
+    }
+
+    public String name() {
+      return name;
+    }
+
+    public String link() {
+      return link;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, link);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (obj == this) {
+        return true;
+      }
+      if (obj == null || obj.getClass() != getClass()) {
+        return false;
+      }
+      final C8AppLink that = (C8AppLink) obj;
+      return Objects.equals(name, that.name) && Objects.equals(link, that.link);
+    }
+
+    @Override
+    public String toString() {
+      return "C8AppLink[" + "name=" + name + ", " + "link=" + link + ']';
+    }
+  }
 
   public enum AppName {
     @JsonProperty("console")

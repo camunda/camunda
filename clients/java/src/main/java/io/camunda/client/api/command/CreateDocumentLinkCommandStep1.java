@@ -38,4 +38,11 @@ public interface CreateDocumentLinkCommandStep1 extends FinalCommandStep<Documen
    * @param timeToLive the time to live of the document link
    */
   CreateDocumentLinkCommandStep1 timeToLive(final Duration timeToLive);
+
+  /**
+   * Sets the documents content hash.
+   *
+   * @param contentHash the documents content Hash
+   */
+  CreateDocumentLinkCommandStep1 contentHash(final String contentHash);
 }

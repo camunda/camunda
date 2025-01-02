@@ -75,6 +75,9 @@ VOLUME ${OPTIMIZE_HOME}/logs
 
 RUN addgroup --gid 1001 camunda && \
     adduser -D -h ${OPTIMIZE_HOME} -G camunda -u 1001 camunda && \
+    apk add --no-cache bash curl tini openjdk21-jre tzdata && \
+    apk -U upgrade && \
+    curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${OPTIMIZE_HOME}/logs && \

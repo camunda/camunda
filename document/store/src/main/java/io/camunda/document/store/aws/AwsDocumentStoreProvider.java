@@ -12,6 +12,7 @@ import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigura
 import io.camunda.document.api.DocumentStoreProvider;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,8 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
   private static final String BUCKET_PATH = "BUCKET_PATH";
 
   @Override
-  public DocumentStore createDocumentStore(final DocumentStoreConfigurationRecord configuration) {
+  public DocumentStore createDocumentStore(
+      final DocumentStoreConfigurationRecord configuration, final ExecutorService executorService) {
     final String bucketName =
         Optional.ofNullable(configuration.properties().get(BUCKET_NAME_PROPERTY))
             .orElseThrow(
@@ -39,7 +41,7 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
                             + "'"));
 
     return AwsDocumentStoreFactory.create(
-        bucketName, getDefaultTTL(configuration), getBucketPath(configuration));
+        bucketName, getDefaultTTL(configuration), getBucketPath(configuration), executorService);
   }
 
   private static Long getDefaultTTL(final DocumentStoreConfigurationRecord configuration) {

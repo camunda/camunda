@@ -37,7 +37,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTest
     implements AuthenticationTestable {
 

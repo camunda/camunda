@@ -21,7 +21,8 @@ public interface ExporterResourceProvider {
   void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider,
-      final MeterRegistry meterRegistry);
+      final MeterRegistry meterRegistry,
+      final ExporterMetadata exporterMetadata);
 
   /**
    * This should return descriptors describing the desired state of all indices provided.

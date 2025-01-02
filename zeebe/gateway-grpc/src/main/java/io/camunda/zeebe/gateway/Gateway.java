@@ -12,12 +12,12 @@ import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 import com.google.rpc.Code;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
-import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
@@ -71,6 +71,7 @@ import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class Gateway implements CloseableSilently {
 
@@ -95,6 +96,7 @@ public final class Gateway implements CloseableSilently {
   private ExecutorService grpcExecutor;
   private final BrokerClient brokerClient;
   private final UserServices userServices;
+  private final PasswordEncoder passwordEncoder;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -102,7 +104,8 @@ public final class Gateway implements CloseableSilently {
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
@@ -110,7 +113,8 @@ public final class Gateway implements CloseableSilently {
         brokerClient,
         actorSchedulingService,
         jobStreamer,
-        userServices);
+        userServices,
+        passwordEncoder);
   }
 
   public Gateway(
@@ -120,7 +124,8 @@ public final class Gateway implements CloseableSilently {
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
-      final UserServices userServices) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
@@ -128,6 +133,7 @@ public final class Gateway implements CloseableSilently {
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
     this.userServices = userServices;
+    this.passwordEncoder = passwordEncoder;
     healthManager = new GatewayHealthManagerImpl();
   }
 
@@ -257,7 +263,7 @@ public final class Gateway implements CloseableSilently {
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
         .permitKeepAliveWithoutCalls(false)
         .withOption(ChannelOption.SO_RCVBUF, (int) cfg.getSocketReceiveBuffer().toBytes())
-        .withOption(ChannelOption.SO_SNDBUF, (int) cfg.getSocketSendBuffer().toBytes());
+        .withChildOption(ChannelOption.SO_SNDBUF, (int) cfg.getSocketSendBuffer().toBytes());
   }
 
   private void setSecurityConfig(
@@ -379,8 +385,8 @@ public final class Gateway implements CloseableSilently {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
-    if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
-      interceptors.add(new AuthenticationInterceptor(userServices));
+    if (!securityConfiguration.getAuthentication().getMethod().equals(AuthenticationMethod.NONE)) {
+      interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
     }
 
     return ServerInterceptors.intercept(service, interceptors);

@@ -22,9 +22,11 @@ import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,6 +95,10 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
 
     // and
     updateUserRealName();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(() -> userDetailsService.loadUserByUsername(TEST_USERNAME) != null);
 
     // then
     final UserDetails userDetails = userDetailsService.loadUserByUsername(TEST_USERNAME);

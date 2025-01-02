@@ -14,6 +14,7 @@ import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +31,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  */
 @Conditional(ElasticSearchCondition.class)
 @Configuration
-@Profile("optimize & !operate")
+@Profile("optimize")
+@ConditionalOnMissingBean({
+  ElasticsearchBackupRepository.class,
+  ElasticsearchTasklistBackupRepository.class
+})
 // only active if standalone, otherwise the operate one is used
 public class ElasticsearchOptimizeBackupRepository {
 

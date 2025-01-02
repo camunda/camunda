@@ -8,7 +8,6 @@
 package io.camunda.document.api;
 
 import io.camunda.zeebe.util.Either;
-import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 
 public interface DocumentStore {
@@ -16,10 +15,13 @@ public interface DocumentStore {
   CompletableFuture<Either<DocumentError, DocumentReference>> createDocument(
       DocumentCreationRequest request);
 
-  CompletableFuture<Either<DocumentError, InputStream>> getDocument(String documentId);
+  CompletableFuture<Either<DocumentError, DocumentContent>> getDocument(String documentId);
 
   CompletableFuture<Either<DocumentError, Void>> deleteDocument(String documentId);
 
   CompletableFuture<Either<DocumentError, DocumentLink>> createLink(
       String documentId, long durationInMillis);
+
+  CompletableFuture<Either<DocumentError, Void>> verifyContentHash(
+      String documentId, String contentHash);
 }

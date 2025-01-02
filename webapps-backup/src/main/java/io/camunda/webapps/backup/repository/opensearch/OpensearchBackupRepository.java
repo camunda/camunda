@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
@@ -56,6 +57,7 @@ import org.slf4j.LoggerFactory;
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  private static final String INDEX_MISSING_EXCEPTION_TYPE = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final OpenSearchClient openSearchClient;
@@ -218,6 +220,7 @@ public class OpensearchBackupRepository implements BackupRepository {
   @Override
   public void executeSnapshotting(
       final BackupService.SnapshotRequest snapshotRequest,
+      final boolean onlyRequired,
       final Runnable onSuccess,
       final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
@@ -229,7 +232,7 @@ public class OpensearchBackupRepository implements BackupRepository {
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
                 snapshotRequest.snapshotName(),
-                snapshotRequest.indices().indices())
+                snapshotRequest.indices(onlyRequired))
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
@@ -244,7 +247,13 @@ public class OpensearchBackupRepository implements BackupRepository {
             e -> "Failed to send snapshot create request!")
         .thenAccept(response -> handleSnapshotReceived(response.snapshot(), onSuccess, onFailure))
         .exceptionally(
-            e -> {
+            t -> {
+              final Throwable e;
+              if (t instanceof final CompletionException ce) {
+                e = ce.getCause();
+              } else {
+                e = t;
+              }
               if (e instanceof SocketTimeoutException) {
                 // This is thrown even if the backup is still running
                 LOGGER.warn(
@@ -280,6 +289,11 @@ public class OpensearchBackupRepository implements BackupRepository {
                     break;
                   }
                 }
+              } else if (isErrorType(e, INDEX_MISSING_EXCEPTION_TYPE) && !onlyRequired) {
+                LOGGER.debug(
+                    "Failed to execute snapshot because some index is missing, retry only with required indices",
+                    e);
+                executeSnapshotting(snapshotRequest, true, onSuccess, onFailure);
               } else {
                 LOGGER.error(
                     "Exception while creating snapshot [{}] for backup id [{}].",
@@ -294,14 +308,19 @@ public class OpensearchBackupRepository implements BackupRepository {
             });
   }
 
+  private boolean isErrorType(final Throwable t, final String errorType) {
+    if (t instanceof final OpenSearchException oe) {
+      return Objects.equals(oe.error().type(), errorType);
+    }
+    return false;
+  }
+
   private boolean isSnapshotMissingException(final Throwable t) {
-    return t instanceof OpenSearchException
-        && t.getMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+    return isErrorType(t, SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
   private boolean isRepositoryMissingException(final Exception e) {
-    return e instanceof OpenSearchException
-        && e.getMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+    return isErrorType(e, REPOSITORY_MISSING_EXCEPTION_TYPE);
   }
 
   private static String noRepositoryErrorMessage(final String repositoryName) {

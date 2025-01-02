@@ -7,8 +7,12 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import static io.camunda.tasklist.util.ErrorHandlingUtils.getErrorMessage;
+
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
@@ -16,8 +20,8 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.zeebe.gateway.cmd.ClientException;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.grpc.Status;
 import java.util.Map;
@@ -72,7 +76,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       try {
         camundaClient.newUserTaskAssignCommand(task.getKey()).assignee(assignee).send().join();
       } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
+        throw new TasklistRuntimeException(getErrorMessage(exception));
       }
     }
   }
@@ -88,7 +92,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       try {
         camundaClient.newUserTaskUnassignCommand(task.getKey()).send().join();
       } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(exception.getMessage());
+        throw new TasklistRuntimeException(getErrorMessage(exception));
       }
     }
   }
@@ -107,8 +111,19 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
         camundaClient.newUserTaskCompleteCommand(task.getKey()).variables(variables).send().join();
       }
     } catch (final ClientException exception) {
-      throw new TasklistRuntimeException(exception.getMessage());
+      throw new TasklistRuntimeException(getErrorMessage(exception));
     }
+  }
+
+  @Override
+  public void deployResourceWithoutAuthentication(
+      final String classpathResource, final String tenantId) {
+    final DeployResourceCommandStep2 deployResourceCommandStep2 =
+        camundaClient.newDeployResourceCommand().addResourceFile(classpathResource);
+    if (tenantService.isMultiTenancyEnabled()) {
+      deployResourceCommandStep2.tenantId(tenantId);
+    }
+    deployResourceCommandStep2.send();
   }
 
   private ProcessInstanceCreationRecord doCreateProcessInstance(

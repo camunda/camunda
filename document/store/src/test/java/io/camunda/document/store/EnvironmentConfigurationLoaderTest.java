@@ -91,4 +91,19 @@ public class EnvironmentConfigurationLoaderTest {
     assertThat(configuration.defaultDocumentStoreId()).isNull();
     assertThat(configuration.documentStores()).isEmpty();
   }
+
+  @Test
+  public void shouldLoadThreadPoolSize() {
+    // given
+    final EnvironmentConfigurationLoader loader = new EnvironmentConfigurationLoader();
+    System.setProperty("DOCUMENT_THREAD_POOL_SIZE", "10");
+
+    // when
+    final var configuration = loader.loadConfiguration();
+
+    // then
+    assertThat(configuration.threadPoolSize()).isEqualTo(10);
+
+    System.clearProperty("DOCUMENT_THREAD_POOL_SIZE");
+  }
 }

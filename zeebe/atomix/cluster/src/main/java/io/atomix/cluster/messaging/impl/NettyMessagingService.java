@@ -910,7 +910,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
               (ChannelFutureListener)
                   f -> {
                     if (f.isSuccess()) {
-                      log.info("TCP server listening for connections on {}", address);
                       serverChannel = f.channel();
                       bind(bootstrap, addressIterator, future);
                     } else {

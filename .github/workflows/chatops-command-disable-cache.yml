@@ -1,0 +1,104 @@
+---
+name: chatops-command-ci-disable-cache
+
+on:
+  repository_dispatch:
+    types: [ci-disable-cache-command, ci-enable-cache-command]
+
+env:
+  NO_CACHE_LABEL: "ci:no-cache"
+
+jobs:
+  chatops-command-disable-cache:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Create URL to the run output
+      id: vars
+      run: |
+        {
+        echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Generate a GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      with:
+        github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+        github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+        github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+        github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+
+    - name: Dump the client payload context
+      env:
+        PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+      run: echo "$PAYLOAD_CONTEXT"
+
+    - uses: actions/checkout@v4
+
+    - name: Git User Setup
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    - name: Disable cache restoration
+      id: ci-disable-cache
+      if: ${{ github.event.client_payload.slash_command.command == 'ci-disable-cache' }}
+      shell: bash
+      env:
+        GH_REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.client_payload.pull_request.number }}
+        BRANCH: ${{ github.event.client_payload.pull_request.head.ref }}
+      run: |
+        if [[ -n "$PR_NUMBER" ]]; then
+            gh pr edit "$PR_NUMBER" --add-label "$NO_CACHE_LABEL"
+            echo "Checkout branch $BRANCH and pushing empty commit"
+            git fetch && git checkout "$BRANCH"
+            git commit --allow-empty -m "ci: REMOVEME" && git push
+        else
+          echo ":debug:Command was not executed on a PR"
+        fi
+
+    - name: Enable cache restoration
+      id: ci-enable-cache
+      if: ${{ github.event.client_payload.slash_command.command == 'ci-enable-cache' }}
+      shell: bash
+      env:
+        GH_REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event.client_payload.pull_request.number }}
+        BRANCH: ${{ github.event.client_payload.pull_request.head.ref }}
+      run: |
+        if [[ -n "$PR_NUMBER" ]]; then
+            gh pr edit "$PR_NUMBER" --remove-label "$NO_CACHE_LABEL"
+            echo "Checkout branch $BRANCH and pushing empty commit"
+            git fetch && git checkout "$BRANCH"
+            git commit --allow-empty -m "ci: REMOVEME" && git push
+        else
+          echo ":debug:Command was not executed on a PR"
+        fi
+
+    - name: Add reaction
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        reactions: "+1"
+        reactions-edit-mode: replace
+
+    - name: Update comment in case of failure
+      if: failure()
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        token: ${{ steps.github-token.outputs.token }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        body: |
+          > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+        reactions: confused

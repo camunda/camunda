@@ -43,6 +43,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -50,7 +51,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "rdbms")
+@ConditionalOnProperty(
+    prefix = "camunda.database",
+    name = "type",
+    havingValue = DatabaseConfig.RDBMS)
 @Import(MyBatisConfiguration.class)
 public class RdbmsConfiguration {
 

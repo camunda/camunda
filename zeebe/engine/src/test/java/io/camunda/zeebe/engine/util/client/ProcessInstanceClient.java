@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util.client;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
@@ -141,6 +142,10 @@ public final class ProcessInstanceClient {
       return resultingRecord.getValue().getProcessInstanceKey();
     }
 
+    public long create(final long userKey) {
+      return create(AuthorizationUtil.getAuthInfo(userKey));
+    }
+
     public ProcessInstanceCreationClient expectRejection() {
       expectation = REJECTION_EXPECTATION;
       return this;
@@ -192,12 +197,38 @@ public final class ProcessInstanceClient {
           .getProcessInstanceKey();
     }
 
+    public long create(final long userKey) {
+      final long position =
+          writer.writeCommand(
+              requestStreamId,
+              requestId,
+              ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+              record,
+              userKey);
+
+      return RecordingExporter.processInstanceCreationRecords()
+          .withIntent(ProcessInstanceCreationIntent.CREATED)
+          .withSourceRecordPosition(position)
+          .getFirst()
+          .getValue()
+          .getProcessInstanceKey();
+    }
+
     public void asyncCreate() {
       writer.writeCommand(
           requestStreamId,
           requestId,
           ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
           record);
+    }
+
+    public void asyncCreate(final long userKey) {
+      writer.writeCommand(
+          requestStreamId,
+          requestId,
+          ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+          record,
+          userKey);
     }
   }
 
@@ -645,6 +676,25 @@ public final class ProcessInstanceClient {
               processInstanceKey,
               ProcessInstanceMigrationIntent.MIGRATE,
               record,
+              authorizedTenants);
+
+      if (expectation == REJECTION_EXPECTATION) {
+        return expectation.apply(processInstanceKey);
+      } else {
+        return expectation.apply(position);
+      }
+    }
+
+    public Record<ProcessInstanceMigrationRecordValue> migrate(final long userKey) {
+      record.setProcessInstanceKey(processInstanceKey);
+      mappingInstructions.forEach(record::addMappingInstruction);
+
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceMigrationIntent.MIGRATE,
+              record,
+              userKey,
               authorizedTenants);
 
       if (expectation == REJECTION_EXPECTATION) {
