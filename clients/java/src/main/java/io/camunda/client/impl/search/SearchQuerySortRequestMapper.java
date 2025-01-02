@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.search;
+package io.camunda.client.impl.search;
 
 import io.camunda.client.protocol.rest.*;
 import java.util.List;
