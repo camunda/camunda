@@ -228,12 +228,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>operate-common</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-webjar</artifactId>

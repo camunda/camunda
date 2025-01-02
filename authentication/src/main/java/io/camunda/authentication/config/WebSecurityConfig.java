@@ -68,7 +68,9 @@ public class WebSecurityConfig {
         // static assets are public
         "/identity/assets/**",
         "/tasklist/assets/**",
+        "/tasklist/client-config.js",
         "/operate/static/**",
+        "/operate/client-config.js",
       };
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);

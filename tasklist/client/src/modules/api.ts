@@ -124,7 +124,7 @@ const api = {
       );
     },
     getCurrentUser: () =>
-      new Request(getFullURL('/v1/internal/users/current'), {
+      new Request(getFullURL('/v2/authentication/me'), {
         ...BASE_REQUEST_OPTIONS,
         method: 'GET',
         headers: {
