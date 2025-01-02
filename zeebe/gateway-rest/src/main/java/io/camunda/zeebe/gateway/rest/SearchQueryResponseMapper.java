@@ -259,7 +259,7 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
     return new ProcessDefinitionItem()
-        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
+        .processDefinitionKey(entity.processDefinitionKey())
         .name(entity.name())
         .resourceName(entity.resourceName())
         .version(entity.version())
@@ -275,14 +275,14 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
-        .processInstanceKey(keyToString(p.processInstanceKey()))
+        .processInstanceKey(p.processInstanceKey())
         .processDefinitionId(p.processDefinitionId())
         .processDefinitionName(p.processDefinitionName())
         .processDefinitionVersion(p.processDefinitionVersion())
         .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(keyToString(p.processDefinitionKey()))
-        .parentProcessInstanceKey(keyToString(p.parentProcessInstanceKey()))
-        .parentFlowNodeInstanceKey(keyToString(p.parentFlowNodeInstanceKey()))
+        .processDefinitionKey(p.processDefinitionKey())
+        .parentProcessInstanceKey(p.parentProcessInstanceKey())
+        .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
@@ -295,7 +295,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static RoleItem toRole(final RoleEntity roleEntity) {
-    return new RoleItem().key(keyToString(roleEntity.roleKey())).name(roleEntity.name());
+    return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
   }
 
   private static List<GroupItem> toGroups(final List<GroupEntity> groups) {
@@ -303,7 +303,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static GroupItem toGroup(final GroupEntity groupEntity) {
-    return new GroupItem().groupKey(keyToString(groupEntity.groupKey())).name(groupEntity.name());
+    return new GroupItem().groupKey(groupEntity.groupKey()).name(groupEntity.name());
   }
 
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {
@@ -312,16 +312,13 @@ public final class SearchQueryResponseMapper {
 
   public static TenantItem toTenant(final TenantEntity tenantEntity) {
     return new TenantItem()
-        .tenantKey(keyToString(tenantEntity.key()))
+        .tenantKey(tenantEntity.key())
         .name(tenantEntity.name())
         .tenantId(tenantEntity.tenantId())
         .assignedMemberKeys(
             tenantEntity.assignedMemberKeys() == null
                 ? null
-                : tenantEntity.assignedMemberKeys().stream()
-                    .map(SearchQueryResponseMapper::keyToString)
-                    .sorted()
-                    .toList());
+                : tenantEntity.assignedMemberKeys().stream().sorted().toList());
   }
 
   private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {
@@ -330,7 +327,7 @@ public final class SearchQueryResponseMapper {
 
   public static MappingItem toMapping(final MappingEntity mappingEntity) {
     return new MappingItem()
-        .mappingKey(keyToString(mappingEntity.mappingKey()))
+        .mappingKey(mappingEntity.mappingKey())
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
         .name(mappingEntity.name());
@@ -364,13 +361,13 @@ public final class SearchQueryResponseMapper {
   public static FlowNodeInstanceItem toFlowNodeInstance(
       final FlowNodeInstanceEntity instance, final String name) {
     return new FlowNodeInstanceItem()
-        .flowNodeInstanceKey(keyToString(instance.flowNodeInstanceKey()))
+        .flowNodeInstanceKey(instance.flowNodeInstanceKey())
         .flowNodeId(instance.flowNodeId())
         .flowNodeName(name)
-        .processDefinitionKey(keyToString(instance.processDefinitionKey()))
+        .processDefinitionKey(instance.processDefinitionKey())
         .processDefinitionId(instance.processDefinitionId())
-        .processInstanceKey(keyToString(instance.processInstanceKey()))
-        .incidentKey(keyToString(instance.incidentKey()))
+        .processInstanceKey(instance.processInstanceKey())
+        .incidentKey(instance.incidentKey())
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
@@ -382,11 +379,11 @@ public final class SearchQueryResponseMapper {
   public static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
-        .decisionDefinitionKey(keyToString(d.decisionDefinitionKey()))
+        .decisionDefinitionKey(d.decisionDefinitionKey())
         .name(d.name())
         .version(d.version())
         .decisionDefinitionId(d.decisionDefinitionId())
-        .decisionRequirementsKey(keyToString(d.decisionRequirementsKey()))
+        .decisionRequirementsKey(d.decisionRequirementsKey())
         .decisionRequirementsId(d.decisionRequirementsId());
   }
 
@@ -394,7 +391,7 @@ public final class SearchQueryResponseMapper {
       final DecisionRequirementsEntity d) {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
-        .decisionRequirementsKey(keyToString(d.decisionRequirementsKey()))
+        .decisionRequirementsKey(d.decisionRequirementsKey())
         .name(d.name())
         .version(d.version())
         .resourceName(d.resourceName())
@@ -421,34 +418,34 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
-        .incidentKey(keyToString(t.incidentKey()))
-        .processDefinitionKey(keyToString(t.processDefinitionKey()))
+        .incidentKey(t.incidentKey())
+        .processDefinitionKey(t.processDefinitionKey())
         .processDefinitionId(t.processDefinitionId())
-        .processInstanceKey(keyToString(t.processInstanceKey()))
+        .processInstanceKey(t.processInstanceKey())
         .errorType(IncidentItem.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
         .flowNodeId(t.flowNodeId())
-        .flowNodeInstanceKey(keyToString(t.flowNodeInstanceKey()))
+        .flowNodeInstanceKey(t.flowNodeInstanceKey())
         .creationTime(formatDate(t.creationTime()))
         .state(IncidentItem.StateEnum.fromValue(t.state().name()))
-        .jobKey(keyToString(t.jobKey()))
+        .jobKey(t.jobKey())
         .tenantId(t.tenantId());
   }
 
   public static UserTaskItem toUserTask(final UserTaskEntity t, final String name) {
     return new UserTaskItem()
         .tenantId(t.tenantId())
-        .userTaskKey(keyToString(t.userTaskKey()))
+        .userTaskKey(t.userTaskKey())
         .name(name)
-        .processInstanceKey(keyToString(t.processInstanceKey()))
-        .processDefinitionKey(keyToString(t.processDefinitionKey()))
-        .elementInstanceKey(keyToString(t.elementInstanceKey()))
+        .processInstanceKey(t.processInstanceKey())
+        .processDefinitionKey(t.processDefinitionKey())
+        .elementInstanceKey(t.elementInstanceKey())
         .processDefinitionId(t.processDefinitionId())
         .state(UserTaskItem.StateEnum.fromValue(t.state().name()))
         .assignee(t.assignee())
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
-        .formKey(keyToString(t.formKey()))
+        .formKey(t.formKey())
         .elementId(t.elementId())
         .creationDate(formatDate(t.creationDate()))
         .completionDate(formatDate(t.completionDate()))
@@ -462,7 +459,7 @@ public final class SearchQueryResponseMapper {
 
   public static FormItem toFormItem(final FormEntity f) {
     return new FormItem()
-        .formKey(keyToString(f.formKey()))
+        .formKey(f.formKey())
         .bpmnId(f.formId())
         .version(f.version())
         .schema(f.schema())
@@ -475,7 +472,7 @@ public final class SearchQueryResponseMapper {
 
   public static UserResponse toUser(final UserEntity user) {
     return new UserResponse()
-        .key(keyToString(user.userKey()))
+        .key(user.userKey())
         .username(user.username())
         .email(user.email())
         .name(user.name());
@@ -488,14 +485,14 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
-        .decisionInstanceKey(keyToString(entity.decisionInstanceKey()))
+        .decisionInstanceKey(entity.decisionInstanceKey())
         .decisionInstanceId(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(keyToString(entity.processInstanceKey()))
-        .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
+        .processDefinitionKey(entity.processDefinitionKey())
+        .processInstanceKey(entity.processInstanceKey())
+        .decisionDefinitionKey(entity.decisionDefinitionKey())
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
@@ -506,14 +503,14 @@ public final class SearchQueryResponseMapper {
   public static DecisionInstanceGetQueryResponse toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return new DecisionInstanceGetQueryResponse()
-        .decisionInstanceKey(keyToString(entity.decisionInstanceKey()))
+        .decisionInstanceKey(entity.decisionInstanceKey())
         .decisionInstanceId(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(keyToString(entity.processInstanceKey()))
-        .decisionDefinitionKey(keyToString(entity.decisionDefinitionKey()))
+        .processDefinitionKey(entity.processDefinitionKey())
+        .processInstanceKey(entity.processInstanceKey())
+        .decisionDefinitionKey(entity.decisionDefinitionKey())
         .decisionDefinitionId(entity.decisionDefinitionId())
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
@@ -610,14 +607,14 @@ public final class SearchQueryResponseMapper {
 
   public static VariableItem toVariable(final VariableEntity variableEntity) {
     return new VariableItem()
-        .variableKey(keyToString(variableEntity.variableKey()))
+        .variableKey(variableEntity.variableKey())
         .name(variableEntity.name())
         .value(variableEntity.value())
         .fullValue(variableEntity.fullValue())
-        .processInstanceKey(keyToString(variableEntity.processInstanceKey()))
+        .processInstanceKey(variableEntity.processInstanceKey())
         .tenantId(variableEntity.tenantId())
         .isTruncated(variableEntity.isPreview())
-        .scopeKey(keyToString(variableEntity.scopeKey()));
+        .scopeKey(variableEntity.scopeKey());
   }
 
   public static AuthorizationSearchResponse toAuthorizationSearchQueryResponse(
@@ -638,7 +635,7 @@ public final class SearchQueryResponseMapper {
   public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
     return new AuthorizationResponse()
         .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
-        .ownerKey(keyToString(authorization.ownerKey()))
+        .ownerKey(authorization.ownerKey())
         .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
         .permissions(
             authorization.permissions().stream()
@@ -648,10 +645,6 @@ public final class SearchQueryResponseMapper {
                             .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
                             .resourceIds(p.resourceIds()))
                 .toList());
-  }
-
-  private static String keyToString(final Long key) {
-    return key == null ? null : key.toString();
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
