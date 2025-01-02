@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.entity;
 
+import com.google.common.base.Objects;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -15,7 +17,7 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
-public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
+public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable {
   private final OidcUser user;
   private final AuthenticationContext authentication;
   private final Set<Long> mappingKeys;
@@ -84,5 +86,21 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
 
   public Set<Long> getMappingKeys() {
     return mappingKeys;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(user, organizationIds, mappingKeys, authentication);
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other instanceof final CamundaOidcUser otherUser) {
+      return user.equals(otherUser.user)
+          && organizationIds.equals(otherUser.organizationIds)
+          && mappingKeys.equals(otherUser.mappingKeys)
+          && authentication.equals(otherUser.authentication);
+    }
+    return false;
   }
 }
