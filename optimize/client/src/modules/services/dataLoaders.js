@@ -7,7 +7,7 @@
  */
 
 import {get, post} from 'request';
-import { getFullURL } from '../api.ts';
+import { getAbsoluteURL } from '../api.ts';
 
 export {loadProcessDefinitionXml, loadVariables} from './dataLoaders.ts';
 
@@ -22,7 +22,7 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
       payload.tenantId = tenantId;
     }
 
-    const response = await post(getFullURL(`api/flow-node/flowNodeNames`), payload);
+    const response = await post(getAbsoluteURL(`api/flow-node/flowNodeNames`), payload);
 
     const json = await response.json();
 
@@ -33,6 +33,6 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
 }
 
 export async function checkDeleteConflict(id, entity) {
-  const response = await get(getFullURL(`api/${entity}/${id}/delete-conflicts`));
+  const response = await get(getAbsoluteURL(`api/${entity}/${id}/delete-conflicts`));
   return await response.json();
 }

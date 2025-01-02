@@ -7,10 +7,10 @@
  */
 
 import {get} from 'request';
-import { getFullURL } from '../api';
+import { getAbsoluteURL } from '../api';
 
 export async function loadTranslation(version: string, localeCode: string) {
-  const response = await get(getFullURL(`api/localization`), {
+  const response = await get(getAbsoluteURL(`api/localization`), {
     version,
     localeCode,
   });

@@ -8,7 +8,7 @@
 
 import {post, get} from 'request';
 import equal from 'fast-deep-equal';
-import { getFullURL } from '../api';
+import { getAbsoluteURL } from '../api';
 
 export async function loadValues(
   processDefinitionKey,
@@ -20,7 +20,7 @@ export async function loadValues(
   numResults,
   valueFilter
 ) {
-  const response = await post(getFullURL(`api/variables/values`), {
+  const response = await post(`api/variables/values`, {
     processDefinitionKey,
     processDefinitionVersions,
     tenantIds,
@@ -65,7 +65,7 @@ export function filterSameTypeExistingFilters(filters, newFilter) {
 }
 
 export async function loadUserNames(type, ids) {
-  const response = await get(getFullURL(`api/${type}`), {idIn: ids.join(',')});
+  const response = await get(getAbsoluteURL(`api/${type}`), {idIn: ids.join(',')});
 
   return await response.json();
 }

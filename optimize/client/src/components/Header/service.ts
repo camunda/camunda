@@ -7,10 +7,10 @@
  */
 
 import {get} from 'request';
-import {getFullURL} from '../../modules/api';
+import {getAbsoluteURL} from '../../modules/api';
 
 export async function getUserToken(): Promise<string> {
-  const response = await get(getFullURL('api/token'));
+  const response = await get(getAbsoluteURL('api/token'));
   const value = (await response.json()) as {token: string};
   return value.token;
 }
