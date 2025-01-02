@@ -21,6 +21,8 @@ type C8RunSettings struct {
 	keystore         string
 	keystorePassword string
 	logLevel         string
+	username         string
+	password         string
 }
 
 type TemplateData struct {

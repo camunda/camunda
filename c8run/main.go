@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/unix"
@@ -65,7 +64,7 @@ func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
 	if settings.keystore != "" && settings.keystorePassword != "" {
 		protocol = "https"
 	}
-	url := protocol + "://localhost:" + strconv.Itoa(settings.port) + "/operate/login"
+	url := protocol + "://localhost:9600/actuator/health"
 	for retries := 24; retries >= 0; retries-- {
 		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
 		time.Sleep(14 * time.Second)
@@ -103,16 +102,7 @@ func stopProcess(c8 C8Run, pidfile string) {
 		}
 		os.Remove(pidfile)
 
-	} else if errors.Is(err, os.ErrNotExist) {
-		// path/to/whatever does *not* exist
-
-	} else {
-		// Schrodinger: file may or may not exist. See err for details.
-
-		// Therefore, do *NOT* use !os.IsNotExist(err) to test for file existence
-
 	}
-
 }
 
 func getC8RunPlatform() C8Run {
@@ -133,7 +123,20 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
 	}
-	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity"
+	if settings.username != "" || settings.password != "" {
+		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
+		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
+		javaOpts = javaOpts + " -Dcamunda.security.authorizations.enabled=true"
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo"
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@demo.com"
+	}
+	if settings.username != "" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.username
+	}
+	if settings.password != "" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.password
+	}
+	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,auth-basic"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	return javaOpts
 }
@@ -159,7 +162,7 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.7.0-alpha2"
+	camundaVersion := "8.7.0-SNAPSHOT"
 	connectorsVersion := "8.7.0-alpha2.1"
 	if os.Getenv("CAMUNDA_VERSION") != "" {
 		camundaVersion = os.Getenv("CAMUNDA_VERSION")
@@ -214,6 +217,8 @@ func main() {
 	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
+	startFlagSet.StringVar(&settings.username, "username", "", "Change the first users username (default: demo)")
+	startFlagSet.StringVar(&settings.password, "password", "", "Change the first users password (default: demo)")
 
 	switch baseCommand {
 	case "start":
