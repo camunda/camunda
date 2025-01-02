@@ -98,13 +98,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/CamundaUserResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/CamundaUserNumberKeys"
+                $ref: "#/components/schemas/CamundaUser"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/CamundaUser"
+                $ref: "#/components/schemas/CamundaUserResult"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -130,13 +130,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JobActivationResponse"
+                $ref: "#/components/schemas/JobActivationResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/JobActivationResponseNumberKeys"
+                $ref: "#/components/schemas/JobActivationResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/JobActivationResponse"
+                $ref: "#/components/schemas/JobActivationResult"
         "400":
           description: >
             The provided data is not valid.
@@ -395,13 +395,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantCreateResponse"
+                $ref: "#/components/schemas/TenantCreateResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/TenantCreateResponseNumberKeys"
+                $ref: "#/components/schemas/TenantCreateResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/TenantCreateResponse"
+                $ref: "#/components/schemas/TenantCreateResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -446,13 +446,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantUpdateResponse"
+                $ref: "#/components/schemas/TenantUpdateResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/TenantUpdateResponseNumberKeys"
+                $ref: "#/components/schemas/TenantUpdateResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/TenantUpdateResponse"
+                $ref: "#/components/schemas/TenantUpdateResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -490,13 +490,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantItem"
+                $ref: "#/components/schemas/TenantResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/TenantItemNumberKeys"
+                $ref: "#/components/schemas/TenantItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/TenantItem"
+                $ref: "#/components/schemas/TenantResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -818,13 +818,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantSearchQueryResponse"
+                $ref: "#/components/schemas/TenantSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/TenantSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/TenantSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/TenantSearchQueryResponse"
+                $ref: "#/components/schemas/TenantSearchQueryResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -966,13 +966,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserTaskItem"
+                $ref: "#/components/schemas/UserTaskResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/UserTaskItemNumberKeys"
+                $ref: "#/components/schemas/UserTaskItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/UserTaskItem"
+                $ref: "#/components/schemas/UserTaskResult"
         "400":
           description: >
             The provided data is not valid.
@@ -1067,13 +1067,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FormItem"
+                $ref: "#/components/schemas/FormResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/FormItemNumberKeys"
+                $ref: "#/components/schemas/FormItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/FormItem"
+                $ref: "#/components/schemas/FormResult"
         "204":
           description: >
             The user task was found, but no form is associated with it.
@@ -1159,13 +1159,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+                $ref: "#/components/schemas/UserTaskSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/UserTaskSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+                $ref: "#/components/schemas/UserTaskSearchQueryResult"
         "400":
           description: >
             The user task search query failed.
@@ -1210,13 +1210,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/VariableSearchQueryResponse"
+                $ref: "#/components/schemas/VariableSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/VariableSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/VariableSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/VariableSearchQueryResponse"
+                $ref: "#/components/schemas/VariableSearchQueryResult"
         "400":
           description: >
             The user task variables search query failed.
@@ -1249,13 +1249,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/VariableSearchQueryResponse"
+                $ref: "#/components/schemas/VariableSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/VariableSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/VariableSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/VariableSearchQueryResponse"
+                $ref: "#/components/schemas/VariableSearchQueryResult"
         "400":
           description: >
             The user task search query failed.
@@ -1294,13 +1294,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/VariableItem"
+                $ref: "#/components/schemas/VariableResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/VariableItemNumberKeys"
+                $ref: "#/components/schemas/VariableItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/VariableItem"
+                $ref: "#/components/schemas/VariableResult"
         "400":
           description: "Bad request"
           content:
@@ -1392,13 +1392,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponse"
+                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResponse"
+                $ref: "#/components/schemas/ProcessDefinitionSearchQueryResult"
         "400":
           description: >
             The process definition search query failed.
@@ -1437,13 +1437,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionItem"
+                $ref: "#/components/schemas/ProcessDefinitionResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionItemNumberKeys"
+                $ref: "#/components/schemas/ProcessDefinitionItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/ProcessDefinitionItem"
+                $ref: "#/components/schemas/ProcessDefinitionResult"
         "400":
           description: >
             The process definition request failed.
@@ -1546,13 +1546,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FormItem"
+                $ref: "#/components/schemas/FormResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/FormItemNumberKeys"
+                $ref: "#/components/schemas/FormItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/FormItem"
+                $ref: "#/components/schemas/FormResult"
         "204":
           description: >
             The process was found, but no form is associated with it.
@@ -1612,13 +1612,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreateProcessInstanceResponse"
+                $ref: "#/components/schemas/CreateProcessInstanceResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/CreateProcessInstanceResponseNumberKeys"
+                $ref: "#/components/schemas/CreateProcessInstanceResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/CreateProcessInstanceResponse"
+                $ref: "#/components/schemas/CreateProcessInstanceResult"
         "400":
           description: The provided data is not valid.
         "500":
@@ -1646,13 +1646,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceItem"
+                $ref: "#/components/schemas/ProcessInstanceResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceItemNumberKeys"
+                $ref: "#/components/schemas/ProcessInstanceItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceItem"
+                $ref: "#/components/schemas/ProcessInstanceResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -1692,13 +1692,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
         "400":
           description: >
             The process instance search query failed.
@@ -1865,13 +1865,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
         "400":
           description: >
             The Flow node instance search query failed.
@@ -1910,13 +1910,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceItem"
+                $ref: "#/components/schemas/FlowNodeInstanceResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceItemNumberKeys"
+                $ref: "#/components/schemas/FlowNodeInstanceItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/FlowNodeInstanceItem"
+                $ref: "#/components/schemas/FlowNodeInstanceResult"
         "400":
           description: >
             The flow node instance request failed.
@@ -1961,13 +1961,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResult"
         "400":
           description: >
             The decision definition search query failed.
@@ -2006,13 +2006,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionItem"
+                $ref: "#/components/schemas/DecisionDefinitionResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionItemNumberKeys"
+                $ref: "#/components/schemas/DecisionDefinitionItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/DecisionDefinitionItem"
+                $ref: "#/components/schemas/DecisionDefinitionResult"
         "400":
           description: >
             The decision definition request failed.
@@ -2104,13 +2104,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResult"
         "400":
           description: >
             The search query failed.
@@ -2149,13 +2149,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsItem"
+                $ref: "#/components/schemas/DecisionRequirementsResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsItemNumberKeys"
+                $ref: "#/components/schemas/DecisionRequirementsItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/DecisionRequirementsItem"
+                $ref: "#/components/schemas/DecisionRequirementsResult"
         "400":
           description: >
             The decision requirements request failed.
@@ -2247,13 +2247,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResult"
         "400":
           description: >
             The decision instance search query failed.
@@ -2291,7 +2291,13 @@ paths:
           content:
             application/json:
               schema:
+                $ref: "#/components/schemas/DecisionInstanceGetQueryResult"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
                 $ref: "#/components/schemas/DecisionInstanceGetQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceGetQueryResult"
         "400":
           description: >
             The decision instance request failed.
@@ -2349,13 +2355,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EvaluateDecisionResponse"
+                $ref: "#/components/schemas/EvaluateDecisionResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/EvaluateDecisionResponseNumberKeys"
+                $ref: "#/components/schemas/EvaluateDecisionResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/EvaluateDecisionResponse"
+                $ref: "#/components/schemas/EvaluateDecisionResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -2441,13 +2447,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponse"
+                $ref: "#/components/schemas/AuthorizationSearchResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponseNumberKeys"
+                $ref: "#/components/schemas/AuthorizationSearchResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponse"
+                $ref: "#/components/schemas/AuthorizationSearchResult"
         "400":
           description: >
             The authorization search query failed.
@@ -2483,13 +2489,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RoleCreateResponse"
+                $ref: "#/components/schemas/RoleCreateResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/RoleCreateResponseNumberKeys"
+                $ref: "#/components/schemas/RoleCreateResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/RoleCreateResponse"
+                $ref: "#/components/schemas/RoleCreateResult"
         "400":
           description: |
             The role could not be created.
@@ -2526,13 +2532,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RoleItem"
+                $ref: "#/components/schemas/RoleResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/RoleItemNumberKeys"
+                $ref: "#/components/schemas/RoleItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/RoleItem"
+                $ref: "#/components/schemas/RoleResult"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2632,13 +2638,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RoleSearchQueryResponse"
+                $ref: "#/components/schemas/RoleSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/RoleSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/RoleSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/RoleSearchQueryResponse"
+                $ref: "#/components/schemas/RoleSearchQueryResult"
         "400":
           description: >
             The role search query failed.
@@ -2675,13 +2681,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupCreateResponse"
+                $ref: "#/components/schemas/GroupCreateResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/GroupCreateResponseNumberKeys"
+                $ref: "#/components/schemas/GroupCreateResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/GroupCreateResponse"
+                $ref: "#/components/schemas/GroupCreateResult"
         "400":
           description: |
             The group could not be created.
@@ -2718,13 +2724,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupItem"
+                $ref: "#/components/schemas/GroupResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/GroupItemNumberKeys"
+                $ref: "#/components/schemas/GroupItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/GroupItem"
+                $ref: "#/components/schemas/GroupResult"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2917,13 +2923,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupSearchQueryResponse"
+                $ref: "#/components/schemas/GroupSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/GroupSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/GroupSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/GroupSearchQueryResponse"
+                $ref: "#/components/schemas/GroupSearchQueryResult"
         "400":
           description: >
             The group search query failed.
@@ -2962,13 +2968,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingRuleCreateResponse"
+                $ref: "#/components/schemas/MappingRuleCreateResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/MappingRuleCreateResponseNumberKeys"
+                $ref: "#/components/schemas/MappingRuleCreateResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/MappingRuleCreateResponse"
+                $ref: "#/components/schemas/MappingRuleCreateResult"
         "400":
           description: The mapping rule could not be created.
           content:
@@ -3040,13 +3046,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResponse"
+                $ref: "#/components/schemas/MappingSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/MappingSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResponse"
+                $ref: "#/components/schemas/MappingSearchQueryResult"
         "400":
           description: >
             The mapping rule search query failed.
@@ -3086,13 +3092,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessagePublicationResponse"
+                $ref: "#/components/schemas/MessagePublicationResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/MessagePublicationResponseNumberKeys"
+                $ref: "#/components/schemas/MessagePublicationResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/MessagePublicationResponse"
+                $ref: "#/components/schemas/MessagePublicationResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -3125,13 +3131,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MessageCorrelationResponse"
+                $ref: "#/components/schemas/MessageCorrelationResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/MessageCorrelationResponseNumberKeys"
+                $ref: "#/components/schemas/MessageCorrelationResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/MessageCorrelationResponse"
+                $ref: "#/components/schemas/MessageCorrelationResult"
         "400":
           description: The provided data is not valid
           content:
@@ -3454,13 +3460,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserCreateResponse"
+                $ref: "#/components/schemas/UserCreateResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/UserCreateResponseNumberKeys"
+                $ref: "#/components/schemas/UserCreateResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/UserCreateResponse"
+                $ref: "#/components/schemas/UserCreateResult"
         "400":
           description: |
             Unable to create the user.
@@ -3503,13 +3509,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponse"
+                $ref: "#/components/schemas/UserSearchResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponseNumberKeys"
+                $ref: "#/components/schemas/UserSearchResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/UserSearchResponse"
+                $ref: "#/components/schemas/UserSearchResult"
         "400":
           description: >
             The user search query failed.
@@ -3553,13 +3559,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponse"
+                $ref: "#/components/schemas/AuthorizationSearchResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponseNumberKeys"
+                $ref: "#/components/schemas/AuthorizationSearchResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponse"
+                $ref: "#/components/schemas/AuthorizationSearchResult"
         "400":
           description: >
             The user authorization search query failed.
@@ -3630,13 +3636,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IncidentSearchQueryResponse"
+                $ref: "#/components/schemas/IncidentSearchQueryResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/IncidentSearchQueryResponseNumberKeys"
+                $ref: "#/components/schemas/IncidentSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/IncidentSearchQueryResponse"
+                $ref: "#/components/schemas/IncidentSearchQueryResult"
         "400":
           description: >
             The incident search query failed.
@@ -3671,13 +3677,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/IncidentItem"
+                $ref: "#/components/schemas/IncidentResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/IncidentItemNumberKeys"
+                $ref: "#/components/schemas/IncidentItem"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/IncidentItem"
+                $ref: "#/components/schemas/IncidentResult"
         "400":
           description: >
             The incident request failed.
@@ -3778,13 +3784,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeploymentResponse"
+                $ref: "#/components/schemas/DeploymentResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/DeploymentResponseNumberKeys"
+                $ref: "#/components/schemas/DeploymentResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/DeploymentResponse"
+                $ref: "#/components/schemas/DeploymentResult"
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
@@ -3894,13 +3900,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SignalBroadcastResponse"
+                $ref: "#/components/schemas/SignalBroadcastResult"
             application/vnd.camunda.api.keys.number+json:
               schema:
-                $ref: "#/components/schemas/SignalBroadcastResponseNumberKeys"
+                $ref: "#/components/schemas/SignalBroadcastResponse"
             application/vnd.camunda.api.keys.string+json:
               schema:
-                $ref: "#/components/schemas/SignalBroadcastResponse"
+                $ref: "#/components/schemas/SignalBroadcastResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -3930,7 +3936,7 @@ components:
       required:
         - tenantId
 
-    TenantCreateResponseNumberKeys:
+    TenantCreateResponse:
       deprecated: true
       type: object
       properties:
@@ -3938,7 +3944,7 @@ components:
           description: The external key of the created tenant
           type: integer
           format: int64
-    TenantCreateResponse:
+    TenantCreateResult:
       type: object
       properties:
         tenantKey:
@@ -3964,7 +3970,7 @@ components:
         name:
           type: string
           description: The name of the tenant.
-    TenantUpdateResponseNumberKeys:
+    TenantUpdateResponse:
       deprecated: true
       type: object
       allOf:
@@ -3974,7 +3980,7 @@ components:
           type: integer
           description: The unique system-generated internal tenant ID.
           format: int64
-    TenantUpdateResponse:
+    TenantUpdateResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/TenantUpdateResponseBase"
@@ -3993,7 +3999,7 @@ components:
         tenantId:
           type: string
           description: The unique external tenant ID.
-    TenantItemNumberKeys:
+    TenantItem:
       description: Tenant search response item. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4010,7 +4016,7 @@ components:
           items:
             type: integer
             format: int64
-    TenantItem:
+    TenantResult:
       description: Tenant search response item.
       type: object
       allOf:
@@ -4047,7 +4053,7 @@ components:
           type: string
           description: The name of the tenant.
 
-    TenantSearchQueryResponseNumberKeys:
+    TenantSearchQueryResponse:
       description: Tenant search response. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4058,8 +4064,8 @@ components:
           description: The matching tenants.
           type: array
           items:
-            $ref: "#/components/schemas/TenantItemNumberKeys"
-    TenantSearchQueryResponse:
+            $ref: "#/components/schemas/TenantItem"
+    TenantSearchQueryResult:
       description: Tenant search response.
       type: object
       allOf:
@@ -4069,7 +4075,7 @@ components:
           description: The matching tenants.
           type: array
           items:
-            $ref: "#/components/schemas/TenantItem"
+            $ref: "#/components/schemas/TenantResult"
 
     UserTaskSearchQueryRequest:
       allOf:
@@ -4086,7 +4092,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.
       type: object
-    UserTaskSearchQueryResponseNumberKeys:
+    UserTaskSearchQueryResponse:
       description: User task search query response. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4097,8 +4103,8 @@ components:
           description: The matching user tasks.
           type: array
           items:
-            $ref: "#/components/schemas/UserTaskItemNumberKeys"
-    UserTaskSearchQueryResponse:
+            $ref: "#/components/schemas/UserTaskItem"
+    UserTaskSearchQueryResult:
       description: User task search query response.
       type: object
       allOf:
@@ -4108,7 +4114,7 @@ components:
           description: The matching user tasks.
           type: array
           items:
-            $ref: "#/components/schemas/UserTaskItem"
+            $ref: "#/components/schemas/UserTaskResult"
     UserTaskFilterRequest:
       description: User task filter request.
       type: object
@@ -4252,7 +4258,7 @@ components:
           minimum: 0
           maximum: 100
           default: 50
-    UserTaskItemNumberKeys:
+    UserTaskItem:
       deprecated: true
       type: object
       allOf:
@@ -4278,7 +4284,7 @@ components:
           type: integer
           description: The key of the form.
           format: int64
-    UserTaskItem:
+    UserTaskResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/UserTaskItemBase"
@@ -4338,7 +4344,7 @@ components:
         isTruncated:
           description: Whether the value is truncated or not.
           type: boolean
-    VariableSearchQueryResponseNumberKeys:
+    VariableSearchQueryResponse:
       description: Variable search query response. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4349,8 +4355,8 @@ components:
           description: The matching variables.
           type: array
           items:
-            $ref: "#/components/schemas/VariableItemNumberKeys"
-    VariableSearchQueryResponse:
+            $ref: "#/components/schemas/VariableItem"
+    VariableSearchQueryResult:
       description: Variable search query response.
       type: object
       allOf:
@@ -4360,7 +4366,7 @@ components:
           description: The matching variables.
           type: array
           items:
-            $ref: "#/components/schemas/VariableItem"
+            $ref: "#/components/schemas/VariableResult"
     VariableItemBase:
       description: Base properties for VariableItem.
       type: object
@@ -4380,7 +4386,7 @@ components:
         isTruncated:
           description: Whether the value is truncated or not.
           type: boolean
-    VariableItemNumberKeys:
+    VariableItem:
       description: Variable search response item. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4399,7 +4405,7 @@ components:
           description: The key of the process instance of this variable.
           type: integer
           format: int64
-    VariableItem:
+    VariableResult:
       description: Variable search response item.
       type: object
       allOf:
@@ -4450,7 +4456,7 @@ components:
         tenantId:
           description: Tenant ID of this process definition.
           type: string
-    ProcessDefinitionSearchQueryResponseNumberKeys:
+    ProcessDefinitionSearchQueryResponse:
       deprecated: true
       type: object
       allOf:
@@ -4460,8 +4466,8 @@ components:
           description: The matching process definitions.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessDefinitionItemNumberKeys"
-    ProcessDefinitionSearchQueryResponse:
+            $ref: "#/components/schemas/ProcessDefinitionItem"
+    ProcessDefinitionSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -4470,7 +4476,7 @@ components:
           description: The matching process definitions.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessDefinitionItem"
+            $ref: "#/components/schemas/ProcessDefinitionResult"
     ProcessDefinitionItemBase:
       description: Base properties for ProcessDefinitionItem.
       type: object
@@ -4494,7 +4500,7 @@ components:
         tenantId:
           description: Tenant ID of this process definition.
           type: string
-    ProcessDefinitionItemNumberKeys:
+    ProcessDefinitionItem:
       deprecated: true
       type: object
       allOf:
@@ -4504,7 +4510,7 @@ components:
           description: The key for this process definition.
           type: integer
           format: int64
-    ProcessDefinitionItem:
+    ProcessDefinitionResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/ProcessDefinitionItemBase"
@@ -4797,7 +4803,7 @@ components:
         value:
           description: The value of the variable.
           type: string
-    ProcessInstanceSearchQueryResponseNumberKeys:
+    ProcessInstanceSearchQueryResponse:
       description: Process instance search response. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4808,8 +4814,8 @@ components:
           description: The matching process instances.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessInstanceItemNumberKeys"
-    ProcessInstanceSearchQueryResponse:
+            $ref: "#/components/schemas/ProcessInstanceItem"
+    ProcessInstanceSearchQueryResult:
       description: Process instance search response.
       type: object
       allOf:
@@ -4819,7 +4825,7 @@ components:
           description: The matching process instances.
           type: array
           items:
-            $ref: "#/components/schemas/ProcessInstanceItem"
+            $ref: "#/components/schemas/ProcessInstanceResult"
     ProcessInstanceItemBase:
       description: Base properties for ProcessInstanceItem.
       type: object
@@ -4853,7 +4859,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID.
-    ProcessInstanceItemNumberKeys:
+    ProcessInstanceItem:
       description: Process instance search response item. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -4876,7 +4882,7 @@ components:
           type: integer
           description: The parent flow node instance key.
           format: int64
-    ProcessInstanceItem:
+    ProcessInstanceResult:
       description: Process instance search response item.
       type: object
       allOf:
@@ -4993,7 +4999,7 @@ components:
         tenantId:
           description: The tenant ID.
           type: string
-    FlowNodeInstanceSearchQueryResponseNumberKeys:
+    FlowNodeInstanceSearchQueryResponse:
       deprecated: true
       type: object
       allOf:
@@ -5003,8 +5009,8 @@ components:
           description: The matching flow node instances.
           type: array
           items:
-            $ref: "#/components/schemas/FlowNodeInstanceItemNumberKeys"
-    FlowNodeInstanceSearchQueryResponse:
+            $ref: "#/components/schemas/FlowNodeInstanceItem"
+    FlowNodeInstanceSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -5013,7 +5019,7 @@ components:
           description: The matching flow node instances.
           type: array
           items:
-            $ref: "#/components/schemas/FlowNodeInstanceItem"
+            $ref: "#/components/schemas/FlowNodeInstanceResult"
     FlowNodeInstanceItemBase:
       description: Base properties for FlowNodeInstanceItem.
       type: object
@@ -5077,7 +5083,7 @@ components:
         tenantId:
           description: The tenant ID of the incident.
           type: string
-    FlowNodeInstanceItemNumberKeys:
+    FlowNodeInstanceItem:
       deprecated: true
       type: object
       allOf:
@@ -5099,7 +5105,7 @@ components:
           description: Incident key associated with this flow node instance.
           type: integer
           format: int64
-    FlowNodeInstanceItem:
+    FlowNodeInstanceResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/FlowNodeInstanceItemBase"
@@ -5226,7 +5232,7 @@ components:
         tenantId:
           description: The tenant ID of the incident.
           type: string
-    IncidentSearchQueryResponseNumberKeys:
+    IncidentSearchQueryResponse:
       deprecated: true
       type: object
       allOf:
@@ -5236,8 +5242,8 @@ components:
           description: The matching incidents.
           type: array
           items:
-            $ref: "#/components/schemas/IncidentItemNumberKeys"
-    IncidentSearchQueryResponse:
+            $ref: "#/components/schemas/IncidentItem"
+    IncidentSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -5246,7 +5252,7 @@ components:
           description: The matching incidents.
           type: array
           items:
-            $ref: "#/components/schemas/IncidentItem"
+            $ref: "#/components/schemas/IncidentResult"
     IncidentItemBase:
       description: Base properties for IncidentItem.
       type: object
@@ -5292,33 +5298,33 @@ components:
         tenantId:
           description: The tenant ID of the incident.
           type: string
-    IncidentItemNumberKeys:
-      deprecated: true
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/IncidentItemBase"
-      properties:
-        incidentKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this incident.
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The process definition key associated to this incident.
-        processInstanceKey:
-          type: integer
-          format: int64
-          description: The process instance key associated to this incident.
-        flowNodeInstanceKey:
-          type: integer
-          format: int64
-          description: The flow node instance key associated to this incident.
-        jobKey:
-          type: integer
-          description: The job key, if exists, associated with this incident.
-          format: int64
     IncidentItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentItemBase"
+      properties:
+        incidentKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The process instance key associated to this incident.
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+          description: The flow node instance key associated to this incident.
+        jobKey:
+          type: integer
+          description: The job key, if exists, associated with this incident.
+          format: int64
+    IncidentResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/IncidentItemBase"
@@ -5338,18 +5344,8 @@ components:
         jobKey:
           type: string
           description: The job key, if exists, associated with this incident.
-    DecisionDefinitionSearchQueryResponseNumberKeys:
-      deprecated: true
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/SearchQueryResponse"
-      properties:
-        items:
-          description: The matching decision definitions.
-          type: array
-          items:
-            $ref: "#/components/schemas/DecisionDefinitionItemNumberKeys"
     DecisionDefinitionSearchQueryResponse:
+      deprecated: true
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -5359,6 +5355,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionItem"
+    DecisionDefinitionSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching decision definitions.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionDefinitionResult"
     DecisionDefinitionItemBase:
       description: Base properties for DecisionDefinitionItem.
       type: object
@@ -5379,7 +5385,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision definition.
-    DecisionDefinitionItemNumberKeys:
+    DecisionDefinitionItem:
       deprecated: true
       type: object
       allOf:
@@ -5393,7 +5399,7 @@ components:
           type: integer
           format: int64
           description: The assigned key of the decision requirements graph that the decision definition is part of.
-    DecisionDefinitionItem:
+    DecisionDefinitionResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/DecisionDefinitionItemBase"
@@ -5536,7 +5542,7 @@ components:
           description: The permissions.
           items:
             $ref: "#/components/schemas/PermissionDTO"
-    AuthorizationResponseNumberKeys:
+    AuthorizationResponse:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
@@ -5545,7 +5551,7 @@ components:
           description: The id of the owner of permissions.
           type: integer
           format: int64
-    AuthorizationResponse:
+    AuthorizationResult:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/AuthorizationResponseBase"
@@ -5553,7 +5559,7 @@ components:
         ownerKey:
           description: The id of the owner of permissions.
           type: string
-    AuthorizationSearchResponseNumberKeys:
+    AuthorizationSearchResponse:
       deprecated: true
       type: object
       allOf:
@@ -5563,8 +5569,8 @@ components:
           description: The matching authorizations.
           type: array
           items:
-            $ref: "#/components/schemas/AuthorizationResponseNumberKeys"
-    AuthorizationSearchResponse:
+            $ref: "#/components/schemas/AuthorizationResponse"
+    AuthorizationSearchResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -5573,7 +5579,7 @@ components:
           description: The matching authorizations.
           type: array
           items:
-            $ref: "#/components/schemas/AuthorizationResponse"
+            $ref: "#/components/schemas/AuthorizationResult"
     UserRequest:
       type: "object"
       properties:
@@ -5589,7 +5595,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-    UserCreateResponseNumberKeys:
+    UserCreateResponse:
       deprecated: true
       type: object
       properties:
@@ -5597,7 +5603,7 @@ components:
           description: The key of the created user
           type: integer
           format: int64
-    UserCreateResponse:
+    UserCreateResult:
       type: object
       properties:
         userKey:
@@ -5705,7 +5711,7 @@ components:
         apiUser:
           description: Flag for understanding if the user is an API user.
           type: boolean
-    CamundaUserNumberKeys:
+    CamundaUser:
       deprecated: true
       type: object
       allOf:
@@ -5715,7 +5721,7 @@ components:
           description: The system generated key of the user.
           type: integer
           format: int64
-    CamundaUser:
+    CamundaUserResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/CamundaUserBase"
@@ -5739,7 +5745,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-    UserResponseNumberKeys:
+    UserResponse:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/UserResponseBase"
@@ -5748,7 +5754,7 @@ components:
           description: The key of the user.
           type: "integer"
           format: "int64"
-    UserResponse:
+    UserResult:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/UserResponseBase"
@@ -5756,7 +5762,7 @@ components:
         key:
           description: The key of the user.
           type: "string"
-    UserSearchResponseNumberKeys:
+    UserSearchResponse:
       deprecated: true
       type: object
       allOf:
@@ -5766,8 +5772,8 @@ components:
           description: The matching users.
           type: array
           items:
-            $ref: "#/components/schemas/UserResponseNumberKeys"
-    UserSearchResponse:
+            $ref: "#/components/schemas/UserResponse"
+    UserSearchResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -5776,7 +5782,7 @@ components:
           description: The matching users.
           type: array
           items:
-            $ref: "#/components/schemas/UserResponse"
+            $ref: "#/components/schemas/UserResult"
     UserUpdateRequest:
       type: object
       properties:
@@ -5802,7 +5808,7 @@ components:
         name:
           type: "string"
           description: The display name of the new role.
-    RoleCreateResponseNumberKeys:
+    RoleCreateResponse:
       deprecated: true
       type: object
       properties:
@@ -5810,7 +5816,7 @@ components:
           description: The key of the created role.
           type: integer
           format: int64
-    RoleCreateResponse:
+    RoleCreateResult:
       type: object
       properties:
         roleKey:
@@ -5839,7 +5845,7 @@ components:
         name:
           type: string
           description: The role name.
-    RoleItemNumberKeys:
+    RoleItem:
       description: Role search response item. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -5856,7 +5862,7 @@ components:
           items:
             type: integer
             format: int64
-    RoleItem:
+    RoleResult:
       description: Role search response item.
       type: object
       allOf:
@@ -5875,7 +5881,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
-    RoleSearchQueryResponseNumberKeys:
+    RoleSearchQueryResponse:
       description: Role search response. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -5886,8 +5892,8 @@ components:
           description: The matching roles.
           type: array
           items:
-            $ref: "#/components/schemas/RoleItemNumberKeys"
-    RoleSearchQueryResponse:
+            $ref: "#/components/schemas/RoleItem"
+    RoleSearchQueryResult:
       description: Role search response.
       type: object
       allOf:
@@ -5897,7 +5903,7 @@ components:
           description: The matching roles.
           type: array
           items:
-            $ref: "#/components/schemas/RoleItem"
+            $ref: "#/components/schemas/RoleResult"
 
     GroupCreateRequest:
       type: "object"
@@ -5905,7 +5911,7 @@ components:
         name:
           type: "string"
           description: The display name of the new group.
-    GroupCreateResponseNumberKeys:
+    GroupCreateResponse:
       deprecated: true
       type: object
       properties:
@@ -5913,7 +5919,7 @@ components:
           description: The key of the created group.
           type: integer
           format: int64
-    GroupCreateResponse:
+    GroupCreateResult:
       type: object
       properties:
         groupKey:
@@ -5942,7 +5948,7 @@ components:
         name:
           type: string
           description: The group name.
-    GroupItemNumberKeys:
+    GroupItem:
       description: Group search response item. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -5959,7 +5965,7 @@ components:
           items:
             type: integer
             format: int64
-    GroupItem:
+    GroupResult:
       description: Group search response item.
       type: object
       allOf:
@@ -5990,7 +5996,7 @@ components:
         name:
           type: string
           description: The name of the group.
-    GroupSearchQueryResponseNumberKeys:
+    GroupSearchQueryResponse:
       description: Group search response. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -6001,8 +6007,8 @@ components:
           description: The matching groups.
           type: array
           items:
-            $ref: "#/components/schemas/GroupItemNumberKeys"
-    GroupSearchQueryResponse:
+            $ref: "#/components/schemas/GroupItem"
+    GroupSearchQueryResult:
       description: Group search response.
       type: object
       allOf:
@@ -6012,7 +6018,7 @@ components:
           description: The matching groups.
           type: array
           items:
-            $ref: "#/components/schemas/GroupItem"
+            $ref: "#/components/schemas/GroupResult"
 
     MappingRuleCreateRequest:
       type: object
@@ -6042,7 +6048,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-    MappingRuleCreateResponseNumberKeys:
+    MappingRuleCreateResponse:
       type: object
       allOf:
         - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
@@ -6051,7 +6057,7 @@ components:
           description: The key of the created mapping rule.
           type: integer
           format: int64
-    MappingRuleCreateResponse:
+    MappingRuleCreateResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
@@ -6059,7 +6065,7 @@ components:
         mappingKey:
           description: The key of the created mapping rule.
           type: string
-    MappingSearchQueryResponseNumberKeys:
+    MappingSearchQueryResponse:
       deprecated: true
       type: object
       allOf:
@@ -6069,8 +6075,8 @@ components:
           description: The matching mapping rules.
           type: array
           items:
-            $ref: "#/components/schemas/MappingItemNumberKeys"
-    MappingSearchQueryResponse:
+            $ref: "#/components/schemas/MappingItem"
+    MappingSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -6079,7 +6085,7 @@ components:
           description: The matching mapping rules.
           type: array
           items:
-            $ref: "#/components/schemas/MappingItem"
+            $ref: "#/components/schemas/MappingResult"
     MappingItemBase:
       type: "object"
       properties:
@@ -6092,7 +6098,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-    MappingItemNumberKeys:
+    MappingItem:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/MappingItemBase"
@@ -6101,7 +6107,7 @@ components:
           description: The key of the created mapping rule.
           type: integer
           format: int64
-    MappingItem:
+    MappingResult:
       type: "object"
       allOf:
         - $ref: "#/components/schemas/MappingItemBase"
@@ -6360,15 +6366,6 @@ components:
         - type
         - timeout
         - maxJobsToActivate
-    JobActivationResponseNumberKeys:
-      description: The list of activated jobs
-      type: object
-      properties:
-        jobs:
-          description: The activated jobs.
-          type: array
-          items:
-            $ref: "#/components/schemas/ActivatedJobNumberKeys"
     JobActivationResponse:
       description: The list of activated jobs
       type: object
@@ -6378,6 +6375,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ActivatedJob"
+    JobActivationResult:
+      description: The list of activated jobs
+      type: object
+      properties:
+        jobs:
+          description: The activated jobs.
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivatedJobResult"
     ActivatedJobBase:
       type: object
       properties:
@@ -6416,7 +6422,7 @@ components:
         tenantId:
           description: The ID of the tenant that owns the job.
           type: string
-    ActivatedJobNumberKeys:
+    ActivatedJob:
       type: object
       allOf:
         - $ref: "#/components/schemas/ActivatedJobBase"
@@ -6439,7 +6445,7 @@ components:
             process instance.
           type: integer
           format: int64
-    ActivatedJob:
+    ActivatedJobResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/ActivatedJobBase"
@@ -6744,7 +6750,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision requirements.
-    DecisionRequirementsSearchQueryResponseNumberKeys:
+    DecisionRequirementsSearchQueryResponse:
       deprecated: true
       type: object
       allOf:
@@ -6754,8 +6760,8 @@ components:
           description: The matching decision requirements.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionRequirementsItemNumberKeys"
-    DecisionRequirementsSearchQueryResponse:
+            $ref: "#/components/schemas/DecisionRequirementsItem"
+    DecisionRequirementsSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -6764,7 +6770,7 @@ components:
           description: The matching decision requirements.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionRequirementsItem"
+            $ref: "#/components/schemas/DecisionRequirementsResult"
     DecisionRequirementsItemBase:
       description: Base properties for DecisionRequirementsItem.
       type: object
@@ -6785,7 +6791,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision requirements.
-    DecisionRequirementsItemNumberKeys:
+    DecisionRequirementsItem:
       deprecated: true
       type: object
       allOf:
@@ -6795,7 +6801,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-    DecisionRequirementsItem:
+    DecisionRequirementsResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/DecisionRequirementsItemBase"
@@ -6855,12 +6861,7 @@ components:
         tenantId:
           description: The tenant ID of the evaluated decision.
           type: string
-        evaluatedDecisions:
-          description: Decisions that were evaluated within the requested decision evaluation.
-          type: array
-          items:
-            $ref: "#/components/schemas/EvaluatedDecisionItem"
-    EvaluateDecisionResponseNumberKeys:
+    EvaluateDecisionResponse:
       deprecated: true
       type: object
       allOf:
@@ -6878,7 +6879,12 @@ components:
           description: The unique key identifying this decision evaluation.
           type: integer
           format: int64
-    EvaluateDecisionResponse:
+        evaluatedDecisions:
+          description: Decisions that were evaluated within the requested decision evaluation.
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatedDecisionItem"
+    EvaluateDecisionResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/EvaluateDecisionResponseBase"
@@ -6892,14 +6898,15 @@ components:
         decisionInstanceKey:
           description: The unique key identifying this decision evaluation.
           type: string
-    EvaluatedDecisionItem:
+        evaluatedDecisions:
+          description: Decisions that were evaluated within the requested decision evaluation.
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatedDecisionResult"
+    EvaluatedDecisionItemBase:
       type: object
-      description: A decision that was evaluated.
+      description: Base properties for EvaluatedDecisionItem.
       properties:
-        decisionDefinitionKey:
-          description: The unique key identifying the decision which was evaluate.
-          type: integer
-          format: int64
         decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
@@ -6930,6 +6937,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+    EvaluatedDecisionItem:
+      type: object
+      description: A decision that was evaluated. Key attributes as numeric values.
+      allOf:
+        - $ref: "#/components/schemas/EvaluatedDecisionItemBase"
+      properties:
+        decisionDefinitionKey:
+          description: The unique key identifying the decision which was evaluate.
+          type: integer
+          format: int64
+    EvaluatedDecisionResult:
+      type: object
+      description: A decision that was evaluated.
+      allOf:
+        - $ref: "#/components/schemas/EvaluatedDecisionItemBase"
+      properties:
+        decisionDefinitionKey:
+          description: The unique key identifying the decision which was evaluate.
+          type: string
     MatchedDecisionRuleItem:
       type: object
       description: A decision rule that matched within this decision evaluation.
@@ -7029,7 +7055,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-    DecisionInstanceSearchQueryResponseNumberKeys:
+    DecisionInstanceSearchQueryResponse:
       deprecated: true
       type: object
       allOf:
@@ -7039,8 +7065,8 @@ components:
           description: The matching decision instances.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionInstanceItemNumberKeys"
-    DecisionInstanceSearchQueryResponse:
+            $ref: "#/components/schemas/DecisionInstanceItem"
+    DecisionInstanceSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -7049,7 +7075,7 @@ components:
           description: The matching decision instances.
           type: array
           items:
-            $ref: "#/components/schemas/DecisionInstanceItem"
+            $ref: "#/components/schemas/DecisionInstanceResult"
 
     DecisionInstanceItemBase:
       type: object
@@ -7084,33 +7110,33 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
-    DecisionInstanceItemNumberKeys:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DecisionInstanceItemBase"
-      properties:
-        decisionInstanceKey:
-          type: integer
-          format: int64
-          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The key of the process definition.
-        processInstanceKey:
-          type: integer
-          format: int64
-          description: The key of the process instance.
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: The key of the decision.
     DecisionInstanceItem:
       type: object
       allOf:
         - $ref: "#/components/schemas/DecisionInstanceItemBase"
       properties:
         decisionInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the process definition.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance.
+        decisionDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the decision.
+    DecisionInstanceResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceItemBase"
+      properties:
+        decisionInstanceKey:
           type: string
           description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
         processDefinitionKey:
@@ -7123,10 +7149,26 @@ components:
           type: string
           description: The key of the decision.
 
-
     DecisionInstanceGetQueryResponse:
       allOf:
         - $ref: "#/components/schemas/DecisionInstanceItem"
+        - type: object
+          properties:
+            evaluatedInputs:
+              type: array
+              items:
+                $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+              description: |
+                The evaluated inputs of the decision instance.
+            matchedRules:
+              type: array
+              items:
+                $ref: "#/components/schemas/MatchedDecisionRuleItem"
+              description: |
+                The matched rules of the decision instance.
+    DecisionInstanceGetQueryResult:
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceResult"
         - type: object
           properties:
             evaluatedInputs:
@@ -7190,7 +7232,7 @@ components:
         tenantId:
           description: The tenant ID of the correlated message
           type: string
-    MessageCorrelationResponseNumberKeys:
+    MessageCorrelationResponse:
       description: |
         The message key of the correlated message, as well as the first process instance key it
         correlated with. Key attributes as numeric values.
@@ -7207,7 +7249,7 @@ components:
           description: The key of the first process instance the message correlated with
           type: integer
           format: int64
-    MessageCorrelationResponse:
+    MessageCorrelationResult:
       description: |
         The message key of the correlated message, as well as the first process instance key it
         correlated with.
@@ -7261,7 +7303,7 @@ components:
         tenantId:
           description: The tenant ID of the message.
           type: string
-    MessagePublicationResponseNumberKeys:
+    MessagePublicationResponse:
       description: The message key of the published message. Key attributes as numeric values.
       deprecated: true
       type: object
@@ -7272,7 +7314,7 @@ components:
           description: The key of the message
           type: integer
           format: int64
-    MessagePublicationResponse:
+    MessagePublicationResult:
       description: The message key of the published message.
       type: object
       allOf:
@@ -7381,7 +7423,7 @@ components:
         tenantId:
           description: The tenant ID associated with the deployment.
           type: string
-    DeploymentResponseNumberKeys:
+    DeploymentResponse:
       deprecated: true
       type: object
       allOf:
@@ -7395,8 +7437,8 @@ components:
           description: Items deployed by the request.
           type: array
           items:
-            $ref: "#/components/schemas/DeploymentMetadataNumberKeys"
-    DeploymentResponse:
+            $ref: "#/components/schemas/DeploymentMetadata"
+    DeploymentResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/DeploymentResponseBase"
@@ -7408,7 +7450,18 @@ components:
           description: Items deployed by the request.
           type: array
           items:
-            $ref: "#/components/schemas/DeploymentMetadata"
+            $ref: "#/components/schemas/DeploymentMetadataResult"
+    DeploymentMetadataResult:
+      type: object
+      properties:
+        processDefinition:
+          $ref: "#/components/schemas/DeploymentProcessResult"
+        decisionDefinition:
+          $ref: "#/components/schemas/DeploymentDecisionResult"
+        decisionRequirements:
+          $ref: "#/components/schemas/DeploymentDecisionRequirementsResult"
+        form:
+          $ref: "#/components/schemas/DeploymentFormResult"
     DeploymentMetadata:
       type: object
       properties:
@@ -7420,17 +7473,6 @@ components:
           $ref: "#/components/schemas/DeploymentDecisionRequirements"
         form:
           $ref: "#/components/schemas/DeploymentForm"
-    DeploymentMetadataNumberKeys:
-      type: object
-      properties:
-        processDefinition:
-          $ref: "#/components/schemas/DeploymentProcessNumberKeys"
-        decisionDefinition:
-          $ref: "#/components/schemas/DeploymentDecisionNumberKeys"
-        decisionRequirements:
-          $ref: "#/components/schemas/DeploymentDecisionRequirementsNumberKeys"
-        form:
-          $ref: "#/components/schemas/DeploymentFormNumberKeys"
     DeploymentProcessBase:
       description: Base properties for DeploymentProcess.
       type: object
@@ -7450,7 +7492,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed process.
-    DeploymentProcessNumberKeys:
+    DeploymentProcess:
       description: A deployed process.
       type: object
       allOf:
@@ -7460,7 +7502,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentProcess:
+    DeploymentProcessResult:
       description: A deployed process.
       type: object
       allOf:
@@ -7492,7 +7534,7 @@ components:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
-    DeploymentDecisionNumberKeys:
+    DeploymentDecision:
       description: A deployed decision.
       type: object
       allOf:
@@ -7508,7 +7550,7 @@ components:
           format: int64
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecision:
+    DeploymentDecisionResult:
       description: A deployed decision.
       type: object
       allOf:
@@ -7543,7 +7585,7 @@ components:
         resourceName:
           type: string
           description: The resource name from which this decision requirements was parsed.
-    DeploymentDecisionRequirementsNumberKeys:
+    DeploymentDecisionRequirements:
       description: Deployed decision requirements.
       type: object
       allOf:
@@ -7554,7 +7596,7 @@ components:
           format: int64
           description: |
             The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentDecisionRequirements:
+    DeploymentDecisionRequirementsResult:
       description: Deployed decision requirements.
       type: object
       allOf:
@@ -7583,7 +7625,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentFormNumberKeys:
+    DeploymentForm:
       description: A deployed form.
       type: object
       allOf:
@@ -7593,7 +7635,7 @@ components:
           type: integer
           format: int64
           description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentForm:
+    DeploymentFormResult:
       description: A deployed form.
       type: object
       allOf:
@@ -7699,7 +7741,7 @@ components:
           additionalProperties: true
           description: All the variables visible in the root scope.
           type: object
-    CreateProcessInstanceResponseNumberKeys:
+    CreateProcessInstanceResponse:
       deprecated: true
       type: object
       allOf:
@@ -7716,7 +7758,7 @@ components:
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: integer
           format: int64
-    CreateProcessInstanceResponse:
+    CreateProcessInstanceResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/CreateProcessInstanceResponseBase"
@@ -7908,7 +7950,7 @@ components:
         tenantId:
           description: The tenant ID of the signal that was broadcast.
           type: string
-    SignalBroadcastResponseNumberKeys:
+    SignalBroadcastResponse:
       deprecated: true
       type: object
       allOf:
@@ -7918,7 +7960,7 @@ components:
           description: The unique ID of the signal that was broadcast.
           type: integer
           format: int64
-    SignalBroadcastResponse:
+    SignalBroadcastResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SignalBroadcastResponseBase"
@@ -7943,7 +7985,7 @@ components:
           description: The version of the form.
           type: integer
           format: int64
-    FormItemNumberKeys:
+    FormItem:
       deprecated: true
       type: object
       allOf:
@@ -7953,7 +7995,7 @@ components:
           description: The key of the form.
           type: integer
           format: int64
-    FormItem:
+    FormResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/FormItemBase"
