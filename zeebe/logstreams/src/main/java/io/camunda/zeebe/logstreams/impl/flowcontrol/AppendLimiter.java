@@ -26,11 +26,13 @@ final class AppendLimiter extends AbstractLimiter<Void> {
 
   @Override
   public Optional<Listener> acquire(final Void context) {
-    if (getInflight() >= getLimit()) {
-      return createRejectedListener();
-    } else {
-      return Optional.of(createListener());
+    synchronized (this) {
+      if (getInflight() < getLimit()) {
+        return Optional.of(createListener());
+      }
     }
+
+    return createRejectedListener();
   }
 
   @Override
