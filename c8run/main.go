@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/unix"
@@ -103,16 +102,7 @@ func stopProcess(c8 C8Run, pidfile string) {
 		}
 		os.Remove(pidfile)
 
-	} else if errors.Is(err, os.ErrNotExist) {
-		// path/to/whatever does *not* exist
-
-	} else {
-		// Schrodinger: file may or may not exist. See err for details.
-
-		// Therefore, do *NOT* use !os.IsNotExist(err) to test for file existence
-
 	}
-
 }
 
 func getC8RunPlatform() C8Run {
