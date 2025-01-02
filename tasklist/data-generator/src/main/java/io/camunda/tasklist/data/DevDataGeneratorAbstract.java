@@ -7,14 +7,16 @@
  */
 package io.camunda.tasklist.data;
 
+import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
+import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.PayloadUtil;
-import io.camunda.tasklist.util.ZeebeTestUtil;
+import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import jakarta.annotation.PostConstruct;
@@ -22,6 +24,7 @@ import jakarta.annotation.PreDestroy;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +46,7 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   @Autowired protected UserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-  @Autowired private CamundaClient camundaClient;
+  @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
 
   @Autowired private FormIndex formIndex;
 
@@ -146,31 +149,29 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
     } else if (choice == 1) {
       payload = payloadUtil.readJSONStringFromClasspath("/large-payload.json");
     }
-    ZeebeTestUtil.startProcessInstance(camundaClient, "simpleProcess", payload);
+    startProcessInstance("simpleProcess", payload);
   }
 
   private void startBigFormProcess() {
-    ZeebeTestUtil.startProcessInstance(camundaClient, "bigFormProcess", null);
+    startProcessInstance("bigFormProcess", null);
   }
 
   private void startCarForRentProcess() {
-    ZeebeTestUtil.startProcessInstance(camundaClient, "registerCarForRent", null);
+    startProcessInstance("registerCarForRent", null);
   }
 
   private void startTwoUserTasks() {
-    ZeebeTestUtil.startProcessInstance(camundaClient, "twoUserTasks", null);
+    startProcessInstance("twoUserTasks", null);
   }
 
   private void startMultipleVersionsProcess() {
-    ZeebeTestUtil.startProcessInstance(camundaClient, "multipleVersions", null);
+    startProcessInstance("multipleVersions", null);
   }
 
   private void startOrderProcess() {
     final float price1 = Math.round(random.nextFloat() * 100000) / 100;
     final float price2 = Math.round(random.nextFloat() * 10000) / 100;
-    ZeebeTestUtil.startProcessInstance(
-        camundaClient,
-        "orderProcess",
+    final String payload =
         "{\n"
             + "  \"clientNo\": \"CNT-1211132-02\",\n"
             + "  \"orderNo\": \"CMD0001-01\",\n"
@@ -199,7 +200,8 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
             + Double.valueOf((price1 + price2))
             + ",\n"
             + "  \"orderStatus\": \"NEW\"\n"
-            + "}");
+            + "}";
+    startProcessInstance("orderProcess", payload);
   }
 
   private void startFlightRegistrationProcess() {
@@ -224,76 +226,62 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
             + followUpDate
             + "\"}";
 
-    ZeebeTestUtil.startProcessInstance(camundaClient, "flightRegistration", payload);
+    startProcessInstance("flightRegistration", payload);
+  }
+
+  private void startProcessInstance(final String processId, final String payload) {
+    final Map<String, Object> variables =
+        payload != null && !payload.isEmpty() ? payloadUtil.parsePayload(payload) : Map.of();
+    final Runnable runCreateProcessInstance =
+        () ->
+            tasklistServicesAdapter.createProcessInstanceWithoutAuthentication(
+                processId, variables, DEFAULT_TENANT_IDENTIFIER);
+    try {
+      runCreateProcessInstance.run();
+    } catch (final Exception ex) {
+      // retry once
+      sleepFor(300L);
+      runCreateProcessInstance.run();
+    }
+    LOGGER.debug("Process instance created for process [{}]", processId);
   }
 
   private void deployProcesses() {
     // Deploy Forms
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("formDeployedV1.form")
-        .send()
-        .join();
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("formDeployedV2.form")
-        .send()
-        .join();
-
-    camundaClient.newDeployResourceCommand().addResourceFromClasspath("bigForm.form").send().join();
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("checkPayment.form")
-        .send()
-        .join();
-
-    camundaClient.newDeployResourceCommand().addResourceFromClasspath("doTaskA.form").send().join();
-
-    camundaClient.newDeployResourceCommand().addResourceFromClasspath("doTaskB.form").send().join();
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("humanTaskForm.form")
-        .send()
-        .join();
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("registerCabinBag.form")
-        .send()
-        .join();
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("registerCarForRent.form")
-        .send()
-        .join();
-
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("registerThePassenger.form")
-        .send()
-        .join();
+    deployResource("formDeployedV1.form");
+    deployResource("formDeployedV2.form");
+    deployResource("bigForm.form");
+    deployResource("checkPayment.form");
+    deployResource("doTaskA.form");
+    deployResource("doTaskB.form");
+    deployResource("humanTaskForm.form");
+    deployResource("registerCabinBag.form");
+    deployResource("registerCarForRent.form");
+    deployResource("registerThePassenger.form");
 
     // Deploy Processes
-    ZeebeTestUtil.deployProcess(camundaClient, "startedByLinkedForm.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "formIdProcessDeployed.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "orderProcess.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "registerPassenger.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "simpleProcess.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "bigFormProcess.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "registerCarForRent.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "twoUserTasks.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "multipleVersions.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "multipleVersions-v2.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "subscribeFormProcess.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "startedByFormProcessWithoutPublic.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "travelSearchProcess.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "travelSearchProcess_v2.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "requestAnnualLeave.bpmn");
-    ZeebeTestUtil.deployProcess(camundaClient, "two_processes.bpmn");
+    deployResource("startedByLinkedForm.bpmn");
+    deployResource("formIdProcessDeployed.bpmn");
+    deployResource("orderProcess.bpmn");
+    deployResource("registerPassenger.bpmn");
+    deployResource("simpleProcess.bpmn");
+    deployResource("bigFormProcess.bpmn");
+    deployResource("registerCarForRent.bpmn");
+    deployResource("twoUserTasks.bpmn");
+    deployResource("multipleVersions.bpmn");
+    deployResource("multipleVersions-v2.bpmn");
+    deployResource("subscribeFormProcess.bpmn");
+    deployResource("startedByFormProcessWithoutPublic.bpmn");
+    deployResource("travelSearchProcess.bpmn");
+    deployResource("travelSearchProcess_v2.bpmn");
+    deployResource("requestAnnualLeave.bpmn");
+    deployResource("two_processes.bpmn");
+  }
+
+  private void deployResource(final String classpathResource) {
+    tasklistServicesAdapter.deployResourceWithoutAuthentication(
+        classpathResource, DEFAULT_TENANT_IDENTIFIER);
+    LOGGER.debug("Deployment of resource [{}] was performed", classpathResource);
   }
 
   @PreDestroy
