@@ -16,7 +16,6 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceItem;
 import java.util.Optional;
 
@@ -37,14 +36,14 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String tenantId;
 
   public ProcessInstanceImpl(final ProcessInstanceItem item) {
-    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    processInstanceKey = item.getProcessInstanceKey();
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionName = item.getProcessDefinitionName();
     processDefinitionVersion = item.getProcessDefinitionVersion();
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
-    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
-    parentProcessInstanceKey = ParseUtil.parseLongOrNull(item.getParentProcessInstanceKey());
-    parentFlowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getParentFlowNodeInstanceKey());
+    processDefinitionKey = item.getProcessDefinitionKey();
+    parentProcessInstanceKey = item.getParentProcessInstanceKey();
+    parentFlowNodeInstanceKey = item.getParentFlowNodeInstanceKey();
     startDate = item.getStartDate();
     endDate = item.getEndDate();
     state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);

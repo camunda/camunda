@@ -84,7 +84,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   public DeploymentEventImpl(final DeploymentResponse response) {
-    key = Long.parseLong(response.getDeploymentKey());
+    key = response.getDeploymentKey();
     tenantId = response.getTenantId();
 
     for (final DeploymentMetadata deployment : response.getDeployments()) {
@@ -103,7 +103,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                     new FormImpl(
                         f.getFormId(),
                         f.getVersion(),
-                        Long.parseLong(f.getFormKey()),
+                        f.getFormKey(),
                         f.getResourceName(),
                         f.getTenantId())));
   }
@@ -118,7 +118,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         dr.getDecisionRequirementsId(),
                         dr.getName(),
                         dr.getVersion(),
-                        Long.parseLong(dr.getDecisionRequirementsKey()),
+                        dr.getDecisionRequirementsKey(),
                         dr.getResourceName(),
                         dr.getTenantId())));
   }
@@ -132,9 +132,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         d.getDecisionDefinitionId(),
                         d.getName(),
                         d.getVersion(),
-                        Long.parseLong(d.getDecisionDefinitionKey()),
+                        d.getDecisionDefinitionKey(),
                         d.getDecisionRequirementsId(),
-                        Long.parseLong(d.getDecisionRequirementsKey()),
+                        d.getDecisionRequirementsKey(),
                         d.getTenantId())));
   }
 
@@ -144,7 +144,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
             p ->
                 processes.add(
                     new ProcessImpl(
-                        Long.parseLong(p.getProcessDefinitionKey()),
+                        p.getProcessDefinitionKey(),
                         p.getProcessDefinitionId(),
                         p.getProcessDefinitionVersion(),
                         p.getResourceName(),

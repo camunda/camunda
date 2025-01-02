@@ -201,7 +201,7 @@ public class DeployResourceRestTest extends ClientRestTest {
   @Test
   public void shouldDeployProcessAsResource() {
     // given
-    final String key = "123";
+    final long key = 123L;
     final String tenantId = "test-tenant";
     final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
     gatewayService.onDeploymentsRequest(
@@ -214,7 +214,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                         new DeploymentProcess()
                             .processDefinitionId(BPMN_1_PROCESS_ID)
                             .processDefinitionVersion(12)
-                            .processDefinitionKey("423")
+                            .processDefinitionKey(423L)
                             .tenantId(tenantId)
                             .resourceName(filename))));
 
@@ -228,7 +228,7 @@ public class DeployResourceRestTest extends ClientRestTest {
             .join();
 
     // then
-    assertThat(String.valueOf(response.getKey())).isEqualTo(key);
+    assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getTenantId()).isEqualTo(tenantId);
     assertThat(response.getProcesses())
         .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, tenantId));
@@ -237,7 +237,7 @@ public class DeployResourceRestTest extends ClientRestTest {
   @Test
   public void shouldDeployMultipleProcessesAsResources() {
     // given
-    final String key = "345";
+    final long key = 345L;
     final String tenantId = "test-tenant";
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
@@ -251,7 +251,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                         new DeploymentProcess()
                             .processDefinitionId(BPMN_1_PROCESS_ID)
                             .processDefinitionVersion(1)
-                            .processDefinitionKey("1")
+                            .processDefinitionKey(1L)
                             .tenantId(tenantId)
                             .resourceName(filename1)))
             .addDeploymentsItem(
@@ -260,7 +260,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                         new DeploymentProcess()
                             .processDefinitionId(BPMN_2_PROCESS_ID)
                             .processDefinitionVersion(1)
-                            .processDefinitionKey("2")
+                            .processDefinitionKey(2L)
                             .tenantId(tenantId)
                             .resourceName(filename2))));
 
@@ -275,7 +275,7 @@ public class DeployResourceRestTest extends ClientRestTest {
             .join();
 
     // then
-    assertThat(String.valueOf(response.getKey())).isEqualTo(key);
+    assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(
             new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, tenantId),
@@ -286,7 +286,7 @@ public class DeployResourceRestTest extends ClientRestTest {
   public void shouldDeployDecisionModelAsResource() {
     // given
     final String filename = DeployResourceTest.class.getResource(DMN_FILENAME).getPath();
-    final String deploymentKey = "123";
+    final long deploymentKey = 123L;
     final int version = 1;
     final String tenantId = "test-tenant";
     final long decisionRequirementsKey = 234L;
@@ -303,9 +303,9 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .decisionDefinitionId(DMN_DECISION_ID_1)
                             .name(DMN_DECISION_NAME_1)
                             .version(version)
-                            .decisionDefinitionKey(String.valueOf(decisionKey1))
+                            .decisionDefinitionKey(decisionKey1)
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
-                            .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
+                            .decisionRequirementsKey(decisionRequirementsKey)
                             .tenantId(tenantId)))
             .addDeploymentsItem(
                 new DeploymentMetadata()
@@ -314,9 +314,9 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .decisionDefinitionId(DMN_DECISION_ID_2)
                             .name(DMN_DECISION_NAME_2)
                             .version(version)
-                            .decisionDefinitionKey(String.valueOf(decisionKey2))
+                            .decisionDefinitionKey(decisionKey2)
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
-                            .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
+                            .decisionRequirementsKey(decisionRequirementsKey)
                             .tenantId(tenantId)))
             .addDeploymentsItem(
                 new DeploymentMetadata()
@@ -325,7 +325,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
                             .name(DMN_DECISION_REQUIREMENTS_NAME)
                             .version(version)
-                            .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
+                            .decisionRequirementsKey(decisionRequirementsKey)
                             .resourceName(filename)
                             .tenantId(tenantId))));
 
@@ -334,7 +334,7 @@ public class DeployResourceRestTest extends ClientRestTest {
         client.newDeployResourceCommand().addResourceFile(filename).send().join();
 
     // then
-    assertThat(String.valueOf(response.getKey())).isEqualTo(deploymentKey);
+    assertThat(response.getKey()).isEqualTo(deploymentKey);
     assertThat(response.getDecisionRequirements())
         .containsExactly(
             new DecisionRequirementsImpl(
@@ -386,7 +386,7 @@ public class DeployResourceRestTest extends ClientRestTest {
   public void shouldDeployFormAsResource() {
     // given
     final String filename = DeployResourceTest.class.getResource(FORM_FILENAME_1).getPath();
-    final String deploymentKey = "123";
+    final long deploymentKey = 123L;
     final int version = 1;
     final long formKey = 234L;
     final String formId = "formId";
@@ -400,7 +400,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                         new DeploymentForm()
                             .formId(formId)
                             .version(version)
-                            .formKey(String.valueOf(formKey))
+                            .formKey(formKey)
                             .resourceName(filename)
                             .tenantId(DEFAULT_TENANT))));
 
@@ -409,7 +409,7 @@ public class DeployResourceRestTest extends ClientRestTest {
         client.newDeployResourceCommand().addResourceFile(filename).send().join();
 
     // then
-    assertThat(String.valueOf(response.getKey())).isEqualTo(deploymentKey);
+    assertThat(response.getKey()).isEqualTo(deploymentKey);
     assertThat(response.getForm())
         .containsExactly(new FormImpl(formId, version, formKey, filename, DEFAULT_TENANT));
   }
@@ -417,7 +417,7 @@ public class DeployResourceRestTest extends ClientRestTest {
   @Test
   public void shouldDeployMultipleFormsAsResources() {
     // given
-    final String key = "345";
+    final long key = 345L;
     final String filename1 = FORM_FILENAME_1.substring(1);
     final String filename2 = FORM_FILENAME_2.substring(1);
     final String formId1 = "formId1";
@@ -432,7 +432,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                         new DeploymentForm()
                             .formId(formId1)
                             .version(1)
-                            .formKey("1")
+                            .formKey(1L)
                             .resourceName(filename1)
                             .tenantId(DEFAULT_TENANT)))
             .addDeploymentsItem(
@@ -441,7 +441,7 @@ public class DeployResourceRestTest extends ClientRestTest {
                         new DeploymentForm()
                             .formId(formId2)
                             .version(1)
-                            .formKey("2")
+                            .formKey(2L)
                             .resourceName(filename2)
                             .tenantId(DEFAULT_TENANT))));
 
@@ -456,7 +456,7 @@ public class DeployResourceRestTest extends ClientRestTest {
             .join();
 
     // then
-    assertThat(String.valueOf(response.getKey())).isEqualTo(key);
+    assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getForm())
         .containsExactly(
             new FormImpl(formId1, 1, 1, filename1, DEFAULT_TENANT),

@@ -27,7 +27,7 @@ public class CreateTenantResponseImpl implements CreateTenantResponse {
   }
 
   public CreateTenantResponseImpl setResponse(final TenantCreateResponse response) {
-    tenantKey = Long.parseLong(response.getTenantKey());
+    tenantKey = response.getTenantKey();
     return this;
   }
 }

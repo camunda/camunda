@@ -16,7 +16,6 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.DecisionRequirements;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionRequirementsItem;
 
 public class DecisionRequirementsImpl implements DecisionRequirements {
@@ -28,7 +27,7 @@ public class DecisionRequirementsImpl implements DecisionRequirements {
   private final Integer version;
 
   public DecisionRequirementsImpl(final DecisionRequirementsItem item) {
-    decisionRequirementsKey = ParseUtil.parseLongOrNull(item.getDecisionRequirementsKey());
+    decisionRequirementsKey = item.getDecisionRequirementsKey();
     resourceName = item.getResourceName();
     tenantId = item.getTenantId();
     dmnDecisionRequirementsId = item.getDecisionRequirementsId();

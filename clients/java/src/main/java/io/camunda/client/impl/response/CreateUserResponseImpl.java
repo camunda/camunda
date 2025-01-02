@@ -34,7 +34,7 @@ public class CreateUserResponseImpl implements CreateUserResponse {
   }
 
   public CreateUserResponseImpl setResponse(final UserCreateResponse response) {
-    userKey = Long.parseLong(response.getUserKey());
+    userKey = response.getUserKey();
     return this;
   }
 }
