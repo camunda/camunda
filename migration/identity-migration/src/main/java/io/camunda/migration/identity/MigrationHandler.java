@@ -10,15 +10,17 @@ package io.camunda.migration.identity;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import java.util.List;
 import java.util.concurrent.CompletionException;
+import org.apache.commons.lang3.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface MigrationHandler {
+public abstract class MigrationHandler<T> {
+  static int SIZE = 100;
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  int SIZE = 100;
-
-  void migrate();
-
-  default boolean isConflictError(final Throwable e) {
+  protected boolean isConflictError(final Throwable e) {
     return (e instanceof final BrokerRejectionException rejectionException
             && rejectionException.getRejection().type() == RejectionType.ALREADY_EXISTS)
         || (e instanceof final CamundaBrokerException brokerException
@@ -26,4 +28,22 @@ public interface MigrationHandler {
         || (e instanceof final CompletionException completionException
             && isConflictError(completionException.getCause()));
   }
+
+  public void migrate() {
+    List<T> batch;
+    try {
+      logger.debug("Migrating started.");
+      do {
+        batch = fetchBatch();
+        process(batch);
+      } while (!batch.isEmpty());
+      logger.debug("Migrating finished.");
+    } catch (final NotImplementedException e) {
+      logger.error("Identity doesn't support migration with code: {}", e.getCode());
+    }
+  }
+
+  protected abstract List<T> fetchBatch();
+
+  protected abstract void process(List<T> batch);
 }

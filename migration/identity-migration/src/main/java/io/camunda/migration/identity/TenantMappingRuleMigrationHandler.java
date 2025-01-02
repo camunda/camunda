@@ -19,15 +19,11 @@ import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TenantMappingRuleMigrationHandler implements MigrationHandler {
+public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMappingRule> {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(TenantMappingRuleMigrationHandler.class);
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
   private final TenantServices tenantServices;
@@ -46,19 +42,16 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
   }
 
   @Override
-  public void migrate() {
-    LOGGER.debug("Migrating tenant mapping rules");
-    List<TenantMappingRule> tenantMappingRules;
-    do {
-      tenantMappingRules = managementIdentityClient.fetchTenantMappingRules(SIZE);
-      managementIdentityClient.updateMigrationStatus(
-          tenantMappingRules.stream().map(this::createTenantMappingRule).toList());
-    } while (!tenantMappingRules.isEmpty());
-    LOGGER.debug("Finished migrating tenant mapping rules");
+  protected List<TenantMappingRule> fetchBatch() {
+    return managementIdentityClient.fetchTenantMappingRules(SIZE);
   }
 
-  private MigrationStatusUpdateRequest createTenantMappingRule(
-      final TenantMappingRule tenantMappingRule) {
+  @Override
+  protected void process(final List<TenantMappingRule> batch) {
+    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
+  }
+
+  protected MigrationStatusUpdateRequest processTask(final TenantMappingRule tenantMappingRule) {
     try {
       final var request =
           new MappingDTO(
@@ -76,7 +69,7 @@ public class TenantMappingRuleMigrationHandler implements MigrationHandler {
       }
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, null);
     } catch (final Exception e) {
-      LOGGER.error("Error creating tenant mapping rule", e);
+      logger.error("Error creating tenant mapping rule", e);
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenantMappingRule, e);
     }
   }
