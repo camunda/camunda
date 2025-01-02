@@ -1,6 +1,6 @@
 ## Tasklist
 
-Tasklist is an graphical and API application to manage user tasks in Zeebe.
+Tasklist is a graphical and API application to manage user tasks in Zeebe.
 
 ## Build and run
 
