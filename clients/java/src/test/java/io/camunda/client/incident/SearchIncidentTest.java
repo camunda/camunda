@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilterRequest.StateEnum;
@@ -29,6 +30,7 @@ import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 public class SearchIncidentTest extends ClientRestTest {
@@ -128,7 +130,9 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQueryRequest request =
         gatewayService.getLastRequest(IncidentSearchQueryRequest.class);
-    final List<SearchQuerySortRequest> sorts = request.getSort();
+    final List<SearchQuerySortRequest> sorts =
+        SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(
+            Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(10);
     assertSort(sorts.get(0), "incidentKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "errorType", SortOrderEnum.ASC);

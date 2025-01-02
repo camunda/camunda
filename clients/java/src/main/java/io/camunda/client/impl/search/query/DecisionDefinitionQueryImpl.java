@@ -30,6 +30,7 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.DecisionDefinitionFilterRequest;
@@ -74,7 +75,8 @@ public class DecisionDefinitionQueryImpl
   @Override
   public DecisionDefinitionQuery sort(final DecisionDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(
+        SearchQuerySortRequestMapper.toDecisionDefinitionSearchQuerySortRequest(sorting));
     return this;
   }
 
@@ -107,9 +109,8 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<DecisionDefinition>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<DecisionDefinition>> result =
-        new HttpCamundaFuture<>();
+  public ZeebeFuture<SearchQueryResponse<DecisionDefinition>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<DecisionDefinition>> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/decision-definitions/search",
         jsonMapper.toJson(request),
