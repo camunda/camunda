@@ -7,6 +7,7 @@
  */
 
 import {get, del, post} from 'request';
+import { getAbsoluteURL } from '../../modules/api';
 
 export async function shareReport(reportId) {
   const body = {
@@ -19,7 +20,7 @@ export async function shareReport(reportId) {
 }
 
 export async function getSharedReport(reportId) {
-  const response = await get(`api/share/report/${reportId}`);
+  const response = await get(getAbsoluteURL(`api/share/report/${reportId}`));
 
   if (response.status > 201) {
     return '';
@@ -30,5 +31,5 @@ export async function getSharedReport(reportId) {
 }
 
 export async function revokeReportSharing(id) {
-  return await del(`api/share/report/${id}`);
+  return await del(getAbsoluteURL(`api/share/report/${id}`));
 }

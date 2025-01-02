@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.webapp.controllers;
 
-import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
-
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,10 +31,5 @@ public class OptimizeIndexController {
   @RequestMapping(value = {"/optimize/{regex:[\\w-]+}", "/optimize/**/{regex:[\\w-]+}"})
   public String forwardToOptimize(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "optimize");
-  }
-
-  @GetMapping({"/static/*"})
-  public String redirectOldRoutes(final HttpServletRequest request) {
-    return "redirect:/optimize" + getRequestedUrl(request);
   }
 }
