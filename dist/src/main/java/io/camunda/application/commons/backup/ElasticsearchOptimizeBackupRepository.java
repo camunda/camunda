@@ -7,12 +7,15 @@
  */
 package io.camunda.application.commons.backup;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -34,12 +37,14 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 // only active if standalone, otherwise the operate one is used
 public class ElasticsearchOptimizeBackupRepository {
 
-  private final ElasticsearchClient esClient;
+  private final OptimizeElasticsearchClient esClient;
   private final BackupRepositoryProps backupRepositoryProps;
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
+  private @Autowired ConfigurationService configurationService;
+  private @Autowired ObjectMapper optimizeObjectMapper;
 
   public ElasticsearchOptimizeBackupRepository(
-      final ElasticsearchClient esClient,
+      final OptimizeElasticsearchClient esClient,
       final BackupRepositoryProps backupRepositoryProps,
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
     this.esClient = esClient;
@@ -50,6 +55,9 @@ public class ElasticsearchOptimizeBackupRepository {
   @Bean
   public BackupRepository backupRepository() {
     return new ElasticsearchBackupRepository(
-        esClient, backupRepositoryProps, new WebappsSnapshotNameProvider(), threadPoolTaskExecutor);
+        esClient.getEsClient(),
+        backupRepositoryProps,
+        new WebappsSnapshotNameProvider(),
+        threadPoolTaskExecutor);
   }
 }

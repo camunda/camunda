@@ -10,6 +10,7 @@ package io.camunda.application.initializers;
 import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.IDENTITY_AUTH;
 import static io.camunda.application.Profile.OPERATE;
+import static io.camunda.application.Profile.OPTIMIZE;
 import static io.camunda.application.Profile.SSO_AUTH;
 import static io.camunda.application.Profile.TASKLIST;
 
@@ -32,7 +33,7 @@ public class WebappsConfigurationInitializer
   private static final String SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY =
       "server.servlet.session.cookie.name";
   private static final Set<String> WEBAPPS_PROFILES =
-      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
+      Set.of(OPERATE.getId(), OPTIMIZE.getId(), TASKLIST.getId(), IDENTITY.getId());
   private static final Set<String> LOGIN_DELEGATED_PROFILES =
       Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId());
 
@@ -51,6 +52,8 @@ public class WebappsConfigurationInitializer
         // Operate is used, as currently, we only utilize Operate's security package for this single
         // app configuration.
         propertyMap.put(SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, OperateURIs.COOKIE_JSESSIONID);
+      } else if (activeProfiles.contains(OPTIMIZE.getId())) {
+        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, OPTIMIZE.getId());
       } else if (activeProfiles.contains(TASKLIST.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
         propertyMap.put(

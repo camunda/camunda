@@ -7,6 +7,7 @@
  */
 
 import {post} from 'request';
+import { getAbsoluteURL } from '../../../modules/api';
 
 export async function loadFrequencyData(
   processDefinitionKey,
@@ -16,7 +17,7 @@ export async function loadFrequencyData(
   filter
 ) {
   const response = await post(
-    'api/report/evaluate',
+    getAbsoluteURL('api/report/evaluate'),
     createFlowNodeFrequencyReport(
       processDefinitionKey,
       processDefinitionVersions,
