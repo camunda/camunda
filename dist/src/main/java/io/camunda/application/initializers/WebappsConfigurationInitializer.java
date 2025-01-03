@@ -13,8 +13,7 @@ import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.SSO_AUTH;
 import static io.camunda.application.Profile.TASKLIST;
 
-import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.authentication.config.WebSecurityConfig;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
@@ -47,21 +46,16 @@ public class WebappsConfigurationInitializer
       propertyMap.put(CAMUNDA_WEBAPPS_ENABLED_PROPERTY, true);
       if (activeProfiles.contains(OPERATE.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, OPERATE.getId());
-        // When Operate and Tasklist are run in a single C8 application, the session cookie name of
-        // Operate is used, as currently, we only utilize Operate's security package for this single
-        // app configuration.
-        propertyMap.put(SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, OperateURIs.COOKIE_JSESSIONID);
       } else if (activeProfiles.contains(TASKLIST.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
-        propertyMap.put(
-            SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, TasklistURIs.COOKIE_JSESSIONID);
       } else if (activeProfiles.contains(IDENTITY.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, IDENTITY.getId());
       }
       propertyMap.put(
           CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY,
           activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains));
-
+      propertyMap.put(
+          SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE);
       DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
     }
   }
