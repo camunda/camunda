@@ -138,7 +138,8 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                           new AntPathRequestMatcher("/*.ico"),
                           new AntPathRequestMatcher("/*.html"),
                           new AntPathRequestMatcher("/static/*.js"),
-                          new AntPathRequestMatcher("/static/*.css"))
+                          new AntPathRequestMatcher("/static/*.css"),
+                          new AntPathRequestMatcher("/static/*.html"))
                       .permitAll()
                       // public share resources
                       .requestMatchers(
