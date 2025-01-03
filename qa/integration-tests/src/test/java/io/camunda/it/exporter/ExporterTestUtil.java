@@ -134,6 +134,11 @@ public class ExporterTestUtil {
 
   public static void waitForProcessTasks(
       final CamundaClient client, final String processInstanceKey) {
+    waitForProcessTasks(client, Long.valueOf(processInstanceKey));
+  }
+
+  public static void waitForProcessTasks(
+      final CamundaClient client, final Long processInstanceKey) {
 
     Awaitility.await()
         .ignoreExceptions()
@@ -142,7 +147,7 @@ public class ExporterTestUtil {
             () ->
                 !client
                     .newUserTaskQuery()
-                    .filter(f -> f.processInstanceKey(Long.valueOf(processInstanceKey)))
+                    .filter(f -> f.processInstanceKey(processInstanceKey))
                     .send()
                     .join()
                     .items()

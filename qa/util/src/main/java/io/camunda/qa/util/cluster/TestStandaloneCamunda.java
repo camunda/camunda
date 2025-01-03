@@ -128,9 +128,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     esContainer.start();
 
     final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
+    final String gatewayURL = String.format("localhost:%s", gatewayConfig().getNetwork().getPort());
 
     operateProperties.getElasticsearch().setUrl(esURL);
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
+    operateProperties.getZeebe().setGatewayAddress(gatewayURL);
     tasklistProperties.getElasticsearch().setUrl(esURL);
     tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
 
