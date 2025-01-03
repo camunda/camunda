@@ -150,4 +150,12 @@ public class MultiDbConfigurator {
           cfg.setArgs(Map.of("flushInterval", "0"));
         });
   }
+
+  public OperateProperties getOperateProperties() {
+    return operateProperties;
+  }
+
+  public TasklistProperties getTasklistProperties() {
+    return tasklistProperties;
+  }
 }
