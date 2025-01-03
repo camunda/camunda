@@ -79,6 +79,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBEELASTICSEARCH_URL, url);
 
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_DATABASE_URL, url);
     return this;
   }
 
