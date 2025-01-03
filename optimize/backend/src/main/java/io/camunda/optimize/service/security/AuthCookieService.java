@@ -137,10 +137,7 @@ public class AuthCookieService {
       final String cookieValue,
       final Date expiresAt,
       final String requestScheme) {
-    String cookiePath = getCookiePath();
-    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
-      cookiePath = addSameSiteCookieFlag(cookiePath);
-    }
+    final String cookiePath = getCookiePath();
     final int maxAge = (int) (expiresAt.toInstant().toEpochMilli() - System.currentTimeMillis());
     final Cookie cookie = new Cookie(cookieName, cookieValue);
     cookie.setPath(cookiePath);
@@ -148,6 +145,9 @@ public class AuthCookieService {
     cookie.setMaxAge(maxAge);
     cookie.setSecure(isSecureScheme(requestScheme));
     cookie.setHttpOnly(true);
+    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
+      cookie.setAttribute(SAME_SITE_COOKIE_FLAG, SAME_SITE_COOKIE_STRICT_VALUE);
+    }
     return cookie;
   }
 
@@ -209,11 +209,6 @@ public class AuthCookieService {
     return configurationService.getAuthConfiguration();
   }
 
-  private String addSameSiteCookieFlag(final String newCookieAsString) {
-    return newCookieAsString
-        + String.format(";%s=%s", SAME_SITE_COOKIE_FLAG, SAME_SITE_COOKIE_STRICT_VALUE);
-  }
-
   private static Optional<Date> getTokenIssuedAt(final String token) {
     return getTokenAttribute(token, DecodedJWT::getIssuedAt);
   }
@@ -246,15 +241,15 @@ public class AuthCookieService {
       final Instant expiresAt,
       final String requestScheme,
       final boolean isDelete) {
-    String cookiePath = getCookiePath();
-    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
-      cookiePath = addSameSiteCookieFlag(cookiePath);
-    }
+    final String cookiePath = getCookiePath();
     final jakarta.servlet.http.Cookie cookie =
         new jakarta.servlet.http.Cookie(cookieName, cookieValue);
     cookie.setPath(cookiePath);
     cookie.setHttpOnly(true);
     cookie.setSecure(isSecureScheme(requestScheme));
+    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
+      cookie.setAttribute(SAME_SITE_COOKIE_FLAG, SAME_SITE_COOKIE_STRICT_VALUE);
+    }
 
     if (expiresAt == null) {
       cookie.setMaxAge(-1);
