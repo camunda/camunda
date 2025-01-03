@@ -73,7 +73,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
 
   @AfterEach
-  void tearDown() throws IOException {
+  void afterEach() throws IOException {
     // wipes all data in ES between tests
     final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
     assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
@@ -142,7 +142,16 @@ final class ElasticsearchArchiverRepositoryIT {
             formattedPrefix + "operate-record-8.2.1_2024-01-02",
             formattedPrefix + "tasklist-record-8.3.0_2024-01");
     final var untouchedIndices =
-        List.of(formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_");
+        new ArrayList<>(
+            List.of(
+                formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_"));
+
+    // we cannot test the case with multiple different prefixes when no prefix is given, since it
+    // will just match everything from the other prefixes...
+    if (!prefix.isEmpty()) {
+      untouchedIndices.add("other-" + "tasklist-record-8.3.0_2024-01-02");
+    }
+
     final var repository = createRepository();
     final var indices = new ArrayList<>(expectedIndices);
     indices.addAll(untouchedIndices);

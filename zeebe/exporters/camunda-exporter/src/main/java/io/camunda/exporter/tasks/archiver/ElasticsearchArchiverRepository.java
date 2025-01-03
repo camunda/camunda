@@ -51,7 +51,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final String ALL_INDICES = "*";
-  private static final String INDEX_WILDCARD = ".+\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
