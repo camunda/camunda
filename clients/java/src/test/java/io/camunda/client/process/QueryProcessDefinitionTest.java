@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
@@ -28,6 +29,7 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessDefinitionTest extends ClientRestTest {
@@ -138,7 +140,9 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     // then
     final ProcessDefinitionSearchQueryRequest request =
         gatewayService.getLastRequest(ProcessDefinitionSearchQueryRequest.class);
-    final List<SearchQuerySortRequest> sorts = request.getSort();
+    final List<SearchQuerySortRequest> sorts =
+        SearchQuerySortRequestMapper.fromProcessDefinitionSearchQuerySortRequest(
+            Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(7);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "name", SortOrderEnum.DESC);

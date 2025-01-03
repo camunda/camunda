@@ -29,6 +29,7 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
@@ -66,8 +67,8 @@ public class UserTaskVariableQueryImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<Variable>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<Variable>> result = new HttpCamundaFuture<>();
+  public ZeebeFuture<SearchQueryResponse<Variable>> send() {
+    final HttpZeebeFuture<SearchQueryResponse<Variable>> result = new HttpZeebeFuture<>();
     httpClient.post(
         String.format("/user-tasks/%d/variables/search", userTaskKey),
         jsonMapper.toJson(request),
@@ -91,7 +92,9 @@ public class UserTaskVariableQueryImpl
   @Override
   public UserTaskVariableQuery sort(final VariableSort value) {
     final VariableSortImpl sorting = (VariableSortImpl) value;
-    request.setSort(sorting.getSearchRequestProperty());
+    request.setSort(
+        SearchQuerySortRequestMapper.toUserTaskVariableSearchQuerySortRequest(
+            sorting.getSearchRequestProperty()));
     return this;
   }
 

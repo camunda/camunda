@@ -18,6 +18,7 @@ package io.camunda.client.decision;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuerySortRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -106,19 +107,24 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionRequirementsSearchQueryRequest.class);
     assertThat(request.getSort()).hasSize(5);
 
-    assertThat(request.getSort().get(0).getField()).isEqualTo("decisionRequirementsKey");
+    assertThat(request.getSort().get(0).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.DECISION_REQUIREMENTS_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.DESC);
 
-    assertThat(request.getSort().get(1).getField()).isEqualTo("version");
+    assertThat(request.getSort().get(1).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.VERSION);
     assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
-    assertThat(request.getSort().get(2).getField()).isEqualTo("name");
+    assertThat(request.getSort().get(2).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.NAME);
     assertThat(request.getSort().get(2).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
-    assertThat(request.getSort().get(3).getField()).isEqualTo("decisionRequirementsId");
+    assertThat(request.getSort().get(3).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.DECISION_REQUIREMENTS_ID);
     assertThat(request.getSort().get(3).getOrder()).isEqualTo(SortOrderEnum.ASC);
 
-    assertThat(request.getSort().get(4).getField()).isEqualTo("tenantId");
+    assertThat(request.getSort().get(4).getField())
+        .isEqualTo(DecisionRequirementsSearchQuerySortRequest.FieldEnum.TENANT_ID);
     assertThat(request.getSort().get(4).getOrder()).isEqualTo(SortOrderEnum.DESC);
   }
 }

@@ -386,9 +386,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Unknown sortBy: unknownField.",
+                      "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [ownerType, ownerKey, resourceType]",
                       "instance": "%s"
                     }""",
                 endpoint)),
