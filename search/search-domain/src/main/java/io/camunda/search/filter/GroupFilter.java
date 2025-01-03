@@ -8,13 +8,14 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Set;
 
-public record GroupFilter(Long groupKey, String name, Long memberKey) implements FilterBase {
+public record GroupFilter(Long groupKey, String name, Set<Long> memberKeys) implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private Long groupKey;
     private String name;
-    private Long memberKey;
+    private Set<Long> memberKeys;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
@@ -27,13 +28,17 @@ public record GroupFilter(Long groupKey, String name, Long memberKey) implements
     }
 
     public Builder memberKey(final Long value) {
-      memberKey = value;
+      return memberKeys(Set.of(value));
+    }
+
+    public Builder memberKeys(final Set<Long> value) {
+      memberKeys = value;
       return this;
     }
 
     @Override
     public GroupFilter build() {
-      return new GroupFilter(groupKey, name, memberKey);
+      return new GroupFilter(groupKey, name, memberKeys);
     }
   }
 }
