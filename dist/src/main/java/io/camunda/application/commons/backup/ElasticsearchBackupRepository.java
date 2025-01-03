@@ -8,6 +8,7 @@
 package io.camunda.application.commons.backup;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -21,7 +22,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /** Note that the condition used refers to operate ElasticSearchCondition */
-@Conditional(ElasticsearchCondition.class)
+@Conditional({ElasticsearchCondition.class, WebappEnabledCondition.class})
 @Configuration
 @Profile("operate")
 public class ElasticsearchBackupRepository {

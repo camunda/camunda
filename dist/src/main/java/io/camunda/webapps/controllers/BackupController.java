@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.controllers;
 
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -34,10 +35,12 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backupHistory")
+@Conditional(WebappEnabledCondition.class)
 @ProfileWebApp
 public class BackupController {
   private static final Logger LOG = LoggerFactory.getLogger(BackupController.class);
