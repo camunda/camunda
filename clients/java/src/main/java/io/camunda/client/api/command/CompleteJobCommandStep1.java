@@ -291,11 +291,26 @@ public interface CompleteJobCommandStep1
     CompleteJobCommandStep2 correctPriority(Integer priority);
 
     /**
-     * Indicates that you are done setting up the result of the job. Allows to call methods
-     * unrelated to the job result like {@link #variables(Object)}. This method can be called
-     * optionally, it has no effect on the command.
+     * Marks the completion of configuring the result of the job.
      *
-     * @return the builder for this command.
+     * <p>This method is optional and can be used to indicate that the result configuration (such as
+     * corrections or denial) is complete. It allows calling methods unrelated to the job result.
+     *
+     * <p>Calling this method has no effect on the final command sent to the broker. It is provided
+     * for readability and organizational clarity in method chaining.
+     *
+     * <p>Example usage:
+     *
+     * <pre>{@code
+     * client.newCompleteJobCommand(jobKey)
+     *     .withResult()
+     *     .correctAssignee("john_doe")
+     *     .resultDone() // explicitly marks the end of result configuration
+     *     .send();
+     * }</pre>
+     *
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
      */
     CompleteJobCommandStep1 resultDone();
   }
