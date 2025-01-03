@@ -72,36 +72,75 @@ public interface CompleteJobCommandStep1
   CompleteJobCommandStep1 variable(String key, Object value);
 
   /**
-   * The result of the completed job as determined by the worker.
+   * Initializes the job result to allow corrections or a denial to be configured.
+   *
+   * <p>This method is used to apply changes to user task attributes (such as {@code assignee},
+   * {@code priority}, {@code dueDate}, and so on) or explicitly deny a user task operation.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * client.newCompleteJobCommand(jobKey)
+   *     .withResult()
+   *     .correctAssignee("john_doe")                 // dynamically reassigns the task to 'john_doe'
+   *     .correctPriority(84)                         // adjusts the priority of the task
+   *     .correctDueDate("2024-11-22T11:44:55.0000Z") // sets a new due date
+   *     .send();
+   * }</pre>
    *
    * @return the builder for this command.
+   * @apiNote Currently, this API is relevant only for user task listeners.
    */
   CompleteJobCommandStep2 withResult();
 
   /**
-   * The result of the completed job as determined by the worker.
+   * Sets the result of the completed job, allowing the worker to apply corrections to user task
+   * attributes or explicitly deny the user task operation.
+   *
+   * <p>The {@link CompleteJobResult} object provides a flexible way to:
+   *
+   * <ul>
+   *   <li>Correct user task attributes such as {@code assignee}, {@code dueDate}, {@code priority},
+   *       and more.
+   *   <li>Deny the operation associated with the user task, preventing its lifecycle transition.
+   * </ul>
    *
    * <pre>{@code
-   * CompleteJobResult jobResult =
+   * final CompleteJobResult jobResult =
    *     new CompleteJobResult()
-   *         .correctAssignee("newAssignee")
-   *         .correctPriority(42);
+   *         .correctAssignee("newAssignee") // dynamically assigns the task
+   *         .correctPriority(42);           // updates the task priority
+   *
    * client.newCompleteJobCommand(jobKey)
    *     .withResult(jobResult)
    *     .send();
    * }</pre>
    *
-   * @param jobResult the result of the job
-   * @return the builder for this command.
+   * @param jobResult the result of the job, containing corrections and/or a denial flag.
+   * @return the builder for this command. Call {@link #send()} to finalize the command and send it
+   *     to the broker.
+   * @apiNote This API is currently relevant only for user task listeners.
    */
   CompleteJobCommandStep1 withResult(CompleteJobResult jobResult);
 
   /**
-   * The result of the completed job as determined by the worker.
+   * Modifies the result of the completed job using a lambda expression, allowing the worker to
+   * dynamically apply corrections to user task attributes or explicitly deny the user task
+   * operation.
    *
-   * <p>This is a convenience method for {@link #withResult(CompleteJobResult)} that allows you to
-   * set the result using a lambda expression. It provides the current job result as input, so you
-   * can easily modify it. If the job result has not been changed yet, it provides the default.
+   * <p>This is a convenience method for {@link #withResult(CompleteJobResult)}, allowing
+   * modifications to be applied directly via a functional interface rather than constructing the
+   * {@link CompleteJobResult} manually, enabling:
+   *
+   * <ul>
+   *   <li>Correcting user task attributes such as {@code assignee}, {@code dueDate}, {@code
+   *       priority}, and more.
+   *   <li>Denying the operation associated with the user task, preventing its lifecycle transition.
+   * </ul>
+   *
+   * <p>The lambda expression receives the current {@link CompleteJobResult}, which can be modified
+   * as needed. If no result has been set yet, a default {@link CompleteJobResult} is provided for
+   * modification.
    *
    * <pre>{@code
    * client.newCompleteJobCommand(jobKey)
@@ -109,8 +148,10 @@ public interface CompleteJobCommandStep1
    *     .send();
    * }</pre>
    *
-   * @param jobResultModifier function to modify the job result
-   * @return the builder for this command.
+   * @param jobResultModifier a function to modify the {@link CompleteJobResult}.
+   * @return the builder for this command. Call {@link #send()} to finalize the command and send it
+   *     to the broker.
+   * @apiNote This API is currently relevant only for user task listeners.
    */
   CompleteJobCommandStep1 withResult(UnaryOperator<CompleteJobResult> jobResultModifier);
 
