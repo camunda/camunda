@@ -9,7 +9,7 @@
     "@bpmn-io/form-js-viewer": "1.13.2",
     "@camunda/camunda-composite-components": "0.11.0",
     "@carbon/elements": "11.58.0",
-    "@carbon/react": "1.71.0",
+    "@carbon/react": "1.73.0",
     "@monaco-editor/react": "4.6.0",
     "@tanstack/eslint-plugin-query": "5.62.1",
     "@tanstack/react-query": "5.62.7",
