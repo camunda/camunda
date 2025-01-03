@@ -71,6 +71,11 @@ public final class AuthorizationClient {
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
+    public AuthorizationPermissionClient withOwnerId(final String username) {
+      authorizationCreationRecord.setOwnerId(username);
+      return this;
+    }
+
     public AuthorizationPermissionClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
       return this;

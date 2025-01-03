@@ -751,6 +751,34 @@ public class AuthorizationCheckBehaviorTest {
         .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
+  @Test
+  public void shouldUseSimpleMapping() {
+    // given
+    final var USERNAME_CLAIM = "username";
+    final var processingState = engine.getProcessingState();
+    final var securityConfig = new SecurityConfiguration();
+    final var authConfig = new AuthorizationsConfiguration();
+    authConfig.setEnabled(true);
+    securityConfig.setAuthorizations(authConfig);
+    securityConfig.getAuthorizations().getOidc().setEnabled(true);
+    securityConfig.getAuthorizations().getOidc().setUsername(USERNAME_CLAIM);
+    final var authCheck = new AuthorizationCheckBehavior(processingState, securityConfig);
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    final var username = "simpleMapping";
+    addPermission(username, resourceType, permissionType, resourceId);
+    final var command = mockCommandWithMapping(USERNAME_CLAIM, username);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authCheck.isAuthorized(request);
+
+    // then
+    EitherAssert.assertThat(authorized).isRight();
+  }
+
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
@@ -789,6 +817,21 @@ public class AuthorizationCheckBehaviorTest {
       final String... resourceIds) {
     final var client =
         engine.authorization().permission().withOwnerKey(userKey).withResourceType(resourceType);
+
+    for (final String resourceId : resourceIds) {
+      client.withPermission(permissionType, resourceId);
+    }
+
+    client.add();
+  }
+
+  private void addPermission(
+      final String username,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String... resourceIds) {
+    final var client =
+        engine.authorization().permission().withOwnerId(username).withResourceType(resourceType);
 
     for (final String resourceId : resourceIds) {
       client.withPermission(permissionType, resourceId);

@@ -17,6 +17,8 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.UserQuery;
+import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.impl.JwtAuthorizationEncoder;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -146,6 +148,32 @@ public class AuthorizationsUtil implements CloseableSilently {
                         .formatted(
                             Base64.getEncoder()
                                 .encodeToString("%s:%s".formatted(username, password).getBytes())));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
+                return false;
+              }
+            })
+        .build();
+  }
+
+  public static CamundaClient createClientOidc(
+      final TestGateway<?> gateway, final String username, final String usernameClaim) {
+    final JwtAuthorizationEncoder encoder = Authorization.jwtEncoder();
+    encoder.withClaim(usernameClaim, username);
+    return gateway
+        .newClientBuilder()
+        .preferRestOverGrpc(true)
+        .defaultRequestTimeout(Duration.ofSeconds(15))
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put(
+                    "Authorization",
+                    "Bearer %s"
+                        .formatted(encoder.encode()));
               }
 
               @Override
