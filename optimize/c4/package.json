@@ -27,7 +27,7 @@
 		"@storybook/addon-links": "^8.4.5",
 		"@storybook/addon-mdx-gfm": "^8.4.5",
 		"@storybook/addon-styling-webpack": "^1.0.1",
-		"@storybook/addon-webpack5-compiler-swc": "^1.0.5",
+		"@storybook/addon-webpack5-compiler-swc": "^2.0.0",
 		"@storybook/blocks": "^8.4.5",
 		"@storybook/react": "^8.4.5",
 		"@storybook/react-webpack5": "^8.4.5",

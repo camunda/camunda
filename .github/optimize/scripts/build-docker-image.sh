@@ -33,7 +33,7 @@ docker buildx build \
     --build-arg REVISION="${REVISION}" \
     --provenance false \
     --load \
-    -f optimize-internal-test.Dockerfile \
+    -f optimize.Dockerfile \
     .
 
 ./optimize/docker/test/verify.sh "${tags[@]}"

@@ -240,8 +240,7 @@ public class TasklistMigrationHelper {
     return new HashMap<>() {
       {
         put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", "http://elasticsearch:9200");
-        put("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", "elasticsearch");
-        put("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", "9200");
+        put("CAMUNDA_DATABASE_URL", "http://elasticsearch:9200");
         put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", "http://elasticsearch:9200");
         put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
         put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());
@@ -254,9 +253,9 @@ public class TasklistMigrationHelper {
     return new HashMap<>() {
       {
         put("CAMUNDA_TASKLIST_DATABASE", "opensearch");
+        put("CAMUNDA_DATABASE_TYPE", "opensearch");
         put("CAMUNDA_TASKLIST_OPENSEARCH_URL", "http://opensearch:9200");
-        put("CAMUNDA_TASKLIST_OPENSEARCH_HOST", "opensearch");
-        put("CAMUNDA_TASKLIST_OPENSEARCH_PORT", "9200");
+        put("CAMUNDA_DATABASE_URL", "http://opensearch:9200");
         put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", "http://opensearch:9200");
         put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getZeebeGatewayAddress());
         put("CAMUNDA_TASKLIST_ZEEBE_REST_ADDRESS", zeebe.getZeebeRestAddress());

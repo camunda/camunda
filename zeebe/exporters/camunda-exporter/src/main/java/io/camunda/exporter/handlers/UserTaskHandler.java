@@ -43,6 +43,9 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATED);
+  private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
+      "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
+
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterMetadata exporterMetadata;
@@ -96,50 +99,11 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
-      case UserTaskIntent.ASSIGNED -> {
-        entity.getChangedAttributes().add("assignee");
-        if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
-          entity.setAssignee(null);
-        } else {
-          entity.setAssignee(record.getValue().getAssignee());
-        }
-      }
-      case UserTaskIntent.UPDATED -> {
-        for (final String attribute : record.getValue().getChangedAttributes()) {
-          entity.getChangedAttributes().add(attribute);
-          switch (attribute) {
-            case "candidateGroupsList" ->
-                entity.setCandidateGroups(
-                    record.getValue().getCandidateGroupsList().toArray(new String[0]));
-            case "candidateUsersList" ->
-                entity.setCandidateUsers(
-                    record.getValue().getCandidateUsersList().toArray(new String[0]));
-            case "dueDate" ->
-                entity.setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()));
-            case "followUpDate" ->
-                entity.setFollowUpDate(
-                    ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()));
-            case "priority" -> entity.setPriority(record.getValue().getPriority());
-            default ->
-                LOGGER.warn(
-                    "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);
-          }
-        }
-      }
-      case UserTaskIntent.COMPLETED, UserTaskIntent.CANCELED ->
-          entity
-              .setState(
-                  record.getIntent().equals(UserTaskIntent.COMPLETED)
-                      ? TaskState.COMPLETED
-                      : TaskState.CANCELED)
-              .setCompletionTime(
-                  ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-      case UserTaskIntent.MIGRATED ->
-          entity
-              .setFlowNodeBpmnId(record.getValue().getElementId())
-              .setBpmnProcessId(record.getValue().getBpmnProcessId())
-              .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-              .setState(TaskState.CREATED);
+      case UserTaskIntent.ASSIGNED -> handleAssignment(record, entity);
+      case UserTaskIntent.UPDATED -> updateChangedAttributes(record, entity);
+      case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
+      case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
+      case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
       default -> {}
     }
 
@@ -184,10 +148,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           case "followUpDate" ->
               updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
           case "priority" -> updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
-          default ->
-              LOGGER.warn(
-                  "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}",
-                  changedAttribute);
+          default -> LOGGER.warn(UNMAPPED_USER_TASK_ATTRIBUTE_WARNING, changedAttribute);
         }
       }
     }
@@ -270,5 +231,76 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   private boolean refersToPreviousVersionRecord(final long key) {
     return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
+  }
+
+  private void handleAssignment(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity.getChangedAttributes().add("assignee");
+    if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
+      entity.setAssignee(null);
+    } else {
+      entity.setAssignee(record.getValue().getAssignee());
+    }
+
+    updateChangedAttributes(record, entity);
+  }
+
+  /**
+   * Applies changes to the user task fields based on the attributes in the {@link
+   * UserTaskRecordValue}.
+   *
+   * <p>This method can be used for updating fields either:
+   *
+   * <ul>
+   *   <li>As a result of user task corrections configured while completing task listener jobs.
+   *   <li>As a result of regular user task updates.
+   * </ul>
+   *
+   * @param record the record containing user task data and changed attributes
+   * @param entity the task entity to be updated
+   */
+  private void updateChangedAttributes(
+      final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    final var value = record.getValue();
+
+    for (final String attribute : value.getChangedAttributes()) {
+      entity.getChangedAttributes().add(attribute);
+
+      switch (attribute) {
+        case "assignee" -> entity.setAssignee(value.getAssignee());
+        case "candidateGroupsList" ->
+            entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
+        case "candidateUsersList" ->
+            entity.setCandidateUsers(value.getCandidateUsersList().toArray(new String[0]));
+        case "dueDate" -> entity.setDueDate(ExporterUtil.toOffsetDateTime(value.getDueDate()));
+        case "followUpDate" ->
+            entity.setFollowUpDate(ExporterUtil.toOffsetDateTime(value.getFollowUpDate()));
+        case "priority" -> entity.setPriority(value.getPriority());
+        default -> LOGGER.warn(UNMAPPED_USER_TASK_ATTRIBUTE_WARNING, attribute);
+      }
+    }
+  }
+
+  private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setState(TaskState.COMPLETED)
+        .setCompletionTime(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    updateChangedAttributes(record, entity);
+  }
+
+  private void handleCancellation(
+      final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setState(TaskState.CANCELED)
+        .setCompletionTime(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+  }
+
+  private void handleMigration(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setFlowNodeBpmnId(record.getValue().getElementId())
+        .setBpmnProcessId(record.getValue().getBpmnProcessId())
+        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
+        .setState(TaskState.CREATED);
   }
 }

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import styled from "styled-components";
-import { spacing04, spacing05 } from "@carbon/themes";
+import { spacing04, spacing05 } from "@carbon/elements";
 
 const PageHeadline = styled.h1`
   display: flex;

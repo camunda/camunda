@@ -174,7 +174,7 @@ public class AuthorizationsUtil implements CloseableSilently {
             })
         .build();
   }
-  
+
   private void awaitTenantExistsInElasticsearch(final String tenantId) {
     final var tenantQuery = TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId)));
     awaitEntityExistsInElasticsearch(() -> searchClients.searchTenants(tenantQuery));

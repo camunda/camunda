@@ -33,7 +33,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.DirtiesContext;
 
+/**
+ * ApplicationContext associated with this test gets dirty {@link
+ * #replaceIndexDescriptorsInValidator(Set)} and should therefore be closed and removed from the
+ * context cache.
+ */
+@DirtiesContext
 public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
   private static final String ORIGINAL_SCHEMA_PATH =

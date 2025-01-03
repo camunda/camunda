@@ -5,14 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.search.connect.configuration;
 
-function isValidJSON(value: string) {
-  try {
-    JSON.parse(value);
-    return true;
-  } catch {
-    return false;
-  }
+public final class DatabaseConfig {
+  public static final String ELASTICSEARCH = "elasticsearch";
+  public static final String RDBMS = "rdbms";
+  public static final String OPENSEARCH = "opensearch";
+
+  private DatabaseConfig() {}
 }
-
-export {isValidJSON};

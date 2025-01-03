@@ -28,7 +28,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "test"})
+@ActiveProfiles({"tasklist", "test", "standalone"})
 public abstract class ModuleIntegrationTest {
 
   @Autowired protected ApplicationContext applicationContext;

@@ -17,25 +17,28 @@
   },
   "dependencies": {
     "@camunda/camunda-composite-components": "0.11.0",
+    "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.71.0",
-    "i18next": "23.16.8",
+    "i18next": "24.2.0",
     "react": "18.3.1",
     "react-debounced": "1.1.2",
     "react-dom": "18.3.1",
-    "react-i18next": "15.2.0",
+    "react-i18next": "15.4.0",
     "react-router": "6.28.0",
     "react-router-dom": "6.28.0",
     "react-transition-group": "4.4.5",
     "styled-components": "6.1.13"
   },
   "devDependencies": {
+    "@types/carbon-components-react": "^7.55.13",
+    "@types/carbon__elements": "^11.10.3",
     "@types/event-source-polyfill": "1.0.5",
     "@types/node": "22.10.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@types/react-transition-group": "4.4.11",
-    "@typescript-eslint/eslint-plugin": "8.18.1",
-    "@typescript-eslint/parser": "8.18.1",
+    "@typescript-eslint/eslint-plugin": "8.19.0",
+    "@typescript-eslint/parser": "8.19.0",
     "@vitejs/plugin-react": "4.3.3",
     "@vzeta/rollup-plugin-sbom": "2.0.0",
     "eslint": "8.57.1",
@@ -47,7 +50,7 @@
     "rollup-plugin-license": "3.5.3",
     "sass": "1.83.0",
     "typescript": "5.6.3",
-    "vite": "5.4.10"
+    "vite": "6.0.6"
   },
   "packageManager": "yarn@4.3.1"
 }

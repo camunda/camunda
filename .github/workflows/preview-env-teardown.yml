@@ -8,7 +8,7 @@ jobs:
   teardown-preview:
     # check whether the unlabel name was deploy-preview || check whether the PR was closed / merged and whether deploy-preview was part of the array
     if: github.event.label.name == 'deploy-preview' || (github.event.action == 'closed' && contains( github.event.pull_request.labels.*.name, 'deploy-preview') )
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR

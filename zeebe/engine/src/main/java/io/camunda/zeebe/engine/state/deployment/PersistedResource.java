@@ -26,18 +26,20 @@ public class PersistedResource extends UnpackedObject implements DbValue {
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
+  private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty resourceProp = new StringProperty("resourceProp", "");
+  private final StringProperty resourceProp = new StringProperty("resource", "");
 
   public PersistedResource() {
-    super(8);
+    super(9);
     declareProperty(resourceIdProp)
         .declareProperty(versionProp)
         .declareProperty(resourceKeyProp)
         .declareProperty(checksumProp)
+        .declareProperty(resourceNameProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
@@ -48,8 +50,9 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     final var copy = new PersistedResource();
     copy.resourceIdProp.setValue(BufferUtil.cloneBuffer(getResourceId()));
     copy.versionProp.setValue(getVersion());
-    copy.resourceKeyProp.setValue(getFormKey());
+    copy.resourceKeyProp.setValue(getResourceKey());
     copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
+    copy.resourceNameProp.setValue(BufferUtil.cloneBuffer(getResourceName()));
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
     copy.versionTagProp.setValue(getVersionTag());
@@ -69,12 +72,16 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     return bufferAsString(versionTagProp.getValue());
   }
 
-  public long getFormKey() {
+  public long getResourceKey() {
     return resourceKeyProp.getValue();
   }
 
   public DirectBuffer getChecksum() {
     return checksumProp.getValue();
+  }
+
+  public DirectBuffer getResourceName() {
+    return resourceNameProp.getValue();
   }
 
   public String getTenantId() {
@@ -94,6 +101,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     versionProp.setValue(record.getVersion());
     resourceKeyProp.setValue(record.getResourceKey());
     checksumProp.setValue(record.getChecksumBuffer());
+    resourceNameProp.setValue(record.getResourceName());
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());

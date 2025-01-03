@@ -71,8 +71,9 @@ public sealed interface ClusterConfigurationChangeOperation {
      *
      * @param memberId the member id of the member that will stop replicating the partition
      * @param partitionId id of the partition to leave
+     * @param isClusterPurge true if the operation is part of a cluster purge
      */
-    record PartitionLeaveOperation(MemberId memberId, int partitionId)
+    record PartitionLeaveOperation(MemberId memberId, int partitionId, boolean isClusterPurge)
         implements PartitionChangeOperation {}
 
     /**
@@ -124,8 +125,26 @@ public sealed interface ClusterConfigurationChangeOperation {
      *
      * @param memberId the member id of the member that will apply this operation
      * @param partitionId id of the partition to bootstrap
+     * @param priority priority of the member in the partition
+     * @param config the config to initialize the partition with. If you don't provide one, the
+     *     config from partition 1 is used.
      */
-    record PartitionBootstrapOperation(MemberId memberId, int partitionId, int priority)
-        implements PartitionChangeOperation {}
+    record PartitionBootstrapOperation(
+        MemberId memberId, int partitionId, int priority, Optional<DynamicPartitionConfig> config)
+        implements PartitionChangeOperation {
+
+      public PartitionBootstrapOperation(
+          final MemberId memberId, final int partitionId, final int priority) {
+        this(memberId, partitionId, priority, Optional.empty());
+      }
+    }
+
+    /**
+     * Operation to delete the history of the given member.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     */
+    record DeleteHistoryOperation(MemberId memberId)
+        implements ClusterConfigurationChangeOperation {}
   }
 }

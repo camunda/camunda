@@ -48,7 +48,7 @@
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-client-java</artifactId>
+      <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
     <!-- ELASTICSEARCH -->

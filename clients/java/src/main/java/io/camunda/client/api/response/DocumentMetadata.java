@@ -43,6 +43,16 @@ public interface DocumentMetadata {
   String getFileName();
 
   /**
+   * @return the process definition ID, if present in the metadata
+   */
+  String getProcessDefinitionId();
+
+  /**
+   * @return the process definition key, if present in the metadata
+   */
+  Long getProcessInstanceKey();
+
+  /**
    * @return the custom properties of the document, if present in the metadata
    */
   Map<String, Object> getCustomProperties();
