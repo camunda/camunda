@@ -83,6 +83,7 @@ public final class AuthorizationCheckBehavior {
 
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
+    // todo: this should become getUsername(request)
     if (userKey.isPresent()) {
       final var userOptional = userState.getUser(userKey.get());
       if (userOptional.isEmpty()) {
@@ -184,7 +185,7 @@ public final class AuthorizationCheckBehavior {
    * assigned roles or groups.
    */
   public Set<String> getDirectAuthorizedResourceIdentifiers(
-      final long ownerKey,
+      final String ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     return authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
@@ -196,7 +197,7 @@ public final class AuthorizationCheckBehavior {
       final PermissionType permissionType) {
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
-        authorizationState.getResourceIdentifiers(user.getUserKey(), resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
@@ -212,14 +213,36 @@ public final class AuthorizationCheckBehavior {
 
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
       final AuthorizationRequest request) {
+    Stream<String> simpleMapping = Stream.empty();
+    if (securityConfig.getAuthorizations().getOidc().isEnabled()) {
+      simpleMapping = getSimpleMapping(request);
+    }
+    return Stream.concat(simpleMapping, getAdvancedMapping(request));
+  }
+
+  private Stream<String> getSimpleMapping(final AuthorizationRequest request) {
+    final var username =
+        (String)
+            request
+                .getCommand()
+                .getAuthorizations()
+                .get(
+                    Authorization.USER_TOKEN_CLAIM_PREFIX
+                        + securityConfig.getAuthorizations().getOidc().getUsername());
+    return authorizationState
+        .getResourceIdentifiers(username, request.getResourceType(), request.getPermissionType())
+        .stream();
+  }
+
+  private Stream<String> getAdvancedMapping(final AuthorizationRequest request) {
     return extractUserTokenClaims(request.getCommand())
         .<PersistedMapping>mapMulti(
             (claim, stream) ->
                 mappingState.get(claim.claimName(), claim.claimValue()).ifPresent(stream))
         .filter(mapping -> isMappingAuthorizedForTenant(request, mapping))
-        .<Long>mapMulti(
+        .<String>mapMulti(
             (mapping, stream) -> {
-              stream.accept(mapping.getMappingKey());
+              stream.accept(mapping.getClaimName());
               mapping.getGroupKeysList().forEach(stream);
               mapping.getRoleKeysList().forEach(stream);
             })
@@ -232,7 +255,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
-      final List<Long> ownerKeys,
+      final List<String> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     return ownerKeys.stream()
