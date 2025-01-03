@@ -1824,10 +1824,10 @@
   dependencies:
     "@types/unist" "^2"
 
-"@types/mixpanel-browser@2.50.1":
-  version "2.50.1"
-  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.50.1.tgz#e93b8754893369bd0a9eae61ce2a45f392ca4e7f"
-  integrity sha512-Z9QnzNIZtsyhc0tvGFeaYCo2NJTGwWi8pqLMB3z/BnGUdEpr3x2qK28KKTjVH31DMbQ0IwqjNQElwJP+XpmeMQ==
+"@types/mixpanel-browser@2.51.0":
+  version "2.51.0"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.51.0.tgz#64df4d23cc053b65eb3c140345d5b81885fd8b6d"
+  integrity sha512-or4HZRDmqMJ1OP+O6h4hB+tVDKJffpVi2bFxi/Gem5TGnE94I7OtWKXtrwdDfSGhfOLL+WQIOUOxUZHAzHNi8A==
 
 "@types/ms@*":
   version "0.7.34"
