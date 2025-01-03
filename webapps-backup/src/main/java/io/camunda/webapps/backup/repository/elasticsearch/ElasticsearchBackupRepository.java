@@ -244,17 +244,20 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       final boolean onlyRequired,
       final Runnable onSuccess,
       final Runnable onFailure) {
+    final var indices = snapshotRequest.indices(onlyRequired);
+    final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
+
     final var request =
         CreateSnapshotRequest.of(
             b ->
                 b.repository(snapshotRequest.repositoryName())
                     .snapshot(snapshotRequest.snapshotName())
-                    .indices(snapshotRequest.indices(onlyRequired))
+                    .indices(indices.isEmpty() ? snapshotRequest.indices(false) : indices)
                     // ignoreUnavailable = false - indices defined by their exact name MUST be
                     // present
                     // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
                     // absent
-                    .ignoreUnavailable(false)
+                    .ignoreUnavailable(indices.isEmpty())
                     // TODO not all migrated
                     //                    .(IndicesOptions.fromOptions(false, true, true, true))
                     .includeGlobalState(backupProps.includeGlobalState())
@@ -263,7 +266,6 @@ public class ElasticsearchBackupRepository implements BackupRepository {
                             snapshotRequest.metadata(), esClient._jsonpMapper()))
                     .featureStates("none")
                     .waitForCompletion(true));
-    final var listener = new CreateSnapshotListener(snapshotRequest, onSuccess, onFailure);
 
     executor.execute(
         () -> {
