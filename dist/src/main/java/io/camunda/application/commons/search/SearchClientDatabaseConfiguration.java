@@ -19,7 +19,6 @@ import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -28,7 +27,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
 @EnableConfigurationProperties(SearchClientProperties.class)
 public class SearchClientDatabaseConfiguration {
 
