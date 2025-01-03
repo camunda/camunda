@@ -22,6 +22,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -34,12 +35,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.http.HttpHost;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -65,6 +71,13 @@ final class ElasticsearchArchiverRepositoryIT {
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
+
+  @AfterEach
+  void afterEach() throws IOException {
+    // wipes all data in ES between tests
+    final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
+    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+  }
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -118,44 +131,53 @@ final class ElasticsearchArchiverRepositoryIT {
         .isEqualTo("operate_delete_archived_indices");
   }
 
-  @Test
-  void shouldSetIndexLifeCycleOnAllValidIndexes() throws IOException {
+  @ParameterizedTest
+  @ValueSource(strings = {"", "test"})
+  void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
     // given
-    indexPrefix = "test";
-    final var indexName1 = "test-operate-record-8.2.1_records";
-    final var indexName2 = "test-tasklist-record-8.3.0_records";
-    // indexName3 does not have a valid name for the policy to be applied.
-    final var indexName3 = "null-tasklist-record_records";
+    indexPrefix = prefix;
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    final var expectedIndices =
+        List.of(
+            formattedPrefix + "operate-record-8.2.1_2024-01-02",
+            formattedPrefix + "tasklist-record-8.3.0_2024-01");
+    final var untouchedIndices =
+        new ArrayList<>(
+            List.of(
+                formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_"));
+
+    // we cannot test the case with multiple different prefixes when no prefix is given, since it
+    // will just match everything from the other prefixes...
+    if (!prefix.isEmpty()) {
+      untouchedIndices.add("other-" + "tasklist-record-8.3.0_2024-01-02");
+    }
 
     final var repository = createRepository();
-    testClient.indices().create(r -> r.index(indexName1));
-    testClient.indices().create(r -> r.index(indexName2));
-    testClient.indices().create(r -> r.index(indexName3));
+    final var indices = new ArrayList<>(expectedIndices);
+    indices.addAll(untouchedIndices);
 
-    final var initialLifecycle = getLifeCycle(indexName1);
-    assertThat(initialLifecycle).isNull();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
+
     putLifecyclePolicy();
+    for (final var index : indices) {
+      testClient.indices().create(r -> r.index(index));
+    }
 
     // when
     final var result = repository.setLifeCycleToAllIndexes();
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var lifeCycleForIndex1 = getLifeCycle(indexName1);
-    final var lifeCycleForIndex2 = getLifeCycle(indexName2);
-    final var lifeCycleForIndex3 = getLifeCycle(indexName3);
-
-    assertThat(lifeCycleForIndex1)
-        .isNotNull()
-        .extracting(IndexSettingsLifecycle::name)
-        .isEqualTo("operate_delete_archived_indices");
-    assertThat(lifeCycleForIndex2)
-        .isNotNull()
-        .extracting(IndexSettingsLifecycle::name)
-        .isEqualTo("operate_delete_archived_indices");
-    assertThat(lifeCycleForIndex3).isNull();
+    for (final var index : expectedIndices) {
+      assertThat(getLifeCycle(index))
+          .isNotNull()
+          .extracting(IndexSettingsLifecycle::name)
+          .isEqualTo("operate_delete_archived_indices");
+    }
+    for (final var index : untouchedIndices) {
+      assertThat(getLifeCycle(index)).as("no policy applied to %s", index).isNull();
+    }
   }
 
   private IndexSettingsLifecycle getLifeCycle(final String indexName) throws IOException {
