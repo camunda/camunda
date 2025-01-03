@@ -17,9 +17,9 @@ import java.util.Set;
 
 public interface AuthorizationState {
   Set<String> getResourceIdentifiers(
-      Long ownerKey, AuthorizationResourceType resourceType, final PermissionType permissionType);
+      String ownerId, AuthorizationResourceType resourceType, final PermissionType permissionType);
 
-  Optional<AuthorizationOwnerType> getOwnerType(final long ownerKey);
+  Optional<AuthorizationOwnerType> getOwnerType(final String ownerKey);
 
   List<AuthorizationKey> getAuthorizationKeysByResourceId(final String resourceId);
 }

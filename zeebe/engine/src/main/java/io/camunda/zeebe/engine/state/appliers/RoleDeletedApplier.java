@@ -33,6 +33,7 @@ public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRec
   @Override
   public void applyState(final long key, final RoleRecord value) {
     final var roleKey = value.getRoleKey();
+    final var id = value.getEntityId();
     final var entities = roleState.getEntitiesByType(roleKey);
     // Remove roles from users if EntityType.USER exists
     final var userEntities = entities.get(EntityType.USER);
@@ -41,8 +42,8 @@ public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRec
     }
     // todo remove entity from mapping state
     // delete role from authorization state
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(roleKey);
-    authorizationState.deleteOwnerTypeByKey(roleKey);
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(id);
+    authorizationState.deleteOwnerTypeByKey(id);
     roleState.delete(value);
   }
 }

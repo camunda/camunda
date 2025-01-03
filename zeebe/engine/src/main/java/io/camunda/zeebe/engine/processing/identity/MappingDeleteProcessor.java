@@ -126,19 +126,19 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     }
     for (final var roleKey : mapping.getRoleKeysList()) {
       stateWriter.appendFollowUpEvent(
-          roleKey,
+          keyGenerator.nextKey(),
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
-              .setRoleKey(roleKey)
+              .setEntityId(roleKey)
               .setEntityKey(mappingKey)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupKey : mapping.getGroupKeysList()) {
       stateWriter.appendFollowUpEvent(
-          groupKey,
+          keyGenerator.nextKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(groupKey)
+              .setEntityId(groupKey)
               .setEntityKey(mappingKey)
               .setEntityType(EntityType.MAPPING));
     }

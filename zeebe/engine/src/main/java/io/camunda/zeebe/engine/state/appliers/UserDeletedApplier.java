@@ -25,8 +25,8 @@ public class UserDeletedApplier implements TypedEventApplier<UserIntent, UserRec
 
   @Override
   public void applyState(final long key, final UserRecord value) {
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(value.getUserKey());
-    authorizationState.deleteOwnerTypeByKey(value.getUserKey());
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(value.getUsername());
+    authorizationState.deleteOwnerTypeByKey(value.getUsername());
     userState.delete(value.getUserKey());
   }
 }

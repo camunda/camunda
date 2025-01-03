@@ -73,7 +73,7 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void addRole(final long userKey, final long roleKey) {
+  public void addRole(final long userKey, final String roleKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
     persistedUser.addRoleKey(roleKey);
@@ -84,7 +84,7 @@ public class DbUserState implements UserState, MutableUserState {
   public void removeRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    final List<Long> roleKeys = persistedUser.getRoleKeysList();
+    final List<String> roleKeys = persistedUser.getRoleKeysList();
     roleKeys.remove(roleKey);
     persistedUser.setRoleKeysList(roleKeys);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);
@@ -109,7 +109,7 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void addGroup(final long userKey, final long groupKey) {
+  public void addGroup(final long userKey, final String groupKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
     persistedUser.addGroupKey(groupKey);
@@ -120,7 +120,7 @@ public class DbUserState implements UserState, MutableUserState {
   public void removeGroup(final long userKey, final long groupKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
-    final List<Long> groupKeys = persistedUser.getGroupKeysList();
+    final List<String> groupKeys = persistedUser.getGroupKeysList();
     groupKeys.remove(groupKey);
     persistedUser.setGroupKeysList(groupKeys);
     userByUserKeyColumnFamily.update(this.userKey, persistedUser);

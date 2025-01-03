@@ -34,12 +34,13 @@ public class TenantDeletedApplier implements TypedEventApplier<TenantIntent, Ten
   @Override
   public void applyState(final long key, final TenantRecord tenantRecord) {
     final var tenantKey = tenantRecord.getTenantKey();
+    final var id = tenantRecord.getEntityId();
     final String tenantId = tenantRecord.getTenantId();
     final Map<EntityType, List<Long>> entities = tenantState.getEntitiesByType(tenantKey);
 
     handleUserEntities(entities, tenantId);
     handleMappingEntities(entities, tenantKey);
-    deleteTenantAuthorizations(tenantKey);
+    deleteTenantAuthorizations(id);
     tenantState.delete(tenantRecord);
   }
 
@@ -63,7 +64,7 @@ public class TenantDeletedApplier implements TypedEventApplier<TenantIntent, Ten
     }
   }
 
-  private void deleteTenantAuthorizations(final long tenantKey) {
+  private void deleteTenantAuthorizations(final String tenantKey) {
     authorizationState.deleteAuthorizationsByOwnerKeyPrefix(tenantKey);
     authorizationState.deleteOwnerTypeByKey(tenantKey);
   }

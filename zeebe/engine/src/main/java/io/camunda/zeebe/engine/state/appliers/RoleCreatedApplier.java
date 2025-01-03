@@ -28,6 +28,6 @@ public class RoleCreatedApplier implements TypedEventApplier<RoleIntent, RoleRec
   @Override
   public void applyState(final long key, final RoleRecord value) {
     roleState.create(value);
-    authorizationState.insertOwnerTypeByKey(value.getRoleKey(), AuthorizationOwnerType.ROLE);
+    authorizationState.insertOwnerTypeByKey(value.getEntityId(), AuthorizationOwnerType.ROLE);
   }
 }

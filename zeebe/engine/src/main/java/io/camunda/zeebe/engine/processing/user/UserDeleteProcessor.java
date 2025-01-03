@@ -130,19 +130,19 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
     for (final var roleKey : user.getRoleKeysList()) {
       stateWriter.appendFollowUpEvent(
-          roleKey,
+          keyGenerator.nextKey(),
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
-              .setRoleKey(roleKey)
+              .setEntityId(roleKey)
               .setEntityKey(userKey)
               .setEntityType(EntityType.USER));
     }
     for (final var groupKey : user.getGroupKeysList()) {
       stateWriter.appendFollowUpEvent(
-          groupKey,
+          keyGenerator.nextKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setGroupKey(groupKey)
+              .setEntityId(groupKey)
               .setEntityKey(userKey)
               .setEntityType(EntityType.USER));
     }

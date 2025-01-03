@@ -124,10 +124,10 @@ public class TenantAppliersTest {
     assertUsersAreNotAssociatedWithAnyTenant(userKeys);
 
     // Verify owner type and permissions are removed
-    assertThat(authorizationState.getOwnerType(tenantKey)).isEmpty();
+    assertThat(authorizationState.getOwnerType("tenantKey")).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
+            "tenantKey", AuthorizationResourceType.TENANT, PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 
@@ -148,11 +148,11 @@ public class TenantAppliersTest {
 
     // then
     assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
-    final var ownerType = authorizationState.getOwnerType(tenantKey);
+    final var ownerType = authorizationState.getOwnerType("tenantKey");
     assertThat(ownerType).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
+            "tenantKey", AuthorizationResourceType.TENANT, PermissionType.DELETE);
     assertThat(resourceIdentifiers).isEmpty();
   }
 

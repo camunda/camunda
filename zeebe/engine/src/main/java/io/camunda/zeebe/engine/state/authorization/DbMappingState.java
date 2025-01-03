@@ -70,7 +70,7 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addRole(final long mappingKey, final long roleKey) {
+  public void addRole(final long mappingKey, final String roleKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
     if (fkClaim != null) {
@@ -94,7 +94,7 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addGroup(final long mappingKey, final long groupKey) {
+  public void addGroup(final long mappingKey, final String groupKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
     if (fkClaim != null) {
@@ -112,7 +112,7 @@ public class DbMappingState implements MutableMappingState {
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<Long> roleKeys = persistedMapping.getRoleKeysList();
+      final List<String> roleKeys = persistedMapping.getRoleKeysList();
       roleKeys.remove(roleKey);
       persistedMapping.setRoleKeysList(roleKeys);
       mappingColumnFamily.update(claim, persistedMapping);
@@ -140,7 +140,7 @@ public class DbMappingState implements MutableMappingState {
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<Long> groupKeys = persistedMapping.getGroupKeysList();
+      final List<String> groupKeys = persistedMapping.getGroupKeysList();
       groupKeys.remove(groupKey);
       persistedMapping.setGroupKeysList(groupKeys);
       mappingColumnFamily.update(claim, persistedMapping);

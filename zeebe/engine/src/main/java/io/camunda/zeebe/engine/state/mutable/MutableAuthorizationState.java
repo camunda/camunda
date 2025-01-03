@@ -27,7 +27,7 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
    */
   void createOrAddPermission(
-      long ownerKey,
+      String ownerKey,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,
       Set<String> resourceIds);
@@ -43,7 +43,7 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
    */
   void removePermission(
-      long ownerKey,
+      String ownerKey,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,
       Set<String> resourceIds);
@@ -54,19 +54,19 @@ public interface MutableAuthorizationState extends AuthorizationState {
    * @param ownerKey the key of the owner
    * @param ownerType the type of the owner
    */
-  void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType);
+  void insertOwnerTypeByKey(final String ownerKey, final AuthorizationOwnerType ownerType);
 
   /**
    * Removes all permissions for the provided ownerKey.
    *
    * @param ownerKey the key of the owner of the authorizations
    */
-  void deleteAuthorizationsByOwnerKeyPrefix(final long ownerKey);
+  void deleteAuthorizationsByOwnerKeyPrefix(final String ownerKey);
 
   /**
    * Removes the owner type for the provided ownerKey.
    *
    * @param ownerKey the key of the owner
    */
-  void deleteOwnerTypeByKey(final long ownerKey);
+  void deleteOwnerTypeByKey(final String ownerKey);
 }

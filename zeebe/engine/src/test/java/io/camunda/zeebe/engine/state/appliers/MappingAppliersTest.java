@@ -67,7 +67,7 @@ public class MappingAppliersTest {
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
-    mappingState.addRole(mappingKey, roleKey);
+    mappingState.addRole(mappingKey, "roleKey");
     final var role =
         new RoleRecord()
             .setRoleKey(roleKey)
@@ -89,7 +89,7 @@ public class MappingAppliersTest {
     tenantState.addEntity(tenant);
     // create group
     final long groupKey = 4L;
-    mappingState.addGroup(mappingKey, groupKey);
+    mappingState.addGroup(mappingKey, "groupKey");
     final var group =
         new GroupRecord()
             .setGroupKey(groupKey)
@@ -98,10 +98,10 @@ public class MappingAppliersTest {
     groupState.create(groupKey, group);
     groupState.addEntity(groupKey, group);
     // create owner
-    authorizationState.insertOwnerTypeByKey(mappingKey, AuthorizationOwnerType.MAPPING);
+    authorizationState.insertOwnerTypeByKey("mappingKey", AuthorizationOwnerType.MAPPING);
     // create authorization
     authorizationState.createOrAddPermission(
-        mappingKey,
+        "mappingKey",
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.READ,
         Set.of("process"));
@@ -111,10 +111,10 @@ public class MappingAppliersTest {
 
     // then
     assertThat(mappingState.get(mappingKey)).isEmpty();
-    assertThat(authorizationState.getOwnerType(mappingKey)).isEmpty();
+    assertThat(authorizationState.getOwnerType("mappingKey")).isEmpty();
     assertThat(
             authorizationState.getResourceIdentifiers(
-                mappingKey, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ))
+                "mappingKey", AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.READ))
         .isEmpty();
   }
 

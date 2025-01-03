@@ -28,6 +28,6 @@ public class TenantCreatedApplier implements TypedEventApplier<TenantIntent, Ten
   @Override
   public void applyState(final long key, final TenantRecord value) {
     tenantState.createTenant(value);
-    authorizationState.insertOwnerTypeByKey(value.getTenantKey(), AuthorizationOwnerType.TENANT);
+    authorizationState.insertOwnerTypeByKey(value.getEntityId(), AuthorizationOwnerType.TENANT);
   }
 }

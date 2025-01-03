@@ -28,6 +28,7 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
   public void applyState(final long key, final MappingRecord value) {
     // retrieve mapping from the state
     final var mappingKey = value.getMappingKey();
+    final var id = value.getMappingId();
     final var mapping = mappingState.get(mappingKey);
     if (mapping.isEmpty()) {
       throw new IllegalStateException(
@@ -36,8 +37,8 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
               value.getMappingKey()));
     }
     // remove mapping from authorization state
-    authorizationState.deleteOwnerTypeByKey(mappingKey);
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(mappingKey);
+    authorizationState.deleteOwnerTypeByKey(id);
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(id);
     mappingState.delete(mappingKey);
   }
 }

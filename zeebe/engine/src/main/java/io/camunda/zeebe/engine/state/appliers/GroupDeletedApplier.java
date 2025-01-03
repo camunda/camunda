@@ -28,11 +28,12 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
   public void applyState(final long key, final GroupRecord value) {
     // get the record key from the GroupRecord, as the key argument
     // may belong to the distribution command
+    final var id = value.getEntityId();
     final var groupKey = value.getGroupKey();
 
     // delete group from authorization state
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(groupKey);
-    authorizationState.deleteOwnerTypeByKey(groupKey);
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(id);
+    authorizationState.deleteOwnerTypeByKey(id);
 
     // delete group from group state
     groupState.delete(groupKey);

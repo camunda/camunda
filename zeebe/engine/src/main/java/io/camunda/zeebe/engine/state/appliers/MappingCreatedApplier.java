@@ -28,6 +28,6 @@ public class MappingCreatedApplier implements TypedEventApplier<MappingIntent, M
   @Override
   public void applyState(final long key, final MappingRecord value) {
     mappingState.create(value);
-    authorizationState.insertOwnerTypeByKey(value.getMappingKey(), AuthorizationOwnerType.MAPPING);
+    authorizationState.insertOwnerTypeByKey(value.getMappingId(), AuthorizationOwnerType.MAPPING);
   }
 }

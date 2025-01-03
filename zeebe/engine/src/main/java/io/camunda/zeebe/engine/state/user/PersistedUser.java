@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.UserType;
@@ -24,12 +23,12 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<UserRecord> userProp =
       new ObjectProperty<>("user", new UserRecord());
-  private final ArrayProperty<LongValue> roleKeysProp =
-      new ArrayProperty<>("roleKeys", LongValue::new);
+  private final ArrayProperty<StringValue> roleKeysProp =
+      new ArrayProperty<>("roleKeys", StringValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>("tenantIds", StringValue::new);
-  private final ArrayProperty<LongValue> groupKeysProp =
-      new ArrayProperty<>("groupKeys", LongValue::new);
+  private final ArrayProperty<StringValue> groupKeysProp =
+      new ArrayProperty<>("groupKeys", StringValue::new);
 
   public PersistedUser() {
     super(4);
@@ -77,20 +76,21 @@ public class PersistedUser extends UnpackedObject implements DbValue {
     return getUser().getUserType();
   }
 
-  public List<Long> getRoleKeysList() {
+  public List<String> getRoleKeysList() {
     return StreamSupport.stream(roleKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
 
-  public PersistedUser setRoleKeysList(final List<Long> roleKeys) {
+  public PersistedUser setRoleKeysList(final List<String> roleKeys) {
     roleKeysProp.reset();
-    roleKeys.forEach(roleKey -> roleKeysProp.add().setValue(roleKey));
+    roleKeys.forEach(roleKey -> roleKeysProp.add().wrap(BufferUtil.wrapString(roleKey)));
     return this;
   }
 
-  public PersistedUser addRoleKey(final long roleKey) {
-    roleKeysProp.add().setValue(roleKey);
+  public PersistedUser addRoleKey(final String roleKey) {
+    roleKeysProp.add().wrap(BufferUtil.wrapString(roleKey));
     return this;
   }
 
@@ -112,20 +112,21 @@ public class PersistedUser extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public List<Long> getGroupKeysList() {
+  public List<String> getGroupKeysList() {
     return StreamSupport.stream(groupKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
   }
 
-  public PersistedUser setGroupKeysList(final List<Long> groupKeys) {
+  public PersistedUser setGroupKeysList(final List<String> groupKeys) {
     groupKeysProp.reset();
-    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
+    groupKeys.forEach(groupKey -> groupKeysProp.add().wrap(BufferUtil.wrapString(groupKey)));
     return this;
   }
 
-  public PersistedUser addGroupKey(final long groupKey) {
-    groupKeysProp.add().setValue(groupKey);
+  public PersistedUser addGroupKey(final String groupKey) {
+    groupKeysProp.add().wrap(BufferUtil.wrapString(groupKey));
     return this;
   }
 }
