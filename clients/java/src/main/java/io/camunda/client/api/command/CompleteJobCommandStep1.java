@@ -159,34 +159,80 @@ public interface CompleteJobCommandStep1
 
     /**
      * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For
-     * example, a Task Listener can deny the completion of a task by setting this flag to true. In
-     * this example, the completion of a task is represented by a job that the worker can complete
-     * as denied. As a result, the completion request is rejected and the task remains active.
-     * Defaults to false.
+     * example, a user task listener can deny the completion of a task by setting this flag to true.
+     * In this example, the completion of a task is represented by a job that the worker can
+     * complete as denied. As a result, the completion request is rejected and the task remains
+     * active. Defaults to {@code false}.
+     *
+     * <p>Example usage:
+     *
+     * <pre>{@code
+     * client.newCompleteJobCommand(jobKey)
+     *     .withResult()
+     *     .deny(true)
+     *     .send();
+     * }</pre>
      *
      * @param isDenied indicates if the worker has denied the reason for the job
-     * @return the builder for this command.
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
      */
     CompleteJobCommandStep2 deny(boolean isDenied);
 
     /**
-     * Correct the task.
+     * Applies corrections to the user task attributes.
      *
-     * @param corrections corrections to apply
-     * @return this job result
+     * <p>This method allows the worker to modify key attributes of the user task (such as {@code
+     * assignee}, {@code candidateGroups}, and so on)
+     *
+     * <p>Example usage:
+     *
+     * <pre>{@code
+     * final JobResultCorrections corrections = new JobResultCorrections()
+     *     .assignee("john_doe")               // reassigns the task to 'john_doe'
+     *     .priority(80)                       // sets a high priority
+     *     .dueDate("2024-01-01T12:00:00Z")    // updates the due date
+     *     .candidateGroups(List.of("sales"))  // assigns the task to the 'sales' group
+     *     .candidateUsers(List.of("alice"));  // allows 'alice' to claim the task
+     *
+     * client.newCompleteJobCommand(jobKey)
+     *     .withResult()
+     *     .correct(corrections)
+     *     .send();
+     * }</pre>
+     *
+     * @param corrections the corrections to apply to the user task.
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
      */
     CompleteJobCommandStep2 correct(JobResultCorrections corrections);
 
     /**
-     * Correct the task.
+     * Dynamically applies corrections to the user task attributes using a lambda expression.
      *
-     * <p>This is a convenience method for {@link #correct(JobResultCorrections)} that allows you to
-     * apply corrections using a lambda expression. It provides the current corrections as input, so
-     * you can easily modify them. If no corrections have been set yet, it provides the default
-     * corrections as input.
+     * <p>This method is a functional alternative to {@link #correct(JobResultCorrections)}. It
+     * allows the worker to modify key user task attributes (such as {@code assignee}, {@code
+     * dueDate}, {@code priority}, and so on) directly via a lambda expression. The lambda receives
+     * the current {@link JobResultCorrections} instance, which can be updated as needed. If no
+     * corrections have been set yet, a default {@link JobResultCorrections} instance is provided.
      *
-     * @param corrections function to modify the corrections
-     * @return this job result
+     * <p>Example usage:
+     *
+     * <pre>{@code
+     * client.newCompleteJobCommand(jobKey)
+     *     .withResult()
+     *     .correct(corrections -> corrections
+     *         .assignee("john_doe")               // dynamically reassigns the task to 'john_doe'
+     *         .priority(80)                       // adjusts the priority of the task
+     *         .dueDate("2024-01-01T12:00:00Z")    // updates the due date
+     *         .candidateGroups(List.of("sales"))  // assigns the task to the 'sales' group
+     *         .candidateUsers(List.of("alice")))  // allows 'alice' to claim the task
+     *     .send();
+     * }</pre>
+     *
+     * @param corrections a lambda expression to modify the {@link JobResultCorrections}.
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
      */
     CompleteJobCommandStep2 correct(UnaryOperator<JobResultCorrections> corrections);
 
