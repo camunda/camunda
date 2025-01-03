@@ -40,7 +40,11 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.opensearch</groupId>
+      <artifactId>opensearch-testcontainers</artifactId>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
@@ -145,5 +149,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
+
   </dependencies>
 </project>

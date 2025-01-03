@@ -18,6 +18,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
@@ -26,6 +27,7 @@ import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -42,10 +44,13 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
@@ -56,17 +61,21 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCamunda.class);
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private static final String ELASTICSEARCH_EXPORTER_ID = "elasticsearchExporter";
+  private static final String OPENSEARCH_EXPORTER_ID = "opensearchExporter";
   private static final String CAMUNDA_EXPORTER_ID = "camundaExporter";
-  private final ElasticsearchContainer esContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
-          .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
+  private GenericContainer<?> dbContainer;
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
   private final CamundaSecurityProperties securityConfig;
   private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
+  private final DatabaseType databaseType;
 
   public TestStandaloneCamunda() {
+    this(DatabaseType.ELASTICSEARCH);
+  }
+
+  public TestStandaloneCamunda(final DatabaseType databaseType) {
     super(
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
@@ -76,11 +85,24 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         // test overrides - to control data clean up; (and some components are not installed on
         // Tests)
         TestOperateElasticsearchSchemaManager.class,
+        TestOperateOpenSearchSchemaManager.class,
         TestTasklistElasticsearchSchemaManager.class,
+        TestTasklistOpenSearchSchemaManager.class,
         TestOperateSchemaStartup.class,
         TestTasklistSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
-
+    this.databaseType = databaseType;
+    dbContainer =
+        switch (databaseType) {
+          case ELASTICSEARCH ->
+              TestSearchContainers.createDefeaultElasticsearchContainer()
+                  .withStartupTimeout(Duration.ofMinutes(5)); // can be slow in CI
+          case OPENSEARCH ->
+              TestSearchContainers.createDefaultOpensearchContainer()
+                  .withStartupTimeout(Duration.ofMinutes(5));
+          default ->
+              throw new IllegalArgumentException("Unsupported database type: " + databaseType);
+        };
     brokerProperties = new BrokerBasedProperties();
 
     brokerProperties.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -98,6 +120,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
     operateProperties = new OperateProperties();
     tasklistProperties = new TasklistProperties();
+    tasklistProperties.setDatabase(databaseType.toString());
     securityConfig = new CamundaSecurityProperties();
     securityConfig
         .getInitialization()
@@ -117,7 +140,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer());
+        .withAdditionalInitializer(new WebappsConfigurationInitializer())
+        .withProperty("camunda.database.type", databaseType.toString())
+        .withProperty("camunda.zeebe.database", databaseType.toString())
+        .withProperty("camunda.operate.database", databaseType.toString())
+        .withProperty("camunda.tasklist.database", databaseType.toString());
 
     // default exporters
     withRecordingExporter(true).withCamundaExporter();
@@ -125,15 +152,23 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   @Override
   public TestStandaloneCamunda start() {
-    esContainer.start();
+    startDBContainer();
 
-    final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
-
-    operateProperties.getElasticsearch().setUrl(esURL);
-    operateProperties.getZeebeElasticsearch().setUrl(esURL);
-    tasklistProperties.getElasticsearch().setUrl(esURL);
-    tasklistProperties.getZeebeElasticsearch().setUrl(esURL);
-
+    final var dbUrl = dbHostAddress();
+    switch (databaseType) {
+      case ELASTICSEARCH -> {
+        operateProperties.getElasticsearch().setUrl(dbUrl);
+        operateProperties.getZeebeElasticsearch().setUrl(dbUrl);
+        tasklistProperties.getElasticsearch().setUrl(dbUrl);
+        tasklistProperties.getZeebeElasticsearch().setUrl(dbUrl);
+      }
+      case OPENSEARCH -> {
+        operateProperties.getOpensearch().setUrl(dbUrl);
+        operateProperties.getZeebeOpensearch().setUrl(dbUrl);
+        tasklistProperties.getOpenSearch().setUrl(dbUrl);
+        tasklistProperties.getZeebeOpenSearch().setUrl(dbUrl);
+      }
+    }
     setExportersConfig();
     return super.start();
   }
@@ -142,7 +177,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
-    esContainer.stop();
+    dbContainer.stop();
     return super.stop();
   }
 
@@ -161,11 +196,17 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the
     // config bean
-    final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
+    final String dbURL = dbHostAddress();
 
     withProperty("zeebe.broker.gateway.enable", brokerProperties.getGateway().isEnable());
-    withProperty("camunda.database.url", esURL);
+    withProperty("camunda.database.url", dbURL);
     return super.createSpringBuilder();
+  }
+
+  public void startDBContainer() {
+    if (!dbContainer.isCreated()) {
+      dbContainer.start();
+    }
   }
 
   public TestRestOperateClient newOperateClient() {
@@ -177,7 +218,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public TestRestTasklistClient newTasklistClient() {
-    return new TestRestTasklistClient(restAddress(), getElasticSearchHostAddress());
+    return new TestRestTasklistClient(restAddress(), getDBHostAddress());
   }
 
   @Override
@@ -241,6 +282,20 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return TestGateway.super.newClientBuilder();
   }
 
+  private String dbHostAddress() {
+    return switch (dbContainer) {
+      case final ElasticsearchContainer c -> "http://" + c.getHttpHostAddress();
+      case final OpensearchContainer<?> c -> c.getHttpHostAddress();
+      default ->
+          throw new IllegalStateException(
+              "Unsupported container" + dbContainer.getDockerImageName());
+    };
+  }
+
+  public TestRestManagementClient newBackupClient() {
+    return new TestRestManagementClient(actuatorUri());
+  }
+
   /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
@@ -299,8 +354,37 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         ELASTICSEARCH_EXPORTER_ID,
         cfg -> {
           cfg.setClassName(ElasticsearchExporter.class.getName());
-          cfg.setArgs(Map.of("url", "http://" + esContainer.getHttpHostAddress()));
+          cfg.setArgs(Map.of("url", dbHostAddress()));
         });
+  }
+
+  public TestStandaloneCamunda withOpensearchExporter(final boolean useOpensearchExporter) {
+    if (!useOpensearchExporter) {
+      registeredExporters.remove(OPENSEARCH_EXPORTER_ID);
+      return this;
+    }
+    return withExporter(
+        OPENSEARCH_EXPORTER_ID,
+        cfg -> {
+          cfg.setClassName(OpensearchExporter.class.getName());
+          cfg.setArgs(Map.of("url", dbHostAddress()));
+        });
+  }
+
+  public TestStandaloneCamunda withDBContainer(
+      final Function<GenericContainer<?>, GenericContainer<?>> update) {
+    if (!dbContainer.isCreated()) {
+      dbContainer = update.apply(dbContainer);
+    } else {
+      throw new IllegalStateException("Elasticsearch container already exists");
+    }
+    return this;
+  }
+
+  public TestStandaloneCamunda withBackupRepository(final String repositoryName) {
+    operateProperties.getBackup().setRepositoryName(repositoryName);
+    tasklistProperties.getBackup().setRepositoryName(repositoryName);
+    return this;
   }
 
   /**
@@ -316,7 +400,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           cfg.setArgs(
               Map.of(
                   "connect",
-                  Map.of("url", "http://" + esContainer.getHttpHostAddress()),
+                  Map.of("url", dbHostAddress(), "type", databaseType.toString()),
                   "bulk",
                   Map.of("size", 1)));
         });
@@ -362,8 +446,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         securityConfig -> securityConfig.getAuthorizations().setEnabled(true));
   }
 
-  public String getElasticSearchHostAddress() {
-    return esContainer.getHttpHostAddress();
+  public String getDBHostAddress() {
+    return dbHostAddress();
   }
 
   public TestStandaloneCamunda withMultiTenancyEnabled() {

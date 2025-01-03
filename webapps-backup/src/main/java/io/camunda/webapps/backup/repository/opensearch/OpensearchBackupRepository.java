@@ -7,7 +7,6 @@
  */
 package io.camunda.webapps.backup.repository.opensearch;
 
-import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestDSL.createSnapshotRequestBuilder;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestDSL.deleteSnapshotRequestBuilder;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestDSL.getSnapshotRequestBuilder;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestDSL.repositoryRequestBuilder;
@@ -49,6 +48,7 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.slf4j.Logger;
@@ -228,14 +228,13 @@ public class OpensearchBackupRepository implements BackupRepository {
         MetadataMarshaller.asJson(
             snapshotRequest.metadata(), openSearchClient._transport().jsonpMapper());
 
+    final var indices = snapshotRequest.indices(onlyRequired);
     final var requestBuilder =
-        createSnapshotRequestBuilder(
-                snapshotRequest.repositoryName(),
-                snapshotRequest.snapshotName(),
-                snapshotRequest.indices(onlyRequired))
-            .ignoreUnavailable(
-                false) // ignoreUnavailable = false - indices defined by their exact name MUST be
-            // present
+        new CreateSnapshotRequest.Builder()
+            .repository(snapshotRequest.repositoryName())
+            .snapshot(snapshotRequest.snapshotName())
+            .indices(indices.isEmpty() ? snapshotRequest.indices(false) : indices)
+            .ignoreUnavailable(indices.isEmpty())
             .includeGlobalState(backupProps.includeGlobalState())
             .metadata(metadataJson)
             .featureStates("none")

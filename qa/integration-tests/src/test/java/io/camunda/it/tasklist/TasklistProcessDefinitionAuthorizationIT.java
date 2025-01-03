@@ -60,13 +60,12 @@ public class TasklistProcessDefinitionAuthorizationIT {
   @BeforeEach
   public void beforeAll() {
     final var defaultUser = "demo";
-    final var searchClients =
-        SearchClientsUtil.createSearchClients(broker.getElasticSearchHostAddress());
+    final var searchClients = SearchClientsUtil.createSearchClients(broker.getDBHostAddress());
 
     // intermediate state, so that a user exists that has
     // access to the storage to retrieve data
     try (final var intermediateAuthClient =
-        AuthorizationsUtil.create(broker, broker.getElasticSearchHostAddress())) {
+        AuthorizationsUtil.create(broker, broker.getDBHostAddress())) {
       intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
