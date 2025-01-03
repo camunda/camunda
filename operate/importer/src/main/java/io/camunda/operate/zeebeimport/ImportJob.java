@@ -216,9 +216,7 @@ public class ImportJob implements Callable<Boolean> {
 
   public void refreshZeebeIndices() {
     final String indexPattern =
-        importBatch
-            .getImportValueType()
-            .getIndicesPattern(operateProperties.getZeebeElasticsearch().getPrefix());
+        importBatch.getImportValueType().getIndicesPattern(zeebeStore.getZeebeIndexPrefix());
     zeebeStore.refreshIndex(indexPattern);
   }
 

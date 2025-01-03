@@ -13,8 +13,8 @@ import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ZeebeStore;
+import io.camunda.operate.zeebe.ZeebeESConstants;
 import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -38,7 +38,6 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   @Qualifier("camundaClient")
   protected CamundaClient client;
 
-  @Autowired protected OperateProperties operateProperties;
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -107,9 +106,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   public boolean shouldCreateData(final boolean manuallyCalled) {
     if (!manuallyCalled) { // when called manually, always create the data
+      final String zeebeIndexPrefix = zeebeStore.getZeebeIndexPrefix();
       final boolean exists =
-          zeebeStore.zeebeIndicesExists(
-              operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+          zeebeStore.zeebeIndicesExists(zeebeIndexPrefix + "*" + ZeebeESConstants.DEPLOYMENT + "*");
       if (exists) {
         // data already exists
         LOGGER.debug("Data already exists in Zeebe.");
