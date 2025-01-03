@@ -46,14 +46,14 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     // given
     final ActivatedJob activatedJob1 =
         new ActivatedJob()
-            .jobKey("12")
+            .jobKey(12L)
             .type("foo")
-            .processInstanceKey("123")
+            .processInstanceKey(123L)
             .processDefinitionId("test1")
             .processDefinitionVersion(2)
-            .processDefinitionKey("23")
+            .processDefinitionKey(23L)
             .elementId("foo")
-            .elementInstanceKey("23213")
+            .elementInstanceKey(23213L)
             .customHeaders(singletonMap("version", "1"))
             .worker("worker1")
             .retries(34)
@@ -63,14 +63,14 @@ public final class ActivateJobsRestTest extends ClientRestTest {
 
     final ActivatedJob activatedJob2 =
         new ActivatedJob()
-            .jobKey("42")
+            .jobKey(42L)
             .type("foo")
-            .processInstanceKey("333")
+            .processInstanceKey(333L)
             .processDefinitionId("test3")
             .processDefinitionVersion(23)
-            .processDefinitionKey("11")
+            .processDefinitionKey(11L)
             .elementId("bar")
-            .elementInstanceKey("111")
+            .elementInstanceKey(111L)
             .customHeaders(singletonMap("key", "value"))
             .worker("worker1")
             .retries(334)
@@ -97,18 +97,15 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(response.getJobs()).hasSize(2);
 
     io.camunda.client.api.response.ActivatedJob job = response.getJobs().get(0);
-    assertThat(String.valueOf(job.getKey())).isEqualTo(activatedJob1.getJobKey());
+    assertThat(job.getKey()).isEqualTo(activatedJob1.getJobKey());
     assertThat(job.getType()).isEqualTo(activatedJob1.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob1.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob1.getElementId());
-    assertThat(String.valueOf(job.getElementInstanceKey()))
-        .isEqualTo(activatedJob1.getElementInstanceKey());
+    assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob1.getElementInstanceKey());
     assertThat(job.getProcessDefinitionVersion())
         .isEqualTo(activatedJob1.getProcessDefinitionVersion());
-    assertThat(String.valueOf(job.getProcessDefinitionKey()))
-        .isEqualTo(activatedJob1.getProcessDefinitionKey());
-    assertThat(String.valueOf(job.getProcessInstanceKey()))
-        .isEqualTo(activatedJob1.getProcessInstanceKey());
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob1.getProcessDefinitionKey());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob1.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob1.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
@@ -117,18 +114,15 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
 
     job = response.getJobs().get(1);
-    assertThat(String.valueOf(job.getKey())).isEqualTo(activatedJob2.getJobKey());
+    assertThat(job.getKey()).isEqualTo(activatedJob2.getJobKey());
     assertThat(job.getType()).isEqualTo(activatedJob2.getType());
     assertThat(job.getBpmnProcessId()).isEqualTo(activatedJob2.getProcessDefinitionId());
     assertThat(job.getElementId()).isEqualTo(activatedJob2.getElementId());
-    assertThat(String.valueOf(job.getElementInstanceKey()))
-        .isEqualTo(activatedJob2.getElementInstanceKey());
+    assertThat(job.getElementInstanceKey()).isEqualTo(activatedJob2.getElementInstanceKey());
     assertThat(job.getProcessDefinitionVersion())
         .isEqualTo(activatedJob2.getProcessDefinitionVersion());
-    assertThat(String.valueOf(job.getProcessDefinitionKey()))
-        .isEqualTo(activatedJob2.getProcessDefinitionKey());
-    assertThat(String.valueOf(job.getProcessInstanceKey()))
-        .isEqualTo(activatedJob2.getProcessInstanceKey());
+    assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob2.getProcessDefinitionKey());
+    assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob2.getProcessInstanceKey());
     assertThat(job.getCustomHeaders()).isEqualTo(activatedJob2.getCustomHeaders());
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());

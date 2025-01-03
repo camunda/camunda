@@ -16,7 +16,6 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskItem;
 import java.util.List;
 import java.util.Map;
@@ -46,18 +45,18 @@ public class UserTaskImpl implements UserTask {
   private final Integer priority;
 
   public UserTaskImpl(final UserTaskItem item) {
-    userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
+    userTaskKey = item.getUserTaskKey();
     name = item.getName();
     state = item.getState().getValue();
     assignee = item.getAssignee();
     elementId = item.getElementId();
-    elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
+    elementInstanceKey = item.getElementInstanceKey();
     candidateGroup = item.getCandidateGroups();
     candidateUser = item.getCandidateUsers();
     bpmnProcessId = item.getProcessDefinitionId();
-    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
-    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
-    formKey = ParseUtil.parseLongOrNull(item.getFormKey());
+    processDefinitionKey = item.getProcessDefinitionKey();
+    processInstanceKey = item.getProcessInstanceKey();
+    formKey = item.getFormKey();
     creationDate = item.getCreationDate();
     completionDate = item.getCompletionDate();
     followUpDate = item.getFollowUpDate();

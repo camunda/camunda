@@ -39,7 +39,7 @@ public final class UpdateTenantResponseImpl implements UpdateTenantResponse {
   }
 
   public UpdateTenantResponseImpl setResponse(final TenantUpdateResponse response) {
-    tenantKey = Long.parseLong(response.getTenantKey());
+    tenantKey = response.getTenantKey();
     tenantId = response.getTenantId();
     name = response.getName();
     return this;

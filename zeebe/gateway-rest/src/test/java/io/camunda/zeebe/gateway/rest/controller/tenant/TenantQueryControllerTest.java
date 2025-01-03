@@ -20,6 +20,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -45,57 +46,76 @@ public class TenantQueryControllerTest extends RestControllerTest {
           new TenantEntity(200L, "tenant-id-2", "Tenant 2", Set.of(1L, 2L)),
           new TenantEntity(300L, "tenant-id-3", "Tenant 12", Set.of(3L)));
 
-  private static final String EXPECTED_RESPONSE =
+  private static final String RESPONSE =
       """
       {
          "items": [
            {
-             "tenantKey": "%d",
+             "tenantKey": %s,
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
-             "tenantKey": "%d",
+             "tenantKey": %s,
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
-             "tenantKey": "%d",
+             "tenantKey": %s,
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            }
          ],
          "page": {
-           "totalItems": %d,
+           "totalItems": %s,
            "firstSortValues": ["f"],
            "lastSortValues": ["v"]
          }
        }
-      """
-          .formatted(
-              TENANT_ENTITIES.get(0).key(),
-              TENANT_ENTITIES.get(0).name(),
-              TENANT_ENTITIES.get(0).tenantId(),
-              formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys()),
-              TENANT_ENTITIES.get(1).key(),
-              TENANT_ENTITIES.get(1).name(),
-              TENANT_ENTITIES.get(1).tenantId(),
-              formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys()),
-              TENANT_ENTITIES.get(2).key(),
-              TENANT_ENTITIES.get(2).name(),
-              TENANT_ENTITIES.get(2).tenantId(),
-              formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys()),
-              TENANT_ENTITIES.size());
+      """;
+  private static final String EXPECTED_RESPONSE =
+      RESPONSE.formatted(
+          "\"%s\"".formatted(TENANT_ENTITIES.get(0).key()),
+          TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).tenantId(),
+          formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), true),
+          "\"%s\"".formatted(TENANT_ENTITIES.get(1).key()),
+          TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).tenantId(),
+          formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), true),
+          "\"%s\"".formatted(TENANT_ENTITIES.get(2).key()),
+          TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).tenantId(),
+          formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), true),
+          TENANT_ENTITIES.size());
+  private static final String EXPECTED_RESPONSE_NUMBER_KEYS =
+      RESPONSE.formatted(
+          TENANT_ENTITIES.get(0).key(),
+          TENANT_ENTITIES.get(0).name(),
+          TENANT_ENTITIES.get(0).tenantId(),
+          formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys(), false),
+          TENANT_ENTITIES.get(1).key(),
+          TENANT_ENTITIES.get(1).name(),
+          TENANT_ENTITIES.get(1).tenantId(),
+          formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys(), false),
+          TENANT_ENTITIES.get(2).key(),
+          TENANT_ENTITIES.get(2).name(),
+          TENANT_ENTITIES.get(2).tenantId(),
+          formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys(), false),
+          TENANT_ENTITIES.size());
 
   @MockBean private TenantServices tenantServices;
 
-  private static String formatSet(final Set<Long> set) {
+  private static String formatSet(final Set<Long> set, final boolean asString) {
     return set.isEmpty()
         ? "[]"
-        : set.stream().map("\"%s\""::formatted).collect(Collectors.toSet()).toString();
+        : set.stream()
+            .map(v -> asString ? "\"%s\"".formatted(v) : v)
+            .collect(Collectors.toSet())
+            .toString();
   }
 
   @BeforeEach
@@ -192,6 +212,36 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_RESPONSE);
+
+    verify(tenantServices).search(new TenantQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchTenantsWithEmptyQueryNumberKeys() {
+    // given
+    when(tenantServices.search(any(TenantQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<TenantEntity>()
+                .total(3)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .items(TENANT_ENTITIES)
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(SEARCH_TENANT_URL)
+        .accept(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .expectBody()
+        .json(EXPECTED_RESPONSE_NUMBER_KEYS);
 
     verify(tenantServices).search(new TenantQuery.Builder().build());
   }

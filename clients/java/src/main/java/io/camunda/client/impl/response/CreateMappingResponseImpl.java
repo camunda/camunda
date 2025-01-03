@@ -28,7 +28,7 @@ public class CreateMappingResponseImpl implements CreateMappingResponse {
   }
 
   public CreateMappingResponseImpl setResponse(final MappingRuleCreateResponse response) {
-    mappingKey = Long.parseLong(response.getMappingKey());
+    mappingKey = response.getMappingKey();
     return this;
   }
 }

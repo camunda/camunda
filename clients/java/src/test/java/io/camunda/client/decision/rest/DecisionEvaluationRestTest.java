@@ -74,17 +74,17 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
   private static final io.camunda.client.protocol.rest.EvaluateDecisionResponse
       EVALUATE_DECISION_RESPONSE =
           new io.camunda.client.protocol.rest.EvaluateDecisionResponse()
-              .decisionDefinitionKey(String.valueOf(DECISION_KEY))
+              .decisionDefinitionKey(DECISION_KEY)
               .decisionDefinitionId("my-decision")
               .decisionDefinitionName("My Decision")
               .decisionDefinitionVersion(1)
               .output("testOutput")
               .decisionRequirementsId("decision-requirements-id")
-              .decisionRequirementsKey("124")
+              .decisionRequirementsKey(124L)
               .failedDecisionDefinitionId("my-decision")
               .failureMessage("decision-evaluation-failure")
               .tenantId(TENANT_ID)
-              .decisionInstanceKey(String.valueOf(DECISION_INSTANCE_KEY))
+              .decisionInstanceKey(DECISION_INSTANCE_KEY)
               .addEvaluatedDecisionsItem(EVALUATED_DECISION);
 
   @Test
@@ -266,7 +266,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
 
   private void assertResponse(final EvaluateDecisionResponse response) {
     // assert EvaluateDecisionResponse properties
-    assertThat(String.valueOf(response.getDecisionKey()))
+    assertThat(response.getDecisionKey())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionKey());
     assertThat(response.getDecisionId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionDefinitionId());
@@ -277,14 +277,14 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     assertThat(response.getDecisionOutput()).isEqualTo(EVALUATE_DECISION_RESPONSE.getOutput());
     assertThat(response.getDecisionRequirementsId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionRequirementsId());
-    assertThat(String.valueOf(response.getDecisionRequirementsKey()))
+    assertThat(response.getDecisionRequirementsKey())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionRequirementsKey());
     assertThat(response.getFailedDecisionId())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getFailedDecisionDefinitionId());
     assertThat(response.getFailureMessage())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getFailureMessage());
     assertThat(response.getTenantId()).isEqualTo(EVALUATE_DECISION_RESPONSE.getTenantId());
-    assertThat(String.valueOf(response.getDecisionInstanceKey()))
+    assertThat(response.getDecisionInstanceKey())
         .isEqualTo(EVALUATE_DECISION_RESPONSE.getDecisionInstanceKey());
 
     // assert EvaluatedDecision

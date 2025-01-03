@@ -16,7 +16,6 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.IncidentItem;
 import io.camunda.client.protocol.rest.IncidentItem.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentItem.StateEnum;
@@ -38,17 +37,17 @@ public class IncidentImpl implements Incident {
   private final String tenantId;
 
   public IncidentImpl(final IncidentItem item) {
-    incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
-    processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
+    incidentKey = item.getIncidentKey();
+    processDefinitionKey = item.getProcessDefinitionKey();
     processDefinitionId = item.getProcessDefinitionId();
-    processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    processInstanceKey = item.getProcessInstanceKey();
     errorType = item.getErrorType();
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
-    flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
+    flowNodeInstanceKey = item.getFlowNodeInstanceKey();
     creationTime = item.getCreationTime();
     state = item.getState();
-    jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
+    jobKey = item.getJobKey();
     tenantId = item.getTenantId();
   }
 

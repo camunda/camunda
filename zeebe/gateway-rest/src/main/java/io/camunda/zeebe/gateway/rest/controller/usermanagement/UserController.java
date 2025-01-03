@@ -23,16 +23,16 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -47,18 +47,14 @@ public class UserController {
     this.roleServices = roleServices;
   }
 
-  @PostMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
     return RequestMapper.toUserDTO(null, userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
-  @DeleteMapping(
-      path = "/{key}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaDeleteMapping(path = "/{key}")
   public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final long key) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () -> userServices.withAuthentication(RequestMapper.getAuthentication()).deleteUser(key));
@@ -71,10 +67,7 @@ public class UserController {
         ResponseMapper::toUserCreateResponse);
   }
 
-  @PatchMapping(
-      path = "/{userKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPatchMapping(path = "/{userKey}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
       @PathVariable final long userKey, @RequestBody final UserUpdateRequest userUpdateRequest) {
     return RequestMapper.toUserUpdateRequest(userUpdateRequest, userKey)
@@ -95,9 +88,8 @@ public class UserController {
                         request.password())));
   }
 
-  @PutMapping(
+  @CamundaPutMapping(
       path = "/{userKey}/roles/{roleKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> addRole(
       @PathVariable final long userKey, @PathVariable final long roleKey) {
@@ -108,10 +100,7 @@ public class UserController {
                 .addMember(roleKey, EntityType.USER, userKey));
   }
 
-  @DeleteMapping(
-      path = "/{userKey}/roles/{roleKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaDeleteMapping(path = "/{userKey}/roles/{roleKey}")
   public CompletableFuture<ResponseEntity<Object>> removeRole(
       @PathVariable final long userKey, @PathVariable final long roleKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
@@ -121,10 +110,7 @@ public class UserController {
                 .removeMember(roleKey, EntityType.USER, userKey));
   }
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<UserSearchResponse> searchUsers(
       @RequestBody(required = false) final UserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserQuery(query)

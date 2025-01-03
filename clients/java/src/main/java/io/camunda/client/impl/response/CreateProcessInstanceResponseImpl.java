@@ -37,10 +37,10 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   }
 
   public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResponse response) {
-    processDefinitionKey = Long.parseLong(response.getProcessDefinitionKey());
+    processDefinitionKey = response.getProcessDefinitionKey();
     bpmnProcessId = response.getProcessDefinitionId();
     version = response.getProcessDefinitionVersion();
-    processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
+    processInstanceKey = response.getProcessInstanceKey();
     tenantId = response.getTenantId();
   }
 
