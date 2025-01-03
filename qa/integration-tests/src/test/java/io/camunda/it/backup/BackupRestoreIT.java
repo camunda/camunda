@@ -82,7 +82,7 @@ public class BackupRestoreIT {
   }
 
   public static Stream<BackupRestoreTestConfig> sources() {
-    return Stream.of(DatabaseType.ELASTICSEARCH)
+    return Stream.of(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH)
         .flatMap(
             dbType ->
                 Stream.of(RepositoryType.values())
@@ -123,11 +123,11 @@ public class BackupRestoreIT {
     // then
     // if we stop all apps and restart elasticsearch
     testStandaloneCamunda.stop();
-    testStandaloneCamunda.startESContainer();
+    testStandaloneCamunda.startDBContainer();
     // perform a restore with a new client (old one is not valid anymore)
     createSearchClient();
     createRepository(storagePath);
-    deleteAllIndices();
+    //    deleteAllIndices();
     restore(snapshots);
   }
 
@@ -159,13 +159,23 @@ public class BackupRestoreIT {
           }
         }
         restClient =
-            RestClient.builder(HttpHost.create(testStandaloneCamunda.getElasticSearchHostAddress()))
-                .build();
+            RestClient.builder(HttpHost.create(testStandaloneCamunda.getDBHostAddress())).build();
 
         esClient =
             new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
         break;
       case OPENSEARCH:
+        if (osRestClient != null) {
+          osRestClient.close();
+        }
+        osRestClient =
+            org.opensearch.client.RestClient.builder(
+                    HttpHost.create(testStandaloneCamunda.getDBHostAddress()))
+                .build();
+        final var transport =
+            new org.opensearch.client.transport.rest_client.RestClientTransport(
+                osRestClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
+        opensearchClient = new OpenSearchClient(transport);
     }
   }
 

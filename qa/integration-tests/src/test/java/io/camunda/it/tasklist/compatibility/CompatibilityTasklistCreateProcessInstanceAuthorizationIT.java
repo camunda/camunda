@@ -46,7 +46,7 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
   @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
 
   @TestZeebe
-  private TestStandaloneCamunda standaloneCamunda =
+  private final TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
@@ -57,13 +57,12 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
   public void beforeAll() {
     final var defaultUser = "demo";
     final var searchClients =
-        SearchClientsUtil.createSearchClients(standaloneCamunda.getElasticSearchHostAddress());
+        SearchClientsUtil.createSearchClients(standaloneCamunda.getDBHostAddress());
 
     // intermediate state, so that a user exists that has
     // access to the storage to retrieve data
     try (final var intermediateAuthClient =
-        AuthorizationsUtil.create(
-            standaloneCamunda, standaloneCamunda.getElasticSearchHostAddress())) {
+        AuthorizationsUtil.create(standaloneCamunda, standaloneCamunda.getDBHostAddress())) {
       intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
       intermediateAuthClient.createUserWithPermissions(
           ADMIN_USER_NAME,
