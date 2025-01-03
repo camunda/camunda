@@ -63,6 +63,14 @@ jobs:
           BRANCH: ${{ inputs.branch }}
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
+      - name: upload distribution archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: camunda-distro-archive
+          path: |
+            ${{ steps.build-camunda.outputs.distball }}
+          retention-days: 7
+          if-no-files-found: ignore
       - uses: ./.github/actions/build-platform-docker
         id: build-push-camunda-docker
         with:
