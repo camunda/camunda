@@ -8,7 +8,7 @@
 package io.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import jakarta.ws.rs.ServiceUnavailableException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.slf4j.Logger;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -20,17 +20,23 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @ControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE) // This mapper takes precedence over GenericExceptionMapper
-public class ServiceUnavailableExceptionMapper {
+public class JsonExceptionMapper {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(ServiceUnavailableExceptionMapper.class);
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(JsonExceptionMapper.class);
 
-  @ExceptionHandler(ServiceUnavailableException.class)
-  public ResponseEntity<String> handleServiceUnavailableException(
-      final JsonParseException exception) {
-    LOG.debug("Mapping ServiceUnavailableException");
-    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-        .contentType(MediaType.TEXT_PLAIN)
-        .build();
+  @ExceptionHandler(JsonMappingException.class)
+  public ResponseEntity<String> handleJsonMappingException(final JsonMappingException exception) {
+    LOG.debug("Mapping handleJsonMappingException");
+    return badRequestResponse();
+  }
+
+  @ExceptionHandler(JsonParseException.class)
+  public ResponseEntity<String> handleJsonParseException(final JsonParseException exception) {
+    LOG.debug("Mapping handleJsonParseException");
+    return badRequestResponse();
+  }
+
+  private ResponseEntity<String> badRequestResponse() {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_PLAIN).build();
   }
 }

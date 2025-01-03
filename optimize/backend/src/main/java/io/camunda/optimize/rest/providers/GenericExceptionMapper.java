@@ -11,47 +11,49 @@ import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ParamException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@Provider
-public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
+@ControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
+public class GenericExceptionMapper {
 
   public static final String GENERIC_ERROR_CODE = "serverError";
   public static final String NOT_FOUND_ERROR_CODE = "notFoundError";
   public static final String BAD_REQUEST_ERROR_CODE = "badRequestError";
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(GenericExceptionMapper.class);
+  private static final Logger LOG = LoggerFactory.getLogger(GenericExceptionMapper.class);
 
-  private final LocalizationService localizationService;
+  @Autowired private LocalizationService localizationService;
 
-  public GenericExceptionMapper(@Context final LocalizationService localizationService) {
-    this.localizationService = localizationService;
-  }
+  @ExceptionHandler(Throwable.class)
+  public ResponseEntity<ErrorResponseDto> handleThrowable(final Throwable throwable) {
+    LOG.error("Mapping generic REST error", throwable);
+    final ErrorResponseDto errorResponseDto = getErrorResponseDto(throwable);
 
-  private Response buildGenericErrorResponse(final Throwable e) {
-    return Response.status(getStatusForError(e))
-        .type(MediaType.APPLICATION_JSON_TYPE)
-        .entity(getErrorResponseDto(e))
-        .build();
-  }
-
-  private static Response.Status getStatusForError(final Throwable e) {
-    final Class<?> errorClass = e.getClass();
-
+    final HttpStatus status;
+    final Class errorClass = throwable.getClass();
     if (NotFoundException.class.equals(errorClass)) {
-      return Response.Status.NOT_FOUND;
+      status = HttpStatus.NOT_FOUND;
     } else if (BadRequestException.class.equals(errorClass)) {
-      return Response.Status.BAD_REQUEST;
+      status = HttpStatus.BAD_REQUEST;
     } else if (ParamException.PathParamException.class.equals(errorClass)) {
-      return Response.Status.BAD_REQUEST;
+      status = HttpStatus.BAD_REQUEST;
+    } else {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
-    return Response.Status.INTERNAL_SERVER_ERROR;
+    return ResponseEntity.status(status)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(errorResponseDto);
   }
 
   private ErrorResponseDto getErrorResponseDto(final Throwable e) {
@@ -71,11 +73,5 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
         localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
 
     return new ErrorResponseDto(errorCode, localizedMessage, e.getMessage());
-  }
-
-  @Override
-  public Response toResponse(final Throwable throwable) {
-    LOG.error("Mapping generic REST error", throwable);
-    return buildGenericErrorResponse(throwable);
   }
 }
