@@ -26,7 +26,12 @@ const getPort = () => {
 };
 
 const getBasePath = () => {
-  return IS_CI && !IS_E2E ? '' : '/operate/';
+  const isLocalVisualRegression =
+    !IS_CI && !IS_E2E && !IS_A11Y && !IS_SCREENSHOT_GENERATOR;
+
+  const path = (IS_CI && !IS_E2E) || isLocalVisualRegression ? '' : '/operate/';
+
+  return path;
 };
 
 /**

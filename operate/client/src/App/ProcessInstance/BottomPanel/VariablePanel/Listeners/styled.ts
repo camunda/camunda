@@ -10,7 +10,7 @@ import {StructuredList as BaseStructuredList} from 'modules/components/Structure
 import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
 import {supportError, spacing01, spacing03} from '@carbon/elements';
 import styled from 'styled-components';
-import {Stack, Dropdown as BaseDropdown} from '@carbon/react';
+import {Stack as BaseStack, Dropdown as BaseDropdown} from '@carbon/react';
 
 const Content = styled.div`
   position: relative;
@@ -30,7 +30,7 @@ const StructuredList = styled(BaseStructuredList)`
   }
 `;
 
-const CellContainer = styled(Stack)`
+const CellContainer = styled(BaseStack)`
   padding: ${spacing03} ${spacing01};
 `;
 
@@ -43,4 +43,31 @@ const Dropdown = styled(BaseDropdown)`
   width: 200px;
 `;
 
-export {Content, StructuredList, CellContainer, WarningFilled, Dropdown};
+const EmptyMessageWrapper = styled.div`
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+
+  > div {
+    max-width: 475px;
+  }
+`;
+
+const dropdownHeight = '32px';
+
+const Stack = styled(BaseStack)<{$isUserTask: boolean}>`
+  height: ${({$isUserTask}) =>
+    $isUserTask ? `calc(100% - ${dropdownHeight})` : '100%'};
+`;
+
+export {
+  Content,
+  StructuredList,
+  CellContainer,
+  WarningFilled,
+  Dropdown,
+  EmptyMessageWrapper,
+  Stack,
+};
