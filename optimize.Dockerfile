@@ -23,7 +23,7 @@ COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
-FROM base
+FROM base as app
 
 ARG VERSION=""
 ARG DATE=""
