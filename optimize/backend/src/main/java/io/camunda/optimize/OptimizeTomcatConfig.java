@@ -70,7 +70,9 @@ public class OptimizeTomcatConfig {
             OptimizeResourceConstants.STATIC_RESOURCE_PATH,
             OptimizeResourceConstants.ACTUATOR_ENDPOINT,
             PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
-            UIConfigurationRestService.UI_CONFIGURATION_PATH
+            UIConfigurationRestService.UI_CONFIGURATION_PATH,
+            "/favicon.ico",
+            "/index.html"
           });
 
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
