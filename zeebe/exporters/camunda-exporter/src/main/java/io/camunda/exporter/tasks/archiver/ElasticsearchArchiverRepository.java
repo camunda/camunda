@@ -203,24 +203,6 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
             executor);
   }
 
-  public CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
-      final List<String> destinationIndexNames) {
-    if (destinationIndexNames.isEmpty()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    final var settingsRequest =
-        new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexNames)
-            .ignoreUnavailable(true)
-            .build();
-
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
-  }
-
   @Override
   public void close() throws Exception {
     client._transport().close();
@@ -244,6 +226,25 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
 
     return createSearchRequest(
         processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
+  }
+
+  private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
+      final List<String> destinationIndexNames) {
+    if (destinationIndexNames.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var settingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(
+                settings ->
+                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
+            .index(destinationIndexNames)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
