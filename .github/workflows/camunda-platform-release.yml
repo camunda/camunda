@@ -526,6 +526,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
+      - name: Move optimize artifacts into expected dir
+        run: |
+          mkdir -p "optimize-distro/target"
+          mv camunda-optimize-${RELEASE_VERSION}-production.tar.gz ./optimize-distro/target/
       - name: Build Optimize Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-optimize-docker
