@@ -1,7 +1,7 @@
-ARG BASE_IMAGE_NAME="alpine:3.21.0"
-ARG BASE_SHA="sha256:21dc6063fd678b478f57c0e13f47560d0ea4eeba26dfc947b2a4f81f686b9f45"
+ARG BASE_IMAGE="alpine:3.21.0"
+ARG BASE_DIGEST="sha256:21dc6063fd678b478f57c0e13f47560d0ea4eeba26dfc947b2a4f81f686b9f45"
 
-FROM ${BASE_IMAGE_NAME}@${BASE_SHA} AS base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
 
 ARG VERSION=""
@@ -30,17 +30,17 @@ ARG DATE=""
 ARG REVISION=""
 
 # leave the values below unset to use the default value at the top of the file
-ARG BASE_IMAGE_NAME
-ARG BASE_SHA
+ARG BASE_IMAGE
+ARG BASE_DIGEST
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE_NAME}"
-LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
+LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="optimize@camunda.com"
 LABEL org.opencontainers.image.url="https://docs.camunda.io/docs/components/optimize/what-is-optimize/"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/optimize-deployment/install-and-start/"
-LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-optimize"
+LABEL org.opencontainers.image.source="https://github.com/camunda/camunda"
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
@@ -50,7 +50,7 @@ LABEL org.opencontainers.image.description="Provides business activity monitorin
 
 # OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
 LABEL io.openshift.tags="bpmn,optimization,camunda"
-LABEL io.openshift.wants="zeebe,elasticsearch,identity,keycloak"
+LABEL io.openshift.wants="zeebe,elasticsearch,identity,keycloak,opensearch"
 LABEL io.k8s.description="Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks"
 LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="2Gi"
