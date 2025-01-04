@@ -23,7 +23,8 @@ public class ConfigIT {
   @Test
   void shouldSuccessfullyValidateConfiguration() throws Exception {
     // given
-    final var bucketName = RandomStringUtils.randomAlphabetic(12);
+    // bucketname must be lowercase, see https://cloud.google.com/storage/docs/buckets
+    final var bucketName = RandomStringUtils.randomAlphanumeric(12).toLowerCase();
     final var config =
         new GcsBackupConfig.Builder()
             .withHost(GCS.externalEndpoint())
@@ -43,7 +44,8 @@ public class ConfigIT {
   @Test
   void shouldFailValidationIfBucketDoesNotExist() {
     // given
-    final var bucketName = RandomStringUtils.randomAlphabetic(12);
+    // bucketname must be lowercase, see https://cloud.google.com/storage/docs/buckets
+    final var bucketName = RandomStringUtils.randomAlphanumeric(12).toLowerCase();
     final var config =
         new GcsBackupConfig.Builder()
             .withHost(GCS.externalEndpoint())
