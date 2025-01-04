@@ -110,7 +110,7 @@
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <junit.platform.version>1.11.4</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
-    <assertj.version>3.27.1</assertj.version>
+    <assertj.version>3.27.2</assertj.version>
     <google-java-format.plugin.version>1.25.2</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
