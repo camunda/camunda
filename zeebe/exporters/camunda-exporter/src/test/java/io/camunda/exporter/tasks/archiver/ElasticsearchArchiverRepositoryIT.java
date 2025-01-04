@@ -180,6 +180,22 @@ final class ElasticsearchArchiverRepositoryIT {
     }
   }
 
+  @Test
+  void shouldNotFailSettingILMOnMissingIndex() throws IOException {
+    // given
+    final var repository = createRepository();
+    final var indexName = UUID.randomUUID().toString();
+    retention.setEnabled(true);
+    retention.setPolicyName("operate_delete_archived_indices");
+    putLifecyclePolicy();
+
+    // when
+    final var result = repository.setIndexLifeCycle(indexName);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+  }
+
   private IndexSettingsLifecycle getLifeCycle(final String indexName) throws IOException {
     return testClient
         .indices()
