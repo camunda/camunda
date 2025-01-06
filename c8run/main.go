@@ -123,20 +123,20 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
 	}
-    if settings.username != "" || settings.password != "" {
-        javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
-        javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
-        javaOpts = javaOpts + " -Dcamunda.security.authorizations.enabled=true"
-        javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo"
-        javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@demo.com"
-    }
+	if settings.username != "" || settings.password != "" {
+		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
+		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
+		javaOpts = javaOpts + " -Dcamunda.security.authorizations.enabled=true"
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo"
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@demo.com"
+	}
 	if settings.username != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.username
 	}
 	if settings.password != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.password
 	}
-    javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,auth-basic"
+	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,auth-basic"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	fmt.Println("Java opts: " + javaOpts)
 	return javaOpts
