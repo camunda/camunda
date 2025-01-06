@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.archiver.os;
 
-import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.Metrics;
@@ -30,7 +29,6 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -76,7 +74,8 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
   }
 
   @Override
-  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      final ArchiveBatch archiveBatch) {
     final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
@@ -187,7 +186,6 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
             .size(tasklistProperties.getArchiver().getRolloverBatchSize())
             .sort(s -> s.field(f -> f.field(ProcessInstanceIndex.END_DATE).order(SortOrder.Asc)))
             .requestCache(false)
-            .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
             .build();
 
     LOGGER.debug("Query finished process instances for archiving request: \n{}", q.toString());
