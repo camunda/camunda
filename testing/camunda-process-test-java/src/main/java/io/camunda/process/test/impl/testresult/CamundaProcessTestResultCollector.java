@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.testresult;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.IncidentDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
@@ -82,7 +82,7 @@ public class CamundaProcessTestResultCollector {
   private List<OpenIncident> collectOpenIncidents(final long processInstanceKey) {
     try {
       return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-          .filter(FlowNodeInstanceDto::isIncident)
+          .filter(FlowNodeInstance::getIncident)
           .map(this::getIncident)
           .collect(Collectors.toList());
     } catch (final IOException e) {
@@ -92,7 +92,7 @@ public class CamundaProcessTestResultCollector {
     return Collections.emptyList();
   }
 
-  private OpenIncident getIncident(final FlowNodeInstanceDto flowNodeInstance) {
+  private OpenIncident getIncident(final FlowNodeInstance flowNodeInstance) {
     final OpenIncident openIncident = new OpenIncident();
     openIncident.setFlowNodeId(flowNodeInstance.getFlowNodeId());
 
