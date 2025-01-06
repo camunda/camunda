@@ -17,87 +17,120 @@ package io.camunda.client.impl.search;
 
 import io.camunda.client.protocol.rest.*;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchQuerySortRequestMapper {
 
   public static List<SearchQuerySortRequest> fromProcessDefinitionSearchQuerySortRequest(
       List<ProcessDefinitionSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromProcessInstanceSearchQuerySortRequest(
       List<ProcessInstanceSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromRoleSearchQuerySortRequest(
       List<RoleSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromGroupSearchQuerySortRequest(
       List<GroupSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromTenantSearchQuerySortRequest(
       List<TenantSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromMappingSearchQuerySortRequest(
       List<MappingSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromDecisionDefinitionSearchQuerySortRequest(
       List<DecisionDefinitionSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromDecisionRequirementsSearchQuerySortRequest(
       List<DecisionRequirementsSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromFlowNodeInstanceSearchQuerySortRequest(
       List<FlowNodeInstanceSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromDecisionInstanceSearchQuerySortRequestt(
       List<DecisionInstanceSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromUserTaskSearchQuerySortRequest(
       List<UserTaskSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromUserTaskVariableSearchQuerySortRequest(
       List<UserTaskVariableSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromVariableSearchQuerySortRequest(
       List<VariableSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromUserSearchQuerySortRequest(
       List<UserSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromIncidentSearchQuerySortRequest(
       List<IncidentSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<SearchQuerySortRequest> fromAuthorizationSearchQuerySortRequest(
       List<AuthorizationSearchQuerySortRequest> requests) {
-    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
   }
 
   public static List<ProcessDefinitionSearchQuerySortRequest>
@@ -112,7 +145,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<ProcessInstanceSearchQuerySortRequest> toProcessInstanceSearchQuerySortRequest(
@@ -127,7 +160,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<RoleSearchQuerySortRequest> toRoleSearchQuerySortRequest(
@@ -140,7 +173,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<GroupSearchQuerySortRequest> toGroupSearchQuerySortRequest(
@@ -153,7 +186,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<TenantSearchQuerySortRequest> toTenantSearchQuerySortRequest(
@@ -166,7 +199,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<MappingSearchQuerySortRequest> toMappingSearchQuerySortRequest(
@@ -179,7 +212,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<DecisionDefinitionSearchQuerySortRequest>
@@ -194,7 +227,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<DecisionRequirementsSearchQuerySortRequest>
@@ -209,7 +242,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<FlowNodeInstanceSearchQuerySortRequest>
@@ -224,7 +257,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<DecisionInstanceSearchQuerySortRequest>
@@ -239,7 +272,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<UserTaskSearchQuerySortRequest> toUserTaskSearchQuerySortRequest(
@@ -252,7 +285,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<UserTaskVariableSearchQuerySortRequest>
@@ -267,7 +300,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<VariableSearchQuerySortRequest> toVariableSearchQuerySortRequest(
@@ -280,7 +313,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<UserSearchQuerySortRequest> toUserSearchQuerySortRequest(
@@ -293,7 +326,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<IncidentSearchQuerySortRequest> toIncidentSearchQuerySortRequest(
@@ -306,7 +339,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   public static List<AuthorizationSearchQuerySortRequest> toAuthorizationSearchQuerySortRequest(
@@ -321,7 +354,7 @@ public class SearchQuerySortRequestMapper {
               request.setOrder(r.getOrder());
               return request;
             })
-        .toList();
+        .collect(Collectors.toList());
   }
 
   private static SearchQuerySortRequest createFrom(Object field, SortOrderEnum order) {
