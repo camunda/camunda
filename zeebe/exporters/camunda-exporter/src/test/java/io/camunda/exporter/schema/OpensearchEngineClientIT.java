@@ -12,15 +12,13 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,29 +30,22 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 public class OpensearchEngineClientIT {
-  @Container
-  private static final OpensearchContainer<?> CONTAINER =
-      TestSearchContainers.createDefaultOpensearchContainer();
+
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;
 
   @BeforeAll
   public static void init() {
-    final var config = new ExporterConfiguration();
-    config.getConnect().setUrl(CONTAINER.getHttpHostAddress());
-    openSearchClient = new OpensearchConnector(config.getConnect()).createClient();
-
+    openSearchClient = searchDB.osClient();
     opensearchEngineClient = new OpensearchEngineClient(openSearchClient);
   }
 
