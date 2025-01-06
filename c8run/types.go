@@ -15,12 +15,13 @@ type C8Run interface {
 }
 
 type C8RunSettings struct {
-	config           string
-	detached         bool
-	port             int
-	keystore         string
-	keystorePassword string
-	logLevel         string
+	config               string
+	detached             bool
+	port                 int
+	keystore             string
+	keystorePassword     string
+	logLevel             string
+	disableElasticsearch bool
 }
 
 type TemplateData struct {
