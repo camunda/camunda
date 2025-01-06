@@ -89,24 +89,24 @@ public class ProcessInstanceAssertTest {
     return processInstance;
   }
 
-  private static FlowNodeInstanceDto newActiveFlowNodeInstance(final String elementName) {
+  private static FlowNodeInstanceDto newActiveFlowNodeInstance(final String elementId) {
     final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
-    flowNodeInstance.setFlowNodeName(elementName);
+    flowNodeInstance.setFlowNodeId(elementId);
     flowNodeInstance.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
     flowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
     flowNodeInstance.setStartDate(START_DATE);
     return flowNodeInstance;
   }
 
-  private static FlowNodeInstanceDto newCompletedFlowNodeInstance(final String elementName) {
-    final FlowNodeInstanceDto flowNodeInstance = newActiveFlowNodeInstance(elementName);
+  private static FlowNodeInstanceDto newCompletedFlowNodeInstance(final String elementId) {
+    final FlowNodeInstanceDto flowNodeInstance = newActiveFlowNodeInstance(elementId);
     flowNodeInstance.setState(FlowNodeInstanceState.COMPLETED);
     flowNodeInstance.setEndDate(END_DATE);
     return flowNodeInstance;
   }
 
-  private static FlowNodeInstanceDto newTerminatedFlowNodeInstance(final String elementName) {
-    final FlowNodeInstanceDto flowNodeInstance = newActiveFlowNodeInstance(elementName);
+  private static FlowNodeInstanceDto newTerminatedFlowNodeInstance(final String elementId) {
+    final FlowNodeInstanceDto flowNodeInstance = newActiveFlowNodeInstance(elementId);
     flowNodeInstance.setState(FlowNodeInstanceState.TERMINATED);
     flowNodeInstance.setEndDate(END_DATE);
     return flowNodeInstance;
@@ -501,7 +501,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
-    void shouldFailWithSameElementName() throws IOException {
+    void shouldFailWithSameElementId() throws IOException {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
@@ -626,7 +626,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
-    void shouldFailWithSameElementName() throws IOException {
+    void shouldFailWithSameElementId() throws IOException {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
@@ -751,7 +751,7 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
-    void shouldFailWithSameElementName() throws IOException {
+    void shouldFailWithSameElementId() throws IOException {
       // given
       final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstanceDto flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");

@@ -69,22 +69,22 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   }
 
   @Override
-  public ProcessInstanceAssert hasActiveElements(final String... elementNames) {
-    hasElementsInState(elementNames, FlowNodeInstanceState.ACTIVE, Objects::nonNull);
+  public ProcessInstanceAssert hasActiveElements(final String... elementIds) {
+    hasElementsInState(elementIds, FlowNodeInstanceState.ACTIVE, Objects::nonNull);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasCompletedElements(final String... elementNames) {
+  public ProcessInstanceAssert hasCompletedElements(final String... elementIds) {
     hasElementsInState(
-        elementNames, FlowNodeInstanceState.COMPLETED, ProcessInstanceAssertj::isEnded);
+        elementIds, FlowNodeInstanceState.COMPLETED, ProcessInstanceAssertj::isEnded);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasTerminatedElements(final String... elementNames) {
+  public ProcessInstanceAssert hasTerminatedElements(final String... elementIds) {
     hasElementsInState(
-        elementNames, FlowNodeInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
+        elementIds, FlowNodeInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
     return this;
   }
 
@@ -142,14 +142,14 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   }
 
   private void hasElementsInState(
-      final String[] elementNames,
+      final String[] elementIds,
       final FlowNodeInstanceState expectedState,
       final Predicate<FlowNodeInstanceDto> waitCondition) {
 
     final AtomicReference<List<FlowNodeInstanceDto>> reference =
         new AtomicReference<>(Collections.emptyList());
 
-    final List<String> elementNamesList = Arrays.asList(elementNames);
+    final List<String> elementIdsList = Arrays.asList(elementIds);
 
     try {
       Awaitility.await()
@@ -158,9 +158,9 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
               () ->
                   reference.get().stream()
                       .filter(waitCondition)
-                      .map(FlowNodeInstanceDto::getFlowNodeName)
+                      .map(FlowNodeInstanceDto::getFlowNodeId)
                       .collect(Collectors.toSet())
-                      .containsAll(elementNamesList))
+                      .containsAll(elementIdsList))
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstanceDto> flowNodeInstances =
@@ -169,27 +169,26 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
                 assertThat(flowNodeInstances)
                     .filteredOn(FlowNodeInstanceDto::getState, expectedState)
-                    .extracting(FlowNodeInstanceDto::getFlowNodeName)
-                    .contains(elementNames);
+                    .extracting(FlowNodeInstanceDto::getFlowNodeId)
+                    .contains(elementIds);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
-      final Map<String, FlowNodeInstanceState> elementStateByName =
+      final Map<String, FlowNodeInstanceState> elementStateById =
           reference.get().stream()
-              .filter(flowNode -> elementNamesList.contains(flowNode.getFlowNodeName()))
+              .filter(flowNode -> elementIdsList.contains(flowNode.getFlowNodeId()))
               .collect(
                   Collectors.toMap(
-                      FlowNodeInstanceDto::getFlowNodeName, FlowNodeInstanceDto::getState));
+                      FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getState));
 
       final String elementsNotInState =
-          Arrays.stream(elementNames)
-              .filter(elementName -> !expectedState.equals(elementStateByName.get(elementName)))
+          Arrays.stream(elementIds)
+              .filter(elementId -> !expectedState.equals(elementStateById.get(elementId)))
               .map(
-                  elementName ->
+                  elementId ->
                       String.format(
-                          "\t- '%s': %s",
-                          elementName, formatState(elementStateByName.get(elementName))))
+                          "\t- '%s': %s", elementId, formatState(elementStateById.get(elementId))))
               .collect(Collectors.joining("\n"));
 
       final String failureMessage =
@@ -197,7 +196,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
               "%s should have %s elements %s but the following elements were not %s:\n%s",
               AssertFormatUtil.formatProcessInstance(actual),
               formatState(expectedState),
-              AssertFormatUtil.formatNames(elementNames),
+              AssertFormatUtil.formatNames(elementIds),
               formatState(expectedState),
               elementsNotInState);
       fail(failureMessage);
