@@ -23,10 +23,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
-import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
 import java.io.IOException;
@@ -92,6 +93,7 @@ public class ProcessInstanceAssertTest {
   private static FlowNodeInstanceDto newActiveFlowNodeInstance(final String elementId) {
     final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
     flowNodeInstance.setFlowNodeId(elementId);
+    flowNodeInstance.setFlowNodeName("element_" + elementId);
     flowNodeInstance.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
     flowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
     flowNodeInstance.setStartDate(START_DATE);
@@ -520,6 +522,69 @@ public class ProcessInstanceAssertTest {
                   + "\t- 'B': not activated",
               PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldUseElementSelectorById() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceC = newCompletedFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasActiveElements(ElementSelectors.byId("A"), ElementSelectors.byId("B"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasActiveElements(
+                          ElementSelectors.byId("A"),
+                          ElementSelectors.byId("C"),
+                          ElementSelectors.byId("D")))
+          .hasMessage(
+              "Process instance [key: %d] should have active elements ['A', 'C', 'D'] but the following elements were not active:\n"
+                  + "\t- 'C': completed\n"
+                  + "\t- 'D': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldUseElementSelectorByName() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newActiveFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newActiveFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceC = newCompletedFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasActiveElements(
+              ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasActiveElements(
+                          ElementSelectors.byName("element_A"),
+                          ElementSelectors.byName("element_C"),
+                          ElementSelectors.byName("element_D")))
+          .hasMessage(
+              "Process instance [key: %d] should have active elements ['element_A', 'element_C', 'element_D'] but the following elements were not active:\n"
+                  + "\t- 'element_C': completed\n"
+                  + "\t- 'element_D': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -645,6 +710,69 @@ public class ProcessInstanceAssertTest {
                   + "\t- 'B': not activated",
               PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldUseElementSelectorById() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceC = newActiveFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasCompletedElements(ElementSelectors.byId("A"), ElementSelectors.byId("B"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasCompletedElements(
+                          ElementSelectors.byId("A"),
+                          ElementSelectors.byId("C"),
+                          ElementSelectors.byId("D")))
+          .hasMessage(
+              "Process instance [key: %d] should have completed elements ['A', 'C', 'D'] but the following elements were not completed:\n"
+                  + "\t- 'C': active\n"
+                  + "\t- 'D': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldUseElementSelectorByName() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newCompletedFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceC = newActiveFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasCompletedElements(
+              ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasCompletedElements(
+                          ElementSelectors.byName("element_A"),
+                          ElementSelectors.byName("element_C"),
+                          ElementSelectors.byName("element_D")))
+          .hasMessage(
+              "Process instance [key: %d] should have completed elements ['element_A', 'element_C', 'element_D'] but the following elements were not completed:\n"
+                  + "\t- 'element_C': active\n"
+                  + "\t- 'element_D': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -768,6 +896,69 @@ public class ProcessInstanceAssertTest {
           .hasMessage(
               "Process instance [key: %d] should have terminated elements ['B'] but the following elements were not terminated:\n"
                   + "\t- 'B': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldUseElementSelectorById() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceC = newActiveFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasTerminatedElements(ElementSelectors.byId("A"), ElementSelectors.byId("B"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasTerminatedElements(
+                          ElementSelectors.byId("A"),
+                          ElementSelectors.byId("C"),
+                          ElementSelectors.byId("D")))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated elements ['A', 'C', 'D'] but the following elements were not terminated:\n"
+                  + "\t- 'C': active\n"
+                  + "\t- 'D': not activated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldUseElementSelectorByName() throws IOException {
+      // given
+      final FlowNodeInstanceDto flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstanceDto flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
+      final FlowNodeInstanceDto flowNodeInstanceC = newActiveFlowNodeInstance("C");
+
+      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasTerminatedElements(
+              ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
+
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasTerminatedElements(
+                          ElementSelectors.byName("element_A"),
+                          ElementSelectors.byName("element_C"),
+                          ElementSelectors.byName("element_D")))
+          .hasMessage(
+              "Process instance [key: %d] should have terminated elements ['element_A', 'element_C', 'element_D'] but the following elements were not terminated:\n"
+                  + "\t- 'element_C': active\n"
+                  + "\t- 'element_D': not activated",
               PROCESS_INSTANCE_KEY);
     }
   }
