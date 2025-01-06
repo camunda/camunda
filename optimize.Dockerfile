@@ -50,7 +50,7 @@ LABEL org.opencontainers.image.description="Provides business activity monitorin
 
 # OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
 LABEL io.openshift.tags="bpmn,optimization,camunda"
-LABEL io.openshift.wants="zeebe,elasticsearch,identity,keycloak,opensearch"
+LABEL io.openshift.wants="zeebe,elasticsearch,identity,keycloak"
 LABEL io.k8s.description="Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks"
 LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="2Gi"
