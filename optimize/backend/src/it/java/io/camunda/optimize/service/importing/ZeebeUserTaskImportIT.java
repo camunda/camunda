@@ -548,7 +548,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     waitUntilUserTaskRecordWithElementIdExported(USER_TASK);
 
     final boolean isZeebeVersionHigherThan870 =
-        isZeebeVersion87OrLater() || isZeebeVersionSnapshot();
+        isZeebeVersion87OrLater() || isZeebeVersionSnapshotOrLatest();
     if (isZeebeVersionHigherThan870) {
       // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
       // `assingee`
@@ -627,7 +627,7 @@ public class ZeebeUserTaskImportIT extends AbstractCCSMIT {
     List<ZeebeUserTaskRecordDto> exportedEvents = getZeebeExportedUserTaskEvents();
 
     final boolean isZeebeVersionHigherThan870 =
-        isZeebeVersion87OrLater() || isZeebeVersionSnapshot();
+        isZeebeVersion87OrLater() || isZeebeVersionSnapshotOrLatest();
     if (isZeebeVersionHigherThan870) {
       // to wait for `ASSIGNED` event triggered by Zeebe after UT creation with the defined
       // `assingee`
