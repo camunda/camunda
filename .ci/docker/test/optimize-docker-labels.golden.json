@@ -3,7 +3,7 @@
   "io.openshift.min-cpu": "1",
   "io.openshift.min-memory": "2Gi",
   "io.openshift.non-scalable": "false",
-  "io.openshift.wants": "zeebe,elasticsearch,identity,keycloak",
+  "io.openshift.wants": "zeebe,elasticsearch,identity,keycloak,opensearch",
   "io.openshift.tags": "bpmn,optimization,camunda",
   "org.opencontainers.image.authors": "optimize@camunda.com",
   "org.opencontainers.image.base.name": $BASE_IMAGE,
