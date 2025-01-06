@@ -4162,6 +4162,14 @@ components:
           type: integer
           description: The key of the element instance.
           format: int64
+        creationDate:
+          description: The user task creation date.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
+        completionDate:
+          description: The user task completion date.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
           description: Process Instance variables associated with the user task.
