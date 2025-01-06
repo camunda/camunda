@@ -39,7 +39,7 @@ func downloadAndExtract(filePath, url, extractDir string, extractFunc func(strin
 	return nil
 }
 
-func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag) error {
+func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-windows-x86_64.zip"
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".zip"
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".zip"

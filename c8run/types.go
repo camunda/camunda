@@ -22,7 +22,7 @@ type C8RunSettings struct {
 	keystorePassword     string
 	logLevel             string
 	disableElasticsearch bool
-	docker           bool
+	docker               bool
 }
 
 type TemplateData struct {
