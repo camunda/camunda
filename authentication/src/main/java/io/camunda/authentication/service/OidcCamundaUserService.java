@@ -51,7 +51,7 @@ public class OidcCamundaUserService implements CamundaUserService {
                   auth.roles().stream().map(RoleEntity::name).toList(),
                   SALES_PLAN_TYPE,
                   C8_LINKS,
-                  true);
+                  false);
             })
         .orElse(null);
   }
