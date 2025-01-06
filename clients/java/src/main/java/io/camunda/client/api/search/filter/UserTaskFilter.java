@@ -15,10 +15,12 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -186,4 +188,36 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter elementInstanceKey(final Long elementInstanceKey);
+
+  /**
+   * Filters user tasks by the specified creation date.
+   *
+   * @param creationDate the creation date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter creationDate(final OffsetDateTime creationDate);
+
+  /**
+   * Filters user tasks by the specified {@link DateTimeProperty} creation date.
+   *
+   * @param creationDate the creation date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter creationDate(final Consumer<DateTimeProperty> creationDate);
+
+  /**
+   * Filters user tasks by the specified completion date.
+   *
+   * @param completionDate the completion date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter completionDate(final OffsetDateTime completionDate);
+
+  /**
+   * Filters user tasks by the specified {@link DateTimeProperty} completion date.
+   *
+   * @param completionDate the completion date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter completionDate(final Consumer<DateTimeProperty> completionDate);
 }
