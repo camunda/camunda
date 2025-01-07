@@ -24,7 +24,7 @@ public class ProcessDefinitionAuthorizationQueryTransformer
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceKeys) {
-    if (resourceType == PROCESS_DEFINITION && permissionType == READ) {
+    if (resourceType == PROCESS_DEFINITION && permissionType == READ) { // TODO verify this shit
       return stringTerms("bpmnProcessId", resourceKeys);
     }
     throw new IllegalArgumentException(

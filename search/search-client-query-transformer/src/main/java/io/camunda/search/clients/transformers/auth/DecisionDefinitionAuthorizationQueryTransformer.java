@@ -24,7 +24,7 @@ public class DecisionDefinitionAuthorizationQueryTransformer
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceKeys) {
-    if (resourceType == DECISION_DEFINITION && permissionType == READ) {
+    if (resourceType == DECISION_DEFINITION && permissionType == READ) { // TODO verify this shit
       return stringTerms("decisionId", resourceKeys);
     }
     throw new IllegalArgumentException(
