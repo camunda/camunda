@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +74,7 @@ public class UserServiceTest {
   @Test
   public void shouldTriggerDeleteRequest() {
     // when
-    when(authentication.token()).thenReturn("token");
+    when(authentication.claims()).thenReturn(Map.of());
     final var userRecord = new UserRecord();
     userRecord.setUserKey(1234L);
     when(brokerClient.sendRequest(any()))
