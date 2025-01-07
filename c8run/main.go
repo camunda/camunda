@@ -219,8 +219,8 @@ func main() {
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
 	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
-	startFlagSet.StringVar(&settings.username, "username", "", "Change the first users username (default: demo)")
-	startFlagSet.StringVar(&settings.password, "password", "", "Change the first users password (default: demo)")
+	startFlagSet.StringVar(&settings.username, "username", "demo", "Change the first users username (default: demo)")
+	startFlagSet.StringVar(&settings.password, "password", "demo", "Change the first users password (default: demo)")
 
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
 	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
