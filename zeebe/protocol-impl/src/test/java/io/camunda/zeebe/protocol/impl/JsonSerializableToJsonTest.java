@@ -154,7 +154,7 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
-              final AuthInfo authInfo = new AuthInfo().setAuthData(Map.of("foo", "bar"));
+              final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
 
               recordMetadata
                   .intent(intent)

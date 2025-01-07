@@ -23,13 +23,13 @@ public class AuthorizationUtil {
    */
   public static AuthInfo getAuthInfo(final String... authorizedTenantIds) {
     final var auth = new AuthInfo();
-    auth.setAuthData(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
+    auth.setClaims(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
     return auth;
   }
 
   public static AuthInfo getAuthInfo(final long userKey, final String... authorizedTenantIds) {
     final var auth = new AuthInfo();
-    auth.setAuthData(
+    auth.setClaims(
         Map.of(
             Authorization.AUTHORIZED_USER_KEY,
             userKey,
@@ -40,13 +40,13 @@ public class AuthorizationUtil {
 
   public static AuthInfo getAuthInfo(final long userKey) {
     final var auth = new AuthInfo();
-    auth.setAuthData(Map.of(Authorization.AUTHORIZED_USER_KEY, userKey));
+    auth.setClaims(Map.of(Authorization.AUTHORIZED_USER_KEY, userKey));
     return auth;
   }
 
   public static AuthInfo getAuthInfoWithClaim(final String claim, final Object claimValue) {
     final var auth = new AuthInfo();
-    auth.setAuthData(Map.of(claim, claimValue));
+    auth.setClaims(Map.of(claim, claimValue));
     return auth;
   }
 }

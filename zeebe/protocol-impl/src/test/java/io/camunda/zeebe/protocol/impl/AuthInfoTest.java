@@ -21,13 +21,13 @@ final class AuthInfoTest {
     // given
     final AuthInfo authInfo = new AuthInfo();
     final Map<String, Object> authInfoMap = Map.of("key", "value");
-    authInfo.setAuthData(authInfoMap);
+    authInfo.setClaims(authInfoMap);
 
     // when
     encodeDecode(authInfo);
 
     // then
-    assertThat(authInfo.getAuthData()).isEqualTo(authInfoMap);
+    assertThat(authInfo.getClaims()).isEqualTo(authInfoMap);
   }
 
   @Test
@@ -39,7 +39,7 @@ final class AuthInfoTest {
     encodeDecode(authInfo);
 
     // then
-    assertThat(authInfo.getAuthData()).isEqualTo(Map.of());
+    assertThat(authInfo.getClaims()).isEqualTo(Map.of());
   }
 
   private void encodeDecode(final AuthInfo authInfo) {

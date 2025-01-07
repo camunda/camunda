@@ -80,7 +80,7 @@ public class UnwrittenRecord implements TypedRecord {
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return metadata.getAuthorization().getAuthData();
+    return metadata.getAuthorization().getClaims();
   }
 
   @Override
