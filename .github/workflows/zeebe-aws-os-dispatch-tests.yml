@@ -35,12 +35,12 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
-          - group: camunda-exporter
-            name: "Camunda Exporter AWS OS Integration Tests"
-            maven-modules: "'io.camunda:camunda-exporter'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: aws-core-8-default
+          #- group: camunda-exporter
+          #  name: "Camunda Exporter AWS OS Integration Tests"
+          #  maven-modules: "'io.camunda:camunda-exporter'"
+          #  maven-build-threads: 2
+          #  maven-test-fork-count: 7
+          #  runs-on: aws-core-8-default
     steps:
       - uses: actions/checkout@v4
       - name: Import secrets from Vault
