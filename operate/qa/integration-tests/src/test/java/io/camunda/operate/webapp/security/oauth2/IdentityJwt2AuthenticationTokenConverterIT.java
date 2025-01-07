@@ -19,6 +19,7 @@ import com.auth0.jwt.exceptions.InvalidClaimException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
@@ -65,6 +66,8 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
   @MockBean private Identity identity;
 
   @MockBean private Tenants tenants;
+
+  @MockBean private CamundaUserService camundaUserService;
 
   @Mock private Authentication authentication;
 

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -56,6 +57,7 @@ public class InternalAPIErrorControllerIT {
   @Autowired private MockMvc mockMvc;
   @MockBean private OperationReader operationReader;
   @MockBean private OperateProfileService mockProfileService;
+  @MockBean private CamundaUserService camundaUserService;
 
   @Autowired private ObjectMapper objectMapper;
 

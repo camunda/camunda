@@ -14,6 +14,8 @@ import static io.camunda.operate.webapp.security.Permission.WRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 
+import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -40,6 +42,7 @@ import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverte
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import jakarta.json.Json;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -104,6 +107,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Autowired private PasswordEncoder encoder;
 
   @MockBean private UserStore userStore;
+  @MockBean private CamundaUserService camundaUserService;
 
   @LocalManagementPort private int managementPort;
 
@@ -117,6 +121,21 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
             .setDisplayName(FIRSTNAME + " " + LASTNAME)
             .setRoles(List.of(Role.OPERATOR.name()));
     given(userStore.getById(USER_ID)).willReturn(user);
+    given(camundaUserService.getCurrentUser())
+        .willReturn(
+            new CamundaUserDTO(
+                user.getUserId(),
+                112233L,
+                user.getDisplayName(),
+                "test",
+                "user@camunda.test",
+                List.of(),
+                List.of(),
+                List.of(),
+                user.getRoles(),
+                "test",
+                Map.of(),
+                true));
   }
 
   @Test

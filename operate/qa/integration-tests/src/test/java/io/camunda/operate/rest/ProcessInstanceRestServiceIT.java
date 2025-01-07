@@ -10,6 +10,7 @@ package io.camunda.operate.rest;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
@@ -21,6 +22,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.web.WebAppConfiguration;
@@ -41,6 +43,7 @@ import org.springframework.test.web.servlet.MvcResult;
 @WithMockUser(DEFAULT_USER)
 public class ProcessInstanceRestServiceIT {
   @Autowired MockMvcManager mockMvcManager;
+  @MockBean private CamundaUserService camundaUserService;
 
   @Test
   public void testGetInstanceByIdWithInvalidId() throws Exception {

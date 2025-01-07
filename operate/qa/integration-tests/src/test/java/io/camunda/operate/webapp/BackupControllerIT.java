@@ -33,6 +33,7 @@ import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.TransportException;
 import co.elastic.clients.util.ObjectBuilder;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -96,6 +97,8 @@ public class BackupControllerIT {
 
   @MockBean(name = "zeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
+
+  @MockBean private CamundaUserService camundaUserService;
 
   @SpyBean private OperateProperties operateProperties;
   @Autowired private BackupController backupController;

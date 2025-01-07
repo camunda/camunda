@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.store.MetricsStore;
@@ -54,6 +55,7 @@ public class UsageMetricIT {
 
   @Autowired private TestRestTemplate testRestTemplate;
   @MockBean private MetricsStore metricsStore;
+  @MockBean private CamundaUserService camundaUserService;
 
   @LocalManagementPort private int managementPort;
 

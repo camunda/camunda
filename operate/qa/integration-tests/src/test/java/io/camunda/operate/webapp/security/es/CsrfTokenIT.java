@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
@@ -115,6 +116,7 @@ public class CsrfTokenIT {
   @MockBean private BatchOperationWriter batchOperationWriter;
   @MockBean private ProcessDefinitionDao processDefinitionDao;
   @MockBean private PermissionsService permissionsService;
+  @MockBean private CamundaUserService camundaUserService;
 
   @Before
   public void setUp() {

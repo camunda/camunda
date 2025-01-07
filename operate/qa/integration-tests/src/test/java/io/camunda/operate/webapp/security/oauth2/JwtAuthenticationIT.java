@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
@@ -54,6 +55,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class JwtAuthenticationIT {
 
   @MockBean JwtDecoder jwtDecoder;
+  @MockBean CamundaUserService camundaUserService;
   @Autowired private TestRestTemplate testRestTemplate;
 
   @Test
