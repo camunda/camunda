@@ -35,22 +35,6 @@ public final class AuthorizationRecord extends UnifiedRecordValue
         .declareProperty(permissionsProp);
   }
 
-  public void wrap(final AuthorizationRecord record) {
-    ownerTypeProp.setValue(record.getOwnerType());
-    ownerKeyProp.setValue(record.getOwnerKey());
-    resourceTypeProp.setValue(record.getResourceType());
-    record.getPermissions().forEach(this::addPermission);
-  }
-
-  public AuthorizationRecord copy() {
-    final AuthorizationRecord copy = new AuthorizationRecord();
-    copy.ownerKeyProp.setValue(getOwnerKey());
-    copy.ownerTypeProp.setValue(getOwnerType());
-    copy.resourceTypeProp.setValue(getResourceType());
-    getPermissions().forEach(copy::addPermission);
-    return copy;
-  }
-
   @Override
   public Long getOwnerKey() {
     return ownerKeyProp.getValue();
