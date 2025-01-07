@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.impl.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;

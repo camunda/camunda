@@ -5,7 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.auth.impl;
+package io.camunda.zeebe.auth;
+
+import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
+import io.camunda.zeebe.auth.impl.JwtAuthorizationEncoder;
 
 public class Authorization {
 

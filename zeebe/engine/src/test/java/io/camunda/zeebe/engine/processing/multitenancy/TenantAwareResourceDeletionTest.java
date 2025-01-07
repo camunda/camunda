@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;

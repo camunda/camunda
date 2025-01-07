@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import java.util.List;
 import java.util.Map;

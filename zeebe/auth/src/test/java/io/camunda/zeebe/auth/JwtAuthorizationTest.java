@@ -10,7 +10,7 @@ package io.camunda.zeebe.auth;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_AUDIENCE;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_ISSUER;
 import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.DEFAULT_SUBJECT;
-import static io.camunda.zeebe.auth.impl.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -18,7 +18,6 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import io.camunda.zeebe.auth.api.AuthorizationEncoder;
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.time.Instant;

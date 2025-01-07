@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.auth.impl.Authorization;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.Instant;
