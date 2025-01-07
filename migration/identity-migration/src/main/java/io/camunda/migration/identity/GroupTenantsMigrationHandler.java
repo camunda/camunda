@@ -63,17 +63,24 @@ final class GroupTenantsMigrationHandler implements MigrationHandler {
     try {
       groupKey =
           groupServices
+              // FIXME: This disables authz checks for the search request until they are working
+              //   correctly.
+              .withAuthentication((Authentication) null)
               .findGroup(groupName)
               .map(GroupEntity::groupKey)
               .orElseGet(() -> groupServices.createGroup(groupName).join().getGroupKey());
     } catch (final Exception e) {
+      LOG.warn("Failed to find or create group {}", groupName, e);
       return toMigrationStatusUpdateRequest(groupTenants, e);
     }
     for (final var tenant : groupTenants.tenants()) {
       final var tenantId = tenant.tenantId();
       LOG.trace("Assigning group {} to tenant {}", groupName, tenantId);
       try {
-        final var tenantKey = tenantServices.getById(tenantId).key();
+        final var tenantKey =
+            // FIXME: This disables authz checks for the search request until they
+            //   are working correctly.
+            tenantServices.withAuthentication((Authentication) null).getById(tenantId).key();
         tenantServices.addMember(tenantKey, EntityType.GROUP, groupKey);
       } catch (final Exception e) {
         if (!isConflictError(e)) {
