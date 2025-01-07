@@ -24,6 +24,7 @@ type C8RunSettings struct {
 	disableElasticsearch bool
 	username             string
 	password             string
+	docker               bool
 }
 
 type TemplateData struct {
