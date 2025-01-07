@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import java.util.List;
+import java.util.Map;
 
 public class AuthorizationUtil {
 
@@ -23,15 +23,8 @@ public class AuthorizationUtil {
    * @return an encoded authorization string that can be set on the record metadata
    */
   public static AuthInfo getAuthInfo(final String... authorizedTenantIds) {
-    final String authorizationToken =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds))
-            .encode();
     final var auth = new AuthInfo();
-    auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
+    auth.setAuthData(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
     return auth;
   }
 
@@ -45,33 +38,24 @@ public class AuthorizationUtil {
             .withClaim(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds))
             .encode();
     final var auth = new AuthInfo();
-    auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
+    auth.setAuthData(
+        Map.of(
+            Authorization.AUTHORIZED_USER_KEY,
+            userKey,
+            Authorization.AUTHORIZED_TENANTS,
+            List.of(authorizedTenantIds)));
     return auth;
   }
 
   public static AuthInfo getAuthInfo(final long userKey) {
-    final String authorizationToken =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_USER_KEY, userKey)
-            .encode();
     final var auth = new AuthInfo();
-    auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
+    auth.setAuthData(Map.of(Authorization.AUTHORIZED_USER_KEY, userKey));
     return auth;
   }
 
   public static AuthInfo getAuthInfoWithClaim(final String claim, final Object claimValue) {
-    final String authorizationToken =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(claim, claimValue)
-            .encode();
     final var auth = new AuthInfo();
-    auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
+    auth.setAuthData(Map.of(claim, claimValue));
     return auth;
   }
 }

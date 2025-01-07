@@ -67,7 +67,7 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   @Override
   public void setAuthorization(final Map<String, Object> claims) {
-    request.setAuthorization(new AuthInfo().setAuthInfo(claims));
+    request.setAuthorization(new AuthInfo().setAuthData(claims));
   }
 
   @Override
