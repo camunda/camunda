@@ -51,7 +51,6 @@ public class OperatePermissionsIT {
   static void initTestStandaloneCamunda() {
     testInstance =
         new TestStandaloneCamunda()
-            .withElasticsearchExporter(false)
             .withCamundaExporter()
             .withAdditionalProfile(Profile.AUTH_BASIC)
             .withAuthorizationsEnabled();

@@ -105,12 +105,12 @@
     <version.jackson>2.18.2</version.jackson>
 
     <!-- testing config -->
-    <mockito.version>5.14.2</mockito.version>
+    <mockito.version>5.15.2</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <junit.platform.version>1.11.4</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
-    <assertj.version>3.27.0</assertj.version>
+    <assertj.version>3.27.2</assertj.version>
     <google-java-format.plugin.version>1.25.2</google-java-format.plugin.version>
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>

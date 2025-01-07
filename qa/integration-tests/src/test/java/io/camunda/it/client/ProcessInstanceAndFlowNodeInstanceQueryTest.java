@@ -370,6 +370,36 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldRetrieveProcessInstancesByExistEndDates() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.endDate(b -> b.exists(true)))
+            .send()
+            .join();
+
+    // then
+    // validate all end dates are not null
+    assertThat(result.items()).allMatch(p -> p.getEndDate() != null);
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByNotExistEndDates() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.endDate(b -> b.exists(false)))
+            .send()
+            .join();
+
+    // then
+    // validate all end dates are not null
+    assertThat(result.items()).allMatch(p -> p.getEndDate() == null);
+  }
+
+  @Test
   void shouldRetrieveProcessInstancesByEndDateFilterGteLte() {
     // given
     final var pi =
