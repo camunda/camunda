@@ -327,6 +327,141 @@ public class UserTaskIT {
   }
 
   @TestTemplate
+  public void shouldFindUserTaskByCreationDateGt(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final var creationDate = NOW.plusDays(15).truncatedTo(ChronoUnit.SECONDS);
+
+    final UserTaskDbModel randomizedUserTask =
+        UserTaskFixtures.createRandomized(b -> b.creationDate(creationDate));
+    createAndSaveUserTask(rdbmsService, randomizedUserTask);
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskDbQuery(
+                    new UserTaskFilter.Builder()
+                        .creationDateOperations(Operation.gt(creationDate.minusDays(1)))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.hits()).hasSize(1);
+    assertUserTaskEntity(searchResult.hits().getFirst(), randomizedUserTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompletionDateGte(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final var completionDate = NOW.plusDays(15).truncatedTo(ChronoUnit.SECONDS);
+
+    final UserTaskDbModel randomizedUserTask =
+        UserTaskFixtures.createRandomized(b -> b.completionDate(completionDate));
+    createAndSaveUserTask(rdbmsService, randomizedUserTask);
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskDbQuery(
+                    new UserTaskFilter.Builder()
+                        .completionDateOperations(Operation.gte(completionDate))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.hits()).hasSize(1);
+    assertUserTaskEntity(searchResult.hits().getFirst(), randomizedUserTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCreationDateLte(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final var creationDate = NOW.minusDays(20).truncatedTo(ChronoUnit.SECONDS);
+
+    final UserTaskDbModel randomizedUserTask =
+        UserTaskFixtures.createRandomized(b -> b.creationDate(creationDate));
+    createAndSaveUserTask(rdbmsService, randomizedUserTask);
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskDbQuery(
+                    new UserTaskFilter.Builder()
+                        .creationDateOperations(Operation.lte(creationDate))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.hits()).hasSize(1);
+    assertUserTaskEntity(searchResult.hits().getFirst(), randomizedUserTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompletionDateLt(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final var completionDate = NOW.minusDays(15).truncatedTo(ChronoUnit.SECONDS);
+
+    final UserTaskDbModel randomizedUserTask =
+        UserTaskFixtures.createRandomized(b -> b.completionDate(completionDate));
+    createAndSaveUserTask(rdbmsService, randomizedUserTask);
+
+    final var searchResultGte =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskDbQuery(
+                    new UserTaskFilter.Builder()
+                        .completionDateOperations(Operation.lt(completionDate.plusDays(1)))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResultGte.total()).isEqualTo(1);
+    assertThat(searchResultGte.hits()).hasSize(1);
+    assertUserTaskEntity(searchResultGte.hits().getFirst(), randomizedUserTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByCompletionDateEquals(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final var completionDate = NOW.minusDays(16).truncatedTo(ChronoUnit.SECONDS);
+
+    final UserTaskDbModel randomizedUserTask =
+        UserTaskFixtures.createRandomized(b -> b.completionDate(completionDate));
+    createAndSaveUserTask(rdbmsService, randomizedUserTask);
+
+    final var searchResultGte =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskDbQuery(
+                    new UserTaskFilter.Builder()
+                        .completionDateOperations(Operation.eq(completionDate))
+                        .build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResultGte.total()).isEqualTo(1);
+    assertThat(searchResultGte.hits()).hasSize(1);
+    assertUserTaskEntity(searchResultGte.hits().getFirst(), randomizedUserTask);
+  }
+
+  @TestTemplate
   public void shouldFindUserTaskWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final UserTaskReader processInstanceReader = rdbmsService.getUserTaskReader();
