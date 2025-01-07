@@ -163,8 +163,8 @@ func main() {
 	parentDir := baseDir
 	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.7.0-SNAPSHOT"
-	connectorsVersion := "8.7.0-alpha2.1"
+	camundaVersion := "8.7.0-alpha3"
+	connectorsVersion := "8.7.0-alpha3"
 	if os.Getenv("CAMUNDA_VERSION") != "" {
 		camundaVersion = os.Getenv("CAMUNDA_VERSION")
 	}
