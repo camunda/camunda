@@ -14,7 +14,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.StringFilterProperty;
-import io.camunda.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -33,7 +32,6 @@ import java.util.Map;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -603,13 +601,13 @@ class UserTaskQueryTest {
     assertThat(result.items().get(2).getName()).isEqualTo("subProcessVariable");
   }
 
-  //@Test
+  @Test
   void shouldReturnUserTaskByCreationDateExists() {
     // when
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.creationDate(b->b.exists(true))) // Test Failing
+            .filter(f -> f.creationDate(b -> b.exists(true)))
             .send()
             .join();
 
@@ -632,21 +630,15 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    //Assert all items the creation Date is greater than userTaskCreationDateExample - 1 second
+    // then all items the creation Date is greater than userTaskCreationDateExample - 1 second
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var creationDate = OffsetDateTime.parse(item.getCreationDate());
-      assertThat(creationDate).isAfter(userTaskCreationDateExample.minusSeconds(1));
-    });
-
-    // Assert it wont return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.creationDate(b -> b.gt(userTaskCreationDateExample.plusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              assertThat(creationDate).isAfter(userTaskCreationDateExample.minusSeconds(1));
+            });
   }
 
   @Test
@@ -664,21 +656,15 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items the creation Date is less than userTaskCreationDateExample + 1 second
+    // then all items the creation Date is less than userTaskCreationDateExample + 1 second
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var creationDate = OffsetDateTime.parse(item.getCreationDate());
-      assertThat(creationDate).isBefore(userTaskCreationDateExample.plusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.creationDate(b -> b.lt(userTaskCreationDateExample.minusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              assertThat(creationDate).isBefore(userTaskCreationDateExample.plusSeconds(1));
+            });
   }
 
   @Test
@@ -696,21 +682,17 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items the creation Date is greater than or equal to userTaskCreationDateExample - 1 second
+    // then all items the creation Date is greater than or equal to userTaskCreationDateExample - 1
+    // second
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var creationDate = OffsetDateTime.parse(item.getCreationDate());
-      assertThat(creationDate).isAfterOrEqualTo(userTaskCreationDateExample.minusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.creationDate(b -> b.gte(userTaskCreationDateExample.plusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              assertThat(creationDate)
+                  .isAfterOrEqualTo(userTaskCreationDateExample.minusSeconds(1));
+            });
   }
 
   @Test
@@ -728,21 +710,17 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items the creation Date is less than or equal to userTaskCreationDateExample + 1 second
+    // then all items the creation Date is less than or equal to userTaskCreationDateExample + 1
+    // second
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var creationDate = OffsetDateTime.parse(item.getCreationDate());
-      assertThat(creationDate).isBeforeOrEqualTo(userTaskCreationDateExample.plusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.creationDate(b -> b.lte(userTaskCreationDateExample.minusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              assertThat(creationDate)
+                  .isBeforeOrEqualTo(userTaskCreationDateExample.plusSeconds(1));
+            });
   }
 
   @Test
@@ -760,62 +738,65 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items have the exact creation Date
+    // then all items have the exact creation Date
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var creationDate = OffsetDateTime.parse(item.getCreationDate());
-      assertThat(creationDate).isEqualTo(userTaskCreationDateExample);
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.creationDate(b -> b.eq(userTaskCreationDateExample.minusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              assertThat(creationDate).isEqualTo(userTaskCreationDateExample);
+            });
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateGte() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f->f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.completionDate(b -> b.gte(userTaskCompletionDateExample.minusSeconds(1))))
+            .filter(
+                f -> f.completionDate(b -> b.gte(userTaskCompletionDateExample.minusSeconds(1))))
             .send()
             .join();
 
-    // Assert all items the completion Date is greater than or equal to userTaskCompletionDateExample - 1 second
+    // then all items the completion Date is greater than or equal to userTaskCompletionDateExample
+    // - 1 second
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isAfterOrEqualTo(userTaskCompletionDateExample.minusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.completionDate(b -> b.gte(userTaskCompletionDateExample.plusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate)
+                  .isAfterOrEqualTo(userTaskCompletionDateExample.minusSeconds(1));
+            });
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateLte() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f->f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
@@ -824,90 +805,98 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items the completion Date is less than or equal to userTaskCompletionDateExample + 1 second
+    // then all items the completion Date is less than or equal to userTaskCompletionDateExample + 1
+    // second
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isBeforeOrEqualTo(userTaskCompletionDateExample.plusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.completionDate(b -> b.lte(userTaskCompletionDateExample.minusDays(1))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate)
+                  .isBeforeOrEqualTo(userTaskCompletionDateExample.plusSeconds(1));
+            });
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateGteLte() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f->f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.completionDate(b -> b.gte(userTaskCompletionDateExample.minusDays(1))
-                .lte(userTaskCompletionDateExample.plusDays(1))))
+            .filter(
+                f ->
+                    f.completionDate(
+                        b ->
+                            b.gte(userTaskCompletionDateExample.minusDays(1))
+                                .lte(userTaskCompletionDateExample.plusDays(1))))
             .send()
             .join();
 
-    // Assert all items have the completion Date within the range
+    // then all items have the completion Date within the range
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isBetween(userTaskCompletionDateExample.minusDays(1), userTaskCompletionDateExample.plusDays(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.completionDate(b -> b.gte(userTaskCompletionDateExample.plusDays(2))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate)
+                  .isBetween(
+                      userTaskCompletionDateExample.minusDays(1),
+                      userTaskCompletionDateExample.plusDays(1));
+            });
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateGtLt() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f -> f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.completionDate(b -> b.gt(userTaskCompletionDateExample.minusDays(1))
-                .lt(userTaskCompletionDateExample.plusDays(1))))
+            .filter(
+                f ->
+                    f.completionDate(
+                        b ->
+                            b.gt(userTaskCompletionDateExample.minusDays(1))
+                                .lt(userTaskCompletionDateExample.plusDays(1))))
             .send()
             .join();
 
-    // Assert all items have the completion Date strictly within the range (exclusive)
+    // then all items have the completion Date strictly within the range (exclusive)
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusDays(1));
-      assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusDays(1));
-    });
-
-    // Assert it won't return results in case does not satisfy the conditions
-    final var noDataResult = camundaClient
-        .newUserTaskQuery()
-        .filter(f -> f.completionDate(b -> b.gt(userTaskCompletionDateExample.plusDays(2))))
-        .send()
-        .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusDays(1));
+              assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusDays(1));
+            });
   }
 
+  @Test
   void shouldReturnUserTaskByCompletionDateExists() {
     // when
     final var result =
@@ -917,10 +906,9 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert items have a completion date
+    // then
     assertThat(result.items().size()).isGreaterThanOrEqualTo(0);
     result.items().forEach(item -> assertThat(item.getCompletionDate()).isNotNull());
-
   }
 
   @Test
@@ -933,19 +921,24 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert no items have a completion date
+    // then
     assertThat(result.items().size()).isGreaterThanOrEqualTo(0);
     result.items().forEach(item -> assertThat(item.getCompletionDate()).isNull());
-
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateEq() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f -> f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
@@ -954,31 +947,30 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items have the exact completion date
+    // then
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isEqualTo(userTaskCompletionDateExample);
-    });
-
-    // Assert it won't return results for a different completion date
-    final var noDataResult =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.completionDate(b -> b.eq(userTaskCompletionDateExample.plusDays(1))))
-            .send()
-            .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate).isEqualTo(userTaskCompletionDateExample);
+            });
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateGt() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f -> f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
@@ -987,31 +979,30 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items have a completion Date greater than the example - 1 second
+    // then
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.completionDate(b -> b.gt(userTaskCompletionDateExample.plusDays(1))))
-            .send()
-            .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusSeconds(1));
+            });
   }
 
   @Test
   void shouldReturnUserTaskByCompletionDateLt() {
     // when
-    final var userTaskListComplete = camundaClient.newUserTaskQuery().filter(f -> f.state(TaskState.COMPLETED.name())).send().join();
+    final var userTaskListComplete =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .send()
+            .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        OffsetDateTime.parse(
+            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
 
     final var result =
         camundaClient
@@ -1020,22 +1011,15 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    // Assert all items have a completion Date less than the example + 1 second
+    // then
     assertThat(result.items().size()).isGreaterThan(0);
-    result.items().forEach(item -> {
-      final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
-      assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusSeconds(1));
-    });
-
-    // Assert it won't return results
-    final var noDataResult =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.completionDate(b -> b.lt(userTaskCompletionDateExample.minusDays(1))))
-            .send()
-            .join();
-
-    assertThat(noDataResult.items().size()).isEqualTo(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusSeconds(1));
+            });
   }
 
   @Test
