@@ -92,7 +92,7 @@ public final class IdentitySetupInitializeProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<IdentitySetupRecord> command) {
-    createDistributedEntities(command.getKey(), command.getValue());
+    createDistributedEntities(command.getValue());
     stateWriter.appendFollowUpEvent(
         command.getKey(), IdentitySetupIntent.INITIALIZED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
@@ -169,7 +169,7 @@ public final class IdentitySetupInitializeProcessor
     return createdNewEntities.get();
   }
 
-  private void createDistributedEntities(final long commandKey, final IdentitySetupRecord record) {
+  private void createDistributedEntities(final IdentitySetupRecord record) {
     final var role = record.getDefaultRole();
     if (roleState.getRole(role.getRoleKey()).isEmpty()) {
       createRole(role);
@@ -243,7 +243,7 @@ public final class IdentitySetupInitializeProcessor
           new AuthorizationRecord().setOwnerKey(roleKey).setOwnerType(AuthorizationOwnerType.ROLE);
       record.setResourceType(resourceType);
 
-      for (final PermissionType permissionType : PermissionType.values()) {
+      for (final PermissionType permissionType : resourceType.getSupportedPermissionTypes()) {
         final var permission =
             new Permission().setPermissionType(permissionType).addResourceId(WILDCARD_PERMISSION);
         record.addPermission(permission);
