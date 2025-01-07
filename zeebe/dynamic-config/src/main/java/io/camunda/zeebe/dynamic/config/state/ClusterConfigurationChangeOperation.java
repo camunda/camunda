@@ -53,6 +53,13 @@ public sealed interface ClusterConfigurationChangeOperation {
   record StartPartitionScaleUpOperation(MemberId memberId, int desiredPartitionCount)
       implements ClusterConfigurationChangeOperation {}
 
+  /**
+   * Operation to delete the history of the given member.
+   *
+   * @param memberId the member id of the member that will apply this operation
+   */
+  record DeleteHistoryOperation(MemberId memberId) implements ClusterConfigurationChangeOperation {}
+
   sealed interface PartitionChangeOperation extends ClusterConfigurationChangeOperation {
     int partitionId();
 
@@ -138,13 +145,5 @@ public sealed interface ClusterConfigurationChangeOperation {
         this(memberId, partitionId, priority, Optional.empty());
       }
     }
-
-    /**
-     * Operation to delete the history of the given member.
-     *
-     * @param memberId the member id of the member that will apply this operation
-     */
-    record DeleteHistoryOperation(MemberId memberId)
-        implements ClusterConfigurationChangeOperation {}
   }
 }

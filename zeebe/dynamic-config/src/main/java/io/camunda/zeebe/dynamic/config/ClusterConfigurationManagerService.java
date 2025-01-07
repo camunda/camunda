@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncIniti
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
+import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -55,13 +56,16 @@ public final class ClusterConfigurationManagerService
   private final ClusterConfigurationRequestServer configurationRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
+  private final ClusterChangeExecutor clusterChangeExecutor;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
-      final boolean enablePartitionScaling) {
+      final boolean enablePartitionScaling,
+      final ClusterChangeExecutor clusterChangeExecutor) {
+    this.clusterChangeExecutor = clusterChangeExecutor;
     this.memberShipService = memberShipService;
     try {
       FileUtil.ensureDirectoryExists(dataRootDirectory);
@@ -228,14 +232,15 @@ public final class ClusterConfigurationManagerService
     return managerActor.closeAsync().andThen(gossipActor::closeAsync, Runnable::run);
   }
 
-  public void registerChangeExecutors(
+  public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     clusterConfigurationManager.registerTopologyChangeAppliers(
         new ConfigurationChangeAppliersImpl(
             partitionChangeExecutor,
             new NoopClusterMembershipChangeExecutor(),
-            partitionScalingChangeExecutor));
+            partitionScalingChangeExecutor,
+            clusterChangeExecutor));
   }
 
   public void removePartitionChangeExecutor() {
