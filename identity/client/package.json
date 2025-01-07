@@ -52,5 +52,6 @@
     "typescript": "5.6.3",
     "vite": "6.0.6"
   },
-  "packageManager": "yarn@4.3.1"
+  "packageManager": "yarn@4.3.1",
+  "stableVersion": "8.7.0-SNAPSHOT"
 }

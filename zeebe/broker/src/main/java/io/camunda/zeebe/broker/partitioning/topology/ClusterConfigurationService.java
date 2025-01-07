@@ -18,7 +18,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
 
-  void registerChangeExecutors(
+  void registerPartitionChangeExecutors(
       PartitionChangeExecutor partitionChangeExecutor,
       PartitionScalingChangeExecutor partitionScalingChangeExecutor);
 
