@@ -13,6 +13,7 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
+import io.camunda.migration.identity.dto.UserGroups;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import io.camunda.migration.identity.dto.UserTenants;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ public class ManagementIdentityClient {
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
   private static final String MIGRATION_GROUPS_ENDPOINT =
       "/api/migration/group?" + URL_PARAMS + "&organizationId={1}";
+  private static final String MIGRATION_USER_GROUP_ENDPOINT =
+      "/api/migration/group/user?" + URL_PARAMS;
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -89,6 +92,14 @@ public class ManagementIdentityClient {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(MIGRATION_ROLES_ENDPOINT, Role[].class, pageSize)))
+        .toList();
+  }
+
+  public List<UserGroups> fetchUserGroups(final int pageSize) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_USER_GROUP_ENDPOINT, UserGroups[].class, pageSize)))
         .toList();
   }
 

@@ -5,13 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.midentity;
+package io.camunda.migration.identity.dto;
 
-public enum MigrationEntityType {
-  TENANT,
-  MAPPING_RULE,
-  TENANT_USER,
-  GROUP,
-  ROLE,
-  GROUP_USER
-}
+import java.util.List;
+
+public record UserGroups(String id, String username, List<Group> groups) {}
