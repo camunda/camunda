@@ -13,6 +13,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -32,7 +33,9 @@ public class ClusterChangeExecutorImplTest {
     }
 
     // when
-    final var executor = new ClusterChangeExecutorImpl(new TestConcurrencyControl(), repository);
+    final var executor =
+        new ClusterChangeExecutorImpl(
+            new TestConcurrencyControl(), repository, new SimpleMeterRegistry());
     executor.deleteHistory().join();
 
     // then

@@ -14,19 +14,23 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.camunda.zeebe.stream.api.StreamClock;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   private final ConcurrencyControl concurrencyControl;
   private final ExporterRepository exporterRepository;
+  private final MeterRegistry meterRegistry;
 
   public ClusterChangeExecutorImpl(
-      final ConcurrencyControl concurrencyControl, final ExporterRepository exporterRepository) {
+      final ConcurrencyControl concurrencyControl,
+      final ExporterRepository exporterRepository,
+      final MeterRegistry meterRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.exporterRepository = exporterRepository;
+    this.meterRegistry = meterRegistry;
   }
 
   @Override
@@ -51,8 +55,6 @@ public class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
     final Exporter exporter = descriptor.newInstance();
-    final var clock = new DefaultActorClock();
-    final var meterRegistry = new SimpleMeterRegistry();
 
     final var exporterContext =
         new ExporterContext(
@@ -60,7 +62,8 @@ public class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
             descriptor.getConfiguration(),
             1,
             meterRegistry,
-            clock);
+            StreamClock.system());
+
     try {
       exporter.configure(exporterContext);
       exporter.purge();
