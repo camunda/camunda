@@ -12,6 +12,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -45,12 +46,14 @@ public final class AuthorizationCheckBehavior {
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
   private final MappingState mappingState;
+  private final GroupState groupState;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
+    groupState = processingState.getGroupState();
     processingState.getTenantState();
     this.securityConfig = securityConfig;
   }
@@ -142,15 +145,38 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    return user.getTenantIdsList().contains(tenantId);
+    if (user.getTenantIdsList().contains(tenantId)) {
+      return true;
+    }
+
+    return areGroupsAuthorizedForTenant(user.getGroupKeysList(), tenantId);
   }
 
   private boolean isMappingAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedMapping mapping) {
-    if (request.tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
+    final var tenantId = request.tenantId;
+    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
       return true;
     }
-    return mapping.getTenantIdsList().contains(request.getTenantId());
+
+    if (mapping.getTenantIdsList().contains(request.getTenantId())) {
+      return true;
+    }
+
+    return areGroupsAuthorizedForTenant(mapping.getGroupKeysList(), tenantId);
+  }
+
+  private boolean areGroupsAuthorizedForTenant(final List<Long> groupKeys, final String tenantId) {
+    return getTenantIdsForGroups(groupKeys).contains(tenantId);
+  }
+
+  private Set<String> getTenantIdsForGroups(final List<Long> groupKeys) {
+    return groupKeys.stream()
+        .map(groupState::get)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .flatMap(group -> group.getTenantIdsList().stream())
+        .collect(Collectors.toSet());
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -266,7 +292,12 @@ public final class AuthorizationCheckBehavior {
     if (userKey.isPresent()) {
       return userState
           .getUser(userKey.get())
-          .map(PersistedUser::getTenantIdsList)
+          .map(
+              user -> {
+                final List<String> tenantIds = user.getTenantIdsList();
+                tenantIds.addAll(getTenantIdsForGroups(user.getGroupKeysList()));
+                return tenantIds;
+              })
           .filter(t -> !t.isEmpty())
           .<AuthorizedTenants>map(AuthenticatedAuthorizedTenants::new)
           .orElse(AuthorizedTenants.DEFAULT_TENANTS);
@@ -276,7 +307,12 @@ public final class AuthorizationCheckBehavior {
         extractUserTokenClaims(command)
             .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
             .<PersistedMapping>mapMulti(Optional::ifPresent)
-            .flatMap(mapping -> mapping.getTenantIdsList().stream())
+            .flatMap(
+                mapping -> {
+                  final var tenantIdsList = mapping.getTenantIdsList();
+                  tenantIdsList.addAll(getTenantIdsForGroups(mapping.getGroupKeysList()));
+                  return tenantIdsList.stream();
+                })
             .toList();
     return tenantsOfMapping.isEmpty()
         ? AuthorizedTenants.DEFAULT_TENANTS

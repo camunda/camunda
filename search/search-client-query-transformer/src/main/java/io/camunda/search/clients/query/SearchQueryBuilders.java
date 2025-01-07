@@ -431,20 +431,23 @@ public final class SearchQueryBuilders {
       final var queries = new ArrayList<SearchQuery>();
       SearchRangeQuery.Builder rangeQueryBuilder = null;
       for (final Operation<OffsetDateTime> op : operations) {
-        final var formatted = formatDate(op.value());
         switch (op.operator()) {
-          case EQUALS -> queries.add(term(field, formatted));
-          case NOT_EQUALS -> queries.add(mustNot(term(field, formatted)));
+          case EQUALS -> queries.add(term(field, formatDate(op.value())));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, formatDate(op.value()))));
           case EXISTS -> queries.add(exists(field));
           case NOT_EXISTS -> queries.add(mustNot(exists(field)));
           case GREATER_THAN ->
-              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(formatted));
+              rangeQueryBuilder =
+                  buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(formatDate(op.value())));
           case GREATER_THAN_EQUALS ->
-              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(formatted));
+              rangeQueryBuilder =
+                  buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(formatDate(op.value())));
           case LOWER_THAN ->
-              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(formatted));
+              rangeQueryBuilder =
+                  buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(formatDate(op.value())));
           case LOWER_THAN_EQUALS ->
-              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(formatted));
+              rangeQueryBuilder =
+                  buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(formatDate(op.value())));
           default -> throw unexpectedOperation("Date", op.operator());
         }
       }
