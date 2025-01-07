@@ -15,6 +15,31 @@ import {
   mockResponses,
 } from '../mocks/dashboard.mocks';
 
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: `window.clientConfig = ${JSON.stringify({
+        isEnterprise: false,
+        canLogout: true,
+        contextPath: '',
+        baseName: '',
+        organizationId: null,
+        clusterId: null,
+        mixpanelAPIHost: null,
+        mixpanelToken: null,
+        isLoginDelegated: false,
+        tasklistUrl: null,
+        resourcePermissionsEnabled: false,
+        multiTenancyEnabled: false,
+      })};`,
+    }),
+  );
+});
+
 test.describe('dashboard page', () => {
   for (const theme of ['light', 'dark']) {
     test(`empty page - ${theme}`, async ({page, commonPage, dashboardPage}) => {

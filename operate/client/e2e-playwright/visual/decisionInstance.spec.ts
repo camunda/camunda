@@ -23,6 +23,31 @@ import {
   mockResponses,
 } from '../mocks/decisionInstance.mocks';
 
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: `window.clientConfig = ${JSON.stringify({
+        isEnterprise: false,
+        canLogout: true,
+        contextPath: '',
+        baseName: '',
+        organizationId: null,
+        clusterId: null,
+        mixpanelAPIHost: null,
+        mixpanelToken: null,
+        isLoginDelegated: false,
+        tasklistUrl: null,
+        resourcePermissionsEnabled: false,
+        multiTenancyEnabled: false,
+      })};`,
+    }),
+  );
+});
+
 test.describe('decision instance page', () => {
   for (const theme of ['light', 'dark']) {
     //TODO: enable when https://github.com/camunda/operate/issues/3344 is implemented
