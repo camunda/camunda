@@ -1053,9 +1053,13 @@ public final class SearchQueryRequestMapper {
 
   private static void applySortOrder(
       final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
-    switch (order) {
-      case DESC -> builder.desc();
-      default -> builder.asc();
+    if (order == null) {
+      builder.asc();
+    } else {
+      switch (order) {
+        case DESC -> builder.desc();
+        default -> builder.asc();
+      }
     }
   }
 
