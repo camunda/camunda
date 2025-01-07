@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -18,8 +19,10 @@ import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -52,7 +55,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
-  private static final String INDEX_WILDCARD = "-.*-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
   private final int partitionId;
   private final ArchiverConfiguration config;
@@ -119,9 +122,10 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
 
   @Override
   public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
-    if (!retention.isEnabled()) {
+    if (!retention.isEnabled() || destinationIndexName.length == 0) {
       return CompletableFuture.completedFuture(null);
     }
+
     return CompletableFuture.allOf(
         Arrays.stream(destinationIndexName)
             .map(this::applyPolicyToIndex)
@@ -133,7 +137,9 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final String indexWildCard = "^" + indexPrefix + INDEX_WILDCARD;
+
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var indexWildCard = "^" + formattedPrefix + INDEX_WILDCARD;
 
     try {
       return fetchIndexMatchingIndexes(indexWildCard)
@@ -192,14 +198,16 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
 
   private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexWildCard)
       throws IOException {
+    final var pattern = Pattern.compile(indexWildCard);
     return client
         .cat()
         .indices()
         .thenApply(
-            response ->
-                response.valueBody().stream()
+            r ->
+                r.valueBody().stream()
                     .map(IndicesRecord::index)
-                    .filter(index -> index.matches(indexWildCard))
+                    .filter(Objects::nonNull)
+                    .filter(index -> pattern.matcher(index).matches())
                     .toList());
   }
 

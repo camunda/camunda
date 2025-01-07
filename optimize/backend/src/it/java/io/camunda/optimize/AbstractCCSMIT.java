@@ -103,8 +103,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
-  protected static boolean isZeebeVersionSnapshot() {
-    return IntegrationTestConfigurationUtil.getZeebeDockerVersion().equalsIgnoreCase("snapshot");
+  protected static boolean isZeebeVersionSnapshotOrLatest() {
+    final String dockerVersion = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
+    return dockerVersion.equalsIgnoreCase("snapshot") || dockerVersion.equalsIgnoreCase("latest");
   }
 
   protected static boolean isZeebeVersionWithMultiTenancy() {
