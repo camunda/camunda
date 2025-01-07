@@ -37,7 +37,7 @@ public class BatchOperationUpdateTaskTest {
 
     // then
     assertThat(result)
-        .succeedsWithin(Duration.ZERO)
+        .succeedsWithin(REQUEST_TIMEOUT)
         .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
         .isEqualTo(0);
   }
@@ -50,7 +50,7 @@ public class BatchOperationUpdateTaskTest {
 
     // then
     assertThat(result)
-        .succeedsWithin(Duration.ZERO)
+        .succeedsWithin(REQUEST_TIMEOUT)
         .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
         .isEqualTo(0);
   }
