@@ -48,7 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @AutoCloseResources
-abstract sealed class BatchOperationUpdateRepositoryIT {
+abstract class BatchOperationUpdateRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
@@ -80,8 +80,12 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
 
   protected abstract BatchOperationUpdateRepository createRepository();
 
-  protected abstract void indexBatchOperation(BatchOperationEntity batchOperationEntity)
-      throws PersistenceException;
+  protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
+      throws PersistenceException {
+    final var batchRequest = clientAdapter.createBatchRequest();
+    batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
+    batchRequest.executeWithRefresh();
+  }
 
   protected abstract BatchOperationEntity getBatchOperationEntity(final String id);
 
