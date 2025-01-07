@@ -36,7 +36,7 @@ import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl;
 import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
 import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -72,7 +72,7 @@ public class FlowNodeInstanceQueryImpl
         "/flownode-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        FlowNodeInstanceSearchQueryResponse.class,
+        FlowNodeInstanceSearchQueryResult.class,
         SearchResponseMapper::toFlowNodeInstanceSearchResponse,
         result);
     return result;

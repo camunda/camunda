@@ -24,7 +24,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateTenantResponseImpl;
 import io.camunda.client.protocol.rest.TenantCreateRequest;
-import io.camunda.client.protocol.rest.TenantCreateResponse;
+import io.camunda.client.protocol.rest.TenantCreateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -69,7 +69,7 @@ public final class CreateTenantCommandImpl implements CreateTenantCommandStep1 {
         "/tenants",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        TenantCreateResponse.class,
+        TenantCreateResult.class,
         response::setResponse,
         result);
     return result;

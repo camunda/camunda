@@ -24,7 +24,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateGroupResponseImpl;
 import io.camunda.client.protocol.rest.GroupCreateRequest;
-import io.camunda.client.protocol.rest.GroupCreateResponse;
+import io.camunda.client.protocol.rest.GroupCreateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -64,7 +64,7 @@ public class CreateGroupCommandImpl implements CreateGroupCommandStep1 {
         "/groups",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        GroupCreateResponse.class,
+        GroupCreateResult.class,
         response::setResponse,
         result);
     return result;

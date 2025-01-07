@@ -26,8 +26,8 @@ import io.camunda.client.impl.response.EvaluatedDecisionInputImpl;
 import io.camunda.client.impl.response.MatchedDecisionRuleImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResponse;
-import io.camunda.client.protocol.rest.DecisionInstanceItem;
+import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResult;
+import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import java.util.List;
 import java.util.Objects;
@@ -52,7 +52,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final List<EvaluatedDecisionInput> evaluatedInputs;
   private final List<MatchedDecisionRule> matchedRules;
 
-  public DecisionInstanceImpl(final DecisionInstanceItem item, final JsonMapper jsonMapper) {
+  public DecisionInstanceImpl(final DecisionInstanceResult item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
         Long.parseLong(item.getDecisionInstanceKey()),
@@ -73,7 +73,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   public DecisionInstanceImpl(
-      final DecisionInstanceGetQueryResponse item, final JsonMapper jsonMapper) {
+      final DecisionInstanceGetQueryResult item, final JsonMapper jsonMapper) {
     this(
         jsonMapper,
         Long.parseLong(item.getDecisionInstanceKey()),

@@ -16,7 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.UpdateTenantResponse;
-import io.camunda.client.protocol.rest.TenantUpdateResponse;
+import io.camunda.client.protocol.rest.TenantUpdateResult;
 
 public final class UpdateTenantResponseImpl implements UpdateTenantResponse {
   private long tenantKey;
@@ -38,7 +38,7 @@ public final class UpdateTenantResponseImpl implements UpdateTenantResponse {
     return name;
   }
 
-  public UpdateTenantResponseImpl setResponse(final TenantUpdateResponse response) {
+  public UpdateTenantResponseImpl setResponse(final TenantUpdateResult response) {
     tenantKey = Long.parseLong(response.getTenantKey());
     tenantId = response.getTenantId();
     name = response.getName();

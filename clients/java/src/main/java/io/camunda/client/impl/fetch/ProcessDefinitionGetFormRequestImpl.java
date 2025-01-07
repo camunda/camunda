@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.Form;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.FormImpl;
-import io.camunda.client.protocol.rest.FormItem;
+import io.camunda.client.protocol.rest.FormResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,7 +52,7 @@ public class ProcessDefinitionGetFormRequestImpl implements ProcessDefinitionGet
     httpClient.get(
         String.format("/process-definitions/%d/form", processDefinitionKey),
         httpRequestConfig.build(),
-        FormItem.class,
+        FormResult.class,
         FormImpl::new,
         result);
     return result;

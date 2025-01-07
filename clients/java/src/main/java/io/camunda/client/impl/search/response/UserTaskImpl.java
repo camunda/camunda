@@ -17,7 +17,7 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.UserTaskItem;
+import io.camunda.client.protocol.rest.UserTaskResult;
 import java.util.List;
 import java.util.Map;
 
@@ -45,7 +45,7 @@ public class UserTaskImpl implements UserTask {
   private final Map<String, String> customHeaders;
   private final Integer priority;
 
-  public UserTaskImpl(final UserTaskItem item) {
+  public UserTaskImpl(final UserTaskResult item) {
     userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
     name = item.getName();
     state = item.getState().getValue();

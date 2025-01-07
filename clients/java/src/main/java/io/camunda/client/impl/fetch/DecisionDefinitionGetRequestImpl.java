@@ -21,7 +21,7 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
-import io.camunda.client.protocol.rest.DecisionDefinitionItem;
+import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -51,7 +51,7 @@ public class DecisionDefinitionGetRequestImpl implements DecisionDefinitionGetRe
     httpClient.get(
         String.format("/decision-definitions/%d", decisionDefinitionKey),
         httpRequestConfig.build(),
-        DecisionDefinitionItem.class,
+        DecisionDefinitionResult.class,
         DecisionDefinitionImpl::new,
         result);
     return result;
