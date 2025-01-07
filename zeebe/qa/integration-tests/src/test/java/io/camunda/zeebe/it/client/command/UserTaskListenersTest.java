@@ -220,7 +220,7 @@ public class UserTaskListenersTest {
                     .hasErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
                     .extracting(
                         IncidentRecordValue::getErrorMessage, as(InstanceOfAssertFactories.STRING))
-                    .startsWith("io.camunda.client.api.command.ClientStatusException:")
+                    .startsWith("io.camunda.command.api.client.ClientStatusException:")
                     .contains("Command 'COMPLETE' rejected with code 'INVALID_ARGUMENT':")
                     .contains(rejectionReason));
 

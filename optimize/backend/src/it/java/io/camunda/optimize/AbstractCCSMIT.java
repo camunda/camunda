@@ -12,8 +12,6 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.response.Process;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
@@ -29,6 +27,8 @@ import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskI
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.test.it.extension.ZeebeExtension;
 import io.camunda.optimize.test.it.extension.db.TermsQueryContainer;
+import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.Intent;
