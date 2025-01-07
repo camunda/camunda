@@ -21,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.web.client.HttpStatusCodeException;
 
 @Configuration
 public class ManagementIdentityConnector {
@@ -87,15 +86,12 @@ public class ManagementIdentityConnector {
     public ClientHttpResponse intercept(
         final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution)
         throws IOException {
-      try {
-        return execution.execute(request, body);
-      } catch (final HttpStatusCodeException e) {
-        if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-          throw new NotImplementedException(
-              "Endpoint is not implemented", request.getURI().toString());
-        }
-        throw e;
+      final var result = execution.execute(request, body);
+      if (result.getStatusCode() == HttpStatus.NOT_FOUND) {
+        throw new NotImplementedException(
+            "Endpoint is not implemented", request.getURI().toString());
       }
+      return result;
     }
   }
 }

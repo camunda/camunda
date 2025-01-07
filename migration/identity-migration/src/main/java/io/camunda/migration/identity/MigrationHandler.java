@@ -32,12 +32,12 @@ public abstract class MigrationHandler<T> {
   public void migrate() {
     List<T> batch;
     try {
-      logger.debug("Migrating started.");
+      logger.info("Migrating started.");
       do {
         batch = fetchBatch();
         process(batch);
       } while (!batch.isEmpty());
-      logger.debug("Migrating finished.");
+      logger.info("Migrating finished.");
     } catch (final NotImplementedException e) {
       logger.error("Identity doesn't support migration with code: {}", e.getCode());
     }
