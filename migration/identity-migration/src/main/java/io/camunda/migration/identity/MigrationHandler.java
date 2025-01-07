@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class MigrationHandler<T> {
-  static int SIZE = 100;
+  static final int SIZE = 100;
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   protected boolean isConflictError(final Throwable e) {
