@@ -209,6 +209,7 @@ jobs:
       - name: Helm install
         run: >
           helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark
+          --version zeebe-benchmark-0.3.7 
           --namespace ${{ inputs.name }}
           --create-namespace
           --reuse-values
