@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class PermissionsBehavior {
 
@@ -117,5 +118,27 @@ public class PermissionsBehavior {
     }
 
     return Either.right(record);
+  }
+
+  public Either<Rejection, AuthorizationRecord> hasValidPermissionTypes(
+      final AuthorizationRecord record) {
+    final var resourceType = record.getResourceType();
+    final var permissionTypes =
+        record.getPermissions().stream()
+            .map(PermissionValue::getPermissionType)
+            .collect(Collectors.toList());
+
+    if (resourceType.getSupportedPermissionTypes().containsAll(permissionTypes)) {
+      return Either.right(record);
+    }
+
+    permissionTypes.removeAll(resourceType.getSupportedPermissionTypes());
+
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            "Expected to add permission types '%s' for resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"
+                .formatted(
+                    permissionTypes, resourceType, resourceType.getSupportedPermissionTypes())));
   }
 }
