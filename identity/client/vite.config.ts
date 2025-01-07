@@ -5,6 +5,7 @@ import path from "node:path";
 import sbom from "@vzeta/rollup-plugin-sbom";
 
 const outDir = "dist";
+const contextPath = process.env.CONTEXT_PATH ?? "";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -34,7 +35,7 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     proxy: {
-      "/v2": {
+      [contextPath + "/v2"]: {
         target: "http://localhost:8080",
         changeOrigin: true,
       },

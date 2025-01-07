@@ -57,9 +57,8 @@ jobs:
         run: |
           # Replace dots and slashes with dashes
           branch=${BRANCH/[\/\.]/-}
-          branch_git_sha=$(git rev-parse --short=8 HEAD)
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
-          echo "image-tag=$version-$branch-$branch_git_sha" >> $GITHUB_OUTPUT
+          echo "image-tag=$version-$branch" >> $GITHUB_OUTPUT
         env:
           BRANCH: ${{ inputs.branch }}
       - uses: ./.github/actions/build-zeebe

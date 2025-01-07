@@ -7,10 +7,13 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ResourceServices;
+import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -20,6 +23,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -28,6 +32,9 @@ import io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +48,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
 
   private final TenantService tenantService;
   private final ProcessInstanceServices processInstanceServices;
+  private final ResourceServices resourceServices;
   private final UserTaskServices userTaskServices;
   private final JobServices<?> jobServices;
   private final TasklistPermissionServices permissionServices;
@@ -48,11 +56,13 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
   public CamundaServicesBasedAdapter(
       final TenantService tenantService,
       final ProcessInstanceServices processInstanceServices,
+      final ResourceServices resourceServices,
       final UserTaskServices userTaskServices,
       final JobServices<?> jobServices,
       final TasklistPermissionServices permissionServices) {
     this.tenantService = tenantService;
     this.processInstanceServices = processInstanceServices;
+    this.resourceServices = resourceServices;
     this.userTaskServices = userTaskServices;
     this.jobServices = jobServices;
     this.permissionServices = permissionServices;
@@ -104,6 +114,28 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
       completeJobBasedUserTask(task, variables);
     } else {
       completeCamundaUserTask(task, variables);
+    }
+  }
+
+  @Override
+  public void deployResourceWithoutAuthentication(
+      final String classpathResource, final String tenantId) {
+    try (final InputStream resourceStream =
+        getClass().getClassLoader().getResourceAsStream(classpathResource)) {
+      if (resourceStream != null) {
+        final byte[] bytes = StreamUtil.readInputStream(resourceStream);
+        executeCamundaServiceAnonymously(
+            (authentication) ->
+                resourceServices
+                    .withAuthentication(authentication)
+                    .deployResources(toDeployResourcesRequest(classpathResource, bytes, tenantId)));
+      } else {
+        throw new FileNotFoundException(classpathResource);
+      }
+    } catch (final IOException e) {
+      final String exceptionMsg =
+          String.format("Cannot deploy resource from classpath. %s", e.getMessage());
+      throw new TasklistRuntimeException(exceptionMsg, e);
     }
   }
 
@@ -169,6 +201,20 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
     final var tenant = tenantValidationResult.get();
     return new ProcessInstanceCreateRequest(
         -1L, bpmnProcessId, -1, variables, tenant, null, null, null, List.of(), null);
+  }
+
+  private DeployResourcesRequest toDeployResourcesRequest(
+      final String classpathResource, final byte[] bytes, final String tenantId) {
+    final var tenantValidationResult =
+        MultiTenancyValidator.validateTenantId(
+            tenantId, tenantService.isMultiTenancyEnabled(), "Deploy Resources");
+
+    if (tenantValidationResult.isLeft()) {
+      throw new InvalidRequestException(tenantValidationResult.getLeft().getDetail());
+    }
+
+    final var tenant = tenantValidationResult.get();
+    return new DeployResourcesRequest(Map.of(classpathResource, bytes), tenant);
   }
 
   private <T> T executeCamundaServiceAuthenticated(

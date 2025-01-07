@@ -7,14 +7,17 @@
  */
 package io.camunda.application.commons.backup;
 
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@Conditional(WebappEnabledCondition.class)
 @ProfileWebApp
 public class DynamicIndicesConfiguration {
 

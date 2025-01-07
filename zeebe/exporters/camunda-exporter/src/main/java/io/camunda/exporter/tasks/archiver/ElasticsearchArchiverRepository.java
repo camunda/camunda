@@ -34,6 +34,7 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
@@ -50,7 +51,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final String ALL_INDICES = "*";
-  private static final String INDEX_WILDCARD = "-.*-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
@@ -134,7 +135,8 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final String indexWildcard = "^" + indexPrefix + INDEX_WILDCARD;
+    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
+    final var indexWildcard = "^" + formattedPrefix + INDEX_WILDCARD;
     return fetchMatchingIndexes(indexWildcard)
         .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
   }
@@ -201,21 +203,6 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
             executor);
   }
 
-  public CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
-      final List<String> destinationIndexNames) {
-    final var settingsRequest =
-        new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexNames)
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .build();
-
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
-  }
-
   @Override
   public void close() throws Exception {
     client._transport().close();
@@ -239,6 +226,25 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
 
     return createSearchRequest(
         processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
+  }
+
+  private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
+      final List<String> destinationIndexNames) {
+    if (destinationIndexNames.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    final var settingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(
+                settings ->
+                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
+            .index(destinationIndexNames)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {

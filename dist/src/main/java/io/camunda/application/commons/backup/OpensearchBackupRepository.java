@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.backup;
 
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
@@ -19,7 +20,7 @@ import org.springframework.context.annotation.Profile;
 /*
  * Note that the condition used refers to operate OpensearchCondition
  */
-@Conditional(OpensearchCondition.class)
+@Conditional({OpensearchCondition.class, WebappEnabledCondition.class})
 @Configuration
 @Profile("operate")
 public class OpensearchBackupRepository

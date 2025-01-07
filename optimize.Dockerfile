@@ -1,38 +1,37 @@
-# hadolint global ignore=DL3006
 ARG BASE_IMAGE="alpine:3.21.0"
 ARG BASE_DIGEST="sha256:21dc6063fd678b478f57c0e13f47560d0ea4eeba26dfc947b2a4f81f686b9f45"
 
-# Prepare Optimize Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
-ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
-WORKDIR /tmp/optimize
-
-# download optimize
-COPY ${DISTBALL} optimize.tar.gz
-RUN tar xzvf optimize.tar.gz --strip 1 && \
-    rm optimize.tar.gz
-COPY docker-notice.txt notice.txt
-RUN sed -i '/^exec /i cat /usr/local/optimize/notice.txt' bin/optimize
-
-### Base image ###
-# hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
+WORKDIR /
 
-# Install Tini
-RUN apk update && apk add --no-cache tini
+ARG VERSION=""
+ARG DISTRO=production
+ARG ARTIFACT_PATH=./optimize-distro/target
 
-### Application Image ###
-# TARGETARCH is provided by buildkit
-# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
-# hadolint ignore=DL3006
+ENV TMP_DIR=/tmp/optimize \
+    BUILD_DIR=/tmp/build
 
-FROM base AS app
-# leave unset to use the default value at the top of the file
-ARG BASE_IMAGE
-ARG BASE_DIGEST
+RUN mkdir -p ${TMP_DIR} && \
+    mkdir -p ${BUILD_DIR}
+
+COPY ${ARTIFACT_PATH}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz ${BUILD_DIR}
+RUN tar -xzf ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz -C ${BUILD_DIR} && \
+    rm ${BUILD_DIR}/camunda-optimize-${VERSION}-${DISTRO}.tar.gz
+COPY ./optimize/docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
+# Prevent environment-config.yaml from overriding service-config.yaml since the
+# service-config.yaml allows usage of OPTIMIZE_ environment variables
+RUN rm ${BUILD_DIR}/config/environment-config.yaml
+
+##### FINAL IMAGE #####
+FROM base as app
+
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
+
+# leave the values below unset to use the default value at the top of the file
+ARG BASE_IMAGE
+ARG BASE_DIGEST
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
@@ -64,26 +63,21 @@ ENV CONTAINER_HOST=0.0.0.0
 
 EXPOSE 8090 8091
 
-RUN apk update && apk upgrade && \
-    apk add --no-cache bash openjdk21-jre tzdata
-
-ENV OPTIMIZE_HOME=/usr/local/optimize
-
-WORKDIR ${OPTIMIZE_HOME}
 VOLUME /tmp
-VOLUME ${OPTIMIZE_HOME}/logs
 
-RUN addgroup --gid 1001 camunda && \
-    adduser -D -h ${OPTIMIZE_HOME} -G camunda -u 1001 camunda && \
+RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
+    apk -U upgrade && \
     curl "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" --output /usr/local/bin/wait-for-it.sh && \
-    # These directories are to be mounted by users, eagerly creating them and setting ownership
-    # helps to avoid potential permission issues due to default volume ownership.
-    mkdir ${OPTIMIZE_HOME}/logs && \
-    chown -R 1001:0 ${OPTIMIZE_HOME} && \
-    chmod -R 0775 ${OPTIMIZE_HOME}
+    chmod +x /usr/local/bin/wait-for-it.sh && \
+    addgroup -S -g 1001 camunda && \
+    adduser -S -g 1001 -u 1001 camunda && \
+    mkdir -p /optimize && \
+    chown 1001:1001 /optimize
 
-COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/optimize ${OPTIMIZE_HOME}
-
+WORKDIR /optimize
 USER 1001:1001
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/local/optimize/bin/optimize"]
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["./optimize.sh"]
+
+COPY --chown=1001:1001 --from=base /tmp/build .
