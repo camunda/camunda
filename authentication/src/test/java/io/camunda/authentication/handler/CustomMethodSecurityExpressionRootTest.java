@@ -10,9 +10,10 @@ package io.camunda.authentication.handler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.Instant;
@@ -137,11 +138,11 @@ public class CustomMethodSecurityExpressionRootTest {
   private static Authentication jwtAuthentication() {
     final Jwt jwt =
         new Jwt(
-            Authorization.jwtEncoder()
+            JWT.create()
                 .withIssuer("issuer1")
                 .withAudience("aud")
                 .withSubject("sub")
-                .build(),
+                .sign(Algorithm.none()),
             Instant.ofEpochSecond(10),
             Instant.ofEpochSecond(100),
             Map.of("alg", "RSA256"),

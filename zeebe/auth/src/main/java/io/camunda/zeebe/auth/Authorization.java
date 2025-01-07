@@ -7,21 +7,10 @@
  */
 package io.camunda.zeebe.auth;
 
-import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
-import io.camunda.zeebe.auth.impl.JwtAuthorizationEncoder;
-
 public class Authorization {
 
   public static final String AUTHORIZED_ANONYMOUS_USER = "authorized_anonymous_user";
   public static final String AUTHORIZED_TENANTS = "authorized_tenants";
   public static final String AUTHORIZED_USER_KEY = "authorized_user_key";
   public static final String USER_TOKEN_CLAIM_PREFIX = "user_token_";
-
-  public static JwtAuthorizationEncoder jwtEncoder() {
-    return new JwtAuthorizationEncoder();
-  }
-
-  public static JwtAuthorizationDecoder jwtDecoder(final String jwtToken) {
-    return new JwtAuthorizationDecoder(jwtToken);
-  }
 }

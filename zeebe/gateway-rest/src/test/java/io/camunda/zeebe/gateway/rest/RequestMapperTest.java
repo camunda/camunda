@@ -11,6 +11,8 @@ import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.zeebe.auth.Authorization;
 import java.time.Instant;
@@ -77,11 +79,11 @@ class RequestMapperTest {
   private void setJwtAuthenticationInContext(final String sub, final String aud) {
     final Jwt jwt =
         new Jwt(
-            Authorization.jwtEncoder()
+            JWT.create()
                 .withIssuer("issuer1")
                 .withAudience(aud)
                 .withSubject(sub)
-                .build(),
+                .sign(Algorithm.none()),
             Instant.ofEpochSecond(10),
             Instant.ofEpochSecond(100),
             Map.of("alg", "RSA256"),
