@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,19 @@ final class AuthorizationMigrationHandlerTest {
     migrationHandler =
         new AuthorizationMigrationHandler(
             Authentication.none(), authorizationServices, managementIdentityClient);
+  }
+
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
+        .thenThrow(new NotImplementedException());
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(managementIdentityClient).fetchUserResourceAuthorizations(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
   }
 
   @Test

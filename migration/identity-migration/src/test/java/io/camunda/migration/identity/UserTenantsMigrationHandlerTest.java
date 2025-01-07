@@ -15,6 +15,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,6 +73,19 @@ final class UserTenantsMigrationHandlerTest {
             new ManagementIdentityTransformer(),
             tenantServices,
             mappingServices);
+  }
+
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchUserTenants(anyInt()))
+        .thenThrow(new NotImplementedException());
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(managementIdentityClient).fetchUserTenants(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
   }
 
   @Test

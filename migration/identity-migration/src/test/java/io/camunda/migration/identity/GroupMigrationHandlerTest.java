@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.Group;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -52,6 +54,18 @@ public class GroupMigrationHandlerTest {
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             groupService);
+  }
+
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchGroups(anyInt())).thenThrow(new NotImplementedException());
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(managementIdentityClient).fetchGroups(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
   }
 
   @Test
