@@ -563,7 +563,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
             <dependency>com.unboundid:unboundid-ldapsdk</dependency>
-            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

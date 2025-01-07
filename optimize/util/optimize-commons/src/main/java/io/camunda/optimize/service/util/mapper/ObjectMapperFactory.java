@@ -34,7 +34,6 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class ObjectMapperFactory {
-
   private static final ObjectMapperFactory FACTORY =
       new ObjectMapperFactory(
           new OptimizeDateTimeFormatterFactory().getObject(),

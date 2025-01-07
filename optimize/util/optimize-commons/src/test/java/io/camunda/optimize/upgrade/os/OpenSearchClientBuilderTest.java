@@ -7,8 +7,10 @@
  */
 package io.camunda.optimize.upgrade.os;
 
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.direct.DirectCallHttpServerFactory;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.db.DatabaseConnection;
@@ -29,9 +31,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.mockserver.integration.ClientAndServer;
-import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
 
 // TODO: when Zeebe parent becomes also a parent for Optimize,
@@ -39,20 +38,22 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
 // commit https://github.com/camunda/camunda/commit/d9bc7a5b380b80c69a7e86f4f295686fc697c85d
 class OpenSearchClientBuilderTest {
 
-  private static final String BASE_URL = "http://localhost:8090/";
-  private static ClientAndServer mockServer;
+  private static WireMockServer wireMockServer;
 
   @BeforeAll
   static void before() {
-    mockServer = startClientAndServer(8090);
-    mockServer
-        .when(HttpRequest.request().withMethod("GET").withPath("/"))
-        .respond(HttpResponse.response().withStatusCode(200).withBody("mocked response"));
+    final DirectCallHttpServerFactory factory = new DirectCallHttpServerFactory();
+    wireMockServer =
+        new WireMockServer(
+            WireMockConfiguration.wireMockConfig().dynamicPort().httpServerFactory(factory));
+    wireMockServer.start();
+    wireMockServer.stubFor(WireMock.get("/").willReturn(WireMock.status(200)));
   }
 
   @AfterAll
   static void after() {
-    mockServer.stop();
+    wireMockServer.stop();
+    wireMockServer.shutdown();
   }
 
   @Test
@@ -79,7 +80,10 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+        client.execute(
+            SimpleHttpRequest.create("GET", wireMockServer.baseUrl()),
+            context,
+            NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -118,7 +122,10 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+        client.execute(
+            SimpleHttpRequest.create("GET", wireMockServer.baseUrl()),
+            context,
+            NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -155,7 +162,10 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+        client.execute(
+            SimpleHttpRequest.create("GET", wireMockServer.baseUrl()),
+            context,
+            NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -196,7 +206,10 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+        client.execute(
+            SimpleHttpRequest.create("GET", wireMockServer.baseUrl()),
+            context,
+            NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);

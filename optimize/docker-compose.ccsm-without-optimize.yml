@@ -121,6 +121,7 @@ services:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
     ports:
       - "26500:26500"
+      - "9600:9600"
     restart: always
     volumes:
       - ../optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
