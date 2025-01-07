@@ -58,7 +58,8 @@ import org.slf4j.LoggerFactory;
  * Auth server
  */
 @ThreadSafe
-public final class OAuthCredentialsProvider implements CredentialsProvider {
+public final class OAuthCredentialsProvider
+    implements CredentialsProvider, io.camunda.zeebe.client.CredentialsProvider {
   private static final String HEADER_AUTH_KEY = "Authorization";
 
   private static final ObjectMapper JSON_MAPPER =
@@ -94,7 +95,8 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
-  public void applyCredentials(final CredentialsApplier applier) throws IOException {
+  public void applyCredentials(final CredentialsProvider.CredentialsApplier applier)
+      throws IOException {
     final CamundaClientCredentials camundaClientCredentials =
         credentialsCache.computeIfMissingOrInvalid(clientId, this::fetchCredentials);
 
@@ -114,7 +116,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
    * access token could be fetched; otherwise returns false.
    */
   @Override
-  public boolean shouldRetryRequest(final StatusCode statusCode) {
+  public boolean shouldRetryRequest(final CredentialsProvider.StatusCode statusCode) {
     try {
       return statusCode.isUnauthorized()
           && credentialsCache
@@ -130,6 +132,19 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       LOG.error("Failed while fetching credentials: ", e);
       return false;
     }
+  }
+
+  @Override
+  public void applyCredentials(
+      final io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier applier)
+      throws IOException {
+    applyCredentials((CredentialsProvider.CredentialsApplier) applier);
+  }
+
+  @Override
+  public boolean shouldRetryRequest(
+      final io.camunda.zeebe.client.CredentialsProvider.StatusCode statusCode) {
+    return shouldRetryRequest((CredentialsProvider.StatusCode) statusCode);
   }
 
   private static String createParams(final OAuthCredentialsProviderBuilder builder) {

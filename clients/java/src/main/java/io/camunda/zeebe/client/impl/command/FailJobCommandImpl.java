@@ -15,18 +15,18 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.FailJobResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.FailJobResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -125,7 +125,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   private ZeebeFuture<FailJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<FailJobResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<FailJobResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/failure",
         objectMapper.toJson(httpRequestObject),

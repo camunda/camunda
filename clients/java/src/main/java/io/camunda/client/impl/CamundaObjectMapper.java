@@ -26,7 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-public final class CamundaObjectMapper implements JsonMapper {
+public final class CamundaObjectMapper
+    implements JsonMapper, io.camunda.zeebe.client.api.JsonMapper {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, Object>>() {};

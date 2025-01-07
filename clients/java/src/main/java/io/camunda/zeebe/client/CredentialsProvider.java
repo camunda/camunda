@@ -15,13 +15,12 @@
  */
 package io.camunda.zeebe.client;
 
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.grpc.Metadata;
+import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import java.io.IOException;
 
 /** Implementations of this interface must be thread-safe. */
-public interface CredentialsProvider {
+public interface CredentialsProvider extends io.camunda.client.CredentialsProvider {
 
   /**
    * Adds credentials to the headers. For an example of this, see {@link
@@ -52,37 +51,10 @@ public interface CredentialsProvider {
    * Used to apply call credentials on a per-request basis, abstracting over gRPC and REST. This
    * interface is only meant to be consumed, not implemented externally.
    */
-  interface CredentialsApplier {
-
-    /**
-     * Puts the given header key and value into the request headers (e.g. HTTP headers or gRPC
-     * metadata).
-     *
-     * @param key the header key
-     * @param value the header value
-     */
-    void put(final String key, final String value);
-
-    /**
-     * Helper method to build a credentials applier out of gRPC metadata.
-     *
-     * @param metadata the gRPC metadata on which to apply
-     */
-    static CredentialsApplier ofMetadata(final Metadata metadata) {
-      return (key, value) ->
-          metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
-    }
-  }
+  interface CredentialsApplier extends io.camunda.client.CredentialsProvider.CredentialsApplier {}
 
   /**
    * Represents the result of a failed call, abstracting over gRPC and standard HTTP status codes.
    */
-  interface StatusCode {
-
-    /** Returns the raw status code, e.g. HTTP 401 Unauthorized, or gRPC 16 Unauthenticated. */
-    int code();
-
-    /** Returns true if the request was failed because the user cannot be authenticated. */
-    boolean isUnauthorized();
-  }
+  interface StatusCode extends io.camunda.client.CredentialsProvider.StatusCode {}
 }

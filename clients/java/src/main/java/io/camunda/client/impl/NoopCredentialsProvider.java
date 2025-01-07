@@ -17,15 +17,28 @@ package io.camunda.client.impl;
 
 import io.camunda.client.CredentialsProvider;
 
-public final class NoopCredentialsProvider implements CredentialsProvider {
+public final class NoopCredentialsProvider
+    implements CredentialsProvider, io.camunda.zeebe.client.CredentialsProvider {
 
   @Override
-  public void applyCredentials(final CredentialsApplier ignored) {
+  public void applyCredentials(final CredentialsProvider.CredentialsApplier ignored) {
     // Noop
   }
 
   @Override
-  public boolean shouldRetryRequest(final StatusCode statusCode) {
+  public boolean shouldRetryRequest(final CredentialsProvider.StatusCode statusCode) {
+    return false;
+  }
+
+  @Override
+  public void applyCredentials(
+      final io.camunda.zeebe.client.CredentialsProvider.CredentialsApplier applier) {
+    // Noop
+  }
+
+  @Override
+  public boolean shouldRetryRequest(
+      final io.camunda.zeebe.client.CredentialsProvider.StatusCode statusCode) {
     return false;
   }
 }

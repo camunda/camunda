@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.client.impl.Loggers;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
-import io.camunda.zeebe.client.impl.Loggers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.slf4j.Logger;

@@ -15,17 +15,17 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CompleteJobResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CompleteJobResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -101,7 +101,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private ZeebeFuture<CompleteJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<CompleteJobResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CompleteJobResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/completion",
         jsonMapper.toJson(httpRequestObject),
@@ -115,7 +115,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
     final RetriableClientFutureImpl<CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>
         future =
-            new RetriableClientFutureImpl<>(
+            new RetriableClientFutureImpl<
+                CompleteJobResponse, GatewayOuterClass.CompleteJobResponse>(
                 CompleteJobResponseImpl::new,
                 retryPredicate,
                 streamObserver -> sendGrpcRequest(request, streamObserver));

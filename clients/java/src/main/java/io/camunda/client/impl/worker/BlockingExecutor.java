@@ -21,7 +21,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-final class BlockingExecutor implements Executor {
+public final class BlockingExecutor implements Executor {
   private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
 
   private final Executor wrappedExecutor;

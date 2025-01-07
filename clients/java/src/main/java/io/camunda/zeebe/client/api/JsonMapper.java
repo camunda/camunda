@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.api;
 
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.zeebe.client.api.command.InternalClientException;
-import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import java.io.InputStream;
 import java.util.Map;
 
 /**
  * This interface is using to customize the way how objects will be serialized and deserialized in
- * JSON format. The default implementation is {@link ZeebeObjectMapper}. This interface could be
+ * JSON format. The default implementation is {@link CamundaObjectMapper}. This interface could be
  * implemented to customize the way how variables in the commands serialized/deserialized. For
  * example: there is such map with variables:
  *
@@ -50,9 +50,9 @@ import java.util.Map;
  *
  * Null values won't pass in the JSON with variables: {@code { "a": "b" } }
  *
- * @see ZeebeObjectMapper
+ * @see CamundaObjectMapper
  */
-public interface JsonMapper {
+public interface JsonMapper extends io.camunda.client.api.JsonMapper {
 
   /**
    * Deserializes a JSON string into an equivalent POJO of type {@code T}.
@@ -63,6 +63,7 @@ public interface JsonMapper {
    * @return the POJO deserialized from the given JSON string
    * @throws InternalClientException on serialization/deserialization error
    */
+  @Override
   <T> T fromJson(final String json, final Class<T> typeClass);
 
   /**
@@ -72,6 +73,7 @@ public interface JsonMapper {
    * @return the map deserialized from the given JSON string
    * @throws InternalClientException on serialization/deserialization error
    */
+  @Override
   Map<String, Object> fromJsonAsMap(final String json);
 
   /**
@@ -81,6 +83,7 @@ public interface JsonMapper {
    * @return the map deserialized from the given JSON string
    * @throws InternalClientException on serialization/deserialization error
    */
+  @Override
   Map<String, String> fromJsonAsStringMap(final String json);
 
   /**
@@ -90,6 +93,7 @@ public interface JsonMapper {
    * @return a JSON string serialized from the given object
    * @throws InternalClientException on serialization/deserialization error
    */
+  @Override
   String toJson(final Object value);
 
   /**
@@ -100,6 +104,7 @@ public interface JsonMapper {
    * @return the same JSON string, that passed in
    * @throws InternalClientException on serialization/deserialization error
    */
+  @Override
   String validateJson(final String propertyName, final String jsonInput);
 
   /**
@@ -111,5 +116,6 @@ public interface JsonMapper {
    * @return the JSON string from the stream
    * @throws InternalClientException on serialization/deserialization error
    */
+  @Override
   String validateJson(final String propertyName, final InputStream jsonInput);
 }

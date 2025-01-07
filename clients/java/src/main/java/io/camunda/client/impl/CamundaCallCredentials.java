@@ -30,7 +30,7 @@ public final class CamundaCallCredentials extends io.grpc.CallCredentials {
 
   private final CredentialsProvider credentialsProvider;
 
-  CamundaCallCredentials(final CredentialsProvider credentialsProvider) {
+  public CamundaCallCredentials(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
   }
 

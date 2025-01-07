@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ResetClockResponse;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -43,7 +43,7 @@ public class ClockResetCommandImpl implements ClockResetCommandStep1 {
 
   @Override
   public ZeebeFuture<ResetClockResponse> send() {
-    final HttpZeebeFuture<ResetClockResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<ResetClockResponse> result = new HttpCamundaFuture<>();
     httpClient.post("/clock/reset", "", httpRequestConfig.build(), result);
     return result;
   }

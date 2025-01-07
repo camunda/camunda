@@ -15,16 +15,16 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DeleteResourceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -43,7 +43,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.DeleteResourceRequest httpRequestObject;
+  private final io.camunda.client.protocol.rest.DeleteResourceRequest httpRequestObject;
   private boolean useRest;
   private final long resourceKey;
   private final JsonMapper jsonMapper;
@@ -61,7 +61,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
     requestTimeout = config.getDefaultRequestTimeout();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.DeleteResourceRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.DeleteResourceRequest();
     useRest = config.preferRestOverGrpc();
     this.resourceKey = resourceKey;
     this.jsonMapper = jsonMapper;
@@ -85,7 +85,7 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
   }
 
   private ZeebeFuture<DeleteResourceResponse> sendRestRequest() {
-    final HttpZeebeFuture<DeleteResourceResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<DeleteResourceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/resources/" + resourceKey + "/deletion",
         jsonMapper.toJson(httpRequestObject),

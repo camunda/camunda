@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
+import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static io.camunda.zeebe.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.zeebe.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_POLL_INTERVAL;
@@ -37,18 +39,18 @@ import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
-import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 
+import io.camunda.client.impl.BuilderUtils;
+import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.util.DataSizeUtil;
+import io.camunda.client.impl.util.Environment;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.client.impl.util.DataSizeUtil;
-import io.camunda.zeebe.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -106,7 +108,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = Duration.ofSeconds(45);
-  private JsonMapper jsonMapper = new ZeebeObjectMapper();
+  private JsonMapper jsonMapper = new CamundaObjectMapper();
   private String overrideAuthority;
   private int maxMessageSize = 4 * ONE_MB;
   private int maxMetadataSize = 16 * ONE_KB;
@@ -207,11 +209,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
-  public JsonMapper getJsonMapper() {
-    return jsonMapper;
-  }
-
-  @Override
   public String getOverrideAuthority() {
     return overrideAuthority;
   }
@@ -249,6 +246,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public boolean preferRestOverGrpc() {
     return preferRestOverGrpc;
+  }
+
+  @Override
+  public JsonMapper getJsonMapper() {
+    return jsonMapper;
   }
 
   @Override

@@ -15,7 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.protocol.rest.SignalBroadcastRequest;
+import io.camunda.client.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -23,12 +28,7 @@ import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.BroadcastSignalResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.BroadcastSignalResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.SignalBroadcastRequest;
-import io.camunda.zeebe.client.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
@@ -116,7 +116,7 @@ public final class BroadcastSignalCommandImpl
   }
 
   private ZeebeFuture<BroadcastSignalResponse> sendRestRequest() {
-    final HttpZeebeFuture<BroadcastSignalResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<BroadcastSignalResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/signals/broadcast",
         objectMapper.toJson(httpRequestObject),

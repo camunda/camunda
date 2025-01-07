@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.client.impl.worker.ExponentialBackoff;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.ExponentialBackoffBuilder;
 import java.util.Random;

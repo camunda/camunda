@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.client.impl.Loggers;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerMetrics;
-import io.camunda.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Optional;

@@ -19,6 +19,7 @@ import com.google.protobuf.GeneratedMessage;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ClientCallStreamObserver;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
     implements CamundaFuture<ClientResponse>,
+        ZeebeFuture<ClientResponse>,
         ClientResponseObserver<GeneratedMessage, BrokerResponse> {
 
   protected ClientCallStreamObserver<GeneratedMessage> clientCall;

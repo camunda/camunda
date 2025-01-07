@@ -20,6 +20,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensurePositive;
 
+import io.camunda.client.impl.worker.BlockingExecutor;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;

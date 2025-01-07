@@ -21,18 +21,18 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class BuilderUtils {
+public final class BuilderUtils {
 
   private static final Logger LOG = LoggerFactory.getLogger(BuilderUtils.class);
 
   private BuilderUtils() {}
 
-  static void appendProperty(
+  public static void appendProperty(
       final StringBuilder sb, final String propertyName, final Object value) {
     sb.append(propertyName).append(": ").append(value).append("\n");
   }
 
-  static void applyIfNotNull(
+  public static void applyIfNotNull(
       final Properties properties, final String propertyName, final Consumer<String> action) {
     final String value = getProperty(properties, propertyName);
     if (value != null) {
@@ -47,7 +47,7 @@ final class BuilderUtils {
     return null;
   }
 
-  static void applyIfNotNull(final String envName, final Consumer<String> action) {
+  public static void applyIfNotNull(final String envName, final Consumer<String> action) {
     final String value = getProperty(Environment.system(), envName);
     if (value != null) {
       action.accept(value);

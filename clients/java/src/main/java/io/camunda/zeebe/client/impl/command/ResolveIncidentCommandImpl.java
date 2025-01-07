@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ResolveIncidentResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -79,7 +79,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   }
 
   private ZeebeFuture<ResolveIncidentResponse> sendRestRequest() {
-    final HttpZeebeFuture<ResolveIncidentResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<ResolveIncidentResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/incidents/" + incidentKey + "/resolution", "", httpRequestConfig.build(), result);
     return result;

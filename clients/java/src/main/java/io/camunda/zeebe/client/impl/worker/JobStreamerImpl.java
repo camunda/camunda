@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.client.impl.Loggers;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
@@ -22,7 +23,6 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobClient;
-import io.camunda.zeebe.client.impl.Loggers;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;

@@ -15,19 +15,19 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.impl.Loggers;
+import io.camunda.client.protocol.rest.DeploymentDecision;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.client.protocol.rest.DeploymentForm;
+import io.camunda.client.protocol.rest.DeploymentMetadata;
+import io.camunda.client.protocol.rest.DeploymentProcess;
+import io.camunda.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.client.impl.Loggers;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
-import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
-import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -84,7 +84,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   public DeploymentEventImpl(final DeploymentResponse response) {
-    key = response.getDeploymentKey();
+    key = Long.valueOf(response.getDeploymentKey());
     tenantId = response.getTenantId();
 
     for (final DeploymentMetadata deployment : response.getDeployments()) {
@@ -103,7 +103,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                     new FormImpl(
                         f.getFormId(),
                         f.getVersion(),
-                        f.getFormKey(),
+                        Long.valueOf(f.getFormKey()),
                         f.getResourceName(),
                         f.getTenantId())));
   }
@@ -116,9 +116,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                 decisionRequirements.add(
                     new DecisionRequirementsImpl(
                         dr.getDecisionRequirementsId(),
-                        dr.getDecisionRequirementsName(),
+                        dr.getName(),
                         dr.getVersion(),
-                        dr.getDecisionRequirementsKey(),
+                        Long.valueOf(dr.getDecisionRequirementsKey()),
                         dr.getResourceName(),
                         dr.getTenantId())));
   }
@@ -132,9 +132,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         d.getDecisionDefinitionId(),
                         d.getName(),
                         d.getVersion(),
-                        d.getDecisionDefinitionKey(),
+                        Long.parseLong(d.getDecisionDefinitionKey()),
                         d.getDecisionRequirementsId(),
-                        d.getDecisionRequirementsKey(),
+                        Long.parseLong(d.getDecisionRequirementsKey()),
                         d.getTenantId())));
   }
 
@@ -144,7 +144,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
             p ->
                 processes.add(
                     new ProcessImpl(
-                        p.getProcessDefinitionKey(),
+                        Long.parseLong(p.getProcessDefinitionKey()),
                         p.getProcessDefinitionId(),
                         p.getProcessDefinitionVersion(),
                         p.getResourceName(),

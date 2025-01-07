@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.worker;
 
-import io.camunda.zeebe.client.impl.worker.ExponentialBackoff;
+import io.camunda.client.impl.worker.ExponentialBackoff;
 import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import java.time.Duration;
 

@@ -15,19 +15,19 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.protocol.rest.JobChangeset;
+import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1.UpdateTimeoutJobCommandStep2;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.UpdateTimeoutJobResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobChangeset;
-import io.camunda.zeebe.client.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest.Builder;
@@ -102,7 +102,7 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   private ZeebeFuture<UpdateTimeoutJobResponse> sendRestRequest() {
-    final HttpZeebeFuture<UpdateTimeoutJobResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<UpdateTimeoutJobResponse> result = new HttpCamundaFuture<>();
     httpClient.patch(
         "/jobs/" + jobKey, jsonMapper.toJson(httpRequestObject), httpRequestConfig.build(), result);
     return result;

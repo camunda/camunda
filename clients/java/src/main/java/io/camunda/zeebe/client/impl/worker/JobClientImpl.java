@@ -15,7 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -30,7 +31,6 @@ import io.camunda.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.FailJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.util.function.Predicate;
 

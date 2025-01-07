@@ -15,16 +15,16 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest.Builder;
@@ -116,7 +116,7 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   private ZeebeFuture<Void> sendRestRequest() {
-    final HttpZeebeFuture<Void> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/jobs/" + jobKey + "/error",
         objectMapper.toJson(httpRequestObject),

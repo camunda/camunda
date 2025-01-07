@@ -18,7 +18,8 @@ package io.camunda.client.impl;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.grpc.Status.Code;
 
-public final class GrpcStatusCode implements StatusCode {
+public final class GrpcStatusCode
+    implements StatusCode, io.camunda.zeebe.client.CredentialsProvider.StatusCode {
 
   private final Code code;
 

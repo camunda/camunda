@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.client.impl.Loggers;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
-import io.camunda.zeebe.client.impl.Loggers;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.time.Duration;

@@ -15,16 +15,16 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CancelProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -46,8 +46,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   private final long processInstanceKey;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest
-      httpRequestObject;
+  private final io.camunda.client.protocol.rest.CancelProcessInstanceRequest httpRequestObject;
   private final HttpClient httpClient;
 
   public CancelProcessInstanceCommandImpl(
@@ -66,7 +65,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
     this.processInstanceKey = processInstanceKey;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CancelProcessInstanceRequest();
+    httpRequestObject = new io.camunda.client.protocol.rest.CancelProcessInstanceRequest();
     this.httpClient = httpClient;
     requestTimeout(requestTimeout);
   }
@@ -89,7 +88,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   }
 
   private ZeebeFuture<CancelProcessInstanceResponse> sendRestRequest() {
-    final HttpZeebeFuture<CancelProcessInstanceResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<CancelProcessInstanceResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/" + processInstanceKey + "/cancellation",
         jsonMapper.toJson(httpRequestObject),

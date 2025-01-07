@@ -28,7 +28,8 @@ import java.util.Random;
  * <pre> max(min(maxDelay, currentDelay * backoffFactor), minDelay) + (rand(0.0, 1.0) *
  * (currentDelay * jitterFactor) + (currentDelay * -jitterFactor)) </pre>
  */
-public final class ExponentialBackoff implements BackoffSupplier {
+public final class ExponentialBackoff
+    implements BackoffSupplier, io.camunda.zeebe.client.api.worker.BackoffSupplier {
 
   private final long maxDelay;
   private final long minDelay;

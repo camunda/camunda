@@ -15,7 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsComm
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
-import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.impl.response.StreamJobsResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;

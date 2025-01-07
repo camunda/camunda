@@ -15,7 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableStreamingFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.protocol.rest.JobActivationRequest;
+import io.camunda.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -24,12 +29,7 @@ import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobs
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ActivateJobsResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -166,7 +166,7 @@ public final class ActivateJobsCommandImpl
   }
 
   private ZeebeFuture<ActivateJobsResponse> sendRestRequest() {
-    final HttpZeebeFuture<ActivateJobsResponse> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<ActivateJobsResponse> result = new HttpCamundaFuture<>();
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
     httpClient.post(
         "/jobs/activation",

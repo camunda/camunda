@@ -15,7 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
+import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -25,9 +28,6 @@ import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.Cre
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
-import io.camunda.zeebe.client.impl.http.HttpClient;
-import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -55,8 +55,8 @@ public final class CreateProcessInstanceCommandImpl
   private boolean useRest;
   private HttpClient httpClient;
   private RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
-      httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest();
+  private final io.camunda.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject =
+      new io.camunda.client.protocol.rest.CreateProcessInstanceRequest();
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -124,7 +124,7 @@ public final class CreateProcessInstanceCommandImpl
     grpcRequestObjectBuilder.addStartInstructions(
         ProcessInstanceCreationStartInstruction.newBuilder().setElementId(elementId).build());
     httpRequestObject.addStartInstructionsItem(
-        new io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationStartInstruction()
+        new io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction()
             .elementId(elementId));
     return this;
   }
@@ -185,12 +185,12 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   private ZeebeFuture<ProcessInstanceEvent> sendRestRequest() {
-    final HttpZeebeFuture<ProcessInstanceEvent> result = new HttpZeebeFuture<>();
+    final HttpCamundaFuture<ProcessInstanceEvent> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse.class,
+        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
         CreateProcessInstanceResponseImpl::new,
         result);
     return result;

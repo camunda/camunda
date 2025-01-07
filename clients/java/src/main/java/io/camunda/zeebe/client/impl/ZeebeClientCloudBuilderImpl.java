@@ -22,6 +22,9 @@ import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
+import io.camunda.client.impl.BuilderUtils;
+import io.camunda.client.impl.Loggers;
+import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -31,7 +34,6 @@ import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuil
 import io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;

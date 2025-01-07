@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -31,7 +32,7 @@ import java.util.concurrent.TimeoutException;
  * @param <RespT> the expected response type
  */
 public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
-    implements CamundaFuture<RespT> {
+    implements CamundaFuture<RespT>, ZeebeFuture<RespT> {
 
   private volatile Future<?> transportFuture;
 

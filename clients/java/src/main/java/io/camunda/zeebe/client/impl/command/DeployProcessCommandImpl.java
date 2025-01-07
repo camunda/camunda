@@ -18,14 +18,14 @@ package io.camunda.zeebe.client.impl.command;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import com.google.protobuf.ByteString;
-import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1.DeployProcessCommandBuilderStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.response.DeploymentEventImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;

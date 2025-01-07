@@ -16,7 +16,7 @@
 package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.ClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.util.VersionUtil;
@@ -70,9 +70,9 @@ public class HttpClientFactory {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-  private final CamundaClientConfiguration config;
+  private final ClientConfiguration config;
 
-  public HttpClientFactory(final CamundaClientConfiguration config) {
+  public HttpClientFactory(final ClientConfiguration config) {
     this.config = config;
   }
 
