@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -417,7 +417,7 @@ public class MigrateUserTaskTest {
     // and finally complete the user task and continue the process
     ENGINE.userTask().ofInstance(processInstanceKey).withKey(userTaskKey).complete();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.END_EVENT)
