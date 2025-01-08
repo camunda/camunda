@@ -54,6 +54,7 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
+          # "C04FM0DRJT0" is the ID of the #optimize-status channel
           payload: |
             {
               "channel": "C04FM0DRJT0",
