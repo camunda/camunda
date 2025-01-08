@@ -15,10 +15,12 @@ import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,11 +72,17 @@ public final class ProcessModelReader {
   }
 
   public Collection<FlowNode> extractFlowNodes() {
-    return process.getChildElementsByType(FlowNode.class).stream().toList();
+    final List<FlowNode> flowNodes = new ArrayList<>();
+    process.getChildElementsByType(FlowNode.class).forEach(fn -> extractFlowNodes(flowNodes, fn));
+    return flowNodes;
   }
 
   public Collection<CallActivity> extractCallActivities() {
-    return process.getChildElementsByType(CallActivity.class).stream().toList();
+    final List<CallActivity> callActivities = new ArrayList<>();
+    process
+        .getChildElementsByType(FlowNode.class)
+        .forEach(fn -> extractCallActivities(callActivities, fn));
+    return callActivities;
   }
 
   private boolean isPublic(final ZeebeProperties properties) {
@@ -172,6 +180,24 @@ public final class ProcessModelReader {
 
   private Optional<ExtensionElements> getExtensionElements(final BaseElement element) {
     return Optional.ofNullable(element.getExtensionElements());
+  }
+
+  private void extractFlowNodes(final List<FlowNode> flowNodes, final FlowNode flowNode) {
+    flowNodes.add(flowNode);
+    flowNode
+        .getChildElementsByType(FlowNode.class)
+        .forEach(nestedFlowNode -> extractFlowNodes(flowNodes, nestedFlowNode));
+  }
+
+  private void extractCallActivities(
+      final List<CallActivity> callActivities, final FlowNode flowNode) {
+    if (flowNode instanceof CallActivity) {
+      callActivities.add((CallActivity) flowNode);
+    } else if (flowNode instanceof SubProcess) {
+      flowNode
+          .getChildElementsByType(FlowNode.class)
+          .forEach(fn -> extractCallActivities(callActivities, fn));
+    }
   }
 
   public record EmbeddedForm(String id, String schema) {}

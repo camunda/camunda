@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -200,6 +201,59 @@ public class ProcessModelReaderTest {
                 throw new RuntimeException(e);
               }
             });
+  }
+
+  @Test
+  void shouldExtractSubProcessFlowNodes() throws IOException {
+    final String processId = "subprocess";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-subprocesses.bpmn");
+
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final List<String> expectedFlowNodes =
+        List.of(
+            "L0_StartEvent",
+            "L0_CallActivity",
+            "L0_UserTask",
+            "L1_SubProcess",
+            "L1_StartEvent",
+            "L1_UserTask",
+            "L2_SubProcess",
+            "L2_StartEvent",
+            "L2_UserTask",
+            "L2_CallActivity",
+            "L2_EndEvent",
+            "L1_EndEvent",
+            "L0_EndEvent");
+    final var flowNodes = reader.get().extractFlowNodes();
+    assertThat(flowNodes).hasSize(expectedFlowNodes.size());
+    expectedFlowNodes.forEach(
+        id ->
+            assertThat(
+                    flowNodes.stream()
+                        .anyMatch(fn -> fn.getId().equals(id) && fn.getName().equals(id)))
+                .isTrue());
+  }
+
+  @Test
+  void shouldExtractSubProcessCallActivities() throws IOException {
+    final String processId = "subprocess";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-subprocesses.bpmn");
+
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final List<String> expectedCallActivities = List.of("L0_CallActivity", "L2_CallActivity");
+    final var flowNodes = reader.get().extractCallActivities();
+    assertThat(flowNodes).hasSize(expectedCallActivities.size());
+    expectedCallActivities.forEach(
+        id ->
+            assertThat(
+                    flowNodes.stream()
+                        .anyMatch(
+                            callActivity ->
+                                callActivity.getId().equals(id)
+                                    && callActivity.getName().equals(id)))
+                .isTrue());
   }
 
   private String formOneJson() {
