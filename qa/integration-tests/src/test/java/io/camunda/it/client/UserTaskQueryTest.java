@@ -943,6 +943,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -975,6 +976,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -1007,6 +1009,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
