@@ -40,8 +40,6 @@ public record UserTaskFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
-    List<Operation<OffsetDateTime>> creationDateOperations;
-    List<Operation<OffsetDateTime>> completionDateOperations;
     private List<Long> userTaskKeys;
     private List<String> elementIds;
     private List<String> bpmnProcessIds;
@@ -56,6 +54,8 @@ public record UserTaskFilter(
     private List<VariableValueFilter> processInstanceVariableFilters;
     private List<VariableValueFilter> localVariableFilters;
     private List<Long> elementInstanceKeys;
+    private List<Operation<OffsetDateTime>> creationDateOperations;
+    private List<Operation<OffsetDateTime>> completionDateOperations;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
