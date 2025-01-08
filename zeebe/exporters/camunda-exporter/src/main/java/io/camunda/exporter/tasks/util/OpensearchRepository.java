@@ -26,17 +26,17 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
-public class OpensearchUtil {
+public class OpensearchRepository {
 
-  private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
-  private static final int SCROLL_PAGE_SIZE = 100;
+  private final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
+  private final int SCROLL_PAGE_SIZE = 100;
 
   /**
    * Variant of {@link #fetchUnboundedDocumentCollection(OpenSearchAsyncClient, Executor, Logger,
    * SearchRequest.Builder, Class, Function)} to use when you don't care about the source document,
    * meaning you won't be using any deserialization functionality.
    */
-  public static <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
+  public <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
       final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger,
@@ -46,14 +46,13 @@ public class OpensearchUtil {
         client, executor, logger, requestBuilder, Object.class, transformer);
   }
 
-  public static <TDocument, TResult>
-      CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
-          final OpenSearchAsyncClient client,
-          final Executor executor,
-          final Logger logger,
-          final SearchRequest.Builder requestBuilder,
-          final Class<TDocument> type,
-          final Function<Hit<TDocument>, TResult> transformer) {
+  public <TDocument, TResult> CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
+      final OpenSearchAsyncClient client,
+      final Executor executor,
+      final Logger logger,
+      final SearchRequest.Builder requestBuilder,
+      final Class<TDocument> type,
+      final Function<Hit<TDocument>, TResult> transformer) {
     final var request =
         requestBuilder
             .allowNoIndices(true)
@@ -94,7 +93,7 @@ public class OpensearchUtil {
     }
   }
 
-  private static <T> CompletionStage<T> clearScrollOnComplete(
+  private <T> CompletionStage<T> clearScrollOnComplete(
       final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger,
@@ -109,7 +108,7 @@ public class OpensearchUtil {
         .thenComposeAsync(Function.identity(), executor);
   }
 
-  private static <T> CompletableFuture<T> clearScroll(
+  private <T> CompletableFuture<T> clearScroll(
       final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger,
@@ -141,7 +140,7 @@ public class OpensearchUtil {
     }
   }
 
-  private static <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
+  private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
       final OpenSearchAsyncClient client,
       final List<Hit<TResult>> hits,
       final String scrollId,
@@ -168,7 +167,7 @@ public class OpensearchUtil {
     }
   }
 
-  public static Throwable collectBulkErrors(final List<BulkResponseItem> items) {
+  public Throwable collectBulkErrors(final List<BulkResponseItem> items) {
     final var collectedErrors = new ArrayList<String>();
     items.stream()
         .flatMap(item -> Optional.ofNullable(item.error()).stream())

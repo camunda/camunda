@@ -23,7 +23,7 @@ import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
 import co.elastic.clients.json.JsonData;
-import io.camunda.exporter.tasks.util.ElasticsearchUtil;
+import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
@@ -44,7 +44,8 @@ import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
-public final class ElasticsearchIncidentUpdateRepository implements IncidentUpdateRepository {
+public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRepository
+    implements IncidentUpdateRepository {
   private static final int RETRY_COUNT = 3;
   private static final List<FieldValue> DELETED_OPERATION_STATES =
       List.of(
@@ -123,7 +124,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
             .query(q -> q.bool(b -> b.must(idQ, typeQ)))
             .source(s -> s.fetch(false));
 
-    return ElasticsearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client, executor, logger, request, hit -> new Document(hit.id(), hit.index()));
   }
 
@@ -134,7 +135,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
     final var request =
         new SearchRequest.Builder().index(flowNodeAlias).query(query).source(s -> s.fetch(false));
 
-    return ElasticsearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client, executor, logger, request, hit -> new Document(hit.id(), hit.index()));
   }
 
@@ -153,7 +154,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
             .source(s -> s.filter(f -> f.includes(ListViewTemplate.TREE_PATH)))
             .query(q -> q.bool(b -> b.must(idQ, typeQ)));
 
-    return ElasticsearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client,
         executor,
         logger,
@@ -193,8 +194,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
         .thenComposeAsync(
             r -> {
               if (r.errors()) {
-                return CompletableFuture.failedFuture(
-                    ElasticsearchUtil.collectBulkErrors(r.items()));
+                return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
               }
 
               return CompletableFuture.completedFuture(r.items().size());
@@ -233,7 +233,7 @@ public final class ElasticsearchIncidentUpdateRepository implements IncidentUpda
             .source(s -> s.filter(f -> f.includes(IncidentTemplate.TREE_PATH)))
             .index(incidentAlias);
 
-    return ElasticsearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client,
         executor,
         logger,

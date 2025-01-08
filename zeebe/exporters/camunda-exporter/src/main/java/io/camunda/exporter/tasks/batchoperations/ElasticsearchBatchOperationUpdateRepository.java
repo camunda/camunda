@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import static io.camunda.exporter.tasks.util.ElasticsearchUtil.collectBulkErrors;
 import static io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
@@ -25,7 +24,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.JsonData;
-import io.camunda.exporter.tasks.util.ElasticsearchUtil;
+import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.OffsetDateTime;
@@ -39,7 +38,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
-public class ElasticsearchBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
+public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRepository
+    implements BatchOperationUpdateRepository {
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
   private static final Integer RETRY_COUNT = 3;
@@ -68,7 +68,7 @@ public class ElasticsearchBatchOperationUpdateRepository implements BatchOperati
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return ElasticsearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client, executor, logger, request, BatchOperationEntity.class, Hit::id);
   }
 

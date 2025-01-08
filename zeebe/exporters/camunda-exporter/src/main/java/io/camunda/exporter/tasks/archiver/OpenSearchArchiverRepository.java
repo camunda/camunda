@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -49,7 +50,8 @@ import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.slf4j.Logger;
 
-public final class OpenSearchArchiverRepository implements ArchiverRepository {
+public final class OpenSearchArchiverRepository extends OpensearchRepository
+    implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";

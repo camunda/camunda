@@ -7,13 +7,12 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import static io.camunda.exporter.tasks.util.OpensearchUtil.collectBulkErrors;
-import static io.camunda.exporter.tasks.util.OpensearchUtil.fetchUnboundedDocumentCollection;
 import static io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.FAILED;
 
+import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
@@ -40,7 +39,8 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
-public class OpensearchBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
+public class OpensearchBatchOperationUpdateRepository extends OpensearchRepository
+    implements BatchOperationUpdateRepository {
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
   private static final Integer RETRY_COUNT = 3;

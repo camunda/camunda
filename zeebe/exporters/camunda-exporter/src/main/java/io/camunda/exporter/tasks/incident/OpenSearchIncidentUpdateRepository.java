@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.tasks.incident;
 
-import io.camunda.exporter.tasks.util.OpensearchUtil;
+import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
@@ -45,7 +45,8 @@ import org.opensearch.client.opensearch.indices.AnalyzeRequest;
 import org.opensearch.client.opensearch.indices.analyze.AnalyzeToken;
 import org.slf4j.Logger;
 
-public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateRepository {
+public final class OpenSearchIncidentUpdateRepository extends OpensearchRepository
+    implements IncidentUpdateRepository {
   private static final int RETRY_COUNT = 3;
   private static final List<FieldValue> DELETED_OPERATION_STATES =
       List.of(
@@ -133,7 +134,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
             .query(q -> q.bool(b -> b.must(idQ, typeQ)))
             .source(s -> s.fetch(false));
 
-    return OpensearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client, executor, logger, request, hit -> new Document(hit.id(), hit.index()));
   }
 
@@ -144,7 +145,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
     final var request =
         new SearchRequest.Builder().index(flowNodeAlias).query(query).source(s -> s.fetch(false));
 
-    return OpensearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client, executor, logger, request, hit -> new Document(hit.id(), hit.index()));
   }
 
@@ -164,7 +165,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
             .source(s -> s.filter(f -> f.includes(ListViewTemplate.TREE_PATH)))
             .query(q -> q.bool(b -> b.must(idQ, typeQ)));
 
-    return OpensearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client,
         executor,
         logger,
@@ -209,8 +210,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
           .thenComposeAsync(
               r -> {
                 if (r.errors()) {
-                  return CompletableFuture.failedFuture(
-                      OpensearchUtil.collectBulkErrors(r.items()));
+                  return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
                 }
 
                 return CompletableFuture.completedFuture(r.items().size());
@@ -263,7 +263,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
             .source(s -> s.filter(f -> f.includes(IncidentTemplate.TREE_PATH)))
             .index(incidentAlias);
 
-    return OpensearchUtil.fetchUnboundedDocumentCollection(
+    return fetchUnboundedDocumentCollection(
         client,
         executor,
         logger,

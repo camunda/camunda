@@ -34,6 +34,7 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -46,7 +47,8 @@ import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
-public final class ElasticsearchArchiverRepository implements ArchiverRepository {
+public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
+    implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";

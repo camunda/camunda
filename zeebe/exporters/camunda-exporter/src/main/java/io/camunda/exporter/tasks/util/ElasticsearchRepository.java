@@ -27,7 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ElasticsearchUtil {
+public class ElasticsearchRepository {
 
   public static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
   public static final int SCROLL_PAGE_SIZE = 100;
@@ -37,7 +37,7 @@ public class ElasticsearchUtil {
    * Builder, Class, Function)} to use when you don't care about the source document, meaning you
    * won't be using any deserialization functionality.
    */
-  public static <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
+  public <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
       final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger,
@@ -47,14 +47,13 @@ public class ElasticsearchUtil {
         client, executor, logger, requestBuilder, Object.class, transformer);
   }
 
-  public static <TDocument, TResult>
-      CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
-          final ElasticsearchAsyncClient client,
-          final Executor executor,
-          final Logger logger,
-          final SearchRequest.Builder requestBuilder,
-          final Class<TDocument> type,
-          final Function<Hit<TDocument>, TResult> transformer) {
+  public <TDocument, TResult> CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
+      final ElasticsearchAsyncClient client,
+      final Executor executor,
+      final Logger logger,
+      final SearchRequest.Builder requestBuilder,
+      final Class<TDocument> type,
+      final Function<Hit<TDocument>, TResult> transformer) {
     final var request =
         requestBuilder
             .allowNoIndices(true)
@@ -89,7 +88,7 @@ public class ElasticsearchUtil {
             executor);
   }
 
-  private static <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
+  private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
       final ElasticsearchAsyncClient client,
       final List<Hit<TResult>> hits,
       final String scrollId,
@@ -112,7 +111,7 @@ public class ElasticsearchUtil {
                     client, r.hits().hits(), r.scrollId(), accumulator, transformer, type));
   }
 
-  private static <T> CompletionStage<T> clearScrollOnComplete(
+  private <T> CompletionStage<T> clearScrollOnComplete(
       final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger,
@@ -127,7 +126,7 @@ public class ElasticsearchUtil {
         .thenComposeAsync(Function.identity(), executor);
   }
 
-  private static <T> CompletableFuture<T> clearScroll(
+  private <T> CompletableFuture<T> clearScroll(
       final ElasticsearchAsyncClient client,
       final Executor executor,
       final Logger logger,
@@ -155,7 +154,7 @@ public class ElasticsearchUtil {
         .thenComposeAsync(ignored -> endResult);
   }
 
-  public static Throwable collectBulkErrors(final List<BulkResponseItem> items) {
+  public Throwable collectBulkErrors(final List<BulkResponseItem> items) {
     final var collectedErrors = new ArrayList<String>();
     items.stream()
         .flatMap(item -> Optional.ofNullable(item.error()).stream())
