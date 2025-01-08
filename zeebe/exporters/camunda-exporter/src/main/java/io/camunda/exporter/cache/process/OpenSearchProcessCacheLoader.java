@@ -58,7 +58,11 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
             bpmnXml.getBytes(StandardCharsets.UTF_8), processEntity.getBpmnProcessId())
         .map(
             reader ->
-                reader.extractCallActivities().stream().map(BaseElement::getId).sorted().toList())
+                reader.extractCallActivities().stream()
+                    .map(BaseElement::getId)
+                    /* Process CallActivity IDs are expected to be in lexicographical order */
+                    .sorted()
+                    .toList())
         .orElseGet(ArrayList::new);
   }
 }
