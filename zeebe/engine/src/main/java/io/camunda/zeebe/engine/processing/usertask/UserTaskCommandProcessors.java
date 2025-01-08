@@ -48,10 +48,10 @@ public final class UserTaskCommandProcessors {
             Map.of(
                 UserTaskIntent.ASSIGN,
                 new UserTaskAssignProcessor(
-                    processingState, eventHandle, writers, authCheckBehavior),
+                    processingState, writers, bpmnBehaviors, authCheckBehavior),
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(
-                    processingState, eventHandle, writers, authCheckBehavior),
+                    processingState, writers, bpmnBehaviors, authCheckBehavior),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.COMPLETE,

@@ -8,11 +8,12 @@
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -34,18 +35,18 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       "Expected to claim user task with key '%d', but provided assignee is empty";
 
   private final UserTaskState userTaskState;
-  private final EventHandle eventHandle;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final VariableBehavior variableBehavior;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskClaimProcessor(
       final ProcessingState state,
-      final EventHandle eventHandle,
       final Writers writers,
+      final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior) {
     userTaskState = state.getUserTaskState();
-    this.eventHandle = eventHandle;
+    variableBehavior = bpmnBehaviors.variableBehavior();
     stateWriter = writers.state();
     responseWriter = writers.response();
     preconditionChecker =
@@ -90,11 +91,23 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
-      eventHandle.triggeringProcessEvent(userTaskRecord);
+      variableBehavior.mergeLocalDocument(
+          command.getKey(),
+          command.getValue().getProcessDefinitionKey(),
+          command.getValue().getProcessInstanceKey(),
+          command.getValue().getBpmnProcessIdBuffer(),
+          command.getValue().getTenantId(),
+          command.getValue().getVariablesBuffer());
     } else {
       final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-      eventHandle.triggeringProcessEvent(userTaskRecord);
+      variableBehavior.mergeLocalDocument(
+          command.getKey(),
+          command.getValue().getProcessDefinitionKey(),
+          command.getValue().getProcessInstanceKey(),
+          command.getValue().getBpmnProcessIdBuffer(),
+          command.getValue().getTenantId(),
+          command.getValue().getVariablesBuffer());
 
       recordRequestMetadata.ifPresent(
           metadata ->
