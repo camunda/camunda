@@ -75,7 +75,7 @@ public class OpensearchBatchOperationUpdateRepository implements BatchOperationU
 
   @Override
   public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
-      final List<String> batchOperationIds) {
+      final Collection<String> batchOperationIds) {
     if (batchOperationIds == null || batchOperationIds.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
     }
