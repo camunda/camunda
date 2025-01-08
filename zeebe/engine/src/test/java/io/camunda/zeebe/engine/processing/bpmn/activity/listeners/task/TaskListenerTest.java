@@ -704,7 +704,7 @@ public class TaskListenerTest {
 
   @Test
   public void
-  shouldMakeVariablesFromPreviousCompletingTaskListenersAvailableToSubsequentListeners() {
+      shouldMakeVariablesFromPreviousCompletingTaskListenersAvailableToSubsequentListeners() {
     final long processInstanceKey =
         createProcessInstance(
             createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
@@ -726,7 +726,7 @@ public class TaskListenerTest {
 
   @Test
   public void
-  shouldMakeVariablesFromPreviousAssigningTaskListenersAvailableToSubsequentListeners() {
+      shouldMakeVariablesFromPreviousAssigningTaskListenersAvailableToSubsequentListeners() {
     final long processInstanceKey =
         createProcessInstance(
             createUserTaskWithTaskListeners(
