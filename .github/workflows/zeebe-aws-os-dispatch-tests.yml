@@ -1,7 +1,9 @@
-name: AWS OpenSearch Manual Run Integration Tests
+name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 
 on:
   workflow_dispatch: { }
+  schedule:
+    - cron: "0 23 * * Sat"
 
 defaults:
   run:
@@ -10,7 +12,7 @@ defaults:
     shell: bash
 
 jobs:
- integration-tests:
+  integration-tests:
     name: "[IT] ${{ matrix.name }}"
     timeout-minutes: 15
     runs-on: ${{ matrix.runs-on }}
@@ -106,3 +108,36 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  
+  send-slack-notificaion:
+    name: "Send slack notification on fail"
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: failure()
+    permissions:
+      contents: read
+      actions: write
+    steps:
+    - name: Import secrets from Vault
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+    - name: Send notification
+      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+      with:
+        webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+        webhook-type: webhook-trigger
+        # For posting a rich message using Block Kit
+        payload: |
+          text: "AWS OpenSearch Manual/Scheduled Run Integration Tests failed"
+          blocks:
+            - type: "section"
+              text:
+                type: "mrkdwn"
+                text: "AWS OpenSearch Manual/Scheduled Run Integration Tests FAILED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

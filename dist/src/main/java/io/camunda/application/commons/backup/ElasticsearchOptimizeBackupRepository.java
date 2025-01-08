@@ -8,6 +8,7 @@
 package io.camunda.application.commons.backup;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -29,7 +30,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  *
  * <p>Note that the condition used refers to tasklist ElasticSearchCondition
  */
-@Conditional(ElasticSearchCondition.class)
+@Conditional({ElasticSearchCondition.class, WebappEnabledCondition.class})
 @Configuration
 @Profile("optimize")
 @ConditionalOnMissingBean({
