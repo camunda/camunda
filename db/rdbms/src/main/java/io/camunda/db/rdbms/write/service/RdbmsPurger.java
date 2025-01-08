@@ -28,6 +28,7 @@ public class RdbmsPurger {
           "DECISION_INSTANCE",
           "DECISION_DEFINITION",
           "DECISION_REQUIREMENTS",
+          "AUTHORIZATIONS",
           "USERS",
           "FORM",
           "MAPPINGS",
