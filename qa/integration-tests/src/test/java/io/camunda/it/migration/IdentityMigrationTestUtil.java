@@ -79,7 +79,12 @@ final class IdentityMigrationTestUtil {
     return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
         .withNetworkAliases("identity")
         .withNetwork(NETWORK)
-        .withExposedPorts(8082, IDENTITY_PORT)
+        .withExposedPorts(8082, IDENTITY_PORT, 5005)
+        .dependsOn(postgres, keycloak)
+        .withEnv(
+            "JAVA_TOOL_OPTIONS",
+            "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=0.0.0.0:"
+                + 5005) // Pass debug options
         .dependsOn(postgres, keycloak)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
         .withEnv("KEYCLOAK_URL", internalKeycloakUrl())

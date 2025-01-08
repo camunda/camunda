@@ -27,16 +27,22 @@ public class MigrationRunner implements Migrator {
   private final TenantMigrationHandler tenantMigrationHandler;
   private final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler;
   private final UserTenantsMigrationHandler userTenantsMigrationHandler;
+  private final RoleMigrationHandler roleMigrationHandler;
+  private final GroupMigrationHandler groupMigrationHandler;
 
   public MigrationRunner(
       final AuthorizationMigrationHandler authorizationMigrationHandler,
       final TenantMigrationHandler tenantMigrationHandler,
       final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler,
-      final UserTenantsMigrationHandler userTenantsMigrationHandler) {
+      final UserTenantsMigrationHandler userTenantsMigrationHandler,
+      final RoleMigrationHandler roleMigrationHandler,
+      final GroupMigrationHandler groupMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
     this.tenantMigrationHandler = tenantMigrationHandler;
     this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
     this.userTenantsMigrationHandler = userTenantsMigrationHandler;
+    this.roleMigrationHandler = roleMigrationHandler;
+    this.groupMigrationHandler = groupMigrationHandler;
   }
 
   @Override
@@ -51,6 +57,8 @@ public class MigrationRunner implements Migrator {
         tenantMigrationHandler.migrate();
         tenantMappingRuleMigrationHandler.migrate();
         userTenantsMigrationHandler.migrate();
+        groupMigrationHandler.migrate();
+        roleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
         break;
       } catch (final NotImplementedException e) {

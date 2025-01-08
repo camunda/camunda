@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
@@ -20,28 +19,17 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
-
-  private final Permissions permissions = new Permissions();
 
   private final DbLong ownerKey;
   private final DbString resourceType;
   private final DbCompositeKey<DbLong, DbString> ownerKeyAndResourceType;
   // owner key + resource type -> permissions
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, Permissions> permissionsColumnFamily;
-
-  private final DbString resourceId;
-  private final DbCompositeKey<DbString, DbCompositeKey<DbLong, DbString>>
-      resourceIdAndOwnerKeyAndResourceType;
-  // resource id + owner key + resource type -> DbNil
-  private final ColumnFamily<DbCompositeKey<DbString, DbCompositeKey<DbLong, DbString>>, DbNil>
-      authorizationKeyByResourceIdColumnFamily;
 
   private final DbString ownerType;
   // owner key -> owner type
@@ -55,17 +43,10 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
     permissionsColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.PERMISSIONS, transactionContext, ownerKeyAndResourceType, permissions);
-
-    resourceId = new DbString();
-    resourceIdAndOwnerKeyAndResourceType =
-        new DbCompositeKey<>(resourceId, ownerKeyAndResourceType);
-    authorizationKeyByResourceIdColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.AUTHORIZATION_KEY_BY_RESOURCE_ID,
+            ZbColumnFamilies.PERMISSIONS,
             transactionContext,
-            resourceIdAndOwnerKeyAndResourceType,
-            DbNil.INSTANCE);
+            ownerKeyAndResourceType,
+            new Permissions());
 
     ownerType = new DbString();
     ownerTypeByOwnerKeyColumnFamily =
@@ -88,13 +69,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
     identifiers.addResourceIdentifiers(permissionType, resourceIds);
     permissionsColumnFamily.upsert(ownerKeyAndResourceType, identifiers);
-
-    resourceIds.forEach(
-        resourceId -> {
-          this.resourceId.wrapString(resourceId);
-          authorizationKeyByResourceIdColumnFamily.upsert(
-              resourceIdAndOwnerKeyAndResourceType, DbNil.INSTANCE);
-        });
   }
 
   @Override
@@ -107,13 +81,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     this.resourceType.wrapString(resourceType.name());
 
     final var permissions = permissionsColumnFamily.get(ownerKeyAndResourceType);
-    resourceIds.forEach(
-        resourceId -> {
-          this.resourceId.wrapString(resourceId);
-          authorizationKeyByResourceIdColumnFamily.deleteExisting(
-              resourceIdAndOwnerKeyAndResourceType);
-        });
-
     permissions.removeResourceIdentifiers(permissionType, resourceIds);
 
     if (permissions.isEmpty()) {
@@ -136,18 +103,6 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     permissionsColumnFamily.whileEqualPrefix(
         this.ownerKey,
         (compositeKey, permissions) -> {
-          resourceType.wrapString(compositeKey.second().toString());
-
-          permissions.getPermissions().values().stream()
-              .flatMap(Set::stream)
-              .distinct()
-              .forEach(
-                  resourceId -> {
-                    this.resourceId.wrapString(resourceId);
-                    authorizationKeyByResourceIdColumnFamily.deleteExisting(
-                        resourceIdAndOwnerKeyAndResourceType);
-                  });
-
           permissionsColumnFamily.deleteExisting(compositeKey);
         });
   }
@@ -185,19 +140,5 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     }
 
     return Optional.of(AuthorizationOwnerType.valueOf(ownerType.toString()));
-  }
-
-  @Override
-  public List<AuthorizationKey> getAuthorizationKeysByResourceId(final String resourceId) {
-    final var authorizationKeys = new ArrayList<AuthorizationKey>();
-    this.resourceId.wrapString(resourceId);
-    authorizationKeyByResourceIdColumnFamily.whileEqualPrefix(
-        this.resourceId,
-        (key, value) -> {
-          final var ownerKey = key.second().first().getValue();
-          final var resourceType = key.second().second().toString();
-          authorizationKeys.add(new AuthorizationKey(ownerKey, resourceType));
-        });
-    return authorizationKeys;
   }
 }
