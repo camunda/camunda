@@ -19,6 +19,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -307,6 +308,18 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
           }
           addChangedAttribute(attribute);
         });
+  }
+
+  public void mergeVariables(final Map<String, Object> variables) {
+
+    final Map<String, Object> taskVariables = getVariables();
+    taskVariables.putAll(variables);
+
+    setVariables(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(taskVariables)));
+  }
+
+  public boolean hasVariables() {
+    return !DocumentValue.EMPTY_DOCUMENT.equals(variableProp.getValue());
   }
 
   @Override

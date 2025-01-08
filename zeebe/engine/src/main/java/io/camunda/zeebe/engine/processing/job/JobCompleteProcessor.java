@@ -127,6 +127,10 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           commandWriter.appendFollowUpCommand(
               userTask.getUserTaskKey(), UserTaskIntent.DENY_TASK_LISTENER, userTask);
         } else {
+          if (hasVariables(value)) {
+            userTask.mergeVariables(value.getVariables());
+          }
+
           userTask.correctAttributes(
               value.getResult().getCorrectedAttributes(), value.getResult().getCorrections());
           commandWriter.appendFollowUpCommand(
