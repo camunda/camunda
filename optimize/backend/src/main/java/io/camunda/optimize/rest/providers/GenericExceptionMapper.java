@@ -9,9 +9,6 @@ package io.camunda.optimize.rest.providers;
 
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
-import org.glassfish.jersey.server.ParamException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 @ControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE)
@@ -37,41 +35,30 @@ public class GenericExceptionMapper {
   @ExceptionHandler(Throwable.class)
   public ResponseEntity<ErrorResponseDto> handleThrowable(final Throwable throwable) {
     LOG.error("Mapping generic REST error", throwable);
-    final ErrorResponseDto errorResponseDto = getErrorResponseDto(throwable);
-
-    final HttpStatus status;
-    final Class errorClass = throwable.getClass();
-    if (NotFoundException.class.equals(errorClass)) {
-      status = HttpStatus.NOT_FOUND;
-    } else if (BadRequestException.class.equals(errorClass)) {
-      status = HttpStatus.BAD_REQUEST;
-    } else if (ParamException.PathParamException.class.equals(errorClass)) {
-      status = HttpStatus.BAD_REQUEST;
-    } else {
-      status = HttpStatus.INTERNAL_SERVER_ERROR;
+    HttpStatus status = null;
+    String errorCode = null;
+    if (throwable instanceof final ResponseStatusException responseStatusException) {
+      if (responseStatusException.getStatusCode() instanceof final HttpStatus httpStatus) {
+        status = httpStatus;
+      }
     }
 
-    return ResponseEntity.status(status)
-        .contentType(MediaType.APPLICATION_JSON)
-        .body(errorResponseDto);
-  }
+    status = status != null ? status : HttpStatus.INTERNAL_SERVER_ERROR;
 
-  private ErrorResponseDto getErrorResponseDto(final Throwable e) {
-    final Class<?> errorClass = e.getClass();
-    final String errorCode;
-
-    if (NotFoundException.class.equals(errorClass)) {
-      errorCode = NOT_FOUND_ERROR_CODE;
-    } else if (BadRequestException.class.equals(errorClass)
-        || ParamException.PathParamException.class.equals(errorClass)) {
-      errorCode = BAD_REQUEST_ERROR_CODE;
-    } else {
-      errorCode = GENERIC_ERROR_CODE;
+    switch (status) {
+      case NOT_FOUND -> errorCode = NOT_FOUND_ERROR_CODE;
+      case BAD_REQUEST -> errorCode = BAD_REQUEST_ERROR_CODE;
+      default -> errorCode = GENERIC_ERROR_CODE;
     }
 
     final String localizedMessage =
         localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
 
-    return new ErrorResponseDto(errorCode, localizedMessage, e.getMessage());
+    final ErrorResponseDto errorResponseDto =
+        new ErrorResponseDto(errorCode, localizedMessage, throwable.getMessage());
+
+    return ResponseEntity.status(status)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(errorResponseDto);
   }
 }

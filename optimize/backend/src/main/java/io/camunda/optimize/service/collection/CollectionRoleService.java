@@ -21,7 +21,7 @@ import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

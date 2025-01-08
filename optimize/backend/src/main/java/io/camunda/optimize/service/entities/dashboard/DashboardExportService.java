@@ -20,7 +20,7 @@ import io.camunda.optimize.service.entities.report.ReportExportService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

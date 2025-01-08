@@ -35,7 +35,7 @@ import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import io.camunda.optimize.service.tenant.TenantService;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -32,7 +32,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.FilenameValidatorUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;

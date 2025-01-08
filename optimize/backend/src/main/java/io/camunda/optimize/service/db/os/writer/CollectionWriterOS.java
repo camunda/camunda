@@ -27,7 +27,7 @@ import io.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflic
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;

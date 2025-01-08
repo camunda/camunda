@@ -19,6 +19,7 @@ import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExpor
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.entities.EntityExportService;
@@ -28,7 +29,6 @@ import io.camunda.optimize.service.export.JsonReportResultExportService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BadRequestException;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;

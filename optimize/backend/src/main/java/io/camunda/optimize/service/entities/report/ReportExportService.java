@@ -17,7 +17,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.ReportAuthorizationService;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

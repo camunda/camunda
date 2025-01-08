@@ -46,7 +46,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;

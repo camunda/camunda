@@ -13,7 +13,7 @@ import io.camunda.tasklist.util.RetryOperation;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashSet;

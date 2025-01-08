@@ -22,7 +22,7 @@ import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefini
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;

@@ -21,13 +21,13 @@ import io.camunda.optimize.dto.optimize.query.analysis.ProcessDefinitionParamete
 import io.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.BranchAnalysisService;
 import io.camunda.optimize.service.OutlierAnalysisService;
 import io.camunda.optimize.service.export.CSVUtils;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.BadRequestException;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;

@@ -34,7 +34,7 @@ import io.camunda.optimize.service.relations.ReportReferencingService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import jakarta.ws.rs.ForbiddenException;
-import jakarta.ws.rs.NotFoundException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashSet;
