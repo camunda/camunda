@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilterRequest.StateEnum;
 import io.camunda.client.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import java.util.Arrays;

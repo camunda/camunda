@@ -7044,16 +7044,6 @@ components:
           type: array
           items:
             type: object
-    SearchQuerySortRequest:
-      type: object
-      properties:
-        field:
-          description: The field to sort by.
-          type: string
-        order:
-          $ref: "#/components/schemas/SortOrderEnum"
-      required:
-        - field
     SearchQueryResponse:
       type: object
       properties:
