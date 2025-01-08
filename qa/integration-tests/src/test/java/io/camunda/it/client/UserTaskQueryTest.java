@@ -618,7 +618,7 @@ class UserTaskQueryTest {
   @Test
   void shouldReturnUserTaskByCreationDateGt() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -644,7 +644,7 @@ class UserTaskQueryTest {
   @Test
   void shouldReturnUserTaskByCreationDateLt() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -670,7 +670,7 @@ class UserTaskQueryTest {
   @Test
   void shouldReturnUserTaskByCreationDateGte() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -698,7 +698,7 @@ class UserTaskQueryTest {
   @Test
   void shouldReturnUserTaskByCreationDateLte() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -726,7 +726,7 @@ class UserTaskQueryTest {
   @Test
   void shouldReturnUserTaskByCreationDateEq() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -791,6 +791,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -825,6 +826,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -865,6 +867,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -908,6 +911,9 @@ class UserTaskQueryTest {
 
     // then
     assertThat(result.items().size()).isGreaterThanOrEqualTo(0);
+    result
+        .items()
+        .forEach(item -> assertThat(item.getState()).isEqualTo(TaskState.COMPLETED.name()));
     result.items().forEach(item -> assertThat(item.getCompletionDate()).isNotNull());
   }
 
