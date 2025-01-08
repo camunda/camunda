@@ -454,12 +454,12 @@ public class ProcessInstanceMigrationMigrateProcessor
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final ElementInstance elementInstance) {
-    final long flowScopeKey = elementInstance.getKey();
+    final long elementInstanceKey = elementInstance.getKey();
     final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
 
     final List<ActiveSequenceFlow> activeSequenceFlows = new ArrayList<>();
     elementInstanceState.visitTakenSequenceFlows(
-        flowScopeKey,
+        elementInstanceKey,
         (scopeKey, gatewayElementId, sequenceFlowId, number) -> {
           final var sequenceFlow =
               sourceProcessDefinition
@@ -480,7 +480,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
               final ExecutableFlowNode sourceGateway = activeSequenceFlow.target;
               requireNoConcurrentCommandForGateway(
-                  elementInstanceState, sourceGateway, flowScopeKey, processInstanceKey);
+                  elementInstanceState, sourceGateway, elementInstanceKey, processInstanceKey);
 
               final String targetGatewayId =
                   sourceElementIdToTargetElementId.get(
