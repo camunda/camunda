@@ -75,7 +75,11 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
   @BeforeEach
   void beforeEach() {
     Stream.of(batchOperationTemplate, operationTemplate)
-        .forEach(template -> engineClient.createIndexTemplate(template, new IndexSettings(), true));
+        .forEach(
+            template -> {
+              engineClient.createIndexTemplate(template, new IndexSettings(), true);
+              engineClient.createIndex(template, new IndexSettings());
+            });
   }
 
   protected abstract BatchOperationUpdateRepository createRepository();
