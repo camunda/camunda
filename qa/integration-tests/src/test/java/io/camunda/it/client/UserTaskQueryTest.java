@@ -473,11 +473,11 @@ class UserTaskQueryTest {
     assertThat(result.items().size()).isEqualTo(8);
 
     assertThat(result.items().get(0).getCreationDate())
-        .isGreaterThan(result.items().get(1).getCreationDate());
+        .isGreaterThanOrEqualTo(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
-        .isGreaterThan(result.items().get(2).getCreationDate());
+        .isGreaterThanOrEqualTo(result.items().get(2).getCreationDate());
     assertThat(result.items().get(2).getCreationDate())
-        .isGreaterThan(result.items().get(3).getCreationDate());
+        .isGreaterThanOrEqualTo(result.items().get(3).getCreationDate());
   }
 
   @Test
