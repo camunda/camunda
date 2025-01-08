@@ -65,10 +65,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
-  private final ElasticsearchAsyncClient client;
-  private final Executor executor;
   private final CamundaExporterMetrics metrics;
-  private final Logger logger;
 
   private final CalendarInterval rolloverInterval;
 
@@ -83,16 +80,14 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
     this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
-    this.client = client;
-    this.executor = executor;
     this.metrics = metrics;
-    this.logger = logger;
 
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }

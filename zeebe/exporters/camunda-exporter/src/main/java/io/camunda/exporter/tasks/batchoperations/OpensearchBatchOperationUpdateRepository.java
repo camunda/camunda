@@ -44,11 +44,8 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
   private static final Integer RETRY_COUNT = 3;
-  private final OpenSearchAsyncClient client;
-  private final Executor executor;
   private final String batchOperationIndex;
   private final String operationIndex;
-  private final Logger logger;
 
   public OpensearchBatchOperationUpdateRepository(
       final OpenSearchAsyncClient client,
@@ -56,11 +53,9 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
       final String batchOperationIndex,
       final String operationIndex,
       final Logger logger) {
-    this.client = client;
-    this.executor = executor;
+    super(client, executor, logger);
     this.batchOperationIndex = batchOperationIndex;
     this.operationIndex = operationIndex;
-    this.logger = logger;
   }
 
   @Override
@@ -69,8 +64,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(
-        client, executor, logger, request, BatchOperationEntity.class, Hit::id);
+    return fetchUnboundedDocumentCollection(request, BatchOperationEntity.class, Hit::id);
   }
 
   @Override

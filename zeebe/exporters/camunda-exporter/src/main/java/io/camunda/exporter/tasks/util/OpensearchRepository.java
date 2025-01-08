@@ -21,36 +21,38 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
-import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
 public class OpensearchRepository {
 
-  private final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
-  private final int SCROLL_PAGE_SIZE = 100;
+  private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
+  private static final int SCROLL_PAGE_SIZE = 100;
+  protected final OpenSearchAsyncClient client;
+  protected final Executor executor;
+  protected final Logger logger;
+
+  public OpensearchRepository(
+      final OpenSearchAsyncClient client, final Executor executor, final Logger logger) {
+    this.client = client;
+    this.executor = executor;
+    this.logger = logger;
+  }
 
   /**
-   * Variant of {@link #fetchUnboundedDocumentCollection(OpenSearchAsyncClient, Executor, Logger,
-   * SearchRequest.Builder, Class, Function)} to use when you don't care about the source document,
-   * meaning you won't be using any deserialization functionality.
+   * Variant of {@link #fetchUnboundedDocumentCollection(Builder, Class, Function)} to use when you
+   * don't care about the source document, meaning you won't be using any deserialization
+   * functionality.
    */
   public <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
-      final OpenSearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final SearchRequest.Builder requestBuilder,
-      final Function<Hit<Object>, T> transformer) {
-    return fetchUnboundedDocumentCollection(
-        client, executor, logger, requestBuilder, Object.class, transformer);
+      final Builder requestBuilder, final Function<Hit<Object>, T> transformer) {
+    return fetchUnboundedDocumentCollection(requestBuilder, Object.class, transformer);
   }
 
   public <TDocument, TResult> CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
-      final OpenSearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final SearchRequest.Builder requestBuilder,
+      final Builder requestBuilder,
       final Class<TDocument> type,
       final Function<Hit<TDocument>, TResult> transformer) {
     final var request =
@@ -67,24 +69,16 @@ public class OpensearchRepository {
               r -> {
                 try {
                   return clearScrollOnComplete(
-                      client,
-                      executor,
-                      logger,
                       r.scrollId(),
                       scrollDocuments(
-                          client,
-                          r.hits().hits(),
-                          r.scrollId(),
-                          new ArrayList<>(),
-                          transformer,
-                          type));
+                          r.hits().hits(), r.scrollId(), new ArrayList<>(), transformer, type));
                 } catch (final Exception e) {
                   // scrollDocuments may fail, in which case we still want to clear the scroll
                   // anyway
                   // we don't need to do this later on however, since at this point our async
                   // pipeline
                   // is set up already to clear it
-                  return clearScroll(client, executor, logger, r.scrollId(), null, e);
+                  return clearScroll(r.scrollId(), null, e);
                 }
               },
               executor);
@@ -94,27 +88,16 @@ public class OpensearchRepository {
   }
 
   private <T> CompletionStage<T> clearScrollOnComplete(
-      final OpenSearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final String scrollId,
-      final CompletionStage<T> scrollOperation) {
+      final String scrollId, final CompletionStage<T> scrollOperation) {
     return scrollOperation
         // we combine `handleAsync` and `thenComposeAsync` to emulate the behavior of a try/finally
         // so we always clear the scroll even if the future is already failed
-        .handleAsync(
-            (result, error) -> clearScroll(client, executor, logger, scrollId, result, error),
-            executor)
+        .handleAsync((result, error) -> clearScroll(scrollId, result, error), executor)
         .thenComposeAsync(Function.identity(), executor);
   }
 
   private <T> CompletableFuture<T> clearScroll(
-      final OpenSearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final String scrollId,
-      final T result,
-      final Throwable error) {
+      final String scrollId, final T result, final Throwable error) {
     final var request = new ClearScrollRequest.Builder().scrollId(scrollId).build();
     final CompletionStage<T> endResult =
         error != null
@@ -141,7 +124,6 @@ public class OpensearchRepository {
   }
 
   private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
-      final OpenSearchAsyncClient client,
       final List<Hit<TResult>> hits,
       final String scrollId,
       final List<TDocument> accumulator,
@@ -159,9 +141,7 @@ public class OpensearchRepository {
       return client
           .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), type)
           .thenComposeAsync(
-              r ->
-                  scrollDocuments(
-                      client, r.hits().hits(), r.scrollId(), accumulator, transformer, type));
+              r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator, transformer, type));
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }

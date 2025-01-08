@@ -11,7 +11,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -31,27 +30,29 @@ public class ElasticsearchRepository {
 
   public static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
   public static final int SCROLL_PAGE_SIZE = 100;
+  protected final ElasticsearchAsyncClient client;
+  protected final Executor executor;
+  protected final Logger logger;
+
+  public ElasticsearchRepository(
+      final ElasticsearchAsyncClient client, final Executor executor, final Logger logger) {
+    this.client = client;
+    this.executor = executor;
+    this.logger = logger;
+  }
 
   /**
-   * Variant of {@link #fetchUnboundedDocumentCollection(ElasticsearchAsyncClient, Executor, Logger,
-   * Builder, Class, Function)} to use when you don't care about the source document, meaning you
-   * won't be using any deserialization functionality.
+   * Variant of {@link #fetchUnboundedDocumentCollection(Builder, Class, Function)} to use when you
+   * don't care about the source document, meaning you won't be using any deserialization
+   * functionality.
    */
   public <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
-      final ElasticsearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final Builder requestBuilder,
-      final Function<Hit<Object>, T> transformer) {
-    return fetchUnboundedDocumentCollection(
-        client, executor, logger, requestBuilder, Object.class, transformer);
+      final Builder requestBuilder, final Function<Hit<Object>, T> transformer) {
+    return fetchUnboundedDocumentCollection(requestBuilder, Object.class, transformer);
   }
 
   public <TDocument, TResult> CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
-      final ElasticsearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final SearchRequest.Builder requestBuilder,
+      final Builder requestBuilder,
       final Class<TDocument> type,
       final Function<Hit<TDocument>, TResult> transformer) {
     final var request =
@@ -67,29 +68,20 @@ public class ElasticsearchRepository {
             r -> {
               try {
                 return clearScrollOnComplete(
-                    client,
-                    executor,
-                    logger,
                     r.scrollId(),
                     scrollDocuments(
-                        client,
-                        r.hits().hits(),
-                        r.scrollId(),
-                        new ArrayList<>(),
-                        transformer,
-                        type));
+                        r.hits().hits(), r.scrollId(), new ArrayList<>(), transformer, type));
               } catch (final Exception e) {
                 // scrollDocuments may fail, in which case we still want to clear the scroll anyway
                 // we don't need to do this later on however, since at this point our async pipeline
                 // is set up already to clear it
-                return clearScroll(client, executor, logger, r.scrollId(), null, e);
+                return clearScroll(r.scrollId(), null, e);
               }
             },
             executor);
   }
 
   private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
-      final ElasticsearchAsyncClient client,
       final List<Hit<TResult>> hits,
       final String scrollId,
       final List<TDocument> accumulator,
@@ -106,33 +98,20 @@ public class ElasticsearchRepository {
     return client
         .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), type)
         .thenComposeAsync(
-            r ->
-                scrollDocuments(
-                    client, r.hits().hits(), r.scrollId(), accumulator, transformer, type));
+            r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator, transformer, type));
   }
 
   private <T> CompletionStage<T> clearScrollOnComplete(
-      final ElasticsearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final String scrollId,
-      final CompletionStage<T> scrollOperation) {
+      final String scrollId, final CompletionStage<T> scrollOperation) {
     return scrollOperation
         // we combine `handleAsync` and `thenComposeAsync` to emulate the behavior of a try/finally
         // so we always clear the scroll even if the future is already failed
-        .handleAsync(
-            (result, error) -> clearScroll(client, executor, logger, scrollId, result, error),
-            executor)
+        .handleAsync((result, error) -> clearScroll(scrollId, result, error), executor)
         .thenComposeAsync(Function.identity(), executor);
   }
 
   private <T> CompletableFuture<T> clearScroll(
-      final ElasticsearchAsyncClient client,
-      final Executor executor,
-      final Logger logger,
-      final String scrollId,
-      final T result,
-      final Throwable error) {
+      final String scrollId, final T result, final Throwable error) {
     final var request = new ClearScrollRequest.Builder().scrollId(scrollId).build();
     final CompletionStage<T> endResult =
         error != null

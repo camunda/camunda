@@ -59,9 +59,6 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   private final String listViewAlias;
   private final String flowNodeAlias;
   private final String operationAlias;
-  private final OpenSearchAsyncClient client;
-  private final Executor executor;
-  private final Logger logger;
 
   public OpenSearchIncidentUpdateRepository(
       final int partitionId,
@@ -73,15 +70,13 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.pendingUpdateAlias = pendingUpdateAlias;
     this.incidentAlias = incidentAlias;
     this.listViewAlias = listViewAlias;
     this.flowNodeAlias = flowNodeAlias;
     this.operationAlias = operationAlias;
-    this.client = client;
-    this.executor = executor;
-    this.logger = logger;
   }
 
   @Override
@@ -134,8 +129,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
             .query(q -> q.bool(b -> b.must(idQ, typeQ)))
             .source(s -> s.fetch(false));
 
-    return fetchUnboundedDocumentCollection(
-        client, executor, logger, request, hit -> new Document(hit.id(), hit.index()));
+    return fetchUnboundedDocumentCollection(request, hit -> new Document(hit.id(), hit.index()));
   }
 
   @Override
@@ -145,8 +139,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
     final var request =
         new SearchRequest.Builder().index(flowNodeAlias).query(query).source(s -> s.fetch(false));
 
-    return fetchUnboundedDocumentCollection(
-        client, executor, logger, request, hit -> new Document(hit.id(), hit.index()));
+    return fetchUnboundedDocumentCollection(request, hit -> new Document(hit.id(), hit.index()));
   }
 
   @Override
@@ -166,9 +159,6 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
             .query(q -> q.bool(b -> b.must(idQ, typeQ)));
 
     return fetchUnboundedDocumentCollection(
-        client,
-        executor,
-        logger,
         request,
         ProcessInstanceForListViewEntity.class,
         hit ->
@@ -264,12 +254,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
             .index(incidentAlias);
 
     return fetchUnboundedDocumentCollection(
-        client,
-        executor,
-        logger,
-        request,
-        IncidentEntity.class,
-        h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+        request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {

@@ -43,11 +43,9 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
   private static final Integer RETRY_COUNT = 3;
-  private final ElasticsearchAsyncClient client;
-  private final Executor executor;
+
   private final String batchOperationIndex;
   private final String operationIndex;
-  private final Logger logger;
 
   public ElasticsearchBatchOperationUpdateRepository(
       final ElasticsearchAsyncClient client,
@@ -55,11 +53,10 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
       final String batchOperationIndex,
       final String operationIndex,
       final Logger logger) {
-    this.client = client;
-    this.executor = executor;
+
+    super(client, executor, logger);
     this.batchOperationIndex = batchOperationIndex;
     this.operationIndex = operationIndex;
-    this.logger = logger;
   }
 
   @Override
@@ -68,8 +65,7 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
         new SearchRequest.Builder()
             .index(batchOperationIndex)
             .query(q -> q.bool(b -> b.mustNot(m -> m.exists(e -> e.field(END_DATE)))));
-    return fetchUnboundedDocumentCollection(
-        client, executor, logger, request, BatchOperationEntity.class, Hit::id);
+    return fetchUnboundedDocumentCollection(request, BatchOperationEntity.class, Hit::id);
   }
 
   @Override

@@ -65,10 +65,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
-  private final OpenSearchAsyncClient client;
-  private final Executor executor;
   private final CamundaExporterMetrics metrics;
-  private final Logger logger;
   private final OpenSearchGenericClient genericClient;
   private final CalendarInterval rolloverInterval;
 
@@ -83,16 +80,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
+    super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
     this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
-    this.client = client;
-    this.executor = executor;
     this.metrics = metrics;
-    this.logger = logger;
 
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
