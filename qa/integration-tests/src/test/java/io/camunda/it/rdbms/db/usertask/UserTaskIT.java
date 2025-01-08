@@ -30,6 +30,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.UserTaskSort;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -465,11 +466,13 @@ public class UserTaskIT {
   public void shouldFindUserTaskWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final UserTaskReader processInstanceReader = rdbmsService.getUserTaskReader();
+    final OffsetDateTime completionDate = NOW.plusDays(1).truncatedTo(ChronoUnit.SECONDS);
 
     final String processDefinitionId = UserTaskFixtures.nextStringId();
     createAndSaveRandomUserTasks(rdbmsService, processDefinitionId);
     final UserTaskDbModel randomizedUserTask =
-        UserTaskFixtures.createRandomized(b -> b.processDefinitionId(processDefinitionId));
+        UserTaskFixtures.createRandomized(
+            b -> b.processDefinitionId(processDefinitionId).completionDate(completionDate));
     createAndSaveUserTask(rdbmsService, randomizedUserTask);
 
     final var searchResult =
@@ -484,6 +487,10 @@ public class UserTaskIT {
                     .processDefinitionKeys(randomizedUserTask.processDefinitionKey())
                     .candidateUserOperations(Operation.in(randomizedUserTask.candidateUsers()))
                     .candidateGroupOperations(Operation.in(randomizedUserTask.candidateGroups()))
+                    .creationDateOperations(
+                        Operation.lt(randomizedUserTask.creationDate().plusDays(1)))
+                    .completionDateOperations(
+                        Operation.gte(randomizedUserTask.completionDate().minusDays(2)))
                     .tenantIds(randomizedUserTask.tenantId())
                     .build(),
                 UserTaskSort.of(b -> b),
