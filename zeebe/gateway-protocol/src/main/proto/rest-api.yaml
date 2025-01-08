@@ -4031,8 +4031,7 @@ components:
           items:
             type: string
     TenantSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -4098,8 +4097,7 @@ components:
           items:
             $ref: "#/components/schemas/TenantResult"
     UserTaskSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -4132,8 +4130,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/UserTaskFilterRequest"
     UserTaskVariableSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -4403,8 +4400,7 @@ components:
           type: string
           description: The key of the form.
     VariableSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -4544,8 +4540,7 @@ components:
           description: The key of the process instance of this variable.
           type: string
     ProcessDefinitionSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -4668,8 +4663,7 @@ components:
           description: The key for this process definition.
           type: string
     ProcessInstanceSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -5099,8 +5093,7 @@ components:
           format: int64
           minimum: 1
     FlowNodeInstanceSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -5333,8 +5326,7 @@ components:
           description: Incident key associated with this flow node instance.
           type: string
     DecisionDefinitionSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -5396,8 +5388,7 @@ components:
           type: string
           description: The tenant ID of the decision definition.
     IncidentSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -5770,8 +5761,7 @@ components:
           items:
             $ref: "#/components/schemas/PermissionDTO"
     AuthorizationSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -5899,8 +5889,7 @@ components:
           description: The key of the created user
           type: string
     UserSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -5930,8 +5919,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
     MappingSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -6211,8 +6199,7 @@ components:
           items:
             type: string
     RoleSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -6336,8 +6323,7 @@ components:
           items:
             type: string
     GroupSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -7094,8 +7080,7 @@ components:
           items:
             type: object
     DecisionRequirementsSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
@@ -7396,8 +7381,7 @@ components:
           description: The value of the evaluated decision output.
           type: string
     DecisionInstanceSearchQuerySortRequest:
-      allOf:
-        - $ref: "#/components/schemas/SearchQuerySortRequest"
+      type: object
       properties:
         field:
           description: The field to sort by.
