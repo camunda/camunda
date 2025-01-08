@@ -760,6 +760,39 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void completingTaskListenerVariablesShouldBeVisibleOutsideUserTaskScope() {
+    // given: deploy a process with a user task having completing TL and service task following it
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcess(
+                p ->
+                    p.userTask(
+                            USER_TASK_ELEMENT_ID,
+                            t ->
+                                t.zeebeUserTask()
+                                    .zeebeAssignee("foo")
+                                    .zeebeTaskListener(l -> l.completing().type(listenerType)))
+                        .serviceTask(
+                            "subsequent_service_task",
+                            tb -> tb.zeebeJobType("subsequent_service_task"))));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when: complete TL job with a variable 'my_listener_var'
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withVariable("my_listener_var", "bar")
+        .complete();
+
+    // then: assert the variable 'my_listener_var' is accessible in the subsequent element
+    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    assertThat(subsequentServiceTaskJob.getVariables()).contains(entry("my_listener_var", "bar"));
+    completeJobs(processInstanceKey, "subsequent_service_task");
+  }
+
+  @Test
   public void shouldAllowTaskListenerVariablesInUserTaskOutputMappings() {
     // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
