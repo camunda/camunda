@@ -5,22 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config;
+package io.camunda.migration.identity.config.prop;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "camunda.migration.identity")
-public class IdentityMigrationProperties {
-  private ManagementIdentityProperties managementIdentity;
+public class ClusterProperties {
   private String organizationId;
-
-  public ManagementIdentityProperties getManagementIdentity() {
-    return managementIdentity;
-  }
-
-  public void setManagementIdentity(final ManagementIdentityProperties managementIdentity) {
-    this.managementIdentity = managementIdentity;
-  }
+  private String clusterId;
+  private String internalClientId;
 
   public String getOrganizationId() {
     return organizationId;
@@ -28,5 +21,21 @@ public class IdentityMigrationProperties {
 
   public void setOrganizationId(final String organizationId) {
     this.organizationId = organizationId;
+  }
+
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public void setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
+  }
+
+  public String getInternalClientId() {
+    return internalClientId;
+  }
+
+  public void setInternalClientId(final String internalClientId) {
+    this.internalClientId = internalClientId;
   }
 }

@@ -5,15 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config;
+package io.camunda.migration.identity.config.prop;
 
-public class ManagementIdentityProperties {
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "camunda.migration.identity.console")
+public class ConsoleProperties {
   private String baseUrl;
   private String issuerBackendUrl;
   private String clientId;
   private String clientSecret;
   private String audience;
-  private String issuerType;
 
   public String getBaseUrl() {
     return baseUrl;
@@ -21,6 +23,14 @@ public class ManagementIdentityProperties {
 
   public void setBaseUrl(final String baseUrl) {
     this.baseUrl = baseUrl;
+  }
+
+  public String getIssuerBackendUrl() {
+    return issuerBackendUrl;
+  }
+
+  public void setIssuerBackendUrl(final String issuerBackendUrl) {
+    this.issuerBackendUrl = issuerBackendUrl;
   }
 
   public String getClientId() {
@@ -45,21 +55,5 @@ public class ManagementIdentityProperties {
 
   public void setAudience(final String audience) {
     this.audience = audience;
-  }
-
-  public String getIssuerBackendUrl() {
-    return issuerBackendUrl;
-  }
-
-  public void setIssuerBackendUrl(final String issuerBackendUrl) {
-    this.issuerBackendUrl = issuerBackendUrl;
-  }
-
-  public String getIssuerType() {
-    return issuerType;
-  }
-
-  public void setIssuerType(final String issuerType) {
-    this.issuerType = issuerType;
   }
 }

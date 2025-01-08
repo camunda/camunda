@@ -9,14 +9,20 @@ package io.camunda.migration.identity;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.migration.api.Migrator;
-import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.config.prop.ClusterProperties;
+import io.camunda.migration.identity.config.prop.ConsoleProperties;
+import io.camunda.migration.identity.config.prop.ManagementIdentityProperties;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@EnableConfigurationProperties(IdentityMigrationProperties.class)
+@EnableConfigurationProperties({
+  ClusterProperties.class,
+  ManagementIdentityProperties.class,
+  ConsoleProperties.class
+})
 @Component("identity-migrator")
 public class MigrationRunner implements Migrator {
 

@@ -7,4 +7,14 @@
  */
 package io.camunda.migration.identity;
 
-public interface RoleMigrationHandler extends MigrationHandler {}
+import io.camunda.migration.identity.console.ConsoleClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConditionalOnBean(ConsoleClient.class)
+public class SaaSRoleMigrationHandler implements RoleMigrationHandler {
+
+  @Override
+  public void migrate() {}
+}

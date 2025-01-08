@@ -59,7 +59,7 @@ public class RoleMigrationHandlerTest {
   private final ManagementIdentityTransformer managementIdentityTransformer =
       new ManagementIdentityTransformer();
 
-  private final RoleMigrationHandler migrationHandler;
+  private final SMRoleMigrationHandler migrationHandler;
 
   @Captor private ArgumentCaptor<PatchAuthorizationRequest> patchAuthorizationRequestCaptor;
 
@@ -71,7 +71,7 @@ public class RoleMigrationHandlerTest {
     this.roleServices = roleServices;
     this.authorizationServices = authorizationServices;
     migrationHandler =
-        new RoleMigrationHandler(
+        new SMRoleMigrationHandler(
             roleServices,
             authorizationServices,
             Authentication.none(),
