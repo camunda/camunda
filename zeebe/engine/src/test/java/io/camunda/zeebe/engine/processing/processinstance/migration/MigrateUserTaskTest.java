@@ -13,9 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -417,6 +420,79 @@ public class MigrateUserTaskTest {
     // and finally complete the user task and continue the process
     ENGINE.userTask().ofInstance(processInstanceKey).withKey(userTaskKey).complete();
 
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.END_EVENT)
+                .withElementId("target_process_end")
+                .findAny())
+        .describedAs("Expect that the process instance is continued in the target process")
+        .isPresent();
+  }
+
+  @Test
+  public void shouldContinueListenerBlockingLifecycleTransition() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A", u -> u.zeebeUserTask().zeebeAssignee("frodo"))
+                    .zeebeTaskListener(
+                        l -> l.eventType(ZeebeTaskListenerEventType.completing).type("completing"))
+                    .endEvent("source_process_end")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B", u -> u.zeebeUserTask().zeebeAssignee("frodo"))
+                    .zeebeTaskListener(
+                        l -> l.eventType(ZeebeTaskListenerEventType.completing).type("completing"))
+                    .endEvent("target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    final var listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .getFirst();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.MIGRATED)
+                .withRecordKey(listenerJob.getKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the listener job is migrated to the target process")
+        .hasElementId("B")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasProcessDefinitionVersion(1)
+        .hasBpmnProcessId(targetProcessId);
+
+    // and when
+    ENGINE.job().withKey(listenerJob.getKey()).complete();
+
+    // then
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
