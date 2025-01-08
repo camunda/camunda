@@ -93,8 +93,7 @@ test.describe('Operations', () => {
     await expect(page.getByTestId('operations-entry')).toHaveCount(40);
   });
 
-  // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
-  test.skip('Retry and Cancel single instance @roundtrip', async ({
+  test('Retry and Cancel single instance @roundtrip', async ({
     commonPage,
     processesPage,
     processesPage: {filtersPanel},
@@ -175,8 +174,7 @@ test.describe('Operations', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
-  test.skip('Retry and cancel multiple instances @roundtrip', async ({
+  test('Retry and cancel multiple instances @roundtrip', async ({
     commonPage,
     processesPage: {filtersPanel},
     page,
