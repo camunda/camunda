@@ -338,24 +338,34 @@ public final class SearchQueryBuilders {
     if (operations == null || operations.isEmpty()) {
       return null;
     } else {
-      final var searchQueries = new ArrayList<SearchQuery>();
-      operations.forEach(
-          op -> {
-            searchQueries.add(
-                switch (op.operator()) {
-                  case EQUALS -> term(field, op.value());
-                  case NOT_EQUALS -> mustNot(term(field, op.value()));
-                  case EXISTS -> exists(field);
-                  case NOT_EXISTS -> mustNot(exists(field));
-                  case GREATER_THAN -> gt(field, op.value());
-                  case GREATER_THAN_EQUALS -> gte(field, op.value());
-                  case LOWER_THAN -> lt(field, op.value());
-                  case LOWER_THAN_EQUALS -> lte(field, op.value());
-                  case IN -> intTerms(field, op.values());
-                  default -> throw unexpectedOperation("Integer", op.operator());
-                });
-          });
-      return searchQueries;
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+
+      for (final Operation<Integer> op : operations) {
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, op.value()));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, op.value())));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(op.value()));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(op.value()));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(op.value()));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(op.value()));
+          case IN -> queries.add(intTerms(field, op.values()));
+          default -> throw unexpectedOperation("Integer", op.operator());
+        }
+      }
+
+      // Add the consolidated range query if any range operations were processed
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+
+      return queries;
     }
   }
 
@@ -364,24 +374,34 @@ public final class SearchQueryBuilders {
     if (operations == null || operations.isEmpty()) {
       return null;
     } else {
-      final var searchQueries = new ArrayList<SearchQuery>();
-      operations.forEach(
-          op -> {
-            searchQueries.add(
-                switch (op.operator()) {
-                  case EQUALS -> term(field, op.value());
-                  case NOT_EQUALS -> mustNot(term(field, op.value()));
-                  case EXISTS -> exists(field);
-                  case NOT_EXISTS -> mustNot(exists(field));
-                  case GREATER_THAN -> gt(field, op.value());
-                  case GREATER_THAN_EQUALS -> gte(field, op.value());
-                  case LOWER_THAN -> lt(field, op.value());
-                  case LOWER_THAN_EQUALS -> lte(field, op.value());
-                  case IN -> longTerms(field, op.values());
-                  default -> throw unexpectedOperation("Long", op.operator());
-                });
-          });
-      return searchQueries;
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+
+      for (final Operation<Long> op : operations) {
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, op.value()));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, op.value())));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(op.value()));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(op.value()));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(op.value()));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(op.value()));
+          case IN -> queries.add(longTerms(field, op.values()));
+          default -> throw unexpectedOperation("Long", op.operator());
+        }
+      }
+
+      // Add the consolidated range query if any range operations were processed
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+
+      return queries;
     }
   }
 
@@ -460,7 +480,7 @@ public final class SearchQueryBuilders {
 
   public static <C extends UntypedOperation> SearchQuery variableOperation(
       final String field, final C operation) {
-    // common operations
+    // Handle common operations
     final var res =
         switch (operation.operator()) {
           case EQUALS -> term(field, TypedValue.toTypedValue(operation.value()));
@@ -474,18 +494,33 @@ public final class SearchQueryBuilders {
       return res;
     }
 
-    // type specific operations
+    // Consolidate range operations for numeric types
     final var type = operation.type();
     if (type.equals(ValueTypeEnum.LONG) || type.equals(ValueTypeEnum.DOUBLE)) {
-      return switch (operation.operator()) {
-        case GREATER_THAN -> range(q -> q.field(field).gt(operation.value())).toSearchQuery();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+
+      switch (operation.operator()) {
+        case GREATER_THAN ->
+            rangeQueryBuilder =
+                buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(operation.value()));
         case GREATER_THAN_EQUALS ->
-            range(q -> q.field(field).gte(operation.value())).toSearchQuery();
-        case LOWER_THAN -> range(q -> q.field(field).lt(operation.value())).toSearchQuery();
-        case LOWER_THAN_EQUALS -> range(q -> q.field(field).lte(operation.value())).toSearchQuery();
+            rangeQueryBuilder =
+                buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(operation.value()));
+        case LOWER_THAN ->
+            rangeQueryBuilder =
+                buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(operation.value()));
+        case LOWER_THAN_EQUALS ->
+            rangeQueryBuilder =
+                buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(operation.value()));
         default -> throw unexpectedOperation("Variable (numeric)", operation.operator());
-      };
+      }
+
+      if (rangeQueryBuilder != null) {
+        return rangeQueryBuilder.build().toSearchQuery();
+      }
     }
+
+    // Handle string-specific operations
     if (type.equals(ValueTypeEnum.STRING)) {
       return switch (operation.operator()) {
         case LIKE -> wildcardQuery(field, (String) operation.value());
