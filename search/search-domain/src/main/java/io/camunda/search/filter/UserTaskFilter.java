@@ -11,8 +11,10 @@ import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +34,8 @@ public record UserTaskFilter(
     List<VariableValueFilter> processInstanceVariableFilter,
     List<VariableValueFilter> localVariableFilters,
     List<Long> elementInstanceKeys,
+    List<Operation<OffsetDateTime>> creationDateOperations,
+    List<Operation<OffsetDateTime>> completionDateOperations,
     String type)
     implements FilterBase {
 
@@ -50,6 +54,8 @@ public record UserTaskFilter(
     private List<VariableValueFilter> processInstanceVariableFilters;
     private List<VariableValueFilter> localVariableFilters;
     private List<Long> elementInstanceKeys;
+    private List<Operation<OffsetDateTime>> creationDateOperations;
+    private List<Operation<OffsetDateTime>> completionDateOperations;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
@@ -194,6 +200,28 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder creationDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      creationDateOperations = addValuesToList(creationDateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder creationDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return creationDateOperations(collectValues(operation, operations));
+    }
+
+    public Builder completionDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      completionDateOperations = addValuesToList(creationDateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder completionDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return completionDateOperations(collectValues(operation, operations));
+    }
+
     public Builder type(final String value) {
       type = value;
       return this;
@@ -216,6 +244,8 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(processInstanceVariableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(localVariableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(creationDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(completionDateOperations, Collections.emptyList()),
           type);
     }
   }

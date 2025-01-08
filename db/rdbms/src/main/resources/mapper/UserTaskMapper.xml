@@ -235,6 +235,24 @@
       )
     </if>
 
+    <!-- Creation Date Filters -->
+    <if test="filter.creationDateOperations != null and !filter.creationDateOperations.isEmpty()">
+      <foreach collection="filter.creationDateOperations" item="operation">
+        AND ut.CREATION_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Completion Date Filters -->
+    <if test="filter.completionDateOperations != null and !filter.completionDateOperations.isEmpty()">
+      <foreach collection="filter.completionDateOperations" item="operation">
+        AND ut.COMPLETION_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+
+
     <!-- Variables Filter -->
     <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
       AND EXISTS (Select * from VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
@@ -270,6 +288,8 @@
       </foreach>
       ))
     </if>
+
+
 
   </sql>
 
