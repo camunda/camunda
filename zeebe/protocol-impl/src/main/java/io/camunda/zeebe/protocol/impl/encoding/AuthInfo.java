@@ -74,12 +74,6 @@ public class AuthInfo extends UnpackedObject {
     return claimsProp.getValue();
   }
 
-  public void wrap(final AuthInfo authInfo) {
-    formatProp.setValue(authInfo.getFormat());
-    authDataProp.setValue(authInfo.getAuthData());
-    claimsProp.setValue(authInfo.getClaimsBuffer());
-  }
-
   @Override
   public void reset() {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
