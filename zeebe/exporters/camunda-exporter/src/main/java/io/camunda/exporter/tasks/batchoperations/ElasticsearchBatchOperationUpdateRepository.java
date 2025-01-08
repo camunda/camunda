@@ -72,7 +72,8 @@ public class ElasticsearchBatchOperationUpdateRepository implements BatchOperati
   }
 
   @Override
-  public List<OperationsAggData> getFinishedOperationsCount(final List<String> batchOperationIds) {
+  public List<OperationsAggData> getFinishedOperationsCount(
+      final Collection<String> batchOperationIds) {
     if (batchOperationIds == null || batchOperationIds.isEmpty()) {
       return List.of();
     }

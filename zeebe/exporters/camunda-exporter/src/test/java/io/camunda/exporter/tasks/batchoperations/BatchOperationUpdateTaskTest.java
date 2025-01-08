@@ -13,6 +13,7 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -72,7 +73,7 @@ public class BatchOperationUpdateTaskTest {
 
     @Override
     public List<OperationsAggData> getFinishedOperationsCount(
-        final List<String> batchOperationIds) {
+        final Collection<String> batchOperationIds) {
       return finishedOperationsCount;
     }
 

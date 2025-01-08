@@ -33,26 +33,27 @@ public class BatchOperationUpdateTask implements BackgroundTask {
 
     final var batchOperationIds = batchOperationUpdateRepository.getNotFinishedBatchOperations();
 
-    if (!batchOperationIds.isEmpty()) {
-
-      final List<OperationsAggData> finishedSingleOperationsCount =
-          batchOperationUpdateRepository.getFinishedOperationsCount((List) batchOperationIds);
-
-      final var documentUpdates =
-          finishedSingleOperationsCount.stream()
-              .map(d -> new DocumentUpdate(d.batchOperationId(), d.finishedOperationsCount()))
-              .toList();
-
-      if (documentUpdates.size() > 0) {
-        final Integer updatesCount = batchOperationUpdateRepository.bulkUpdate(documentUpdates);
-        logger.trace(
-            "Updated {} batch operations with the following completedOperationsCount {}",
-            updatesCount,
-            documentUpdates);
-        return CompletableFuture.completedFuture(updatesCount);
-      } // else return 0
+    if (batchOperationIds.isEmpty()) {
+      return CompletableFuture.completedFuture(NO_UPDATES);
     }
 
-    return CompletableFuture.completedFuture(NO_UPDATES);
+    final List<OperationsAggData> finishedSingleOperationsCount =
+        batchOperationUpdateRepository.getFinishedOperationsCount(batchOperationIds);
+
+    final var documentUpdates =
+        finishedSingleOperationsCount.stream()
+            .map(d -> new DocumentUpdate(d.batchOperationId(), d.finishedOperationsCount()))
+            .toList();
+
+    if (documentUpdates.isEmpty()) {
+      return CompletableFuture.completedFuture(NO_UPDATES);
+    }
+
+    final Integer updatesCount = batchOperationUpdateRepository.bulkUpdate(documentUpdates);
+    logger.trace(
+        "Updated {} batch operations with the following completedOperationsCount {}",
+        updatesCount,
+        documentUpdates);
+    return CompletableFuture.completedFuture(updatesCount);
   }
 }

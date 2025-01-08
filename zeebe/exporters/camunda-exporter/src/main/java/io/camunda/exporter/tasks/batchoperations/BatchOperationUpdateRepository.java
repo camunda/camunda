@@ -26,7 +26,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    *
    * @param batchOperationIds list of batch operation ids
    */
-  List<OperationsAggData> getFinishedOperationsCount(List<String> batchOperationIds);
+  List<OperationsAggData> getFinishedOperationsCount(Collection<String> batchOperationIds);
 
   /**
    * Updates the batch operations with the amount of finished operations. Update method additionally
@@ -56,7 +56,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
 
     @Override
     public List<OperationsAggData> getFinishedOperationsCount(
-        final List<String> batchOperationIds) {
+        final Collection<String> batchOperationIds) {
       return List.of();
     }
 
