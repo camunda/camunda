@@ -145,8 +145,6 @@ abstract class BatchOperationUpdateRepositoryIT {
     }
   }
 
-  // TODO OpenSearchIT
-
   @Nested
   final class GetNotFinishedBatchOperationsTest {
     @Test
