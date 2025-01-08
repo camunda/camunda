@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import static io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat.JWT;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -17,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -97,19 +96,25 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public Map<String, Object> toDecodedMap() {
-    if (claimsProp.hasValue()) {
-      return getClaims();
-    }
-    if (JWT.equals(getFormat())) {
+    if (Objects.requireNonNull(getFormat()) == AuthDataFormat.JWT) {
       final String token = getAuthData();
       return new JwtDecoder(token).decode().getClaims();
     }
-    return Map.of();
+    return getClaims();
   }
 
   @Override
   public String toString() {
-    return "AuthInfo{" + "authData=" + BufferUtil.bufferAsString(claimsProp.getValue()) + '}';
+    return "AuthInfo{"
+        + "format="
+        + getFormat()
+        + ", "
+        + "authData="
+        + getAuthData()
+        + ", "
+        + "claims="
+        + getClaims()
+        + '}';
   }
 
   public enum AuthDataFormat {
