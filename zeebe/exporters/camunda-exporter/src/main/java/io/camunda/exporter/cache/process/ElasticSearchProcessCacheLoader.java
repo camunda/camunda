@@ -9,12 +9,13 @@ package io.camunda.exporter.cache.process;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
+import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +26,10 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
   private final ElasticsearchClient client;
   private final String processIndexName;
 
-  private final XMLUtil xmlUtil;
-
   public ElasticSearchProcessCacheLoader(
-      final ElasticsearchClient client, final String processIndexName, final XMLUtil xmlUtil) {
+      final ElasticsearchClient client, final String processIndexName) {
     this.client = client;
     this.processIndexName = processIndexName;
-    this.xmlUtil = xmlUtil;
   }
 
   @Override
@@ -57,8 +55,11 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
 
   private List<String> extractCallActivityIdsFromDiagram(final ProcessEntity processEntity) {
     final String bpmnXml = processEntity.getBpmnXml();
-    final Optional<ProcessEntity> diagramData =
-        xmlUtil.extractDiagramData(bpmnXml.getBytes(), processEntity.getBpmnProcessId());
-    return diagramData.isPresent() ? diagramData.get().getCallActivityIds() : new ArrayList<>();
+    return ProcessModelReader.of(
+            bpmnXml.getBytes(StandardCharsets.UTF_8), processEntity.getBpmnProcessId())
+        .map(
+            reader ->
+                reader.extractCallActivities().stream().map(BaseElement::getId).sorted().toList())
+        .orElseGet(ArrayList::new);
   }
 }

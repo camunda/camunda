@@ -64,7 +64,6 @@ import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -124,7 +123,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<>(
             configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new ExporterCacheMetrics("process", meterRegistry));
 
     final var formCache =
@@ -193,15 +192,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new DecisionEvaluationHandler(
                 indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
             new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
-                new XMLUtil(),
-                processCache),
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
             new MetricFromProcessInstanceHandler(
                 indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
             new TaskCompletedMetricHandler(
                 indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName()),
-            new EmbeddedFormHandler(
-                indexDescriptors.get(FormIndex.class).getFullQualifiedName(), new XMLUtil()),
+            new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
             new EventFromIncidentHandler(
