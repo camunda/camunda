@@ -65,7 +65,13 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   value,
                   UserTaskState.COMPLETED,
                   DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case MIGRATED -> userTaskWriter.update(map(value, UserTaskState.CREATED, null));
+      case MIGRATED ->
+          userTaskWriter.migrateToProcess(
+              value.getUserTaskKey(),
+              value.getProcessInstanceKey(),
+              value.getBpmnProcessId(),
+              value.getProcessDefinitionVersion(),
+              value.getElementId());
       default -> userTaskWriter.update(map(value, null, null));
     }
   }

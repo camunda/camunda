@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import java.util.Map;
 
 public class VariableWriter {
 
@@ -36,5 +37,16 @@ public class VariableWriter {
             variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.update",
             variable));
+  }
+
+  public void migrateToProcess(final long variableKey, final String processDefinitionId) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            variableKey,
+            "io.camunda.db.rdbms.sql.VariableMapper.migrateToProcess",
+            Map.of(
+                "variableKey", variableKey,
+                "processDefinitionId", processDefinitionId)));
   }
 }

@@ -38,6 +38,15 @@ public class IncidentWriter {
             incident));
   }
 
+  public void update(final IncidentDbModel incident) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.INCIDENT,
+            incident.incidentKey(),
+            "io.camunda.db.rdbms.sql.IncidentMapper.update",
+            incident));
+  }
+
   public void resolve(final Long incidentKey) {
     final boolean wasMerged =
         mergeToQueue(incidentKey, b -> b.state(IncidentState.RESOLVED).errorMessage(null));
