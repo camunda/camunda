@@ -24,7 +24,6 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -33,6 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,8 +45,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 final class IdentitySetupInitializerIT {
 
   private static PasswordEncoder passwordEncoder;
-  @AutoCloseResource private CamundaClient client;
-  @AutoCloseResource private TestStandaloneBroker broker;
+  @AutoClose private CamundaClient client;
+  @AutoClose private TestStandaloneBroker broker;
 
   @BeforeAll
   static void beforeAll() {

@@ -8,22 +8,20 @@
 package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.archiver.ArchiverJob;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@AutoCloseResources
 final class ReschedulingTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ReschedulingTaskTest.class);
 
-  @AutoCloseResource
+  @AutoClose
   private final ScheduledThreadPoolExecutor executor =
       Mockito.spy(new ScheduledThreadPoolExecutor(1));
 

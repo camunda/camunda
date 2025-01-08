@@ -33,7 +33,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.camunda.zeebe.test.broker.protocol.brokerapi.StubBroker;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -45,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,16 +52,16 @@ import org.junit.jupiter.api.TestInfo;
 
 public final class BrokerClientTest {
 
-  @AutoCloseResource
+  @AutoClose
   private final ActorScheduler actorScheduler = ActorScheduler.newActorScheduler().build();
 
-  @AutoCloseResource private final StubBroker broker = new StubBroker().start();
-  @AutoCloseResource private BrokerClient client;
-  @AutoCloseResource private AtomixCluster atomixCluster;
+  @AutoClose private final StubBroker broker = new StubBroker().start();
+  @AutoClose private BrokerClient client;
+  @AutoClose private AtomixCluster atomixCluster;
 
   // keep as field to ensure it gets closed at the end
   @SuppressWarnings({"FieldCanBeLocal", "Unused"})
-  @AutoCloseResource
+  @AutoClose
   private BrokerTopologyManagerImpl topologyManager;
 
   @BeforeEach

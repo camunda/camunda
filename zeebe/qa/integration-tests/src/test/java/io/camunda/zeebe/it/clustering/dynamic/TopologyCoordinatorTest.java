@@ -15,7 +15,6 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -23,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @ZeebeIntegration
-@AutoCloseResources
 @Timeout(2 * 60)
 final class TopologyCoordinatorTest {
   private static final int PARTITIONS_COUNT = 3;

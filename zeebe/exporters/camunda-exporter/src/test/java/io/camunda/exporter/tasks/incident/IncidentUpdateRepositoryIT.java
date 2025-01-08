@@ -40,8 +40,6 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.IOException;
 import java.time.Duration;
@@ -57,6 +55,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -69,7 +68,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SuppressWarnings("resource")
 @Testcontainers
-@AutoCloseResources
 abstract class IncidentUpdateRepositoryIT {
   public static final int PARTITION_ID = 1;
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateRepositoryIT.class);
@@ -79,7 +77,7 @@ abstract class IncidentUpdateRepositoryIT {
   protected final ListViewTemplate listViewTemplate;
   protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   protected final OperationTemplate operationTemplate;
-  @AutoCloseResource private final ClientAdapter clientAdapter;
+  @AutoClose private final ClientAdapter clientAdapter;
   private final SearchEngineClient engineClient;
 
   protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {

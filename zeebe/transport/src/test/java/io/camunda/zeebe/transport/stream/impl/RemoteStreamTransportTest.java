@@ -16,8 +16,6 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
@@ -29,6 +27,7 @@ import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import org.agrona.collections.ArrayUtil;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,14 +37,13 @@ import org.junit.jupiter.api.Test;
  * dealing with expected error handling/propagation. If there's ever an easy way to build that
  * without building a whole cluster instance, then we can refactor this.
  */
-@AutoCloseResources
 final class RemoteStreamTransportTest {
   private final List<Node> nodes = List.of(createNode("sender"), createNode("receiver"));
   private final RecordingBackoffSupplier senderBackoffSupplier = new RecordingBackoffSupplier();
 
-  @AutoCloseResource private final AtomixCluster sender = createClusterNode(nodes.get(0), nodes);
+  @AutoClose private final AtomixCluster sender = createClusterNode(nodes.get(0), nodes);
 
-  @AutoCloseResource
+  @AutoClose
   private final RemoteStreamTransport<TestSerializableData> transport =
       new RemoteStreamTransport<>(
           sender.getCommunicationService(),
@@ -58,14 +56,14 @@ final class RemoteStreamTransportTest {
               }),
           senderBackoffSupplier);
 
-  @AutoCloseResource
+  @AutoClose
   private final ActorScheduler scheduler =
       ActorScheduler.newActorScheduler()
           .setCpuBoundActorThreadCount(1)
           .setIoBoundActorThreadCount(0)
           .build();
 
-  @AutoCloseResource private final AtomixCluster receiver = createClusterNode(nodes.get(1), nodes);
+  @AutoClose private final AtomixCluster receiver = createClusterNode(nodes.get(1), nodes);
 
   @BeforeEach
   void beforeEach() {
