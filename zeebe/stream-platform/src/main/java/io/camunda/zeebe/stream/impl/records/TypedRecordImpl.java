@@ -90,7 +90,7 @@ public final class TypedRecordImpl implements TypedRecord {
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return metadata.getAuthorization().getClaims();
+    return metadata.getAuthorization().toDecodedMap();
   }
 
   @Override

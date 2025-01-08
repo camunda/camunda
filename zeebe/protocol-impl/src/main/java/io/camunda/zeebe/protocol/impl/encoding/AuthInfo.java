@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
+import static io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat.JWT;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
@@ -35,7 +38,7 @@ public class AuthInfo extends UnpackedObject {
     return formatProp.getValue();
   }
 
-  public AuthInfo setFormatProp(final AuthDataFormat format) {
+  public AuthInfo setFormat(final AuthDataFormat format) {
     formatProp.setValue(format);
     return this;
   }
@@ -91,6 +94,17 @@ public class AuthInfo extends UnpackedObject {
     write(buffer, 0);
 
     return buffer;
+  }
+
+  public Map<String, Object> toDecodedMap() {
+    if (claimsProp.hasValue()) {
+      return getClaims();
+    }
+    if (JWT.equals(getFormat())) {
+      final String token = getAuthData();
+      return new JwtDecoder(token).decode().getClaims();
+    }
+    return Map.of();
   }
 
   @Override

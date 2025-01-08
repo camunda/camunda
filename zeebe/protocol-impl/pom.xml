@@ -99,6 +99,10 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
+    </dependency>
   </dependencies>
 
 </project>

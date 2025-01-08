@@ -20,13 +20,18 @@ final class AuthInfoTest {
   void shouldEncodeDecodeAuthInfo() {
     // given
     final AuthInfo authInfo = new AuthInfo();
+    final String token = "token";
     final Map<String, Object> authInfoMap = Map.of("key", "value");
+    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
+    authInfo.setAuthData(token);
     authInfo.setClaims(authInfoMap);
 
     // when
     encodeDecode(authInfo);
 
     // then
+    assertThat(authInfo.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
+    assertThat(authInfo.getAuthData()).isEqualTo(token);
     assertThat(authInfo.getClaims()).isEqualTo(authInfoMap);
   }
 
@@ -39,6 +44,8 @@ final class AuthInfoTest {
     encodeDecode(authInfo);
 
     // then
+    assertThat(authInfo.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.UNKNOWN);
+    assertThat(authInfo.getAuthData()).isEqualTo("");
     assertThat(authInfo.getClaims()).isEqualTo(Map.of());
   }
 
