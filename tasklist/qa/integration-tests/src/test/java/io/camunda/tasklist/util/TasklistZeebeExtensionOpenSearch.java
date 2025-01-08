@@ -88,6 +88,6 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Override
   protected int getDatabasePort() {
-    return 9205;
+    return 9200;
   }
 }
