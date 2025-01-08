@@ -9,8 +9,6 @@ package io.camunda.zeebe.broker.system.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -21,16 +19,16 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@AutoCloseResources
 public class HealthTreeMetricsTest {
   private MeterRegistry meterRegistry;
-  @AutoCloseResource private HealthTreeMetrics metrics;
+  @AutoClose private HealthTreeMetrics metrics;
 
   @BeforeEach
   public void setup() {

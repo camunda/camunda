@@ -26,8 +26,6 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.channel.ChannelHandlerContext;
@@ -57,6 +55,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -65,7 +64,6 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 /** Netty messaging service test. */
-@AutoCloseResources
 final class NettyMessagingServiceTest {
   private static final String CLUSTER_NAME = "zeebe";
   private static final int UID_COLUMN = 7;
@@ -124,10 +122,10 @@ final class NettyMessagingServiceTest {
 
   @Nested
   final class VersionTest {
-    @AutoCloseResource private final NettyMessagingService nettyv11 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService nettyv12 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService nettyv21 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService nettyv22 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv11 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv12 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv21 = newMessagingService();
+    @AutoClose private final NettyMessagingService nettyv22 = newMessagingService();
 
     @BeforeEach
     void beforeEach() {
@@ -224,8 +222,8 @@ final class NettyMessagingServiceTest {
 
   @Nested
   final class DualInstanceTest {
-    @AutoCloseResource private final NettyMessagingService netty1 = newMessagingService();
-    @AutoCloseResource private final NettyMessagingService netty2 = newMessagingService();
+    @AutoClose private final NettyMessagingService netty1 = newMessagingService();
+    @AutoClose private final NettyMessagingService netty2 = newMessagingService();
 
     @BeforeEach
     void beforeEach() {

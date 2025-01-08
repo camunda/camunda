@@ -21,15 +21,13 @@ import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 public class TasklistProcessDefinitionAuthorizationIT {
 
@@ -44,9 +42,9 @@ public class TasklistProcessDefinitionAuthorizationIT {
   private static final String TEST_USER_PASSWORD = "bar";
   private static long testUserKey;
 
-  @AutoCloseResource private static AuthorizationsUtil adminAuthClient;
-  @AutoCloseResource private static CamundaClient adminCamundaClient;
-  @AutoCloseResource private static TestRestTasklistClient tasklistRestClient;
+  @AutoClose private static AuthorizationsUtil adminAuthClient;
+  @AutoClose private static CamundaClient adminCamundaClient;
+  @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
   private static long processDefinitionKey;
 
