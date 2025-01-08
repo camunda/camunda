@@ -181,4 +181,12 @@ public final class DeploymentClient {
 
     return expectation.apply(position, forEachPartition);
   }
+
+  public Record<DeploymentRecordValue> deploy(final String username, final String usernameClaim) {
+    final long position =
+        writer.writeAuthorizedCommand(
+            DeploymentIntent.CREATE, deploymentRecord, username, usernameClaim);
+
+    return expectation.apply(position, forEachPartition);
+  }
 }

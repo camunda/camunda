@@ -133,7 +133,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     return switch (entityType) {
       case USER -> userState.getUser(entityKey).isPresent();
       case MAPPING -> mappingState.get(entityKey).isPresent();
-      case GROUP -> groupState.get(entityKey).isPresent();
+      case GROUP -> groupState.get("entityKey").isPresent();
       default -> false;
     };
   }

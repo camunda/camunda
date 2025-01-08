@@ -12,6 +12,7 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -45,12 +46,14 @@ public final class AuthorizationCheckBehavior {
   private final UserState userState;
   private final SecurityConfiguration securityConfig;
   private final MappingState mappingState;
+  private final GroupState groupState;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
     userState = processingState.getUserState();
     mappingState = processingState.getMappingState();
+    groupState = processingState.getGroupState();
     processingState.getTenantState();
     this.securityConfig = securityConfig;
   }
@@ -229,9 +232,17 @@ public final class AuthorizationCheckBehavior {
                 .get(
                     Authorization.USER_TOKEN_CLAIM_PREFIX
                         + securityConfig.getAuthorizations().getOidc().getUsername());
-    return authorizationState
-        .getResourceIdentifiers(username, request.getResourceType(), request.getPermissionType())
-        .stream();
+
+    final var assignedGroupIds = groupState.getGroupIdsForEntity(username);
+    assignedGroupIds.add(username); // TODO this is dirty, the name is wrong now
+
+    return assignedGroupIds.stream()
+        .flatMap(
+            groupId ->
+                authorizationState
+                    .getResourceIdentifiers(
+                        groupId, request.getResourceType(), request.getPermissionType())
+                    .stream());
   }
 
   private Stream<String> getAdvancedMapping(final AuthorizationRequest request) {

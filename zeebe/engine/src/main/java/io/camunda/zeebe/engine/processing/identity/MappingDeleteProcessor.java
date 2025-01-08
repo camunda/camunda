@@ -138,7 +138,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           keyGenerator.nextKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setEntityId(groupKey)
+              .setGroupId(groupKey)
               .setEntityKey(mappingKey)
               .setEntityType(EntityType.MAPPING));
     }

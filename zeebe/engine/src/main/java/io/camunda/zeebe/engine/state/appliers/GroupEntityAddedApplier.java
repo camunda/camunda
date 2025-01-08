@@ -32,19 +32,14 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
     // get the record key from the GroupRecord, as the key argument
     // may belong to the distribution command
     final var groupKey = value.getGroupKey();
-    final var id = value.getEntityId();
-    groupState.addEntity(groupKey, value);
+    final var id = value.getGroupId();
+    groupState.addEntity(id, value);
 
     final var entityKey = value.getEntityKey();
     final var entityType = value.getEntityType();
     switch (entityType) {
       case USER -> userState.addGroup(entityKey, id);
       case MAPPING -> mappingState.addGroup(entityKey, id);
-      default ->
-          throw new IllegalStateException(
-              String.format(
-                  "Expected to add entity '%d' to group '%d', but entities of type '%s' cannot be added to groups.",
-                  entityKey, groupKey, entityType));
     }
   }
 }

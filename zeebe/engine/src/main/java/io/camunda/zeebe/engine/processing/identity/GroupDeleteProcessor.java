@@ -54,10 +54,10 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
+    final var groupId = record.getGroupId();
+    final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupKey);
+      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -77,8 +77,10 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
     removeAssignedEntities(record);
 
-    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
+    stateWriter.appendFollowUpEvent(
+        persistedRecord.get().getGroupKey(), GroupIntent.DELETED, record);
+    responseWriter.writeEventOnCommand(
+        persistedRecord.get().getGroupKey(), GroupIntent.DELETED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -91,7 +93,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     groupState
-        .get(record.getGroupKey())
+        .get(record.getGroupId())
         .ifPresentOrElse(
             group -> {
               removeAssignedEntities(command.getValue());
@@ -109,7 +111,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private void removeAssignedEntities(final GroupRecord record) {
     final var groupKey = record.getGroupKey();
     groupState
-        .getEntitiesByType(groupKey)
+        .getEntitiesByType(record.getGroupId())
         .forEach(
             (entityType, entityKeys) -> {
               entityKeys.forEach(

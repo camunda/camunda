@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.deployment;
+package io.camunda.zeebe.engine.processing.group;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.OidcConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -18,8 +19,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.protocol.record.value.UserRecordValue;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -30,7 +29,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class DeploymentCreateAuthorizationTest {
+public class SimpleMappingAuthorizationTest {
+
+  public static final String USERNAME_CLAIM = "USERNAME_CLAIM";
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -43,7 +44,14 @@ public class DeploymentCreateAuthorizationTest {
       EngineRule.singlePartition()
           .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSecurityConfig(
+              cfg -> {
+                final var oidc = new OidcConfiguration();
+                oidc.setEnabled(true);
+                oidc.setUsername(USERNAME_CLAIM);
+                cfg.getAuthorizations().setOidc(oidc);
+              });
 
   private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
@@ -58,63 +66,45 @@ public class DeploymentCreateAuthorizationTest {
   }
 
   @Test
-  public void shouldBeAuthorizedToDeployWithDefaultUser() {
+  public void verifyPermissionOfSimpleMapping() {
     // given
-    final var processId = Strings.newRandomValidBpmnId();
-
-    // when
+    final var username = UUID.randomUUID().toString();
     ENGINE
-        .deployment()
-        .withXmlResource(
-            "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-        .deploy(defaultUserKey);
+        .authorization()
+        .permission()
+        .withOwnerId(username)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "*")
+        .add(defaultUserKey);
 
     // when
+    final var response =
+        ENGINE
+            .deployment()
+            .withXmlResource(Bpmn.createExecutableProcess().startEvent().endEvent().done())
+            .deploy(username, USERNAME_CLAIM);
+
+    // then
     assertThat(
             RecordingExporter.processRecords(ProcessIntent.CREATED)
-                .withBpmnProcessId(processId)
+                .withBpmnProcessId(
+                    response.getValue().getProcessesMetadata().getFirst().getBpmnProcessId())
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldBeAuthorizedToDeployWithPermissions() {
+  public void verifyNoPermissionOfSimpleMapping() {
     // given
-    final var processId = Strings.newRandomValidBpmnId();
-    final var user = createUser();
-    addPermissionsToUser(
-        user.getUsername(), AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
-
-    // when
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-        .deploy(user.getUserKey());
-
-    // when
-    assertThat(
-            RecordingExporter.processRecords(ProcessIntent.CREATED)
-                .withBpmnProcessId(processId)
-                .exists())
-        .isTrue();
-  }
-
-  @Test
-  public void shouldBeUnAuthorizedToDeployWithPermissions() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    final var user = createUser();
+    final var username = UUID.randomUUID().toString();
 
     // when
     final var rejection =
         ENGINE
             .deployment()
-            .withXmlResource(
-                "process.bpmn",
-                Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .withXmlResource(Bpmn.createExecutableProcess().startEvent().endEvent().done())
             .expectRejection()
-            .deploy(user.getUserKey());
+            .deploy(username, USERNAME_CLAIM);
 
     // then
     Assertions.assertThat(rejection)
@@ -123,27 +113,34 @@ public class DeploymentCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
-        .user()
-        .newUser(UUID.randomUUID().toString())
-        .withPassword(UUID.randomUUID().toString())
-        .withName(UUID.randomUUID().toString())
-        .withEmail(UUID.randomUUID().toString())
-        .create()
-        .getValue();
-  }
-
-  private void addPermissionsToUser(
-      final String username,
-      final AuthorizationResourceType authorization,
-      final PermissionType permissionType) {
+  @Test
+  public void verifyGroupPermissionOfSimpleMapping() {
+    // given
+    final var username = UUID.randomUUID().toString();
+    final var groupId = UUID.randomUUID().toString();
+    ENGINE.group().newGroup("group").withGroupId(groupId).create();
     ENGINE
         .authorization()
         .permission()
-        .withOwnerId(username)
-        .withResourceType(authorization)
-        .withPermission(permissionType, "*")
+        .withOwnerId(groupId)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "*")
         .add(defaultUserKey);
+    ENGINE.group().addEntity(groupId).withEntityId(username).add();
+
+    // when
+    final var response =
+        ENGINE
+            .deployment()
+            .withXmlResource(Bpmn.createExecutableProcess().startEvent().endEvent().done())
+            .deploy(username, USERNAME_CLAIM);
+
+    // then
+    assertThat(
+            RecordingExporter.processRecords(ProcessIntent.CREATED)
+                .withBpmnProcessId(
+                    response.getValue().getProcessesMetadata().getFirst().getBpmnProcessId())
+                .exists())
+        .isTrue();
   }
 }

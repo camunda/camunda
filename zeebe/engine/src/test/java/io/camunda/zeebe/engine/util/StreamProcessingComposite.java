@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.engine.util;
 
+import static io.camunda.zeebe.auth.impl.Authorization.USER_TOKEN_CLAIM_PREFIX;
+
+import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
+import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -17,6 +21,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -178,6 +183,36 @@ public class StreamProcessingComposite implements CommandWriter {
             .intent(intent)
             .authorizations(authorizedTenants)
             .event(value);
+    return writeActor.submit(writer::write).join();
+  }
+
+  @Override
+  public long writeAuthorizedCommand(
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String username,
+      final String usernameClaim) {
+    final var requestId = new Random().nextLong();
+    final var requestStreamId = new Random().nextInt();
+    final String authorizationToken =
+        Authorization.jwtEncoder()
+            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
+            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
+            .withClaim(USER_TOKEN_CLAIM_PREFIX + usernameClaim, username)
+            .encode();
+    final var auth = new AuthInfo();
+    auth.setFormatProp(AuthDataFormat.JWT).setAuthData(authorizationToken);
+
+    final var writer =
+        streams
+            .newRecord(getLogName(partitionId))
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .authorizations(auth)
+            .requestId(requestId)
+            .requestStreamId(requestStreamId)
+            .event(recordValue);
     return writeActor.submit(writer::write).join();
   }
 

@@ -23,7 +23,7 @@ import java.util.HashSet;
 public class PermissionsBehavior {
 
   public static final String OWNER_NOT_FOUND_MESSAGE =
-      "Expected to find owner with key: '%d', but none was found";
+      "Expected to find owner with key: '%s', but none was found";
   public static final String PERMISSION_ALREADY_EXISTS_MESSAGE =
       "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'";
   public static final String PERMISSION_NOT_FOUND_MESSAGE =

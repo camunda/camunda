@@ -60,7 +60,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var setupRecord = new IdentitySetupRecord();
 
-    final var defaultRole = new RoleRecord().setName(DEFAULT_ROLE_NAME);
+    final var defaultRole =
+        new RoleRecord().setName(DEFAULT_ROLE_NAME).setEntityId(DEFAULT_ROLE_NAME);
     setupRecord.setDefaultRole(defaultRole);
 
     securityConfig

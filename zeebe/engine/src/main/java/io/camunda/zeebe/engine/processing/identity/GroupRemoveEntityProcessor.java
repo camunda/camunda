@@ -62,12 +62,12 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
+    final var groupId = record.getGroupId();
+    final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
+              .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -84,19 +84,23 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       return;
     }
 
-    final var entityKey = record.getEntityKey();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
-      final var errorMessage =
-          "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
-              .formatted(entityKey, entityType, groupKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
+    // TODO only do this validation when we don't use OIDC
+    //    final var entityKey = record.getEntityKey();
+    //    final var entityType = record.getEntityType();
+    //    if (!isEntityPresent(entityKey, entityType)) {
+    //      final var errorMessage =
+    //          "Expected to remove an entity with key '%s' and type '%s' from group with key '%s',
+    // but the entity does not exist."
+    //              .formatted(entityKey, entityType, groupId);
+    //      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+    //      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    //      return;
+    //    }
 
-    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_REMOVED, record, command);
+    stateWriter.appendFollowUpEvent(
+        persistedRecord.get().getGroupKey(), GroupIntent.ENTITY_REMOVED, record);
+    responseWriter.writeEventOnCommand(
+        persistedRecord.get().getGroupKey(), GroupIntent.ENTITY_REMOVED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -110,7 +114,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     final var record = command.getValue();
 
     groupState
-        .getEntityType(record.getGroupKey(), record.getEntityKey())
+        .getEntityType(record.getGroupId(), record.getEntityKey())
         .ifPresentOrElse(
             entityType ->
                 stateWriter.appendFollowUpEvent(

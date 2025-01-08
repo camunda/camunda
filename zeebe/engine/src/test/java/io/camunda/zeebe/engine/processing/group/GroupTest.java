@@ -235,7 +235,7 @@ public class GroupTest {
     final var groupWithRemovedEntity =
         engine
             .group()
-            .removeEntity(groupKey)
+            .removeEntity("groupKey")
             .withEntityKey(userKey)
             .withEntityType(EntityType.USER)
             .remove()
@@ -275,7 +275,7 @@ public class GroupTest {
     final var notPresentUpdateRecord =
         engine
             .group()
-            .removeEntity(groupKey)
+            .removeEntity("groupKey")
             .withEntityKey(1L)
             .withEntityType(EntityType.USER)
             .expectRejection()
@@ -355,5 +355,43 @@ public class GroupTest {
         .hasRejectionReason(
             "Expected to delete group with key '%s', but a group with this key does not exist."
                 .formatted(notPresentGroupKey));
+  }
+
+  @Test
+  public void shouldBeAbleToAddUserToGroupUsingOIDC() {
+    // given
+    // a user
+    // a group
+
+    // when
+    // assign user to group
+
+    // then user should be assigned
+
+    // given
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var name = UUID.randomUUID().toString();
+    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+
+    // when
+    final var updatedGroup =
+        engine
+            .group()
+            .addEntity(groupKey)
+            .withEntityKey(userKey)
+            .withEntityType(EntityType.USER)
+            .add()
+            .getValue();
+
+    // then
+    assertThat(updatedGroup).hasEntityKey(userKey).hasEntityType(EntityType.USER);
   }
 }

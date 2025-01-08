@@ -12,17 +12,17 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 
 public interface MutableGroupState extends GroupState {
 
-  void create(final long groupKey, final GroupRecord group);
+  void create(final String groupId, final GroupRecord group);
 
-  void update(final long groupKey, final GroupRecord group);
+  void update(final String groupId, final GroupRecord group);
 
-  void addEntity(final long groupKey, final GroupRecord group);
+  void addEntity(final String groupId, final GroupRecord group);
 
-  void removeEntity(final long groupKey, final long entityKey);
+  void removeEntity(final String groupId, final long entityKey, final String entityId);
 
-  void delete(final long groupKey);
+  void delete(final String groupId);
 
-  void addTenant(final long groupKey, final String tenantId);
+  void addTenant(final String groupId, final String tenantId);
 
-  void removeTenant(final long groupKey, final String tenantId);
+  void removeTenant(final String groupId, final String tenantId);
 }

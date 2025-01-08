@@ -31,12 +31,16 @@ public class GroupClient {
     return new GroupUpdateClient(writer, groupKey);
   }
 
-  public GroupAddEntityClient addEntity(final long groupKey) {
-    return new GroupAddEntityClient(writer, groupKey);
+  public GroupAddEntityClient addEntity(final String groupId) {
+    return new GroupAddEntityClient(writer, groupId);
   }
 
-  public GroupRemoveEntityClient removeEntity(final long groupKey) {
-    return new GroupRemoveEntityClient(writer, groupKey);
+  public GroupAddEntityClient addEntity(final Long groupKey) {
+    return new GroupAddEntityClient(writer, groupKey.toString());
+  }
+
+  public GroupRemoveEntityClient removeEntity(final String groupId) {
+    return new GroupRemoveEntityClient(writer, groupId);
   }
 
   public GroupDeleteClient deleteGroup(final long groupKey) {
@@ -67,6 +71,11 @@ public class GroupClient {
       this.writer = writer;
       groupRecord = new GroupRecord();
       groupRecord.setName(name);
+    }
+
+    public GroupCreateClient withGroupId(final String groupId) {
+      groupRecord.setGroupId(groupId);
+      return this;
     }
 
     public Record<GroupRecordValue> create() {
@@ -145,14 +154,19 @@ public class GroupClient {
 
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupAddEntityClient(final CommandWriter writer, final long groupKey) {
+    public GroupAddEntityClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(groupKey);
+      groupRecord.setGroupId(groupId);
     }
 
     public GroupAddEntityClient withEntityKey(final long entityKey) {
       groupRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public GroupAddEntityClient withEntityId(final String entityId) {
+      groupRecord.setEntityId(entityId);
       return this;
     }
 
@@ -193,14 +207,19 @@ public class GroupClient {
 
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupRemoveEntityClient(final CommandWriter writer, final long key) {
+    public GroupRemoveEntityClient(final CommandWriter writer, final String id) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(key);
+      groupRecord.setGroupId(id);
     }
 
     public GroupRemoveEntityClient withEntityKey(final long entityKey) {
       groupRecord.setEntityKey(entityKey);
+      return this;
+    }
+
+    public GroupRemoveEntityClient withEntityId(final String entityId) {
+      groupRecord.setEntityId(entityId);
       return this;
     }
 

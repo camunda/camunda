@@ -220,6 +220,16 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   @Override
+  public long writeAuthorizedCommand(
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final String username,
+      final String usernameClaim) {
+    return streamProcessingComposite.writeAuthorizedCommand(
+        intent, recordValue, username, usernameClaim);
+  }
+
+  @Override
   public long writeCommand(
       final Intent intent,
       final UnifiedRecordValue recordValue,

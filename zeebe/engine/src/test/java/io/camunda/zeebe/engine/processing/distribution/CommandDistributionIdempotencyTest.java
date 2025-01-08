@@ -251,7 +251,7 @@ public class CommandDistributionIdempotencyTest {
                       .add();
                   ENGINE
                       .group()
-                      .removeEntity(group.getKey())
+                      .removeEntity("group.getKey()")
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .remove();

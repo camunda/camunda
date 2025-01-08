@@ -63,12 +63,12 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
+    final var groupId = record.getGroupId();
+    final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
+              .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -85,16 +85,18 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
-    final var entityKey = record.getEntityKey();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
-      final var errorMessage =
-          "Expected to add an entity with key '%s' and type '%s' to group with key '%d', but the entity does not exist."
-              .formatted(entityKey, entityType, groupKey);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
+    // TODO we should change this validation so that we only verify it if we're not using OIDC
+    //    final var entityKey = record.getEntityKey();
+    //    final var entityType = record.getEntityType();
+    //    if (!isEntityPresent(entityKey, entityType)) {
+    //      final var errorMessage =
+    //          "Expected to add an entity with key '%s' and type '%s' to group with key '%d', but
+    // the entity does not exist."
+    //              .formatted(entityKey, entityType, groupId);
+    //      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+    //      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    //      return;
+    //    }
 
     if (isEntityAssigned(record)) {
       final var errorMessage =
@@ -105,8 +107,10 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
-    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_ADDED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_ADDED, record, command);
+    stateWriter.appendFollowUpEvent(
+        persistedRecord.get().getGroupKey(), GroupIntent.ENTITY_ADDED, record);
+    responseWriter.writeEventOnCommand(
+        persistedRecord.get().getGroupKey(), GroupIntent.ENTITY_ADDED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -139,6 +143,6 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   }
 
   private boolean isEntityAssigned(final GroupRecord record) {
-    return groupState.getEntityType(record.getGroupKey(), record.getEntityKey()).isPresent();
+    return groupState.getEntityType(record.getGroupId(), record.getEntityKey()).isPresent();
   }
 }

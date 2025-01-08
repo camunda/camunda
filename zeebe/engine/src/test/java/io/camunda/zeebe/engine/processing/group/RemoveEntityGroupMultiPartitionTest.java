@@ -52,7 +52,7 @@ public class RemoveEntityGroupMultiPartitionTest {
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
-        .removeEntity(groupKey)
+        .removeEntity("groupKey")
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();
@@ -120,7 +120,7 @@ public class RemoveEntityGroupMultiPartitionTest {
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
-        .removeEntity(groupKey)
+        .removeEntity("groupKey")
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();
@@ -156,7 +156,7 @@ public class RemoveEntityGroupMultiPartitionTest {
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     engine
         .group()
-        .removeEntity(groupKey)
+        .removeEntity("groupKey")
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .remove();

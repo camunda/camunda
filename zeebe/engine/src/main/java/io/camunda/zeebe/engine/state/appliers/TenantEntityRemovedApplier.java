@@ -36,7 +36,7 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
     switch (tenant.getEntityType()) {
       case USER -> userState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
       case MAPPING -> mappingState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
-      case GROUP -> groupState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
+      case GROUP -> groupState.removeTenant("tenant.getEntityKey()", tenant.getTenantId());
       default ->
           throw new UnsupportedOperationException(
               String.format(

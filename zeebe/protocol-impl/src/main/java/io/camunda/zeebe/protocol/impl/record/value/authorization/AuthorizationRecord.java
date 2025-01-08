@@ -21,7 +21,7 @@ import java.util.List;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
-  private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
+  private final LongProperty ownerKeyProp = new LongProperty("ownerKey", -1L);
   private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(

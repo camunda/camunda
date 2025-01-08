@@ -142,7 +142,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           keyGenerator.nextKey(),
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
-              .setEntityId(groupKey)
+              .setGroupId(groupKey)
               .setEntityKey(userKey)
               .setEntityType(EntityType.USER));
     }

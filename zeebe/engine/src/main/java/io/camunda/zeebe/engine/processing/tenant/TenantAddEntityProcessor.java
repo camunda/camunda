@@ -166,7 +166,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private boolean checkGroupAssignment(
       final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var group = groupState.get(entityKey);
+    final var group = groupState.get("entityKey");
 
     if (group.isEmpty()) {
       createEntityNotExistRejectCommand(command, entityKey, tenantId);

@@ -48,7 +48,7 @@ public final class AuthorizationAddPermissionProcessor
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
         .isAuthorized(command)
-        .flatMap(permissionsBehavior::ownerExists)
+        //        .flatMap(permissionsBehavior::ownerExists) // TODO we cannot check this for OIDC
         .flatMap(permissionsBehavior::permissionAlreadyExists)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),

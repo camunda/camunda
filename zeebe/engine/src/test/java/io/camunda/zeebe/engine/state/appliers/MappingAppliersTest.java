@@ -95,8 +95,8 @@ public class MappingAppliersTest {
             .setGroupKey(groupKey)
             .setEntityKey(mappingKey)
             .setEntityType(EntityType.MAPPING);
-    groupState.create(groupKey, group);
-    groupState.addEntity(groupKey, group);
+    groupState.create("groupKey", group);
+    groupState.addEntity("groupKey", group);
     // create owner
     authorizationState.insertOwnerTypeByKey("mappingKey", AuthorizationOwnerType.MAPPING);
     // create authorization

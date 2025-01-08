@@ -15,11 +15,13 @@ import java.util.Optional;
 
 public interface GroupState {
 
-  Optional<PersistedGroup> get(long groupKey);
+  Optional<PersistedGroup> get(String groupId);
 
-  Optional<Long> getGroupKeyByName(String groupName);
+  Optional<String> getGroupKeyByName(String groupName);
 
-  Optional<EntityType> getEntityType(long groupKey, long entityKey);
+  Optional<EntityType> getEntityType(String groupId, long entityKey);
 
-  Map<EntityType, List<Long>> getEntitiesByType(long groupKey);
+  Map<EntityType, List<Long>> getEntitiesByType(String groupId);
+
+  List<String> getGroupIdsForEntity(final String entity);
 }
