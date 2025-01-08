@@ -13,7 +13,6 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('User info', () => {
@@ -36,18 +35,6 @@ describe('User info', () => {
   });
 
   it('should render user display name', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
-
     const {user} = render(<Header />, {
       wrapper: getWrapper(),
     });
@@ -62,18 +49,6 @@ describe('User info', () => {
   });
 
   it('should render language selection dropdown', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
-
     const {user} = render(<Header />, {
       wrapper: getWrapper(),
     });
@@ -94,18 +69,6 @@ describe('User info', () => {
 
   it('should handle a SSO user', async () => {
     window.clientConfig = {...window.clientConfig, canLogout: false};
-
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
 
     const {user} = render(<Header />, {
       wrapper: getWrapper(),
@@ -129,15 +92,6 @@ describe('User info', () => {
     const logoutSpy = vi.spyOn(authenticationStore, 'handleLogout');
 
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
       http.post(
         '/api/logout',
         () => {
@@ -172,18 +126,6 @@ describe('User info', () => {
     const originalWindowOpen = window.open;
     const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
-
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
 
     const {user} = render(<Header />, {
       wrapper: getWrapper(),
@@ -235,18 +177,6 @@ describe('User info', () => {
         addEventListener: vi.fn(),
       },
     };
-
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
 
     const {user} = render(<Header />, {
       wrapper: getWrapper(),

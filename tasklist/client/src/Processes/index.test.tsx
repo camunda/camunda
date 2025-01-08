@@ -15,7 +15,10 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {createMockProcess} from 'modules/queries/useProcesses';
 import {http, HttpResponse} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
@@ -64,18 +67,6 @@ describe('Processes', () => {
   afterEach(() => {
     mockedNotificationsStore.displayNotification.mockClear();
     import.meta.env.VITE_VERSION = '1.2.3';
-  });
-
-  beforeEach(() => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-    );
   });
 
   it('should render an empty state message', async () => {
@@ -208,13 +199,7 @@ describe('Processes', () => {
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([createMockProcess('process-0')]);
       }),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
     );
 
     render(<Component />, {
@@ -261,13 +246,7 @@ describe('Processes', () => {
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([]);
       }),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUserWithTenants);
-        },
-        {once: true},
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUserWithTenants),
     );
 
     render(<Component />, {
@@ -299,13 +278,7 @@ describe('Processes', () => {
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([]);
       }),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUserWithTenants);
-        },
-        {once: true},
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUserWithTenants),
     );
 
     render(<Component />, {
@@ -336,13 +309,6 @@ describe('Processes', () => {
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([]);
       }),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
     );
 
     render(<Component />, {

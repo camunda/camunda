@@ -11,9 +11,6 @@ import {render} from 'modules/testing-library';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {HttpResponse, http} from 'msw';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -33,18 +30,6 @@ const createWrapper = (
 };
 
 describe('<Filters />', () => {
-  beforeEach(() => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-    );
-  });
-
   it('should render filters', async () => {
     const {user} = render(<Filters disabled={false} />, {
       wrapper: createWrapper(),

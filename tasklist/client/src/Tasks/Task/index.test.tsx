@@ -22,7 +22,6 @@ import {notificationsStore} from 'modules/stores/notifications';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
@@ -75,13 +74,6 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post(
         '/v1/tasks/:taskId/variables/search',
         () => {
@@ -117,13 +109,6 @@ describe('<Task />', () => {
         '/v1/tasks/:taskId',
         () => {
           return HttpResponse.json(taskMocks.assignedTaskWithForm());
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
         },
         {once: true},
       ),
@@ -186,13 +171,6 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-      http.get(
         '/v1/forms/:formId',
         () => {
           return HttpResponse.json(formMocks.form);
@@ -250,13 +228,6 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post(
         '/v1/tasks/:taskId/variables/search',
         () => {
@@ -295,13 +266,6 @@ describe('<Task />', () => {
         '/v1/tasks/:taskId',
         () => {
           return HttpResponse.json(taskMocks.completedTaskWithForm());
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
         },
         {once: true},
       ),
@@ -352,13 +316,6 @@ describe('<Task />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-      http.get(
         '/v1/forms/:formId',
         () => {
           return HttpResponse.json(formMocks.form);
@@ -401,13 +358,6 @@ describe('<Task />', () => {
         '/v1/tasks/:taskId',
         () => {
           return HttpResponse.json(taskMocks.assignedTask());
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
         },
         {once: true},
       ),
@@ -475,13 +425,6 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.patch('/v1/tasks/:taskId/complete', () => {
         return HttpResponse.error();
       }),
@@ -534,13 +477,6 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post(
         '/v1/tasks/:taskId/variables/search',
         () => {
@@ -585,13 +521,6 @@ describe('<Task />', () => {
         '/v1/tasks/:taskId',
         () => {
           return HttpResponse.json(taskMocks.assignedTask());
-        },
-        {once: true},
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
         },
         {once: true},
       ),
@@ -660,13 +589,6 @@ describe('<Task />', () => {
 
   it('should render created task with variables in embedded form', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.get(
         '/v1/tasks/:taskId',
         () => {

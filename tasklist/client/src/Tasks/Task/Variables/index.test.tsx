@@ -11,10 +11,13 @@ import {Variables} from './index';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as variableMocks from 'modules/mock-schema/mocks/variables';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {currentUser} from 'modules/mock-schema/mocks/current-user';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
-import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import type {Variable} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -42,16 +45,6 @@ function isRequestingAllVariables(req: VariableSearchRequestBody) {
 
 describe('<Variables />', () => {
   beforeEach(() => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-    );
-
     vi.useFakeTimers({
       shouldAdvanceTime: true,
     });
@@ -803,13 +796,7 @@ describe('<Variables />', () => {
     };
 
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
       http.post<never, VariableSearchRequestBody>(
         '/v1/tasks/:taskId/variables/search',
         async ({request}) => {
@@ -1148,13 +1135,6 @@ describe('<Variables />', () => {
 
   it('should complete a task with a truncated variable', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post<never, VariableSearchRequestBody>(
         '/v1/tasks/:taskId/variables/search',
         async ({request}) => {
@@ -1227,13 +1207,6 @@ describe('<Variables />', () => {
     };
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post<never, VariableSearchRequestBody>(
         '/v1/tasks/:taskId/variables/search',
         async ({request}) => {
@@ -1302,13 +1275,6 @@ describe('<Variables />', () => {
 
   it('should show the preview value of a truncated variable', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post<never, VariableSearchRequestBody>(
         '/v1/tasks/:taskId/variables/search',
         async ({request}) => {
@@ -1324,13 +1290,6 @@ describe('<Variables />', () => {
             {status: 400},
           );
         },
-      ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
       ),
       http.post<never, VariableSearchRequestBody>(
         '/v1/tasks/:taskId/variables/search',

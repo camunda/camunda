@@ -15,12 +15,12 @@ const usePermissions = (scopes?: Permissions) => {
     return {hasPermission: false};
   }
   const permissions = currentUser.permissions;
-  if (permissions?.length === 0) {
+  if (permissions === undefined) {
     return {hasPermission: true}; // FIXME
   }
   return {
     hasPermission:
-      permissions?.some((permission) => scopes?.includes(permission)) ?? false,
+      permissions.some((permission) => scopes?.includes(permission)) ?? false,
   };
 };
 

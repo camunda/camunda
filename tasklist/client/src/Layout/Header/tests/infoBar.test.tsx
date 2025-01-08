@@ -7,7 +7,10 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
@@ -33,18 +36,6 @@ describe('Info bar', () => {
     const originalWindowOpen = window.open;
     const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
-
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
 
     const {user} = render(<Header />, {
       wrapper: getWrapper(),
@@ -95,18 +86,9 @@ describe('Info bar', () => {
     window.open = mockOpenFn;
 
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json({
-            ...userMocks.currentUser,
-            salesPlanType: 'free',
-          });
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUser, {
+        salesPlanType: 'free',
+      }),
     );
 
     const {user} = render(<Header />, {
@@ -158,18 +140,9 @@ describe('Info bar', () => {
     window.open = mockOpenFn;
 
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json({
-            ...userMocks.currentUser,
-            salesPlanType: 'paid-cc',
-          });
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUser, {
+        salesPlanType: 'paid-cc',
+      }),
     );
 
     const {user} = render(<Header />, {
@@ -225,18 +198,9 @@ describe('Info bar', () => {
     window.open = mockOpenFn;
 
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json({
-            ...userMocks.currentUser,
-            salesPlanType: 'enterprise',
-          });
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUser, {
+        salesPlanType: 'enterprise',
+      }),
     );
 
     const {user} = render(<Header />, {

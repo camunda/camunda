@@ -8,7 +8,10 @@
 
 import {render, screen} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
@@ -50,12 +53,6 @@ describe('<Header />', () => {
   });
 
   it('should render completed task details', async () => {
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
-    );
-
     render(
       <Header
         task={taskMocks.completedTask()}
@@ -76,12 +73,6 @@ describe('<Header />', () => {
   });
 
   it('should render unassigned task details', async () => {
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
-    );
-
     render(
       <Header
         task={taskMocks.unassignedTask()}
@@ -104,9 +95,6 @@ describe('<Header />', () => {
 
   it('should render unassigned task and assign it', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
       http.patch('/v1/tasks/:taskId/assign', () => {
         return HttpResponse.json(taskMocks.assignedTask('0'));
       }),
@@ -154,9 +142,6 @@ describe('<Header />', () => {
 
   it('should render assigned task and unassign it', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
       http.patch('/v1/tasks/:taskId/unassign', () => {
         return HttpResponse.json(taskMocks.unassignedTask('0'));
       }),
@@ -207,9 +192,7 @@ describe('<Header />', () => {
 
   it('should not render assignment button on assigned tasks', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentRestrictedUser);
-      }),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
       http.patch('/v1/tasks/:taskId/unassign', () => {
         return HttpResponse.json(taskMocks.unassignedTask);
       }),
@@ -235,9 +218,7 @@ describe('<Header />', () => {
 
   it('should not render assignment on unassigned tasks', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentRestrictedUser);
-      }),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
       http.patch('/v1/tasks/:taskId/assign', () => {
         return HttpResponse.json(taskMocks.assignedTask);
       }),
@@ -262,12 +243,6 @@ describe('<Header />', () => {
   });
 
   it('should render a task assigned to someone else', async () => {
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
-    );
-
     const MOCK_OTHER_ASSIGNEE = 'jane';
 
     render(

@@ -13,6 +13,7 @@ import type {CurrentUser} from '../types';
 
 export function createMockAuthenticationMeHandler(
   currentUser: CurrentUser,
+  overrides?: object,
 ): HttpHandler {
   return http.get(
     '/v2/authentication/me',
@@ -23,6 +24,7 @@ export function createMockAuthenticationMeHandler(
         username: currentUser.displayName,
         email: 'user@camunda.test',
         canLogout: true,
+        ...overrides,
       });
     },
     {once: false},

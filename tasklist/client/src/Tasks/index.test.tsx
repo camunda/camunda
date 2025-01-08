@@ -6,13 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
+import {fireEvent, render, screen, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -61,13 +60,6 @@ function getWrapper(
 describe('<Tasks />', () => {
   it('should load more tasks', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post<never, {searchAfter: [string, string]}>(
         '/v1/tasks/search',
         async ({request}) => {
@@ -106,9 +98,6 @@ describe('<Tasks />', () => {
 
   it('should use tasklist api raw filters', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
       http.post<never, {candidateUser: string; foo: unknown}>(
         '/v1/tasks/search',
         async ({request}) => {
@@ -133,9 +122,6 @@ describe('<Tasks />', () => {
 
   it('should select the first open task when auto-select is enabled and tasks are in the list', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
       http.post<never, never>('/v1/tasks/search', async () => {
         return HttpResponse.json([
           {...FIRST_PAGE[0], taskState: 'COMPLETED'},
@@ -162,9 +148,6 @@ describe('<Tasks />', () => {
 
   it('should go to the inital page when auto-select is enabled and no tasks are available', async () => {
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
       http.post<never, {candidateUser: string; foo: unknown}>(
         '/v1/tasks/search',
         async () => {

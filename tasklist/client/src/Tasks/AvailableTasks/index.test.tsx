@@ -14,10 +14,7 @@ import {
 } from 'modules/testing-library';
 import {AvailableTasks} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {http, HttpResponse} from 'msw';
 import * as tasksMocks from 'modules/mock-schema/mocks/tasks';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 
@@ -47,18 +44,6 @@ const getWrapper = (
 };
 
 describe('<AvailableTasks />', () => {
-  beforeEach(() => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-    );
-  });
-
   it('should not render when loading', async () => {
     const {rerender} = render(
       <AvailableTasks

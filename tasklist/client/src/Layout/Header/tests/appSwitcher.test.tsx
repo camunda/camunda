@@ -12,7 +12,6 @@ import {http, HttpResponse} from 'msw';
 import {Header} from '..';
 import {getWrapper} from './mocks';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('App switcher', () => {
@@ -40,18 +39,6 @@ describe('App switcher', () => {
       isEnterprise: false,
       organizationId: null,
     };
-
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUserWithC8Links);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
 
     render(<Header />, {
       wrapper: getWrapper(),

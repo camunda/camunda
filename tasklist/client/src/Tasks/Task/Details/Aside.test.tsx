@@ -7,9 +7,11 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {http, HttpResponse} from 'msw';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
@@ -46,14 +48,6 @@ const getWrapper = (id: string = '0') => {
 describe('<Aside />', () => {
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
-  });
-
-  beforeEach(() => {
-    nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(userMocks.currentUser);
-      }),
-    );
   });
 
   it('should render completed task details', async () => {
@@ -117,9 +111,7 @@ describe('<Aside />', () => {
     };
 
     nodeMockServer.use(
-      http.get('/v1/internal/users/current', () => {
-        return HttpResponse.json(currentUserWithSingleTenant);
-      }),
+      createMockAuthenticationMeHandler(currentUserWithSingleTenant),
     );
 
     render(

@@ -11,9 +11,8 @@ import {CollapsiblePanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {HttpResponse, http} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {createMockProcess} from 'modules/queries/useProcesses';
 
@@ -36,18 +35,6 @@ const createWrapper = (
 };
 
 describe('<CollapsiblePanel />', () => {
-  beforeEach(() => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
-    );
-  });
-
   it('should render a collapsed panel', () => {
     render(<CollapsiblePanel />, {
       wrapper: createWrapper(),

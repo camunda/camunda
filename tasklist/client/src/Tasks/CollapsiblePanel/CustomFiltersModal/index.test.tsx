@@ -10,7 +10,10 @@ import {render, screen, waitFor, within} from 'modules/testing-library';
 import {CustomFiltersModal} from './index';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {HttpResponse, http} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {createMockProcess} from 'modules/queries/useProcesses';
@@ -31,13 +34,6 @@ const getWrapper = () => {
 describe('<CustomFiltersModal />', () => {
   beforeEach(() => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.get(
         '/v1/internal/processes',
         () => {
@@ -301,13 +297,7 @@ describe('<CustomFiltersModal />', () => {
 
   it('should load user groups', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUserWithGroups);
-        },
-        {once: true},
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUserWithGroups),
     );
     const {user} = render(
       <CustomFiltersModal

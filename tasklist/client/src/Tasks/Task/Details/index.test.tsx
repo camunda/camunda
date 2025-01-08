@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse, http} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, Routes, Route} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   render,
   screen,
@@ -17,7 +17,6 @@ import {
 } from 'modules/testing-library';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as processMocks from 'modules/mock-schema/mocks/processes';
 import {Component} from '.';
@@ -41,16 +40,6 @@ const getWrapper = (id: string = '0') => {
 };
 
 describe('Task Details', () => {
-  beforeEach(() => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => HttpResponse.json(userMocks.currentUser),
-        {once: true},
-      ),
-    );
-  });
-
   it('shows task and process tabs when a process definition is returned', async () => {
     nodeMockServer.use(
       http.get(

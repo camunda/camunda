@@ -8,8 +8,10 @@
 
 import {Restricted} from './index';
 import {render, screen} from 'modules/testing-library';
-import {http, HttpResponse} from 'msw';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {MemoryRouter} from 'react-router-dom';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
@@ -46,15 +48,7 @@ const getWrapper = () => {
 describe('Restricted', () => {
   it('should not render content that user has no permission for', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
     );
 
     render(
@@ -70,15 +64,7 @@ describe('Restricted', () => {
 
   it('should render content that user has permission for at least one scope', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
     );
 
     render(
@@ -93,18 +79,6 @@ describe('Restricted', () => {
   });
 
   it('should render content that user has permission for', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {
-          once: true,
-        },
-      ),
-    );
-
     render(
       <Restricted scopes={['write']}>
         <div>test content</div>
@@ -118,15 +92,7 @@ describe('Restricted', () => {
 
   it('should not render content when API returns an unknown permission', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUserWithUnknownRole);
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUserWithUnknownRole),
     );
 
     render(
@@ -142,15 +108,7 @@ describe('Restricted', () => {
 
   it('should not render content when API returns no permissions', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUserWithoutRole);
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentUserWithoutRole),
     );
 
     render(
@@ -166,15 +124,7 @@ describe('Restricted', () => {
 
   it('should render a fallback', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {
-          once: true,
-        },
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
     );
 
     const mockFallback = 'mock fallback';

@@ -92,7 +92,7 @@ test.describe('a11y', () => {
         });
       }
 
-      if (route.request().url().includes('v1/internal/users/current')) {
+      if (route.request().url().includes('v2/authentication/me')) {
         return route.fulfill({
           status: 200,
           body: JSON.stringify({

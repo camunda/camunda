@@ -13,8 +13,11 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {clearStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {
+  createMockAuthenticationMeHandler,
+  nodeMockServer,
+} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -42,13 +45,6 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should hide part of the empty message for new users', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post('/v1/tasks/search', async () => {
         return HttpResponse.json([]);
       }),
@@ -71,13 +67,6 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should show an empty page message for new users', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post('/v1/tasks/search', async () => {
         return HttpResponse.json([generateTask('0')]);
       }),
@@ -112,13 +101,6 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should show an empty page message for old users', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post('/v1/tasks/search', async () => {
         return HttpResponse.json([generateTask('0')]);
       }),
@@ -139,13 +121,6 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should not show an empty page message for old users', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
       http.post('/v1/tasks/search', async () => {
         return HttpResponse.json([]);
       }),
@@ -166,13 +141,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
   it('should show an empty page message for old readonly users', async () => {
     nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
+      createMockAuthenticationMeHandler(userMocks.currentRestrictedUser),
       http.post('/v1/tasks/search', async () => {
         return HttpResponse.json([generateTask('0')]);
       }),

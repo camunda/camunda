@@ -77,13 +77,6 @@ describe('<FormJS />', () => {
         },
         {once: true},
       ),
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentUser);
-        },
-        {once: true},
-      ),
     );
   });
 
