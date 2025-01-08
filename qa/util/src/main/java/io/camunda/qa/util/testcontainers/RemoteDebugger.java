@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.qa.util.testcontainers;
+package io.camunda.qa.util.testcontainers;
 
 import java.time.Duration;
 import org.testcontainers.containers.GenericContainer;
