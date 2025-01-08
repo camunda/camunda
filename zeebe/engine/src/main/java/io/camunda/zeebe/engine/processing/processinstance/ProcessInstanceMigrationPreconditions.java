@@ -176,14 +176,14 @@ public final class ProcessInstanceMigrationPreconditions {
   private static final String ERROR_GATEWAY_NOT_MAPPED =
       """
       Expected to migrate process instance '%s' \
-      but gateway '%s' has at least one sequence flow taken. \
-      Joining gateways with at least one sequence flow taken must be mapped \
+      but gateway '%s' has at least one incoming sequence flow taken. \
+      Joining gateways with at least one incoming sequence flow taken must be mapped \
       to a gateway of the same type in the target process definition.""";
 
   private static final String ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY =
       """
       Expected to migrate process instance '%s' \
-      but gateway with id '%s' has a taken sequence flow mismatch. \
+      but gateway with id '%s' has a taken incoming sequence flow mismatch. \
       Taken sequence flow with id '%s' must connect to the mapped target gateway \
       with id '%s' in the target process definition.""";
 
