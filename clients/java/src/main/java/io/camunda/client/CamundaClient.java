@@ -1077,8 +1077,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
-   *  .newAssignUserToGroupCommand(123L, 456L)
+   * camundaClient
+   *  .newAssignUserToGroupCommand(123L)
+   *  .userKey(456L)
    *  .send();
    * </pre>
    *
@@ -1086,7 +1087,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long userKey, long groupKey);
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long groupKey);
 
   /**
    * Command to unassign a user from a group.
@@ -1094,8 +1095,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    *
-   * zeebeClient
-   *  .newUnassignUserFromGroupCommand(123L, 456L)
+   * camundaClient
+   *  .newUnassignUserFromGroupCommand(123L)
+   *  .userKey(456L)
    *  .send();
    * </pre>
    *
@@ -1103,7 +1105,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long userKey, long groupKey);
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long groupKey);
 
   /**
    * Command to create a user.

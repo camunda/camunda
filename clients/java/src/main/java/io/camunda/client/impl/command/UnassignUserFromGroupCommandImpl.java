@@ -19,25 +19,30 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
-import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCommandStep1 {
 
-  private final long userKey;
   private final long groupKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private long userKey;
 
-  public UnassignUserFromGroupCommandImpl(
-      final long userKey, final long groupKey, final HttpClient httpClient) {
-    this.userKey = userKey;
+  public UnassignUserFromGroupCommandImpl(final long groupKey, final HttpClient httpClient) {
     this.groupKey = groupKey;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+  }
+
+  @Override
+  public UnassignUserFromGroupCommandStep1 userKey(final long userKey) {
+    ArgumentUtil.ensureNotNull("userKey", userKey);
+    this.userKey = userKey;
+    return this;
   }
 
   @Override
@@ -49,6 +54,7 @@ public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCo
 
   @Override
   public CamundaFuture<UnassignUserFromGroupResponse> send() {
+    ArgumentUtil.ensureNotNull("userKey", userKey);
     final HttpCamundaFuture<UnassignUserFromGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/groups/" + groupKey + "/users/" + userKey, httpRequestConfig.build(), result);

@@ -19,25 +19,30 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToGroupResponse;
-import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandStep1 {
 
-  private final long userKey;
   private final long groupKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private long userKey;
 
-  public AssignUserToGroupCommandImpl(
-      final long userKey, final long groupKey, final HttpClient httpClient) {
-    this.userKey = userKey;
+  public AssignUserToGroupCommandImpl(final long groupKey, final HttpClient httpClient) {
     this.groupKey = groupKey;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+  }
+
+  @Override
+  public AssignUserToGroupCommandStep1 userKey(final long userKey) {
+    ArgumentUtil.ensureNotNull("userKey", userKey);
+    this.userKey = userKey;
+    return this;
   }
 
   @Override
@@ -48,6 +53,7 @@ public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandSte
 
   @Override
   public CamundaFuture<AssignUserToGroupResponse> send() {
+    ArgumentUtil.ensureNotNull("userKey", userKey);
     final HttpCamundaFuture<AssignUserToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/groups/" + groupKey + "/users/" + userKey, null, httpRequestConfig.build(), result);

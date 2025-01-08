@@ -50,13 +50,13 @@ public class UnassignUserFromGroupTest {
             .getUserKey();
 
     groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
-    client.newAssignUserToGroupCommand(userKey, groupKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
   }
 
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(userKey, groupKey).send().join();
+    client.newUnassignUserFromGroupCommand(groupKey).userKey(userKey).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
@@ -74,11 +74,16 @@ public class UnassignUserFromGroupTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(nonExistentUserKey, groupKey).send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand(groupKey)
+                    .userKey(nonExistentUserKey)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add an entity with key '%d' and type '%s' to group with key '%d', but the entity does not exist."
+            "Expected to remove an entity with key '%d' and type '%s' from group with key '%d', but the entity does not exist."
                 .formatted(nonExistentUserKey, EntityType.USER, groupKey));
   }
 
@@ -89,7 +94,12 @@ public class UnassignUserFromGroupTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(userKey, nonExistentGroupKey).send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand(nonExistentGroupKey)
+                    .userKey(userKey)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(

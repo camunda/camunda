@@ -18,4 +18,14 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
 
 public interface UnassignUserFromGroupCommandStep1
-    extends FinalCommandStep<UnassignUserFromGroupResponse> {}
+    extends FinalCommandStep<UnassignUserFromGroupResponse> {
+
+  /**
+   * Sets the user key for the unassignment.
+   *
+   * @param userKey the key of the user
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UnassignUserFromGroupCommandStep1 userKey(long userKey);
+}

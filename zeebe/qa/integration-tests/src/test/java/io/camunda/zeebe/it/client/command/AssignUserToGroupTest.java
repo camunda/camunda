@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
@@ -57,7 +56,7 @@ class AssignUserToGroupTest {
   @Test
   void shouldAssignUserToGroup() {
     // when
-    client.newAssignUserToGroupCommand(userKey, groupKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
@@ -75,7 +74,12 @@ class AssignUserToGroupTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(nonExistentUserKey, groupKey).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand(groupKey)
+                    .userKey(nonExistentUserKey)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
@@ -90,7 +94,12 @@ class AssignUserToGroupTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(userKey, nonExistentGroupKey).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand(nonExistentGroupKey)
+                    .userKey(userKey)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
@@ -101,10 +110,11 @@ class AssignUserToGroupTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignUserToGroupCommand(userKey, groupKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
 
     // when / then
-    assertThatThrownBy(() -> client.newAssignUserToGroupCommand(userKey, groupKey).send().join())
+    assertThatThrownBy(
+            () -> client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
