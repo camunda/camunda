@@ -475,6 +475,14 @@
 
       <!-- Third party dependencies -->
       <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${version.junit}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${version.jackson}</version>
@@ -646,14 +654,6 @@
         <groupId>org.msgpack</groupId>
         <artifactId>jackson-dataformat-msgpack</artifactId>
         <version>${version.msgpack}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit</groupId>
-        <artifactId>junit-bom</artifactId>
-        <version>${version.junit}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <dependency>
