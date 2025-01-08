@@ -19,10 +19,13 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RoleMigrationHandler implements MigrationHandler {
+  private static final Logger LOG = LoggerFactory.getLogger(RoleMigrationHandler.class);
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
   private final ManagementIdentityClient managementIdentityClient;
@@ -42,6 +45,7 @@ public class RoleMigrationHandler implements MigrationHandler {
 
   @Override
   public void migrate() {
+    LOG.debug("Migrating roles");
     List<Role> roles;
     do {
       roles = managementIdentityClient.fetchRoles(SIZE);
@@ -58,6 +62,7 @@ public class RoleMigrationHandler implements MigrationHandler {
               .map(RoleEntity::roleKey)
               .orElseGet(() -> roleServices.createRole(role.name()).join().getRoleKey());
     } catch (final Exception e) {
+      LOG.error("create or finding role with name {} failed", role.name(), e);
       return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);
     }
 
@@ -66,6 +71,7 @@ public class RoleMigrationHandler implements MigrationHandler {
           .map(authorizationServices::patchAuthorization)
           .forEach(CompletableFuture::join);
     } catch (final Exception e) {
+      LOG.error("patch authorization for role failed", e);
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);
       }

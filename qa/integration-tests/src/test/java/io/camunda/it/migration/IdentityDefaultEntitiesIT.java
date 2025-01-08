@@ -45,8 +45,6 @@ public class IdentityDefaultEntitiesIT {
 
   @Test
   void canMigrateOldDefaultEntities() {
-    // given -- default entities in the old identity service
-    System.out.printf("Port:" + IDENTITY.getMappedPort(5005));
 
     // when -- Camunda is started with identity migration profile
     camunda
