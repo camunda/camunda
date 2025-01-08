@@ -58,7 +58,6 @@ public class ElasticsearchUtil {
     final var request =
         requestBuilder
             .allowNoIndices(true)
-            .ignoreUnavailable(true)
             .scroll(SCROLL_KEEP_ALIVE)
             .size(SCROLL_PAGE_SIZE)
             .build();

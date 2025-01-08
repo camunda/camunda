@@ -15,6 +15,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -22,8 +25,10 @@ import org.slf4j.LoggerFactory;
 
 public class BatchOperationUpdateTaskTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationUpdateTaskTest.class);
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   private final TestRepository repository = Mockito.spy(new TestRepository());
-  private final BatchOperationUpdateTask task = new BatchOperationUpdateTask(repository, LOGGER);
+  private final BatchOperationUpdateTask task =
+      new BatchOperationUpdateTask(repository, LOGGER, Runnable::run);
 
   @Test
   void shouldReturnZeroIfNoBatchOperationsFound() {
@@ -31,7 +36,10 @@ public class BatchOperationUpdateTaskTest {
     final var result = task.execute();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(0);
   }
 
   @Test
@@ -41,7 +49,10 @@ public class BatchOperationUpdateTaskTest {
     final var result = task.execute();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(0);
   }
 
   @Test
@@ -55,7 +66,10 @@ public class BatchOperationUpdateTaskTest {
     final var result = task.execute();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(2);
+    assertThat(result)
+        .succeedsWithin(REQUEST_TIMEOUT)
+        .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+        .isEqualTo(2);
     assertThat(repository.documentUpdates).hasSize(2);
     assertThat(repository.documentUpdates)
         .contains(new DocumentUpdate("1", 5L), new DocumentUpdate("2", 6L));
@@ -67,20 +81,20 @@ public class BatchOperationUpdateTaskTest {
     private List<DocumentUpdate> documentUpdates = new ArrayList<>();
 
     @Override
-    public List<String> getNotFinishedBatchOperations() {
-      return batchOperationIds;
+    public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
+      return CompletableFuture.completedFuture(batchOperationIds);
     }
 
     @Override
-    public List<OperationsAggData> getFinishedOperationsCount(
+    public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
         final Collection<String> batchOperationIds) {
-      return finishedOperationsCount;
+      return CompletableFuture.completedFuture(finishedOperationsCount);
     }
 
     @Override
-    public Integer bulkUpdate(final List<DocumentUpdate> documentUpdates) {
+    public CompletionStage<Integer> bulkUpdate(final List<DocumentUpdate> documentUpdates) {
       this.documentUpdates = documentUpdates;
-      return documentUpdates.size();
+      return CompletableFuture.completedFuture(documentUpdates.size());
     }
 
     @Override
