@@ -7,9 +7,21 @@
  */
 
 import type {Permissions} from 'modules/types';
+import {useCurrentUser} from '../queries/useCurrentUser';
 
-const usePermissions = (_: Permissions) => {
-  return {hasPermission: true};
+const usePermissions = (scopes?: Permissions) => {
+  const {data: currentUser} = useCurrentUser();
+  if (!currentUser) {
+    return {hasPermission: false};
+  }
+  const permissions = currentUser.permissions;
+  if (permissions?.length === 0) {
+    return {hasPermission: true}; // FIXME
+  }
+  return {
+    hasPermission:
+      permissions?.some((permission) => scopes?.includes(permission)) ?? false,
+  };
 };
 
 export {usePermissions};
