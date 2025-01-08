@@ -57,7 +57,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -487,10 +486,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   sourceElementIdToTargetElementId.get(
                       BufferUtil.bufferAsString(sourceGateway.getId()));
               requireValidGatewayMapping(
-                  sourceGateway,
-                  Optional.ofNullable(targetGatewayId),
-                  targetProcessDefinition,
-                  processInstanceKey);
+                  sourceGateway, targetGatewayId, targetProcessDefinition, processInstanceKey);
 
               final ExecutableFlowNode targetGateway =
                   targetProcessDefinition

@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -936,10 +935,10 @@ public final class ProcessInstanceMigrationPreconditions {
 
   public static void requireValidGatewayMapping(
       final ExecutableFlowNode sourceGateway,
-      final Optional<String> maybeTargetGatewayId,
+      final String targetGatewayId,
       final DeployedProcess targetProcessDefinition,
       final long processInstanceKey) {
-    if (maybeTargetGatewayId.isEmpty()) {
+    if (targetGatewayId == null) {
       final var reason =
           String.format(
               ERROR_GATEWAY_NOT_MAPPED,
@@ -949,7 +948,6 @@ public final class ProcessInstanceMigrationPreconditions {
           reason, RejectionType.INVALID_ARGUMENT);
     }
 
-    final String targetGatewayId = maybeTargetGatewayId.get();
     // no need to check if the target gateway exists because it is already validated
     final var targetGateway = targetProcessDefinition.getProcess().getElementById(targetGatewayId);
 
