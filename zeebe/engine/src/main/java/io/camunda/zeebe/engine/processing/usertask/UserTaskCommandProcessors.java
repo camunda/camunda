@@ -47,7 +47,8 @@ public final class UserTaskCommandProcessors {
         new EnumMap<>(
             Map.of(
                 UserTaskIntent.ASSIGN,
-                new UserTaskAssignProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskAssignProcessor(
+                    processingState, eventHandle, writers, authCheckBehavior),
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.UPDATE,
