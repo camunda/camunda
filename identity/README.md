@@ -25,7 +25,7 @@ docker compose -f config/docker-compose.yml up -d elasticsearch
 3. Run this command for some final setup:
 
 ```
-CAMUNDA_BROKER_EXPERIMENTAL_ENGINE_AUTHORIZATIONS_ENABLEAUTHORIZATION=true \
+CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
 ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
 CAMUNDA_REST_QUERY_ENABLED=true \
 ./dist/target/camunda-zeebe/bin/broker
