@@ -68,7 +68,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             this::acceptCommand,
             authCheckBehavior,
             List.of(
-                this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
@@ -149,23 +148,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     }
   }
 
-  /** We currently don't support completing task listener jobs with variables. */
-  private Either<Rejection, JobRecord> checkTaskListenerJobForProvidingVariables(
-      final TypedRecord<JobRecord> command, final JobRecord job) {
-
-    if (job.getJobKind() == JobKind.TASK_LISTENER && hasVariables(command)) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE.formatted(
-                  command.getKey(), job.getType(), job.getProcessInstanceKey())));
-    }
-
-    return Either.right(job);
-  }
-
-  private boolean hasVariables(final TypedRecord<JobRecord> command) {
-    return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
+  private boolean hasVariables(final JobRecord jobRecord) {
+    return !DocumentValue.EMPTY_DOCUMENT.equals(jobRecord.getVariablesBuffer());
   }
 
   private Either<Rejection, JobRecord> checkTaskListenerJobForDenyingWithCorrections(
