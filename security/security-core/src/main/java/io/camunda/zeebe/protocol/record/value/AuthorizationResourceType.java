@@ -38,7 +38,8 @@ public enum AuthorizationResourceType {
   DECISION_DEFINITION(
       PermissionType.READ_DECISION_DEFINITION,
       PermissionType.READ_DECISION_INSTANCE,
-      PermissionType.CREATE_DECISION_INSTANCE),
+      PermissionType.CREATE_DECISION_INSTANCE,
+      PermissionType.DELETE_DECISION_INSTANCE),
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE);
