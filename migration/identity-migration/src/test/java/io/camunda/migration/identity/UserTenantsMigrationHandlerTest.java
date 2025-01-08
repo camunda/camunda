@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -81,7 +82,7 @@ final class UserTenantsMigrationHandlerTest {
         .thenThrow(new NotImplementedException());
 
     // when
-    migrationHandler.migrate();
+    assertThrows(NotImplementedException.class, migrationHandler::migrate);
 
     // then
     verify(managementIdentityClient).fetchUserTenants(anyInt());

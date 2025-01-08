@@ -12,7 +12,6 @@ import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import java.util.List;
 import java.util.concurrent.CompletionException;
-import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,17 +29,13 @@ public abstract class MigrationHandler<T> {
   }
 
   public void migrate() {
+    logger.info("Migrating started.");
     List<T> batch;
-    try {
-      logger.info("Migrating started.");
-      do {
-        batch = fetchBatch();
-        process(batch);
-      } while (!batch.isEmpty());
-      logger.info("Migrating finished.");
-    } catch (final NotImplementedException e) {
-      logger.error("Identity doesn't support migration with code: {}", e.getCode());
-    }
+    do {
+      batch = fetchBatch();
+      process(batch);
+    } while (!batch.isEmpty());
+    logger.info("Migrating finished.");
   }
 
   protected abstract List<T> fetchBatch();
