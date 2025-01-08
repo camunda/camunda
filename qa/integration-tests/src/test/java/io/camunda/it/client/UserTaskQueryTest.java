@@ -473,11 +473,11 @@ class UserTaskQueryTest {
     assertThat(result.items().size()).isEqualTo(8);
 
     assertThat(result.items().get(0).getCreationDate())
-        .isGreaterThanOrEqualTo(result.items().get(1).getCreationDate());
+        .isGreaterThan(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
-        .isGreaterThanOrEqualTo(result.items().get(2).getCreationDate());
+        .isGreaterThan(result.items().get(2).getCreationDate());
     assertThat(result.items().get(2).getCreationDate())
-        .isGreaterThanOrEqualTo(result.items().get(3).getCreationDate());
+        .isGreaterThan(result.items().get(3).getCreationDate());
   }
 
   @Test
@@ -756,6 +756,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.state(TaskState.COMPLETED.name()))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -910,11 +911,14 @@ class UserTaskQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThanOrEqualTo(0);
+    assertThat(result.items().size()).isGreaterThan(0);
     result
         .items()
-        .forEach(item -> assertThat(item.getState()).isEqualTo(TaskState.COMPLETED.name()));
-    result.items().forEach(item -> assertThat(item.getCompletionDate()).isNotNull());
+        .forEach(
+            item -> {
+              assertThat(item.getState()).isEqualTo(TaskState.COMPLETED.name());
+              assertThat(item.getCompletionDate()).isNotNull();
+            });
   }
 
   @Test
@@ -928,7 +932,7 @@ class UserTaskQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isGreaterThanOrEqualTo(0);
+    assertThat(result.items().size()).isGreaterThan(0);
     result.items().forEach(item -> assertThat(item.getCompletionDate()).isNull());
   }
 
