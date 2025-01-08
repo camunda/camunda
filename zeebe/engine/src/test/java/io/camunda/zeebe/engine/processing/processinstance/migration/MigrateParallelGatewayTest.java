@@ -461,20 +461,18 @@ public class MigrateParallelGatewayTest {
         .isNotNull();
 
     // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("task2", "task2")
-        // gateway not mapped
-        .expectRejection()
-        .migrate();
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            // gateway not mapped
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
     Assertions.assertThat(rejectionRecord)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
@@ -548,20 +546,18 @@ public class MigrateParallelGatewayTest {
         .isNotNull();
 
     // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("task2", "task2")
-        .addMappingInstruction("join1", "join2")
-        .expectRejection()
-        .migrate();
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction("join1", "join2")
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
     Assertions.assertThat(rejectionRecord)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
@@ -639,20 +635,18 @@ public class MigrateParallelGatewayTest {
 
     // when
     final String nonExistingSourceGatewayId = "nonExistingSourceGatewayId";
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("task2", "task2")
-        .addMappingInstruction(nonExistingSourceGatewayId, "join2")
-        .expectRejection()
-        .migrate();
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction(nonExistingSourceGatewayId, "join2")
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
     Assertions.assertThat(rejectionRecord)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
@@ -726,20 +720,18 @@ public class MigrateParallelGatewayTest {
 
     // when
     final String nonExistingTargetGatewayId = "nonExistingTargetGatewayId";
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("task2", "task2")
-        .addMappingInstruction("join1", nonExistingTargetGatewayId)
-        .expectRejection()
-        .migrate();
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction("join1", nonExistingTargetGatewayId)
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
     Assertions.assertThat(rejectionRecord)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
@@ -812,20 +804,18 @@ public class MigrateParallelGatewayTest {
         .isNotNull();
 
     // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("task2", "task3")
-        .addMappingInstruction("join1", "join2")
-        .expectRejection()
-        .migrate();
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task3")
+            .addMappingInstruction("join1", "join2")
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
     Assertions.assertThat(rejectionRecord)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
@@ -902,21 +892,19 @@ public class MigrateParallelGatewayTest {
         .isNotNull();
 
     // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("task2", "task2")
-        .addMappingInstruction("task3", "task4")
-        .addMappingInstruction("join1", "join2")
-        .expectRejection()
-        .migrate();
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction("task3", "task4")
+            .addMappingInstruction("join1", "join2")
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectionRecord =
-        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
-
     Assertions.assertThat(rejectionRecord)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
