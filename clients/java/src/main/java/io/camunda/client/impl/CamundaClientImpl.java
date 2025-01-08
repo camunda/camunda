@@ -892,15 +892,14 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(
-      final long tenantKey, final long groupKey) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey, groupKey);
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
   }
 
   @Override
   public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final long tenantKey, final long groupKey) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey, groupKey);
+      final long tenantKey) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {

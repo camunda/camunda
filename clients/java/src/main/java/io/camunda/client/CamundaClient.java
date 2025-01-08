@@ -1615,14 +1615,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignGroupToTenantCommand(tenantKey, groupKey)
+   *   .newAssignGroupToTenantCommand(tenantKey)
+   *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
    * @param tenantKey the unique identifier of the tenant
    * @return a builder to configure and send the assign group to tenant command
    */
-  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey, long groupKey);
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey);
 
   /**
    * Command to unassign a group from a tenant.
@@ -1631,13 +1632,13 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignGroupFromTenantCommand(tenantKey, groupKey)
+   *   .newUnassignGroupFromTenantCommand(tenantKey)
+   *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
    * @param tenantKey the unique identifier of the tenant
    * @return a builder to configure and send the unassign group from tenant command
    */
-  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      long tenantKey, long groupKey);
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
 }
