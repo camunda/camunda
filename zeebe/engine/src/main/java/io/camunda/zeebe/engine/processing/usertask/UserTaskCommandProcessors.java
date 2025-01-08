@@ -50,7 +50,8 @@ public final class UserTaskCommandProcessors {
                 new UserTaskAssignProcessor(
                     processingState, eventHandle, writers, authCheckBehavior),
                 UserTaskIntent.CLAIM,
-                new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskClaimProcessor(
+                    processingState, eventHandle, writers, authCheckBehavior),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.COMPLETE,
