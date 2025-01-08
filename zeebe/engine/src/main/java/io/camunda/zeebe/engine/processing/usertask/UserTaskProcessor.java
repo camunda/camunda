@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
+import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
@@ -107,6 +108,15 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         stateWriter.appendFollowUpEvent(
             command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
       }
+    }
+
+    final DirectBuffer commandVariablesBuffer = command.getValue().getVariablesBuffer();
+    if (command.getValue().hasVariables()
+        && !intermediateUserTaskRecord.getVariablesBuffer().equals(commandVariablesBuffer)) {
+
+      intermediateUserTaskRecord.setVariables(commandVariablesBuffer);
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), UserTaskIntent.VARIABLES_UPDATED, intermediateUserTaskRecord);
     }
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
