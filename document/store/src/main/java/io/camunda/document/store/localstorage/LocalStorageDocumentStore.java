@@ -30,10 +30,13 @@ import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import org.slf4j.Logger;
 
 public class LocalStorageDocumentStore implements DocumentStore {
 
   public static final String METADATA_SUFFIX = "-metadata";
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(LocalStorageDocumentStore.class);
   private final Path storagePath;
   private final FileHandler fileHandler;
   private final ExecutorService executor;
@@ -89,8 +92,20 @@ public class LocalStorageDocumentStore implements DocumentStore {
     final Path documentFilePath = storagePath.resolve(documentId);
     final Path documentMetaDataFilePath = storagePath.resolve(documentId + METADATA_SUFFIX);
 
+    // remove inconsistent data if it exists (rare occurrence)
     if (fileHandler.fileExists(documentFilePath)
-        || fileHandler.fileExists(documentMetaDataFilePath)) {
+        != fileHandler.fileExists(documentMetaDataFilePath)) {
+      try {
+        fileHandler.delete(documentFilePath);
+        fileHandler.delete(documentMetaDataFilePath);
+      } catch (final IOException e) {
+        LOG.warn("Error deleting document or metadata with document ID {}", documentId);
+        return Either.left(new UnknownDocumentError(e));
+      }
+    }
+
+    if (fileHandler.fileExists(documentFilePath)
+        && fileHandler.fileExists(documentMetaDataFilePath)) {
       return Either.left(new DocumentAlreadyExists(documentId));
     }
 

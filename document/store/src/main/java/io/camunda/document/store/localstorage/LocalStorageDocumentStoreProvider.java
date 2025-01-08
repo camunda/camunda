@@ -46,7 +46,7 @@ public class LocalStorageDocumentStoreProvider implements DocumentStoreProvider 
           "Failed to configure document store with id '"
               + configuration.id()
               + "': '"
-              + STORAGE_PATH
+              + pathString
               + " must be a valid path'");
     }
   }
