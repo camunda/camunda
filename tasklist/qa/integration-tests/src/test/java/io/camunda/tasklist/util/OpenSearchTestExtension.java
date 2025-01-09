@@ -34,7 +34,9 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
@@ -311,6 +313,29 @@ public class OpenSearchTestExtension
                                                     .collect(Collectors.toList())))))
                 .build())
         .deleted();
+  }
+
+  @Override
+  public void reindex(final String sourceIndex, final String destinationIndex) throws IOException {
+    osClient.reindex(
+        r ->
+            r.source(Source.of(s -> s.index(sourceIndex)))
+                .dest(d -> d.index(destinationIndex))
+                .refresh(true));
+  }
+
+  @Override
+  public void createIndex(final String indexName) throws IOException {
+    osClient.indices().create(c -> c.index(indexName));
+  }
+
+  @Override
+  public void deleteIndex(final String indexName) {
+    try {
+      osClient.indices().delete(d -> d.index(indexName));
+    } catch (final OpenSearchException | IOException e) {
+      LOGGER.warn("Could not delete index {}", indexName, e);
+    }
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
