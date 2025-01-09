@@ -48,7 +48,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   private final String indexName = "test-list-view";
   private final TestProcessCache processCache = new TestProcessCache();
   private final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, false, processCache);
+      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, processCache);
 
   @Test
   public void testGetHandledValueType() {
@@ -230,53 +230,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
-  }
-
-  @Test
-  void shouldUpsertEntityWithConcurrencyModeOnFlush() {
-    // given
-    final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-        new ListViewProcessInstanceFromProcessInstanceHandler(indexName, true, processCache);
-    final ProcessInstanceForListViewEntity inputEntity =
-        new ProcessInstanceForListViewEntity()
-            .setId("111")
-            .setProcessInstanceKey(111L)
-            .setProcessName("process")
-            .setProcessVersion(2)
-            .setProcessVersionTag("versionTag")
-            .setProcessDefinitionKey(444L)
-            .setBpmnProcessId("bpmnProcessId")
-            .setPosition(123L)
-            .setStartDate(OffsetDateTime.now())
-            .setEndDate(OffsetDateTime.now())
-            .setState(ProcessInstanceState.ACTIVE)
-            .setTreePath("PI_111");
-    final BatchRequest mockRequest = mock(BatchRequest.class);
-
-    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, "versionTag");
-    expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
-    expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
-    expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
-    expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
-    expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
-    expectedUpdateFields.put(ListViewTemplate.TREE_PATH, "PI_111");
-    expectedUpdateFields.put(POSITION, 123L);
-
-    // when
-    underTest.flush(inputEntity, mockRequest);
-
-    // then
-    verify(mockRequest, times(1))
-        .upsertWithScriptAndRouting(
-            indexName,
-            "111",
-            inputEntity,
-            underTest.getProcessInstanceScript(),
-            expectedUpdateFields,
-            "111");
   }
 
   @Test
