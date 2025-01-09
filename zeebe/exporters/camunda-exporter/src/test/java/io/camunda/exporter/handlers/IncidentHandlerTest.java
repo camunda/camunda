@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
@@ -40,7 +41,9 @@ public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-incident";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final IncidentHandler underTest = new IncidentHandler(indexName, processCache);
+  private final IncidentNotifier incidentNotifier = mock(IncidentNotifier.class);
+  private final IncidentHandler underTest =
+      new IncidentHandler(indexName, processCache, incidentNotifier);
 
   @Test
   void testGetHandledValueType() {
@@ -118,6 +121,7 @@ public class IncidentHandlerTest {
 
     // then
     verify(mockRequest, times(1)).upsert(indexName, "0", inputEntity, Map.of("position", 1L));
+    verify(incidentNotifier).notifyOnIncidents(List.of(inputEntity));
   }
 
   @Test
