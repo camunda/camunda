@@ -888,3 +888,4 @@ jobs:
   c8run-build-test:
     name: Deploy c8run
     uses: ./.github/workflows/c8run-build.yaml
+    inherit: true
