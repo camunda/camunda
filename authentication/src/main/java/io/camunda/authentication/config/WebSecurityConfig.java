@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.filters.OrganizationAuthorizationFilter;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
@@ -30,16 +28,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -47,8 +50,9 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 @Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
-  public static final String LOGIN_URL = "/login";
-  public static final String LOGOUT_URL = "/logout";
+  // FIXME: /api/ prefix is necessary for compatibility with tasklist and operate
+  public static final String LOGIN_URL = "/api/login";
+  public static final String LOGOUT_URL = "/api/logout";
 
   public static final String[] UNAUTHENTICATED_PATHS =
       new String[] {
@@ -94,18 +98,9 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
-    try {
-      return httpSecurity.build();
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Bean
   @Primary
   @Profile("auth-oidc")
-  public HttpSecurity oidcHttpSecurity(
+  public SecurityFilterChain oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
       final ClientRegistrationRepository clientRegistrationRepository,
@@ -123,13 +118,8 @@ public class WebSecurityConfig {
                                     .getProviderDetails()
                                     .getJwkSetUri())))
             .oauth2Login(oauthLoginConfigurer -> {})
-            .logout(
-                (logout) ->
-                    logout
-                        .logoutUrl(LOGOUT_URL)
-                        .logoutSuccessHandler(this::genericSuccessHandler)
-                        .deleteCookies(SESSION_COOKIE));
-    return withOrganizationIdFilter(security, configuration);
+            .logout(WebSecurityConfig::configureLogout);
+    return withOrganizationIdFilter(security, configuration).build();
   }
 
   private HttpSecurity withOrganizationIdFilter(
@@ -144,23 +134,55 @@ public class WebSecurityConfig {
         SecurityContextHolderAwareRequestFilter.class);
   }
 
-  private void genericSuccessHandler(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final Authentication authentication) {
-    response.setStatus(HttpStatus.NO_CONTENT.value());
+  @Bean
+  @Profile("auth-basic")
+  @Order(1)
+  public SecurityFilterChain basicAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    LOG.info("HTTP Basic authentication is enabled");
+    // Require valid credentials when a basic auth header is present.
+    return baseHttpSecurity(
+            withSecurityMatcher(httpSecurity, WebSecurityConfig::isBasicAuthRequest),
+            authFailureHandler)
+        .httpBasic(Customizer.withDefaults())
+        .build();
   }
 
   @Bean
-  @Primary
   @Profile("auth-basic")
-  public HttpSecurity localHttpSecurity(
+  @Order(2)
+  public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
-    LOG.info("Configuring basic auth login");
+    LOG.info("Configuring login auth");
     return baseHttpSecurity(httpSecurity, authFailureHandler)
-        .httpBasic(withDefaults())
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
+        .formLogin(
+            formLogin ->
+                formLogin
+                    .loginProcessingUrl(LOGIN_URL)
+                    .failureHandler(authFailureHandler)
+                    .successHandler(WebSecurityConfig::genericSuccessHandler))
+        .logout(WebSecurityConfig::configureLogout)
+        .exceptionHandling(
+            exceptionHandling ->
+                exceptionHandling
+                    .authenticationEntryPoint(authFailureHandler)
+                    .accessDeniedHandler(authFailureHandler))
+        .build();
+  }
+
+  @Bean
+  public FilterRegistrationBean<TenantRequestAttributeFilter>
+      tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
+    return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
+  }
+
+  private static void configureLogout(final LogoutConfigurer<HttpSecurity> logout) {
+    logout
+        .logoutUrl(LOGOUT_URL)
+        .logoutSuccessHandler(WebSecurityConfig::genericSuccessHandler)
+        .deleteCookies(SESSION_COOKIE);
   }
 
   private HttpSecurity baseHttpSecurity(
@@ -193,9 +215,23 @@ public class WebSecurityConfig {
     }
   }
 
-  @Bean
-  public FilterRegistrationBean<TenantRequestAttributeFilter>
-      tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
-    return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
+  private static void genericSuccessHandler(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    response.setStatus(HttpStatus.NO_CONTENT.value());
+  }
+
+  private static boolean isBasicAuthRequest(final HttpServletRequest request) {
+    if (request.getRequestURI().contains("/identity/")) {
+      return true; // FIXME: identity doesn't support form login yet
+    }
+    final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
+  }
+
+  private static HttpSecurity withSecurityMatcher(
+      final HttpSecurity httpSecurity, final RequestMatcher requestMatcher) {
+    return httpSecurity.securityMatchers(matchers -> matchers.requestMatchers(requestMatcher));
   }
 }
