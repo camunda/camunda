@@ -23,8 +23,8 @@ func Clean(camundaVersion string, elasticsearchVersion string) {
 	}
 }
 
-func downloadAndExtract(filePath, url, extractDir string, extractFunc func(string, string) error) error {
-	err := archive.DownloadFile(filePath, url)
+func downloadAndExtract(filePath, url, extractDir string, authToken string, extractFunc func(string, string) error) error {
+	err := archive.DownloadFile(filePath, url, authToken)
 	if err != nil {
 		return fmt.Errorf("downloadAndExtract: failed to download file at url %s\n%w\n%s", url, err, debug.Stack())
 	}
@@ -49,25 +49,26 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + ".zip"
 	composeFilePath := composeTag + ".zip"
 	composeExtractionPath := "camunda-platform-" + composeTag
+	authToken := os.Getenv("GITHUB_TOKEN")
 
 	Clean(camundaVersion, elasticsearchVersion)
 
-	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, archive.UnzipSource)
+	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, archive.UnzipSource)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch camunda: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, archive.UnzipSource)
+	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, authToken, archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
@@ -113,25 +114,26 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + ".tar.gz"
 	composeFilePath := composeTag + ".tar.gz"
 	composeExtractionPath := "camunda-platform-" + composeTag
+	authToken := os.Getenv("GITHUB_TOKEN")
 
 	Clean(camundaVersion, elasticsearchVersion)
 
-	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, archive.ExtractTarGzArchive)
+	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", archive.ExtractTarGzArchive)
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch elasticsearch %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, archive.ExtractTarGzArchive)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, archive.ExtractTarGzArchive)
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch connectors %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, archive.ExtractTarGzArchive)
+	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, authToken, archive.ExtractTarGzArchive)
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
