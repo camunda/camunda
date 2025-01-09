@@ -149,16 +149,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for artifact in ./sboms/*/*; do
-            # Debug: Print the artifact being processed
-            echo "Processing artifact: $artifact"
-
             # Extract the file and directory names
             base_name=$(basename "$artifact")
             dir_name=$(basename "$(dirname "$artifact")")
             unique_name="${dir_name}-${base_name}-${RELEASE_TAG}"
-
-            # Debug: Print the unique name being generated
-            echo "Generated unique name for upload: $unique_name"
 
             # Temporarily rename the artifact with the unique name
             mv "$artifact" "./sboms/$unique_name"
