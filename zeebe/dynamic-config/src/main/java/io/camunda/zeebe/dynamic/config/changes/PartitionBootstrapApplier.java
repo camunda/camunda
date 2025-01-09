@@ -98,15 +98,9 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     }
 
     partitionConfig =
-        (config.orElse(
-            currentClusterConfiguration.members().values().stream()
-                .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
-                .toList()
-                .stream()
-                .findFirst()
-                .map(Entry::getValue)
-                .map(PartitionState::config)
-                .orElse(DynamicPartitionConfig.init())));
+        config.orElse(
+            getFirstMemberFirstPartitionConfig(currentClusterConfiguration)
+                .orElse(getFallbackPartitionConfig()));
 
     return Either.right(
         memberState ->
@@ -133,6 +127,21 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
             });
 
     return result;
+  }
+
+  private DynamicPartitionConfig getFallbackPartitionConfig() {
+    return DynamicPartitionConfig.init();
+  }
+
+  private Optional<DynamicPartitionConfig> getFirstMemberFirstPartitionConfig(
+      final ClusterConfiguration currentClusterConfiguration) {
+    return currentClusterConfiguration.members().values().stream()
+        .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
+        .toList()
+        .stream()
+        .findFirst()
+        .map(Entry::getValue)
+        .map(PartitionState::config);
   }
 
   private boolean isLocalMemberIsActive(final ClusterConfiguration currentClusterConfiguration) {

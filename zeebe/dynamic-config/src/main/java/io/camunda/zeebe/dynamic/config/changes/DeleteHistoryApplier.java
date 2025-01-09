@@ -16,19 +16,40 @@ import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
 
 final class DeleteHistoryApplier implements ClusterOperationApplier {
+  private final ClusterChangeExecutor clusterChangeExecutor;
 
-  public DeleteHistoryApplier(final MemberId memberId) {}
+  public DeleteHistoryApplier(
+      final MemberId memberId, final ClusterChangeExecutor clusterChangeExecutor) {
+    this.clusterChangeExecutor = clusterChangeExecutor;
+  }
 
   @Override
   public Either<Exception, UnaryOperator<ClusterConfiguration>> init(
       final ClusterConfiguration currentClusterConfiguration) {
+    if (currentClusterConfiguration.partitionCount() > 0) {
+      return Either.left(
+          new IllegalStateException(
+              "Cannot delete history as "
+                  + currentClusterConfiguration.partitionCount()
+                  + " partitions still exist."));
+    }
     return Either.right(UnaryOperator.identity());
   }
 
   @Override
   public ActorFuture<UnaryOperator<ClusterConfiguration>> apply() {
     final var result = new CompletableActorFuture<UnaryOperator<ClusterConfiguration>>();
-    result.complete(UnaryOperator.identity());
+    clusterChangeExecutor
+        .deleteHistory()
+        .onComplete(
+            (ignore, error) -> {
+              if (error != null) {
+                result.completeExceptionally(error);
+              } else {
+                result.complete(UnaryOperator.identity());
+              }
+            });
+
     return result;
   }
 }
