@@ -11,9 +11,6 @@ import static io.camunda.application.commons.backup.ConfigValidation.*;
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.optimize.service.metadata.Version;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
@@ -26,6 +23,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+/*
+import io.camunda.optimize.service.metadata.Version;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
+ */
+
 @Configuration
 @Conditional(WebappEnabledCondition.class)
 public class BackupConfig {
@@ -35,15 +38,16 @@ public class BackupConfig {
 
   final OperateProperties operateProperties;
   final TasklistProperties tasklistProperties;
-  private final ConfigurationService configurationService;
+
+  // private final ConfigurationService configurationService;
 
   public BackupConfig(
       @Autowired(required = false) final OperateProperties operateProperties,
-      @Autowired(required = false) final TasklistProperties tasklistProperties,
-      @Autowired(required = false) final ConfigurationService configurationService) {
+      @Autowired(required = false) final TasklistProperties tasklistProperties) {
+    // @Autowired(required = false) final ConfigurationService configurationService) {
     this.operateProperties = operateProperties;
     this.tasklistProperties = tasklistProperties;
-    this.configurationService = configurationService;
+    // this.configurationService = configurationService;
   }
 
   @Bean
@@ -52,6 +56,7 @@ public class BackupConfig {
         Optional.ofNullable(operateProperties).map(c -> props(c.getVersion(), c.getBackup()));
     final var tasklistBackup =
         Optional.ofNullable(tasklistProperties).map(c -> props(c.getVersion(), c.getBackup()));
+    /*
     final Optional<BackupRepositoryProps> optimizeBackup =
         Optional.ofNullable(configurationService)
             .flatMap(
@@ -69,14 +74,14 @@ public class BackupConfig {
                   } catch (final Exception ignored) {
                     return Optional.empty();
                   }
-                });
+                }); */
 
     // A LinkedHashMap has to be used because it keeps insertion order
     // the first entry of the map will be used if all entries are present
     final var propMap = new LinkedHashMap<String, Optional<BackupRepositoryProps>>();
     propMap.put("operate", operateBackup);
     propMap.put("tasklist", tasklistBackup);
-    propMap.put("optimize", optimizeBackup);
+    // propMap.put("optimize", optimizeBackup);
 
     final var props =
         allMatchHaving(
@@ -116,8 +121,10 @@ public class BackupConfig {
         operateProperties.getIncompleteCheckTimeoutInSeconds());
   }
 
+  /*
   public static BackupRepositoryProps props(final DatabaseBackup databaseBackup) {
     final var version = Version.VERSION;
     return new BackupRepositoryPropsRecord(version, databaseBackup.getSnapshotRepositoryName());
   }
+   */
 }

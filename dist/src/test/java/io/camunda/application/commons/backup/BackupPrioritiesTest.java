@@ -8,21 +8,15 @@
 package io.camunda.application.commons.backup;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.implement;
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio1Delegate;
-import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio6Delegate;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.Arrays;
@@ -47,10 +41,9 @@ class BackupPrioritiesTest {
   static {
     ALL_IMPLEMENTATIONS =
         new ClassFileImporter()
-                .importPackages(
-                    "io.camunda.webapps.schema",
-                    // Just scan the ES instances of the classes
-                    "io.camunda.optimize.service.db.es.schema.index")
+                .importPackages("io.camunda.webapps.schema")
+                // Just scan the ES instances of the classes
+                // "io.camunda.optimize.service.db.es.schema.index")
                 .that(implement(BackupPriority.class))
                 .stream()
                 .filter(clz -> !clz.getName().contains("Abstract"))
@@ -70,11 +63,11 @@ class BackupPrioritiesTest {
             .filter(clz -> clz.getPackage().getName().contains("tasklist"))
             .toList();
     assertThat(tasklist).isNotEmpty();
-    final var optimize =
+    /* final var optimize =
         ALL_IMPLEMENTATIONS.stream()
             .filter(clz -> clz.getPackage().getName().contains("optimize"))
             .toList();
-    assertThat(optimize).isNotEmpty();
+    assertThat(optimize).isNotEmpty(); */
   }
 
   @Test
@@ -105,8 +98,7 @@ class BackupPrioritiesTest {
         new BackupPriorityConfiguration(
             new OperateProperties(),
             new TasklistProperties(),
-            new OptimizeIndexNameService(""),
-            matchingProfiles("operate", "tasklist", "optimize"));
+            matchingProfiles("operate", "tasklist"));
     final var priorities = configuration.backupPriorities();
 
     final Set<String> allPriorities =
@@ -114,12 +106,13 @@ class BackupPrioritiesTest {
             .allPriorities()
             .map(
                 obj -> {
+                  /*
                   if (obj instanceof final OptimizePrio6Delegate<?> p) {
                     return p.index().getClass().getName();
                   }
                   if (obj instanceof final OptimizePrio1Delegate<?> p) {
                     return p.index().getClass().getName();
-                  }
+                  } */
                   return obj.getClass().getName();
                 })
             .collect(Collectors.toSet());
@@ -139,8 +132,7 @@ class BackupPrioritiesTest {
   @Test
   public void testBackupPrioritiesIndicesSplitBySnapshot() {
     final var configuration =
-        new BackupPriorityConfiguration(
-            new OperateProperties(), null, null, matchingProfiles("operate"));
+        new BackupPriorityConfiguration(new OperateProperties(), null, matchingProfiles("operate"));
     final var priorities = configuration.backupPriorities();
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
@@ -149,10 +141,9 @@ class BackupPrioritiesTest {
     // PRIO 1
     assertThat(indices.get(0).allIndices())
         .containsExactlyInAnyOrder(
-            "operate-import-position-8.3.0_",
-            "tasklist-import-position-8.2.0_",
-            "optimize-position-based-import-index_v3",
-            "optimize-timestamp-based-import-index_v5");
+            "operate-import-position-8.3.0_", "tasklist-import-position-8.2.0_");
+    // "optimize-position-based-import-index_v3",
+    // "optimize-timestamp-based-import-index_v5");
     // PRIO 2
     assertThat(indices.get(1).allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.0_");
@@ -224,7 +215,7 @@ class BackupPrioritiesTest {
             "camunda-tenant-8.7.0_",
             "camunda-user-8.7.0_");
 
-    // PRIO6
+    /* PRIO6
     assertThat(indices.get(7).allIndices())
         .containsExactlyInAnyOrder(
             "optimize-single-decision-report_v10",
@@ -253,7 +244,7 @@ class BackupPrioritiesTest {
           .allSatisfy(i -> assertThat(i).startsWith("optimize"));
       assertThat(indexList.requiredIndices())
           .allSatisfy(i -> assertThat(i).doesNotStartWith("optimize"));
-    }
+    } */
   }
 
   @Test
@@ -262,13 +253,13 @@ class BackupPrioritiesTest {
     operateProperties.getElasticsearch().setIndexPrefix("operate-prefix");
     final var tasklistProperties = new TasklistProperties();
     tasklistProperties.getElasticsearch().setIndexPrefix("tasklist-prefix");
-    final var optimizeIndexService = new OptimizeIndexNameService("optimize-prefix");
+    // final var optimizeIndexService = new OptimizeIndexNameService("optimize-prefix");
     final var configuration =
         new BackupPriorityConfiguration(
             operateProperties,
             tasklistProperties,
-            optimizeIndexService,
-            matchingProfiles("operate", "tasklist", "optimize"));
+            // optimizeIndexService,
+            matchingProfiles("operate", "tasklist"));
     assertThatThrownBy(configuration::backupPriorities)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("operate-prefix")
@@ -285,8 +276,8 @@ class BackupPrioritiesTest {
               return profileSet.contains(profileArg);
             });
     when(environment.getActiveProfiles()).thenReturn(profiles);
-    when(environment.getProperty(eq(CAMUNDA_OPTIMIZE_DATABASE), (String) any()))
-        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
+    // when(environment.getProperty(eq(CAMUNDA_OPTIMIZE_DATABASE), (String) any()))
+    //  .thenReturn(DatabaseType.ELASTICSEARCH.toString());
     return environment;
   }
 }

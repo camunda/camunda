@@ -100,17 +100,17 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     return bpmnEventType;
   }
 
-  @Override
+  // @Override
   public List<List<Long>> getElementInstancePath() {
     return elementInstancePath;
   }
 
-  @Override
+  // @Override
   public List<Long> getProcessDefinitionPath() {
     return processDefinitionPath;
   }
 
-  @Override
+  // @Override
   public List<Integer> getCallingElementPath() {
     return callingElementPath;
   }

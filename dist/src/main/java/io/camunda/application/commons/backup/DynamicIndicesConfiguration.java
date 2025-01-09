@@ -10,9 +10,7 @@ package io.camunda.application.commons.backup;
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.profiles.ProfileWebApp;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,11 +29,11 @@ public class DynamicIndicesConfiguration {
     this.searchClient = searchClient;
   }
 
-  @Bean
+  /* @Bean
   public DynamicIndicesProvider dynamicIndicesProvider() {
     return new SearchDynamicIndicesProvider(
         searchClient,
         connectConfiguration.getTypeEnum().isElasticSearch(),
         connectConfiguration.getIndexPrefix());
-  }
+  } */
 }

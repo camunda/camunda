@@ -28,15 +28,19 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-elasticsearch</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-opensearch</artifactId>
+      <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-query-transformer</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>

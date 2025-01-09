@@ -17,6 +17,10 @@
     <it.test.includedGroups />
     <test.forkCount />
     <version.tomcat>10.1.34</version.tomcat>
+
+    <!-- TODO: remove these once we inherit from parent/pom.xml -->
+    <version.javassist>3.30.2-GA</version.javassist>
+    <version.spring-boot>3.3.7</version.spring-boot>
   </properties>
 
   <dependencies>
@@ -86,6 +90,12 @@
       <artifactId>zeebe-client-java</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>4.29.2</version>
     </dependency>
 
     <dependency>
@@ -168,7 +178,7 @@
     <dependency>
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
-      <version>${spring.boot.version}</version>
+      <version>${version.javassist}</version>
     </dependency>
 
     <dependency>
@@ -859,6 +869,10 @@
             <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
+            <dep>org.javassist:javassist</dep>
+            <dep>org.springframework.boot:spring-boot-actuator</dep>
+            <dep> jakarta.xml.bind:jakarta.xml.bind-api</dep>
+            <dep>com.google.protobuf:protobuf-java</dep>
 
             <!-- test dependencies -->
             <dep>org.springframework.boot:spring-boot-starter-test</dep>

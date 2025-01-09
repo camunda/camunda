@@ -51,7 +51,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
 
   private ZeebeContainer zeebeContainer;
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   private String zeebeRecordPrefix;
 
@@ -99,14 +99,14 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   public void createClient() {
     if (isZeebeVersionPre85()) {
       camundaClient =
-          CamundaClient.newClientBuilder()
+          ZeebeClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
               .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
               .usePlaintext()
               .build();
     } else {
       camundaClient =
-          CamundaClient.newClientBuilder()
+          ZeebeClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
               .grpcAddress(
                   URI.create(
