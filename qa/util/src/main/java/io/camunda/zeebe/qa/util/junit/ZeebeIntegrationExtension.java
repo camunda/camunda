@@ -236,7 +236,11 @@ final class ZeebeIntegrationExtension
     final TestApplication<?> value;
 
     try {
-      value = (TestApplication<?>) ReflectionUtils.makeAccessible(field).get(testInstance);
+      if (!field.canAccess(testInstance)) {
+        field.setAccessible(true);
+      }
+
+      value = (TestApplication<?>) field.get(testInstance);
     } catch (final IllegalAccessException e) {
       throw new UnsupportedOperationException(e);
     }
