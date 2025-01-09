@@ -41,7 +41,8 @@ public class ProcessDefinitionServices
     return processDefinitionSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().read())))
+                authentication,
+                Authorization.of(a -> a.processDefinition().readProcessDefinition())))
         .searchProcessDefinitions(query);
   }
 
@@ -60,7 +61,7 @@ public class ProcessDefinitionServices
                     q -> q.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
     final var processDefinitionEntity =
         getSingleResultOrThrow(result, processDefinitionKey, "Process definition");
-    final var authorization = Authorization.of(a -> a.processDefinition().read());
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
     if (!securityContextProvider.isAuthorized(
         processDefinitionEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);

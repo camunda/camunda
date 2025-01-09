@@ -62,7 +62,8 @@ public final class DecisionDefinitionServices
     return decisionDefinitionSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.decisionDefinition().read())))
+                authentication,
+                Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
         .searchDecisionDefinitions(query);
   }
 
@@ -97,7 +98,8 @@ public final class DecisionDefinitionServices
                     q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey))));
     final var decisionDefinitionEntity =
         getSingleResultOrThrow(result, decisionKey, "Decision definition");
-    final var authorization = Authorization.of(a -> a.decisionDefinition().read());
+    final var authorization =
+        Authorization.of(a -> a.decisionDefinition().readDecisionDefinition());
     if (!securityContextProvider.isAuthorized(
         decisionDefinitionEntity.decisionDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
