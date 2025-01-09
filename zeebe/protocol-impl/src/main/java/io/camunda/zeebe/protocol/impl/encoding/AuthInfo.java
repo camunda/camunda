@@ -15,7 +15,6 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
-import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -90,7 +89,7 @@ public class AuthInfo extends UnpackedObject {
   }
 
   public Map<String, Object> toDecodedMap() {
-    if (Objects.requireNonNull(getFormat()) == AuthDataFormat.JWT) {
+    if (getFormat() == AuthDataFormat.JWT) {
       final String token = getAuthData();
       return new JwtDecoder(token).decode().getClaims();
     }
