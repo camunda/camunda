@@ -11,10 +11,13 @@ import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
 
 public interface MappingSearchClient {
 
   SearchQueryResult<MappingEntity> searchMappings(MappingQuery filter);
+
+  List<MappingEntity> findAllMappings(MappingQuery query);
 
   MappingSearchClient withSecurityContext(SecurityContext securityContext);
 }

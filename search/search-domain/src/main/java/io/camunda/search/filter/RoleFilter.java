@@ -8,16 +8,17 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Set;
 
-public record RoleFilter(Long roleKey, String name, Long memberKey) implements FilterBase {
+public record RoleFilter(Long roleKey, String name, Set<Long> memberKeys) implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).name(name).memberKey(memberKey);
+    return new Builder().roleKey(roleKey).name(name).memberKeys(memberKeys);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
     private Long roleKey;
     private String name;
-    private Long memberKey;
+    private Set<Long> memberKeys;
 
     public Builder roleKey(final Long value) {
       roleKey = value;
@@ -29,14 +30,18 @@ public record RoleFilter(Long roleKey, String name, Long memberKey) implements F
       return this;
     }
 
-    public Builder memberKey(final Long value) {
-      memberKey = value;
+    public Builder memberKeys(final Set<Long> value) {
+      memberKeys = value;
       return this;
+    }
+
+    public Builder memberKey(final Long... values) {
+      return memberKeys(Set.of(values));
     }
 
     @Override
     public RoleFilter build() {
-      return new RoleFilter(roleKey, name, memberKey);
+      return new RoleFilter(roleKey, name, memberKeys);
     }
   }
 }
