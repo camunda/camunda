@@ -19,7 +19,7 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.FlowNodeInstanceType;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
 import java.util.Objects;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {
@@ -38,7 +38,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String tenantId;
   private final FlowNodeInstanceType type;
 
-  public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
+  public FlowNodeInstanceImpl(final FlowNodeInstanceResult item) {
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();

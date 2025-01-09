@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.protocol.rest.ProcessDefinitionItem;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,7 +52,7 @@ public class ProcessDefinitionGetRequestImpl implements ProcessDefinitionGetRequ
     httpClient.get(
         String.format("/process-definitions/%d", processDefinitionKey),
         httpRequestConfig.build(),
-        ProcessDefinitionItem.class,
+        ProcessDefinitionResult.class,
         SearchResponseMapper::toProcessDefinitionGetResponse,
         result);
     return result;

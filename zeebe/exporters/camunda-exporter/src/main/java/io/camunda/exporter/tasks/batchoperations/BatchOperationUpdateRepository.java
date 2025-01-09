@@ -9,6 +9,8 @@ package io.camunda.exporter.tasks.batchoperations;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
@@ -16,7 +18,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * Returns the list of not finished batch operations. We can use endDate field to distinguish
    * finished from running.
    */
-  Collection<String> getNotFinishedBatchOperations();
+  CompletionStage<Collection<String>> getNotFinishedBatchOperations();
 
   /**
    * Counts amount of single operations that are finished (COMPLETED or FAILED state) that are
@@ -26,7 +28,8 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    *
    * @param batchOperationIds list of batch operation ids
    */
-  List<OperationsAggData> getFinishedOperationsCount(Collection<String> batchOperationIds);
+  CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+      Collection<String> batchOperationIds);
 
   /**
    * Updates the batch operations with the amount of finished operations. Update method additionally
@@ -36,7 +39,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * @param documentUpdates
    * @return
    */
-  Integer bulkUpdate(List<DocumentUpdate> documentUpdates);
+  CompletionStage<Integer> bulkUpdate(List<DocumentUpdate> documentUpdates);
 
   /**
    * Represents a specific document store agnostic update to execute.
@@ -50,19 +53,19 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
 
     @Override
-    public Collection<String> getNotFinishedBatchOperations() {
-      return List.of();
+    public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override
-    public List<OperationsAggData> getFinishedOperationsCount(
+    public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
         final Collection<String> batchOperationIds) {
-      return List.of();
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override
-    public Integer bulkUpdate(final List<DocumentUpdate> documentUpdates) {
-      return 0;
+    public CompletionStage<Integer> bulkUpdate(final List<DocumentUpdate> documentUpdates) {
+      return CompletableFuture.completedFuture(0);
     }
 
     @Override

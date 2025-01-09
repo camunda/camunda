@@ -17,7 +17,7 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.ProcessInstanceItem;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import java.util.Optional;
 
 public class ProcessInstanceImpl implements ProcessInstance {
@@ -36,7 +36,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Boolean hasIncident;
   private final String tenantId;
 
-  public ProcessInstanceImpl(final ProcessInstanceItem item) {
+  public ProcessInstanceImpl(final ProcessInstanceResult item) {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionName = item.getProcessDefinitionName();

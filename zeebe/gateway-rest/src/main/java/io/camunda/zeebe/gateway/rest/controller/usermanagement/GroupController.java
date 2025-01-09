@@ -20,16 +20,15 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -43,28 +42,21 @@ public class GroupController {
     this.groupServices = groupServices;
   }
 
-  @PostMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createGroup(
       @RequestBody final GroupCreateRequest createGroupRequest) {
     return RequestMapper.toGroupCreateRequest(createGroupRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGroup);
   }
 
-  @PatchMapping(
-      path = "/{groupKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPatchMapping(path = "/{groupKey}")
   public CompletableFuture<ResponseEntity<Object>> updateGroup(
       @PathVariable final long groupKey, @RequestBody final GroupUpdateRequest groupUpdateRequest) {
     return RequestMapper.toGroupUpdateRequest(groupUpdateRequest, groupKey)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
   }
 
-  @DeleteMapping(
-      path = "/{groupKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaDeleteMapping(path = "/{groupKey}")
   public CompletableFuture<ResponseEntity<Object>> deleteGroup(@PathVariable final long groupKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
@@ -73,9 +65,9 @@ public class GroupController {
                 .deleteGroup(groupKey));
   }
 
-  @PostMapping(
+  @CamundaPostMapping(
       path = "/{groupKey}/users/{userKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+      consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
       @PathVariable final long groupKey, @PathVariable final long userKey) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
@@ -85,9 +77,7 @@ public class GroupController {
                 .assignMember(groupKey, userKey, EntityType.USER));
   }
 
-  @DeleteMapping(
-      path = "/{groupKey}/users/{userKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaDeleteMapping(path = "/{groupKey}/users/{userKey}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
       @PathVariable final long groupKey, @PathVariable final long userKey) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
@@ -97,9 +87,7 @@ public class GroupController {
                 .removeMember(groupKey, userKey, EntityType.USER));
   }
 
-  @GetMapping(
-      path = "/{groupKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping(path = "/{groupKey}")
   public ResponseEntity<Object> getGroup(@PathVariable final long groupKey) {
     try {
       return ResponseEntity.ok()
@@ -109,10 +97,7 @@ public class GroupController {
     }
   }
 
-  @PostMapping(
-      path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<GroupSearchQueryResponse> searchGroups(
       @RequestBody(required = false) final GroupSearchQueryRequest query) {
     return SearchQueryRequestMapper.toGroupQuery(query)

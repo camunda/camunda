@@ -148,11 +148,11 @@ public class FlownodeInstanceTest extends ClientRestTest {
       }
     }
 
-    for (final FlowNodeInstanceItem.TypeEnum protocolValue :
-        FlowNodeInstanceItem.TypeEnum.values()) {
+    for (final FlowNodeInstanceResult.TypeEnum protocolValue :
+        FlowNodeInstanceResult.TypeEnum.values()) {
       final FlowNodeInstanceType value = FlowNodeInstanceType.fromProtocolType(protocolValue);
       assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceItem.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == FlowNodeInstanceResult.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(FlowNodeInstanceType.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
@@ -175,11 +175,11 @@ public class FlownodeInstanceTest extends ClientRestTest {
       }
     }
 
-    for (final FlowNodeInstanceItem.StateEnum protocolValue :
-        FlowNodeInstanceItem.StateEnum.values()) {
+    for (final FlowNodeInstanceResult.StateEnum protocolValue :
+        FlowNodeInstanceResult.StateEnum.values()) {
       final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
       assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceItem.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == FlowNodeInstanceResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());

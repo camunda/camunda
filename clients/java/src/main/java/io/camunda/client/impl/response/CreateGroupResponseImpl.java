@@ -16,7 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.CreateGroupResponse;
-import io.camunda.client.protocol.rest.GroupCreateResponse;
+import io.camunda.client.protocol.rest.GroupCreateResult;
 
 public class CreateGroupResponseImpl implements CreateGroupResponse {
 
@@ -27,7 +27,7 @@ public class CreateGroupResponseImpl implements CreateGroupResponse {
     return groupKey;
   }
 
-  public CreateGroupResponseImpl setResponse(final GroupCreateResponse response) {
+  public CreateGroupResponseImpl setResponse(final GroupCreateResult response) {
     groupKey = Long.parseLong(response.getGroupKey());
     return this;
   }

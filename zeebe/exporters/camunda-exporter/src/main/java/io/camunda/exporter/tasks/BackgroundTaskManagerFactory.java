@@ -133,7 +133,7 @@ public final class BackgroundTaskManagerFactory {
 
   private ReschedulingTask buildBatchOperationUpdateTask() {
     return new ReschedulingTask(
-        new BatchOperationUpdateTask(batchOperationUpdateRepository, logger),
+        new BatchOperationUpdateTask(batchOperationUpdateRepository, logger, executor),
         config.getArchiver().getRolloverBatchSize(),
         config.getArchiver().getDelayBetweenRuns(),
         executor,

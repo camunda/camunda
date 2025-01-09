@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +51,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 abstract sealed class BatchOperationUpdateRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
+  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
   @AutoCloseResource protected final ClientAdapter clientAdapter;
@@ -73,7 +75,11 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
   @BeforeEach
   void beforeEach() {
     Stream.of(batchOperationTemplate, operationTemplate)
-        .forEach(template -> engineClient.createIndexTemplate(template, new IndexSettings(), true));
+        .forEach(
+            template -> {
+              engineClient.createIndexTemplate(template, new IndexSettings(), true);
+              engineClient.createIndex(template, new IndexSettings());
+            });
   }
 
   protected abstract BatchOperationUpdateRepository createRepository();
@@ -152,7 +158,10 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
       final var documents = repository.getNotFinishedBatchOperations();
 
       // then
-      assertThat(documents).asInstanceOf(InstanceOfAssertFactories.list(String.class)).isEmpty();
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+          .isEmpty();
     }
 
     @Test
@@ -168,6 +177,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
 
       // then
       assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(String.class))
           .hasSize(1)
           .contains(expected.getId());
@@ -192,6 +202,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
       var operationsAggData = repository.getFinishedOperationsCount(List.of());
       // then
       assertThat(operationsAggData)
+          .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(OperationsAggData.class))
           .isEmpty();
 
@@ -199,6 +210,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
       operationsAggData = repository.getFinishedOperationsCount(null);
       // then
       assertThat(operationsAggData)
+          .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(OperationsAggData.class))
           .isEmpty();
     }
@@ -221,6 +233,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
 
       // then
       assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(OperationsAggData.class))
           .hasSize(2)
           .isEqualTo(expected);
@@ -258,7 +271,10 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
           repository.bulkUpdate(List.of(new DocumentUpdate("1", 2), new DocumentUpdate("2", 50)));
 
       // then
-      assertThat(updated).isEqualTo(2);
+      assertThat(updated)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
+          .isEqualTo(2);
 
       final BatchOperationEntity batchOperationEntity1 = getBatchOperationEntity("1");
       assertThat(batchOperationEntity1.getEndDate()).isNotNull();

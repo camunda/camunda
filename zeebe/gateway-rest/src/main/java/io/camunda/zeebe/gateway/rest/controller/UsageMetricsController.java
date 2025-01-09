@@ -16,9 +16,8 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import org.springframework.http.MediaType;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -32,8 +31,7 @@ public class UsageMetricsController {
     this.usageMetricsServices = usageMetricsServices;
   }
 
-  @GetMapping(
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
       @RequestParam(required = false) final String startTime,
       @RequestParam(required = false) final String endTime) {

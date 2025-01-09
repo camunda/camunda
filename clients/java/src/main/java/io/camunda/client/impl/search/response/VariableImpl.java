@@ -17,7 +17,7 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.VariableItem;
+import io.camunda.client.protocol.rest.VariableResult;
 
 public class VariableImpl implements Variable {
 
@@ -30,7 +30,7 @@ public class VariableImpl implements Variable {
   private final String tenantId;
   private final Boolean isTruncated;
 
-  public VariableImpl(final VariableItem item) {
+  public VariableImpl(final VariableResult item) {
     variableKey = ParseUtil.parseLongOrNull(item.getVariableKey());
     name = item.getName();
     value = item.getValue();

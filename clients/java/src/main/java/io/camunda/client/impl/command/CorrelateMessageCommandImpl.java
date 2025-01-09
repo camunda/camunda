@@ -26,7 +26,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CorrelateMessageResponseImpl;
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
-import io.camunda.client.protocol.rest.MessageCorrelationResponse;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -85,7 +85,7 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
         "/messages/correlation",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        MessageCorrelationResponse.class,
+        MessageCorrelationResult.class,
         response::setResponse,
         result);
     return result;

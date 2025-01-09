@@ -32,7 +32,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeploymentEventImpl;
-import io.camunda.client.protocol.rest.DeploymentResponse;
+import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
@@ -251,7 +251,7 @@ public final class DeployResourceCommandImpl
         "/deployments",
         multipartEntityBuilder,
         httpRequestConfig.build(),
-        DeploymentResponse.class,
+        DeploymentResult.class,
         DeploymentEventImpl::new,
         result);
     return result;

@@ -28,6 +28,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.EvaluateDecisionResponseImpl;
+import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
@@ -79,8 +80,8 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
    * backwards compatibility in tests.
    *
    * @deprecated since 8.3.0, use {@link
-   *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub asyncStub, JsonMapper
-   *     jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
+   *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub, JsonMapper,
+   *     CamundaClientConfiguration, Predicate, HttpClient)}
    */
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
@@ -153,7 +154,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.client.protocol.rest.EvaluateDecisionResponse.class,
+        EvaluateDecisionResult.class,
         response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
         result);
     return result;
