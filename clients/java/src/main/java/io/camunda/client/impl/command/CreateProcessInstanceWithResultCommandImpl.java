@@ -25,6 +25,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceWithResultResponseImpl;
+import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -99,7 +100,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
+        CreateProcessInstanceResult.class,
         response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
         result);
     return result;

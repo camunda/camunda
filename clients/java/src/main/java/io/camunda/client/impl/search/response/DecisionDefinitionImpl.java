@@ -16,7 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.DecisionDefinition;
-import io.camunda.client.protocol.rest.DecisionDefinitionItem;
+import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import java.util.Objects;
 
 public final class DecisionDefinitionImpl implements DecisionDefinition {
@@ -29,7 +29,7 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   private final long decisionRequirementsKey;
   private final String tenantId;
 
-  public DecisionDefinitionImpl(final DecisionDefinitionItem item) {
+  public DecisionDefinitionImpl(final DecisionDefinitionResult item) {
     this(
         item.getDecisionDefinitionId(),
         item.getName(),

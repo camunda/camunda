@@ -17,7 +17,7 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.CreateUserResponse;
-import io.camunda.client.protocol.rest.UserCreateResponse;
+import io.camunda.client.protocol.rest.UserCreateResult;
 
 public class CreateUserResponseImpl implements CreateUserResponse {
 
@@ -33,7 +33,7 @@ public class CreateUserResponseImpl implements CreateUserResponse {
     return userKey;
   }
 
-  public CreateUserResponseImpl setResponse(final UserCreateResponse response) {
+  public CreateUserResponseImpl setResponse(final UserCreateResult response) {
     userKey = Long.parseLong(response.getUserKey());
     return this;
   }

@@ -71,7 +71,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   public ActivatedJobImpl(
-      final JsonMapper jsonMapper, final io.camunda.client.protocol.rest.ActivatedJob job) {
+      final JsonMapper jsonMapper, final io.camunda.client.protocol.rest.ActivatedJobResult job) {
     this.jsonMapper = jsonMapper;
 
     key = parseLongOrEmpty(job.getJobKey());

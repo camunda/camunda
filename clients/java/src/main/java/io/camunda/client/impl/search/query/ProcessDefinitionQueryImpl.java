@@ -34,7 +34,7 @@ import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilterRequest;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryRequest;
-import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResponse;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
@@ -73,7 +73,7 @@ public class ProcessDefinitionQueryImpl
         "/process-definitions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        ProcessDefinitionSearchQueryResponse.class,
+        ProcessDefinitionSearchQueryResult.class,
         SearchResponseMapper::toProcessDefinitionSearchResponse,
         result);
     return result;

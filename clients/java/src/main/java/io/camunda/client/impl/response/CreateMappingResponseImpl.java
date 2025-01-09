@@ -16,7 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.CreateMappingResponse;
-import io.camunda.client.protocol.rest.MappingRuleCreateResponse;
+import io.camunda.client.protocol.rest.MappingRuleCreateResult;
 
 public class CreateMappingResponseImpl implements CreateMappingResponse {
 
@@ -27,7 +27,7 @@ public class CreateMappingResponseImpl implements CreateMappingResponse {
     return mappingKey;
   }
 
-  public CreateMappingResponseImpl setResponse(final MappingRuleCreateResponse response) {
+  public CreateMappingResponseImpl setResponse(final MappingRuleCreateResult response) {
     mappingKey = Long.parseLong(response.getMappingKey());
     return this;
   }

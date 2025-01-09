@@ -16,7 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.CreateTenantResponse;
-import io.camunda.client.protocol.rest.TenantCreateResponse;
+import io.camunda.client.protocol.rest.TenantCreateResult;
 
 public class CreateTenantResponseImpl implements CreateTenantResponse {
   private long tenantKey;
@@ -26,7 +26,7 @@ public class CreateTenantResponseImpl implements CreateTenantResponse {
     return tenantKey;
   }
 
-  public CreateTenantResponseImpl setResponse(final TenantCreateResponse response) {
+  public CreateTenantResponseImpl setResponse(final TenantCreateResult response) {
     tenantKey = Long.parseLong(response.getTenantKey());
     return this;
   }

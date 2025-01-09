@@ -16,7 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Form;
-import io.camunda.client.protocol.rest.FormItem;
+import io.camunda.client.protocol.rest.FormResult;
 
 public class FormImpl implements Form {
   private final String formId;
@@ -25,7 +25,7 @@ public class FormImpl implements Form {
   private final Object schema;
   private final String tenantId;
 
-  public FormImpl(final FormItem item) {
+  public FormImpl(final FormResult item) {
     formId = item.getBpmnId();
     version = item.getVersion();
     formKey = Long.parseLong(item.getFormKey());

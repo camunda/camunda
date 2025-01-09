@@ -21,7 +21,7 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.VariableImpl;
-import io.camunda.client.protocol.rest.VariableItem;
+import io.camunda.client.protocol.rest.VariableResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -50,7 +50,7 @@ public class VariableGetRequestImpl implements VariableGetRequest {
     httpClient.get(
         String.format("/variables/%d", variableKey),
         httpRequestConfig.build(),
-        VariableItem.class,
+        VariableResult.class,
         VariableImpl::new,
         result);
     return result;
