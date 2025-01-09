@@ -149,13 +149,38 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for artifact in ./sboms/*/*; do
+            # Debug: Print the artifact being processed
+            echo "Processing artifact: $artifact"
+
+            # Extract the file and directory names
             base_name=$(basename "$artifact")
             dir_name=$(basename "$(dirname "$artifact")")
             unique_name="${dir_name}-${base_name}-${RELEASE_TAG}"
-            gh release upload "$RELEASE_TAG" "$artifact" \
-              --repo "camunda/camunda" \
-              --clobber \
-              --name "$unique_name"
+
+            # Debug: Print the unique name being generated
+            echo "Generated unique name for upload: $unique_name"
+
+            # Temporarily rename the artifact with the unique name
+            mv "$artifact" "./sboms/$unique_name"
+            echo "Renamed $artifact to ./sboms/$unique_name"
+
+            # Upload the artifact
+            echo "Uploading ./sboms/$unique_name to release $RELEASE_TAG"
+            gh release upload "$RELEASE_TAG" "./sboms/$unique_name" \
+            --repo "camunda/camunda" \
+            --clobber
+
+            # Check the exit code of the upload command
+            if [ $? -eq 0 ]; then
+              echo "Successfully uploaded: $unique_name"
+            else
+              echo "Failed to upload: $unique_name"
+            exit 1
+            fi
+
+            # Restore the original artifact name
+            mv "./sboms/$unique_name" "$artifact"
+            echo "Restored ./sboms/$unique_name back to $artifact"
           done
 
 
