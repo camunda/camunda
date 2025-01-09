@@ -17,6 +17,7 @@ import io.camunda.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
+import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
@@ -46,20 +48,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class ArchiverIT extends TasklistZeebeIntegrationTest {
-
   @Autowired private BeanFactory beanFactory;
-
   @Autowired private ArchiverUtil archiverUtil;
-
   @Autowired private TaskTemplate taskTemplate;
-
   @Autowired private TaskVariableTemplate taskVariableTemplate;
-
   @Autowired private ObjectMapper objectMapper;
-
   @Autowired private TaskStore taskStore;
-
   @Autowired private NoSqlHelper noSqlHelper;
+  @Autowired private ProcessInstanceIndex processInstanceIndex;
 
   @Autowired
   @Qualifier(PROCESS_INSTANCE_IS_COMPLETED_CHECK)
@@ -72,7 +68,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   private TaskArchiverJob archiverJob;
   private ProcessInstanceArchiverJob processInstanceArchiverJob;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
 
@@ -148,7 +144,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     assertAllInstancesInAlias(count1 + count2 + count3, ids1.get(0));
   }
 
-  private void assertAllInstancesInAlias(int count, String id) throws IOException {
+  private void assertAllInstancesInAlias(final int count, final String id) throws IOException {
     assertThat(tester.getAllTasks().get("$.data.tasks.length()")).isEqualTo(String.valueOf(count));
     final String taskId = tester.getTaskById(id).get("$.data.task.id");
     assertThat(taskId).isEqualTo(id);
@@ -238,6 +234,60 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     assertProcessInstancesExist(ids3);
   }
 
+  @Test
+  public void shouldArchiveDocumentsOnlyFromDeclaredProcessInstanceIndex() throws IOException {
+    final String piCustomPrefix = UUID.randomUUID().toString().substring(0, 10);
+    final Instant currentTime = pinZeebeTime();
+
+    // having
+    // deploy process
+    offsetZeebeTime(Duration.ofDays(-4));
+    final String processId = "demoProcess";
+    final String flowNodeBpmnId = "task1";
+    deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
+
+    // start and complete instances 2 hours ago
+    final int count1 = random.nextInt(6) + 3;
+    final Instant endDate1 = currentTime.minus(2, ChronoUnit.HOURS);
+    final List<String> ids1 =
+        startAndCompleteInstances(processId, flowNodeBpmnId, count1, endDate1);
+
+    // start and cancel instances 2 hours ago
+    final int count2 = random.nextInt(6) + 3;
+    final List<String> ids2 = startAndCancelInstances(processId, flowNodeBpmnId, count2, endDate1);
+
+    resetZeebeTime();
+    databaseTestExtension.refreshIndexesInElasticsearch();
+
+    final List<String> allIds = new ArrayList<>();
+    allIds.addAll(ids1);
+    allIds.addAll(ids2);
+    databaseTestExtension.createIndex(piCustomPrefix + processInstanceIndex.getIndexName());
+
+    try {
+      databaseTestExtension.reindex(
+          processInstanceIndex.getFullQualifiedName(),
+          piCustomPrefix + processInstanceIndex.getIndexName());
+      // when
+      assertThat(processInstanceArchiverJob.archiveNextBatch().join().getValue())
+          .isEqualTo(count1 + count2);
+      databaseTestExtension.refreshIndexesInElasticsearch();
+      // 2rd run should not move anything, as no processes are left
+      assertThat(processInstanceArchiverJob.archiveNextBatch().join())
+          .isEqualTo(Map.entry("NothingToArchive", 0));
+
+      final List<String> customIndexIds =
+          noSqlHelper.getIdsFromIndex(
+              ProcessInstanceIndex.ID,
+              piCustomPrefix + processInstanceIndex.getIndexName(),
+              allIds);
+      assertThat(customIndexIds).containsExactlyInAnyOrderElementsOf(allIds);
+      assertThat(noSqlHelper.getProcessInstances(allIds)).isEmpty();
+    } finally {
+      databaseTestExtension.deleteIndex(piCustomPrefix + processInstanceIndex.getIndexName());
+    }
+  }
+
   private void assertProcessInstancesExist(final List<String> ids) {
     assertThat(noSqlHelper.getProcessInstances(ids)).hasSize(ids.size());
   }
@@ -246,7 +296,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     assertThat(noSqlHelper.getProcessInstances(ids)).isEmpty();
   }
 
-  private void deployProcessWithOneFlowNode(String processId, String flowNodeBpmnId) {
+  private void deployProcessWithOneFlowNode(final String processId, final String flowNodeBpmnId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -256,14 +306,14 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     tester.deployProcess(process, processId + ".bpmn").waitUntil().processIsDeployed();
   }
 
-  private void assertTasksInCorrectIndex(int tasksCount, List<String> ids, Instant endDate)
-      throws IOException {
+  private void assertTasksInCorrectIndex(
+      final int tasksCount, final List<String> ids, final Instant endDate) throws IOException {
     assertTaskIndex(tasksCount, ids, endDate);
     assertDependentIndex(
         taskVariableTemplate.getFullQualifiedName(), TaskVariableTemplate.TASK_ID, ids, endDate);
   }
 
-  private void assertTaskIndex(int tasksCount, List<String> ids, Instant endDate)
+  private void assertTaskIndex(final int tasksCount, final List<String> ids, final Instant endDate)
       throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
@@ -289,7 +339,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private void assertDependentIndex(
-      String mainIndexName, String idFieldName, List<String> ids, Instant endDate)
+      final String mainIndexName,
+      final String idFieldName,
+      final List<String> ids,
+      final Instant endDate)
       throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
@@ -305,7 +358,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private List<String> startInstancesAndCompleteTasks(
-      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+      final String processId,
+      final String flowNodeBpmnId,
+      final int count,
+      final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
@@ -324,7 +380,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private List<String> startAndCancelInstances(
-      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+      final String processId,
+      final String flowNodeBpmnId,
+      final int count,
+      final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
@@ -344,7 +403,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private List<String> startAndCompleteInstances(
-      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+      final String processId,
+      final String flowNodeBpmnId,
+      final int count,
+      final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();
@@ -363,7 +425,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private List<String> startInstances(
-      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+      final String processId,
+      final String flowNodeBpmnId,
+      final int count,
+      final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<String> ids = new ArrayList<>();

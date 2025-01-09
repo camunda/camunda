@@ -48,4 +48,10 @@ public interface DatabaseTestExtension extends Extension {
   <T> long deleteByTermsQuery(
       String index, String fieldName, Collection<T> values, final Class<T> valueType)
       throws IOException;
+
+  void reindex(String sourceIndex, String destinationIndex) throws IOException;
+
+  void createIndex(String indexName) throws IOException;
+
+  void deleteIndex(String indexName);
 }

@@ -182,6 +182,7 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
 
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
+            .index(processInstanceIndex.getFullQualifiedName())
             .query(q)
             .size(tasklistProperties.getArchiver().getRolloverBatchSize())
             .sort(s -> s.field(f -> f.field(ProcessInstanceIndex.END_DATE).order(SortOrder.Asc)))

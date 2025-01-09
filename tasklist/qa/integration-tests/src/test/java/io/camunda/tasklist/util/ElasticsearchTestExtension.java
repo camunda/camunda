@@ -28,15 +28,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.ReindexRequest;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -286,6 +290,30 @@ public class ElasticsearchTestExtension
             new DeleteByQueryRequest(index).setQuery(QueryBuilders.termsQuery(fieldName, values)),
             RequestOptions.DEFAULT)
         .getDeleted();
+  }
+
+  @Override
+  public void reindex(final String sourceIndex, final String destinationIndex) throws IOException {
+    esClient.reindex(
+        new ReindexRequest()
+            .setSourceIndices(sourceIndex)
+            .setDestIndex(destinationIndex)
+            .setRefresh(true),
+        RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public void createIndex(final String indexName) throws IOException {
+    esClient.indices().create(new CreateIndexRequest(indexName), RequestOptions.DEFAULT);
+  }
+
+  @Override
+  public void deleteIndex(final String indexName) {
+    try {
+      esClient.indices().delete(new DeleteIndexRequest(indexName), RequestOptions.DEFAULT);
+    } catch (final ElasticsearchException | IOException e) {
+      LOGGER.error("Could not delete index {}", indexName, e);
+    }
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
