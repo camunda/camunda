@@ -35,6 +35,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 public class IncidentHandlerTest {
@@ -140,7 +141,8 @@ public class IncidentHandlerTest {
     // then
     verify(mockRequest, times(1))
         .upsert(indexName, String.valueOf(recordKey), incidentEntity, Map.of("position", 1L));
-    verify(incidentNotifier).notifyOnIncidents(List.of(incidentEntity));
+    Awaitility.await()
+        .untilAsserted(() -> verify(incidentNotifier).notifyOnIncidents(List.of(incidentEntity)));
   }
 
   @Test
