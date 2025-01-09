@@ -22,12 +22,11 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
-
   @Test
   void shouldQueryByKey() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.decisionInstanceKeys(124L));
+        FilterBuilders.decisionInstance(f -> f.decisionInstanceKeyOperations(Operation.eq(124L)));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);
@@ -47,7 +46,8 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   void shouldQueryByDecisionVersion() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.decisionDefinitionVersions(1));
+        FilterBuilders.decisionInstance(
+            f -> f.decisionDefinitionVersionOperations(Operation.eq(1)));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);
@@ -66,7 +66,8 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByTenantId() {
     // given
-    final var decisionInstanceFilter = FilterBuilders.decisionInstance(f -> f.tenantIds("t"));
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.tenantIdOperations(Operation.eq("t")));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);
@@ -86,7 +87,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   void shouldQueryByDmnDecisionId() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.decisionDefinitionIds("dId"));
+        FilterBuilders.decisionInstance(f -> f.decisionDefinitionIdOperations(Operation.eq("d")));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);
@@ -98,7 +99,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("decisionId");
-              assertThat(t.value().stringValue()).isEqualTo("dId");
+              assertThat(t.value().stringValue()).isEqualTo("d");
             });
   }
 
@@ -106,7 +107,8 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   void shouldQueryByDecisionKey() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.decisionDefinitionKeys(12345L));
+        FilterBuilders.decisionInstance(
+            f -> f.decisionDefinitionKeyOperations(Operation.eq(12345L)));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
@@ -120,7 +122,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("decisionDefinitionId");
-              assertThat(t.value().stringValue()).isEqualTo("12345");
+              assertThat(t.value().longValue()).isEqualTo(12345L);
             });
   }
 
@@ -128,7 +130,8 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   void shouldQueryByDecisionInstanceId() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.decisionInstanceIds("12345-1"));
+        FilterBuilders.decisionInstance(
+            f -> f.decisionInstanceIdOperations(Operation.eq("12345-1")));
     final var searchQuery =
         SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
@@ -150,7 +153,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   void shouldQueryByDmnDecisionName() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.decisionDefinitionNames("n"));
+        FilterBuilders.decisionInstance(f -> f.decisionDefinitionNameOperations(Operation.eq("n")));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);
@@ -171,7 +174,9 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var decisionInstanceFilter =
         FilterBuilders.decisionInstance(
-            f -> f.decisionDefinitionNames("n").decisionDefinitionVersions(1));
+            f ->
+                f.decisionDefinitionNameOperations(Operation.eq("n"))
+                    .decisionDefinitionVersionOperations(Operation.eq(1)));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);

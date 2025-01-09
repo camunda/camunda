@@ -19,6 +19,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.filter.DecisionInstanceFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.sort.DecisionInstanceSort;
@@ -154,7 +155,7 @@ public class DecisionInstanceSortIT {
             .search(
                 new DecisionInstanceQuery(
                     new DecisionInstanceFilter.Builder()
-                        .processDefinitionKeys(processDefinitionKey)
+                        .processDefinitionKeyOperations(Operation.eq(processDefinitionKey))
                         .build(),
                     DecisionInstanceSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b),

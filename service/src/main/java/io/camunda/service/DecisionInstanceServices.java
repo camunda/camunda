@@ -14,6 +14,7 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
@@ -83,7 +84,10 @@ public final class DecisionInstanceServices
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchDecisionInstances(
                 decisionInstanceSearchQuery(
-                    q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
+                    q ->
+                        q.filter(
+                            f ->
+                                f.decisionInstanceIdOperations(Operation.eq(decisionInstanceId)))));
     final var decisionInstanceEntity =
         getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
     final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());

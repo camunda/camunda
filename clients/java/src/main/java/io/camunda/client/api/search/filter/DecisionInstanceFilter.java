@@ -15,8 +15,10 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.api.search.filter.builder.LongProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
@@ -28,14 +30,23 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by decisionInstanceKey */
   DecisionInstanceFilter decisionInstanceKey(long decisionInstanceKey);
 
+  /** Filter by decisionInstanceKey using {@link LongProperty} consumer */
+  DecisionInstanceFilter decisionInstanceKey(Consumer<LongProperty> callback);
+
   /** Filter by decisionInstanceId */
   DecisionInstanceFilter decisionInstanceId(String decisionInstanceId);
+
+  /** Filter by decisionInstanceId using {@link StringProperty} consumer */
+  DecisionInstanceFilter decisionInstanceId(Consumer<StringProperty> callback);
 
   /** Filter by state */
   DecisionInstanceFilter state(DecisionInstanceState state);
 
   /** Filter by evaluationFailure */
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);
+
+  /** Filter by evaluationFailure using {@link StringProperty} consumer */
+  DecisionInstanceFilter evaluationFailure(Consumer<StringProperty> callback);
 
   /** Filter by evaluationDate */
   DecisionInstanceFilter evaluationDate(OffsetDateTime evaluationDate);
@@ -46,27 +57,45 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionKey */
   DecisionInstanceFilter processDefinitionKey(long processDefinitionKey);
 
+  /** Filter by processDefinitionKey using {@link LongProperty} consumer */
+  DecisionInstanceFilter processDefinitionKey(Consumer<LongProperty> callback);
+
   /** Filter by processInstanceKey */
   DecisionInstanceFilter processInstanceKey(long processInstanceKey);
+
+  /** Filter by processInstanceKey using {@link LongProperty} consumer */
+  DecisionInstanceFilter processInstanceKey(Consumer<LongProperty> callback);
 
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
 
-  /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
-  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
+  /** Filter by decisionDefinitionKey using {@link LongProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionKey(Consumer<LongProperty> callback);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);
 
+  /** Filter by decisionDefinitionId using {@link StringProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionId(Consumer<StringProperty> callback);
+
   /** Filter by decisionDefinitionName */
   DecisionInstanceFilter decisionDefinitionName(String decisionDefinitionName);
 
+  /** Filter by decisionDefinitionName using {@link StringProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionName(Consumer<StringProperty> callback);
+
   /** Filter by decisionDefinitionVersion */
   DecisionInstanceFilter decisionDefinitionVersion(int decisionDefinitionVersion);
+
+  /** Filter by decisionDefinitionVersion using {@link IntegerProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionVersion(Consumer<IntegerProperty> callback);
 
   /** Filter by decisionDefinitionType */
   DecisionInstanceFilter decisionDefinitionType(DecisionDefinitionType decisionDefinitionType);
 
   /** Filter by tenantId */
   DecisionInstanceFilter tenantId(String tenantId);
+
+  /** Filter by tenantId using {@link StringProperty} consumer */
+  DecisionInstanceFilter tenantId(Consumer<StringProperty> callback);
 }

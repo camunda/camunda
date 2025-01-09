@@ -13,7 +13,6 @@ import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -22,19 +21,19 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record DecisionInstanceFilter(
-    List<Long> decisionInstanceKeys,
-    List<String> decisionInstanceIds,
+    List<Operation<Long>> decisionInstanceKeyOperations,
+    List<Operation<String>> decisionInstanceIdOperations,
     List<DecisionInstanceState> states,
     List<Operation<OffsetDateTime>> evaluationDateOperations,
-    List<String> evaluationFailures,
-    List<Long> processDefinitionKeys,
-    List<Long> processInstanceKeys,
+    List<Operation<String>> evaluationFailureOperations,
+    List<Operation<Long>> processDefinitionKeyOperations,
+    List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> decisionDefinitionKeyOperations,
-    List<String> decisionDefinitionIds,
-    List<String> decisionDefinitionNames,
-    List<Integer> decisionDefinitionVersions,
+    List<Operation<String>> decisionDefinitionIdOperations,
+    List<Operation<String>> decisionDefinitionNameOperations,
+    List<Operation<Integer>> decisionDefinitionVersionOperations,
     List<DecisionDefinitionType> decisionTypes,
-    List<String> tenantIds)
+    List<Operation<String>> tenantIdOperations)
     implements FilterBase {
 
   public static DecisionInstanceFilter of(
@@ -44,36 +43,40 @@ public record DecisionInstanceFilter(
 
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
 
-    private List<Long> decisionInstanceKeys;
-    private List<String> decisionInstanceIds;
+    private List<Operation<Long>> decisionInstanceKeyOperations;
+    private List<Operation<String>> decisionInstanceIdOperations;
     private List<DecisionInstanceState> states;
     private List<Operation<OffsetDateTime>> evaluationDateOperations;
-    private List<String> evaluationFailures;
-    private List<Long> processDefinitionKeys;
-    private List<Long> processInstanceKeys;
+    private List<Operation<String>> evaluationFailureOperations;
+    private List<Operation<Long>> processDefinitionKeyOperations;
+    private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> decisionDefinitionKeyOperations;
-    private List<String> decisionDefinitionIds;
-    private List<String> decisionDefinitionNames;
-    private List<Integer> decisionDefinitionVersions;
+    private List<Operation<String>> decisionDefinitionIdOperations;
+    private List<Operation<String>> decisionDefinitionNameOperations;
+    private List<Operation<Integer>> decisionDefinitionVersionOperations;
     private List<DecisionDefinitionType> decisionTypes;
-    private List<String> tenantIds;
+    private List<Operation<String>> tenantIdOperations;
 
-    public Builder decisionInstanceKeys(final List<Long> values) {
-      decisionInstanceKeys = addValuesToList(decisionInstanceKeys, values);
+    public Builder decisionInstanceKeyOperations(final List<Operation<Long>> operations) {
+      decisionInstanceKeyOperations = addValuesToList(decisionInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder decisionInstanceKeys(final Long... values) {
-      return decisionInstanceKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder decisionInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return decisionInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder decisionInstanceIds(final List<String> values) {
-      decisionInstanceIds = addValuesToList(decisionInstanceIds, values);
+    public Builder decisionInstanceIdOperations(final List<Operation<String>> operations) {
+      decisionInstanceIdOperations = addValuesToList(decisionInstanceIdOperations, operations);
       return this;
     }
 
-    public Builder decisionInstanceIds(final String... values) {
-      return decisionInstanceIds(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder decisionInstanceIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return decisionInstanceIdOperations(collectValues(operation, operations));
     }
 
     public Builder states(final List<DecisionInstanceState> values) {
@@ -96,31 +99,37 @@ public record DecisionInstanceFilter(
       return evaluationDateOperations(collectValues(operation, operations));
     }
 
-    public Builder evaluationFailures(final List<String> values) {
-      evaluationFailures = addValuesToList(evaluationFailures, values);
+    public Builder evaluationFailureOperations(final List<Operation<String>> operations) {
+      evaluationFailureOperations = addValuesToList(evaluationFailureOperations, operations);
       return this;
     }
 
-    public Builder evaluationFailures(final String... values) {
-      return evaluationFailures(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder evaluationFailureOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return evaluationFailureOperations(collectValues(operation, operations));
     }
 
-    public Builder processDefinitionKeys(final List<Long> values) {
-      processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
+    public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
+      processDefinitionKeyOperations = addValuesToList(processDefinitionKeyOperations, operations);
       return this;
     }
 
-    public Builder processDefinitionKeys(final Long... values) {
-      return processDefinitionKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processDefinitionKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processDefinitionKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder processInstanceKeys(final List<Long> values) {
-      processInstanceKeys = addValuesToList(processInstanceKeys, values);
+    public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
+      processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
       return this;
     }
 
-    public Builder processInstanceKeys(final Long... values) {
-      return processInstanceKeys(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder processInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return processInstanceKeyOperations(collectValues(operation, operations));
     }
 
     public Builder decisionDefinitionKeyOperations(final List<Operation<Long>> operations) {
@@ -129,41 +138,45 @@ public record DecisionInstanceFilter(
       return this;
     }
 
-    public Builder decisionDefinitionKeys(final Long value, final Long... values) {
-      return decisionDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
-    }
-
     @SafeVarargs
     public final Builder decisionDefinitionKeyOperations(
         final Operation<Long> operation, final Operation<Long>... operations) {
       return decisionDefinitionKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder decisionDefinitionIds(final List<String> values) {
-      decisionDefinitionIds = addValuesToList(decisionDefinitionIds, values);
+    public Builder decisionDefinitionIdOperations(final List<Operation<String>> operations) {
+      decisionDefinitionIdOperations = addValuesToList(decisionDefinitionIdOperations, operations);
       return this;
     }
 
-    public Builder decisionDefinitionIds(final String... values) {
-      return decisionDefinitionIds(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder decisionDefinitionIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return decisionDefinitionIdOperations(collectValues(operation, operations));
     }
 
-    public Builder decisionDefinitionNames(final List<String> values) {
-      decisionDefinitionNames = addValuesToList(decisionDefinitionNames, values);
+    public Builder decisionDefinitionNameOperations(final List<Operation<String>> operations) {
+      decisionDefinitionNameOperations =
+          addValuesToList(decisionDefinitionNameOperations, operations);
       return this;
     }
 
-    public Builder decisionDefinitionNames(final String... values) {
-      return decisionDefinitionNames(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder decisionDefinitionNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return decisionDefinitionNameOperations(collectValues(operation, operations));
     }
 
-    public Builder decisionDefinitionVersions(final List<Integer> values) {
-      decisionDefinitionVersions = addValuesToList(decisionDefinitionVersions, values);
+    public Builder decisionDefinitionVersionOperations(final List<Operation<Integer>> operations) {
+      decisionDefinitionVersionOperations =
+          addValuesToList(decisionDefinitionVersionOperations, operations);
       return this;
     }
 
-    public Builder decisionDefinitionVersions(final Integer... values) {
-      return decisionDefinitionVersions(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder decisionDefinitionVersionOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return decisionDefinitionVersionOperations(collectValues(operation, operations));
     }
 
     public Builder decisionTypes(final List<DecisionDefinitionType> values) {
@@ -175,31 +188,33 @@ public record DecisionInstanceFilter(
       return decisionTypes(collectValuesAsList(values));
     }
 
-    public Builder tenantIds(final List<String> values) {
-      tenantIds = addValuesToList(tenantIds, values);
+    public Builder tenantIdOperations(final List<Operation<String>> operations) {
+      tenantIdOperations = addValuesToList(tenantIdOperations, operations);
       return this;
     }
 
-    public Builder tenantIds(final String... values) {
-      return tenantIds(collectValuesAsList(values));
+    @SafeVarargs
+    public final Builder tenantIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return tenantIdOperations(collectValues(operation, operations));
     }
 
     @Override
     public DecisionInstanceFilter build() {
       return new DecisionInstanceFilter(
-          Objects.requireNonNullElse(decisionInstanceKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionInstanceIds, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionInstanceIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(evaluationDateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(evaluationFailureOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),
-          Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionNameOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionDefinitionVersionOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionTypes, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()));
     }
   }
 }

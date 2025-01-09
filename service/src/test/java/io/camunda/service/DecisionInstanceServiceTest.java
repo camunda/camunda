@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -88,7 +89,9 @@ class DecisionInstanceServiceTest {
     verify(client)
         .searchDecisionInstances(
             SearchQueryBuilders.decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
+                q ->
+                    q.filter(
+                        f -> f.decisionInstanceIdOperations(Operation.eq(decisionInstanceId)))));
   }
 
   @Test
@@ -97,7 +100,7 @@ class DecisionInstanceServiceTest {
     final DecisionInstanceQuery query =
         SearchQueryBuilders.decisionInstanceSearchQuery(
             q ->
-                q.filter(f -> f.tenantIds("tenant1"))
+                q.filter(f -> f.tenantIdOperations(Operation.eq("tenant1")))
                     .sort(s -> s.evaluationDate().asc())
                     .page(p -> p.size(20)));
 
@@ -109,7 +112,7 @@ class DecisionInstanceServiceTest {
         .searchDecisionInstances(
             SearchQueryBuilders.decisionInstanceSearchQuery(
                 q ->
-                    q.filter(f -> f.tenantIds("tenant1"))
+                    q.filter(f -> f.tenantIdOperations(Operation.eq("tenant1")))
                         .sort(s -> s.evaluationDate().asc())
                         .page(p -> p.size(20))
                         .resultConfig(

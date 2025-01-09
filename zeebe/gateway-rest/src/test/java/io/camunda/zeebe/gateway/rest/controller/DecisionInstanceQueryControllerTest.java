@@ -117,7 +117,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
               "decisionDefinitionKey": 123456
           }
       }""",
-            q -> q.filter(f -> f.decisionDefinitionKeys(123456L))),
+            q -> q.filter(f -> f.decisionInstanceKeyOperations(Operation.eq(123456L)))),
         new TestArguments(
             """
       {

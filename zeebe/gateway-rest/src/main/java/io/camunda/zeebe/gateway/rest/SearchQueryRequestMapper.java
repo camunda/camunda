@@ -271,28 +271,47 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.decisionInstance();
 
     if (filter != null) {
-      ofNullable(filter.getDecisionInstanceKey()).ifPresent(builder::decisionInstanceKeys);
-      ofNullable(filter.getDecisionInstanceId()).ifPresent(builder::decisionInstanceIds);
+      ofNullable(filter.getDecisionInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::decisionInstanceKeyOperations);
+      ofNullable(filter.getDecisionInstanceId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::decisionInstanceIdOperations);
       ofNullable(filter.getState())
           .map(s -> convertEnum(s, DecisionInstanceState.class))
           .ifPresent(builder::states);
-      ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
+      ofNullable(filter.getEvaluationFailure())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::evaluationFailureOperations);
       ofNullable(filter.getEvaluationDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::evaluationDateOperations);
-      ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
-      ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
-      ofNullable(filter.getDecisionDefinitionName()).ifPresent(builder::decisionDefinitionNames);
+      ofNullable(filter.getDecisionDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::decisionDefinitionIdOperations);
+      ofNullable(filter.getDecisionDefinitionName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::decisionDefinitionNameOperations);
       ofNullable(filter.getDecisionDefinitionVersion())
-          .ifPresent(builder::decisionDefinitionVersions);
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::decisionDefinitionVersionOperations);
       ofNullable(filter.getDecisionDefinitionType())
           .map(t -> convertEnum(t, DecisionDefinitionType.class))
           .ifPresent(builder::decisionTypes);
-      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
     }
+
     return builder.build();
   }
 

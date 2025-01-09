@@ -19,12 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
-import io.camunda.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
+import io.camunda.client.protocol.rest.LongFilterProperty;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
@@ -96,7 +96,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
     final DecisionInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicLongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
+    final LongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
     assertThat(decisionDefinitionKey).isNotNull();
     assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
   }

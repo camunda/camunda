@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel.EvaluatedOutput;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
@@ -43,7 +44,7 @@ public class DecisionInstanceReader extends AbstractEntityReader<DecisionInstanc
         search(
             DecisionInstanceQuery.of(
                 b ->
-                    b.filter(f -> f.decisionInstanceIds(decisionInstanceId))
+                    b.filter(f -> f.decisionInstanceIdOperations(Operation.eq(decisionInstanceId)))
                         .resultConfig(
                             r -> r.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))));
     return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());

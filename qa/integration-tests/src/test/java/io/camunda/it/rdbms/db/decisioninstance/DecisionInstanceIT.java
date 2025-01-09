@@ -82,8 +82,8 @@ public class DecisionInstanceIT {
                 b ->
                     b.filter(
                             f ->
-                                f.decisionDefinitionKeys(
-                                    decisionDefinition.decisionDefinitionKey()))
+                                f.decisionDefinitionKeyOperations(
+                                    Operation.eq(decisionDefinition.decisionDefinitionKey())))
                         .sort(s -> s.evaluationDate().asc().decisionDefinitionName().asc())
                         .page(p -> p.from(0).size(5))));
 
@@ -129,14 +129,20 @@ public class DecisionInstanceIT {
                 b ->
                     b.filter(
                             f ->
-                                f.decisionInstanceKeys(instance.decisionInstanceKey())
-                                    .decisionDefinitionIds(instance.decisionDefinitionId())
-                                    .decisionDefinitionNames(decisionDefinition.name())
-                                    .processDefinitionKeys(instance.processDefinitionKey())
+                                f.decisionInstanceKeyOperations(
+                                        Operation.eq(instance.decisionInstanceKey()))
+                                    .decisionDefinitionIdOperations(
+                                        Operation.eq(instance.decisionDefinitionId()))
+                                    .decisionDefinitionNameOperations(
+                                        Operation.eq(decisionDefinition.name()))
+                                    .processDefinitionKeyOperations(
+                                        Operation.eq(instance.processDefinitionKey()))
                                     .states(instance.state())
                                     .decisionTypes(instance.decisionType())
-                                    .processInstanceKeys(instance.processInstanceKey())
-                                    .evaluationFailures(instance.evaluationFailure())
+                                    .processInstanceKeyOperations(
+                                        Operation.eq(instance.processInstanceKey()))
+                                    .evaluationFailureOperations(
+                                        Operation.eq(instance.evaluationFailure()))
                                     .evaluationDateOperations(
                                         List.of(
                                             Operation.gt(
@@ -178,7 +184,9 @@ public class DecisionInstanceIT {
             DecisionInstanceQuery.of(
                 b ->
                     b.filter(
-                            f -> f.decisionDefinitionIds(decisionDefinition.decisionDefinitionId()))
+                            f ->
+                                f.decisionDefinitionIdOperations(
+                                    Operation.eq(decisionDefinition.decisionDefinitionId())))
                         .sort(sort)
                         .page(p -> p.from(0).size(20))));
 
@@ -188,7 +196,9 @@ public class DecisionInstanceIT {
             DecisionInstanceQuery.of(
                 b ->
                     b.filter(
-                            f -> f.decisionDefinitionIds(decisionDefinition.decisionDefinitionId()))
+                            f ->
+                                f.decisionDefinitionIdOperations(
+                                    Operation.eq(decisionDefinition.decisionDefinitionId())))
                         .sort(sort)
                         .page(
                             p ->

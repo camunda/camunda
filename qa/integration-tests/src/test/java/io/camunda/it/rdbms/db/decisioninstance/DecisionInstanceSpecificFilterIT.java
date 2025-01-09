@@ -118,16 +118,17 @@ public class DecisionInstanceSpecificFilterIT {
 
   static List<DecisionInstanceFilter> shouldFindDecisionInstanceWithSpecificFilterParameters() {
     return List.of(
-        DecisionInstanceFilter.of(b -> b.decisionInstanceIds("42-1")),
-        DecisionInstanceFilter.of(b -> b.decisionInstanceKeys(42L)),
-        DecisionInstanceFilter.of(b -> b.processInstanceKeys(123L)),
-        DecisionInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
+        DecisionInstanceFilter.of(b -> b.decisionInstanceIdOperations(Operation.eq("42-1"))),
+        DecisionInstanceFilter.of(b -> b.decisionInstanceKeyOperations(Operation.eq(42L))),
+        DecisionInstanceFilter.of(b -> b.processInstanceKeyOperations(Operation.eq(123L))),
+        DecisionInstanceFilter.of(b -> b.processDefinitionKeyOperations(Operation.eq(124L))),
+        DecisionInstanceFilter.of(b -> b.decisionDefinitionKeyOperations(Operation.eq(100L))),
         DecisionInstanceFilter.of(
-            b -> b.decisionDefinitionKeyOperations(List.of(Operation.eq(100L)))),
-        DecisionInstanceFilter.of(b -> b.decisionDefinitionIds("decision-100")),
+            b -> b.decisionDefinitionIdOperations(Operation.eq("decision-100"))),
         DecisionInstanceFilter.of(b -> b.states(DecisionInstanceState.EVALUATED)),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
-        DecisionInstanceFilter.of(b -> b.evaluationFailures("failure-42")),
-        DecisionInstanceFilter.of(b -> b.decisionDefinitionNames("Decision 100")));
+        DecisionInstanceFilter.of(b -> b.evaluationFailureOperations(Operation.eq("failure-42"))),
+        DecisionInstanceFilter.of(
+            b -> b.decisionDefinitionNameOperations(Operation.eq("Decision 100"))));
   }
 }

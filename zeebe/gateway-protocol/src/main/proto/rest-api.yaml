@@ -7022,49 +7022,54 @@ components:
       type: object
       properties:
         decisionInstanceKey:
-          type: integer
-          format: int64
           description: |
             The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         decisionInstanceId:
-          type: string
           description: The ID of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
-          type: string
           description: The evaluation failure of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         evaluationDate:
           description: The evaluation date of the decision instance.
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         processDefinitionKey:
-          type: integer
-          format: int64
           description: The key of the process definition.
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processInstanceKey:
-          type: integer
-          format: int64
           description: The key of the process instance.
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         decisionDefinitionKey:
           description: The key of the decision.
           allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
+            - $ref: "#/components/schemas/LongFilterProperty"
         decisionDefinitionId:
-          type: string
           description: The ID of the DMN decision.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         decisionDefinitionName:
-          type: string
           description: The name of the DMN decision.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         decisionDefinitionVersion:
-          type: integer
-          format: int32
           description: The version of the decision.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         decisionDefinitionType:
           $ref: "#/components/schemas/DecisionDefinitionTypeEnum"
         tenantId:
-          type: string
           description: The tenant ID of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     DecisionInstanceSearchQueryResponse:
       deprecated: true
       type: object

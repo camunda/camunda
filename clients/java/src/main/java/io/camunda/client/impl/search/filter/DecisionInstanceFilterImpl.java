@@ -16,13 +16,17 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
-import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.api.search.filter.builder.LongProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.LongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
@@ -41,13 +45,29 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionInstanceKey(final long decisionInstanceKey) {
-    filter.setDecisionInstanceKey(decisionInstanceKey);
+    decisionInstanceKey(b -> b.eq(decisionInstanceKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionInstanceKey(final Consumer<LongProperty> callback) {
+    final LongPropertyImpl property = new LongPropertyImpl();
+    callback.accept(property);
+    filter.setDecisionInstanceKey(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionInstanceId(final String decisionInstanceId) {
-    filter.decisionInstanceId(decisionInstanceId);
+    decisionInstanceId(b -> b.eq(decisionInstanceId));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionInstanceId(final Consumer<StringProperty> callback) {
+    final StringPropertyImpl property = new StringPropertyImpl();
+    callback.accept(property);
+    filter.setDecisionInstanceId(property.build());
     return this;
   }
 
@@ -76,33 +96,57 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter evaluationFailure(final String evaluationFailure) {
-    filter.setEvaluationFailure(evaluationFailure);
+    evaluationFailure(b -> b.eq(evaluationFailure));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter evaluationFailure(final Consumer<StringProperty> callback) {
+    final StringPropertyImpl property = new StringPropertyImpl();
+    callback.accept(property);
+    filter.setEvaluationFailure(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter evaluationDate(final OffsetDateTime evaluationDate) {
     evaluationDate(b -> b.eq(evaluationDate));
-    return null;
+    return this;
   }
 
   @Override
-  public DecisionInstanceFilter evaluationDate(final Consumer<DateTimeProperty> fn) {
+  public DecisionInstanceFilter evaluationDate(final Consumer<DateTimeProperty> callback) {
     final DateTimePropertyImpl property = new DateTimePropertyImpl();
-    fn.accept(property);
+    callback.accept(property);
     filter.setEvaluationDate(property.build());
-    return null;
+    return this;
   }
 
   @Override
   public DecisionInstanceFilter processDefinitionKey(final long processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter processDefinitionKey(final Consumer<LongProperty> callback) {
+    final LongPropertyImpl property = new LongPropertyImpl();
+    callback.accept(property);
+    filter.setProcessDefinitionKey(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter processInstanceKey(final long processInstanceKey) {
-    filter.setProcessInstanceKey(processInstanceKey);
+    processInstanceKey(b -> b.eq(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter processInstanceKey(final Consumer<LongProperty> callback) {
+    final LongPropertyImpl property = new LongPropertyImpl();
+    callback.accept(property);
+    filter.setProcessInstanceKey(property.build());
     return this;
   }
 
@@ -113,59 +157,92 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
-  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
-    fn.accept(property);
+  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<LongProperty> callback) {
+    final LongPropertyImpl property = new LongPropertyImpl();
+    callback.accept(property);
     filter.setDecisionDefinitionKey(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionDefinitionId(final String decisionDefinitionId) {
-    filter.setDecisionDefinitionId(decisionDefinitionId);
+    decisionDefinitionId(b -> b.eq(decisionDefinitionId));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionId(final Consumer<StringProperty> callback) {
+    final StringPropertyImpl property = new StringPropertyImpl();
+    callback.accept(property);
+    filter.setDecisionDefinitionId(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionDefinitionName(final String decisionDefinitionName) {
-    filter.setDecisionDefinitionName(decisionDefinitionName);
+    decisionDefinitionName(b -> b.eq(decisionDefinitionName));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionName(final Consumer<StringProperty> callback) {
+    final StringPropertyImpl property = new StringPropertyImpl();
+    callback.accept(property);
+    filter.setDecisionDefinitionName(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionDefinitionVersion(final int decisionDefinitionVersion) {
-    filter.setDecisionDefinitionVersion(decisionDefinitionVersion);
+    decisionDefinitionVersion(b -> b.eq(decisionDefinitionVersion));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionVersion(
+      final Consumer<IntegerProperty> callback) {
+    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    callback.accept(property);
+    filter.setDecisionDefinitionVersion(property.build());
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionDefinitionType(
       final DecisionDefinitionType decisionDefinitionType) {
-    final DecisionDefinitionTypeEnum decisionDefinitionTypeEnum;
+    final DecisionDefinitionTypeEnum typeEnum;
     switch (decisionDefinitionType) {
       case DECISION_TABLE:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.DECISION_TABLE;
+        typeEnum = DecisionDefinitionTypeEnum.DECISION_TABLE;
         break;
       case LITERAL_EXPRESSION:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+        typeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
         break;
       case UNSPECIFIED:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNSPECIFIED;
+        typeEnum = DecisionDefinitionTypeEnum.UNSPECIFIED;
         break;
       case UNKNOWN:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNKNOWN;
+        typeEnum = DecisionDefinitionTypeEnum.UNKNOWN;
         break;
       default:
         throw new IllegalArgumentException(
             "Unexpected DecisionDefinitionType value: " + decisionDefinitionType);
     }
-    filter.setDecisionDefinitionType(decisionDefinitionTypeEnum);
+    filter.setDecisionDefinitionType(typeEnum);
     return this;
   }
 
   @Override
   public DecisionInstanceFilter tenantId(final String tenantId) {
-    filter.setTenantId(tenantId);
+    tenantId(b -> b.eq(tenantId));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter tenantId(final Consumer<StringProperty> callback) {
+    final StringPropertyImpl property = new StringPropertyImpl();
+    callback.accept(property);
+    filter.setTenantId(property.build());
     return this;
   }
 
