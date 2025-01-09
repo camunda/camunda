@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.junit;
 
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
@@ -22,7 +23,6 @@ import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
 import org.junit.platform.commons.support.ModifierSupport;
 import org.junit.platform.commons.support.ReflectionSupport;
-import org.junit.platform.commons.util.ReflectionUtils;
 
 final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllCallback {
   @Override
@@ -64,8 +64,8 @@ final class AutoCloseResourceExtension implements BeforeEachCallback, BeforeAllC
                         "No close method '%s' for object of type '%s'; did you forget to set a custom close method?"
                             .formatted(annotation.closeMethod(), field.getType().getName())));
 
-    ReflectionUtils.makeAccessible(field);
-    ReflectionUtils.makeAccessible(method);
+    ReflectUtil.makeAccessible(field, testInstance);
+    ReflectUtil.makeAccessible(method, testInstance);
 
     return new AnnotatedCloseable(testInstance, field, method);
   }
