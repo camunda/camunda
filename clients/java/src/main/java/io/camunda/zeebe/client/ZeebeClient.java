@@ -49,6 +49,7 @@ import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 public interface ZeebeClient extends AutoCloseable, JobClient {
+  /** Fixing something in Camunda Client, here it needs to be done in Zeebe client */
 
   /**
    * @return a new Zeebe client with default configuration values. In order to customize
