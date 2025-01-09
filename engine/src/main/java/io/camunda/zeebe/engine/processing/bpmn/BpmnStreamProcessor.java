@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_ELEMENT;
-import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.TERMINATE_ELEMENT;
-
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -50,7 +47,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
       final Writers writers,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final EngineConfiguration config) {
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
@@ -63,7 +61,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             processEngineMetrics,
             this::getContainerProcessor,
             writers);
-    processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
+    processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior, config);
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -110,10 +108,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
               case ACTIVATE_ELEMENT -> stateTransitionBehavior.transitionToActivating(context);
               case COMPLETE_ELEMENT -> stateTransitionBehavior.transitionToCompleting(context);
               case TERMINATE_ELEMENT -> stateTransitionBehavior.transitionToTerminating(context);
-                // even though we don't know how to resolve this incident, we can still
-                // raise it so the user can use modification to recover. The incident resolution
-                // logic is smart enough to deal with this case. It will log an error due to
-                // IllegalStateException.
+              // even though we don't know how to resolve this incident, we can still
+              // raise it so the user can use modification to recover. The incident resolution
+              // logic is smart enough to deal with this case. It will log an error due to
+              // IllegalStateException.
               default -> context;
             };
         incidentBehavior.createIncident(
