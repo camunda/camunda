@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,7 @@ public class MappingServicesTest {
 
   @BeforeEach
   public void before() {
-    authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    authentication = Authentication.of(builder -> builder.user(1234L));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(MappingSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -137,7 +138,7 @@ public class MappingServicesTest {
   public void shouldTriggerDeleteRequest() {
     // given
     final Authentication testAuthentication = mock(Authentication.class);
-    when(testAuthentication.token()).thenReturn("token");
+    when(testAuthentication.claims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingServices testMappingServices =
         new MappingServices(
