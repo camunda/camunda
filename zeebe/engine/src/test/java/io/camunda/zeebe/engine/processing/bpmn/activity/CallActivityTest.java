@@ -1233,7 +1233,6 @@ public final class CallActivityTest {
         ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
 
     // then
-    RecordingExporter.setMaximumWaitTime(10_000);
     Assertions.assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst().getValue())
         .describedAs("Expect that incident is raised due to the depth limit")
