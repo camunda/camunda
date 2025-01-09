@@ -111,7 +111,8 @@ class DecisionAuthorizationIT {
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'");
+        .isEqualTo(
+            "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
   }
 
   @TestTemplate
