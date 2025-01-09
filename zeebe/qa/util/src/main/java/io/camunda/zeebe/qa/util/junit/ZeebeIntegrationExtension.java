@@ -17,6 +17,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
@@ -252,7 +253,7 @@ final class ZeebeIntegrationExtension
     final TestCluster value;
 
     try {
-      value = (TestCluster) ReflectionUtils.makeAccessible(field).get(testInstance);
+      value = (TestCluster) ReflectUtil.makeAccessible(field, testInstance).get(testInstance);
     } catch (final IllegalAccessException e) {
       throw new UnsupportedOperationException(e);
     }
@@ -264,11 +265,8 @@ final class ZeebeIntegrationExtension
     final TestApplication<?> value;
 
     try {
-      if (!field.canAccess(testInstance)) {
-        field.setAccessible(true);
-      }
-
-      value = (TestApplication<?>) field.get(testInstance);
+      value =
+          (TestApplication<?>) ReflectUtil.makeAccessible(field, testInstance).get(testInstance);
     } catch (final IllegalAccessException e) {
       throw new UnsupportedOperationException(e);
     }

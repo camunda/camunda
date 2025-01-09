@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util;
 
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Stream;
 
@@ -26,6 +27,25 @@ public final class ReflectUtil {
               "Failed to instantiate class %s with the default constructor", clazz.getName()),
           e);
     }
+  }
+
+  /**
+   * Sets the field to be accessible via reflection if it is not currently for the given instance
+   * object. This replaces the old Junit 5 `ReflectUtils.makeAccessible` which was removed from
+   * their platform.
+   *
+   * @param field the field to make accessible
+   * @param instance the instance on which we check accessibility
+   * @return the field, accessible
+   * @param <T> the type of the field
+   * @param <U> the type of the instance, typically just {@code Object}
+   */
+  public static <T extends AccessibleObject, U> T makeAccessible(final T field, final U instance) {
+    if (!field.canAccess(instance)) {
+      field.setAccessible(true);
+    }
+
+    return field;
   }
 
   /**
