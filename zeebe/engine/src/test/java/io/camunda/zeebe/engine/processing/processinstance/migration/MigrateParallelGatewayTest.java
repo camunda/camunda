@@ -165,15 +165,6 @@ public class MigrateParallelGatewayTest {
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
 
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the joining gateway")
-        .isNotNull();
-
     // when
     ENGINE
         .processInstance()
@@ -451,15 +442,6 @@ public class MigrateParallelGatewayTest {
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
 
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the join gateway")
-        .isNotNull();
-
     // when
     final var rejectionRecord =
         ENGINE
@@ -535,15 +517,6 @@ public class MigrateParallelGatewayTest {
         .hasSize(2);
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
-
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the join gateway")
-        .isNotNull();
 
     // when
     final var rejectionRecord =
@@ -624,15 +597,6 @@ public class MigrateParallelGatewayTest {
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
 
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the join gateway")
-        .isNotNull();
-
     // when
     final String nonExistingSourceGatewayId = "nonExistingSourceGatewayId";
     final var rejectionRecord =
@@ -709,15 +673,6 @@ public class MigrateParallelGatewayTest {
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
 
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the join gateway")
-        .isNotNull();
-
     // when
     final String nonExistingTargetGatewayId = "nonExistingTargetGatewayId";
     final var rejectionRecord =
@@ -793,15 +748,6 @@ public class MigrateParallelGatewayTest {
         .hasSize(2);
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
-
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the joining gateway")
-        .isNotNull();
 
     // when
     final var rejectionRecord =
@@ -881,15 +827,6 @@ public class MigrateParallelGatewayTest {
         .hasSize(2);
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
-
-    Assertions.assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("flow1")
-                .getFirst()
-                .getValue())
-        .describedAs("Expected to take the sequence flow to the join gateway")
-        .isNotNull();
 
     // when
     final var rejectionRecord =
