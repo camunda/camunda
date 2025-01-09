@@ -533,13 +533,11 @@ public class RequestMapper {
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
-    final Map<String, Object> claims = new HashMap<>();
-    claims.put(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
-
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (requestAuthentication != null) {
+    final Map<String, Object> claims = new HashMap<>();
 
+    if (requestAuthentication != null) {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaUser authenticatedPrincipal) {
         authenticatedUserKey = authenticatedPrincipal.getUserKey();
