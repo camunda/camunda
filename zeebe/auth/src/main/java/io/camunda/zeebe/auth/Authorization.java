@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.auth.api;
+package io.camunda.zeebe.auth;
 
-public interface AuthorizationDecoder<T> {
+public class Authorization {
 
-  /** Returns an instance of <T> containing the user's authorizations. */
-  T decode();
+  public static final String AUTHORIZED_ANONYMOUS_USER = "authorized_anonymous_user";
+  public static final String AUTHORIZED_TENANTS = "authorized_tenants";
+  public static final String AUTHORIZED_USER_KEY = "authorized_user_key";
+  public static final String USER_TOKEN_CLAIM_PREFIX = "user_token_";
 }
