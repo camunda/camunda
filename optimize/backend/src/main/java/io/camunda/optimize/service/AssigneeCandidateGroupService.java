@@ -29,7 +29,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.identity.UserTaskIdentityService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;

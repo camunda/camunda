@@ -13,7 +13,7 @@ import io.camunda.optimize.service.db.writer.SettingsWriter;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 

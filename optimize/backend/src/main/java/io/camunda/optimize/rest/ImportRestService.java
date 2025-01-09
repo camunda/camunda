@@ -12,11 +12,11 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.Set;
 import org.springframework.web.bind.annotation.PostMapping;

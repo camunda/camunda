@@ -33,7 +33,7 @@ import io.camunda.optimize.service.relations.DashboardReferencingService;
 import io.camunda.optimize.service.relations.ReportReferencingService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.time.ZoneId;
 import java.util.Collections;

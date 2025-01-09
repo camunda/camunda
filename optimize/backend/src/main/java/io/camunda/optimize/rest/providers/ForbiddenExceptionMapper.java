@@ -9,7 +9,7 @@ package io.camunda.optimize.rest.providers;
 
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;

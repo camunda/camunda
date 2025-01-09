@@ -16,7 +16,7 @@ import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRespo
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import io.camunda.optimize.service.db.reader.DecisionVariableReader;
 import io.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;

@@ -13,7 +13,7 @@ import io.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisResponseDto
 import io.camunda.optimize.service.db.reader.BranchAnalysisReader;
 import io.camunda.optimize.service.security.util.definition.DataSourceDefinitionAuthorizationService;
 import io.camunda.optimize.service.util.ValidationHelper;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import java.time.ZoneId;
 import org.springframework.stereotype.Component;
 

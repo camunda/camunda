@@ -27,7 +27,7 @@ import io.camunda.optimize.service.relations.CollectionRelationService;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.List;

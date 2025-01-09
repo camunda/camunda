@@ -43,7 +43,7 @@ import io.camunda.optimize.service.identity.CollapsedSubprocessNodesService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.variable.ProcessVariableService;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;

@@ -36,6 +36,7 @@ import io.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionRespon
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import io.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import io.camunda.optimize.rest.exceptions.BadRequestException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.reader.ReportReader;
@@ -51,7 +52,6 @@ import io.camunda.optimize.service.security.AuthorizedCollectionService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.variable.ProcessVariableService;
-import jakarta.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

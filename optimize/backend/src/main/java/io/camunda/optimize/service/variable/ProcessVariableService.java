@@ -24,7 +24,7 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValuesQuer
 import io.camunda.optimize.service.db.reader.ProcessVariableReader;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.security.util.tenant.DataSourceTenantAuthorizationService;
-import jakarta.ws.rs.ForbiddenException;
+import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
