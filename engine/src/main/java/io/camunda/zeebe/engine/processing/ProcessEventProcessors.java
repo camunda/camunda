@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -58,7 +59,8 @@ public final class ProcessEventProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
       final Writers writers,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final EngineConfiguration config) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -68,7 +70,8 @@ public final class ProcessEventProcessors {
     addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
 
     final var bpmnStreamProcessor =
-        new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
+        new BpmnStreamProcessor(
+            bpmnBehaviors, processingState, writers, processEngineMetrics, config);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(

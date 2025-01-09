@@ -40,16 +40,19 @@ public final class CallActivityProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final int maxCallActivityDepth;
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
-      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+      final BpmnStateTransitionBehavior stateTransitionBehavior,
+      final int maxCallActivityDepth) {
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     stateBehavior = bpmnBehaviors.stateBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    this.maxCallActivityDepth = maxCallActivityDepth;
   }
 
   @Override
@@ -66,15 +69,16 @@ public final class CallActivityProcessor
               final var processInstance =
                   stateBehavior.getElementInstance(context.getProcessInstanceKey());
               final int calledProcessDepth = processInstance.getCalledProcessDepth();
-              if (calledProcessDepth >= 1000) {
+              if (calledProcessDepth >= maxCallActivityDepth) {
                 return Either.left(
                     new Failure(
                         """
-                        The call activity has reached the maximum depth of 1000. \
+                        The call activity has reached the maximum depth of %d. \
                         This is likely due to a recursive call. \
                         Cancel the root process instance if this was unintentional. \
                         Otherwise, consider increasing the maximum depth, \
-                        or use process instance modification to adjust the process instance.""",
+                        or use process instance modification to adjust the process instance."""
+                            .formatted(maxCallActivityDepth),
                         ErrorType.CALLED_ELEMENT_ERROR));
               }
               return Either.right(null);

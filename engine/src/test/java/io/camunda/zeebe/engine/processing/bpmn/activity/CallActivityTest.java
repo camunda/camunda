@@ -37,10 +37,13 @@ import org.junit.Test;
 public final class CallActivityTest {
 
   public static final boolean ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR = false;
+  public static final int CUSTOM_CALL_ACTIVITY_DEPTH = 10;
 
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
+          .withEngineConfig(
+              config -> config.setDefaultCallActivityMaxDepth(CUSTOM_CALL_ACTIVITY_DEPTH))
           .withFeatureFlags(
               new FeatureFlags(
                   true, false, true, true, ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR, true));
@@ -789,13 +792,17 @@ public final class CallActivityTest {
         ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
 
     // then
+    RecordingExporter.setMaximumWaitTime(10_000);
     Assertions.assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst().getValue())
         .describedAs("Expect that incident is raised due to the depth limit")
-        .hasErrorMessage("Oh noo, Durin dug too deep!");
+        .hasErrorMessage(
+            """
+        The call activity has reached the maximum depth of %d. This is likely due to a recursive call. \
+        Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
+        maximum depth, or use process instance modification to adjust the process instance.\
+        """
+                .formatted(CUSTOM_CALL_ACTIVITY_DEPTH));
   }
 
   private void completeJobWith(final Map<String, Object> variables) {
