@@ -458,7 +458,7 @@ public class ExporterConfiguration {
     private String webhook;
 
     /** Defines the domain which the user always sees */
-    private String domain;
+    private String auth0Domain;
 
     private String m2mClientId;
 
@@ -474,12 +474,12 @@ public class ExporterConfiguration {
       this.webhook = webhook;
     }
 
-    public String getDomain() {
-      return domain;
+    public String getAuth0Domain() {
+      return auth0Domain;
     }
 
-    public void setDomain(final String domain) {
-      this.domain = domain;
+    public void setAuth0Domain(final String auth0Domain) {
+      this.auth0Domain = auth0Domain;
     }
 
     public String getM2mClientId() {

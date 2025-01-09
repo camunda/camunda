@@ -71,7 +71,8 @@ public class M2mTokenManager {
 
   private String getNewToken() {
     try {
-      final String tokenURL = String.format("https://%s/oauth/token", configuration.getDomain());
+      final String tokenURL =
+          String.format("https://%s/oauth/token", configuration.getAuth0Domain());
 
       final HttpRequest request =
           HttpRequest.newBuilder()

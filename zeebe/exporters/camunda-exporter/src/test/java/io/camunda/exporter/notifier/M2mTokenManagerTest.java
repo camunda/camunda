@@ -69,7 +69,7 @@ class M2mTokenManagerTest {
   @BeforeEach
   public void setup() {
     final IncidentNotifierConfiguration configuration = new IncidentNotifierConfiguration();
-    configuration.setDomain(AUTH0_DOMAIN);
+    configuration.setAuth0Domain(AUTH0_DOMAIN);
     configuration.setM2mClientId(M2M_CLIENT_ID);
     configuration.setM2mClientSecret(M2M_CLIENT_SECRET);
     configuration.setM2mAudience(M2M_AUDIENCE);
