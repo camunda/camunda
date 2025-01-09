@@ -9,6 +9,7 @@ package io.camunda.exporter.notifier;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
@@ -47,7 +48,8 @@ public class IncidentNotifier {
   protected static final String FIELD_NAME_PROCESS_NAME = "processName";
   protected static final String FIELD_NAME_PROCESS_VERSION = "processVersion";
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentNotifier.class);
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   private final M2mTokenManager m2mTokenManager;
 
@@ -58,11 +60,12 @@ public class IncidentNotifier {
   public IncidentNotifier(
       final M2mTokenManager m2mTokenManager,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final IncidentNotifierConfiguration configuration) {
+      final IncidentNotifierConfiguration configuration,
+      final HttpClient httpClient) {
     this.m2mTokenManager = m2mTokenManager;
     this.processCache = processCache;
     this.configuration = configuration;
-    httpClient = HttpClient.newHttpClient();
+    this.httpClient = httpClient;
   }
 
   public void notifyOnIncidents(final List<IncidentEntity> incidents) {

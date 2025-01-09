@@ -10,6 +10,7 @@ package io.camunda.exporter.notifier;
 import com.auth0.jwt.JWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.exceptions.IncidentNotifierException;
 import java.io.IOException;
@@ -29,7 +30,8 @@ public class M2mTokenManager {
   protected static final String FIELD_NAME_CLIENT_SECRET = "client_secret";
   protected static final String FIELD_NAME_AUDIENCE = "audience";
   protected static final String FIELD_NAME_ACCESS_TOKEN = "access_token";
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
   private final IncidentNotifierConfiguration configuration;
   private final HttpClient client;
 
@@ -39,9 +41,10 @@ public class M2mTokenManager {
   private Date tokenExpiresAt;
   private final Object cacheLock = new Object();
 
-  public M2mTokenManager(final IncidentNotifierConfiguration configuration) {
+  public M2mTokenManager(
+      final IncidentNotifierConfiguration configuration, final HttpClient client) {
     this.configuration = configuration;
-    client = HttpClient.newHttpClient();
+    this.client = client;
   }
 
   public String getToken() {
