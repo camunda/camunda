@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.it.client.command;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -25,100 +26,99 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 @AutoCloseResources
-class AssignGroupToTenantTest {
-
-  private static final String TENANT_ID = "tenant-id";
+class AssignUserToGroupTest {
 
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoCloseResource private CamundaClient client;
 
-  private long tenantKey;
   private long groupKey;
+  private long userKey;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    tenantKey =
+    userKey =
         client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Tenant Name")
+            .newUserCreateCommand()
+            .name("User Name")
+            .username("user")
+            .email("foo@example.com")
+            .password("******")
             .send()
             .join()
-            .getTenantKey();
+            .getUserKey();
 
-    groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
+    groupKey = client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
   }
 
   @Test
-  void shouldAssignGroupToTenant() {
+  void shouldAssignUserToGroup() {
     // when
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
 
     // then
-    ZeebeAssertHelper.assertEntityAssignedToTenant(
-        tenantKey,
+    ZeebeAssertHelper.assertEntityAssignedToGroup(
         groupKey,
-        tenant -> {
-          assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP);
+        userKey,
+        group -> {
+          assertThat(group).hasEntityType(EntityType.USER);
         });
   }
 
   @Test
-  void shouldRejectIfTenantDoesNotExist() {
+  void shouldRejectIfUserDoesNotExist() {
     // given
-    final long nonExistentTenantKey = 999999L;
+    final long nonExistentUserKey = Protocol.encodePartitionId(1, 111L);
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignGroupToTenantCommand(nonExistentTenantKey)
-                    .groupKey(groupKey)
+                    .newAssignUserToGroupCommand(groupKey)
+                    .userKey(nonExistentUserKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity to tenant with key '%d', but no tenant with this key exists."
-                .formatted(nonExistentTenantKey));
+            "Expected to add an entity with key '%d' and type '%s' to group with key '%d', but the entity does not exist."
+                .formatted(nonExistentUserKey, EntityType.USER, groupKey));
   }
 
   @Test
   void shouldRejectIfGroupDoesNotExist() {
     // given
-    final long nonExistentGroupKey = 888888L;
+    final long nonExistentGroupKey = Protocol.encodePartitionId(1, 111L);
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignGroupToTenantCommand(tenantKey)
-                    .groupKey(nonExistentGroupKey)
+                    .newAssignUserToGroupCommand(nonExistentGroupKey)
+                    .userKey(userKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity doesn't exist."
-                .formatted(nonExistentGroupKey, TENANT_ID));
+            "Expected to update group with key '%s', but a group with this key does not exist."
+                .formatted(nonExistentGroupKey));
   }
 
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join())
+            () -> client.newAssignUserToGroupCommand(groupKey).userKey(userKey).send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity is already assigned to the tenant."
-                .formatted(groupKey, TENANT_ID));
+            "Expected to add entity with key '%d' to group with key '%d', but the entity is already assigned to this group."
+                .formatted(userKey, groupKey));
   }
 }

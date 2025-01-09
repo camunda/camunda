@@ -16,49 +16,47 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
-import io.camunda.client.api.response.AssignGroupToTenantResponse;
+import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.response.AssignUserToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class AssignGroupToTenantCommandImpl implements AssignGroupToTenantCommandStep1 {
+public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandStep1 {
 
+  private final long groupKey;
   private final HttpClient httpClient;
-  private final long tenantKey;
   private final RequestConfig.Builder httpRequestConfig;
-  private long groupKey;
+  private long userKey;
 
-  public AssignGroupToTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public AssignUserToGroupCommandImpl(final long groupKey, final HttpClient httpClient) {
+    this.groupKey = groupKey;
     this.httpClient = httpClient;
-    this.tenantKey = tenantKey;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 groupKey(final long groupKey) {
-    ArgumentUtil.ensureNotNull("groupKey", groupKey);
-    this.groupKey = groupKey;
+  public AssignUserToGroupCommandStep1 userKey(final long userKey) {
+    ArgumentUtil.ensureNotNull("userKey", userKey);
+    this.userKey = userKey;
     return this;
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 requestTimeout(final Duration timeout) {
-    httpRequestConfig.setResponseTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+  public FinalCommandStep<AssignUserToGroupResponse> requestTimeout(final Duration requestTimeout) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<AssignGroupToTenantResponse> send() {
-    ArgumentUtil.ensureNotNull("groupKey", groupKey);
-    final HttpCamundaFuture<AssignGroupToTenantResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
-        "/tenants/" + tenantKey + "/groups/" + groupKey,
-        null, // No request body needed
-        httpRequestConfig.build(),
-        result);
+  public CamundaFuture<AssignUserToGroupResponse> send() {
+    ArgumentUtil.ensureNotNull("userKey", userKey);
+    final HttpCamundaFuture<AssignUserToGroupResponse> result = new HttpCamundaFuture<>();
+    httpClient.post(
+        "/groups/" + groupKey + "/users/" + userKey, null, httpRequestConfig.build(), result);
     return result;
   }
 }

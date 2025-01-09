@@ -13,19 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command;
+package io.camunda.client.api.response;
 
-import io.camunda.client.api.response.AssignGroupToTenantResponse;
-
-public interface AssignGroupToTenantCommandStep1
-    extends FinalCommandStep<AssignGroupToTenantResponse> {
-
-  /**
-   * Sets the group key for the assignment.
-   *
-   * @param groupKey the key of the group
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  AssignGroupToTenantCommandStep1 groupKey(long groupKey);
-}
+public interface AssignUserToGroupResponse {}

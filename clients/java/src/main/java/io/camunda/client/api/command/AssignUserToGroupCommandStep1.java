@@ -15,17 +15,16 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.AssignGroupToTenantResponse;
+import io.camunda.client.api.response.AssignUserToGroupResponse;
 
-public interface AssignGroupToTenantCommandStep1
-    extends FinalCommandStep<AssignGroupToTenantResponse> {
+public interface AssignUserToGroupCommandStep1 extends FinalCommandStep<AssignUserToGroupResponse> {
 
   /**
-   * Sets the group key for the assignment.
+   * Sets the user key for the assignment.
    *
-   * @param groupKey the key of the group
+   * @param userKey the key of the user
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignGroupToTenantCommandStep1 groupKey(long groupKey);
+  AssignUserToGroupCommandStep1 userKey(long userKey);
 }
