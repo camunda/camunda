@@ -10,10 +10,10 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-client-java</artifactId>
+  <artifactId>zeebe-client-java</artifactId>
   <packaging>jar</packaging>
 
-  <name>Camunda Client Java</name>
+  <name>Zeebe Client Java</name>
 
   <licenses>
     <license>
@@ -278,7 +278,7 @@
           <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
-          <modelPackage>io.camunda.client.protocol.rest</modelPackage>
+          <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
           <typeMappings>OffsetDateTime=String</typeMappings>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
