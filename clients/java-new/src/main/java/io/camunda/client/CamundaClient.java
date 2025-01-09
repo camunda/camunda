@@ -95,6 +95,8 @@ import io.camunda.client.impl.CamundaClientImpl;
 /** The client to communicate with a Camunda broker/cluster. */
 public interface CamundaClient extends AutoCloseable, JobClient {
 
+  /** Fixing something in Camunda Client */
+
   /**
    * @return a new Camunda client with default configuration values. In order to customize
    *     configuration, use the methods {@link #newClientBuilder()} or {@link
