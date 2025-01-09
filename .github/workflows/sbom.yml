@@ -8,8 +8,12 @@ name: Generate and Attach SBOM
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to attach SBOMs"
+        required: true
   release:
-    types: [published]
+    types: [published,created]
   schedule:
     - cron: "0 9 * * MON"
 
@@ -91,7 +95,7 @@ jobs:
   attach_artifacts_to_release:
     runs-on: ubuntu-latest
     needs: [ frontend_sbom, generate_backend_sbom ]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Check out repository code
@@ -132,6 +136,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "release" ]; then
             echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.release_tag }}" >> $GITHUB_ENV
           else
             latest_release=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | jq -r '.[0].tag_name')
@@ -145,7 +151,7 @@ jobs:
           for artifact in ./sboms/*/*; do
             base_name=$(basename "$artifact")
             dir_name=$(basename "$(dirname "$artifact")")
-            unique_name="${dir_name}-${base_name}"
+            unique_name="${dir_name}-${base_name}-${RELEASE_TAG}"
             gh release upload "$RELEASE_TAG" "$artifact" \
               --repo "camunda/camunda" \
               --clobber \
