@@ -75,7 +75,8 @@ public interface CompleteJobCommandStep1
    * Initializes the job result to allow corrections or a denial to be configured.
    *
    * <p>This method is used to apply changes to user task attributes (such as {@code assignee},
-   * {@code priority}, {@code dueDate}, and so on) or explicitly deny a user task operation.
+   * {@code priority}, {@code dueDate}, and so on) or explicitly deny a user task lifecycle
+   * transition.
    *
    * <p>Example usage:
    *
@@ -95,14 +96,14 @@ public interface CompleteJobCommandStep1
 
   /**
    * Sets the result of the completed job, allowing the worker to apply corrections to user task
-   * attributes or explicitly deny the user task operation.
+   * attributes or explicitly deny the user task lifecycle transition.
    *
    * <p>The {@link CompleteJobResult} object provides a flexible way to:
    *
    * <ul>
    *   <li>Correct user task attributes such as {@code assignee}, {@code dueDate}, {@code priority},
    *       and more.
-   *   <li>Deny the operation associated with the user task, preventing its lifecycle transition.
+   *   <li>Deny the lifecycle transition associated with the user task.
    * </ul>
    *
    * <pre>{@code
@@ -126,7 +127,7 @@ public interface CompleteJobCommandStep1
   /**
    * Modifies the result of the completed job using a lambda expression, allowing the worker to
    * dynamically apply corrections to user task attributes or explicitly deny the user task
-   * operation.
+   * lifecycle transition.
    *
    * <p>This is a convenience method for {@link #withResult(CompleteJobResult)}, allowing
    * modifications to be applied directly via a functional interface rather than constructing the
@@ -135,7 +136,7 @@ public interface CompleteJobCommandStep1
    * <ul>
    *   <li>Correcting user task attributes such as {@code assignee}, {@code dueDate}, {@code
    *       priority}, and more.
-   *   <li>Denying the operation associated with the user task, preventing its lifecycle transition.
+   *   <li>Denying the lifecycle transition associated with the user task.
    * </ul>
    *
    * <p>The lambda expression receives the current {@link CompleteJobResult}, which can be modified
@@ -192,7 +193,7 @@ public interface CompleteJobCommandStep1
      *     .assignee("john_doe")               // reassigns the task to 'john_doe'
      *     .priority(80)                       // sets a high priority
      *     .dueDate("2024-01-01T12:00:00Z")    // updates the due date
-     *     .candidateGroups(List.of("sales"))  // assigns the task to the 'sales' group
+     *     .candidateGroups(List.of("sales"))  // allows the 'sales' group to claim the task
      *     .candidateUsers(List.of("alice"));  // allows 'alice' to claim the task
      *
      * client.newCompleteJobCommand(jobKey)
@@ -225,7 +226,7 @@ public interface CompleteJobCommandStep1
      *         .assignee("john_doe")               // dynamically reassigns the task to 'john_doe'
      *         .priority(80)                       // adjusts the priority of the task
      *         .dueDate("2024-01-01T12:00:00Z")    // updates the due date
-     *         .candidateGroups(List.of("sales"))  // assigns the task to the 'sales' group
+     *         .candidateGroups(List.of("sales"))  // allows the 'sales' group to claim the task
      *         .candidateUsers(List.of("alice")))  // allows 'alice' to claim the task
      *     .send();
      * }</pre>
@@ -306,6 +307,7 @@ public interface CompleteJobCommandStep1
      *     .withResult()
      *     .correctAssignee("john_doe")
      *     .resultDone() // explicitly marks the end of result configuration
+     *     .variable("we_can", "still_set_vars")
      *     .send();
      * }</pre>
      *
