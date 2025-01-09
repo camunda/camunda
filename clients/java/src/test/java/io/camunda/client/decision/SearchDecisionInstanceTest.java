@@ -68,18 +68,18 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     // then
     final DecisionInstanceSearchQueryRequest request =
         gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionInstanceKey()).isEqualTo(1L);
+    assertThat(request.getFilter().getDecisionInstanceKey().get$Eq()).isEqualTo(1L);
     assertThat(request.getFilter().getState()).isEqualTo(DecisionInstanceStateEnum.FAILED);
-    assertThat(request.getFilter().getEvaluationFailure()).isEqualTo("ef");
+    assertThat(request.getFilter().getEvaluationFailure().get$Eq()).isEqualTo("ef");
     assertThat(request.getFilter().getDecisionDefinitionType())
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
-    assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo(2L);
-    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(3L);
+    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo(2L);
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo(3L);
     assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo(4L);
-    assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
-    assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
-    assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
-    assertThat(request.getFilter().getTenantId()).isEqualTo("t");
+    assertThat(request.getFilter().getDecisionDefinitionId().get$Eq()).isEqualTo("ddi");
+    assertThat(request.getFilter().getDecisionDefinitionName().get$Eq()).isEqualTo("ddm");
+    assertThat(request.getFilter().getDecisionDefinitionVersion().get$Eq()).isEqualTo(5);
+    assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("t");
   }
 
   @Test
