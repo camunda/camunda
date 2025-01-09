@@ -86,7 +86,7 @@ abstract sealed class BatchOperationUpdateRepositoryIT {
     private static final ElasticsearchContainer CONTAINER =
         TestSearchContainers.createDefeaultElasticsearchContainer();
 
-    @AutoCloseResource private final RestClientTransport transport = createTransport();
+    @AutoClose private final RestClientTransport transport = createTransport();
     private final ElasticsearchAsyncClient client;
 
     public ElasticsearchIT() {
