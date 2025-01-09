@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.util;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.util.stream.Collectors.joining;
-import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -21,6 +20,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -101,7 +101,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
         .forEach(
             field -> {
               try {
-                makeAccessible(field).set(testInstance, lookupOrCreate(context).getZeebeDb());
+                ReflectUtil.makeAccessible(field, testInstance)
+                    .set(testInstance, lookupOrCreate(context).getZeebeDb());
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
               }
@@ -115,7 +116,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
         .forEach(
             field -> {
               try {
-                makeAccessible(field)
+                ReflectUtil.makeAccessible(field, testInstance)
                     .set(testInstance, lookupOrCreate(context).getTransactionContext());
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
@@ -131,7 +132,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
         .forEach(
             field -> {
               try {
-                makeAccessible(field)
+                ReflectUtil.makeAccessible(field, testInstance)
                     .set(testInstance, lookupOrCreate(context).getProcessingState());
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
