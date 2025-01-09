@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import io.atomix.utils.net.Address;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.auth.ClaimTransformer;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -494,10 +495,7 @@ public final class EndpointManager {
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
     if (userClaims != null) {
-      userClaims.forEach(
-          (key, value) -> {
-            claims.put(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
-          });
+      userClaims.forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
     }
 
     // retrieve the user key from the context and add it to the authorization if present
