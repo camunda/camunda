@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanFactory;
@@ -47,7 +48,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class ArchiverIT extends TasklistZeebeIntegrationTest {
-
   @Autowired private BeanFactory beanFactory;
   @Autowired private ArchiverUtil archiverUtil;
   @Autowired private TaskTemplate taskTemplate;
@@ -236,8 +236,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldArchiveDocumentsOnlyFromDeclaredProcessInstanceIndex() throws IOException {
-    final String piCustomPrefix = "pi-custom-";
-    databaseTestExtension.createIndex(piCustomPrefix + processInstanceIndex.getIndexName());
+    final String piCustomPrefix = UUID.randomUUID().toString().substring(0, 10);
     final Instant currentTime = pinZeebeTime();
 
     // having
@@ -259,28 +258,34 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
     resetZeebeTime();
     databaseTestExtension.refreshIndexesInElasticsearch();
-    databaseTestExtension.reindex(
-        processInstanceIndex.getFullQualifiedName(),
-        piCustomPrefix + processInstanceIndex.getIndexName());
-
-    // when
-    assertThat(processInstanceArchiverJob.archiveNextBatch().join().getValue())
-        .isEqualTo(count1 + count2);
-    databaseTestExtension.refreshIndexesInElasticsearch();
-    // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
-    assertThat(processInstanceArchiverJob.archiveNextBatch().join())
-        .isEqualTo(Map.entry("NothingToArchive", 0));
 
     final List<String> allIds = new ArrayList<>();
     allIds.addAll(ids1);
     allIds.addAll(ids2);
+    databaseTestExtension.createIndex(piCustomPrefix + processInstanceIndex.getIndexName());
 
-    final List<String> customIndexIds =
-        noSqlHelper.getIdsFromIndex(
-            ProcessInstanceIndex.ID, piCustomPrefix + processInstanceIndex.getIndexName(), allIds);
-    assertThat(customIndexIds).containsExactlyInAnyOrderElementsOf(allIds);
-    assertThat(noSqlHelper.getProcessInstances(allIds)).isEmpty();
-    databaseTestExtension.deleteIndex(piCustomPrefix + processInstanceIndex.getIndexName());
+    try {
+      databaseTestExtension.reindex(
+          processInstanceIndex.getFullQualifiedName(),
+          piCustomPrefix + processInstanceIndex.getIndexName());
+      // when
+      assertThat(processInstanceArchiverJob.archiveNextBatch().join().getValue())
+          .isEqualTo(count1 + count2);
+      databaseTestExtension.refreshIndexesInElasticsearch();
+      // 2rd run should not move anything, as no processes are left
+      assertThat(processInstanceArchiverJob.archiveNextBatch().join())
+          .isEqualTo(Map.entry("NothingToArchive", 0));
+
+      final List<String> customIndexIds =
+          noSqlHelper.getIdsFromIndex(
+              ProcessInstanceIndex.ID,
+              piCustomPrefix + processInstanceIndex.getIndexName(),
+              allIds);
+      assertThat(customIndexIds).containsExactlyInAnyOrderElementsOf(allIds);
+      assertThat(noSqlHelper.getProcessInstances(allIds)).isEmpty();
+    } finally {
+      databaseTestExtension.deleteIndex(piCustomPrefix + processInstanceIndex.getIndexName());
+    }
   }
 
   private void assertProcessInstancesExist(final List<String> ids) {
