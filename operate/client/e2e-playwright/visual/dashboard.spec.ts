@@ -14,6 +14,7 @@ import {
   mockStatistics,
   mockResponses,
 } from '../mocks/dashboard.mocks';
+import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
   await context.route('**/client-config.js', (route) =>
@@ -22,20 +23,7 @@ test.beforeEach(async ({context}) => {
       headers: {
         'Content-Type': 'text/javascript;charset=UTF-8',
       },
-      body: `window.clientConfig = ${JSON.stringify({
-        isEnterprise: false,
-        canLogout: true,
-        contextPath: '',
-        baseName: '',
-        organizationId: null,
-        clusterId: null,
-        mixpanelAPIHost: null,
-        mixpanelToken: null,
-        isLoginDelegated: false,
-        tasklistUrl: null,
-        resourcePermissionsEnabled: false,
-        multiTenancyEnabled: false,
-      })};`,
+      body: clientConfigMock,
     }),
   );
 });
