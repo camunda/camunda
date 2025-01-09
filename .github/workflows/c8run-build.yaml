@@ -33,12 +33,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
 
-      - name: build zeebe
-        uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: "-Dskip.fe.build=false"
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
