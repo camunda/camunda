@@ -25,7 +25,7 @@ test.beforeEach(async ({context}) => {
         isEnterprise: false,
         canLogout: true,
         contextPath: '',
-        baseName: '/operate',
+        baseName: '',
         organizationId: null,
         clusterId: null,
         mixpanelAPIHost: null,
