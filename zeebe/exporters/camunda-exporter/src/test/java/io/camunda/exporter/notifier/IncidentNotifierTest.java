@@ -52,6 +52,7 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
 import org.junit.jupiter.api.BeforeEach;
@@ -210,6 +211,8 @@ class IncidentNotifierTest {
   private String extractBody(final HttpRequest.BodyPublisher bodyPublisher)
       throws IOException, InterruptedException {
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    final CountDownLatch latch = new CountDownLatch(1);
+
     bodyPublisher.subscribe(
         new Subscriber<>() {
           @Override
@@ -224,18 +227,17 @@ class IncidentNotifierTest {
 
           @Override
           public void onError(final Throwable throwable) {
+            latch.countDown();
             throw new RuntimeException(throwable);
           }
 
           @Override
           public void onComplete() {
-            // No action needed
+            latch.countDown();
           }
         });
 
-    // Wait for the body to be fully written
-    Thread.sleep(100); // Adjust the sleep time as needed
-
+    latch.await(); // Wait for the body to be fully written
     return outputStream.toString(StandardCharsets.UTF_8);
   }
 
