@@ -70,6 +70,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JobActivationResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/JobActivationResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/JobActivationResult"
         "400":
           description: >
             The provided data is not valid.
@@ -563,6 +569,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/UserTaskSearchQueryResult"
         "400":
           description: >
             The user task search query failed.
@@ -675,6 +687,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CreateProcessInstanceResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/CreateProcessInstanceResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/CreateProcessInstanceResult"
         "400":
           description: The provided data is not valid.
         "500":
@@ -710,6 +728,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
         "400":
           description: >
             The Process Instance Search Query failed.
@@ -889,6 +913,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
         "400":
           description: >
             The Flow node instance Search Query failed.
@@ -931,6 +961,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DecisionDefinitionSearchQueryResult"
         "400":
           description: >
             The Decision Definition Search Query failed.
@@ -1025,6 +1061,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DecisionRequirementsSearchQueryResult"
         "400":
           description: >
             The decision requirements search query failed.
@@ -1057,6 +1099,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DecisionInstanceSearchQueryResult"
         "400":
           description: >
             The decision instance search query failed.
@@ -1108,6 +1156,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EvaluateDecisionResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/EvaluateDecisionResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/EvaluateDecisionResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -1150,6 +1204,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessagePublicationResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/MessagePublicationResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/MessagePublicationResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -1183,6 +1243,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageCorrelationResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/MessageCorrelationResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/MessageCorrelationResult"
         "400":
           description: The provided data is not valid
           content:
@@ -1427,6 +1493,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSearchResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResult"
         "400":
           description: "Bad request"
           content:
@@ -1485,6 +1557,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/IncidentSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/IncidentSearchQueryResult"
         '400':
           description: >
             The incident search query failed.
@@ -1541,6 +1619,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IncidentItem"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/IncidentItem"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/IncidentResult"
         "400":
           description: >
             The incident Get failed.
@@ -1598,6 +1682,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeploymentResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DeploymentResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DeploymentResult"
         "400":
           description: >
             The document upload failed. More details are provided in the response body.
@@ -1714,6 +1804,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SignalBroadcastResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/SignalBroadcastResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/SignalBroadcastResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -1744,15 +1840,26 @@ components:
         filter:
           $ref: "#/components/schemas/UserTaskFilterRequest"
     UserTaskSearchQueryResponse:
+      description: User task search query response.
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      description: User task search query response.
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/UserTaskItem"
+    UserTaskSearchQueryResult:
+      description: User task search query response. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskResult"
     UserTaskFilterRequest:
       description: User task filter request.
       type: object
@@ -1791,21 +1898,16 @@ components:
           type: string
         value:
           type: string
-    UserTaskItem:
+    UserTaskItemBase:
+      description: Base properties for UserTaskItem
       type: object
       properties:
-        key:
-          type: integer
-          format: int64
         state:
           type: string
         assignee:
           type: string
         elementId:
           type: string
-        elementInstanceKey:
-          type: integer
-          format: int64
         candidateGroup:
           type: array
           items:
@@ -1816,15 +1918,6 @@ components:
             type: string
         processDefinitionId:
           type: string
-        processDefinitionKey:
-          type: integer
-          format: int64
-        processInstanceKey:
-          type: integer
-          format: int64
-        formKey:
-          type: integer
-          format: int64
         creationDate:
           type: string
           format: date-time
@@ -1854,6 +1947,42 @@ components:
           minimum: 0
           maximum: 100
           default: 50
+    UserTaskItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskItemBase"
+      properties:
+        key:
+          type: integer
+          format: int64
+        elementInstanceKey:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        formKey:
+          type: integer
+          format: int64
+    UserTaskResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskItemBase"
+      properties:
+        key:
+          type: string
+        elementInstanceKey:
+          type: string
+        processDefinitionKey:
+          type: string
+        processInstanceKey:
+          type: string
+        formKey:
+          type: string
     ProcessInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -1915,20 +2044,28 @@ components:
           items:
             type: string
     ProcessInstanceSearchQueryResponse:
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceItem"
-    ProcessInstanceItem:
+    ProcessInstanceSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceResult"
+    ProcessInstanceItemBase:
+      description: Base properties for ProcessInstanceItem
       type: object
       properties:
-        key:
-          type: integer
-          format: int64
         processDefinitionName:
           type: string
           description: The process name.
@@ -1937,12 +2074,6 @@ components:
           format: int32
         bpmnProcessId:
           type: string
-        parentKey:
-          type: integer
-          format: int64
-        parentFlowNodeInstanceKey:
-          type: integer
-          format: int64
         startDate:
           type: string
           format: date-time
@@ -1962,9 +2093,6 @@ components:
           type: boolean
         hasActiveOperation:
           type: boolean
-        processDefinitionKey:
-          type: integer
-          format: int64
         tenantId:
           type: string
         rootInstanceId:
@@ -1977,6 +2105,37 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceReferenceItem"
+    ProcessInstanceItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceItemBase"
+      properties:
+        key:
+          type: integer
+          format: int64
+        parentKey:
+          type: integer
+          format: int64
+        parentFlowNodeInstanceKey:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
+    ProcessInstanceResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceItemBase"
+      properties:
+        key:
+          type: string
+        parentKey:
+          type: string
+        parentFlowNodeInstanceKey:
+          type: string
+        processDefinitionKey:
+          type: string
     CancelProcessInstanceRequest:
       type: object
       nullable: true
@@ -2039,26 +2198,28 @@ components:
           description: The tenant id
           type: string
     FlowNodeInstanceSearchQueryResponse:
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/FlowNodeInstanceItem"
-    FlowNodeInstanceItem:
+    FlowNodeInstanceSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowNodeInstanceResult"
+    FlowNodeInstanceItemBase:
+      description: Base properties for FlowNodeInstanceItem
       type: object
       properties:
-        flowNodeInstanceKey:
-          type: integer
-          format: int64
-        processInstanceKey:
-          type: integer
-          format: int64
-        processDefinitionKey:
-          type: integer
-          format: int64
         startDate:
           type: string
         endDate:
@@ -2075,10 +2236,38 @@ components:
           type: string
         incident:
           type: boolean
+        tenantId:
+          type: string
+    FlowNodeInstanceItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/FlowNodeInstanceItemBase"
+      properties:
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+        processInstanceKey:
+          type: integer
+          format: int64
+        processDefinitionKey:
+          type: integer
+          format: int64
         incidentKey:
           type: integer
           format: int64
-        tenantId:
+    FlowNodeInstanceResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/FlowNodeInstanceItemBase"
+      properties:
+        flowNodeInstanceKey:
+          type: string
+        processInstanceKey:
+          type: string
+        processDefinitionKey:
+          type: string
+        incidentKey:
           type: string
     DecisionDefinitionSearchQueryRequest:
       allOf:
@@ -2190,32 +2379,31 @@ components:
           description: The tenant id of the incident.
           type: string
     IncidentSearchQueryResponse:
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/IncidentItem"
-    IncidentItem:
+    IncidentSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentResult"
+    IncidentItemBase:
+      description: Base properties for IncidentItem
       type: object
       properties:
-        key:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this incident.
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
           description: The bpmn process id associated to this incident.
-        processInstanceKey:
-          type: integer
-          format: int64
-          description: The process instance key associated to this incident.
         errorType:
           type: string
           description: Incident error type with a defined set of values.
@@ -2238,10 +2426,6 @@ components:
         flowNodeId:
           type: string
           description: The flow node id associated to this incident.
-        flowNodeInstanceKey:
-          type: integer
-          format: int64
-          description: The flow node instance key associated to this incident.
         creationTime:
           type: string
           description: Date of incident creation.
@@ -2250,20 +2434,62 @@ components:
           type: string
           description: State of this incident with a defined set of values.
           enum:
-          - ACTIVE
-          - MIGRATED
-          - RESOLVED
-          - PENDING
-        jobKey:
-          type: integer
-          description: The job key, if exists, associated with this incident.
-          format: int64
+            - ACTIVE
+            - MIGRATED
+            - RESOLVED
+            - PENDING
         treePath:
           type: string
           description: The path from process instance via flow node ids and flow node instance keys leading to this incident.
         tenantId:
           description: The tenant id of the incident.
           type: string
+    IncidentItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentItemBase"
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The process instance key associated to this incident.
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+          description: The flow node instance key associated to this incident.
+        jobKey:
+          type: integer
+          description: The job key, if exists, associated with this incident.
+          format: int64
+    IncidentResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentItemBase"
+      properties:
+        key:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          type: string
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          type: string
+          description: The process instance key associated to this incident.
+        flowNodeInstanceKey:
+          type: string
+          description: The flow node instance key associated to this incident.
+        jobKey:
+          type: string
+          description: The job key, if exists, associated with this incident.
     OperationItem:
       description: " Operation"
       type: object
@@ -2308,21 +2534,28 @@ components:
         processDefinitionName:
           type: string
     DecisionDefinitionSearchQueryResponse:
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionItem"
-    DecisionDefinitionItem:
+    DecisionDefinitionSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionDefinitionResult"
+    DecisionDefinitionItemBase:
+      description: Base properties for DecisionDefinitionItem
       type: object
       properties:
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this decision definition.
         decisionDefinitionId:
           type: string
           description: The DMN id of the decision definition.
@@ -2336,13 +2569,34 @@ components:
         decisionRequirementsId:
           type: string
           description: the DMN id of the decision requirements graph that the decision definition is part of.
+        tenantId:
+          type: string
+          description: The tenant id of the decision definition.
+    DecisionDefinitionItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionDefinitionItemBase"
+      properties:
+        decisionDefinitionKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this decision definition.
         decisionRequirementsKey:
           type: integer
           format: int64
           description: The assigned key of the decision requirements graph that the decision definition is part of.
-        tenantId:
+    DecisionDefinitionResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionDefinitionItemBase"
+      properties:
+        decisionDefinitionKey:
           type: string
-          description: The tenant id of the decision definition.
+          description: The assigned key, which acts as a unique identifier for this decision definition.
+        decisionRequirementsKey:
+          type: string
+          description: The assigned key of the decision requirements graph that the decision definition is part of.
     AuthorizationPatchRequest:
       type: object
       properties:
@@ -2420,22 +2674,37 @@ components:
           type: "string"
         email:
           type: "string"
-    UserResponse:
-      type: "object"
+    UserResponseBase:
+      description: Base properties for UserResponse
+      type: object
       properties:
         id:
-          type: "integer"
-          format: "int64"
-        key:
-          type: "integer"
-          format: "int64"
+          type: integer
+          format: int64
         username:
-          type: "string"
+          type: string
         name:
-          type: "string"
+          type: string
         email:
-          type: "string"
+          type: string
+    UserResponse:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserResponseBase"
+      properties:
+        key:
+          type: integer
+          format: int64
+    UserResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserResponseBase"
+      properties:
+        key:
+          type: string
     UserSearchResponse:
+      deprecated: true
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -2444,6 +2713,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
+    UserSearchResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserResult"
     TopologyResponse:
       description: The response of a topology request.
       type: object
@@ -2688,26 +2966,28 @@ components:
         - maxJobsToActivate
     JobActivationResponse:
       description: The list of activated jobs
+      deprecated: true
       type: object
       properties:
         jobs:
           type: array
           items:
             $ref: "#/components/schemas/ActivatedJob"
-    ActivatedJob:
+    JobActivationResult:
+      description: The list of activated jobs Key attributes as string values.
       type: object
       properties:
-        jobKey:
-          description: the key, a unique identifier for the job
-          type: integer
-          format: int64
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivatedJobResult"
+    ActivatedJobBase:
+      description: Base properties for ActivatedJob
+      type: object
+      properties:
         type:
           description: the type of the job (should match what was requested)
           type: string
-        processInstanceKey:
-          description: the job's process instance key
-          type: integer
-          format: int64
         processDefinitionId:
           description: the bpmn process ID of the job's process definition
           type: string
@@ -2715,19 +2995,9 @@ components:
           description: the version of the job's process definition
           type: integer
           format: int32
-        processDefinitionKey:
-          description: the key of the job's process definition
-          type: integer
-          format: int64
         elementId:
           description: the associated task element ID
           type: string
-        elementInstanceKey:
-          description: >
-            the unique key identifying the associated task, unique within the scope of the
-            process instance
-          type: integer
-          format: int64
         customHeaders:
           description: a set of custom headers defined during modelling; returned as a serialized JSON document
           type: object
@@ -2749,6 +3019,47 @@ components:
           additionalProperties: true
         tenantId:
           description: The ID of the tenant that owns the job
+          type: string
+    ActivatedJob:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ActivatedJobBase"
+      properties:
+        jobKey:
+          description: the key, a unique identifier for the job
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: the job's process instance key©
+          type: integer
+          format: int64
+        processDefinitionKey:
+          description: the key of the job's process definition
+          type: integer
+          format: int64
+        elementInstanceKey:
+          description: |
+            the unique key identifying the associated task, unique within the scope of the process instance
+          type: integer
+          format: int64
+    ActivatedJobResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ActivatedJobBase"
+      properties:
+        jobKey:
+          description: the key, a unique identifier for the job
+          type: string
+        processInstanceKey:
+          description: the job's process instance key©
+          type: string
+        processDefinitionKey:
+          description: the key of the job's process definition
+          type: string
+        elementInstanceKey:
+          description: |
+            the unique key identifying the associated task, unique within the scope of the process instance
           type: string
     JobFailRequest:
       type: object
@@ -2973,21 +3284,28 @@ components:
           type: string
           description: The tenant ID of the decision requirements.
     DecisionRequirementsSearchQueryResponse:
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/DecisionRequirementsItem"
-    DecisionRequirementsItem:
+    DecisionRequirementsSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementsResult"
+    DecisionRequirementsItemBase:
+      description: Base properties for DecisionRequirementsItem
       type: object
       properties:
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this decision requirements.
         decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements.
@@ -3004,6 +3322,24 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision requirements.
+    DecisionRequirementsItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionRequirementsItemBase"
+      properties:
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
+    DecisionRequirementsResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionRequirementsItemBase"
+      properties:
+        decisionRequirementsKey:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
     EvaluateDecisionRequest:
       type: object
       properties:
@@ -3026,13 +3362,10 @@ components:
         tenantId:
           description: The tenant ID of the decision.
           type: string
-    EvaluateDecisionResponse:
+    EvaluateDecisionResponseBase:
+      description: Base properties for EvaluateDecisionResponse
       type: object
       properties:
-        decisionDefinitionKey:
-          description: The unique key identifying the decision which was evaluated.
-          type: integer
-          format: int64
         decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
@@ -3046,10 +3379,6 @@ components:
         decisionRequirementsId:
           description: The ID of the decision requirements graph that the decision which was evaluated is part of.
           type: string
-        decisionRequirementsKey:
-          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
-          type: integer
-          format: int64
         output:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
@@ -3063,6 +3392,20 @@ components:
         tenantId:
           description: The tenant ID of the evaluated decision.
           type: string
+    EvaluateDecisionResponse:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/EvaluateDecisionResponseBase"
+      properties:
+        decisionDefinitionKey:
+          description: The unique key identifying the decision which was evaluated.
+          type: integer
+          format: int64
+        decisionRequirementsKey:
+          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
+          type: integer
+          format: int64
         decisionInstanceKey:
           description: The unique key identifying this decision evaluation.
           type: integer
@@ -3071,14 +3414,28 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionItem"
-    EvaluatedDecisionItem:
+    EvaluateDecisionResult:
       type: object
-      description: List of decisions that were evaluated within the requested decision evaluation.
+      allOf:
+        - $ref: "#/components/schemas/EvaluateDecisionResponseBase"
       properties:
         decisionDefinitionKey:
-          description: The unique key identifying the decision which was evaluate.
-          type: integer
-          format: int64
+          description: The unique key identifying the decision which was evaluated.
+          type: string
+        decisionRequirementsKey:
+          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
+          type: string
+        decisionInstanceKey:
+          description: The unique key identifying this decision evaluation.
+          type: string
+        evaluatedDecisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluatedDecisionResult"
+    EvaluatedDecisionItemBase:
+      description: Base properties for EvaluatedDecisionItem
+      type: object
+      properties:
         decisionDefinitionId:
           description: The ID of the decision which was evaluated.
           type: string
@@ -3107,6 +3464,26 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionInputItem"
+    EvaluatedDecisionItem:
+      description: List of decisions that were evaluated within the requested decision evaluation.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/EvaluatedDecisionItemBase"
+      properties:
+        decisionDefinitionKey:
+          description: The unique key identifying the decision which was evaluate.
+          type: integer
+          format: int64
+    EvaluatedDecisionResult:
+      description: List of decisions that were evaluated within the requested decision evaluation. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/EvaluatedDecisionItemBase"
+      properties:
+        decisionDefinitionKey:
+          description: The unique key identifying the decision which was evaluate.
+          type: string
     MatchedDecisionRuleItem:
       type: object
       description: The decision rules that matched within this decision evaluation.
@@ -3198,24 +3575,31 @@ components:
           type: string
           description: The tenant ID of the decision instance.
     DecisionInstanceSearchQueryResponse:
+      deprecated: true
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
-      type: object
       properties:
         items:
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceItem"
+    DecisionInstanceSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionInstanceResult"
 
-    DecisionInstanceItem:
+    DecisionInstanceItemBase:
+      description: Base properties for DecisionInstanceItem
       type: object
       properties:
-        key:
-          type: integer
-          format: int64
-          description: The key of the decision instance.
         state:
-          $ref: '#/components/schemas/DecisionInstanceStateEnum'
+          $ref: "#/components/schemas/DecisionInstanceStateEnum"
           description: The state of the decision instance.
         evaluationDate:
           type: string
@@ -3224,6 +3608,35 @@ components:
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
+        decisionDefinitionId:
+          type: string
+          description: The ID of the DMN decision.
+        decisionDefinitionName:
+          type: string
+          description: The name of the DMN decision.
+        decisionDefinitionVersion:
+          type: integer
+          format: int32
+          description: The version of the decision.
+        decisionDefinitionType:
+          $ref: "#/components/schemas/DecisionInstanceTypeEnum"
+          description: The type of the decision.
+        result:
+          type: string
+          description: The result of the decision instance.
+        tenantId:
+          type: string
+          description: The tenant ID of the decision instance.
+    DecisionInstanceItem:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceItemBase"
+      properties:
+        key:
+          type: integer
+          format: int64
+          description: The key of the decision instance.
         processDefinitionKey:
           type: integer
           format: int64
@@ -3236,25 +3649,23 @@ components:
           type: integer
           format: int64
           description: The key of the decision.
-        decisionDefinitionId:
+    DecisionInstanceResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceItemBase"
+      properties:
+        key:
           type: string
-          description: The ID of the DMN decision.
-        decisionDefinitionName:
+          description: The key of the decision instance.
+        processDefinitionKey:
           type: string
-          description: The name of the DMN decision.
-        decisionDefinitionVersion:
-          type: integer
-          format: int32
-          description: The version of the decision.
-        decisionDefinitionType:
-          $ref: '#/components/schemas/DecisionInstanceTypeEnum'
-          description: The type of the decision.
-        result:
+          description: The key of the process definition.
+        processInstanceKey:
           type: string
-          description: The result of the decision instance.
-        tenantId:
+          description: The key of the process instance.
+        decisionDefinitionKey:
           type: string
-          description: The tenant ID of the decision instance.
+          description: The key of the decision.
 
     DecisionInstanceTypeEnum:
       enum:
@@ -3291,23 +3702,45 @@ components:
           description: the tenant for which the message is published
           type: string
           nullable: true
+    MessageCorrelationResponseBase:
+      description: Base properties for MessageCorrelationResponse
+      type: object
+      properties:
+        tenantId:
+          description: The tenant ID of the correlated message
+          type: string
     MessageCorrelationResponse:
       description: |
         The message key of the correlated message, as well as the first process instance key it
         correlated with.
+      deprecated: true
       type: object
+      allOf:
+        - $ref: "#/components/schemas/MessageCorrelationResponseBase"
       properties:
         messageKey:
           description: The key of the correlated message
           type: integer
           format: int64
-        tenantId:
-          description: The tenant ID of the correlated message
-          type: string
         processInstanceKey:
           description: The key of the first process instance the message correlated with
           type: integer
           format: int64
+    MessageCorrelationResult:
+      description: |-
+        The message key of the correlated message, as well as the first process instance key it
+        correlated with.
+         Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MessageCorrelationResponseBase"
+      properties:
+        messageKey:
+          description: The key of the correlated message
+          type: string
+        processInstanceKey:
+          description: The key of the first process instance the message correlated with
+          type: string
     MessagePublicationRequest:
       type: object
       properties:
@@ -3341,16 +3774,32 @@ components:
       required:
         - name
         - correlationKey
+    MessagePublicationResponseBase:
+      description: Base properties for MessagePublicationResponse
+      type: object
+      properties:
+        tenantId:
+          description: The tenant ID of the message.
+          type: string
     MessagePublicationResponse:
       description: The message key of the published message.
+      deprecated: true
       type: object
+      allOf:
+        - $ref: "#/components/schemas/MessagePublicationResponseBase"
       properties:
         messageKey:
           description: The key of the message
           type: integer
           format: int64
-        tenantId:
-          description: The tenant ID of the message.
+    MessagePublicationResult:
+      description: The message key of the published message. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MessagePublicationResponseBase"
+      properties:
+        messageKey:
+          description: The key of the message
           type: string
 
     DocumentReference:
@@ -3406,19 +3855,38 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
-    DeploymentResponse:
+    DeploymentResponseBase:
+      description: Base properties for DeploymentResponse
       type: object
       properties:
-        deploymentKey:
-          type: integer
-          format: int64
-          description: The unique key identifying the deployment.
+        tenantId:
+          type: string
+    DeploymentResponse:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentResponseBase"
+      properties:
         deployments:
           type: array
           items:
             $ref: "#/components/schemas/DeploymentMetadata"
-        tenantId:
+        deploymentKey:
+          type: integer
+          format: int64
+          description: The unique key identifying the deployment.
+    DeploymentResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentResponseBase"
+      properties:
+        deployments:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeploymentMetadataResult"
+        deploymentKey:
           type: string
+          description: The unique key identifying the deployment.
     DeploymentMetadata:
       type: object
       properties:
@@ -3430,7 +3898,19 @@ components:
           $ref: "#/components/schemas/DeploymentDecisionRequirements"
         form:
           $ref: "#/components/schemas/DeploymentForm"
-    DeploymentProcess:
+    DeploymentMetadataResult:
+      type: object
+      properties:
+        processDefinition:
+          $ref: "#/components/schemas/DeploymentProcessResult"
+        decisionDefinition:
+          $ref: "#/components/schemas/DeploymentDecisionResult"
+        decisionRequirements:
+          $ref: "#/components/schemas/DeploymentDecisionRequirementsResult"
+        form:
+          $ref: "#/components/schemas/DeploymentFormResult"
+    DeploymentProcessBase:
+      description: Base properties for DeploymentProcess.
       type: object
       properties:
         processDefinitionId:
@@ -3442,17 +3922,34 @@ components:
           type: integer
           format: int32
           description: The assigned process version.
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this process.
         resourceName:
           type: string
           description: The resource name from which this process was parsed.
         tenantId:
           type: string
           description: The tenant ID of the deployed process.
-    DeploymentDecision:
+    DeploymentProcess:
+      deprecated: true
+      description: A deployed process.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentProcessBase"
+      properties:
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this process.
+    DeploymentProcessResult:
+      description: A deployed process.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentProcessBase"
+      properties:
+        processDefinitionKey:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this process.
+    DeploymentDecisionBase:
+      description: Base properties for DeploymentDecision.
       type: object
       properties:
         decisionDefinitionId:
@@ -3464,11 +3961,6 @@ components:
           type: integer
           format: int32
           description: The assigned decision version.
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision key, which acts as a unique identifier for this decision.
         name:
           type: string
           description: The DMN name of the decision, as parsed during deployment.
@@ -3479,12 +3971,39 @@ components:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
+    DeploymentDecision:
+      deprecated: true
+      description: A deployed decision.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentDecisionBase"
+      properties:
+        decisionDefinitionKey:
+          type: integer
+          format: int64
+          description: |
+            The assigned decision key, which acts as a unique identifier for this decision.
         decisionRequirementsKey:
           type: integer
           format: int64
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionRequirements:
+    DeploymentDecisionResult:
+      description: A deployed decision.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentDecisionBase"
+      properties:
+        decisionDefinitionKey:
+          type: string
+          description: |
+            The assigned decision key, which acts as a unique identifier for this decision.
+        decisionRequirementsKey:
+          type: string
+          description: |
+            The assigned key of the decision requirements graph that this decision is part of.
+    DeploymentDecisionRequirementsBase:
+      description: Base properties for DeploymentDecisionRequirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -3501,15 +4020,33 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed decision requirements.
+        resourceName:
+          type: string
+          description: The resource name from which this decision requirements was parsed.
+    DeploymentDecisionRequirements:
+      deprecated: true
+      description: Deployed decision requirements.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
+      properties:
         decisionRequirementsKey:
           type: integer
           format: int64
           description: |
             The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-        resourceName:
+    DeploymentDecisionRequirementsResult:
+      description: Deployed decision requirements.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
+      properties:
+        decisionRequirementsKey:
           type: string
-          description: The resource name from which this decision requirements was parsed.
-    DeploymentForm:
+          description: |
+            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
+    DeploymentFormBase:
+      description: Base properties for DeploymentForm.
       type: object
       properties:
         formId:
@@ -3521,16 +4058,32 @@ components:
           type: integer
           format: int32
           description: The assigned form version.
-        formKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this form.
         resourceName:
           type: string
           description: The resource name from which this form was parsed.
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
+    DeploymentForm:
+      deprecated: true
+      description: A deployed form.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentFormBase"
+      properties:
+        formKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this form.
+    DeploymentFormResult:
+      description: A deployed form.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DeploymentFormBase"
+      properties:
+        formKey:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this form.
 
     CreateProcessInstanceRequest:
       type: object
@@ -3607,14 +4160,10 @@ components:
 
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           type: string
-    CreateProcessInstanceResponse:
+    CreateProcessInstanceResponseBase:
+      description: Base properties for CreateProcessInstanceResponse
       type: object
       properties:
-        processDefinitionKey:
-          description: |
-            The key of the process definition which was used to create the process instance.
-          type: integer
-          format: int64
         processDefinitionId:
           description: |
             The BPMN process ID of the process definition which was used to create the process.
@@ -3625,12 +4174,6 @@ components:
             The version of the process definition which was used to create the process instance.
           type: integer
           format: int32
-        processInstanceKey:
-          description: |
-            The unique identifier of the created process instance; to be used wherever a request
-            needs a process instance key (e.g. CancelProcessInstanceRequest).
-          type: integer
-          format: int64
         tenantId:
           description: The tenant ID of the created process instance.
           type: string
@@ -3638,6 +4181,37 @@ components:
           additionalProperties: true
           description: All the variables visible in the root scope.
           type: object
+    CreateProcessInstanceResponse:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/CreateProcessInstanceResponseBase"
+      properties:
+        processDefinitionKey:
+          description: |
+            The key of the process definition which was used to create the process instance.
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: |
+            The unique identifier of the created process instance; to be used wherever a request
+            needs a process instance key (e.g. CancelProcessInstanceRequest).
+          type: integer
+          format: int64
+    CreateProcessInstanceResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/CreateProcessInstanceResponseBase"
+      properties:
+        processDefinitionKey:
+          description: |
+            The key of the process definition which was used to create the process instance.
+          type: string
+        processInstanceKey:
+          description: |
+            The unique identifier of the created process instance; to be used wherever a request
+            needs a process instance key (e.g. CancelProcessInstanceRequest).
+          type: string
     MigrateProcessInstanceRequest:
       type: object
       properties:
@@ -3805,15 +4379,30 @@ components:
           type: string
       required:
         - signalName
-    SignalBroadcastResponse:
+    SignalBroadcastResponseBase:
+      description: Base properties for SignalBroadcastResponse
       type: object
+      properties:
+        tenantId:
+          description: The tenant ID of the signal that was broadcast.
+          type: string
+    SignalBroadcastResponse:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SignalBroadcastResponseBase"
       properties:
         signalKey:
           description: The unique ID of the signal that was broadcast.
           type: integer
           format: int64
-        tenantId:
-          description: The tenant ID of the signal that was broadcast.
+    SignalBroadcastResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SignalBroadcastResponseBase"
+      properties:
+        signalKey:
+          description: The unique ID of the signal that was broadcast.
           type: string
 
   securitySchemes:
