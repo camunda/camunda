@@ -21,6 +21,7 @@ public class ExporterConfiguration {
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
+  private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -93,6 +94,14 @@ public class ExporterConfiguration {
 
   public void setPostExport(final PostExportConfiguration postExport) {
     this.postExport = postExport;
+  }
+
+  public IncidentNotifierConfiguration getNotifier() {
+    return notifier;
+  }
+
+  public void setNotifier(final IncidentNotifierConfiguration notifier) {
+    this.notifier = notifier;
   }
 
   @Override
@@ -441,6 +450,60 @@ public class ExporterConfiguration {
           + ", ignoreMissingData="
           + ignoreMissingData
           + '}';
+    }
+  }
+
+  public static final class IncidentNotifierConfiguration {
+
+    private String webhook;
+
+    /** Defines the domain which the user always sees */
+    private String domain;
+
+    private String m2mClientId;
+
+    private String m2mClientSecret;
+
+    private String m2mAudience;
+
+    public String getWebhook() {
+      return webhook;
+    }
+
+    public void setWebhook(final String webhook) {
+      this.webhook = webhook;
+    }
+
+    public String getDomain() {
+      return domain;
+    }
+
+    public void setDomain(final String domain) {
+      this.domain = domain;
+    }
+
+    public String getM2mClientId() {
+      return m2mClientId;
+    }
+
+    public void setM2mClientId(final String m2mClientId) {
+      this.m2mClientId = m2mClientId;
+    }
+
+    public String getM2mClientSecret() {
+      return m2mClientSecret;
+    }
+
+    public void setM2mClientSecret(final String m2mClientSecret) {
+      this.m2mClientSecret = m2mClientSecret;
+    }
+
+    public String getM2mAudience() {
+      return m2mAudience;
+    }
+
+    public void setM2mAudience(final String m2mAudience) {
+      this.m2mAudience = m2mAudience;
     }
   }
 }
