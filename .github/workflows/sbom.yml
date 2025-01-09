@@ -161,15 +161,15 @@ jobs:
             # Upload the artifact
             echo "Uploading ./sboms/$unique_name to release $RELEASE_TAG"
             gh release upload "$RELEASE_TAG" "./sboms/$unique_name" \
-            --repo "camunda/camunda" \
-            --clobber
+              --repo "camunda/camunda" \
+              --clobber
 
             # Check the exit code of the upload command
             if [ $? -eq 0 ]; then
               echo "Successfully uploaded: $unique_name"
             else
               echo "Failed to upload: $unique_name"
-            exit 1
+              exit 1
             fi
 
             # Restore the original artifact name
