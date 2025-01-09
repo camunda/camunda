@@ -27,6 +27,8 @@ public final class EngineConfiguration {
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
 
+  public static final int DEFAULT_CALL_ACTIVITY_MAX_DEPTH = 1000;
+
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -37,6 +39,8 @@ public final class EngineConfiguration {
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
 
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
+
+  private int defaultCallActivityMaxDepth = DEFAULT_CALL_ACTIVITY_MAX_DEPTH;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -112,5 +116,13 @@ public final class EngineConfiguration {
   public EngineConfiguration setValidatorsResultsOutputMaxSize(final int maxSize) {
     validatorsResultsOutputMaxSize = maxSize;
     return this;
+  }
+
+  public int getDefaultCallActivityMaxDepth() {
+    return defaultCallActivityMaxDepth;
+  }
+
+  public void setDefaultCallActivityMaxDepth(final int defaultCallActivityMaxDepth) {
+    this.defaultCallActivityMaxDepth = defaultCallActivityMaxDepth;
   }
 }
