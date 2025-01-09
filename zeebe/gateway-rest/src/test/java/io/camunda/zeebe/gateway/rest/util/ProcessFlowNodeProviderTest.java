@@ -20,7 +20,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil.ProcessFlowNode;
+import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider.ProcessFlowNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -38,8 +38,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {XmlUtil.class})
-class XmlUtilTest {
+@ContextConfiguration(classes = {ProcessFlowNodeProvider.class})
+class ProcessFlowNodeProviderTest {
 
   public static final String PROC_DEF_ID1 = "testProcess";
   public static final String PROC_DEF_ID2 = "parent_process_v1";
@@ -47,7 +47,7 @@ class XmlUtilTest {
   public static final String PROC_DEF_ID41 = "Process_0diikxu";
   public static final String PROC_DEF_ID42 = "Process_18z2cdf";
   private static final Long PROC_DEF_KEY = 1L;
-  @Autowired XmlUtil xmlUtil;
+  @Autowired ProcessFlowNodeProvider processFlowNodeProvider;
   @MockBean ProcessDefinitionServices processDefinitionServices;
   @Mock ProcessDefinitionEntity processDefinition;
   @Mock BiConsumer<Long, ProcessFlowNode> mockConsumer;
@@ -76,10 +76,13 @@ class XmlUtilTest {
 
   private void verifyFlowNodesBpmn1() {
     verify(mockConsumer)
-        .accept(XmlUtilTest.PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start"));
+        .accept(
+            ProcessFlowNodeProviderTest.PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start"));
     verify(mockConsumer)
-        .accept(XmlUtilTest.PROC_DEF_KEY, new ProcessFlowNode("Event_0692jdh", "End"));
-    verify(mockConsumer).accept(XmlUtilTest.PROC_DEF_KEY, new ProcessFlowNode("taskB", "Task B"));
+        .accept(
+            ProcessFlowNodeProviderTest.PROC_DEF_KEY, new ProcessFlowNode("Event_0692jdh", "End"));
+    verify(mockConsumer)
+        .accept(ProcessFlowNodeProviderTest.PROC_DEF_KEY, new ProcessFlowNode("taskB", "Task B"));
   }
 
   private void verifyFlowNodesBpmn2(final long key) {
@@ -106,7 +109,7 @@ class XmlUtilTest {
     // given
     when(processDefinition.bpmnXml()).thenReturn("not-xml");
     // when
-    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
     verifyNoInteractions(mockConsumer);
   }
@@ -116,7 +119,7 @@ class XmlUtilTest {
     // given
     when(processDefinition.bpmnXml()).thenReturn(bpmn1);
     // when
-    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
     verifyFlowNodesBpmn1();
     verifyNoMoreInteractions(mockConsumer);
@@ -128,7 +131,7 @@ class XmlUtilTest {
     when(processDefinition.bpmnXml()).thenReturn(bpmn2);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID2);
     // when
-    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
     verifyFlowNodesBpmn2(PROC_DEF_KEY);
     verifyNoMoreInteractions(mockConsumer);
@@ -140,7 +143,7 @@ class XmlUtilTest {
     when(processDefinition.bpmnXml()).thenReturn(bpmn3);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID3);
     // when
-    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
     verifyFlowNodesBpmn3(PROC_DEF_KEY);
     verifyNoMoreInteractions(mockConsumer);
@@ -152,7 +155,7 @@ class XmlUtilTest {
     when(processDefinition.bpmnXml()).thenReturn(bpmn4);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID41);
     // when
-    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
     verify(mockConsumer)
         .accept(PROC_DEF_KEY, new ProcessFlowNode("StartEvent_1", "Start process A"));
@@ -168,7 +171,7 @@ class XmlUtilTest {
     when(processDefinition.bpmnXml()).thenReturn(bpmn4);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID42);
     // when
-    xmlUtil.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(PROC_DEF_KEY, mockConsumer);
     // then
     verify(mockConsumer)
         .accept(PROC_DEF_KEY, new ProcessFlowNode("Event_00cm7tu", "Start process B"));
@@ -194,7 +197,7 @@ class XmlUtilTest {
                 .total(3)
                 .build());
     // when
-    xmlUtil.extractFlowNodeNames(Set.of(PROC_DEF_KEY, 2L, 3L), mockConsumer);
+    processFlowNodeProvider.extractFlowNodeNames(Set.of(PROC_DEF_KEY, 2L, 3L), mockConsumer);
     // then
     verifyFlowNodesBpmn1();
     verifyFlowNodesBpmn2(2L);
