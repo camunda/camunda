@@ -52,7 +52,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
           new PartitionLeaveApplier(
               leaveOperation.partitionId(),
               leaveOperation.memberId(),
-              leaveOperation.isClusterPurge(),
+              leaveOperation.minimumAllowedReplicas(),
               partitionChangeExecutor);
       case final MemberJoinOperation memberJoinOperation ->
           new MemberJoinApplier(memberJoinOperation.memberId(), clusterMembershipChangeExecutor);

@@ -78,9 +78,9 @@ public sealed interface ClusterConfigurationChangeOperation {
      *
      * @param memberId the member id of the member that will stop replicating the partition
      * @param partitionId id of the partition to leave
-     * @param isClusterPurge true if the operation is part of a cluster purge
+     * @param minimumAllowedReplicas 0 if the operation is part of a cluster purge
      */
-    record PartitionLeaveOperation(MemberId memberId, int partitionId, boolean isClusterPurge)
+    record PartitionLeaveOperation(MemberId memberId, int partitionId, int minimumAllowedReplicas)
         implements PartitionChangeOperation {}
 
     /**

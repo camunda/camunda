@@ -49,7 +49,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
       final var memberId = member.getKey();
       for (final var partitions : member.getValue().partitions().entrySet()) {
         final var partitionId = partitions.getKey();
-        operations.add(new PartitionLeaveOperation(memberId, partitionId, true));
+        operations.add(new PartitionLeaveOperation(memberId, partitionId, 0));
 
         final var primaryForPartition = primaries.get(partitionId);
 

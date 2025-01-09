@@ -393,7 +393,7 @@ public class ProtoBufSerializer
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
                   .setPartitionId(leaveOperation.partitionId())
-                  .setIsClusterPurge(leaveOperation.isClusterPurge()));
+                  .setMinimumAllowedReplicas(leaveOperation.minimumAllowedReplicas()));
       case final MemberJoinOperation memberJoinOperation ->
           builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -593,7 +593,7 @@ public class ProtoBufSerializer
       return new PartitionLeaveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionLeave().getPartitionId(),
-          topologyChangeOperation.getPartitionLeave().getIsClusterPurge());
+          topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
     } else if (topologyChangeOperation.hasMemberJoin()) {
       return new MemberJoinOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else if (topologyChangeOperation.hasMemberLeave()) {

@@ -35,7 +35,7 @@ final class PartitionLeaveApplierTest {
       mock(PartitionChangeExecutor.class);
   private final MemberId localMemberId = MemberId.from("1");
   final PartitionLeaveApplier partitionLeaveApplier =
-      new PartitionLeaveApplier(1, localMemberId, false, partitionChangeExecutor);
+      new PartitionLeaveApplier(1, localMemberId, 1, partitionChangeExecutor);
   private final ClusterConfiguration initialClusterConfiguration =
       ClusterConfiguration.init()
           .addMember(localMemberId, MemberState.initializeAsActive(Map.of()));
@@ -69,7 +69,7 @@ final class PartitionLeaveApplierTest {
 
     Assertions.assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("partition 1 has only one replica");
+        .hasMessageContaining("partition 1 has 1 replicas but minimum allowed replicas is 1");
   }
 
   @Test
@@ -81,7 +81,7 @@ final class PartitionLeaveApplierTest {
                 localMemberId, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .startConfigurationChange(List.of(new DeleteHistoryOperation(localMemberId)));
     final var partitionLeaveApplierForPurge =
-        new PartitionLeaveApplier(1, localMemberId, true, partitionChangeExecutor);
+        new PartitionLeaveApplier(1, localMemberId, 0, partitionChangeExecutor);
 
     // when
     final var resultingTopology =

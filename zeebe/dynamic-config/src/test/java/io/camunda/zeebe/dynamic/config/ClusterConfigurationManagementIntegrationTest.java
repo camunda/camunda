@@ -181,7 +181,7 @@ class ClusterConfigurationManagementIntegrationTest {
                 Either.right(
                     List.of(
                         new PartitionJoinOperation(MemberId.from("0"), 2, 1),
-                        new PartitionLeaveOperation(MemberId.from("1"), 1, false))))
+                        new PartitionLeaveOperation(MemberId.from("1"), 1, 1))))
         .join();
 
     // then
@@ -213,7 +213,7 @@ class ClusterConfigurationManagementIntegrationTest {
                 Either.right(
                     List.of(
                         new PartitionJoinOperation(MemberId.from("0"), 2, 1),
-                        new PartitionLeaveOperation(MemberId.from("1"), 1, false),
+                        new PartitionLeaveOperation(MemberId.from("1"), 1, 1),
                         new PartitionJoinOperation(MemberId.from("1"), 1, 1))))
         .join();
 

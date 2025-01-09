@@ -58,10 +58,10 @@ final class ClusterPurgeRequestTransformerTest {
               assertThat(operations).hasSize(9);
               assertThat(operations)
                   .containsExactly(
-                      new PartitionLeaveOperation(id0, 0, true),
-                      new PartitionLeaveOperation(id0, 1, true),
-                      new PartitionLeaveOperation(id1, 0, true),
-                      new PartitionLeaveOperation(id1, 1, true),
+                      new PartitionLeaveOperation(id0, 0, 0),
+                      new PartitionLeaveOperation(id0, 1, 0),
+                      new PartitionLeaveOperation(id1, 0, 0),
+                      new PartitionLeaveOperation(id1, 1, 0),
                       new DeleteHistoryOperation(id0),
                       new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig)),
                       new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig)),
@@ -98,12 +98,12 @@ final class ClusterPurgeRequestTransformerTest {
               assertThat(operations).hasSize(13);
               assertThat(operations)
                   .containsExactly(
-                      new PartitionLeaveOperation(id0, 0, true),
-                      new PartitionLeaveOperation(id0, 1, true),
-                      new PartitionLeaveOperation(id0, 2, true),
-                      new PartitionLeaveOperation(id1, 0, true),
-                      new PartitionLeaveOperation(id1, 1, true),
-                      new PartitionLeaveOperation(id1, 2, true),
+                      new PartitionLeaveOperation(id0, 0, 0),
+                      new PartitionLeaveOperation(id0, 1, 0),
+                      new PartitionLeaveOperation(id0, 2, 0),
+                      new PartitionLeaveOperation(id1, 0, 0),
+                      new PartitionLeaveOperation(id1, 1, 0),
+                      new PartitionLeaveOperation(id1, 2, 0),
                       new DeleteHistoryOperation(id0),
                       new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig)),
                       new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig)),
