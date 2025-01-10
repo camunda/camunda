@@ -348,6 +348,8 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.variableSearchQuery().build());
     }
+
+    final var filter = toUserTaskVariableFilter(request.getFilter());
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
@@ -355,8 +357,21 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::variable,
             SearchQueryRequestMapper::applyVariableSortField);
 
-    return buildSearchQuery(
-        FilterBuilders.variable().build(), sort, page, SearchQueryBuilders::variableSearchQuery);
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  private static VariableFilter toUserTaskVariableFilter(
+      final VariableUserTaskFilterRequest filter) {
+    if (filter == null) {
+      return FilterBuilders.variable().build();
+    }
+
+    final var builder = FilterBuilders.variable();
+    ofNullable(filter.getName())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::nameOperations);
+
+    return builder.build();
   }
 
   public static Either<ProblemDetail, VariableQuery> toVariableQuery(

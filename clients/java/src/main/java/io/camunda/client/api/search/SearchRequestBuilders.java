@@ -23,6 +23,7 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
@@ -42,6 +43,7 @@ import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
+import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
@@ -271,5 +273,16 @@ public final class SearchRequestBuilders {
     final VariableSort sort = variableSort();
     fn.accept(sort);
     return sort;
+  }
+
+  public static UserTaskVariableFilter userTaskVariableFilter() {
+    return new UserTaskVariableFilterImpl();
+  }
+
+  public static UserTaskVariableFilter userTaskVariableFilter(
+      final Consumer<UserTaskVariableFilter> fn) {
+    final UserTaskVariableFilter filter = userTaskVariableFilter();
+    fn.accept(filter);
+    return filter;
   }
 }

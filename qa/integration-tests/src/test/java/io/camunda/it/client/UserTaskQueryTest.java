@@ -602,6 +602,69 @@ class UserTaskQueryTest {
   }
 
   @Test
+  void shouldReturnUserTaskVariablesFilteredByNameEq() {
+    // when
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskVariableQuery(userTaskKey)
+            .filter(f -> f.name(b -> b.eq("localVariable")))
+            .send()
+            .join();
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesFilteredByNameLike() {
+    // When
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey =
+        userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskVariableQuery(userTaskKey)
+            .filter(f -> f.name(b -> b.like("*rocess*")))
+            .send()
+            .join();
+
+    // Then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesFilteredByIn() {
+    // When
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey =
+        userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskVariableQuery(userTaskKey)
+            .filter(f -> f.name(b -> b.in(List.of("processVariable", "subProcessVariable"))))
+            .send()
+            .join();
+
+    // Then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items().stream().map(item -> item.getName()))
+        .containsExactlyInAnyOrder("processVariable", "subProcessVariable");
+  }
+
+  @Test
   void shouldReturnUserTaskByCreationDateExists() {
     // when
     final var result =

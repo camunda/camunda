@@ -4092,6 +4092,11 @@ components:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.
       type: object
+      properties:
+        filter:
+          description: The user task search filters.
+          allOf:
+            - $ref: "#/components/schemas/VariableUserTaskFilterRequest"
     UserTaskSearchQueryResponse:
       description: User task search query response. Key attributes as numeric values.
       deprecated: true
@@ -4195,6 +4200,14 @@ components:
         value:
           type: string
           description: The value of the variable.
+    VariableUserTaskFilterRequest:
+      description: Variable
+      type: object
+      properties:
+        name:
+          description: Name of the variable.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     UserTaskItemBase:
       description: Base properties for UserTaskItem.
       type: object
