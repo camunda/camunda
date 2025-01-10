@@ -49,7 +49,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + ".zip"
 	composeFilePath := composeTag + ".zip"
 	composeExtractionPath := "camunda-platform-" + composeTag
-	authToken := os.Getenv("GITHUB_TOKEN")
+	authToken := os.Getenv("GH_TOKEN")
 
 	Clean(camundaVersion, elasticsearchVersion)
 
@@ -114,7 +114,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + ".tar.gz"
 	composeFilePath := composeTag + ".tar.gz"
 	composeExtractionPath := "camunda-platform-" + composeTag
-	authToken := os.Getenv("GITHUB_TOKEN")
+	authToken := os.Getenv("GH_TOKEN")
 
 	Clean(camundaVersion, elasticsearchVersion)
 
