@@ -693,14 +693,21 @@
     <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
-      <version>8.7.0-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
-      <version>8.7.0-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-webjar</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
@@ -850,6 +857,7 @@
             <dep>io.camunda.migration:identity-migration</dep>
             <dep>io.camunda.migration:process-migration</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
+            <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
