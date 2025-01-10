@@ -83,7 +83,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 		return fmt.Errorf("PackageWindows: failed to fetch camunda: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, "", func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
@@ -153,7 +153,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 		return fmt.Errorf("PackageUnix: failed to fetch camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, authToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, "", func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch connectors %w\n%s", err, debug.Stack())
 	}
