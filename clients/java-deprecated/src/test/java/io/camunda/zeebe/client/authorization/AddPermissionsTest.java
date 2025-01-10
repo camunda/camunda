@@ -19,11 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import com.google.common.collect.Sets;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.PermissionDTO;
+import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,15 +56,15 @@ public final class AddPermissionsTest extends ClientRestTest {
 
     assertThat(request.getPermissions())
         .hasSize(3)
-        .extracting(
-            AuthorizationPatchRequestPermissionsInner::getPermissionType,
-            AuthorizationPatchRequestPermissionsInner::getResourceIds)
+        .extracting(PermissionDTO::getPermissionType, PermissionDTO::getResourceIds)
         .containsExactly(
-            tuple(PermissionTypeEnum.CREATE, Collections.singletonList("resourceId1")),
-            tuple(PermissionTypeEnum.UPDATE, Arrays.asList("resourceId2", "resourceId3")),
+            tuple(
+                PermissionTypeEnum.CREATE,
+                Sets.newHashSet(Collections.singletonList("resourceId1"))),
+            tuple(PermissionTypeEnum.UPDATE, Sets.newHashSet("resourceId2", "resourceId3")),
             tuple(
                 PermissionTypeEnum.DELETE,
-                Arrays.asList("resourceId4", "resourceId5", "resourceId6")));
+                Sets.newHashSet("resourceId4", "resourceId5", "resourceId6")));
   }
 
   @Test
