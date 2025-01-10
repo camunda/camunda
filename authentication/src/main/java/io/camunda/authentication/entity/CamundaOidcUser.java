@@ -36,7 +36,7 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
 
   @Override
   public String getDisplayName() {
-    return user.getClaim("nickname");
+    return user.getPreferredUsername();
   }
 
   @Override
@@ -71,7 +71,7 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
 
   @Override
   public String getName() {
-    return user.getClaim("name");
+    return user.getName();
   }
 
   public Set<Long> getMappingKeys() {

@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class OidcCamundaUserService implements CamundaUserService {
   private static final String SALES_PLAN_TYPE = "";
+
+  // TODO: This needs to be set for SaaS purposes
   private static final Map<AppName, String> C8_LINKS = Map.of();
 
   private Optional<CamundaOidcUser> getCamundaUser() {
