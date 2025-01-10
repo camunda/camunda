@@ -41,11 +41,16 @@ public class ExternalHomeServlet extends HttpServlet {
       filename = INDEX_FILE;
     }
 
-    final String resourcePath = webappPath + filename;
-    final InputStream fileStream = this.getClass().getResourceAsStream(resourcePath);
-    final String mimeType = getServletContext().getMimeType(resourcePath);
-    response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
-    StreamUtils.copy(fileStream, response.getOutputStream());
-    response.flushBuffer();
+    try {
+      final String resourcePath = webappPath + filename;
+      final InputStream fileStream = this.getClass().getResourceAsStream(resourcePath);
+      final String mimeType = getServletContext().getMimeType(resourcePath);
+      response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
+      StreamUtils.copy(fileStream, response.getOutputStream());
+      response.flushBuffer();
+    } catch (final Exception e) {
+      final String errorMessage = "Failed to load external resource: " + filename;
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 }
