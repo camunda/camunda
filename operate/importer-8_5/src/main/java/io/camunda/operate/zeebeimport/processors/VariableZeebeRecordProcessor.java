@@ -54,14 +54,6 @@ public class VariableZeebeRecordProcessor {
       final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    processVariableRecords(variablesGroupedByScopeKey, batchRequest, false);
-  }
-
-  public void processVariableRecords(
-      final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
-      throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
       final var scopedVariables = variableRecords.getValue();
