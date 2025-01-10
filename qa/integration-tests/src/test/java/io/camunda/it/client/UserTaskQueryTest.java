@@ -1076,14 +1076,13 @@ class UserTaskQueryTest {
   @Test
   void shouldRetrieveTaskByDueDateEquals() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
     final var dueDateExample = OffsetDateTime.parse(userTaskList.items().get(0).getDueDate());
 
     final var result =
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.dueDate(b -> b.eq(dueDateExample)))
-            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -1101,7 +1100,7 @@ class UserTaskQueryTest {
   @Test
   void shouldRetrieveTaskByFollowUpDateEquals() {
     // when
-    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var userTaskList = camundaClient.newUserTaskQuery().page(p -> p.limit(1)).send().join();
     final var followUpDateExample =
         OffsetDateTime.parse(userTaskList.items().get(0).getFollowUpDate());
 
@@ -1109,7 +1108,6 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.followUpDate(b -> b.eq(followUpDateExample)))
-            .page(p -> p.limit(1))
             .send()
             .join();
 
