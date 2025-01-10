@@ -7,23 +7,27 @@
  */
 package io.camunda.it.backup;
 
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.connect.configuration.DatabaseType;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
+/** interface to abstract Elasticsearch/Opensearch clients for testing purposes */
 public interface BackupDBClient extends AutoCloseable {
   void restore(String repositoryName, Collection<String> snapshots) throws IOException;
 
   void createRepository(String repositoryName) throws IOException;
 
-  static BackupDBClient create(
-      final TestStandaloneCamunda testStandaloneCamunda, final DatabaseType databaseType)
+  static BackupDBClient create(final String url, final DatabaseType databaseType)
       throws IOException {
     return switch (databaseType) {
-      case ELASTICSEARCH -> new ESDBClientBackup(testStandaloneCamunda);
-      case OPENSEARCH -> new OSDBClientBackup(testStandaloneCamunda);
+      case ELASTICSEARCH -> new ESDBClientBackup(url);
+      case OPENSEARCH -> new OSDBClientBackup(url);
       default -> throw new IllegalStateException("Unsupported database type: " + databaseType);
     };
   }
+
+  void deleteAllIndices(final String indexPrefix) throws IOException;
+
+  List<String> cat() throws IOException;
 }

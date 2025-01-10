@@ -93,6 +93,11 @@ public class MultiDbConfigurator {
     operateOpensearch.setIndexPrefix(indexPrefix);
     operateOpensearch.setPassword(userPassword);
     operateOpensearch.setUsername(userName);
+
+    final var zeebeOS = operateProperties.getZeebeOpensearch();
+    zeebeOS.setUrl(opensearchUrl);
+    zeebeOS.setPassword(userPassword);
+    zeebeOS.setUsername(userName);
     tasklistProperties.setDatabase("opensearch");
 
     final TasklistOpenSearchProperties tasklistOpensearch = tasklistProperties.getOpenSearch();
@@ -100,6 +105,12 @@ public class MultiDbConfigurator {
     tasklistOpensearch.setIndexPrefix(indexPrefix);
     tasklistOpensearch.setPassword(userPassword);
     tasklistOpensearch.setUsername(userName);
+
+    final var zeebeTasklistOS = tasklistProperties.getZeebeOpenSearch();
+    zeebeTasklistOS.setUrl(opensearchUrl);
+    zeebeTasklistOS.setPassword(userPassword);
+    zeebeTasklistOS.setUsername(userName);
+
     testApplication.withExporter(
         "CamundaExporter",
         cfg -> {
