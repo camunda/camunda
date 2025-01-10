@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/archive"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -39,6 +40,15 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 	return nil
 }
 
+func downloadGHArtifact(camundaVersion string, camundaFilePath string) error {
+	cmd := exec.Command("gh", "release", "download", "--repo", "camunda/camunda", camundaVersion, "-p", camundaFilePath)
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("downloadGHArtifact: failed to download artifact %w\n%s", err, debug.Stack())
+	}
+	return nil
+}
+
 func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string, camundaReleaseTag string, composeTag string) error {
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-windows-x86_64.zip"
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".zip"
@@ -56,6 +66,11 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("PackageWindows: failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
+	}
+
+	err = downloadGHArtifact(camundaVersion, camundaFilePath)
+	if err != nil {
+		return fmt.Errorf("PackageWindows: failed to download camunda with gh: %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, archive.UnzipSource)
@@ -121,6 +136,11 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	err := downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", archive.ExtractTarGzArchive)
 	if err != nil {
 		return fmt.Errorf("PackageUnix: failed to fetch elasticsearch %w\n%s", err, debug.Stack())
+	}
+
+	err = downloadGHArtifact(camundaVersion, camundaFilePath)
+	if err != nil {
+		return fmt.Errorf("PackageWindows: failed to download camunda with gh: %w\n%s", err, debug.Stack())
 	}
 
 	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, authToken, archive.ExtractTarGzArchive)
