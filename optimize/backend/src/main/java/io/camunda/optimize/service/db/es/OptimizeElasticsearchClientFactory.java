@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.es;
 
-import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkESVersionSupport;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -112,7 +111,6 @@ public final class OptimizeElasticsearchClientFactory {
         }
       }
     }
-    checkESVersionSupport(esClient, requestOptions);
   }
 
   private static int getNumberOfClusterNodes(
