@@ -8,7 +8,7 @@
 package io.camunda.optimize.rest.providers;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import jakarta.ws.rs.ServiceUnavailableException;
+import io.camunda.optimize.rest.exceptions.ServiceUnavailableException;
 import org.slf4j.Logger;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
