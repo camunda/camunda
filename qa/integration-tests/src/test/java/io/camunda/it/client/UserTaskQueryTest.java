@@ -1083,6 +1083,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.dueDate(b -> b.eq(dueDateExample)))
+            .page(p -> p.limit(1))
             .send()
             .join();
 
@@ -1108,6 +1109,7 @@ class UserTaskQueryTest {
         camundaClient
             .newUserTaskQuery()
             .filter(f -> f.followUpDate(b -> b.eq(followUpDateExample)))
+            .page(p -> p.limit(1))
             .send()
             .join();
 

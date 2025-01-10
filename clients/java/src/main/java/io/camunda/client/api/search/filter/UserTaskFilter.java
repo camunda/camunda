@@ -224,7 +224,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
   /**
    * Filters user tasks by the specified follow-up date.
    *
-   * @param followUpDate the creation date of the user task
+   * @param followUpDate the follow-up date of the user task
    * @return the updated filter
    */
   UserTaskFilter followUpDate(final OffsetDateTime followUpDate);
@@ -232,7 +232,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
   /**
    * Filters user tasks by the specified {@link DateTimeProperty} follow-up date.
    *
-   * @param followUpDate the creation date of the user task
+   * @param followUpDate the follow-up date of the user task
    * @return the updated filter
    */
   UserTaskFilter followUpDate(final Consumer<DateTimeProperty> followUpDate);
@@ -240,7 +240,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
   /**
    * Filters user tasks by the specified due date.
    *
-   * @param dueDate the creation date of the user task
+   * @param dueDate the due date of the user task
    * @return the updated filter
    */
   UserTaskFilter dueDate(final OffsetDateTime dueDate);
@@ -248,7 +248,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
   /**
    * Filters user tasks by the specified {@link DateTimeProperty} due date.
    *
-   * @param dueDate the creation date of the user task
+   * @param dueDate the due date of the user task
    * @return the updated filter
    */
   UserTaskFilter dueDate(final Consumer<DateTimeProperty> dueDate);

@@ -4177,7 +4177,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         followUpDate:
-          description: The user task follow up date.
+          description: The user task follow-up date.
           allOf:
               - $ref: "#/components/schemas/DateTimeFilterProperty"
         dueDate:
