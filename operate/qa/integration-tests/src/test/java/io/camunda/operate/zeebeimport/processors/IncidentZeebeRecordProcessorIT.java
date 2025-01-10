@@ -190,7 +190,7 @@ public class IncidentZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   private void importIncidentZeebeRecord(final Record<IncidentRecordValue> zeebeRecord)
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
-    incidentZeebeRecordProcessor.processIncidentRecord(List.of(zeebeRecord), batchRequest, true);
+    incidentZeebeRecordProcessor.processIncidentRecord(List.of(zeebeRecord), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(incidentTemplate.getFullQualifiedName());
   }

@@ -325,7 +325,7 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
                     .withElementInstanceKey(event.getFlowNodeInstanceKey())
                     .withMessageName(messageName)
                     .withCorrelationKey(correlationKey));
-    importProcessMessageSubscriptionZeebeRecord(zeebeRecord, true);
+    importProcessMessageSubscriptionZeebeRecord(zeebeRecord);
 
     // then
     // event fields are updated
@@ -365,7 +365,7 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
                     .withElementInstanceKey(event.getFlowNodeInstanceKey())
                     .withMessageName(messageName)
                     .withCorrelationKey(correlationKey));
-    importProcessMessageSubscriptionZeebeRecord(zeebeRecord, true);
+    importProcessMessageSubscriptionZeebeRecord(zeebeRecord);
 
     // then
     // event fields are updated
@@ -406,7 +406,7 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
                     .withElementInstanceKey(event.getFlowNodeInstanceKey())
                     .withMessageName(messageName)
                     .withCorrelationKey(correlationKey));
-    importProcessMessageSubscriptionZeebeRecord(zeebeRecord, true);
+    importProcessMessageSubscriptionZeebeRecord(zeebeRecord);
 
     // then
     // event fields are updated
@@ -613,9 +613,7 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processIncidentRecords(
-        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)),
-        batchRequest,
-        true);
+        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
@@ -624,26 +622,16 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processJobRecords(
-        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)),
-        batchRequest,
-        true);
+        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
 
   private void importProcessMessageSubscriptionZeebeRecord(
       final Record<ProcessMessageSubscriptionRecordValue> zeebeRecord) throws PersistenceException {
-    importProcessMessageSubscriptionZeebeRecord(zeebeRecord, false);
-  }
-
-  private void importProcessMessageSubscriptionZeebeRecord(
-      final Record<ProcessMessageSubscriptionRecordValue> zeebeRecord, boolean useConcurrencyMode)
-      throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processProcessMessageSubscription(
-        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)),
-        batchRequest,
-        useConcurrencyMode);
+        Map.of(zeebeRecord.getValue().getElementInstanceKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }
@@ -652,7 +640,7 @@ public class EventZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       final Record<ProcessInstanceRecordValue> zeebeRecord) throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     eventZeebeRecordProcessor.processProcessInstanceRecords(
-        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
+        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(eventTemplate.getFullQualifiedName());
   }

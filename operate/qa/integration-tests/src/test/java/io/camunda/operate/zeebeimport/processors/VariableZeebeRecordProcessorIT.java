@@ -156,7 +156,7 @@ public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     variableZeebeRecordProcessor.processVariableRecords(
-        Map.of(zeebeRecord.getValue().getScopeKey(), List.of(zeebeRecord)), batchRequest, true);
+        Map.of(zeebeRecord.getValue().getScopeKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(variableTemplate.getFullQualifiedName());
   }
