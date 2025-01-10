@@ -30,12 +30,9 @@ public class ListViewFlowNodeFromIncidentHandler
       LoggerFactory.getLogger(ListViewFlowNodeFromIncidentHandler.class);
 
   private final String indexName;
-  private final boolean concurrencyMode;
 
-  public ListViewFlowNodeFromIncidentHandler(
-      final String indexName, final boolean concurrencyMode) {
+  public ListViewFlowNodeFromIncidentHandler(final String indexName) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
   }
 
   @Override
@@ -101,18 +98,9 @@ public class ListViewFlowNodeFromIncidentHandler
     updateFields.put(INCIDENT_POSITION, entity.getPositionIncident());
 
     final Long processInstanceKey = entity.getProcessInstanceKey();
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          indexName,
-          entity.getId(),
-          entity,
-          getIncidentScript(),
-          updateFields,
-          String.valueOf(processInstanceKey));
-    } else {
-      batchRequest.upsertWithRouting(
-          indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
-    }
+
+    batchRequest.upsertWithRouting(
+        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override
@@ -122,20 +110,5 @@ public class ListViewFlowNodeFromIncidentHandler
 
   public String trimWhitespace(final String str) {
     return (str == null) ? null : str.strip();
-  }
-
-  protected String getIncidentScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "ctx._source.%s = params.%s; " // error message
-            + "}",
-        INCIDENT_POSITION,
-        INCIDENT_POSITION,
-        INCIDENT_POSITION,
-        INCIDENT_POSITION,
-        INCIDENT_POSITION,
-        ERROR_MSG,
-        ERROR_MSG);
   }
 }
