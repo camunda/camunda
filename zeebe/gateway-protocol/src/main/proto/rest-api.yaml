@@ -4176,6 +4176,14 @@ components:
           description: The user task completion date.
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
+        followUpDate:
+          description: The user task follow-up date.
+          allOf:
+              - $ref: "#/components/schemas/DateTimeFilterProperty"
+        dueDate:
+            description: The user task due date.
+            allOf:
+                - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
           description: Process Instance variables associated with the user task.

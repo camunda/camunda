@@ -388,4 +388,114 @@ public final class SearchUserTaskTest extends ClientRestTest {
     assertThat(request.getFilter().getCompletionDate().get$Lt()).isNotNull();
     assertThat(request.getFilter().getCompletionDate().get$Gt()).isNotNull();
   }
+
+  @Test
+  void shouldReturnUserTaskByDueDateExists() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.exists(true))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateGt() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.gt(OffsetDateTime.now()))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateLt() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.lt(OffsetDateTime.now()))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateGteLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(
+            f -> f.dueDate(b -> b.gte(OffsetDateTime.now().minusDays(5)).lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getDueDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateExists() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.followUpDate(b -> b.exists(true))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateGt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.followUpDate(b -> b.gt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateLt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.followUpDate(b -> b.lt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateGteLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(
+            f ->
+                f.followUpDate(
+                    b -> b.gte(OffsetDateTime.now().minusDays(10)).lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getFollowUpDate().get$Lte()).isNotNull();
+  }
 }
