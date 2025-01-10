@@ -32,6 +32,7 @@ test.beforeAll(async ({request}) => {
               const response = await request.get(
                 `${config.endpoint}/v1/process-instances/${instance.processInstanceKey}`,
               );
+              console.log(response);
               return response.status();
             },
             {timeout: SETUP_WAITING_TIME},

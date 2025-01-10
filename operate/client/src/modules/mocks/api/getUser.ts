@@ -9,6 +9,6 @@
 import {UserDto} from 'modules/api/getUser';
 import {mockGetRequest} from './mockRequest';
 
-const mockGetUser = () => mockGetRequest<UserDto>('/api/authentications/user');
+const mockGetUser = () => mockGetRequest<UserDto>('/v2/authentication/me');
 
 export {mockGetUser};

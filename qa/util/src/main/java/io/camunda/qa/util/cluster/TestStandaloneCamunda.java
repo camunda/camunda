@@ -67,6 +67,10 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   private final Map<String, Consumer<ExporterCfg>> registeredExporters = new HashMap<>();
 
   public TestStandaloneCamunda() {
+    this(false);
+  }
+
+  public TestStandaloneCamunda(final boolean withBasicAuth) {
     super(
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
@@ -117,8 +121,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalProfile(Profile.AUTH_BASIC)
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
+
+    if (withBasicAuth) {
+      withAdditionalProfile(Profile.AUTH_BASIC);
+    }
 
     // default exporters
     withRecordingExporter(true).withCamundaExporter();

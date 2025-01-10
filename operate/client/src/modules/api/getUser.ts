@@ -39,7 +39,7 @@ type UserDto = {
 };
 
 const getUser = async (options: Parameters<typeof requestAndParse>[1]) => {
-  return requestAndParse<UserDto>({url: '/api/authentications/user'}, options);
+  return requestAndParse<UserDto>({url: '/v2/authentication/me'}, options);
 };
 
 export {getUser};

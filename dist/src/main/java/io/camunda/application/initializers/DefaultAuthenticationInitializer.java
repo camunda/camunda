@@ -24,7 +24,7 @@ public class DefaultAuthenticationInitializer
     final var env = context.getEnvironment();
     final var activeProfiles = Set.of(env.getActiveProfiles());
     if (shouldApplyDefaultAuthenticationProfile(activeProfiles)) {
-      env.addActiveProfile(Profile.AUTH_BASIC.getId());
+      env.addActiveProfile(Profile.AUTH_NONE.getId());
     }
   }
 

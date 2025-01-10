@@ -98,6 +98,14 @@ public class WebSecurityConfig {
   }
 
   @Bean
+  @Profile("auth-none")
+  public SecurityFilterChain unprotectedHttpSecurity(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    return baseHttpSecurity(httpSecurity, authFailureHandler).build();
+  }
+
+  @Bean
   @Primary
   @Profile("auth-oidc")
   public SecurityFilterChain oidcHttpSecurity(
