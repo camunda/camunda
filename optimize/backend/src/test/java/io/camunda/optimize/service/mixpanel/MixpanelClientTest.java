@@ -28,8 +28,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilde
 import io.camunda.optimize.service.util.configuration.analytics.MixpanelConfiguration;
 import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,6 +47,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @ExtendWith(MockitoExtension.class)
 public class MixpanelClientTest {
@@ -108,7 +108,7 @@ public class MixpanelClientTest {
         .isEqualTo("strict=1&project_id=" + getMixpanelConfiguration().getProjectId());
     assertThat(requestCaptor.getValue().getMethod()).isEqualTo(HttpMethod.POST);
     assertThat(requestCaptor.getValue().getFirstHeader(HttpHeaders.CONTENT_TYPE).getValue())
-        .isEqualTo(MediaType.APPLICATION_JSON);
+        .isEqualTo(MediaType.APPLICATION_JSON_VALUE);
     assertThat(requestCaptor.getValue().getFirstHeader(HttpHeaders.AUTHORIZATION).getValue())
         .satisfies(
             authHeaderValue -> {

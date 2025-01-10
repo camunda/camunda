@@ -11,9 +11,10 @@ import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.Response;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
 
 public abstract class AbstractAuthenticationService {
 
@@ -26,15 +27,15 @@ public abstract class AbstractAuthenticationService {
     this.authCookieService = authCookieService;
   }
 
-  public abstract Response authenticateUser(
-      @Context ContainerRequestContext requestContext, CredentialsRequestDto credentials);
+  public abstract void authenticateUser(CredentialsRequestDto credentials);
 
-  public abstract Response loginCallback(
-      @Context ContainerRequestContext requestContext, AuthCodeDto authCode);
+  public abstract void loginCallback(
+      final AuthCodeDto authCode, final URI uri, final HttpServletResponse response)
+      throws IOException;
 
-  public abstract Response logout(@Context ContainerRequestContext requestContext);
+  public abstract void logout(final Cookie[] cookies, final HttpServletResponse response);
 
-  public Response testAuthentication() {
-    return Response.status(Response.Status.OK).entity("OK").build();
+  public String testAuthentication() {
+    return "OK";
   }
 }

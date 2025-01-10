@@ -16,6 +16,7 @@ import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.optimize.OptimizeModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -29,7 +30,12 @@ public class StandaloneCamunda {
 
   private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
   private static final String DEFAULT_CAMUNDA_PROFILES =
-      String.join(",", Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.BROKER.getId());
+      String.join(
+          ",",
+          Profile.OPERATE.getId(),
+          Profile.OPTIMIZE.getId(),
+          Profile.TASKLIST.getId(),
+          Profile.BROKER.getId());
 
   public static void main(final String[] args) {
     MainSupport.setDefaultGlobalConfiguration();
@@ -42,6 +48,7 @@ public class StandaloneCamunda {
             .sources(
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
+                OptimizeModuleConfiguration.class,
                 TasklistModuleConfiguration.class,
                 IdentityModuleConfiguration.class,
                 WebappsModuleConfiguration.class,

@@ -11,13 +11,12 @@ import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ParamException;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
@@ -29,13 +28,13 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
   private final LocalizationService localizationService;
 
-  public GenericExceptionMapper(@Context final LocalizationService localizationService) {
+  public GenericExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
   private Response buildGenericErrorResponse(final Throwable e) {
     return Response.status(getStatusForError(e))
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(getErrorResponseDto(e))
         .build();
   }

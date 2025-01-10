@@ -60,7 +60,7 @@ public enum Profile {
   }
 
   public static Set<Profile> getWebappProfiles() {
-    return Set.of(TASKLIST, IDENTITY, OPERATE);
+    return Set.of(TASKLIST, IDENTITY, OPERATE, OPTIMIZE);
   }
 
   @Override

@@ -29,7 +29,6 @@ import java.util.Date;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
@@ -47,15 +46,15 @@ public class ObjectMapperFactory {
   private final ConfigurationService configurationService;
 
   public ObjectMapperFactory(
-      final DateTimeFormatter optimizeDateTimeFormatter,
+      @Qualifier("io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory")
+          final DateTimeFormatter optimizeDateTimeFormatter,
       final ConfigurationService configurationService) {
     this.optimizeDateTimeFormatter = optimizeDateTimeFormatter;
     this.configurationService = configurationService;
   }
 
-  @Qualifier("optimizeMapper")
+  @Qualifier("optimizeObjectMapper")
   @Bean
-  @Primary
   public ObjectMapper createOptimizeMapper() {
     return buildObjectMapper(optimizeDateTimeFormatter, true);
   }

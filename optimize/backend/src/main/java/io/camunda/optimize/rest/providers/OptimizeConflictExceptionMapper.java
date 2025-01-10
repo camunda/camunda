@@ -10,12 +10,11 @@ package io.camunda.optimize.rest.providers;
 import io.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 import org.slf4j.Logger;
+import org.springframework.http.MediaType;
 
 @Provider
 public class OptimizeConflictExceptionMapper implements ExceptionMapper<OptimizeConflictException> {
@@ -24,7 +23,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
       org.slf4j.LoggerFactory.getLogger(OptimizeConflictExceptionMapper.class);
   private final LocalizationService localizationService;
 
-  public OptimizeConflictExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeConflictExceptionMapper(final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -33,7 +32,7 @@ public class OptimizeConflictExceptionMapper implements ExceptionMapper<Optimize
     LOG.info("Mapping OptimizeConflictException");
 
     return Response.status(Response.Status.CONFLICT)
-        .type(MediaType.APPLICATION_JSON_TYPE)
+        .type(MediaType.APPLICATION_JSON_VALUE)
         .entity(getConflictResponseDto(conflictException))
         .build();
   }
