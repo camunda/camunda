@@ -197,8 +197,9 @@ func main() {
 	baseDir, _ := os.Getwd()
 	parentDir := baseDir
 	elasticsearchVersion := "8.13.4"
-	camundaVersion := "8.7.0-alpha2"
-	connectorsVersion := "8.7.0-alpha2"
+	camundaReleaseTag := "untagged-6aae82d948631897ab68"
+	camundaVersion := "8.7.0-alpha3-rc5"
+	connectorsVersion := "8.7.0-alpha3.1"
 	composeTag := "8.7-alpha2"
 	composeExtractedFolder := "camunda-platform-8.7-alpha2"
 
@@ -477,13 +478,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)

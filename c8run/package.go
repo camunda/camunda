@@ -39,11 +39,11 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 	return nil
 }
 
-func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
+func PackageWindows(camundaVersion string, elasticsearchVersion string, connectorsVersion string, camundaReleaseTag string, composeTag string) error {
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-windows-x86_64.zip"
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".zip"
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".zip"
-	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaVersion + "/" + camundaFilePath
+	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaReleaseTag + "/" + camundaFilePath
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + ".zip"
@@ -96,7 +96,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string, connecto
 	return nil
 }
 
-func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
+func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsVersion string, camundaReleaseTag string, composeTag string) error {
 	var architecture string
 	if runtime.GOARCH == "amd64" {
 		architecture = "x86_64"
@@ -107,7 +107,7 @@ func PackageUnix(camundaVersion string, elasticsearchVersion string, connectorsV
 	elasticsearchUrl := "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-" + elasticsearchVersion + "-" + runtime.GOOS + "-" + architecture + ".tar.gz"
 	elasticsearchFilePath := "elasticsearch-" + elasticsearchVersion + ".tar.gz"
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".tar.gz"
-	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaVersion + "/" + camundaFilePath
+	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaReleaseTag + "/" + camundaFilePath
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 
