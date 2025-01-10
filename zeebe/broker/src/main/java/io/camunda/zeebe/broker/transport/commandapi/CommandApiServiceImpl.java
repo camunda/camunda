@@ -66,7 +66,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   protected void onActorClosing() {
     for (final Integer leadPartition : leadPartitions) {
-      unregisterHandlers(leadPartition);
+      unregisterHandlersActorless(leadPartition);
     }
     leadPartitions.clear();
     actor.runOnCompletion(
@@ -135,14 +135,15 @@ public final class CommandApiServiceImpl extends Actor
 
   @Override
   public ActorFuture<Void> unregisterHandlers(final int partitionId) {
-    return actor.call(
-        () -> {
-          commandHandler.removePartition(partitionId);
-          queryHandler.removePartition(partitionId);
-          leadPartitions.remove(partitionId);
-          serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
-          serverTransport.unsubscribe(partitionId, RequestType.QUERY);
-        });
+    return actor.call(() -> unregisterHandlersActorless(partitionId));
+  }
+
+  private void unregisterHandlersActorless(final int partitionId) {
+    commandHandler.removePartition(partitionId);
+    queryHandler.removePartition(partitionId);
+    leadPartitions.remove(partitionId);
+    serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
+    serverTransport.unsubscribe(partitionId, RequestType.QUERY);
   }
 
   @Override

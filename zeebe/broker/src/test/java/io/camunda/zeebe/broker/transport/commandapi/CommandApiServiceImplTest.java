@@ -16,6 +16,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
@@ -25,8 +26,10 @@ import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -36,6 +39,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,20 +48,29 @@ public class CommandApiServiceImplTest {
   @Mock private ServerTransport serverTransport;
   @Mock private QueryApiCfg queryApi;
   private CommandApiServiceImpl commandApiService;
-  @Mock private PartitionTransitionContext transitionContext;
-  @Mock private LogStream logStream;
+
+  @Mock(strictness = Strictness.LENIENT)
+  private PartitionTransitionContext transitionContext;
+
+  @Mock(strictness = Strictness.LENIENT)
+  private LogStream logStream;
 
   @RegisterExtension
-  private ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
+  private final ControlledActorSchedulerExtension scheduler =
+      new ControlledActorSchedulerExtension();
 
   @BeforeEach
   public void setup() {
-    final ConcurrencyControl cc = mock();
+    final ConcurrencyControl cc =
+        mock(
+            ConcurrencyControl.class,
+            withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
     when(cc.createCompletedFuture()).thenReturn(CompletableActorFuture.completed(null));
 
     final RequestLimiter<Intent> requestLimiter = mock();
 
-    final PartitionAwareRequestLimiter limiter = mock();
+    final PartitionAwareRequestLimiter limiter =
+        mock(withSettings().strictness(org.mockito.quality.Strictness.LENIENT));
     when(limiter.getLimiter(anyInt())).thenReturn(requestLimiter);
 
     commandApiService =
@@ -114,5 +127,66 @@ public class CommandApiServiceImplTest {
     transitionFollowerFuture.join();
     verify(serverTransport, never()).unsubscribe(eq(1), eq(RequestType.QUERY));
     verify(serverTransport, never()).unsubscribe(eq(1), eq(RequestType.COMMAND));
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/25897")
+  public void shouldUnsubscribeTwiceWhenTransitioningFromFollowerToInactive() {
+    // given
+    when(transitionContext.getPartitionId()).thenReturn(1);
+    final var transitionStep = new CommandApiServiceTransitionStep();
+    final var prepareFollowerFuture =
+        transitionStep.prepareTransition(transitionContext, 1, Role.FOLLOWER);
+    scheduler.workUntilDone();
+    prepareFollowerFuture.join();
+
+    // when - transitions to FOLLOWER
+    final var transitionFollowerFuture =
+        transitionStep.transitionTo(transitionContext, 1, Role.FOLLOWER);
+    scheduler.workUntilDone();
+    transitionFollowerFuture.join();
+
+    // then - subscriptions are cleaned up
+    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.QUERY));
+    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.COMMAND));
+
+    clearInvocations(serverTransport);
+    final var unregisterFuture =
+        transitionStep.prepareTransition(transitionContext, 2, Role.INACTIVE);
+    scheduler.workUntilDone();
+    unregisterFuture.join();
+
+    // when - transitions to INACTIVE
+    final var transitionInactiveFuture =
+        transitionStep.transitionTo(transitionContext, 2, Role.INACTIVE);
+    scheduler.workUntilDone();
+    transitionInactiveFuture.join();
+
+    // then - subscriptions are cleaned up
+    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.QUERY));
+    verify(serverTransport, times(1)).unsubscribe(eq(1), eq(RequestType.COMMAND));
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/25897")
+  public void shouldUnsubscribeOnActorClosing() {
+    // given
+    when(logStream.newLogStreamWriter()).thenReturn(CompletableActorFuture.completed(mock()));
+    when(transitionContext.getQueryService()).thenReturn(mock());
+
+    final var registerFuture =
+        commandApiService.registerHandlers(1, logStream, transitionContext.getQueryService());
+    scheduler.workUntilDone();
+
+    verify(serverTransport).subscribe(eq(1), eq(RequestType.QUERY), any());
+    registerFuture.join();
+    verify(serverTransport).subscribe(eq(1), eq(RequestType.COMMAND), any());
+
+    // when - closing the actor
+    final ActorFuture<Void> closeFuture = commandApiService.closeAsync();
+    scheduler.workUntilDone();
+    closeFuture.join(10, TimeUnit.SECONDS);
+
+    // then - subscriptions are cleaned up
+    verify(serverTransport).unsubscribe(eq(1), eq(RequestType.QUERY));
+    verify(serverTransport).unsubscribe(eq(1), eq(RequestType.COMMAND));
   }
 }
