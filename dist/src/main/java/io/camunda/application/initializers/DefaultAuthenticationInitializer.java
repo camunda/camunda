@@ -7,7 +7,6 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.application.Profile.DEFAULT_AUTH_PROFILE;
 import static io.camunda.application.Profile.getAuthProfiles;
 import static io.camunda.application.Profile.getWebappProfiles;
 
@@ -25,7 +24,7 @@ public class DefaultAuthenticationInitializer
     final var env = context.getEnvironment();
     final var activeProfiles = Set.of(env.getActiveProfiles());
     if (shouldApplyDefaultAuthenticationProfile(activeProfiles)) {
-      env.addActiveProfile(DEFAULT_AUTH_PROFILE.getId());
+      env.addActiveProfile(Profile.AUTH_BASIC.getId());
     }
   }
 
