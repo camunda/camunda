@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.upgrade.db;
 
+import io.camunda.optimize.rest.exceptions.NotSupportedException;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -25,7 +26,6 @@ import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import io.camunda.optimize.upgrade.es.SchemaUpgradeClientES;
 import io.camunda.optimize.upgrade.os.SchemaUpgradeClientOS;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
-import jakarta.ws.rs.NotSupportedException;
 
 public final class SchemaUpgradeClientFactory {
 
