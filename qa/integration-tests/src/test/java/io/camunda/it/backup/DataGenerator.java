@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -60,8 +61,12 @@ public class DataGenerator implements AutoCloseable {
   }
 
   public void verifyAllExported() {
+    verifyAllExported(30);
+  }
+
+  public void verifyAllExported(final int timeoutSeconds) {
     Awaitility.await("until all processes have been exported")
-        .atMost(Duration.ofSeconds(3000))
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<ProcessInstance>> response =
@@ -70,11 +75,11 @@ public class DataGenerator implements AutoCloseable {
                       .filter(
                           b ->
                               b.processInstanceKey(p -> p.in(instancekeys.stream().toList()))
-                                  .state("COMPLETED"))
+                                  .state(ProcessInstanceState.COMPLETED))
                       .page(b -> b.limit(instancekeys.size()).from(0))
                       .send();
               assertThat(response)
-                  .succeedsWithin(Duration.ofSeconds(30))
+                  .succeedsWithin(Duration.ofSeconds(timeoutSeconds))
                   .extracting(SearchQueryResponse::items)
                   .asInstanceOf(InstanceOfAssertFactories.LIST)
                   .hasSameSizeAs(instancekeys);
