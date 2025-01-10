@@ -41,8 +41,13 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 }
 
 func downloadGHArtifact(camundaVersion string, camundaFilePath string) error {
+        _, err := exec.LookPath("gh")
+        if err != nil {
+                // This is not an error because there is another way to download camunda releases
+                return nil
+        }
 	cmd := exec.Command("gh", "release", "download", "--repo", "camunda/camunda", camundaVersion, "-p", camundaFilePath)
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return fmt.Errorf("downloadGHArtifact: failed to download artifact %w\n%s", err, debug.Stack())
 	}
