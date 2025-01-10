@@ -36,6 +36,8 @@ public record UserTaskFilter(
     List<Long> elementInstanceKeys,
     List<Operation<OffsetDateTime>> creationDateOperations,
     List<Operation<OffsetDateTime>> completionDateOperations,
+    List<Operation<OffsetDateTime>> followUpDateOperations,
+    List<Operation<OffsetDateTime>> dueDateOperations,
     String type)
     implements FilterBase {
 
@@ -56,6 +58,8 @@ public record UserTaskFilter(
     private List<Long> elementInstanceKeys;
     private List<Operation<OffsetDateTime>> creationDateOperations;
     private List<Operation<OffsetDateTime>> completionDateOperations;
+    private List<Operation<OffsetDateTime>> followUpDateOperations;
+    private List<Operation<OffsetDateTime>> dueDateOperations;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
@@ -222,6 +226,29 @@ public record UserTaskFilter(
       return completionDateOperations(collectValues(operation, operations));
     }
 
+    public Builder followUpDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      followUpDateOperations = addValuesToList(followUpDateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder followUpDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return followUpDateOperations(collectValues(operation, operations));
+    }
+
+    // add builder for dueDate
+    public Builder dueDateOperations(final List<Operation<OffsetDateTime>> operations) {
+      dueDateOperations = addValuesToList(dueDateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder dueDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return dueDateOperations(collectValues(operation, operations));
+    }
+
     public Builder type(final String value) {
       type = value;
       return this;
@@ -246,6 +273,8 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(creationDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(completionDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(followUpDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(dueDateOperations, Collections.emptyList()),
           type);
     }
   }

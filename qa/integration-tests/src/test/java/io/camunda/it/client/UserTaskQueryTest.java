@@ -1050,6 +1050,101 @@ class UserTaskQueryTest {
         .isEqualTo(thirdKey);
   }
 
+  @Test
+  void shouldRetrieveTaskByDueDateRange() {
+    // when
+    final var now = OffsetDateTime.now(ZoneId.of("UTC"));
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.dueDate(b -> b.gt(now.minusDays(2)).lt(now.plusDays(2))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var dueDate = OffsetDateTime.parse(item.getDueDate());
+              assertThat(dueDate).isAfter(now.minusDays(2));
+              assertThat(dueDate).isBefore(now.plusDays(2));
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByDueDateEquals() {
+    // when
+    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var dueDateExample = OffsetDateTime.parse(userTaskList.items().get(0).getDueDate());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.dueDate(b -> b.eq(dueDateExample)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var dueDate = OffsetDateTime.parse(item.getDueDate());
+              assertThat(dueDate).isEqualTo(dueDateExample);
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByFollowUpDateEquals() {
+    // when
+    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+    final var followUpDateExample =
+        OffsetDateTime.parse(userTaskList.items().get(0).getFollowUpDate());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.followUpDate(b -> b.eq(followUpDateExample)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var followUpDate = OffsetDateTime.parse(item.getFollowUpDate());
+              assertThat(followUpDate).isEqualTo(followUpDateExample);
+            });
+  }
+
+  @Test
+  void shouldRetrieveTaskByFollowUpDateRange() {
+    // when
+    final var now = OffsetDateTime.now(ZoneId.of("UTC"));
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.followUpDate(b -> b.gte(now.minusDays(5)).lte(now.plusDays(5))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isGreaterThan(0);
+    result
+        .items()
+        .forEach(
+            item -> {
+              final var followUpDate = OffsetDateTime.parse(item.getFollowUpDate());
+              assertThat(followUpDate).isAfterOrEqualTo(now.minusDays(5));
+              assertThat(followUpDate).isBeforeOrEqualTo(now.plusDays(5));
+            });
+  }
+
   private static void deployProcess(
       final String processId,
       final String resourceName,

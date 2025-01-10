@@ -220,4 +220,36 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter completionDate(final Consumer<DateTimeProperty> completionDate);
+
+  /**
+   * Filters user tasks by the specified follow-up date.
+   *
+   * @param followUpDate the creation date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter followUpDate(final OffsetDateTime followUpDate);
+
+  /**
+   * Filters user tasks by the specified {@link DateTimeProperty} follow-up date.
+   *
+   * @param followUpDate the creation date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter followUpDate(final Consumer<DateTimeProperty> followUpDate);
+
+  /**
+   * Filters user tasks by the specified due date.
+   *
+   * @param dueDate the creation date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter dueDate(final OffsetDateTime dueDate);
+
+  /**
+   * Filters user tasks by the specified {@link DateTimeProperty} due date.
+   *
+   * @param dueDate the creation date of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter dueDate(final Consumer<DateTimeProperty> dueDate);
 }
