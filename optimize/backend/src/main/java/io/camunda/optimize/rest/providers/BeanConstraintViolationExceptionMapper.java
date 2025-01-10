@@ -12,25 +12,26 @@ import io.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ExceptionMapper;
-import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@Provider
-public class BeanConstraintViolationExceptionHandler
-    implements ExceptionMapper<ConstraintViolationException> {
+@ControllerAdvice
+public class BeanConstraintViolationExceptionMapper {
 
   public static final String THE_REQUEST_BODY_WAS_INVALID = "The request body was invalid.";
   private static final Pattern ARG_PATTERN = Pattern.compile("arg\\d");
 
-  @Override
-  public Response toResponse(final ConstraintViolationException throwable) {
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ResponseEntity<ValidationErrorResponseDto> handleConstraintViolationException(
+      final ConstraintViolationException throwable) {
     final List<ValidationErrorResponseDto.ValidationError> validationErrors =
         throwable.getConstraintViolations().stream()
             .map(
@@ -38,10 +39,9 @@ public class BeanConstraintViolationExceptionHandler
                     new ValidationErrorResponseDto.ValidationError(
                         extractPropertyName(constraintViolation), constraintViolation.getMessage()))
             .collect(Collectors.toList());
-    return Response.status(Response.Status.BAD_REQUEST)
-        .type(MediaType.APPLICATION_JSON_VALUE)
-        .entity(new ValidationErrorResponseDto(THE_REQUEST_BODY_WAS_INVALID, validationErrors))
-        .build();
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(new ValidationErrorResponseDto(THE_REQUEST_BODY_WAS_INVALID, validationErrors));
   }
 
   private String extractPropertyName(final ConstraintViolation<?> constraintViolation) {
