@@ -117,6 +117,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
+        .withAdditionalProfile(Profile.AUTH_BASIC)
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
 
     // default exporters
