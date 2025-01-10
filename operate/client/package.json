@@ -85,7 +85,7 @@
     "eslint-plugin-license-header": "^0.6.0",
     "eslint-plugin-prettier": "5.2.1",
     "event-source-polyfill": "1.0.31",
-    "glob": "11.0.0",
+    "glob": "11.0.1",
     "http-proxy-middleware": "3.0.3",
     "husky": "9.1.7",
     "jest-styled-components": "7.2.0",

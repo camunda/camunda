@@ -2890,7 +2890,7 @@ __metadata:
     license-checker: "npm:25.0.1"
     prettier: "npm:3.3.3"
     react: "npm:18.3.1"
-    react-debounced: "npm:1.1.2"
+    react-debounced: "npm:1.1.3"
     react-dom: "npm:18.3.1"
     react-i18next: "npm:15.0.3"
     react-router: "npm:6.26.2"
@@ -4305,13 +4305,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-debounced@npm:1.1.2":
-  version: 1.1.2
-  resolution: "react-debounced@npm:1.1.2"
+"react-debounced@npm:1.1.3":
+  version: 1.1.3
+  resolution: "react-debounced@npm:1.1.3"
   peerDependencies:
-    react: ^16.8.3 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.8.3 || ^17.0.0 || ^18.0.0
-  checksum: 10c0/92669a33db65817286a3a6b4c1e033ca86bda68370a5161354c863f0db17f52eeaae9b1427e91265b5e9f39126e1295b0ac13f1084b1d3f5b26378ffc365220e
+    react: ^16.8.3 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^16.8.3 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/9dcd359ea57a01c4e9d1468325affcf602f4b9ebb9de9d78173c0bc893e5096edaa33b4271ab1514454d0e86ab10c877f317787b299057fd8420ee95218a8f15
   languageName: node
   linkType: hard
 
