@@ -9,7 +9,6 @@ package io.camunda.optimize.service.importing;
 
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
 import io.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -50,7 +49,6 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
 
   @Autowired private Environment environment;
 
-  @SuppressFBWarnings(value = "IS2_INCONSISTENT_SYNC", justification = "False positives")
   private List<AbstractImportScheduler<? extends SchedulerConfig>> importSchedulers =
       new ArrayList<>();
 

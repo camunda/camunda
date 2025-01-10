@@ -11,18 +11,18 @@ import static io.camunda.optimize.AbstractCCSMIT.isZeebeVersionPre85;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_ELASTICSEARCH_EXPORTER;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_OPENSEARCH_EXPORTER;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.client.api.command.DeployResourceCommandStep1;
-import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.response.Process;
-import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobHandler;
-import io.camunda.client.api.worker.JobWorker;
 import io.camunda.optimize.service.util.IdGenerator;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.importing.ZeebeConstants;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ZeebeExtension.class);
 
   private ZeebeContainer zeebeContainer;
-  private CamundaClient camundaClient;
+  private ZeebeClient camundaClient;
 
   private String zeebeRecordPrefix;
 
@@ -99,14 +99,14 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
   public void createClient() {
     if (isZeebeVersionPre85()) {
       camundaClient =
-          CamundaClient.newClientBuilder()
+          ZeebeClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
               .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
               .usePlaintext()
               .build();
     } else {
       camundaClient =
-          CamundaClient.newClientBuilder()
+          ZeebeClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
               .grpcAddress(
                   URI.create(
