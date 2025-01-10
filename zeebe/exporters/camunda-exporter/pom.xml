@@ -53,6 +53,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>co.elastic.clients</groupId>
+          <artifactId>elasticsearch-java</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

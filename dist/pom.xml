@@ -15,6 +15,16 @@
 
   <name>Zeebe Distribution</name>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>co.elastic.clients</groupId>
+        <artifactId>elasticsearch-java</artifactId>
+        <version>8.14.2</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
 
     <dependency>
@@ -30,7 +40,6 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>8.14.2</version>
     </dependency>
 
     <dependency>
