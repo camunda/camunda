@@ -72,6 +72,17 @@
           </markdown>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <checkModificationExcludes>
+            <checkModificationExclude>optimize/backend/pom.xml</checkModificationExclude>
+            <checkModificationExclude>pom.xml</checkModificationExclude>
+          </checkModificationExcludes>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
