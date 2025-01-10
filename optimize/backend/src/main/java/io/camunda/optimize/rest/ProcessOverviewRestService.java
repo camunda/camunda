@@ -17,12 +17,12 @@ import io.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewRes
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.dto.optimize.rest.sorting.ProcessOverviewSorter;
+import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.ProcessOverviewService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.ws.rs.NotAuthorizedException;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.web.bind.annotation.GetMapping;
