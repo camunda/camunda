@@ -17,6 +17,10 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface UpdateRetriesJobCommandStep1
     extends CommandWithCommunicationApiStep<UpdateRetriesJobCommandStep1> {
   /**

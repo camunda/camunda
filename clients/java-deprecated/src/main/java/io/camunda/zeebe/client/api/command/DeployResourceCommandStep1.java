@@ -21,6 +21,10 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface DeployResourceCommandStep1
     extends CommandWithCommunicationApiStep<DeployResourceCommandStep1> {
 

@@ -15,6 +15,12 @@
  */
 package io.camunda.zeebe.client;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Replace with the
+ *     `io.camunda.client.CamundaClientCloudBuilderStep1` class available in the
+ *     `io.camunda:camunda-client-java` library.
+ */
+@Deprecated
 public interface ZeebeClientCloudBuilderStep1 {
 
   /**

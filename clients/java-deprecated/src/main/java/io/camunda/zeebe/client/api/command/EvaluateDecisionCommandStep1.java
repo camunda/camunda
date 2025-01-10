@@ -19,6 +19,10 @@ import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface EvaluateDecisionCommandStep1
     extends CommandWithCommunicationApiStep<EvaluateDecisionCommandStep1> {
 

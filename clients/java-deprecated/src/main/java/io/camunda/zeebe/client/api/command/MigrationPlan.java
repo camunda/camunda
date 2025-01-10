@@ -18,6 +18,10 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl.MappingInstruction;
 import java.util.List;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface MigrationPlan {
 
   /** Create a new migration plan builder to build {@link MigrationPlan} object */

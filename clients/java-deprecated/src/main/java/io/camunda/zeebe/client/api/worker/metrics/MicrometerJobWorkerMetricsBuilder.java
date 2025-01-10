@@ -39,7 +39,10 @@ import io.micrometer.core.instrument.Tag;
  *
  * <p>NOTE: the names may be changed depending on the registry backing Micrometer (e.g. Prometheus
  * names will replace the periods with underscore, etc.)
+ *
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
  */
+@Deprecated
 public interface MicrometerJobWorkerMetricsBuilder {
 
   /**

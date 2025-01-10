@@ -20,7 +20,13 @@ import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.Metadata;
 import java.io.IOException;
 
-/** Implementations of this interface must be thread-safe. */
+/**
+ * Implementations of this interface must be thread-safe.
+ *
+ * @deprecated since 8.7, for removal in 8.8. Replace with the
+ *     `io.camunda.client.CredentialsProvider` class available in the
+ *     `io.camunda:camunda-client-java` library.
+ */
 public interface CredentialsProvider {
 
   /**

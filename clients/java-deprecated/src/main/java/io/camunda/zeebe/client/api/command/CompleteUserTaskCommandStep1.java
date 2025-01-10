@@ -22,7 +22,10 @@ import java.util.Map;
  * The user task completion currently only accepts variables as a {@link Map} due to the current
  * request handling before sending it the gateway. The list of options might be extended in the
  * future.
+ *
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
  */
+@Deprecated
 public interface CompleteUserTaskCommandStep1 extends FinalCommandStep<CompleteUserTaskResponse> {
 
   /**

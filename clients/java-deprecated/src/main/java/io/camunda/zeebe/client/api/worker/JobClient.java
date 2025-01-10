@@ -31,7 +31,10 @@ import java.time.Duration;
  * <li>complete a job
  * <li>mark a job as failed
  * <li>update the retries of a job
+ *
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
  */
+@Deprecated
 public interface JobClient {
 
   /**

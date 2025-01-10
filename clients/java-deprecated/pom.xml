@@ -15,6 +15,9 @@
 
   <name>Zeebe Client Java</name>
 
+  <description>io.camunda:zeebe-client-java is deprecated since 8.7 and will be removed in 8.8 release.
+    Please migrate to io.camunda:camunda-client-java.</description>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>

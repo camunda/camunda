@@ -22,6 +22,10 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
 public interface StreamJobsCommandStep1 {
   /**

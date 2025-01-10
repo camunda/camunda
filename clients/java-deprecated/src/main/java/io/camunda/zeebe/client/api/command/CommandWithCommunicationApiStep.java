@@ -18,6 +18,10 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface CommandWithCommunicationApiStep<T> {
 
   /**

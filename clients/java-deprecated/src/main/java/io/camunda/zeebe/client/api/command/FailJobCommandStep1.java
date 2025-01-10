@@ -20,6 +20,10 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface FailJobCommandStep1 extends CommandWithCommunicationApiStep<FailJobCommandStep1> {
 
   /**

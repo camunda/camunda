@@ -18,6 +18,10 @@ package io.camunda.zeebe.client.api.command;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface ThrowErrorCommandStep1
     extends CommandWithCommunicationApiStep<ThrowErrorCommandStep1> {
   /**

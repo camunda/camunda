@@ -21,6 +21,10 @@ import io.camunda.zeebe.client.api.command.CommandWithOneOrMoreTenantsStep;
 import java.time.Duration;
 import java.util.List;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface JobWorkerBuilderStep1 {
   /**
    * Set the type of jobs to work on.

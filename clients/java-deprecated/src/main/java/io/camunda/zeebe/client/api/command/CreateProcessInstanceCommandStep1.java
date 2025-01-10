@@ -21,6 +21,10 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.7, for removal in 8.8. Use `io.camunda:camunda-client-java` library instead.
+ */
+@Deprecated
 public interface CreateProcessInstanceCommandStep1
     extends CommandWithCommunicationApiStep<CreateProcessInstanceCommandStep1> {
   /** Use the latest version of the process (without guarantee). */
