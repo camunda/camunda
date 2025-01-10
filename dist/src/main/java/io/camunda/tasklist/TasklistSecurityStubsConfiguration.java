@@ -43,7 +43,7 @@ public class TasklistSecurityStubsConfiguration {
 
   /** UserReader that gets user details using Operate's UserService */
   @Bean
-  public UserReader stubUserReader(final CamundaUserService camundaUserService) {
+  public UserReader stubUserReader(final Optional<CamundaUserService> camundaUserService) {
     return new UserReader() {
 
       @Override
@@ -53,7 +53,10 @@ public class TasklistSecurityStubsConfiguration {
 
       @Override
       public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
-        return Optional.ofNullable(camundaUserService.getCurrentUser())
+        return Optional.ofNullable(
+                camundaUserService
+                    .orElseThrow(() -> new RuntimeException("CamundaUserService is missing"))
+                    .getCurrentUser())
             .map(
                 currentUser ->
                     new UserDTO()

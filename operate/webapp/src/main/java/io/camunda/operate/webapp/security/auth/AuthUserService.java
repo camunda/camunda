@@ -14,6 +14,7 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,11 +31,14 @@ import org.springframework.stereotype.Component;
 })
 public class AuthUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
 
-  @Autowired private CamundaUserService camundaUserService;
+  @Autowired private Optional<CamundaUserService> camundaUserService;
 
   @Override
   public UserDto getCurrentUser() {
-    final CamundaUserDTO currentUser = camundaUserService.getCurrentUser();
+    final CamundaUserDTO currentUser =
+        camundaUserService
+            .orElseThrow(() -> new RuntimeException("CamundaUserService is missing"))
+            .getCurrentUser();
     return new UserDto()
         .setUserId(currentUser.userId())
         .setDisplayName(currentUser.displayName())
