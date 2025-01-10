@@ -237,7 +237,6 @@ public record UserTaskFilter(
       return followUpDateOperations(collectValues(operation, operations));
     }
 
-    // add builder for dueDate
     public Builder dueDateOperations(final List<Operation<OffsetDateTime>> operations) {
       dueDateOperations = addValuesToList(dueDateOperations, operations);
       return this;
