@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import io.camunda.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.zeebe.containers.ZeebeContainer;
