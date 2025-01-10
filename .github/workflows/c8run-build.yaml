@@ -38,10 +38,6 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Setup yarn
-        shell: bash
-        run: npm install -g yarn
-
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: ./tasklist/client
@@ -54,6 +50,10 @@ jobs:
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: ./operate/client
+
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: identity/client
 
       - name: Install node dependencies
         working-directory: ./operate/client
@@ -127,10 +127,6 @@ jobs:
         working-directory: ./c8run
         env:
           JAVA_VERSION: 21.0.3
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
 
       - name: Install dependencies
         run: npm ci
