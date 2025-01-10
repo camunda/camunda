@@ -88,7 +88,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <version>${project.version}</version>
+      <version>8.6.0</version>
       <scope>test</scope>
     </dependency>
 
