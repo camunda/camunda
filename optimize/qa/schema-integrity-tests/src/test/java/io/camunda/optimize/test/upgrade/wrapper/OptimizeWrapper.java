@@ -17,7 +17,6 @@ import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.optimize.HealthClient;
 import jakarta.ws.rs.ProcessingException;
-import jakarta.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
@@ -26,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
 
 public class OptimizeWrapper {
   private static final org.slf4j.Logger LOG =
@@ -117,7 +117,7 @@ public class OptimizeWrapper {
           .ignoreException(ProcessingException.class)
           .until(
               healthClient::getReadiness,
-              response -> Response.Status.OK.getStatusCode() == response.getStatus());
+              response -> HttpStatus.OK.value() == response.getStatus());
       LOG.info("Optimize {} is up!", optimizeVersion);
     } catch (final Exception e) {
       LOG.error("Optimize did not start within 60s.");

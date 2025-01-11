@@ -15,7 +15,6 @@ import io.camunda.optimize.service.security.util.LocalDateUtil;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MultivaluedHashMap;
-import jakarta.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 public class CacheRequestFilterTest {
@@ -43,7 +43,7 @@ public class CacheRequestFilterTest {
   @Test
   public void filterSetsCacheControlMaxAge() {
     // given
-    when(responseContext.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
+    when(responseContext.getStatus()).thenReturn(HttpStatus.OK.value());
     final OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
@@ -71,9 +71,9 @@ public class CacheRequestFilterTest {
 
   @ParameterizedTest
   @MethodSource("unsuccessfulResponses")
-  public void filterIsNotSetOnUnsuccessfulResponse(final Response.Status errorResponse) {
+  public void filterIsNotSetOnUnsuccessfulResponse(final HttpStatus status) {
     // given
-    when(responseContext.getStatus()).thenReturn(errorResponse.getStatusCode());
+    when(responseContext.getStatus()).thenReturn(status.value());
     final OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
@@ -84,8 +84,7 @@ public class CacheRequestFilterTest {
     assertThat(responseContext.getHeaders().get(HttpHeaders.CACHE_CONTROL)).isNull();
   }
 
-  private static Stream<Response.Status> unsuccessfulResponses() {
-    return Stream.of(
-        Response.Status.BAD_REQUEST, Response.Status.NOT_FOUND, Response.Status.FORBIDDEN);
+  private static Stream<HttpStatus> unsuccessfulResponses() {
+    return Stream.of(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND, HttpStatus.FORBIDDEN);
   }
 }
