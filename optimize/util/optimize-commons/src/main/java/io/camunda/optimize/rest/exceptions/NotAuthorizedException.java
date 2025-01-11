@@ -19,4 +19,9 @@ public class NotAuthorizedException extends ResponseStatusException {
   public NotAuthorizedException(final String reason, final Throwable cause) {
     super(HttpStatus.UNAUTHORIZED, reason, cause);
   }
+
+  @Override
+  public String getMessage() {
+    return getReason() != null ? getReason() : "";
+  }
 }

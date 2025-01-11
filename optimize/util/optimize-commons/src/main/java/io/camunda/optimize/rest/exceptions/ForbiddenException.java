@@ -19,4 +19,9 @@ public class ForbiddenException extends ResponseStatusException {
   public ForbiddenException(final String reason, final Throwable cause) {
     super(HttpStatus.FORBIDDEN, reason, cause);
   }
+
+  @Override
+  public String getMessage() {
+    return getReason() != null ? getReason() : "";
+  }
 }

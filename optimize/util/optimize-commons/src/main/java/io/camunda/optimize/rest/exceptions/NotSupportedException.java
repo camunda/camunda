@@ -19,4 +19,9 @@ public class NotSupportedException extends ResponseStatusException {
   public NotSupportedException(final String reason, final Throwable cause) {
     super(HttpStatus.UNSUPPORTED_MEDIA_TYPE, reason, cause);
   }
+
+  @Override
+  public String getMessage() {
+    return getReason() != null ? getReason() : "";
+  }
 }

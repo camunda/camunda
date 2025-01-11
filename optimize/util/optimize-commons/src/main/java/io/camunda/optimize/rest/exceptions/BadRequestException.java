@@ -19,4 +19,9 @@ public class BadRequestException extends ResponseStatusException {
   public BadRequestException(final String reason, final Throwable cause) {
     super(HttpStatus.BAD_REQUEST, reason, cause);
   }
+
+  @Override
+  public String getMessage() {
+    return getReason() != null ? getReason() : "";
+  }
 }

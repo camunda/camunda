@@ -19,4 +19,9 @@ public class ServiceUnavailableException extends ResponseStatusException {
   public ServiceUnavailableException(final String reason, final Throwable cause) {
     super(HttpStatus.SERVICE_UNAVAILABLE, reason, cause);
   }
+
+  @Override
+  public String getMessage() {
+    return getReason() != null ? getReason() : "";
+  }
 }
