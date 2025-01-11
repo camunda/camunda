@@ -14,12 +14,12 @@ import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.DynamicFeature;
 import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.FeatureContext;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Provider;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 
 @Provider
 public class CacheRequestFilterFactory implements DynamicFeature {
@@ -41,8 +41,7 @@ public class CacheRequestFilterFactory implements DynamicFeature {
         final ContainerRequestContext containerRequestContext,
         final ContainerResponseContext containerResponseContext) {
       if (!containerResponseContext.getHeaders().containsKey(HttpHeaders.CACHE_CONTROL)
-          && Response.Status.Family.familyOf(containerResponseContext.getStatus())
-              .equals(Response.Status.Family.SUCCESSFUL)) {
+          && HttpStatus.resolve(containerResponseContext.getStatus()).is2xxSuccessful()) {
         containerResponseContext
             .getHeaders()
             .putSingle(HttpHeaders.CACHE_CONTROL, "max-age=" + getSecondsToMidnight());

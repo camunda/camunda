@@ -35,7 +35,6 @@ import io.camunda.optimize.service.util.configuration.security.CloudAuthConfigur
 import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -327,7 +326,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                     getClusterIdPath(), getClusterIdPath(), getClusterIdPath()));
         // @formatter:on
       } else {
-        response.setStatus(Response.Status.FORBIDDEN.getStatusCode());
+        response.setStatus(HttpStatus.FORBIDDEN.value());
       }
     };
   }

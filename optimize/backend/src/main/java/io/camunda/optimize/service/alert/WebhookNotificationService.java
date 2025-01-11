@@ -16,7 +16,6 @@ import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,6 +34,7 @@ import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
@@ -129,11 +129,9 @@ public class WebhookNotificationService
 
     try (final CloseableHttpResponse response =
         webhookClientsByWebhookName.get(webhookName).execute(request)) {
-      final Response.Status statusCode =
-          Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
-      if (!Response.Status.Family.familyOf(statusCode.getStatusCode())
-          .equals(Response.Status.Family.SUCCESSFUL)) {
-        LOG.error("Unexpected response when sending webhook notification: " + statusCode);
+      final HttpStatus status = HttpStatus.resolve(response.getStatusLine().getStatusCode());
+      if (!status.is2xxSuccessful()) {
+        LOG.error("Unexpected response when sending webhook notification: " + status);
       }
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(

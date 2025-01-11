@@ -13,7 +13,6 @@ import io.camunda.optimize.dto.optimize.cloud.TokenResponseDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -24,6 +23,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
@@ -57,11 +57,10 @@ public class CCSaaSM2MTokenProvider extends AbstractCCSaaSClient {
       request.setEntity(notificationRequestBody);
 
       try (final CloseableHttpResponse response = performRequest(request)) {
-        final Response.Status statusCode =
-            Response.Status.fromStatusCode(response.getStatusLine().getStatusCode());
-        if (!Response.Status.OK.equals(statusCode)) {
+        final HttpStatus status = HttpStatus.resolve(response.getStatusLine().getStatusCode());
+        if (!HttpStatus.OK.equals(status)) {
           throw new OptimizeRuntimeException(
-              "Unexpected response when retrieving M2M token: " + statusCode);
+              "Unexpected response when retrieving M2M token: " + status);
         }
         return objectMapper.readValue(
             EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8),

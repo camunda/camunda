@@ -23,13 +23,13 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -68,7 +68,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
     } catch (final NotAuthorizedException ex) {
       response.sendError(
-          Response.Status.FORBIDDEN.getStatusCode(),
+          HttpStatus.FORBIDDEN.value(),
           "User has no authorization to access Optimize. Please check your Identity configuration");
       return;
     }
