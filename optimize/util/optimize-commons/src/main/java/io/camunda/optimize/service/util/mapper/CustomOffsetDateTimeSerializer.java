@@ -46,7 +46,7 @@ public class CustomOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTim
                         attrs.getAttribute(
                             X_OPTIMIZE_CLIENT_TIMEZONE, RequestAttributes.SCOPE_REQUEST))
                 .orElse(null);
-    ;
+
     OffsetDateTime timeZoneAdjustedDateTime = value;
     if (timezone != null) {
       if (AVAILABLE_ZONE_IDS.contains(timezone)) {
