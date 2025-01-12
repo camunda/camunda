@@ -38,7 +38,7 @@ permissions:
 jobs:
   e2e-tests-sm:
     name: E2E tests sm
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 120
 
     steps:
@@ -61,40 +61,10 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
 
-      - name: Install firefox deps
-        run: |
-          sudo apt-get update && sudo apt-get install
-          sudo apt-get install -y xvfb bzip2 packagekit-gtk3-module libasound2
-
-      - name: Install firefox
-        uses: browser-actions/setup-firefox@v1
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - name: Setup yarn
-        run: npm install -g yarn
-
-      - name: Setup NodeJS
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: optimize/client
-
-      - name: Install node dependencies
-        working-directory: ./optimize/client
-        shell: bash
-        run: yarn
-
       - name: Build frontend
-        working-directory: ./optimize/client
-        run: yarn build
-        shell: bash
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
 
       - name: Start frontend
         working-directory: ./optimize/client
