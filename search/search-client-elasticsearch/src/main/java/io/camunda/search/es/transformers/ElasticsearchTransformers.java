@@ -7,6 +7,14 @@
  */
 package io.camunda.search.es.transformers;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
+import io.camunda.search.clients.aggregation.SearchAggregation;
+import io.camunda.search.clients.aggregation.SearchCardinalityAggregate;
+import io.camunda.search.clients.aggregation.SearchCardinalityAggregation;
+import io.camunda.search.clients.aggregation.SearchTermsAggregate;
+import io.camunda.search.clients.aggregation.SearchTermsAggregation;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
@@ -37,6 +45,11 @@ import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.es.transformers.aggregation.CardinalityAggregateTransformer;
+import io.camunda.search.es.transformers.aggregation.CardinalityAggregationTransformer;
+import io.camunda.search.es.transformers.aggregation.SearchAggregateTransformer;
+import io.camunda.search.es.transformers.aggregation.SearchAggregationTransformer;
+import io.camunda.search.es.transformers.aggregation.TermsAggregateTransformer;
 import io.camunda.search.es.transformers.aggregator.TermsAggregationTransformer;
 import io.camunda.search.es.transformers.index.IndexAliasRequestTransformer;
 import io.camunda.search.es.transformers.index.IndexAliasResponseTransformer;
@@ -136,5 +149,17 @@ public final class ElasticsearchTransformers {
     // source
     mappers.put(SearchSourceConfig.class, new SourceConfigTransformer(mappers));
     mappers.put(SearchSourceFilter.class, new SourceFilterTransformer(mappers));
+
+    // Aggregations
+    mappers.put(SearchAggregation.class, new SearchAggregationTransformer(mappers));
+    mappers.put(SearchCardinalityAggregation.class, new CardinalityAggregationTransformer(mappers));
+    mappers.put(SearchTermsAggregation.class, new TermsAggregationTransformer(mappers));
+
+    // aggregates
+    mappers.put(SearchCardinalityAggregate.class, new CardinalityAggregateTransformer(mappers));
+    mappers.put(SearchTermsAggregate.class, new TermsAggregateTransformer(mappers));
+    mappers.put(Aggregate.class, new SearchAggregateTransformer(mappers));
+    mappers.put(CardinalityAggregate.class, new CardinalityAggregateTransformer(mappers));
+    mappers.put(LongTermsAggregate.class, new TermsAggregateTransformer(mappers));
   }
 }
