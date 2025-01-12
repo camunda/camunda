@@ -12,13 +12,7 @@ import {ComboBox} from '@carbon/react';
 import {t} from 'translation';
 import {getRandomId} from 'services';
 
-import {
-  itemToElement,
-  itemToString,
-  getItems,
-  identityToItem,
-  getSelectedIdentity,
-} from './service';
+import {itemToElement, getItems, identityToItem, getSelectedIdentity} from './service';
 import useLoadIdentities from './useLoadIdentities';
 import {UserInputProps} from './UserTypeahead';
 
@@ -80,7 +74,13 @@ export default function SingleUserInput({
           onClear();
         }
       }}
-      itemToString={itemToString}
+      itemToString={(item) => {
+        if (!item) {
+          return '';
+        }
+        const {label, subText, id} = item;
+        return label || subText || id;
+      }}
       itemToElement={(item) => itemToElement(item, textValue)}
     />
   );
