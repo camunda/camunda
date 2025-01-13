@@ -49,6 +49,11 @@ public interface DeploymentEvent {
   List<Form> getForm();
 
   /**
+   * @return the deployed resource metadata
+   */
+  List<Resource> getResource();
+
+  /**
    * @return the tenant identifier that owns this deployment
    */
   String getTenantId();
