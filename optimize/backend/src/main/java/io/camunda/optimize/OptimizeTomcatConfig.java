@@ -19,6 +19,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
+import io.camunda.optimize.tomcat.ResponseTimezoneFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import java.util.Optional;
 import org.apache.catalina.connector.Connector;
@@ -138,6 +139,17 @@ public class OptimizeTomcatConfig {
         new FilterRegistrationBean<>();
     registrationBean.addUrlPatterns("/*");
     registrationBean.setFilter(responseSecurityHeaderFilter);
+    return registrationBean;
+  }
+
+  @Bean
+  FilterRegistrationBean<ResponseTimezoneFilter> responseTimezoneFilter() {
+    LOG.debug("Registering filter 'responseTimezoneFilter'...");
+    final ResponseTimezoneFilter filter = new ResponseTimezoneFilter();
+    final FilterRegistrationBean<ResponseTimezoneFilter> registrationBean =
+        new FilterRegistrationBean<>();
+    registrationBean.addUrlPatterns("/*");
+    registrationBean.setFilter(filter);
     return registrationBean;
   }
 

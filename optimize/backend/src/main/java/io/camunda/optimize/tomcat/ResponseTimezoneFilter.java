@@ -17,17 +17,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.util.Optional;
 import org.slf4j.Logger;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
-@Provider
-@Component
 public class ResponseTimezoneFilter implements Filter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ResponseTimezoneFilter.class);
