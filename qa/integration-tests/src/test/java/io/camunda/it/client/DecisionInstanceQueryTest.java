@@ -327,6 +327,108 @@ class DecisionInstanceQueryTest {
         .isEqualTo("Decision instance with key %s not found".formatted(decisionInstanceId));
   }
 
+  @TestTemplate
+  public void shouldRetrieveDecisionInstanceByDecisionInstanceKeyEquals(
+      final CamundaClient camundaClient) {
+    // given
+    final long decisionInstanceKey =
+        evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.decisionInstanceKey(b -> b.eq(decisionInstanceKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+  }
+
+  @TestTemplate
+  public void shouldRetrieveDecisionInstanceByDecisionInstanceIdLike(
+      final CamundaClient camundaClient) {
+    // given
+    final String partialDecisionInstanceId =
+        camundaClient
+            .newDecisionInstanceQuery()
+            .page(p -> p.limit(1))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .findFirst()
+            .get()
+            .getDecisionInstanceId()
+            .substring(0, 2);
+
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceQuery()
+            .filter(
+                f ->
+                    f.decisionInstanceId(
+                        b -> b.like(partialDecisionInstanceId.substring(0, 2) + "*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isNotEmpty();
+    assertThat(result.items())
+        .allMatch(di -> di.getDecisionInstanceId().startsWith(partialDecisionInstanceId));
+  }
+
+  @TestTemplate
+  public void shouldRetrieveDecisionInstanceByProcessDefinitionKeyIn(
+      final CamundaClient camundaClient) {
+    // given
+    final var processDefinitionKeys =
+        camundaClient
+            .newDecisionInstanceQuery()
+            .page(p -> p.limit(2))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(DecisionInstance::getProcessDefinitionKey)
+            .collect(Collectors.toList());
+
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceQuery()
+            .filter(
+                f -> f.processDefinitionKey(b -> b.in(processDefinitionKeys.toArray(new Long[0]))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items())
+        .allMatch(di -> processDefinitionKeys.contains(di.getProcessDefinitionKey()));
+  }
+
+  @TestTemplate
+  public void shouldRetrieveDecisionInstanceByDecisionDefinitionVersionLessThan(
+      final CamundaClient camundaClient) {
+    // given
+    final int maxVersion = 2;
+
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.decisionDefinitionVersion(b -> b.lt(maxVersion)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isNotEmpty();
+    assertThat(result.items()).allMatch(di -> di.getDecisionDefinitionVersion() < maxVersion);
+  }
+
   private DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
