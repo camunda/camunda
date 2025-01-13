@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -238,22 +239,27 @@ public class OpensearchBatchRequest implements BatchRequest {
     try {
       final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkItemResponses.items();
-      for (final BulkResponseItem responseItem : items) {
-        if (responseItem.error() != null) {
-          LOGGER.warn(
-              String.format(
-                  "%s failed for type [%s] and id [%s]: %s",
-                  responseItem.operationType(),
-                  responseItem.index(),
-                  responseItem.id(),
-                  responseItem.error().reason()),
-              "error on OpenSearch BulkRequest");
-          throw new PersistenceException("Operation failed: " + responseItem.error().reason());
-        }
-      }
+      validateNoErrors(items);
     } catch (final IOException | OpenSearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
+    }
+  }
+
+  private void validateNoErrors(final List<BulkResponseItem> items) throws PersistenceException {
+    final String errorMessages =
+        items.stream()
+            .filter(item -> item.error() != null)
+            .map(
+                item ->
+                    String.format(
+                        "%s failed for type [%s] and id [%s]: %s",
+                        item.operationType(), item.index(), item.id(), item.error().reason()))
+            .collect(Collectors.joining(", \n"));
+
+    if (!errorMessages.isEmpty()) {
+      LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
+      throw new PersistenceException("Operation failed: \n[" + errorMessages + "]");
     }
   }
 }

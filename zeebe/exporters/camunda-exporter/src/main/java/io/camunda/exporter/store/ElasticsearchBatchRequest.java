@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,15 +242,27 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     try {
       final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkResponse.items();
-      for (final BulkResponseItem item : items) {
-        if (item.error() != null) {
-          LOGGER.warn("Bulk request execution failed. {}. Cause: {}.", item, item.error().reason());
-          throw new PersistenceException("Operation failed: " + item.error().reason());
-        }
-      }
+      validateNoErrors(items);
     } catch (final IOException | ElasticsearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
+    }
+  }
+
+  private void validateNoErrors(final List<BulkResponseItem> items) throws PersistenceException {
+    final String errorMessages =
+        items.stream()
+            .filter(item -> item.error() != null)
+            .map(
+                item ->
+                    String.format(
+                        "%s failed for type [%s] and id [%s]: %s",
+                        item.operationType(), item.index(), item.id(), item.error().reason()))
+            .collect(Collectors.joining(", \n"));
+
+    if (!errorMessages.isEmpty()) {
+      LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
+      throw new PersistenceException("Operation failed: \n[" + errorMessages + "]");
     }
   }
 }
