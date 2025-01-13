@@ -15,7 +15,6 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
-import io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel;
 import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -27,7 +26,6 @@ import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,13 +46,11 @@ public class AuthorizationIT {
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriter, authorization);
 
-    final var instance =
-        authorizationReader
-            .findOne(
-                authorization.ownerKey(), authorization.ownerType(), authorization.resourceType())
-            .orElse(null);
+    final var instances =
+        authorizationReader.find(
+            authorization.ownerKey(), authorization.ownerType(), authorization.resourceType());
 
-    compareAuthorizations(instance, authorization);
+    compareAuthorizations(instances, authorization);
   }
 
   @TestTemplate
@@ -65,38 +61,47 @@ public class AuthorizationIT {
 
     final var authorization =
         AuthorizationFixtures.createRandomized(
-            b ->
-                b.permissions(
-                    List.of(
-                        new AuthorizationPermissionDbModel.Builder()
-                            .type(PermissionType.CREATE)
-                            .resourceIds(Set.of("resource1", "resource2"))
-                            .build())));
+            b -> b.resourceId("resource1").permissionType(PermissionType.CREATE));
+
     createAndSaveAuthorization(rdbmsWriter, authorization);
 
-    final var authorizationUpdate =
+    final var authorizationUpdate1 =
         AuthorizationFixtures.createRandomized(
             b ->
                 b.ownerKey(authorization.ownerKey())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
-                    .permissions(
-                        List.of(
-                            new AuthorizationPermissionDbModel.Builder()
-                                .type(PermissionType.CREATE)
-                                .resourceIds(Set.of("resource3", "resource4"))
-                                .build())));
-    rdbmsWriter.getAuthorizationWriter().addPermissions(authorizationUpdate);
+                    .resourceId("resource2")
+                    .permissionType(PermissionType.CREATE));
+    final var authorizationUpdate2 =
+        AuthorizationFixtures.createRandomized(
+            b ->
+                b.ownerKey(authorization.ownerKey())
+                    .ownerType(authorization.ownerType())
+                    .resourceType(authorization.resourceType())
+                    .resourceId("resource3")
+                    .permissionType(PermissionType.CREATE));
+    final var authorizationUpdate3 =
+        AuthorizationFixtures.createRandomized(
+            b ->
+                b.ownerKey(authorization.ownerKey())
+                    .ownerType(authorization.ownerType())
+                    .resourceType(authorization.resourceType())
+                    .resourceId("resource4")
+                    .permissionType(PermissionType.CREATE));
+    rdbmsWriter
+        .getAuthorizationWriter()
+        .addPermissions(List.of(authorizationUpdate1, authorizationUpdate2, authorizationUpdate3));
     rdbmsWriter.flush();
 
-    final var instance =
-        authorizationReader
-            .findOne(
-                authorization.ownerKey(), authorization.ownerType(), authorization.resourceType())
-            .orElse(null);
+    final var instances =
+        authorizationReader.find(
+            authorization.ownerKey(), authorization.ownerType(), authorization.resourceType());
 
-    assertThat(instance).isNotNull();
-    assertThat(instance.permissions().getFirst().resourceIds())
+    assertThat(instances).isNotNull();
+    assertThat(instances).hasSize(4);
+    assertThat(instances)
+        .extracting(AuthorizationEntity::resourceId)
         .containsExactlyInAnyOrder("resource1", "resource2", "resource3", "resource4");
   }
 
@@ -108,16 +113,16 @@ public class AuthorizationIT {
 
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriter, authorization);
-    final var instance =
-        authorizationReader.findOne(
+    final var instances =
+        authorizationReader.find(
             authorization.ownerKey(), authorization.ownerType(), authorization.resourceType());
-    assertThat(instance).isNotEmpty();
+    assertThat(instances).isNotEmpty();
 
-    rdbmsWriter.getAuthorizationWriter().removePermissions(authorization);
+    rdbmsWriter.getAuthorizationWriter().removePermission(authorization);
     rdbmsWriter.flush();
 
     final var deletedInstance =
-        authorizationReader.findOne(
+        authorizationReader.find(
             authorization.ownerKey(), authorization.ownerType(), authorization.resourceType());
     assertThat(deletedInstance).isEmpty();
   }
@@ -131,7 +136,7 @@ public class AuthorizationIT {
     final var authorization = AuthorizationFixtures.createRandomized(b -> b);
     createAndSaveAuthorization(rdbmsWriter, authorization);
 
-    final var resourceId = authorization.permissions().getFirst().resourceIds().iterator().next();
+    final var resourceId = authorization.resourceId();
     final var searchResult =
         authorizationReader.search(
             new AuthorizationQuery(
@@ -185,9 +190,8 @@ public class AuthorizationIT {
                     .ownerKeys(authorization.ownerKey())
                     .ownerType(authorization.ownerType())
                     .resourceType(authorization.resourceType())
-                    .permissionType(authorization.permissions().getFirst().permissionType())
-                    .resourceIds(
-                        authorization.permissions().getFirst().resourceIds().iterator().next())
+                    .permissionType(authorization.permissionType())
+                    .resourceIds(authorization.resourceId())
                     .build(),
                 AuthorizationSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -238,23 +242,20 @@ public class AuthorizationIT {
   }
 
   private static void compareAuthorizations(
+      final List<AuthorizationEntity> instances, final AuthorizationDbModel authorization) {
+    assertThat(instances).isNotNull();
+    instances.forEach(
+        i -> {
+          if (i.permissionType() == authorization.permissionType()
+              && i.resourceType().equals(authorization.resourceId())) {
+            compareAuthorizations(i, authorization);
+          }
+        });
+  }
+
+  private static void compareAuthorizations(
       final AuthorizationEntity instance, final AuthorizationDbModel authorization) {
     assertThat(instance).isNotNull();
-    assertThat(instance)
-        .usingRecursiveComparison()
-        .ignoringFields("permissions")
-        .isEqualTo(authorization);
-    authorization
-        .permissions()
-        .forEach(
-            p -> {
-              assertThat(instance.permissions())
-                  .anySatisfy(
-                      p2 -> {
-                        assertThat(p2.type()).isEqualTo(p.permissionType());
-                        assertThat(p2.resourceIds())
-                            .containsExactlyInAnyOrder(p.resourceIds().toArray(new String[0]));
-                      });
-            });
+    assertThat(instance).usingRecursiveComparison().isEqualTo(authorization);
   }
 }

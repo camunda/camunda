@@ -12,10 +12,8 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
-import io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
 public final class AuthorizationFixtures extends CommonFixtures {
@@ -30,16 +28,8 @@ public final class AuthorizationFixtures extends CommonFixtures {
             .ownerKey(ownerKey)
             .ownerType(randomEnum(OwnerTypeEnum.class).name())
             .resourceType(randomEnum(ResourceTypeEnum.class).name())
-            .permissions(
-                List.of(
-                    new AuthorizationPermissionDbModel.Builder()
-                        .type(PermissionType.CREATE)
-                        .resourceIds(Set.of(nextStringId(), nextStringId()))
-                        .build(),
-                    new AuthorizationPermissionDbModel.Builder()
-                        .type(PermissionType.READ)
-                        .resourceIds(Set.of(nextStringId(), nextStringId()))
-                        .build()));
+            .permissionType(randomEnum(PermissionType.class))
+            .resourceId(nextStringId());
 
     return builderFunction.apply(builder).build();
   }
@@ -51,7 +41,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
   public static AuthorizationDbModel createAndSaveRandomAuthorization(
       final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = AuthorizationFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getAuthorizationWriter().addPermissions(definition);
+    rdbmsWriter.getAuthorizationWriter().addPermissions(List.of(definition));
     rdbmsWriter.flush();
     return definition;
   }
@@ -61,7 +51,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getAuthorizationWriter()
-          .addPermissions(AuthorizationFixtures.createRandomized(builderFunction));
+          .addPermissions(List.of(AuthorizationFixtures.createRandomized(builderFunction)));
     }
 
     rdbmsWriter.flush();
@@ -82,7 +72,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
   public static void createAndSaveAuthorizations(
       final RdbmsWriter rdbmsWriter, final List<AuthorizationDbModel> userList) {
     for (final AuthorizationDbModel user : userList) {
-      rdbmsWriter.getAuthorizationWriter().addPermissions(user);
+      rdbmsWriter.getAuthorizationWriter().addPermissions(List.of(user));
     }
     rdbmsWriter.flush();
   }

@@ -31,7 +31,6 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -49,7 +48,6 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
@@ -610,11 +608,10 @@ class RdbmsExporterIT {
     final var authorization =
         rdbmsService
             .getAuthorizationReader()
-            .findOne(
+            .find(
                 recordValue.getOwnerKey(),
                 recordValue.getOwnerType().name(),
-                recordValue.getResourceType().name())
-            .orElse(null);
+                recordValue.getResourceType().name());
     assertThat(authorization).isNotNull();
 
     // given
@@ -633,25 +630,30 @@ class RdbmsExporterIT {
 
     // then
     final var updatedRecordValue = (AuthorizationRecordValue) authorizationUpdatedRecord.getValue();
-    final var updatedAuthorization =
+    final var updatedAuthorizations =
         rdbmsService
             .getAuthorizationReader()
-            .findOne(
+            .find(
                 recordValue.getOwnerKey(),
                 recordValue.getOwnerType().name(),
-                recordValue.getResourceType().name())
-            .orElse(null);
+                recordValue.getResourceType().name());
 
-    assertThat(updatedAuthorization).isNotNull();
-    assertThat(updatedAuthorization.permissions()).hasSize(2);
-    assertThat(updatedAuthorization.permissions())
-        .contains(
-            new Permission(
-                PermissionType.READ, Set.of("resource1", "resource2", "resource5", "resource6")));
-    assertThat(updatedAuthorization.permissions())
-        .contains(
-            new Permission(
-                PermissionType.CREATE, Set.of("resource3", "resource4", "resource7", "resource8")));
+    assertThat(updatedAuthorizations).hasSize(8);
+
+    final var readResourceIds =
+        updatedAuthorizations.stream()
+            .filter(a -> a.permissionType() == PermissionType.READ)
+            .map(AuthorizationEntity::resourceId)
+            .toList();
+
+    final var createResourceIds =
+        updatedAuthorizations.stream()
+            .filter(a -> a.permissionType() == PermissionType.CREATE)
+            .map(AuthorizationEntity::resourceId)
+            .toList();
+
+    assertThat(readResourceIds).contains("resource1", "resource2", "resource5", "resource6");
+    assertThat(createResourceIds).contains("resource3", "resource4", "resource7", "resource8");
   }
 
   @Test
@@ -675,11 +677,10 @@ class RdbmsExporterIT {
     final var authorization =
         rdbmsService
             .getAuthorizationReader()
-            .findOne(
+            .find(
                 recordValue.getOwnerKey(),
                 recordValue.getOwnerType().name(),
-                recordValue.getResourceType().name())
-            .orElse(null);
+                recordValue.getResourceType().name());
     assertThat(authorization).isNotNull();
 
     // given
@@ -697,36 +698,28 @@ class RdbmsExporterIT {
     exporter.export(authorizationUpdatedRecord);
 
     // then
-    final var updatedAuthorization =
+    final var updatedAuthorizations =
         rdbmsService
             .getAuthorizationReader()
-            .findOne(
+            .find(
                 recordValue.getOwnerKey(),
                 recordValue.getOwnerType().name(),
-                recordValue.getResourceType().name())
-            .orElse(null);
+                recordValue.getResourceType().name());
 
-    assertThat(updatedAuthorization).isNotNull();
-    assertThat(updatedAuthorization.permissions()).hasSize(2);
-    assertThat(updatedAuthorization.permissions())
-        .contains(new Permission(PermissionType.READ, Set.of("resource2")));
-    assertThat(updatedAuthorization.permissions())
-        .contains(new Permission(PermissionType.CREATE, Set.of("resource4")));
-  }
+    assertThat(updatedAuthorizations).hasSize(2);
 
-  private void compareAuthorizations(
-      final AuthorizationRecordValue recordValue, final AuthorizationEntity entity) {
-    assertThat(recordValue.getOwnerKey()).isEqualTo(entity.ownerKey());
-    assertThat(recordValue.getOwnerType().name()).isEqualTo(entity.ownerType());
-    assertThat(recordValue.getResourceType().name()).isEqualTo(entity.resourceType());
+    final var readResourceIds =
+        updatedAuthorizations.stream()
+            .filter(a -> a.permissionType() == PermissionType.READ)
+            .map(AuthorizationEntity::resourceId)
+            .toList();
 
-    for (final PermissionValue permissionValue : recordValue.getPermissions()) {
-      if (!permissionValue.getResourceIds().isEmpty()) {
-        assertThat(entity.permissions())
-            .contains(
-                new Permission(
-                    permissionValue.getPermissionType(), permissionValue.getResourceIds()));
-      }
-    }
+    final var createResourceIds =
+        updatedAuthorizations.stream()
+            .filter(a -> a.permissionType() == PermissionType.CREATE)
+            .map(AuthorizationEntity::resourceId)
+            .toList();
+    assertThat(readResourceIds).contains("resource2");
+    assertThat(createResourceIds).contains("resource4");
   }
 }

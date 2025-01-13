@@ -26,10 +26,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 public class AuthorizationPermissionRemoveHandlerTest {
 
@@ -55,7 +52,18 @@ public class AuthorizationPermissionRemoveHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final AuthorizationRecordValue value = factory.generateObject(AuthorizationRecordValue.class);
+    final AuthorizationRecordValue value =
+        ImmutableAuthorizationRecordValue.builder()
+            .withOwnerKey(6741987849931465728L)
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.USER)
+            .withPermissions(
+                List.of(
+                    ImmutablePermissionValue.builder()
+                        .withPermissionType(PermissionType.DELETE)
+                        .withResourceIds(List.of("vMgnykrx"))
+                        .build()))
+            .build();
 
     final Record<AuthorizationRecordValue> record =
         factory.generateRecord(ValueType.AUTHORIZATION, r -> r.withValue(value));
@@ -67,8 +75,23 @@ public class AuthorizationPermissionRemoveHandlerTest {
     assertThat(ids)
         .containsExactly(
             String.format(
-                "%s-%s",
-                record.getValue().getOwnerKey(), record.getValue().getResourceType().name()));
+                "%s-%s-%s-%s",
+                record.getValue().getOwnerKey(),
+                record.getValue().getResourceType().name(),
+                getFirstPermission(value.getPermissions()).type(),
+                getFirstPermission(value.getPermissions()).resourceIds().stream()
+                    .findFirst()
+                    .get()));
+  }
+
+  private Permission getFirstPermission(final List<PermissionValue> permissionValues) {
+    return permissionValues.stream()
+        .findFirst()
+        .map(
+            permissionValue ->
+                new Permission(
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
+        .orElseThrow();
   }
 
   @Test
@@ -107,9 +130,8 @@ public class AuthorizationPermissionRemoveHandlerTest {
     assertThat(entity.getResourceType()).isEqualTo("USER");
 
     // Assert permissions
-    assertThat(entity.getPermissions()).hasSize(1);
-    assertThat(entity.getPermissions().get(0).type()).isEqualTo(PermissionType.UPDATE);
-    assertThat(entity.getPermissions().get(0).resourceIds()).containsExactly("resource1");
+    assertThat(entity.getPermissionType()).isEqualTo(PermissionType.UPDATE);
+    assertThat(entity.getResourceId()).isEqualTo("resource1");
   }
 
   @Test
@@ -117,54 +139,19 @@ public class AuthorizationPermissionRemoveHandlerTest {
     // given
     final AuthorizationEntity entity =
         new AuthorizationEntity()
-            .setId("123-DEPLOYMENT")
+            .setId("123-USER-READ-resource1")
             .setOwnerKey(123L)
             .setOwnerType("USER")
-            .setResourceType("DEPLOYMENT")
-            .setPermissions(
-                List.of(new Permission(PermissionType.READ, Set.of("resource1", "resource2"))));
+            .setResourceType("USER")
+            .setPermissionType(PermissionType.READ)
+            .setResourceId("resource1");
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    final String expectedScript =
-        """
-        if (ctx._source.permissions != null) {
-        for (p in params.inputPermissions) {
-          for (permission in ctx._source.permissions) {
-            if (permission.type == p.type) {
-              // Remove matching resource IDs
-              permission.resourceIds.removeAll(p.resourceIds);
-            }
-          }
-        }
-        // Remove permissions with empty resourceIds
-        ctx._source.permissions.removeIf(permission -> permission.resourceIds.isEmpty());
-        if (ctx._source.permissions.isEmpty()) {
-          ctx.op = 'delete';
-        }
-      }
-      """;
-
-    // Expected parameters
-
-    final Map<String, Object> inputPermissions =
-        Map.of(
-            "inputPermissions",
-            List.of(Map.of("type", "READ", "resourceIds", List.of("resource1", "resource2"))));
     // when
     underTest.flush(entity, mockRequest);
 
     // then
-    final ArgumentCaptor<Map<String, Object>> actualParamsCaptor =
-        ArgumentCaptor.forClass(Map.class);
-
-    verify(mockRequest, times(1))
-        .updateWithScript(
-            eq(indexName), eq(entity.getId()), eq(expectedScript), actualParamsCaptor.capture());
-
-    assertThat(actualParamsCaptor.getValue())
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .isEqualTo(inputPermissions);
+    verify(mockRequest, times(1)).delete(indexName, entity.getId());
   }
 }

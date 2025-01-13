@@ -18,14 +18,12 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,14 +45,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerKey": "1",
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
-                 "permissions": [
-                   {
-                     "permissionType": "CREATE",
-                     "resourceIds": [
-                       "2"
-                     ]
-                   }
-                 ]
+                 "permissionType": "CREATE",
+                 "resourceId": "2"
                }
              ],
              "page": {
@@ -78,7 +70,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       1L,
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
-                      List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
+                      PermissionType.CREATE,
+                      "2")))
           .firstSortValues(new Object[] {"f"})
           .lastSortValues(new Object[] {"v"})
           .build();

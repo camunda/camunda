@@ -22,7 +22,6 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.entity.Permission;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -90,7 +89,8 @@ public class BasicAuthIT {
                     1L,
                     AuthorizationOwnerType.USER.name(),
                     AuthorizationResourceType.APPLICATION.name(),
-                    List.of(new Permission(PermissionType.ACCESS, Set.of("*"))))));
+                    PermissionType.ACCESS,
+                    "*")));
 
     when(roleServices.findAll(any())).thenReturn(List.of());
 

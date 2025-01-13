@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -61,7 +62,18 @@ public class AuthorizationPermissionAddedHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final AuthorizationRecordValue value = factory.generateObject(AuthorizationRecordValue.class);
+    final AuthorizationRecordValue value =
+        ImmutableAuthorizationRecordValue.builder()
+            .withOwnerKey(6741987849931465728L)
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.USER)
+            .withPermissions(
+                List.of(
+                    ImmutablePermissionValue.builder()
+                        .withPermissionType(PermissionType.DELETE)
+                        .withResourceIds(List.of("vMgnykrx"))
+                        .build()))
+            .build();
 
     final Record<AuthorizationRecordValue> record =
         factory.generateRecord(ValueType.AUTHORIZATION, r -> r.withValue(value));
@@ -73,8 +85,23 @@ public class AuthorizationPermissionAddedHandlerTest {
     assertThat(ids)
         .containsExactly(
             String.format(
-                "%s-%s",
-                record.getValue().getOwnerKey(), record.getValue().getResourceType().name()));
+                "%s-%s-%s-%s",
+                record.getValue().getOwnerKey(),
+                record.getValue().getResourceType().name(),
+                getFirstPermission(value.getPermissions()).type(),
+                getFirstPermission(value.getPermissions()).resourceIds().stream()
+                    .findFirst()
+                    .get()));
+  }
+
+  private Permission getFirstPermission(final List<PermissionValue> permissionValues) {
+    return permissionValues.stream()
+        .findFirst()
+        .map(
+            permissionValue ->
+                new Permission(
+                    permissionValue.getPermissionType(), permissionValue.getResourceIds()))
+        .orElseThrow();
   }
 
   @Test
@@ -123,9 +150,8 @@ public class AuthorizationPermissionAddedHandlerTest {
     assertThat(entity.getResourceType()).isEqualTo("USER");
 
     // Assert permissions
-    assertThat(entity.getPermissions()).hasSize(1);
-    assertThat(entity.getPermissions().get(0).type()).isEqualTo(PermissionType.UPDATE);
-    assertThat(entity.getPermissions().get(0).resourceIds()).containsExactly("resource1");
+    assertThat(entity.getPermissionType()).isEqualTo(PermissionType.UPDATE);
+    assertThat(entity.getResourceId()).isEqualTo("resource1");
   }
 
   @Test

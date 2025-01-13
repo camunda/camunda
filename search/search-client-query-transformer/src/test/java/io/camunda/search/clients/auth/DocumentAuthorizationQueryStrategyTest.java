@@ -11,7 +11,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.query.SearchQueryBuilders.authorizationSearchQuery;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,9 +28,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.entity.Permission;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -98,13 +95,9 @@ class DocumentAuthorizationQueryStrategyTest {
     when(authorizationSearchClient.findAllAuthorizations(any()))
         .thenReturn(
             List.of(
-                new AuthorizationEntity(
-                    null,
-                    null,
-                    null,
-                    List.of(
-                        new Permission(READ, Set.of("foo", "*")),
-                        new Permission(CREATE, Set.of("bar"))))));
+                new AuthorizationEntity(null, null, null, READ, "foo"),
+                new AuthorizationEntity(null, null, null, READ, "*"),
+                new AuthorizationEntity(null, null, null, READ, "bar")));
 
     // when
     final SearchQueryRequest result =
@@ -152,13 +145,8 @@ class DocumentAuthorizationQueryStrategyTest {
     when(authorizationSearchClient.findAllAuthorizations(authorizationQueryCaptor.capture()))
         .thenReturn(
             List.of(
-                new AuthorizationEntity(
-                    null,
-                    null,
-                    null,
-                    List.of(
-                        new Permission(READ, Set.of("foo")),
-                        new Permission(CREATE, Set.of("bar"))))));
+                new AuthorizationEntity(null, null, null, READ, "foo"),
+                new AuthorizationEntity(null, null, null, READ, "bar")));
 
     // when
     final SearchQueryRequest result =
