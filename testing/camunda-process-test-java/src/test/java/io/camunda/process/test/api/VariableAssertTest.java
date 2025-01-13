@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.VariableDto;
 import java.io.IOException;
 import java.time.Duration;
@@ -67,6 +68,15 @@ public class VariableAssertTest {
   void resetAssertions() {
     CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
     CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
+  }
+
+  @BeforeEach
+  void configureMocks() throws IOException {
+    final ProcessInstanceDto processInstance = new ProcessInstanceDto();
+    processInstance.setKey(PROCESS_INSTANCE_KEY);
+
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Collections.singletonList(processInstance));
   }
 
   private static VariableDto newVariable(final String variableName, final String variableValue) {

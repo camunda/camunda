@@ -16,7 +16,6 @@
 package io.camunda.process.test.api;
 
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,7 +25,6 @@ import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
@@ -122,7 +120,8 @@ public class ProcessInstanceAssertTest {
     @BeforeEach
     void configureMocks() throws IOException {
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
     }
 
     @Test
@@ -134,7 +133,7 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThat(processInstanceEvent).isActive();
 
       // then
-      verify(camundaDataSource).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findProcessInstances();
     }
 
     @Test
@@ -146,7 +145,7 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThat(processInstanceResult).isActive();
 
       // then
-      verify(camundaDataSource).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findProcessInstances();
     }
   }
 
@@ -157,7 +156,8 @@ public class ProcessInstanceAssertTest {
     void shouldBeActive() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -170,7 +170,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfCompleted() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -186,7 +187,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfTerminated() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -201,9 +203,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
-          .when(camundaDataSource)
-          .getProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -223,7 +223,8 @@ public class ProcessInstanceAssertTest {
     void shouldBeCompleted() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -236,7 +237,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfTerminated() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -257,8 +259,9 @@ public class ProcessInstanceAssertTest {
       final ProcessInstanceDto processInstanceCompleted =
           newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY))
-          .thenReturn(processInstanceActive, processInstanceCompleted);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstanceActive))
+          .thenReturn(Collections.singletonList(processInstanceCompleted));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -266,7 +269,7 @@ public class ProcessInstanceAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).isCompleted();
 
-      verify(camundaDataSource, times(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findProcessInstances();
     }
 
     @Test
@@ -274,7 +277,8 @@ public class ProcessInstanceAssertTest {
       // given
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -286,15 +290,13 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: %d] should be completed but was active.",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource, atLeast(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, atLeast(2)).findProcessInstances();
     }
 
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
-          .when(camundaDataSource)
-          .getProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -315,7 +317,8 @@ public class ProcessInstanceAssertTest {
     void shouldBeTerminated() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -328,7 +331,8 @@ public class ProcessInstanceAssertTest {
     void shouldFailIfCompleted() throws IOException {
       // given
       final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -349,8 +353,9 @@ public class ProcessInstanceAssertTest {
       final ProcessInstanceDto processInstanceTerminated =
           newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY))
-          .thenReturn(processInstanceActive, processInstanceTerminated);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstanceActive))
+          .thenReturn(Collections.singletonList(processInstanceTerminated));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -358,7 +363,7 @@ public class ProcessInstanceAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).isTerminated();
 
-      verify(camundaDataSource, times(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findProcessInstances();
     }
 
     @Test
@@ -366,7 +371,8 @@ public class ProcessInstanceAssertTest {
       // given
       final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getProcessInstance(PROCESS_INSTANCE_KEY)).thenReturn(processInstance);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -378,15 +384,13 @@ public class ProcessInstanceAssertTest {
               "Process instance [key: %d] should be terminated but was active.",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource, atLeast(2)).getProcessInstance(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, atLeast(2)).findProcessInstances();
     }
 
     @Test
     void shouldFailIfNotFound() throws IOException {
       // given
-      doThrow(new CamundaClientNotFoundException())
-          .when(camundaDataSource)
-          .getProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -402,6 +406,12 @@ public class ProcessInstanceAssertTest {
 
   @Nested
   class HasActiveElements {
+
+    @BeforeEach
+    void configureMocks() throws IOException {
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY)));
+    }
 
     @Test
     void shouldHasActiveElements() throws IOException {
@@ -590,6 +600,12 @@ public class ProcessInstanceAssertTest {
   @Nested
   class HasCompletedElements {
 
+    @BeforeEach
+    void configureMocks() throws IOException {
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY)));
+    }
+
     @Test
     void shouldHasCompletedElements() throws IOException {
       // given
@@ -777,6 +793,12 @@ public class ProcessInstanceAssertTest {
 
   @Nested
   class HasTerminatedElements {
+
+    @BeforeEach
+    void configureMocks() throws IOException {
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY)));
+    }
 
     @Test
     void shouldHasTerminatedElements() throws IOException {
