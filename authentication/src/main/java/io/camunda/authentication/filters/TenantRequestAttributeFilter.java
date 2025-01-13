@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.filters;
 
-import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -24,8 +24,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class TenantRequestAttributeFilter extends OncePerRequestFilter {
@@ -56,24 +55,17 @@ public class TenantRequestAttributeFilter extends OncePerRequestFilter {
     if (!multiTenancyCfg.isEnabled()) {
       return Set.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
-
-    return switch (principal) {
-      case final UsernamePasswordAuthenticationToken token -> {
-        if (!(token.getPrincipal() instanceof final CamundaUser user)) {
-          LOG.error("cannot find tenants: principal is not a camunda user");
-          yield null;
-        }
-        yield user.getTenants().stream().map(TenantDTO::tenantId).collect(Collectors.toSet());
-      }
-      case final OAuth2AuthenticationToken token -> {
-        LOG.error("cannot find tenants: tenant mapping isn't implemented for oidc");
-        yield null;
-      }
-      default -> {
-        LOG.error(
-            "cannot find tenants: unsupported principal type {}", principal.getClass().getName());
-        yield null;
-      }
-    };
+    if (!(principal instanceof final Authentication auth)) {
+      LOG.error(
+          "cannot find tenants: unsupported principal type: {}", principal.getClass().getName());
+      return null;
+    }
+    if (!(auth.getPrincipal() instanceof final CamundaPrincipal camundaPrincipal)) {
+      LOG.error("cannot find tenants: unsupported principal type: {}", auth.getClass().getName());
+      return null;
+    }
+    return camundaPrincipal.getAuthenticationContext().tenants().stream()
+        .map(TenantDTO::tenantId)
+        .collect(Collectors.toSet());
   }
 }

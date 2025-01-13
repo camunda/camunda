@@ -12,21 +12,10 @@ import static io.camunda.webapps.schema.descriptors.operate.template.OperationTe
 import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
 import static io.camunda.webapps.schema.entities.operation.OperationState.FAILED;
 
-import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.Script;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.JsonData;
-import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -36,24 +25,34 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Script;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 
-public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRepository
+public class OpensearchBatchOperationUpdateRepository extends OpensearchRepository
     implements BatchOperationUpdateRepository {
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
   private static final Integer RETRY_COUNT = 3;
-
   private final String batchOperationIndex;
   private final String operationIndex;
 
-  public ElasticsearchBatchOperationUpdateRepository(
-      final ElasticsearchAsyncClient client,
+  public OpensearchBatchOperationUpdateRepository(
+      final OpenSearchAsyncClient client,
       final Executor executor,
       final String batchOperationIndex,
       final String operationIndex,
       final Logger logger) {
-
     super(client, executor, logger);
     this.batchOperationIndex = batchOperationIndex;
     this.operationIndex = operationIndex;
@@ -75,22 +74,26 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
       return CompletableFuture.completedFuture(List.of());
     }
     final var batchOperationIdsValues = batchOperationIds.stream().map(FieldValue::of).toList();
-    final var completedStatesValues = Stream.of(COMPLETED, FAILED).map(FieldValue::of).toList();
+    final var completedStatesValues =
+        Stream.of(COMPLETED.name(), FAILED.name()).map(FieldValue::of).toList();
+
     final var batchOperationIdsQ =
-        QueryBuilders.bool(
-            b ->
-                b.must(
-                        m ->
-                            m.terms(
-                                t ->
-                                    t.field(OperationTemplate.BATCH_OPERATION_ID)
-                                        .terms(v -> v.value(batchOperationIdsValues))))
-                    .must(
-                        m ->
-                            m.terms(
-                                t ->
-                                    t.field(OperationTemplate.STATE)
-                                        .terms(v -> v.value(completedStatesValues)))));
+        QueryBuilders.terms()
+            .field(BATCH_OPERATION_ID)
+            .terms(v -> v.value(batchOperationIdsValues))
+            .build()
+            .toQuery();
+
+    final var statesQ =
+        QueryBuilders.terms()
+            .field(OperationTemplate.STATE)
+            .terms(v -> v.value(completedStatesValues))
+            .build()
+            .toQuery();
+
+    final var operationsQ =
+        QueryBuilders.bool().must(batchOperationIdsQ, statesQ).build().toQuery();
+
     final var aggregation =
         Aggregation.of(
             a -> a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationIds.size())));
@@ -98,11 +101,15 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
     final var request =
         new SearchRequest.Builder()
             .index(operationIndex)
-            .query(batchOperationIdsQ)
+            .query(operationsQ)
             .size(0)
             .aggregations(BATCH_OPERATION_IDAGG_NAME, aggregation)
             .build();
-    return client.search(request, Void.class).thenApply(this::processAggregations);
+    try {
+      return client.search(request, Void.class).thenApply(this::processAggregations);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   @Override
@@ -113,27 +120,19 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
     final var updates = documentUpdates.stream().map(this::createUpdateOperation).toList();
     final var request =
         new BulkRequest.Builder().operations(updates).source(s -> s.fetch(false)).build();
-    return client
-        .bulk(request)
-        .thenCompose(
-            r -> {
-              if (r.errors()) {
-                return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
-              }
-              return CompletableFuture.completedFuture(r.items().size());
-            });
-  }
-
-  private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {
-    return response
-        .aggregations()
-        .get(BATCH_OPERATION_IDAGG_NAME)
-        .sterms()
-        .buckets()
-        .array()
-        .stream()
-        .map(b -> new OperationsAggData(b.key().stringValue(), b.docCount()))
-        .collect(Collectors.toList());
+    try {
+      return client
+          .bulk(request)
+          .thenCompose(
+              r -> {
+                if (r.errors()) {
+                  return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
+                }
+                return CompletableFuture.completedFuture(r.items().size());
+              });
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   private BulkOperation createUpdateOperation(final DocumentUpdate update) {
@@ -147,7 +146,7 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
         .index(batchOperationIndex)
         .id(update.id())
         .retryOnConflict(RETRY_COUNT)
-        .action(a -> a.script(getBatchOperationUpdateScript(params)))
+        .script(getBatchOperationUpdateScript(params))
         .build()
         ._toBulkOperation();
   }
@@ -167,6 +166,18 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
                     .lang("painless")
                     .params(parameters))
         .build();
+  }
+
+  private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {
+    return response
+        .aggregations()
+        .get(BATCH_OPERATION_IDAGG_NAME)
+        .sterms()
+        .buckets()
+        .array()
+        .stream()
+        .map(b -> new OperationsAggData(b.key(), b.docCount()))
+        .collect(Collectors.toList());
   }
 
   @Override

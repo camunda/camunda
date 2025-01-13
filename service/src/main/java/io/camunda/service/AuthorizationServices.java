@@ -14,6 +14,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.entity.Permission;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -64,6 +65,31 @@ public class AuthorizationServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.authorization().read())))
         .findAllAuthorizations(query);
+  }
+
+  public List<String> getAuthorizedResources(
+      final Set<Long> ownerKeys,
+      final PermissionType permissionType,
+      final AuthorizationResourceType resourceType) {
+    final var authorizationQuery =
+        SearchQueryBuilders.authorizationSearchQuery(
+            fn ->
+                fn.filter(
+                    f ->
+                        f.ownerKeys(ownerKeys.stream().toList())
+                            .permissionType(permissionType)
+                            .resourceType(resourceType.name())));
+    return findAll(authorizationQuery).stream()
+        .map(AuthorizationEntity::permissions)
+        .flatMap(List::stream)
+        .map(Permission::resourceIds)
+        .flatMap(Set::stream)
+        .collect(Collectors.toList());
+  }
+
+  public List<String> getAuthorizedApplications(final Set<Long> ownerKeys) {
+    return getAuthorizedResources(
+        ownerKeys, PermissionType.READ, AuthorizationResourceType.APPLICATION);
   }
 
   public Set<String> fetchAssignedPermissions(
