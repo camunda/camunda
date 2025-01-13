@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.auth;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -36,7 +37,8 @@ public final class ClaimTransformer {
    * </ul>
    *
    * Additionally, claims with unsupported value types will be dropped and a warning will be logged.
-   * Supported value types are {@link String}, {@link Boolean}, and {@link Number}.
+   * Supported value types are {@link String}, {@link Boolean}, and {@link Number}. We also pass
+   * through {@link Collection} values without checking the type of the elements.
    *
    * @param claims A collection of user claims to add to.
    * @param key The key of the claim, without prefix, as it appears in the token. If the key is not
@@ -53,7 +55,10 @@ public final class ClaimTransformer {
       return;
     }
 
-    if (value instanceof String || value instanceof Boolean || value instanceof Number) {
+    if (value instanceof String
+        || value instanceof Boolean
+        || value instanceof Number
+        || value instanceof Collection<?>) {
       claims.put(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
     } else {
       LOG.debug("Dropping claim '{}' with unsupported value type '{}'", key, value.getClass());
