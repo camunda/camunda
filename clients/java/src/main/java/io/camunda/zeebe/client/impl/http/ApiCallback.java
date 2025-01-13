@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientHttpException;
@@ -112,7 +114,8 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     }
 
     response.completeExceptionally(
-        new ProblemException(code, reason, ProblemDetail.of(body.problem())));
+        new ProblemException(
+            code, reason, ofNullable(body.problem()).map(ProblemDetail::new).orElse(null)));
   }
 
   private void handleSuccessResponse(
