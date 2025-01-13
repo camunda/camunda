@@ -11,13 +11,16 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkRequest.Builder;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.slf4j.Logger;
@@ -29,16 +32,18 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBatchRequest.class);
   private final OpenSearchClient osClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
+  private final Builder bulkRequestBuilder;
   private final OpensearchScriptBuilder scriptBuilder;
+  private final Map<String, Function<String, Void>> errorHandlers;
 
   public OpensearchBatchRequest(
       final OpenSearchClient osClient,
-      final BulkRequest.Builder bulkRequestBuilder,
+      final Builder bulkRequestBuilder,
       final OpensearchScriptBuilder scriptBuilder) {
     this.osClient = osClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+    errorHandlers = new HashMap<>();
   }
 
   @Override
@@ -224,6 +229,11 @@ public class OpensearchBatchRequest implements BatchRequest {
     execute(true);
   }
 
+  @Override
+  public void onError(final String index, final Function<String, Void> errorHandler) {
+    errorHandlers.put(index, errorHandler);
+  }
+
   private void execute(final boolean shouldRefresh) throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
@@ -247,19 +257,30 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   private void validateNoErrors(final List<BulkResponseItem> items) throws PersistenceException {
+    final var errorItems = items.stream().filter(item -> item.error() != null).toList();
+    if (errorItems.isEmpty()) {
+      return;
+    }
+
     final String errorMessages =
-        items.stream()
-            .filter(item -> item.error() != null)
+        errorItems.stream()
             .map(
                 item ->
                     String.format(
                         "%s failed for type [%s] and id [%s]: %s",
                         item.operationType(), item.index(), item.id(), item.error().reason()))
             .collect(Collectors.joining(", \n"));
+    LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
 
-    if (!errorMessages.isEmpty()) {
-      LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
-      throw new PersistenceException("Operation failed: \n[" + errorMessages + "]");
-    }
+    errorItems.forEach(
+        item -> {
+          final Function<String, Void> errorHandler = errorHandlers.get(item.index());
+          if (errorHandler != null) {
+            errorHandler.apply(
+                String.format(
+                    "%s failed for type [%s] and id [%s]: %s",
+                    item.operationType(), item.index(), item.id(), item.error().reason()));
+          }
+        });
   }
 }

@@ -11,14 +11,17 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +32,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
+  private final Builder bulkRequestBuilder;
   private final ElasticsearchScriptBuilder scriptBuilder;
+  private final Map<String, Function<String, Void>> errorHandlers;
 
   public ElasticsearchBatchRequest(
       final ElasticsearchClient esClient,
-      final BulkRequest.Builder bulkRequestBuilder,
+      final Builder bulkRequestBuilder,
       final ElasticsearchScriptBuilder scriptBuilder) {
     this.esClient = esClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+    errorHandlers = new HashMap<>();
   }
 
   @Override
@@ -231,6 +236,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     execute(true);
   }
 
+  @Override
+  public void onError(final String index, final Function<String, Void> errorHandler) {
+    errorHandlers.put(index, errorHandler);
+  }
+
   private void execute(final boolean shouldRefresh) throws PersistenceException {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
@@ -250,19 +260,30 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   private void validateNoErrors(final List<BulkResponseItem> items) throws PersistenceException {
+    final var errorItems = items.stream().filter(item -> item.error() != null).toList();
+    if (errorItems.isEmpty()) {
+      return;
+    }
+
     final String errorMessages =
-        items.stream()
-            .filter(item -> item.error() != null)
+        errorItems.stream()
             .map(
                 item ->
                     String.format(
                         "%s failed for type [%s] and id [%s]: %s",
                         item.operationType(), item.index(), item.id(), item.error().reason()))
             .collect(Collectors.joining(", \n"));
+    LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
 
-    if (!errorMessages.isEmpty()) {
-      LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
-      throw new PersistenceException("Operation failed: \n[" + errorMessages + "]");
-    }
+    errorItems.forEach(
+        item -> {
+          final Function<String, Void> errorHandler = errorHandlers.get(item.index());
+          if (errorHandler != null) {
+            errorHandler.apply(
+                String.format(
+                    "%s failed for type [%s] and id [%s]: %s",
+                    item.operationType(), item.index(), item.id(), item.error().reason()));
+          }
+        });
   }
 }
