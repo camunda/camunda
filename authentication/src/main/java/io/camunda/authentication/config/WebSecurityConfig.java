@@ -18,6 +18,8 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -26,11 +28,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -39,6 +43,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 @Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
+  public static final String SESSION_COOKIE = "camunda-session";
+  public static final String LOGIN_URL = "/login";
+  public static final String LOGOUT_URL = "/logout";
+
   public static final String[] UNAUTHENTICATED_PATHS =
       new String[] {
         "/login",
@@ -55,6 +63,7 @@ public class WebSecurityConfig {
         "/v1/external/process/**",
         "/new/**"
       };
+
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
   @Bean
@@ -104,7 +113,19 @@ public class WebSecurityConfig {
                                 .getJwkSetUri())))
         .oauth2Login(oauthLoginConfigurer -> {})
         .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
+        .logout(
+            (logout) ->
+                logout
+                    .logoutUrl(LOGOUT_URL)
+                    .logoutSuccessHandler(this::genericSuccessHandler)
+                    .deleteCookies());
+  }
+
+  private void genericSuccessHandler(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    response.setStatus(HttpStatus.NO_CONTENT.value());
   }
 
   @Bean
