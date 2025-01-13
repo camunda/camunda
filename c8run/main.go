@@ -197,8 +197,8 @@ func main() {
 	baseDir, _ := os.Getwd()
 	parentDir := baseDir
 	elasticsearchVersion := "8.13.4"
-	camundaReleaseTag := "untagged-6aae82d948631897ab68"
-	camundaVersion := "8.7.0-alpha3-rc5"
+	camundaReleaseTag := "untagged-fb93be48e97526f512dc"
+	camundaVersion := "8.7.0-alpha3-rc6"
 	connectorsVersion := "8.7.0-alpha3.2"
 	composeTag := "8.7-alpha2"
 	composeExtractedFolder := "camunda-platform-8.7-alpha2"
