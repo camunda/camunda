@@ -549,6 +549,7 @@ public class RequestMapper {
                 .toList());
         if (authenticatedPrincipal instanceof final CamundaUser user) {
           authenticatedUserKey = user.getUserKey();
+          claims.put(Authorization.AUTHORIZED_USERNAME, user.getUsername());
         }
       }
 
@@ -558,10 +559,6 @@ public class RequestMapper {
             .forEach(
                 (key, value) -> claims.put(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
       }
-    }
-
-    if (authenticatedUserKey != null) {
-      claims.put(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
     }
 
     return new Builder()

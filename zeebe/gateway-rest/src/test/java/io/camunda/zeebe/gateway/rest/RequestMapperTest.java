@@ -40,19 +40,19 @@ class RequestMapperTest {
   }
 
   @Test
-  void tokenContainsUserKeyWithBasicAuth() {
+  void tokenContainsUsernameWithBasicAuth() {
 
     // given
-    final long userKey = 1L;
-    setUsernamePasswordAuthenticationInContext(userKey);
+    final var username = "username";
+    setUsernamePasswordAuthenticationInContext(username);
 
     // when
     final var claims = RequestMapper.getAuthentication().claims();
 
     // then
     assertNotNull(claims);
-    assertThat(claims).containsKey(Authorization.AUTHORIZED_USER_KEY);
-    assertThat(claims.get(Authorization.AUTHORIZED_USER_KEY)).isEqualTo(userKey);
+    assertThat(claims).containsKey(Authorization.AUTHORIZED_USERNAME);
+    assertThat(claims.get(Authorization.AUTHORIZED_USERNAME)).isEqualTo(username);
   }
 
   @Test
@@ -92,13 +92,13 @@ class RequestMapperTest {
     SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationToken);
   }
 
-  private void setUsernamePasswordAuthenticationInContext(final long userKey) {
+  private void setUsernamePasswordAuthenticationInContext(final String username) {
     final UsernamePasswordAuthenticationToken authenticationToken =
         new UsernamePasswordAuthenticationToken(
             CamundaUserBuilder.aCamundaUser()
-                .withUsername("admin")
+                .withUsername(username)
                 .withPassword("admin")
-                .withUserKey(userKey)
+                .withUserKey(1L)
                 .build(),
             null);
     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
