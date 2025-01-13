@@ -200,7 +200,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
     channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
-
+    // Fix in ZeebeClientImpl 8.6
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
       if (!serviceConfig.isEmpty()) {
