@@ -66,7 +66,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
   @Override
   public ProcessInstanceAssert isTerminated() {
-    hasProcessInstanceInState(ProcessInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
+    hasProcessInstanceInState(ProcessInstanceState.CANCELED, ProcessInstanceAssertj::isEnded);
     return this;
   }
 
@@ -156,14 +156,14 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
                 final ProcessInstanceDto processInstance = dataSource.getProcessInstance(actual);
                 reference.set(processInstance);
 
-                assertThat(processInstance.getState()).isEqualTo(expectedState);
+                assertThat(processInstance.getProcessInstanceState()).isEqualTo(expectedState);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
       final String actualState =
           Optional.ofNullable(reference.get())
-              .map(ProcessInstanceDto::getState)
+              .map(ProcessInstanceDto::getProcessInstanceState)
               .map(ProcessInstanceAssertj::formatState)
               .orElse("not activated");
 
@@ -267,6 +267,8 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   private static String formatState(final ProcessInstanceState state) {
     if (state == null) {
       return "not activated";
+    } else if (state == ProcessInstanceState.CANCELED) {
+      return "terminated";
     } else {
       return state.name().toLowerCase();
     }
