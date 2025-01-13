@@ -7,8 +7,13 @@
  */
 
 import {test as base} from './test-fixtures';
+import {type Page} from '@playwright/test';
 
-const test = base.extend({
+type PlaywrightFixtures = {
+  page: Page;
+};
+
+const test = base.extend<PlaywrightFixtures>({
   page: async ({page}, use) => {
     await page.route('**/v2/license', (route) =>
       route.fulfill({

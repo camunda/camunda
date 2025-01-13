@@ -39,7 +39,7 @@ final class EventFromIncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = EventTemplate.INDEX_NAME;
 
-  private final EventFromIncidentHandler underTest = new EventFromIncidentHandler(indexName, false);
+  private final EventFromIncidentHandler underTest = new EventFromIncidentHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

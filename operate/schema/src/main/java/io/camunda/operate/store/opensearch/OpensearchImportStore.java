@@ -10,13 +10,11 @@ package io.camunda.operate.store.opensearch;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex.META_CONCURRENCY_MODE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.Either;
@@ -24,12 +22,9 @@ import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
-import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,32 +98,6 @@ public class OpensearchImportStore implements ImportStore {
         return Either.left(e);
       }
     }
-  }
-
-  @Override
-  public boolean getConcurrencyMode() {
-    final String indexName = importPositionType.getFullQualifiedName();
-    final Map<String, IndexMapping> indexMappings =
-        richOpenSearchClient.index().getIndexMappings(indexName);
-    if (indexMappings.get(indexName).getMetaProperties() == null) {
-      return false;
-    } else {
-      final Object concurrencyMode =
-          indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
-      return concurrencyMode != null && (boolean) concurrencyMode;
-    }
-  }
-
-  @Override
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    final String indexName = importPositionType.getFullQualifiedName();
-    LOGGER.debug("Meta field will be updated. Index name: {}. ");
-    final PutMappingRequest request =
-        new PutMappingRequest.Builder()
-            .index(indexName)
-            .meta(META_CONCURRENCY_MODE, JsonData.of(concurrencyMode))
-            .build();
-    richOpenSearchClient.index().putMapping(request);
   }
 
   private void withImportPositionTimer(final Callable<Void> action) throws Exception {

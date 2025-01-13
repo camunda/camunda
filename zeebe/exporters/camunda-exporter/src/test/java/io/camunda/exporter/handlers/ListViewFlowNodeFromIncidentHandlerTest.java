@@ -29,7 +29,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
   private final ListViewFlowNodeFromIncidentHandler underTest =
-      new ListViewFlowNodeFromIncidentHandler(indexName, false);
+      new ListViewFlowNodeFromIncidentHandler(indexName);
 
   @Test
   public void testGetHandledValueType() {
@@ -92,40 +92,6 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
             indexName,
             inputEntity.getId(),
             inputEntity,
-            expectedUpdateFields,
-            String.valueOf(inputEntity.getProcessInstanceKey()));
-  }
-
-  @Test
-  public void shouldUpsertEntityWithConcurrencyModeOnFlush() {
-    // given
-    final ListViewFlowNodeFromIncidentHandler underTest =
-        new ListViewFlowNodeFromIncidentHandler(indexName, true);
-    final FlowNodeInstanceForListViewEntity inputEntity =
-        new FlowNodeInstanceForListViewEntity()
-            .setId("111")
-            .setKey(111L)
-            .setPartitionId(3)
-            .setTenantId("tenantId")
-            .setProcessInstanceKey(66L)
-            .setErrorMessage("error")
-            .setPositionIncident(123L);
-    inputEntity.getJoinRelation().setParent(66L);
-
-    final BatchRequest mockRequest = mock(BatchRequest.class);
-
-    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
-    expectedUpdateFields.put(ERROR_MESSAGE, inputEntity.getErrorMessage());
-    expectedUpdateFields.put(INCIDENT_POSITION, inputEntity.getPositionIncident());
-    // when
-    underTest.flush(inputEntity, mockRequest);
-    // then
-    verify(mockRequest, times(1))
-        .upsertWithScriptAndRouting(
-            indexName,
-            inputEntity.getId(),
-            inputEntity,
-            underTest.getIncidentScript(),
             expectedUpdateFields,
             String.valueOf(inputEntity.getProcessInstanceKey()));
   }

@@ -36,7 +36,7 @@ final class EventFromProcessInstanceHandlerTest {
   private final String indexName = EventTemplate.INDEX_NAME;
 
   private final EventFromProcessInstanceHandler underTest =
-      new EventFromProcessInstanceHandler(indexName, false);
+      new EventFromProcessInstanceHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

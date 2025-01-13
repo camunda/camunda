@@ -18,8 +18,4 @@ public interface ImportStore {
       throws IOException;
 
   Either<Throwable, Boolean> updateImportPositions(List<ImportPositionEntity> positions);
-
-  boolean getConcurrencyMode();
-
-  void setConcurrencyMode(boolean concurrencyMode);
 }

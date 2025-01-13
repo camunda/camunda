@@ -226,6 +226,34 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
+  public UserTaskFilter followUpDate(final OffsetDateTime followUpDate) {
+    followUpDate(b -> b.eq(followUpDate));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter followUpDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setFollowUpDate(property.build());
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter dueDate(final OffsetDateTime dueDate) {
+    dueDate(b -> b.eq(dueDate));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter dueDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setDueDate(property.build());
+    return this;
+  }
+
+  @Override
   protected UserTaskFilterRequest getSearchRequestProperty() {
     return filter;
   }

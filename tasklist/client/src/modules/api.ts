@@ -329,7 +329,7 @@ const api = {
         body,
       });
     },
-    getDocument: async (id: string) => {
+    getDocument: (id: string) => {
       return new Request(getFullURL(`/v2/documents/${id}`), {
         method: 'GET',
         ...BASE_REQUEST_OPTIONS,

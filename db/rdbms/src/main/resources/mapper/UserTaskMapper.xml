@@ -251,6 +251,21 @@
       </foreach>
     </if>
 
+    <!-- Due Date Filters -->
+    <if test="filter.dueDateOperations != null and !filter.dueDateOperations.isEmpty()">
+      <foreach collection="filter.dueDateOperations" item="operation">
+        AND ut.DUE_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Follow-Up Date Filters -->
+    <if test="filter.followUpDateOperations != null and !filter.followUpDateOperations.isEmpty()">
+      <foreach collection="filter.followUpDateOperations" item="operation">
+        AND ut.FOLLOW_UP_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
 
 
     <!-- Variables Filter -->

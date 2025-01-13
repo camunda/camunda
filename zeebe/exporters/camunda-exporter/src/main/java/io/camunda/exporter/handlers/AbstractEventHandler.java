@@ -40,11 +40,9 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<EventEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
-  protected final boolean concurrencyMode;
 
-  public AbstractEventHandler(final String indexName, final boolean concurrencyMode) {
+  public AbstractEventHandler(final String indexName) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
   }
 
   @Override
@@ -112,65 +110,6 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     }
 
     // write event
-    if (concurrencyMode) {
-      batchRequest.upsertWithScript(
-          indexName, entity.getId(), entity, getScript(positionFieldName), jsonMap);
-    } else {
-      batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
-    }
-  }
-
-  private String getScript(final String fieldName) {
-    return """
-    if (ctx._source.%1$s == null || ctx._source.%1$s < params.%1$s) {
-        ctx._source.%1$s = params.%1$s;
-        ctx._source.%2$s = params.%2$s;
-        ctx._source.%3$s = params.%3$s;
-        ctx._source.%4$s = params.%4$s;
-        ctx._source.%5$s = params.%5$s;
-        ctx._source.%6$s = params.%6$s;
-        ctx._source.%7$s = params.%7$s;
-        ctx._source.%8$s = params.%8$s;
-        if (params.%9$s != null) {
-            ctx._source.%9$s = params.%9$s;
-            ctx._source.%10$s = params.%10$s;
-        }
-        if (params.%11$s != null) {
-            ctx._source.%11$s = params.%11$s;
-        }
-        if (params.%12$s != null) {
-            ctx._source.%12$s = params.%12$s;
-            ctx._source.%13$s = params.%13$s;
-            ctx._source.%14$s = params.%14$s;
-            ctx._source.%15$s = params.%15$s;
-        }
-        if (params.%16$s != null) {
-            ctx._source.%16$s = params.%16$s;
-            ctx._source.%17$s = params.%17$s;
-        }
-        if (params.%18$s != null) {
-            ctx._source.%18$s = params.%18$s;
-        }
-    }
-    """
-        .formatted(
-            fieldName,
-            KEY,
-            EVENT_SOURCE_TYPE,
-            EVENT_TYPE,
-            DATE_TIME,
-            PROCESS_KEY,
-            BPMN_PROCESS_ID,
-            FLOW_NODE_ID,
-            INCIDENT_ERROR_MSG,
-            INCIDENT_ERROR_TYPE,
-            JOB_KEY,
-            JOB_TYPE,
-            JOB_RETRIES,
-            JOB_WORKER,
-            JOB_CUSTOM_HEADERS,
-            MESSAGE_NAME,
-            CORRELATION_KEY,
-            METADATA);
+    batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
   }
 }

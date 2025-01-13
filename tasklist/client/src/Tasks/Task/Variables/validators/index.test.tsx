@@ -54,8 +54,8 @@ describe('Validators', () => {
       'line\nbreak',
       'carriage\rreturn',
       'form\ffeed',
-    ])(`should not allow: %s`, (variableName) => {
-      const result = validateNameCharacters(
+    ])(`should not allow: %s`, async (variableName) => {
+      const resultPromise = validateNameCharacters(
         variableName,
         {newVariables: [{name: variableName}]},
         {
@@ -65,6 +65,8 @@ describe('Validators', () => {
       );
 
       vi.runOnlyPendingTimers();
+
+      const result = await resultPromise;
 
       expect(result).toBe('Name is invalid');
     });
@@ -86,8 +88,8 @@ describe('Validators', () => {
 
     it.each(['', ' ', '           '])(
       'should not allow empty spaces',
-      (variableName) => {
-        const result = validateNameComplete(
+      async (variableName) => {
+        const resultPromise = validateNameComplete(
           variableName,
           {newVariables: [{name: variableName, value: '1'}]},
           {
@@ -98,7 +100,9 @@ describe('Validators', () => {
 
         vi.runOnlyPendingTimers();
 
-        expect(result).resolves.toBe('Name has to be filled');
+        const result = await resultPromise;
+
+        expect(result).toBe('Name has to be filled');
       },
     );
   });
@@ -140,61 +144,67 @@ describe('Validators', () => {
       ).toBe(undefined);
     });
 
-    it.each(['test1', 'test2'])('should not allow: %s', (variableName) => {
-      const [activeResult, errorResult, validatingResult] = [
-        validateDuplicateNames(
-          variableName,
-          {
-            '#test1': 'value1',
-            newVariables: [
-              {name: 'test2', value: 'value2'},
-              {name: 'test2', value: 'value3'},
-            ],
-          },
-          {
-            ...mockMeta,
-            name: '',
-            active: true,
-          },
-        ),
-        validateDuplicateNames(
-          variableName,
-          {
-            '#test1': 'value1',
-            newVariables: [
-              {name: 'test2', value: 'value2'},
-              {name: 'test2', value: 'value3'},
-            ],
-          },
-          {
-            ...mockMeta,
-            name: '',
-            error: 'Name must be unique',
-          },
-        ),
-        validateDuplicateNames(
-          variableName,
-          {
-            '#test1': 'value1',
-            newVariables: [
-              {name: 'test2', value: 'value2'},
-              {name: 'test2', value: 'value3'},
-            ],
-          },
-          {
-            ...mockMeta,
-            name: '',
-            validating: true,
-          },
-        ),
-      ];
+    it.each(['test1', 'test2'])(
+      'should not allow: %s',
+      async (variableName) => {
+        const resultPromise = Promise.all([
+          validateDuplicateNames(
+            variableName,
+            {
+              '#test1': 'value1',
+              newVariables: [
+                {name: 'test2', value: 'value2'},
+                {name: 'test2', value: 'value3'},
+              ],
+            },
+            {
+              ...mockMeta,
+              name: '',
+              active: true,
+            },
+          ),
+          validateDuplicateNames(
+            variableName,
+            {
+              '#test1': 'value1',
+              newVariables: [
+                {name: 'test2', value: 'value2'},
+                {name: 'test2', value: 'value3'},
+              ],
+            },
+            {
+              ...mockMeta,
+              name: '',
+              error: 'Name must be unique',
+            },
+          ),
+          validateDuplicateNames(
+            variableName,
+            {
+              '#test1': 'value1',
+              newVariables: [
+                {name: 'test2', value: 'value2'},
+                {name: 'test2', value: 'value3'},
+              ],
+            },
+            {
+              ...mockMeta,
+              name: '',
+              validating: true,
+            },
+          ),
+        ]);
 
-      vi.runOnlyPendingTimers();
+        vi.runOnlyPendingTimers();
 
-      expect(activeResult).resolves.toBe('Name must be unique');
-      expect(errorResult).toBe('Name must be unique');
-      expect(validatingResult).resolves.toBe('Name must be unique');
-    });
+        const [activeResult, errorResult, validatingResult] =
+          await resultPromise;
+
+        expect(activeResult).toBe('Name must be unique');
+        expect(errorResult).toBe('Name must be unique');
+        expect(validatingResult).toBe('Name must be unique');
+      },
+    );
   });
 
   describe('validateValueComplete', () => {
@@ -233,8 +243,8 @@ describe('Validators', () => {
 
     it.each(['abc', '"abc', '{name: "value"}', '[[0]', '() => {}'])(
       'should not allow: %s',
-      (value) => {
-        const result = validateValueComplete(
+      async (value) => {
+        const resultPromise = validateValueComplete(
           value,
           {
             newVariables: [{name: 'test', value}],
@@ -247,7 +257,9 @@ describe('Validators', () => {
 
         vi.runOnlyPendingTimers();
 
-        expect(result).resolves.toBe('Value has to be JSON or a literal');
+        const result = await resultPromise;
+
+        expect(result).toBe('Value has to be JSON or a literal');
       },
     );
   });
@@ -273,8 +285,8 @@ describe('Validators', () => {
 
     it.each(['abc', '"abc', '{name: "value"}', '[[0]', '() => {}'])(
       'should not allow: %s',
-      (value) => {
-        const result = validateValueJSON(
+      async (value) => {
+        const resultPromise = validateValueJSON(
           value,
           {
             newVariables: [{name: 'test', value}],
@@ -287,7 +299,9 @@ describe('Validators', () => {
 
         vi.runOnlyPendingTimers();
 
-        expect(result).resolves.toBe('Value has to be JSON or a literal');
+        const result = await resultPromise;
+
+        expect(result).toBe('Value has to be JSON or a literal');
       },
     );
   });

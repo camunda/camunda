@@ -52,21 +52,9 @@ describe('license note', () => {
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: 'Learn more',
-        expanded: false,
-      }),
-    ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: 'Learn more'}));
+    await user.click(screen.getByText('Non-production license'));
 
-    expect(
-      screen.getByRole('button', {
-        name: 'Learn more',
-        expanded: true,
-      }),
-    ).toBeInTheDocument();
     expect(
       screen.getByText(
         /Non-production license. For production usage details, visit/,

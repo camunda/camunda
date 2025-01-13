@@ -22,6 +22,8 @@ type C8RunSettings struct {
 	keystorePassword     string
 	logLevel             string
 	disableElasticsearch bool
+	username             string
+	password             string
 	docker               bool
 }
 

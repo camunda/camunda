@@ -166,17 +166,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new DecisionHandler(indexDescriptors.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
-                false,
-                processCache),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
             new ListViewFlowNodeFromIncidentHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromJobHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewFlowNodeFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewVariableFromVariableHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new VariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
@@ -189,9 +187,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(),
-                false,
-                processCache),
+                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
             new DecisionEvaluationHandler(
@@ -209,13 +205,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
             new EventFromIncidentHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new EventFromJobHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new EventFromProcessInstanceHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new EventFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName(), false),
+                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
             new UserTaskHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
@@ -244,7 +240,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
             new MetricFromDecisionEvaluationHandler(
                 indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
-            new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName(), false),
+            new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()));
   }

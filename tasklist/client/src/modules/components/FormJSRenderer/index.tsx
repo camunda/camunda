@@ -21,7 +21,7 @@ import set from 'lodash/set';
 import {api} from 'modules/api';
 
 const defaultDocumentsEndpointKey = decodeURIComponent(
-  (await api.v2.getDocument('{documentId}')).url,
+  api.v2.getDocument('{documentId}').url,
 );
 
 type Props = {

@@ -135,7 +135,7 @@ const OSNotifications: React.FC =
           },
         );
         const navigate = useNavigate();
-        const notification = useRef<Notification | undefined>();
+        const notification = useRef<Notification | undefined>(undefined);
         useBeforeUnload(
           useCallback(() => {
             if (notification.current) {

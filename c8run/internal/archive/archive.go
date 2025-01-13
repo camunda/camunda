@@ -17,7 +17,7 @@ import (
 const OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
 const ReadWriteMode = 0755
 
-func DownloadFile(filepath string, url string) error {
+func DownloadFile(filepath string, url string, authToken string) error {
 	// if the file already exists locally, don't download a new copy
 	_, err := os.Stat(filepath)
 	if !errors.Is(err, os.ErrNotExist) {
@@ -30,7 +30,16 @@ func DownloadFile(filepath string, url string) error {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url)
+	}
+	if authToken != "" {
+		req.Header.Add("Authorization", "Bearer "+authToken)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("DownloadFile: failed to download from url: %s\n%w\n%s", url, err, debug.Stack())
 	}
