@@ -19,10 +19,12 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public abstract class AbstractOperationHandler<R extends RecordValue>
     implements ExportHandler<OperationEntity, R> {
 
+  protected static final Function<String, Void> NOOP_ERROR_HANDLER = error -> null;
   protected final String indexName;
 
   public AbstractOperationHandler(final String indexName) {
@@ -76,6 +78,6 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
 
   @Override
   public void onError(final BatchRequest batchRequest) throws PersistenceException {
-    // do nothing
+    batchRequest.onError(indexName, NOOP_ERROR_HANDLER);
   }
 }

@@ -256,7 +256,7 @@ public class OpensearchBatchRequest implements BatchRequest {
     }
   }
 
-  private void validateNoErrors(final List<BulkResponseItem> items) throws PersistenceException {
+  private void validateNoErrors(final List<BulkResponseItem> items) {
     final var errorItems = items.stream().filter(item -> item.error() != null).toList();
     if (errorItems.isEmpty()) {
       return;
@@ -275,11 +275,14 @@ public class OpensearchBatchRequest implements BatchRequest {
     errorItems.forEach(
         item -> {
           final Function<String, Void> errorHandler = errorHandlers.get(item.index());
+          final String message =
+              String.format(
+                  "%s failed for type [%s] and id [%s]: %s",
+                  item.operationType(), item.index(), item.id(), item.error().reason());
           if (errorHandler != null) {
-            errorHandler.apply(
-                String.format(
-                    "%s failed for type [%s] and id [%s]: %s",
-                    item.operationType(), item.index(), item.id(), item.error().reason()));
+            errorHandler.apply(message);
+          } else {
+            throw new PersistenceException(message);
           }
         });
   }
