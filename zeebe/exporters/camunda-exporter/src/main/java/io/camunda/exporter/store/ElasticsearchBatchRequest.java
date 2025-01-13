@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   private final ElasticsearchClient esClient;
   private final Builder bulkRequestBuilder;
   private final ElasticsearchScriptBuilder scriptBuilder;
-  private final Map<String, Function<String, Void>> errorHandlers;
+  private final Map<String, Consumer<String>> errorHandlers;
 
   public ElasticsearchBatchRequest(
       final ElasticsearchClient esClient,
@@ -237,7 +237,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void onError(final String index, final Function<String, Void> errorHandler) {
+  public void onError(final String index, final Consumer<String> errorHandler) {
     errorHandlers.put(index, errorHandler);
   }
 
@@ -277,13 +277,13 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
     errorItems.forEach(
         item -> {
-          final Function<String, Void> errorHandler = errorHandlers.get(item.index());
+          final var errorHandler = errorHandlers.get(item.index());
           final String message =
               String.format(
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
           if (errorHandler != null) {
-            errorHandler.apply(message);
+            errorHandler.accept(message);
           } else {
             throw new PersistenceException(message);
           }

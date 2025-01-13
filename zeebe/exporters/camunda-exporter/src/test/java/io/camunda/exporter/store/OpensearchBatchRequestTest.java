@@ -20,7 +20,7 @@ import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -442,7 +442,7 @@ class OpensearchBatchRequestTest {
     // Given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
-    final Function<String, Void> errorHandler = mock(Function.class);
+    final Consumer<String> errorHandler = mock(Consumer.class);
     batchRequest.onError(INDEX_WITH_HANDLER, errorHandler);
 
     final BulkResponseItem item = mock(BulkResponseItem.class);
@@ -461,6 +461,6 @@ class OpensearchBatchRequestTest {
     batchRequest.execute();
 
     // Then
-    verify(errorHandler).apply(any());
+    verify(errorHandler).accept(any());
   }
 }

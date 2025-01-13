@@ -10,7 +10,7 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
 /** A {@link BatchRequest} contains updates to one or more {@link ExporterEntity} */
 @SuppressWarnings("rawtypes")
@@ -74,5 +74,5 @@ public interface BatchRequest {
    *     for.
    * @param errorHandler the error handler to call when an error occurs
    */
-  void onError(String index, Function<String, Void> errorHandler);
+  void onError(String index, Consumer<String> errorHandler);
 }

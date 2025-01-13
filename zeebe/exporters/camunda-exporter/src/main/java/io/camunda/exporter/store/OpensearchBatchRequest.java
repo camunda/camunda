@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -34,7 +34,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   private final OpenSearchClient osClient;
   private final Builder bulkRequestBuilder;
   private final OpensearchScriptBuilder scriptBuilder;
-  private final Map<String, Function<String, Void>> errorHandlers;
+  private final Map<String, Consumer<String>> errorHandlers;
 
   public OpensearchBatchRequest(
       final OpenSearchClient osClient,
@@ -230,7 +230,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public void onError(final String index, final Function<String, Void> errorHandler) {
+  public void onError(final String index, final Consumer<String> errorHandler) {
     errorHandlers.put(index, errorHandler);
   }
 
@@ -274,13 +274,13 @@ public class OpensearchBatchRequest implements BatchRequest {
 
     errorItems.forEach(
         item -> {
-          final Function<String, Void> errorHandler = errorHandlers.get(item.index());
+          final var errorHandler = errorHandlers.get(item.index());
           final String message =
               String.format(
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
           if (errorHandler != null) {
-            errorHandler.apply(message);
+            errorHandler.accept(message);
           } else {
             throw new PersistenceException(message);
           }
