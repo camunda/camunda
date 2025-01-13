@@ -500,10 +500,10 @@ public final class EndpointManager {
           });
     }
 
-    // retrieve the user key from the context and add it to the authorization if present
-    final Long userKey = Context.current().call(AuthenticationInterceptor.USER_KEY::get);
-    if (userKey != null) {
-      claims.put(Authorization.AUTHORIZED_USER_KEY, userKey);
+    // retrieve the username from the context and add it to the authorization if present
+    final String username = Context.current().call(AuthenticationInterceptor.USERNAME::get);
+    if (username != null) {
+      claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }
 
     brokerRequest.setAuthorization(claims);
