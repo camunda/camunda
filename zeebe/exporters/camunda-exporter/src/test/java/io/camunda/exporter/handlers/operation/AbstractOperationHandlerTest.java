@@ -9,9 +9,11 @@ package io.camunda.exporter.handlers.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -123,8 +125,17 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
     underTest.flush(entity, mockRequest);
 
     // then
-    verify(mockRequest)
-        .updateWithScript(eq(indexName), eq(entity.getId()), anyString(), eq(expectedUpdateFields));
+    verify(mockRequest).update(eq(indexName), eq(entity.getId()), eq(expectedUpdateFields));
+  }
+
+  @Test
+  void shouldSwallowErrors() {
+    // given
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    // when
+    underTest.onError(mockRequest);
+    // then
+    verify(mockRequest, never()).onError(anyString(), any());
   }
 
   protected Record<R> generateRecord(final Intent intent) {

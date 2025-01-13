@@ -66,7 +66,7 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
     updateFields.put(OperationTemplate.LOCK_OWNER, entity.getLockOwner());
     updateFields.put(OperationTemplate.LOCK_EXPIRATION_TIME, entity.getLockExpirationTime());
 
-    batchRequest.updateWithScript(indexName, entity.getId(), getScript(), updateFields);
+    batchRequest.update(indexName, entity.getId(), updateFields);
   }
 
   @Override
@@ -74,21 +74,8 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
     return indexName;
   }
 
-  private String getScript() {
-    return """
-    if (ctx._source != null) {
-        ctx._source.%1$s = params.%1$s;
-        ctx._source.%2$s = params.%2$s;
-        ctx._source.%3$s = params.%3$s;
-        ctx._source.%4$s = params.%4$s;
-    } else {
-        ctx.op = 'noop';
-    }
-  """
-        .formatted(
-            OperationTemplate.STATE,
-            OperationTemplate.COMPLETED_DATE,
-            OperationTemplate.LOCK_OWNER,
-            OperationTemplate.LOCK_EXPIRATION_TIME);
+  @Override
+  public void onError(final BatchRequest batchRequest) throws PersistenceException {
+    // do nothing
   }
 }
