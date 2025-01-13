@@ -61,7 +61,8 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
   }
 
   @Override
-  public UpdateJobCommandStep2 update(final JobChangeset jobChangeset) {
+  public UpdateJobCommandStep2 update(
+      final io.camunda.zeebe.client.protocol.rest.JobChangeset jobChangeset) {
     httpRequestObject.setChangeset(jobChangeset);
     return this;
   }
