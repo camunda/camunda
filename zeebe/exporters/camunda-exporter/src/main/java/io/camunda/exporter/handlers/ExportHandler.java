@@ -80,4 +80,19 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    * @return the index name that the handler entities are flushed to.
    */
   String getIndexName();
+
+  /**
+   * Adds a custom error handling behavior to the BatchRequest, in case of failing to execute the
+   * flushed requests from this handler. By default, if not overridden, a {@link
+   * PersistenceException} is thrown.
+   *
+   * @param batchRequest the batch request to add the error handler to.
+   */
+  default void onError(final BatchRequest batchRequest) {
+    batchRequest.onError(
+        getIndexName(),
+        (cause) -> {
+          throw new PersistenceException(cause);
+        });
+  }
 }
