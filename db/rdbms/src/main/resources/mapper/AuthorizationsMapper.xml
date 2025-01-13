@@ -11,39 +11,25 @@
 <mapper namespace="io.camunda.db.rdbms.sql.AuthorizationMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
-    SELECT COUNT(*) FROM (
-    SELECT DISTINCT OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE
-    FROM AUTHORIZATIONS a
+    SELECT COUNT(*)
+    FROM AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
-    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery"
     resultMap="io.camunda.db.rdbms.sql.AuthorizationMapper.authorizationResultMap">
     SELECT
-    t.OWNER_KEY,
-    t.OWNER_TYPE,
-    t.RESOURCE_TYPE,
-    a.PERMISSION_TYPE,
-    a.RESOURCE_ID
-    FROM (
-    SELECT * FROM (
-    SELECT DISTINCT
     OWNER_KEY,
     OWNER_TYPE,
-    RESOURCE_TYPE
+    RESOURCE_TYPE,
+    PERMISSION_TYPE,
+    RESOURCE_ID
     FROM AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
-    ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <!-- inner orderBy for keyset pagination -->
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
-    ) t
-    JOIN AUTHORIZATIONS a ON t.OWNER_KEY = a.OWNER_KEY AND t.OWNER_TYPE = a.OWNER_TYPE AND
-    t.RESOURCE_TYPE = a.RESOURCE_TYPE
-    <!-- outer orderBy for actual sorting -->
-    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchFilter">
@@ -53,14 +39,13 @@
     <if test="filter.permissionType != null">AND PERMISSION_TYPE = #{filter.permissionType}</if>
     <if test="filter.ownerKeys != null and !filter.ownerKeys.isEmpty()">
       AND OWNER_KEY IN
-      <foreach collection="filter.ownerKeys" item="value" open="(" separator=", "
-        close=")">#{value}
+      <foreach collection="filter.ownerKeys" item="value" open="(" separator=", " close=")"> #{value}
       </foreach>
     </if>
     <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">
       AND RESOURCE_ID IN
-      <foreach collection="filter.resourceIds" item="value" open="(" separator=", "
-        close=")">#{value}
+      <foreach collection="filter.resourceIds" item="value" open="(" separator=", " close=")">
+        #{value}
       </foreach>
     </if>
   </sql>
@@ -70,44 +55,24 @@
     <id column="OWNER_KEY" property="ownerKey"/>
     <id column="OWNER_TYPE" property="ownerType"/>
     <id column="RESOURCE_TYPE" property="resourceType"/>
-    <collection property="permissions"
-      ofType="io.camunda.db.rdbms.write.domain.AuthorizationPermissionDbModel"
-      javaType="java.util.List">
-      <id column="PERMISSION_TYPE" property="type"/>
-      <collection property="resourceIds" ofType="java.lang.String" javaType="java.util.Set">
-        <id column="RESOURCE_ID"/>
-      </collection>
-    </collection>
+    <id column="PERMISSION_TYPE" property="permissionType"/>
+    <id column="RESOURCE_ID" property="resourceId"/>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
     INSERT INTO AUTHORIZATIONS (OWNER_KEY, OWNER_TYPE, RESOURCE_TYPE, PERMISSION_TYPE, RESOURCE_ID)
-    VALUES
-    <foreach collection="permissions" item="permission" separator=",">
-      <foreach collection="permission.resourceIds" item="resourceId" separator=",">
-        (#{ownerKey}, #{ownerType}, #{resourceType}, #{permission.type}, #{resourceId})
-      </foreach>
-    </foreach>
+    VALUES (#{ownerKey}, #{ownerType}, #{resourceType}, #{permissionType}, #{resourceId})
   </insert>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
     flushCache="true">
-    DELETE
-    FROM AUTHORIZATIONS
+    DELETE FROM AUTHORIZATIONS
     WHERE OWNER_KEY = #{ownerKey}
-    AND OWNER_TYPE = #{ownerType}
-    AND RESOURCE_TYPE = #{resourceType}
-    <if test="permissions != null and !permissions.isEmpty()">
-      <foreach collection="permissions" item="permission" open=" AND (" separator=" OR " close=" ) ">
-        ( PERMISSION_TYPE = #{permission.type}
-        <if test="permission.resourceIds != null and !permission.resourceIds.isEmpty()">
-          <foreach collection="permission.resourceIds" item="resourceId" open=" AND RESOURCE_ID IN (" separator=", " close=" ) ">
-            #{resourceId}
-          </foreach>
-        </if>
-        )
-      </foreach>
-    </if>
+      AND OWNER_TYPE = #{ownerType}
+      AND RESOURCE_TYPE = #{resourceType}
+      AND PERMISSION_TYPE = #{permissionType}
+      AND RESOURCE_ID = #{resourceId}
   </delete>
+
 </mapper>
