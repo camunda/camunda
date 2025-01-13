@@ -4488,15 +4488,15 @@ components:
         resourceId:
           type: string
           description: |
-            The RPA ID, as parsed during deployment, together with the version forms a
+            The resource ID, as parsed during deployment, together with the version forms a
             unique identifier for a specific form.
         version:
           type: integer
           format: int32
-          description: The assigned RPA version.
+          description: The assigned resource version.
         resourceName:
           type: string
-          description: The resource name from which this RPA was parsed.
+          description: The resource name from which this resource was parsed.
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
