@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
+import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
 
 /** Interface for defining user task filters in search queries. */
