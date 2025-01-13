@@ -11,19 +11,16 @@ import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.ws.rs.DefaultValue;
 
 public class PaginationScrollableRequestDto {
   @Min(0)
-  @DefaultValue("1000")
   @Max(MAX_RESPONSE_SIZE_LIMIT)
-  protected Integer limit;
+  protected Integer limit = 1000;
 
   protected String searchRequestId;
 
   @Min(60)
-  @DefaultValue("120")
-  protected Integer paginationTimeout;
+  protected Integer paginationTimeout = 120;
 
   public PaginationScrollableRequestDto(
       @Min(0) @Max(MAX_RESPONSE_SIZE_LIMIT) final Integer limit,
