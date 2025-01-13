@@ -4171,7 +4171,7 @@ components:
         form:
           $ref: "#/components/schemas/DeploymentFormResult"
         resource:
-          $ref: "#/components/schemas/DeploymentRpaNumberKeys"
+          $ref: "#/components/schemas/DeploymentResource"
     DeploymentProcessBase:
       description: Base properties for DeploymentProcess.
       type: object
@@ -4347,8 +4347,8 @@ components:
         formKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentRpaBase:
-      description: Base properties for DeploymentRpa.
+    DeploymentResourceBase:
+      description: Base properties for DeploymentResource.
       type: object
       properties:
         resourceId:
@@ -4366,25 +4366,25 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentRpaNumberKeys:
-      description: A deployed RPA.
+    DeploymentResource:
+      description: A deployed Resource.
       type: object
       allOf:
-        - $ref: "#/components/schemas/DeploymentRpaBase"
+        - $ref: "#/components/schemas/DeploymentResourceBase"
       properties:
         resourceKey:
           type: integer
           format: int64
-          description: The assigned key, which acts as a unique identifier for this RPA.
-    DeploymentRpa:
-      description: A deployed RPA.
+          description: The assigned key, which acts as a unique identifier for this Resource.
+    DeploymentResourceResult:
+      description: A deployed Resource.
       type: object
       allOf:
-        - $ref: "#/components/schemas/DeploymentRpaBase"
+        - $ref: "#/components/schemas/DeploymentResourceBase"
       properties:
         resourceKey:
           type: string
-          description: The assigned key, which acts as a unique identifier for this RPA.
+          description: The assigned key, which acts as a unique identifier for this Resource.
 
     CreateProcessInstanceRequestBase:
       description: Base properties for CreateProcessInstanceRequest

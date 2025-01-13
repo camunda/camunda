@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
+import io.camunda.zeebe.gateway.protocol.rest.DeploymentResource;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentRpa;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -167,7 +168,7 @@ public final class ResponseMapper {
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
     addDeployedDecisionRequirements(response, brokerResponse.decisionRequirementsMetadata());
     addDeployedForm(response, brokerResponse.formMetadata());
-    addDeployedRPA(response, brokerResponse.resourceMetadata());
+    addDeployedResource(response, brokerResponse.resourceMetadata());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -196,16 +197,16 @@ public final class ResponseMapper {
         .forEach(response::addDeploymentsItem);
   }
 
-  private static void addDeployedRPA(
+  private static void addDeployedResource(
       final DeploymentResponse response,
       final ValueArray<ResourceMetadataRecord> resourceMetadataRecords) {
     resourceMetadataRecords.stream()
         .map(
             resource ->
-                new DeploymentRpa()
+                new DeploymentResource()
                     .resourceId(resource.getResourceId())
                     .version(resource.getVersion())
-                    .resourceKey(String.valueOf(resource.getResourceKey()))
+                    .resourceKey(resource.getResourceKey())
                     .resourceName(resource.getResourceName())
                     .tenantId(resource.getTenantId()))
         .map(deploymentForm -> new DeploymentMetadata().resource(deploymentForm))
