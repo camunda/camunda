@@ -191,7 +191,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(48);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(54);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
