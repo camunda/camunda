@@ -138,7 +138,7 @@ public class HttpClientFactory {
         HttpAsyncClients.custom()
             .setConnectionManager(connectionManager)
             .setDefaultHeaders(Collections.singletonList(acceptHeader))
-            .setUserAgent("camunda-client-java/" + VersionUtil.getVersion())
+            .setUserAgent("zeebe-client-java/" + VersionUtil.getVersion())
             .evictExpiredConnections()
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
