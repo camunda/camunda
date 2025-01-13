@@ -47,6 +47,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -357,6 +358,66 @@ final class CamundaExporterIT {
     // given
     final var valueType = ValueType.VARIABLE;
     final Record record = generateRecordWithSupportedBrokerVersion(valueType);
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
+    final var expectedHandlers =
+        resourceProvider.getExportHandlers().stream()
+            .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
+            .filter(exportHandler -> exportHandler.handlesRecord(record))
+            .toList();
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // when
+    camundaExporter.export(record);
+
+    // then
+    assertThat(expectedHandlers).isNotEmpty();
+    expectedHandlers.forEach(
+        exportHandler -> {
+          final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
+          final ExporterEntity<?> responseEntity;
+          try {
+            responseEntity =
+                clientAdapter.get(
+                    expectedEntity.getId(),
+                    exportHandler.getIndexName(),
+                    exportHandler.getEntityType());
+          } catch (final IOException e) {
+            fail("Failed to find expected entity " + expectedEntity, e);
+            return;
+          }
+
+          assertThat(responseEntity)
+              .describedAs(
+                  "Handler [%s] correctly handles a [%s] record",
+                  exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
+              .isEqualTo(expectedEntity);
+        });
+  }
+
+  @TestTemplate
+  void shouldNotFailWhenUpdatingOperationWithNoDocument(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+    // given
+    final ValueType valueType = ValueType.INCIDENT;
+    final Record record =
+        factory.generateRecord(
+            valueType,
+            r ->
+                r.withBrokerVersion("8.7.0")
+                    .withIntent(IncidentIntent.RESOLVED)
+                    .withTimestamp(System.currentTimeMillis()));
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
