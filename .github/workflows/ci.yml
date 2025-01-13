@@ -10,6 +10,8 @@ on:
   pull_request: {}
   merge_group: {}
   workflow_dispatch: {}
+  schedule:
+    - cron: '0 6 * * *' # daily full build in the morning to re-populate GHA caches
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
@@ -53,6 +55,8 @@ jobs:
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
+        with:
+          trigger_source: "Unified CI"
         id: filter
 
   actionlint:

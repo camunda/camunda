@@ -1,6 +1,12 @@
 ---
 name: Common paths filter for camunda/camunda
 
+inputs:
+  trigger_source:
+    required: false
+    default: "unknown"
+    description: "Source of the workflow trigger"
+
 description: |
   Common filters to detect and group changes against a base branch
   It leverages the `dorny/paths-filter` action to filter paths
@@ -12,6 +18,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true'
       }}
   maven-spotless-linter:
@@ -19,6 +26,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -29,6 +37,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
@@ -38,6 +47,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
@@ -46,6 +56,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-operate.outputs.operate-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
@@ -57,6 +68,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-tasklist.outputs.tasklist-frontend-change == 'true'
       }}
@@ -65,6 +77,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
@@ -76,6 +89,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-optimize.outputs.optimize-frontend-change == 'true'
       }}
@@ -84,6 +98,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-optimize.outputs.optimize-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
@@ -94,6 +109,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.java-code-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -105,6 +121,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.frontend-change == 'true' ||
         steps.filter-identity.outputs.frontend-identity == 'true'
@@ -114,6 +131,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
@@ -124,6 +142,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.protobuf-change == 'true'
       }}
   openapi-changes:
@@ -131,6 +150,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
+        (github.event_name == 'schedule' && inputs.trigger_source == 'Unified CI') ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
 
