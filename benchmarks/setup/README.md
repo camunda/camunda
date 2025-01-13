@@ -34,7 +34,7 @@ to configure your benchmark.
 ### How to configure a Benchmark
 
 The benchmark configuration is completely done via the `zeebe-values.yaml` file.
-If there is a property missing which you want to change please open an issue in https://github.com/camunda/camunda-cloud-helm
+If there is a property missing which you want to change please open an issue in https://github.com/camunda/zeebe-benchmark-helm
 
 #### Use different Zeebe Snapshot
 
