@@ -19,6 +19,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 public class LongSerializer extends JsonSerializer<Long> {
 
+  public static final String HEADER_JAVA_CLIENT_AGENT = "camunda-client-java/";
   public static final String PACKAGE_GATEWAY_REST = "io.camunda.zeebe.gateway.protocol.rest";
   public static final String KEY = "Key";
   public static final String KEYS = "Keys";
@@ -72,6 +73,16 @@ public class LongSerializer extends JsonSerializer<Long> {
       if (acceptHeader != null && acceptHeader.equals(RequestMapper.MEDIA_TYPE_KEYS_STRING_VALUE)) {
         writeString(value, gen);
         return;
+      }
+
+      final var userAgentHeader = r.getRequest().getHeader(HttpHeaders.USER_AGENT);
+      if (userAgentHeader != null && userAgentHeader.startsWith(HEADER_JAVA_CLIENT_AGENT)) {
+        final var clientVersion = userAgentHeader.substring(HEADER_JAVA_CLIENT_AGENT.length());
+
+        if (clientVersion.startsWith("8.5") || clientVersion.startsWith("8.6")) {
+          writeNumber(value, gen);
+          return;
+        }
       }
     }
 
