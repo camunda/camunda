@@ -49,77 +49,95 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <!-- basic filters -->
+    <!-- Advanced filtering for decisionInstanceId -->
     <if
-      test="filter.decisionInstanceIds != null and !filter.decisionInstanceIds.isEmpty()">
-      AND di.DECISION_INSTANCE_ID IN
-      <foreach collection="filter.decisionInstanceIds" item="key" open="(" close=")" separator=", ">
-        #{key}
+      test="filter.decisionInstanceIdOperations != null and !filter.decisionInstanceIdOperations.isEmpty()">
+      <foreach collection="filter.decisionInstanceIdOperations" item="operation">
+        AND di.DECISION_INSTANCE_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+
+    <!-- Advanced filtering for decisionInstanceKey -->
     <if
-      test="filter.decisionInstanceKeys != null and !filter.decisionInstanceKeys.isEmpty()">
-      AND di.DECISION_INSTANCE_KEY IN
-      <foreach collection="filter.decisionInstanceKeys" item="key" open="(" close=")" separator=", ">
-        #{key}
+      test="filter.decisionInstanceKeyOperations != null and !filter.decisionInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.decisionInstanceKeyOperations" item="operation">
+        AND di.DECISION_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-      AND di.PROCESS_INSTANCE_KEY IN
-      <foreach collection="filter.processInstanceKeys" item="key" open="(" close=")" separator=", ">
-        #{key}
+
+    <!-- Advanced filtering for processInstanceKey -->
+    <if
+      test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND di.PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-      AND di.PROCESS_DEFINITION_KEY IN
-      <foreach collection="filter.processDefinitionKeys" item="key" open="(" close=")" separator=", ">
-        #{key}
+
+    <!-- Advanced filtering for processDefinitionKey -->
+    <if
+      test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND di.PROCESS_DEFINITION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+
     <if test="filter.states != null and !filter.states.isEmpty()">
       AND di.STATE IN
       <foreach collection="filter.states" item="value" open="(" close=")" separator=", ">
         #{value}
       </foreach>
     </if>
-    <if test="filter.evaluationFailures != null and !filter.evaluationFailures.isEmpty()">
-      AND di.EVALUATION_FAILURE IN
-      <foreach collection="filter.evaluationFailures" item="value" open="(" close=")" separator=", ">
-        #{value}
-      </foreach>
-    </if>
-    <if test="filter.decisionDefinitionIds != null and !filter.decisionDefinitionIds.isEmpty()">
-      AND di.DECISION_DEFINITION_ID IN
-      <foreach collection="filter.decisionDefinitionIds" item="value" open="(" close=")" separator=", ">
-        #{value}
-      </foreach>
-    </if>
-    <if test="filter.decisionDefinitionNames != null and !filter.decisionDefinitionNames.isEmpty()">
-      AND dd.NAME IN
-      <foreach collection="filter.decisionDefinitionNames" item="value" open="(" close=")" separator=", ">
-        #{value}
-      </foreach>
-    </if>
+
+    <!-- Advanced filtering for evaluationFailure -->
     <if
-      test="filter.decisionDefinitionVersions != null and !filter.decisionDefinitionVersions.isEmpty()">
-      AND dd.VERSION IN
-      <foreach collection="filter.decisionDefinitionVersions" item="value" open="(" close=")" separator=", ">
-        #{value}
+      test="filter.evaluationFailureOperations != null and !filter.evaluationFailureOperations.isEmpty()">
+      <foreach collection="filter.evaluationFailureOperations" item="operation">
+        AND di.EVALUATION_FAILURE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+
+    <!-- Advanced filtering for decisionDefinitionId -->
+    <if
+      test="filter.decisionDefinitionIdOperations != null and !filter.decisionDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.decisionDefinitionIdOperations" item="operation">
+        AND di.DECISION_DEFINITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+
+    <!-- Advanced filtering for decisionDefinitionName -->
+    <if
+      test="filter.decisionDefinitionNameOperations != null and !filter.decisionDefinitionNameOperations.isEmpty()">
+      <foreach collection="filter.decisionDefinitionNameOperations" item="operation">
+        AND dd.NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Advanced filtering for decisionDefinitionVersion -->
+    <if
+      test="filter.decisionDefinitionVersionOperations != null and !filter.decisionDefinitionVersionOperations.isEmpty()">
+      <foreach collection="filter.decisionDefinitionVersionOperations" item="operation">
+        AND dd.VERSION
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Basic filtering for decisionTypes -->
     <if test="filter.decisionTypes != null and !filter.decisionTypes.isEmpty()">
       AND di.TYPE IN
-      <foreach collection="filter.decisionTypes" item="value" open="(" close=")" separator=", ">
-        #{value}
+      <foreach collection="filter.decisionTypes" item="type" open="(" close=")" separator=", ">
+        #{type}
       </foreach>
     </if>
-    <!--    TODO: Check if useful https://github.com/camunda/camunda/issues/22842
-    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-          AND di.TENANT_ID
-          <foreach collection="filter.tenantIds" item="value" open="(" close=")">
-            #{value}
-          </foreach>
-        </if>-->
+
+    <!-- Advanced filtering for evaluationDate -->
     <if
       test="filter.evaluationDateOperations != null and !filter.evaluationDateOperations.isEmpty()">
       <foreach collection="filter.evaluationDateOperations" item="operation">
@@ -127,6 +145,9 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+
+
+    <!-- Advanced filtering for decisionDefinitionKey -->
     <if
       test="filter.decisionDefinitionKeyOperations != null and !filter.decisionDefinitionKeyOperations.isEmpty()">
       <foreach collection="filter.decisionDefinitionKeyOperations" item="operation">
