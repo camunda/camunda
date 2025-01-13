@@ -81,6 +81,7 @@ jobs:
         --set publisher.replicas=1
         --set publisher.rate=5
         --set camunda-platform.operate.enabled=true
+        -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
         --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
         --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
         --set camunda-platform.elasticsearch.master.persistence.size=128Gi
