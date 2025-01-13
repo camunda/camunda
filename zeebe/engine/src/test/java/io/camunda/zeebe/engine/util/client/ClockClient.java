@@ -97,6 +97,6 @@ public class ClockClient {
   }
 
   private long writeCommand(final ClockIntent intent, final long userKey) {
-    return writer.writeCommand(intent, record, userKey);
+    return writer.writeCommand(intent, userKey, record);
   }
 }

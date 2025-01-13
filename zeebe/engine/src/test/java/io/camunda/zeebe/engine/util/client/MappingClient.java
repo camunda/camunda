@@ -72,7 +72,7 @@ public class MappingClient {
     }
 
     public Record<MappingRecordValue> create(final long userKey) {
-      final long position = writer.writeCommand(MappingIntent.CREATE, mappingRecord, userKey);
+      final long position = writer.writeCommand(MappingIntent.CREATE, userKey, mappingRecord);
       return expectation.apply(position);
     }
 

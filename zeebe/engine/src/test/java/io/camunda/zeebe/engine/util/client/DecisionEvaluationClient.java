@@ -87,7 +87,7 @@ public class DecisionEvaluationClient {
 
   public Record<DecisionEvaluationRecordValue> evaluate(final long userKey) {
     final long position =
-        writer.writeCommand(DecisionEvaluationIntent.EVALUATE, decisionEvaluationRecord, userKey);
+        writer.writeCommand(DecisionEvaluationIntent.EVALUATE, userKey, decisionEvaluationRecord);
 
     return expectation.apply(position);
   }

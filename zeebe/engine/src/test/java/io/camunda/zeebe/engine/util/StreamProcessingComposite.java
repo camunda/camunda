@@ -184,8 +184,8 @@ public class StreamProcessingComposite implements CommandWriter {
   @Override
   public long writeCommand(
       final Intent intent,
-      final UnifiedRecordValue value,
       final long userKey,
+      final UnifiedRecordValue value,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -244,8 +244,8 @@ public class StreamProcessingComposite implements CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
       final long userKey,
+      final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -289,8 +289,8 @@ public class StreamProcessingComposite implements CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
       final long userKey,
+      final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     final var writer =
         streams
@@ -417,8 +417,8 @@ public class StreamProcessingComposite implements CommandWriter {
       final int partition,
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
       final long userKey,
+      final UnifiedRecordValue value,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();

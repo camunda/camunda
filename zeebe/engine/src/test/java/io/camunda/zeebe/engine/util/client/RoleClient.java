@@ -75,7 +75,7 @@ public class RoleClient {
     }
 
     public Record<RoleRecordValue> create(final long userKey) {
-      final long position = writer.writeCommand(RoleIntent.CREATE, roleRecord, userKey);
+      final long position = writer.writeCommand(RoleIntent.CREATE, userKey, roleRecord);
       return expectation.apply(position);
     }
 

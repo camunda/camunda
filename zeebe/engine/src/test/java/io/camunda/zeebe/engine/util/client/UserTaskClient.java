@@ -140,8 +140,8 @@ public final class UserTaskClient {
             DEFAULT_REQUEST_STREAM_ID,
             DEFAULT_REQUEST_ID,
             UserTaskIntent.ASSIGN,
-            userTaskRecord.setUserTaskKey(userTaskKey),
             userKey,
+            userTaskRecord.setUserTaskKey(userTaskKey),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
@@ -183,8 +183,8 @@ public final class UserTaskClient {
             DEFAULT_REQUEST_STREAM_ID,
             DEFAULT_REQUEST_ID,
             UserTaskIntent.CLAIM,
-            userTaskRecord.setUserTaskKey(userTaskKey),
             userKey,
+            userTaskRecord.setUserTaskKey(userTaskKey),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
@@ -210,8 +210,8 @@ public final class UserTaskClient {
             DEFAULT_REQUEST_STREAM_ID,
             DEFAULT_REQUEST_ID,
             UserTaskIntent.COMPLETE,
-            userTaskRecord.setUserTaskKey(userTaskKey),
             userKey,
+            userTaskRecord.setUserTaskKey(userTaskKey),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }
@@ -282,8 +282,8 @@ public final class UserTaskClient {
             DEFAULT_REQUEST_STREAM_ID,
             DEFAULT_REQUEST_ID,
             UserTaskIntent.UPDATE,
-            userTaskRecord.setUserTaskKey(userTaskKey),
             userKey,
+            userTaskRecord.setUserTaskKey(userTaskKey),
             TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return expectation.apply(position);
   }

@@ -177,7 +177,7 @@ public final class DeploymentClient {
   }
 
   public Record<DeploymentRecordValue> deploy(final long userKey) {
-    final long position = writer.writeCommand(DeploymentIntent.CREATE, deploymentRecord, userKey);
+    final long position = writer.writeCommand(DeploymentIntent.CREATE, userKey, deploymentRecord);
 
     return expectation.apply(position, forEachPartition);
   }

@@ -82,7 +82,7 @@ public class SignalClient {
   }
 
   public Record<SignalRecordValue> broadcast(final long userKey) {
-    final long position = writer.writeCommand(SignalIntent.BROADCAST, signalRecord, userKey);
+    final long position = writer.writeCommand(SignalIntent.BROADCAST, userKey, signalRecord);
     return expectation.apply(position);
   }
 }

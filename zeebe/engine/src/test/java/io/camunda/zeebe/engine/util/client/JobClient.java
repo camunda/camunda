@@ -161,8 +161,8 @@ public final class JobClient {
         writer.writeCommand(
             jobKey,
             JobIntent.COMPLETE,
-            jobRecord,
             userKey,
+            jobRecord,
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
@@ -180,7 +180,7 @@ public final class JobClient {
     final long jobKey = findJobKey();
     final long position =
         writer.writeCommand(
-            jobKey, JobIntent.FAIL, jobRecord, userKey, authorizedTenantIds.toArray(new String[0]));
+            jobKey, JobIntent.FAIL, userKey, jobRecord, authorizedTenantIds.toArray(new String[0]));
 
     return expectation.apply(position);
   }
@@ -209,8 +209,8 @@ public final class JobClient {
         writer.writeCommand(
             jobKey,
             JobIntent.UPDATE_RETRIES,
-            jobRecord,
             userKey,
+            jobRecord,
             authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }

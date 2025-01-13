@@ -130,8 +130,8 @@ public final class IncidentClient {
               Protocol.decodePartitionId(incidentKey),
               incidentKey,
               IncidentIntent.RESOLVE,
-              incidentRecord,
               userKey,
+              incidentRecord,
               TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
       return expectation.apply(position);

@@ -324,8 +324,8 @@ public final class ProcessInstanceClient {
           partition,
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
-          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
           userKey,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
           authorizedTenants);
     }
 
@@ -475,8 +475,8 @@ public final class ProcessInstanceClient {
           writer.writeCommand(
               processInstanceKey,
               ProcessInstanceModificationIntent.MODIFY,
-              record,
               userKey,
+              record,
               authorizedTenants);
 
       if (expectation == REJECTION_EXPECTATION) {
@@ -693,8 +693,8 @@ public final class ProcessInstanceClient {
           writer.writeCommand(
               processInstanceKey,
               ProcessInstanceMigrationIntent.MIGRATE,
-              record,
               userKey,
+              record,
               authorizedTenants);
 
       if (expectation == REJECTION_EXPECTATION) {

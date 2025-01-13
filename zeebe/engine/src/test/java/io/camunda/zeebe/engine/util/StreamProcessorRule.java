@@ -222,10 +222,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   @Override
   public long writeCommand(
       final Intent intent,
-      final UnifiedRecordValue recordValue,
       final long userKey,
+      final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
-    return streamProcessingComposite.writeCommand(intent, recordValue, userKey, authorizedTenants);
+    return streamProcessingComposite.writeCommand(intent, userKey, recordValue, authorizedTenants);
   }
 
   @Override
@@ -252,11 +252,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
       final long userKey,
+      final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
-        key, intent, recordValue, userKey, authorizedTenants);
+        key, intent, userKey, recordValue, authorizedTenants);
   }
 
   @Override
@@ -277,11 +277,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
       final long userKey,
+      final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
-        key, requestStreamId, requestId, intent, recordValue, userKey, authorizedTenants);
+        key, requestStreamId, requestId, intent, userKey, recordValue, authorizedTenants);
   }
 
   @Override
@@ -353,11 +353,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionId,
       final long key,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
       final long userKey,
+      final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommandOnPartition(
-        partitionId, key, intent, recordValue, userKey, authorizedTenants);
+        partitionId, key, intent, userKey, recordValue, authorizedTenants);
   }
 
   public void snapshot() {
