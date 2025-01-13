@@ -4094,7 +4094,7 @@ components:
       type: object
       properties:
         filter:
-          description: The user task search filters.
+          description: The user task variable search filters.
           allOf:
             - $ref: "#/components/schemas/VariableUserTaskFilterRequest"
     UserTaskSearchQueryResponse:
@@ -4201,7 +4201,7 @@ components:
           type: string
           description: The value of the variable.
     VariableUserTaskFilterRequest:
-      description: Variable
+      description: The user task variable search filters.
       type: object
       properties:
         name:
