@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import java.time.Duration;
@@ -110,6 +111,18 @@ public class CamundaAssert {
       final ProcessInstanceResult processInstanceResult) {
     return new ProcessInstanceAssertj(
         getDataSource(), processInstanceResult.getProcessInstanceKey());
+  }
+
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceSelector the selector of the process instance to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.ProcessInstanceSelectors
+   */
+  public static ProcessInstanceAssert assertThat(
+      final ProcessInstanceSelector processInstanceSelector) {
+    return new ProcessInstanceAssertj(getDataSource(), processInstanceSelector);
   }
 
   // ======== Internal ========
