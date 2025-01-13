@@ -19,4 +19,5 @@ public enum PartitionBrokerHealth {
   HEALTHY,
   UNHEALTHY,
   DEAD,
+  UNKNOWN_ENUM_VALUE,
 }

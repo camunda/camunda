@@ -18,5 +18,6 @@ package io.camunda.zeebe.client.api.response;
 public enum PartitionBrokerRole {
   LEADER,
   FOLLOWER,
-  INACTIVE
+  INACTIVE,
+  UNKNOWN_ENUM_VALUE,
 }
