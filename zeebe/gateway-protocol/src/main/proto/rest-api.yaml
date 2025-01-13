@@ -7997,10 +7997,10 @@ components:
           description: The BPMN ID of the form.
           type: string
         schema:
-          description: The schema of the form.
+          description: The form content.
           type: object
         version:
-          description: The version of the form.
+          description: The version of the the deployed form.
           type: integer
           format: int64
     FormItem:
