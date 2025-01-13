@@ -33,13 +33,18 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+<!--    <if test="filter.ownerType != null or filter.resourceType != null or filter.permissionType != null or-->
+<!--            (filter.ownerKeys != null and !filter.ownerKeys.isEmpty()) or-->
+<!--            (filter.resourceIds != null and !filter.resourceIds.isEmpty())">-->
+      WHERE 1 = 1
+<!--    </if>-->
     <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
     <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
     <if test="filter.permissionType != null">AND PERMISSION_TYPE = #{filter.permissionType}</if>
     <if test="filter.ownerKeys != null and !filter.ownerKeys.isEmpty()">
       AND OWNER_KEY IN
-      <foreach collection="filter.ownerKeys" item="value" open="(" separator=", " close=")"> #{value}
+      <foreach collection="filter.ownerKeys" item="value" open="(" separator=", "
+        close=")">#{value}
       </foreach>
     </if>
     <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">

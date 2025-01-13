@@ -155,7 +155,8 @@ class DocumentAuthorizationQueryStrategyTest {
 
     // then
     assertThat(result.query())
-        .isEqualTo(and(originalRequest.query(), stringTerms("bpmnProcessId", List.of("foo"))));
+        .isEqualTo(
+            and(originalRequest.query(), stringTerms("bpmnProcessId", List.of("foo", "bar"))));
     assertThat(authorizationQueryCaptor.getValue())
         .isEqualTo(
             authorizationSearchQuery(
