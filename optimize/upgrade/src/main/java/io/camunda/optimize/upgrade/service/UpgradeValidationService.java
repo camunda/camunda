@@ -8,9 +8,7 @@
 package io.camunda.optimize.upgrade.service;
 
 import static io.camunda.optimize.service.metadata.Version.getMajorAndMinor;
-import static io.camunda.optimize.service.util.DatabaseVersionChecker.checkDatabaseVersionSupported;
 
-import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,27 +40,14 @@ public class UpgradeValidationService {
     }
   }
 
-  public void validateDatabaseVersion(final DatabaseClient dbClient, final String toVersion) {
-    try {
-      checkDatabaseVersionSupported(dbClient.getDatabaseVersion(), dbClient.getDatabaseVendor());
-    } catch (Exception e) {
-      String errorMessage =
-          "It was not possible to upgrade Optimize to version "
-              + toVersion
-              + ".\n"
-              + e.getMessage();
-      throw new UpgradeRuntimeException(errorMessage);
-    }
-  }
-
   public void validateEnvironmentConfigInClasspath() {
     boolean configAvailable = false;
-    try (InputStream resourceAsStream =
+    try (final InputStream resourceAsStream =
         UpgradeValidationService.class.getResourceAsStream("/" + ENVIRONMENT_CONFIG_FILE)) {
       if (resourceAsStream != null) {
         configAvailable = true;
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.error("Can't resolve " + ENVIRONMENT_CONFIG_FILE, e);
     }
 
