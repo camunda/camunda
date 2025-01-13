@@ -11,9 +11,9 @@ import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
-import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -111,10 +111,8 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
                       .map(fn -> new ProcessFlowNodeEntity(fn.getId(), fn.getName()))
                       .toList());
               entity.setCallActivityIds(
-                  processModelReader.extractCallActivities().stream()
-                      .map(BaseElement::getId)
-                      .sorted()
-                      .toList());
+                  ProcessCacheUtil.sortedCallActivityIds(
+                      processModelReader.extractCallActivities()));
               processModelReader
                   .extractStartFormLink()
                   .ifPresent(

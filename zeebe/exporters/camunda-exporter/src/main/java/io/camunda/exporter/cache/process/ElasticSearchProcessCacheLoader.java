@@ -9,13 +9,9 @@ package io.camunda.exporter.cache.process;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.zeebe.model.bpmn.instance.BaseElement;
-import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +39,7 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersionTag(),
-          extractCallActivityIdsFromDiagram(processEntity));
+          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processEntity));
     } else {
       // This should only happen if the process was deleted from ElasticSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the
@@ -51,15 +47,5 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
       LOG.debug("Process '{}' not found in Elasticsearch", processDefinitionKey);
       return null;
     }
-  }
-
-  private List<String> extractCallActivityIdsFromDiagram(final ProcessEntity processEntity) {
-    final String bpmnXml = processEntity.getBpmnXml();
-    return ProcessModelReader.of(
-            bpmnXml.getBytes(StandardCharsets.UTF_8), processEntity.getBpmnProcessId())
-        .map(
-            reader ->
-                reader.extractCallActivities().stream().map(BaseElement::getId).sorted().toList())
-        .orElseGet(ArrayList::new);
   }
 }
