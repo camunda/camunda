@@ -23,9 +23,12 @@ import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,16 +43,27 @@ import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 
-public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssertj, Long>
+public class ProcessInstanceAssertj
+    extends AbstractAssert<ProcessInstanceAssertj, ProcessInstanceSelector>
     implements ProcessInstanceAssert {
 
   private final CamundaDataSource dataSource;
   private final VariableAssertj variableAssertj;
+  private final String failureMessagePrefix;
+
+  private final AtomicReference<ProcessInstanceDto> actualProcessInstance = new AtomicReference<>();
 
   public ProcessInstanceAssertj(final CamundaDataSource dataSource, final long processInstanceKey) {
-    super(processInstanceKey, ProcessInstanceAssertj.class);
+    this(dataSource, ProcessInstanceSelectors.byKey(processInstanceKey));
+  }
+
+  public ProcessInstanceAssertj(
+      final CamundaDataSource dataSource, final ProcessInstanceSelector processInstanceSelector) {
+    super(processInstanceSelector, ProcessInstanceAssertj.class);
     this.dataSource = dataSource;
-    variableAssertj = new VariableAssertj(dataSource, processInstanceKey);
+    failureMessagePrefix =
+        String.format("Process instance [%s]", processInstanceSelector.describe());
+    variableAssertj = new VariableAssertj(dataSource, failureMessagePrefix);
   }
 
   @Override
@@ -122,19 +136,19 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
 
   @Override
   public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
-    variableAssertj.hasVariableNames(variableNames);
+    variableAssertj.hasVariableNames(getProcessInstanceKey(), variableNames);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
-    variableAssertj.hasVariable(variableName, variableValue);
+    variableAssertj.hasVariable(getProcessInstanceKey(), variableName, variableValue);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
-    variableAssertj.hasVariables(variables);
+    variableAssertj.hasVariables(getProcessInstanceKey(), variables);
     return this;
   }
 
@@ -145,16 +159,14 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   private void hasProcessInstanceInState(
       final ProcessInstanceState expectedState, final Predicate<ProcessInstanceDto> waitCondition) {
 
-    final AtomicReference<ProcessInstanceDto> reference = new AtomicReference<>();
-
     try {
       Awaitility.await()
           .ignoreException(CamundaClientNotFoundException.class)
-          .failFast(() -> waitCondition.test(reference.get()))
+          .failFast(() -> waitCondition.test(actualProcessInstance.get()))
           .untilAsserted(
               () -> {
-                final ProcessInstanceDto processInstance = dataSource.getProcessInstance(actual);
-                reference.set(processInstance);
+                final ProcessInstanceDto processInstance = findProcessInstance();
+                actualProcessInstance.set(processInstance);
 
                 assertThat(processInstance.getProcessInstanceState()).isEqualTo(expectedState);
               });
@@ -162,7 +174,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
       final String actualState =
-          Optional.ofNullable(reference.get())
+          Optional.ofNullable(actualProcessInstance.get())
               .map(ProcessInstanceDto::getProcessInstanceState)
               .map(ProcessInstanceAssertj::formatState)
               .orElse("not activated");
@@ -170,17 +182,48 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
       final String failureMessage =
           String.format(
               "%s should be %s but was %s.",
-              AssertFormatUtil.formatProcessInstance(actual),
-              formatState(expectedState),
-              actualState);
+              failureMessagePrefix, formatState(expectedState), actualState);
       fail(failureMessage);
     }
+  }
+
+  private ProcessInstanceDto findProcessInstance() throws IOException {
+    return (ProcessInstanceDto)
+        dataSource.findProcessInstances().stream()
+            .filter(actual::test)
+            .findFirst()
+            .orElseThrow(CamundaClientNotFoundException::new);
+  }
+
+  private void awaitProcessInstance() {
+    try {
+      Awaitility.await()
+          .ignoreException(CamundaClientNotFoundException.class)
+          .untilAsserted(
+              () -> {
+                final ProcessInstanceDto processInstance = findProcessInstance();
+                actualProcessInstance.set(processInstance);
+              });
+
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+      final String failureMessage =
+          String.format("No process instance [%s] found.", actual.describe());
+      fail(failureMessage);
+    }
+  }
+
+  private long getProcessInstanceKey() {
+    if (actualProcessInstance.get() == null) {
+      awaitProcessInstance();
+    }
+    return actualProcessInstance.get().getProcessInstanceKey();
   }
 
   private void hasElementsInState(
       final List<ElementSelector> elementSelectors,
       final FlowNodeInstanceState expectedState,
       final Predicate<FlowNodeInstance> waitCondition) {
+    final long processInstanceKey = getProcessInstanceKey();
 
     final AtomicReference<List<FlowNodeInstance>> reference =
         new AtomicReference<>(Collections.emptyList());
@@ -200,7 +243,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =
-                    dataSource.getFlowNodeInstancesByProcessInstanceKey(actual);
+                    dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey);
                 reference.set(flowNodeInstances);
 
                 final List<FlowNodeInstance> flowNodeInstancesInState =
@@ -247,7 +290,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
       final String failureMessage =
           String.format(
               "%s should have %s elements %s but the following elements were not %s:\n%s",
-              AssertFormatUtil.formatProcessInstance(actual),
+              failureMessagePrefix,
               formatState(expectedState),
               formatElementSelectors(elementSelectors),
               formatState(expectedState),
