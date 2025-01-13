@@ -45,9 +45,19 @@ public class AuthorizationPermissionAddedHandler
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(
-        String.format(
-            "%s-%s", record.getValue().getOwnerKey(), record.getValue().getResourceType().name()));
+    return record.getValue().getPermissions().stream()
+        .flatMap(
+            permissionValue ->
+                permissionValue.getResourceIds().stream()
+                    .map(
+                        resourceId ->
+                            String.format(
+                                "%s-%s-%s-%s",
+                                record.getValue().getOwnerKey(),
+                                record.getValue().getResourceType().name(),
+                                permissionValue.getPermissionType().name(),
+                                resourceId)))
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -63,7 +73,9 @@ public class AuthorizationPermissionAddedHandler
         .setOwnerKey(value.getOwnerKey())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
-        .setPermissions(getPermissions(value.getPermissions()));
+        .setPermissionType(getFirstPermission(value.getPermissions()).type())
+        .setResourceId(
+            getFirstPermission(value.getPermissions()).resourceIds().stream().findFirst().get());
   }
 
   @Override
@@ -77,12 +89,13 @@ public class AuthorizationPermissionAddedHandler
     return indexName;
   }
 
-  private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
+  private Permission getFirstPermission(final List<PermissionValue> permissionValues) {
     return permissionValues.stream()
+        .findFirst()
         .map(
             permissionValue ->
                 new Permission(
                     permissionValue.getPermissionType(), permissionValue.getResourceIds()))
-        .collect(Collectors.toList());
+        .orElseThrow();
   }
 }

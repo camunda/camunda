@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<AuthorizationRecord> {
@@ -37,10 +36,14 @@ public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<Author
     return this;
   }
 
-  public BrokerAuthorizationPatchRequest addPermissions(
-      final PermissionType permissionType, final Set<String> resourceIds) {
+  public BrokerAuthorizationPatchRequest setPermission(
+      final PermissionType permissionType, final String resourceId) {
+    if (requestDto.getPermissions() != null && !requestDto.getPermissions().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Only one permission can be added at a time. Ensure the request is properly flattened.");
+    }
     requestDto.addPermission(
-        new Permission().setPermissionType(permissionType).addResourceIds(resourceIds));
+        new Permission().setPermissionType(permissionType).addResourceId(resourceId));
     return this;
   }
 

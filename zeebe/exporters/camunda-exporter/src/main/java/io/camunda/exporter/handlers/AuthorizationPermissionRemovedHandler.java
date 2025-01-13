@@ -16,32 +16,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AuthorizationPermissionRemovedHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
-
-  private static final String UPDATE_PERMISSIONS_SCRIPT =
-      """
-            if (ctx._source.permissions != null) {
-            for (p in params.inputPermissions) {
-              for (permission in ctx._source.permissions) {
-                if (permission.type == p.type) {
-                  // Remove matching resource IDs
-                  permission.resourceIds.removeAll(p.resourceIds);
-                }
-              }
-            }
-            // Remove permissions with empty resourceIds
-            ctx._source.permissions.removeIf(permission -> permission.resourceIds.isEmpty());
-            if (ctx._source.permissions.isEmpty()) {
-              ctx.op = 'delete';
-            }
-          }
-          """;
 
   private final String indexName;
 
@@ -67,9 +46,19 @@ public class AuthorizationPermissionRemovedHandler
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(
-        String.format(
-            "%s-%s", record.getValue().getOwnerKey(), record.getValue().getResourceType().name()));
+    return record.getValue().getPermissions().stream()
+        .flatMap(
+            permissionValue ->
+                permissionValue.getResourceIds().stream()
+                    .map(
+                        resourceId ->
+                            String.format(
+                                "%s-%s-%s-%s",
+                                record.getValue().getOwnerKey(),
+                                record.getValue().getResourceType().name(),
+                                permissionValue.getPermissionType().name(),
+                                resourceId)))
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -85,27 +74,15 @@ public class AuthorizationPermissionRemovedHandler
         .setOwnerKey(value.getOwnerKey())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
-        .setPermissions(getPermissions(value.getPermissions()));
+        .setPermissionType(getFirstPermission(value.getPermissions()).type())
+        .setResourceId(
+            getFirstPermission(value.getPermissions()).resourceIds().stream().findFirst().get());
   }
 
   @Override
   public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    final List<Map<String, Object>> inputPermissions =
-        entity.getPermissions().stream()
-            .map(
-                permission -> {
-                  final Map<String, Object> map = new HashMap<>();
-                  map.put("type", permission.type().name());
-                  map.put("resourceIds", permission.resourceIds());
-                  return map;
-                })
-            .collect(Collectors.toList());
-
-    final Map<String, Object> params = new HashMap<>();
-    params.put("inputPermissions", inputPermissions);
-
-    batchRequest.updateWithScript(indexName, entity.getId(), UPDATE_PERMISSIONS_SCRIPT, params);
+    batchRequest.delete(indexName, entity.getId());
   }
 
   @Override
@@ -113,12 +90,13 @@ public class AuthorizationPermissionRemovedHandler
     return indexName;
   }
 
-  private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {
+  private Permission getFirstPermission(final List<PermissionValue> permissionValues) {
     return permissionValues.stream()
+        .findFirst()
         .map(
             permissionValue ->
                 new Permission(
                     permissionValue.getPermissionType(), permissionValue.getResourceIds()))
-        .collect(Collectors.toList());
+        .orElseThrow();
   }
 }

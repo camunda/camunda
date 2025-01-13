@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import java.util.List;
 
 public class AuthorizationWriter {
 
@@ -20,19 +21,27 @@ public class AuthorizationWriter {
     this.executionQueue = executionQueue;
   }
 
-  public void addPermissions(final AuthorizationDbModel authorization) {
-    final String key = generateKey(authorization);
-    if (hasPermissions(authorization)) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.AUTHORIZATION,
-              key,
-              "io.camunda.db.rdbms.sql.AuthorizationMapper.insert",
-              authorization));
+  public void addPermissions(final List<AuthorizationDbModel> authorizations) {
+    for (final AuthorizationDbModel authorization : authorizations) {
+      final String key = generateKey(authorization);
+      if (hasPermissions(authorization)) {
+        executionQueue.executeInQueue(
+            new QueueItem(
+                ContextType.AUTHORIZATION,
+                key,
+                "io.camunda.db.rdbms.sql.AuthorizationMapper.insert",
+                authorization));
+      }
     }
   }
 
-  public void removePermissions(final AuthorizationDbModel authorization) {
+  public void removePermissions(final List<AuthorizationDbModel> authorizations) {
+    for (final AuthorizationDbModel authorization : authorizations) {
+      removePermission(authorization);
+    }
+  }
+
+  public void removePermission(final AuthorizationDbModel authorization) {
     final String key = generateKey(authorization);
     if (hasPermissions(authorization)) {
       executionQueue.executeInQueue(
@@ -53,9 +62,6 @@ public class AuthorizationWriter {
   }
 
   private static boolean hasPermissions(final AuthorizationDbModel authorization) {
-    return authorization.permissions().stream()
-            .map(it -> it.resourceIds().size())
-            .reduce(0, Integer::sum)
-        > 0;
+    return authorization.resourceId() != null && !authorization.resourceId().isEmpty();
   }
 }

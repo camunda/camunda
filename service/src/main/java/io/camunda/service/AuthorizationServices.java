@@ -109,24 +109,51 @@ public class AuthorizationServices
                         .page(p -> p.size(1))));
     // TODO logic to fetch indirect authorizations via roles/groups should be added later
     return result.items().stream()
-        .flatMap(authorization -> authorization.permissions().stream())
-        .filter(permission -> permission.resourceIds().contains(resourceId))
-        .map(Permission -> Permission.type().name())
+        .filter(entity -> entity.resourceId().equals(resourceId))
+        .map(entity -> entity.permissionType().name())
         .collect(Collectors.toSet());
   }
 
   public CompletableFuture<AuthorizationRecord> patchAuthorization(
       final PatchAuthorizationRequest request) {
-    final var intent =
-        request.action() == PermissionAction.ADD
-            ? AuthorizationIntent.ADD_PERMISSION
-            : AuthorizationIntent.REMOVE_PERMISSION;
-    final var brokerRequest =
-        new BrokerAuthorizationPatchRequest(intent)
-            .setOwnerKey(request.ownerKey())
-            .setResourceType(request.resourceType());
-    request.permissions().forEach(brokerRequest::addPermissions);
-    return sendBrokerRequest(brokerRequest);
+    final var futures =
+        request.permissions().entrySet().stream()
+            .flatMap(
+                entry ->
+                    entry.getValue().stream()
+                        .map(
+                            resourceId -> {
+                              final var intent =
+                                  request.action() == PermissionAction.ADD
+                                      ? AuthorizationIntent.ADD_PERMISSION
+                                      : AuthorizationIntent.REMOVE_PERMISSION;
+
+                              final var brokerRequest =
+                                  new BrokerAuthorizationPatchRequest(intent)
+                                      .setOwnerKey(request.ownerKey())
+                                      .setResourceType(request.resourceType())
+                                      .setPermission(entry.getKey(), resourceId);
+
+                              return sendBrokerRequest(brokerRequest);
+                            }))
+            .toList();
+
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .thenApply(
+            v -> {
+              final var aggregatedRecord =
+                  new AuthorizationRecord()
+                      .setOwnerKey(request.ownerKey())
+                      .setResourceType(request.resourceType());
+
+              futures.forEach(
+                  future -> {
+                    final AuthorizationRecord record = future.join();
+                    record.getPermissions().forEach(aggregatedRecord::addPermission);
+                  });
+
+              return aggregatedRecord;
+            });
   }
 
   public record PatchAuthorizationRequest(

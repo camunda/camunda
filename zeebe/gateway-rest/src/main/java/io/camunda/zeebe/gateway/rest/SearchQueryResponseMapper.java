@@ -82,6 +82,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -629,22 +631,77 @@ public final class SearchQueryResponseMapper {
 
   public static List<AuthorizationResponse> toAuthorizations(
       final List<AuthorizationEntity> authorizations) {
-    return authorizations.stream().map(SearchQueryResponseMapper::toAuthorization).toList();
+    return authorizations.stream()
+        .collect(
+            Collectors.groupingBy(
+                auth ->
+                    new AuthorizationResponseKey(
+                        auth.ownerKey(), auth.ownerType(), auth.resourceType()),
+                Collectors.mapping(
+                    SearchQueryResponseMapper::toPermissionDTO, Collectors.toList())))
+        .entrySet()
+        .stream()
+        .map(
+            entry -> {
+              final var key = entry.getKey();
+              return new AuthorizationResponse()
+                  .ownerKey(key.ownerKey())
+                  .ownerType(OwnerTypeEnum.fromValue(key.ownerType()))
+                  .resourceType(ResourceTypeEnum.valueOf(key.resourceType()))
+                  .permissions(entry.getValue());
+            })
+        .toList();
   }
 
-  public static AuthorizationResponse toAuthorization(final AuthorizationEntity authorization) {
-    return new AuthorizationResponse()
-        .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
-        .ownerKey(authorization.ownerKey())
-        .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .permissions(
-            authorization.permissions().stream()
-                .map(
-                    p ->
-                        new PermissionDTO()
-                            .permissionType(PermissionTypeEnum.fromValue(p.type().name()))
-                            .resourceIds(p.resourceIds()))
-                .toList());
+  private static PermissionDTO toPermissionDTO(final AuthorizationEntity authorization) {
+    return new PermissionDTO()
+        .permissionType(PermissionTypeEnum.fromValue(authorization.permissionType().name()))
+        .resourceIds(Set.of(authorization.resourceId()));
+  }
+
+  /** Helper class to group authorizations by owner and resource type. */
+  private static class AuthorizationResponseKey {
+    private final Long ownerKey;
+    private final String ownerType;
+    private final String resourceType;
+
+    AuthorizationResponseKey(
+        final Long ownerKey, final String ownerType, final String resourceType) {
+      this.ownerKey = ownerKey;
+      this.ownerType = ownerType;
+      this.resourceType = resourceType;
+    }
+
+    public Long ownerKey() {
+      return ownerKey;
+    }
+
+    public String ownerType() {
+      return ownerType;
+    }
+
+    public String resourceType() {
+      return resourceType;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(ownerKey, ownerType, resourceType);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final AuthorizationResponseKey that = (AuthorizationResponseKey) o;
+      return Objects.equals(ownerKey, that.ownerKey)
+          && Objects.equals(ownerType, that.ownerType)
+          && Objects.equals(resourceType, that.resourceType);
+    }
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

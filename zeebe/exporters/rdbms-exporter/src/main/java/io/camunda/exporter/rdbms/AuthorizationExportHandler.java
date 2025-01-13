@@ -45,13 +45,21 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
     }
   }
 
-  private AuthorizationDbModel map(final AuthorizationRecordValue authorization) {
-    return new AuthorizationDbModel.Builder()
-        .ownerKey(authorization.getOwnerKey())
-        .ownerType(authorization.getOwnerType().name())
-        .resourceType(authorization.getResourceType().name())
-        .permissions(mapPermissions(authorization.getPermissions()))
-        .build();
+  public List<AuthorizationDbModel> map(final AuthorizationRecordValue authorization) {
+    return authorization.getPermissions().stream()
+        .flatMap(
+            permission ->
+                permission.getResourceIds().stream()
+                    .map(
+                        resourceId ->
+                            new AuthorizationDbModel.Builder()
+                                .ownerKey(authorization.getOwnerKey())
+                                .ownerType(authorization.getOwnerType().name())
+                                .resourceType(authorization.getResourceType().name())
+                                .permissionType(permission.getPermissionType())
+                                .resourceId(resourceId)
+                                .build()))
+        .toList();
   }
 
   private List<AuthorizationPermissionDbModel> mapPermissions(

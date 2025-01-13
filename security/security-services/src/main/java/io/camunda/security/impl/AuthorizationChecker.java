@@ -14,7 +14,6 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
@@ -57,13 +56,7 @@ public class AuthorizationChecker {
                             f.ownerKeys(ownerKeys)
                                 .resourceType(resourceType.name())
                                 .permissionType(permissionType))));
-    return authorizationEntities.stream()
-        .flatMap(
-            e ->
-                e.permissions().stream()
-                    .filter(permission -> permissionType.equals(permission.type()))
-                    .flatMap(permission -> permission.resourceIds().stream()))
-        .toList();
+    return authorizationEntities.stream().map(AuthorizationEntity::resourceId).toList();
   }
 
   /**
@@ -118,14 +111,8 @@ public class AuthorizationChecker {
                                 .resourceType(resourceType.name())
                                 .resourceIds(List.of(WILDCARD, resourceId)))));
 
-    return collectPermissionTypes(authorizationEntities);
-  }
-
-  private Set<PermissionType> collectPermissionTypes(
-      final List<AuthorizationEntity> authorizationEntities) {
     return authorizationEntities.stream()
-        .flatMap(a -> a.permissions().stream())
-        .map(Permission::type)
+        .map(AuthorizationEntity::permissionType)
         .collect(Collectors.toSet());
   }
 

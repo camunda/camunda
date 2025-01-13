@@ -7,18 +7,19 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
-import io.camunda.security.entity.Permission;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 
 public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
+  // Composite ID: ownerKey + resourceType + permissionType + resourceId
   private String id;
   private Long ownerKey;
   private String ownerType;
   private String resourceType;
-  private List<Permission> permissions;
+  private PermissionType permissionType;
+  private String resourceId;
 
   public AuthorizationEntity() {}
 
@@ -60,12 +61,21 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
     return this;
   }
 
-  public List<Permission> getPermissions() {
-    return permissions == null ? List.of() : permissions;
+  public PermissionType getPermissionType() {
+    return permissionType;
   }
 
-  public AuthorizationEntity setPermissions(final List<Permission> permissions) {
-    this.permissions = permissions;
+  public AuthorizationEntity setPermissionType(final PermissionType permissionType) {
+    this.permissionType = permissionType;
+    return this;
+  }
+
+  public String getResourceId() {
+    return resourceId;
+  }
+
+  public AuthorizationEntity setResourceId(final String resourceId) {
+    this.resourceId = resourceId;
     return this;
   }
 }
