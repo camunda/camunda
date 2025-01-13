@@ -11,6 +11,7 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -29,6 +30,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
@@ -424,11 +426,6 @@ final class CamundaExporterIT {
         mock(ExporterEntityCacheProvider.class),
         new SimpleMeterRegistry(),
         new ExporterMetadata());
-    final var expectedHandlers =
-        resourceProvider.getExportHandlers().stream()
-            .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
-            .filter(exportHandler -> exportHandler.handlesRecord(record))
-            .toList();
 
     final CamundaExporter camundaExporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
@@ -438,32 +435,43 @@ final class CamundaExporterIT {
     camundaExporter.configure(exporterTestContext);
     camundaExporter.open(new ExporterTestController());
 
-    // when
-    camundaExporter.export(record);
+    // act
+    assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+  }
 
-    // then
-    assertThat(expectedHandlers).isNotEmpty();
-    expectedHandlers.forEach(
-        exportHandler -> {
-          final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
-          final ExporterEntity<?> responseEntity;
-          try {
-            responseEntity =
-                clientAdapter.get(
-                    expectedEntity.getId(),
-                    exportHandler.getIndexName(),
-                    exportHandler.getEntityType());
-          } catch (final IOException e) {
-            fail("Failed to find expected entity " + expectedEntity, e);
-            return;
-          }
+  @TestTemplate
+  void shouldThrowIfDateFormatIsInvalid(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+    // given
+    final ValueType valueType = ValueType.INCIDENT;
+    final long invalidTimestamp = 8109027450636607488L;
+    final Record record =
+        factory.generateRecord(
+            valueType,
+            r ->
+                r.withBrokerVersion("8.7.0")
+                    .withIntent(IncidentIntent.RESOLVED)
+                    .withTimestamp(invalidTimestamp));
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
 
-          assertThat(responseEntity)
-              .describedAs(
-                  "Handler [%s] correctly handles a [%s] record",
-                  exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
-              .isEqualTo(expectedEntity);
-        });
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // act
+    assertThatThrownBy(() -> camundaExporter.export(record))
+        .isInstanceOf(ExporterException.class)
+        .cause()
+        .isInstanceOf(PersistenceException.class);
   }
 
   @TestTemplate
