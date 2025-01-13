@@ -31,7 +31,7 @@ public class AuthorizationUtil {
     final var auth = new AuthInfo();
     auth.setClaims(
         Map.of(
-            Authorization.AUTHORIZED_USER_KEY,
+            Authorization.AUTHORIZED_USERNAME,
             userKey,
             Authorization.AUTHORIZED_TENANTS,
             List.of(authorizedTenantIds)));
@@ -40,7 +40,7 @@ public class AuthorizationUtil {
 
   public static AuthInfo getAuthInfo(final long userKey) {
     final var auth = new AuthInfo();
-    auth.setClaims(Map.of(Authorization.AUTHORIZED_USER_KEY, userKey));
+    auth.setClaims(Map.of(Authorization.AUTHORIZED_USERNAME, userKey));
     return auth;
   }
 
