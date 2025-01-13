@@ -18,7 +18,7 @@ package io.camunda.client.impl.response;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.protocol.rest.JobActivationResponse;
+import io.camunda.client.protocol.rest.JobActivationResult;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +39,8 @@ public final class ActivateJobsResponseImpl implements ActivateJobsResponse {
         .forEach(jobs::add);
   }
 
-  public ActivateJobsResponseImpl addResponse(final JobActivationResponse activateJobsResponse) {
-    final List<io.camunda.client.protocol.rest.ActivatedJob> activatedJobs =
+  public ActivateJobsResponseImpl addResponse(final JobActivationResult activateJobsResponse) {
+    final List<io.camunda.client.protocol.rest.ActivatedJobResult> activatedJobs =
         activateJobsResponse.getJobs();
     if (activatedJobs != null) {
       activatedJobs.stream().map(r -> new ActivatedJobImpl(jsonMapper, r)).forEach(jobs::add);

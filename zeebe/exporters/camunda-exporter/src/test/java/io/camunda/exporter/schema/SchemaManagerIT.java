@@ -25,6 +25,7 @@ import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -39,9 +40,14 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
+@DisabledIfSystemProperty(
+    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    matches = "^(?=\\s*\\S).*$",
+    disabledReason = "Excluding from AWS OS IT CI")
 @ExtendWith(CamundaExporterITInvocationProvider.class)
 public class SchemaManagerIT {
 

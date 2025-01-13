@@ -35,7 +35,7 @@ import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.client.protocol.rest.IncidentSearchQueryRequest;
-import io.camunda.client.protocol.rest.IncidentSearchQueryResponse;
+import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
@@ -72,7 +72,7 @@ public class IncidentQueryImpl
         "/incidents/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        IncidentSearchQueryResponse.class,
+        IncidentSearchQueryResult.class,
         SearchResponseMapper::toIncidentSearchResponse,
         result);
     return result;

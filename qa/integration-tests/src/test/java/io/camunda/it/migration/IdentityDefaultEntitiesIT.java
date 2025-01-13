@@ -45,7 +45,6 @@ public class IdentityDefaultEntitiesIT {
 
   @Test
   void canMigrateOldDefaultEntities() {
-    // given -- default entities in the old identity service
 
     // when -- Camunda is started with identity migration profile
     camunda

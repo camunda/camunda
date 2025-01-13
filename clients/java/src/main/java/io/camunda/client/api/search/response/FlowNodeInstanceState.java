@@ -17,7 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
 
 public enum FlowNodeInstanceState {
   ACTIVE,
@@ -31,7 +31,7 @@ public enum FlowNodeInstanceState {
   }
 
   public static FlowNodeInstanceState fromProtocolState(
-      final FlowNodeInstanceItem.StateEnum value) {
+      final FlowNodeInstanceResult.StateEnum value) {
     if (value == null) {
       return null;
     }

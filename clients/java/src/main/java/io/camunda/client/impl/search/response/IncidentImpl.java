@@ -17,9 +17,9 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.IncidentItem;
-import io.camunda.client.protocol.rest.IncidentItem.ErrorTypeEnum;
-import io.camunda.client.protocol.rest.IncidentItem.StateEnum;
+import io.camunda.client.protocol.rest.IncidentResult;
+import io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum;
+import io.camunda.client.protocol.rest.IncidentResult.StateEnum;
 import java.util.Objects;
 
 public class IncidentImpl implements Incident {
@@ -37,7 +37,7 @@ public class IncidentImpl implements Incident {
   private final Long jobKey;
   private final String tenantId;
 
-  public IncidentImpl(final IncidentItem item) {
+  public IncidentImpl(final IncidentResult item) {
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();

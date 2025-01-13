@@ -26,9 +26,10 @@ import io.camunda.client.api.response.EvaluatedDecisionInput;
 import io.camunda.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.client.api.response.MatchedDecisionRule;
 import io.camunda.client.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.EvaluatedDecisionInputItem;
-import io.camunda.client.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
+import io.camunda.client.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
@@ -60,10 +61,10 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .ruleId("rule-id")
           .ruleIndex(1)
           .addEvaluatedOutputsItem(EVALUATED_OUTPUT);
-  private static final EvaluatedDecisionItem EVALUATED_DECISION =
-      new EvaluatedDecisionItem()
+  private static final EvaluatedDecisionResult EVALUATED_DECISION =
+      new EvaluatedDecisionResult()
           .decisionDefinitionId("my-decision")
-          .decisionDefinitionKey(DECISION_KEY)
+          .decisionDefinitionKey(String.valueOf(DECISION_KEY))
           .decisionDefinitionName("My Decision")
           .decisionDefinitionVersion(1)
           .decisionDefinitionType("TABLE")
@@ -71,21 +72,20 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
           .tenantId(TENANT_ID)
           .addEvaluatedInputsItem(EVALUATED_INPUT)
           .addMatchedRulesItem(MATCHED_RULE);
-  private static final io.camunda.client.protocol.rest.EvaluateDecisionResponse
-      EVALUATE_DECISION_RESPONSE =
-          new io.camunda.client.protocol.rest.EvaluateDecisionResponse()
-              .decisionDefinitionKey(String.valueOf(DECISION_KEY))
-              .decisionDefinitionId("my-decision")
-              .decisionDefinitionName("My Decision")
-              .decisionDefinitionVersion(1)
-              .output("testOutput")
-              .decisionRequirementsId("decision-requirements-id")
-              .decisionRequirementsKey("124")
-              .failedDecisionDefinitionId("my-decision")
-              .failureMessage("decision-evaluation-failure")
-              .tenantId(TENANT_ID)
-              .decisionInstanceKey(String.valueOf(DECISION_INSTANCE_KEY))
-              .addEvaluatedDecisionsItem(EVALUATED_DECISION);
+  private static final EvaluateDecisionResult EVALUATE_DECISION_RESPONSE =
+      new EvaluateDecisionResult()
+          .decisionDefinitionKey(String.valueOf(DECISION_KEY))
+          .decisionDefinitionId("my-decision")
+          .decisionDefinitionName("My Decision")
+          .decisionDefinitionVersion(1)
+          .output("testOutput")
+          .decisionRequirementsId("decision-requirements-id")
+          .decisionRequirementsKey("124")
+          .failedDecisionDefinitionId("my-decision")
+          .failureMessage("decision-evaluation-failure")
+          .tenantId(TENANT_ID)
+          .decisionInstanceKey(String.valueOf(DECISION_INSTANCE_KEY))
+          .addEvaluatedDecisionsItem(EVALUATED_DECISION);
 
   @Test
   public void shouldEvaluateStandaloneDecisionWithDecisionKey() {
@@ -292,7 +292,7 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     final EvaluatedDecision evaluatedDecisionResponse = response.getEvaluatedDecisions().get(0);
     assertThat(evaluatedDecisionResponse.getDecisionId())
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionId());
-    assertThat(evaluatedDecisionResponse.getDecisionKey())
+    assertThat(String.valueOf(evaluatedDecisionResponse.getDecisionKey()))
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionKey());
     assertThat(evaluatedDecisionResponse.getDecisionName())
         .isEqualTo(EVALUATED_DECISION.getDecisionDefinitionName());

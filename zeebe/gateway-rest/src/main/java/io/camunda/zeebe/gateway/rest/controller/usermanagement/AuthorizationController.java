@@ -21,13 +21,12 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -40,10 +39,7 @@ public class AuthorizationController {
     this.authorizationServices = authorizationServices;
   }
 
-  @PatchMapping(
-      path = "/authorizations/{ownerKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPatchMapping(path = "/authorizations/{ownerKey}")
   public CompletableFuture<ResponseEntity<Object>> patchAuthorization(
       @PathVariable final long ownerKey,
       @RequestBody final AuthorizationPatchRequest authorizationPatchRequest) {
@@ -51,20 +47,14 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::patchAuthorization);
   }
 
-  @PostMapping(
-      path = "/authorizations/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/authorizations/search")
   public ResponseEntity<AuthorizationSearchResponse> searchAuthorizations(
       @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @PostMapping(
-      path = "/users/{userKey}/authorizations/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaPostMapping(path = "/users/{userKey}/authorizations/search")
   public ResponseEntity<AuthorizationSearchResponse> searchUserAuthorizations(
       @PathVariable("userKey") final long userKey,
       @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {

@@ -42,6 +42,10 @@ jest.mock('modules/stores/licenseTag', () => ({
   },
 }));
 
+jest.mock('bpmn-js/lib/features/outline', () => {
+  return () => {};
+});
+
 global.beforeEach(() => {
   localStorage.clear();
 

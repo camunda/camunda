@@ -35,7 +35,7 @@ import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.protocol.rest.DecisionRequirementsFilterRequest;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryRequest;
-import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -71,7 +71,7 @@ public class DecisionRequirementsQueryImpl
         "/decision-requirements/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        DecisionRequirementsSearchQueryResponse.class,
+        DecisionRequirementsSearchQueryResult.class,
         SearchResponseMapper::toDecisionRequirementsSearchResponse,
         result);
     return result;

@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.protocol.rest.IncidentItem;
+import io.camunda.client.protocol.rest.IncidentResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -51,7 +51,7 @@ public class IncidentGetRequestImpl implements IncidentGetRequest {
     httpClient.get(
         String.format("/incidents/%d", incidentKey),
         httpRequestConfig.build(),
-        IncidentItem.class,
+        IncidentResult.class,
         SearchResponseMapper::toIncidentGetResponse,
         result);
     return result;

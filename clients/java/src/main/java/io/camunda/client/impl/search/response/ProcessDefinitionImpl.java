@@ -18,7 +18,7 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.ProcessDefinitionItem;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import java.util.Objects;
 
 public class ProcessDefinitionImpl implements ProcessDefinition, Process {
@@ -31,7 +31,7 @@ public class ProcessDefinitionImpl implements ProcessDefinition, Process {
   private final String processDefinitionId;
   private final String tenantId;
 
-  public ProcessDefinitionImpl(final ProcessDefinitionItem item) {
+  public ProcessDefinitionImpl(final ProcessDefinitionResult item) {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     name = item.getName();
     resourceName = item.getResourceName();

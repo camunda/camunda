@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
@@ -20,8 +21,12 @@ import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTempla
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_GROUPS;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_USERS;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.COMPLETION_TIME;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CREATION_TIME;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.DUE_DATE;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_BPMN_ID;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_INSTANCE_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FOLLOW_UP_DATE;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.IMPLEMENTATION;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PRIORITY;
@@ -39,6 +44,7 @@ import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,6 +76,11 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     ofNullable(getStateQuery(filter.states())).ifPresent(queries::add);
     ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
+    ofNullable(getCreationTimeQuery(filter.creationDateOperations())).ifPresent(queries::addAll);
+    ofNullable(getCompletionTimeQuery(filter.completionDateOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(getFollowUpDateQuery(filter.followUpDateOperations())).ifPresent(queries::addAll);
+    ofNullable(getDueDateQuery(filter.dueDateOperations())).ifPresent(queries::addAll);
 
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
@@ -112,6 +123,25 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private List<SearchQuery> getPrioritiesQuery(final List<Operation<Integer>> priorities) {
     return intOperations(PRIORITY, priorities);
+  }
+
+  private List<SearchQuery> getCreationTimeQuery(
+      final List<Operation<OffsetDateTime>> creationTime) {
+    return dateTimeOperations(CREATION_TIME, creationTime);
+  }
+
+  private List<SearchQuery> getCompletionTimeQuery(
+      final List<Operation<OffsetDateTime>> completionTime) {
+    return dateTimeOperations(COMPLETION_TIME, completionTime);
+  }
+
+  private List<SearchQuery> getFollowUpDateQuery(
+      final List<Operation<OffsetDateTime>> followUpTime) {
+    return dateTimeOperations(FOLLOW_UP_DATE, followUpTime);
+  }
+
+  private List<SearchQuery> getDueDateQuery(final List<Operation<OffsetDateTime>> dueTime) {
+    return dateTimeOperations(DUE_DATE, dueTime);
   }
 
   private SearchQuery getStateQuery(final List<String> state) {

@@ -7,9 +7,10 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public interface BatchOperationUpdateRepository extends AutoCloseable {
 
@@ -17,7 +18,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * Returns the list of not finished batch operations. We can use endDate field to distinguish
    * finished from running.
    */
-  List<BatchOperationEntity> getNotFinishedBatchOperations();
+  CompletionStage<Collection<String>> getNotFinishedBatchOperations();
 
   /**
    * Counts amount of single operations that are finished (COMPLETED or FAILED state) that are
@@ -27,7 +28,8 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    *
    * @param batchOperationIds list of batch operation ids
    */
-  List<OperationsAggData> getFinishedOperationsCount(List<String> batchOperationIds);
+  CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+      Collection<String> batchOperationIds);
 
   /**
    * Updates the batch operations with the amount of finished operations. Update method additionally
@@ -37,14 +39,36 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * @param documentUpdates
    * @return
    */
-  Integer bulkUpdate(List<DocumentUpdate> documentUpdates);
+  CompletionStage<Integer> bulkUpdate(List<DocumentUpdate> documentUpdates);
 
   /**
    * Represents a specific document store agnostic update to execute.
    *
-   * <p>All fields are expected to be non-null, except routing.
+   * <p>All fields are expected to be non-null.
    */
-  record DocumentUpdate(String id, Map<String, Object> doc) {}
+  record DocumentUpdate(String id, long finishedOperationsCount) {}
 
   record OperationsAggData(String batchOperationId, long finishedOperationsCount) {}
+
+  class NoopBatchOperationUpdateRepository implements BatchOperationUpdateRepository {
+
+    @Override
+    public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
+    public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+        final Collection<String> batchOperationIds) {
+      return CompletableFuture.completedFuture(List.of());
+    }
+
+    @Override
+    public CompletionStage<Integer> bulkUpdate(final List<DocumentUpdate> documentUpdates) {
+      return CompletableFuture.completedFuture(0);
+    }
+
+    @Override
+    public void close() throws Exception {}
+  }
 }

@@ -23,7 +23,7 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.DecisionInstanceImpl;
-import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResponse;
+import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -55,7 +55,7 @@ public class DecisionInstanceGetRequestImpl implements DecisionInstanceGetReques
     httpClient.get(
         String.format("/decision-instances/%s", decisionInstanceId),
         httpRequestConfig.build(),
-        DecisionInstanceGetQueryResponse.class,
+        DecisionInstanceGetQueryResult.class,
         resp -> new DecisionInstanceImpl(resp, jsonMapper),
         result);
     return result;

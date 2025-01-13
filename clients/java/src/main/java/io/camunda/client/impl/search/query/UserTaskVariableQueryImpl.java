@@ -34,7 +34,7 @@ import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
 import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
-import io.camunda.client.protocol.rest.VariableSearchQueryResponse;
+import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -72,7 +72,7 @@ public class UserTaskVariableQueryImpl
         String.format("/user-tasks/%d/variables/search", userTaskKey),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        VariableSearchQueryResponse.class,
+        VariableSearchQueryResult.class,
         SearchResponseMapper::toVariableSearchResponse,
         result);
     return result;

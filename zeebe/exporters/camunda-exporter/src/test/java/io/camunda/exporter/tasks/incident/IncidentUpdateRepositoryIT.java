@@ -21,6 +21,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkU
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
@@ -60,6 +61,7 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
@@ -70,6 +72,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SuppressWarnings("resource")
 @Testcontainers
 @AutoCloseResources
+@DisabledIfSystemProperty(
+    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    matches = "^(?=\\s*\\S).*$",
+    disabledReason = "Excluding from AWS OS IT CI")
 abstract class IncidentUpdateRepositoryIT {
   public static final int PARTITION_ID = 1;
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateRepositoryIT.class);
@@ -132,6 +138,10 @@ abstract class IncidentUpdateRepositoryIT {
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetIncidentDocumentsTest {
     @Test
@@ -206,6 +216,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetPendingIncidentsBatchTest {
     @Test
@@ -345,6 +359,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class BulkUpdateIT {
     @Test
@@ -519,6 +537,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class AnalyzeTreePathIT {
     @Test
@@ -553,6 +575,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class WasProcessInstanceDeletedIT {
     @Test
@@ -645,6 +671,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetFlowNodesInListViewIT {
     @Test
@@ -731,6 +761,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetFlowNodeInstancesIT {
     @Test
@@ -778,6 +812,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetActiveIncidentsTest {
     @Test
@@ -872,6 +910,10 @@ abstract class IncidentUpdateRepositoryIT {
     }
   }
 
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetProcessInstancesIT {
     @Test

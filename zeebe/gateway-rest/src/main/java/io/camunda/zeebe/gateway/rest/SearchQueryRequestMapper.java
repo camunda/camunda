@@ -625,6 +625,18 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getLocalVariables())
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(vars -> builder.localVariables(toVariableValueFilters(vars)));
+              Optional.ofNullable(f.getCreationDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::creationDateOperations);
+              Optional.ofNullable(f.getCompletionDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::completionDateOperations);
+              Optional.ofNullable(f.getDueDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::dueDateOperations);
+              Optional.ofNullable(f.getFollowUpDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::followUpDateOperations);
             });
 
     return builder.build();

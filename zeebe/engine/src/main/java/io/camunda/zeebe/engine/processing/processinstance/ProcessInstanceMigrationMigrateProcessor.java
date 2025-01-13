@@ -454,10 +454,13 @@ public class ProcessInstanceMigrationMigrateProcessor
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final ElementInstance elementInstance) {
+    final long elementInstanceKey = elementInstance.getKey();
+    final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
+
     final List<ActiveSequenceFlow> activeSequenceFlows = new ArrayList<>();
     elementInstanceState.visitTakenSequenceFlows(
-        elementInstance.getKey(),
-        (flowScopeKey, gatewayElementId, sequenceFlowId, number) -> {
+        elementInstanceKey,
+        (scopeKey, gatewayElementId, sequenceFlowId, number) -> {
           final var sequenceFlow =
               sourceProcessDefinition
                   .getProcess()
@@ -476,17 +479,22 @@ public class ProcessInstanceMigrationMigrateProcessor
             activeSequenceFlow -> {
               final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
               final ExecutableFlowNode sourceGateway = activeSequenceFlow.target;
+              requireNoConcurrentCommandForGateway(
+                  elementInstanceState, sourceGateway, elementInstanceKey, processInstanceKey);
+
               final String targetGatewayId =
                   sourceElementIdToTargetElementId.get(
                       BufferUtil.bufferAsString(sourceGateway.getId()));
+              requireValidGatewayMapping(
+                  sourceGateway, targetGatewayId, targetProcessDefinition, processInstanceKey);
 
-              // TODO -  add validations: if gateway not mapped and if gateway type changed
-              // target gateway will be used for validations in the next PR, please ignore
-              // the assignment for now
               final ExecutableFlowNode targetGateway =
                   targetProcessDefinition
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
+              requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
+              requireSequenceFlowExistsInTarget(
+                  activeFlow.getId(), sourceGateway, targetGateway, processInstanceKey);
 
               return activeFlow;
             })

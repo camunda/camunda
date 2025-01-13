@@ -75,7 +75,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   }
 
   public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.wrap(authorization);
+    this.authorization.copyFrom(authorization);
     return this;
   }
 

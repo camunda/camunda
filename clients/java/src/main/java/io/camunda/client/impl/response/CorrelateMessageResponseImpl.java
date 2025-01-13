@@ -17,7 +17,7 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.CorrelateMessageResponse;
-import io.camunda.client.protocol.rest.MessageCorrelationResponse;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
 
 public final class CorrelateMessageResponseImpl implements CorrelateMessageResponse {
 
@@ -45,7 +45,7 @@ public final class CorrelateMessageResponseImpl implements CorrelateMessageRespo
     return processInstanceKey;
   }
 
-  public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResponse response) {
+  public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResult response) {
     key = Long.parseLong(response.getMessageKey());
     tenantId = response.getTenantId();
     processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
