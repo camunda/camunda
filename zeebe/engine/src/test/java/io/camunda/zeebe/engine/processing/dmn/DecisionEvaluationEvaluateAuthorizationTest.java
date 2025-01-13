@@ -13,10 +13,9 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
@@ -37,24 +36,17 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-    ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy(defaultUserKey);
+    ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
@@ -65,7 +57,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
             .decision()
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "red")
-            .evaluate(defaultUserKey);
+            .evaluate(DEFAULT_USER.getUsername());
 
     // then
     assertThat(response.getValue().getDecisionOutput()).isEqualTo("\"Sith\"");
@@ -74,9 +66,9 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToEvaluateDecisionWithUser() {
     // given
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user.getUserKey(),
         AuthorizationResourceType.DECISION_DEFINITION,
         PermissionType.CREATE_DECISION_INSTANCE);
 
@@ -86,7 +78,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
             .decision()
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "red")
-            .evaluate(userKey);
+            .evaluate(user.getUsername());
 
     // then
     assertThat(response.getValue().getDecisionOutput()).isEqualTo("\"Sith\"");
@@ -95,7 +87,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
   @Test
   public void shouldBeUnauthorizedToEvaluateDecisionIfNoPermissions() {
     // given
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
@@ -104,7 +96,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "red")
             .expectRejection()
-            .evaluate(userKey);
+            .evaluate(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -114,7 +106,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
                 .formatted(DECISION_ID));
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -122,7 +114,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -135,6 +127,6 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 }

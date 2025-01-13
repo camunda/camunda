@@ -222,10 +222,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   @Override
   public long writeCommand(
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
-    return streamProcessingComposite.writeCommand(intent, userKey, recordValue, authorizedTenants);
+    return streamProcessingComposite.writeCommand(intent, username, recordValue, authorizedTenants);
   }
 
   @Override
@@ -252,11 +252,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
-        key, intent, userKey, recordValue, authorizedTenants);
+        key, intent, username, recordValue, authorizedTenants);
   }
 
   @Override
@@ -277,11 +277,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
-        key, requestStreamId, requestId, intent, userKey, recordValue, authorizedTenants);
+        key, requestStreamId, requestId, intent, username, recordValue, authorizedTenants);
   }
 
   @Override
@@ -299,9 +299,9 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final long requestId,
       final Intent intent,
       final UnifiedRecordValue value,
-      final long userKey) {
+      final String username) {
     return streamProcessingComposite.writeCommand(
-        requestStreamId, requestId, intent, value, userKey);
+        requestStreamId, requestId, intent, value, username);
   }
 
   @Override
@@ -315,9 +315,9 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionId,
       final Intent intent,
       final UnifiedRecordValue recordValue,
-      final long userKey) {
+      final String username) {
     return streamProcessingComposite.writeCommandOnPartition(
-        partitionId, intent, recordValue, userKey);
+        partitionId, intent, recordValue, username);
   }
 
   @Override
@@ -353,11 +353,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partitionId,
       final long key,
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommandOnPartition(
-        partitionId, key, intent, userKey, recordValue, authorizedTenants);
+        partitionId, key, intent, username, recordValue, authorizedTenants);
   }
 
   public void snapshot() {

@@ -14,10 +14,10 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -41,21 +41,13 @@ public class UserTaskAssignAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-
     ENGINE
         .deployment()
         .withXmlResource(
@@ -66,7 +58,7 @@ public class UserTaskAssignAuthorizationTest {
                 .zeebeUserTask()
                 .endEvent()
                 .done())
-        .deploy(defaultUserKey);
+        .deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
@@ -79,7 +71,7 @@ public class UserTaskAssignAuthorizationTest {
         .userTask()
         .ofInstance(processInstanceKey)
         .withAssignee("assignee")
-        .assign(defaultUserKey);
+        .assign(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -93,15 +85,19 @@ public class UserTaskAssignAuthorizationTest {
   public void shouldBeAuthorizedToAssignUserTaskWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user.getUserKey(),
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_USER_TASK,
         PROCESS_ID);
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("assignee").assign(userKey);
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAssignee("assignee")
+        .assign(user.getUsername());
 
     // then
     assertThat(
@@ -115,7 +111,7 @@ public class UserTaskAssignAuthorizationTest {
   public void shouldBeUnauthorizedToAssignUserTaskIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
@@ -124,7 +120,7 @@ public class UserTaskAssignAuthorizationTest {
             .ofInstance(processInstanceKey)
             .withAssignee("assignee")
             .expectRejection()
-            .assign(userKey);
+            .assign(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -134,7 +130,7 @@ public class UserTaskAssignAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -142,7 +138,7 @@ public class UserTaskAssignAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -156,10 +152,10 @@ public class UserTaskAssignAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

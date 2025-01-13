@@ -27,20 +27,21 @@ public class AuthorizationUtil {
     return auth;
   }
 
-  public static AuthInfo getAuthInfo(final long userKey, final String... authorizedTenantIds) {
+  public static AuthInfo getUsernameAuthInfo(
+      final String username, final String... authorizedTenantIds) {
     final var auth = new AuthInfo();
     auth.setClaims(
         Map.of(
             Authorization.AUTHORIZED_USERNAME,
-            userKey,
+            username,
             Authorization.AUTHORIZED_TENANTS,
             List.of(authorizedTenantIds)));
     return auth;
   }
 
-  public static AuthInfo getAuthInfo(final long userKey) {
+  public static AuthInfo getAuthInfo(final String username) {
     final var auth = new AuthInfo();
-    auth.setClaims(Map.of(Authorization.AUTHORIZED_USERNAME, userKey));
+    auth.setClaims(Map.of(Authorization.AUTHORIZED_USERNAME, username));
     return auth;
   }
 

@@ -15,10 +15,10 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -43,21 +43,13 @@ public class UserTaskUpdateAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-
     ENGINE
         .deployment()
         .withXmlResource(
@@ -68,7 +60,7 @@ public class UserTaskUpdateAuthorizationTest {
                 .zeebeUserTask()
                 .endEvent()
                 .done())
-        .deploy(defaultUserKey);
+        .deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
@@ -77,7 +69,10 @@ public class UserTaskUpdateAuthorizationTest {
     final var processInstanceKey = createProcessInstance();
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord(), defaultUserKey);
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord(), DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -91,15 +86,18 @@ public class UserTaskUpdateAuthorizationTest {
   public void shouldBeAuthorizedToUpdateUserTaskWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user.getUserKey(),
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_USER_TASK,
         PROCESS_ID);
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord(), userKey);
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord(), user.getUsername());
 
     // then
     assertThat(
@@ -113,11 +111,14 @@ public class UserTaskUpdateAuthorizationTest {
   public void shouldBeUnauthorizedToUpdateUserTaskIfNoPermissions() {
     // given
     final var processInstanceKey = createProcessInstance();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
-        ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord(), userKey);
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .update(new UserTaskRecord(), user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -127,7 +128,7 @@ public class UserTaskUpdateAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -135,7 +136,7 @@ public class UserTaskUpdateAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -149,10 +150,10 @@ public class UserTaskUpdateAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

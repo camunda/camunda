@@ -20,7 +20,7 @@ public interface CommandWriter {
 
   long writeCommand(
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       String... authorizedTenants);
 
@@ -38,7 +38,7 @@ public interface CommandWriter {
   long writeCommand(
       final long key,
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       final String... authorizedTenants);
 
@@ -55,7 +55,7 @@ public interface CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final long userKey,
+      final String username,
       final UnifiedRecordValue recordValue,
       final String... authorizedTenants);
 
@@ -70,7 +70,7 @@ public interface CommandWriter {
       final long requestId,
       final Intent intent,
       final UnifiedRecordValue value,
-      final long userKey);
+      final String username);
 
   long writeCommandOnPartition(
       final int partitionId, final Intent intent, final UnifiedRecordValue recordValue);
@@ -79,7 +79,7 @@ public interface CommandWriter {
       final int partitionId,
       final Intent intent,
       final UnifiedRecordValue recordValue,
-      final long userKey);
+      final String username);
 
   long writeCommandOnPartition(
       int partitionId, long key, Intent intent, UnifiedRecordValue recordValue);
@@ -102,7 +102,7 @@ public interface CommandWriter {
       int partitionId,
       long key,
       Intent intent,
-      final long userKey,
+      final String username,
       UnifiedRecordValue recordValue,
       final String... authorizedTenants);
 }

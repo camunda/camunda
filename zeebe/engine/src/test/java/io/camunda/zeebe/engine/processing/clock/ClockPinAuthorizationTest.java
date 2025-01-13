@@ -14,15 +14,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,21 +38,10 @@ public class ClockPinAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToPinClockWithDefaultUser() {
@@ -61,7 +49,7 @@ public class ClockPinAuthorizationTest {
     final var instant = Instant.now();
 
     // when
-    ENGINE.clock().pinAt(instant, defaultUserKey);
+    ENGINE.clock().pinAt(instant, DEFAULT_USER.getUsername());
 
     // when
     assertThat(RecordingExporter.clockRecords(ClockIntent.PINNED).withTimestamp(instant).exists())
@@ -74,11 +62,11 @@ public class ClockPinAuthorizationTest {
     final var instant = Instant.now();
     final var resourceType = AuthorizationResourceType.SYSTEM;
     final var permissionType = PermissionType.UPDATE;
-    final var userKey = createUser();
-    addPermissionsToUser(userKey, resourceType, permissionType);
+    final var user = createUser();
+    addPermissionsToUser(user.getUserKey(), resourceType, permissionType);
 
     // when
-    ENGINE.clock().pinAt(instant, userKey);
+    ENGINE.clock().pinAt(instant, user.getUsername());
 
     // when
     assertThat(RecordingExporter.clockRecords(ClockIntent.PINNED).withTimestamp(instant).exists())
@@ -89,10 +77,10 @@ public class ClockPinAuthorizationTest {
   public void shouldBeUnAuthorizedToPinClockWithPermissions() {
     // given
     final var instant = Instant.now();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
-    final var rejection = ENGINE.clock().expectRejection().pinAt(instant, userKey);
+    final var rejection = ENGINE.clock().expectRejection().pinAt(instant, user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -101,7 +89,7 @@ public class ClockPinAuthorizationTest {
             "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -109,7 +97,7 @@ public class ClockPinAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -122,6 +110,6 @@ public class ClockPinAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 }

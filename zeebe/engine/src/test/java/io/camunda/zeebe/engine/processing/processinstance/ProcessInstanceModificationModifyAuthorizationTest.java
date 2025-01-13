@@ -16,9 +16,9 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -44,21 +44,13 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-
     ENGINE
         .deployment()
         .withXmlResource(
@@ -68,7 +60,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
                 .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
                 .done())
-        .deploy(defaultUserKey)
+        .deploy(DEFAULT_USER.getUsername())
         .getValue();
   }
 
@@ -84,7 +76,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withInstanceKey(processInstanceKey)
         .modification()
         .terminateElement(serviceTaskKey)
-        .modify(defaultUserKey);
+        .modify(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -100,9 +92,9 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
     // given
     final var processInstanceKey = createProcessInstance();
     final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user.getUserKey(),
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE,
         PROCESS_ID);
@@ -113,7 +105,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withInstanceKey(processInstanceKey)
         .modification()
         .terminateElement(serviceTaskKey)
-        .modify(userKey);
+        .modify(user.getUsername());
 
     // then
     assertThat(
@@ -129,7 +121,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
     // given
     final var processInstanceKey = createProcessInstance();
     final var serviceTaskKey = getServiceTaskKey(processInstanceKey);
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     ENGINE
@@ -138,7 +130,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .modification()
         .terminateElement(serviceTaskKey)
         .expectRejection()
-        .modify(userKey);
+        .modify(user.getUsername());
 
     // then
     Assertions.assertThat(
@@ -151,7 +143,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -159,7 +151,7 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -173,11 +165,11 @@ public class ProcessInstanceModificationModifyAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
+    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 
   private long getServiceTaskKey(final long processInstanceKey) {

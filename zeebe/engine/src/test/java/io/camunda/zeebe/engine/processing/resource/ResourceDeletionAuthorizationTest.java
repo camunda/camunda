@@ -15,15 +15,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,21 +39,10 @@ public class ResourceDeletionAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToDeleteProcessDefinitionWithDefaultUser() {
@@ -62,7 +50,10 @@ public class ResourceDeletionAuthorizationTest {
     final var processDefinitionKey = deployProcessDefinition(Strings.newRandomValidBpmnId());
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete(defaultUserKey);
+    ENGINE
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .delete(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -77,12 +68,15 @@ public class ResourceDeletionAuthorizationTest {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var processDefinitionKey = deployProcessDefinition(processId);
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_PROCESS, processId);
+        user.getUserKey(),
+        AuthorizationResourceType.DEPLOYMENT,
+        PermissionType.DELETE_PROCESS,
+        processId);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete(userKey);
+    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete(user.getUsername());
 
     // then
     assertThat(
@@ -97,14 +91,14 @@ public class ResourceDeletionAuthorizationTest {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var processDefinitionKey = deployProcessDefinition(processId);
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     ENGINE
         .resourceDeletion()
         .withResourceKey(processDefinitionKey)
         .expectRejection()
-        .delete(userKey);
+        .delete(user.getUsername());
 
     // then
     Assertions.assertThat(
@@ -123,7 +117,7 @@ public class ResourceDeletionAuthorizationTest {
     final var drdKey = deployDrd();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(defaultUserKey);
+    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -138,12 +132,12 @@ public class ResourceDeletionAuthorizationTest {
     // given
     final var drdId = "force_users";
     final var drdKey = deployDrd();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_DRD, drdId);
+        user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_DRD, drdId);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(userKey);
+    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(user.getUsername());
 
     // then
     assertThat(
@@ -158,10 +152,10 @@ public class ResourceDeletionAuthorizationTest {
     // given
     final var drdId = "force_users";
     final var drdKey = deployDrd();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drdKey).expectRejection().delete(userKey);
+    ENGINE.resourceDeletion().withResourceKey(drdKey).expectRejection().delete(user.getUsername());
 
     // then
     Assertions.assertThat(
@@ -180,7 +174,7 @@ public class ResourceDeletionAuthorizationTest {
     final var formKey = deployForm();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(formKey).delete(defaultUserKey);
+    ENGINE.resourceDeletion().withResourceKey(formKey).delete(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -195,12 +189,15 @@ public class ResourceDeletionAuthorizationTest {
     // given
     final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_FORM, formId);
+        user.getUserKey(),
+        AuthorizationResourceType.DEPLOYMENT,
+        PermissionType.DELETE_FORM,
+        formId);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(formKey).delete(userKey);
+    ENGINE.resourceDeletion().withResourceKey(formKey).delete(user.getUsername());
 
     // then
     assertThat(
@@ -215,10 +212,10 @@ public class ResourceDeletionAuthorizationTest {
     // given
     final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(formKey).expectRejection().delete(userKey);
+    ENGINE.resourceDeletion().withResourceKey(formKey).expectRejection().delete(user.getUsername());
 
     // then
     Assertions.assertThat(
@@ -231,7 +228,7 @@ public class ResourceDeletionAuthorizationTest {
                 .formatted(formId));
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -239,7 +236,7 @@ public class ResourceDeletionAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -253,7 +250,7 @@ public class ResourceDeletionAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, resourceIds)
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 
   private long deployProcessDefinition(final String processId) {
@@ -261,7 +258,7 @@ public class ResourceDeletionAuthorizationTest {
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-        .deploy(defaultUserKey)
+        .deploy(DEFAULT_USER.getUsername())
         .getValue()
         .getProcessesMetadata()
         .getFirst()
@@ -272,7 +269,7 @@ public class ResourceDeletionAuthorizationTest {
     return ENGINE
         .deployment()
         .withXmlClasspathResource("/dmn/drg-force-user.dmn")
-        .deploy(defaultUserKey)
+        .deploy(DEFAULT_USER.getUsername())
         .getValue()
         .getDecisionRequirementsMetadata()
         .getFirst()
@@ -283,7 +280,7 @@ public class ResourceDeletionAuthorizationTest {
     return ENGINE
         .deployment()
         .withXmlClasspathResource("/form/test-form-1.form")
-        .deploy(defaultUserKey)
+        .deploy(DEFAULT_USER.getUsername())
         .getValue()
         .getFormMetadata()
         .getFirst()

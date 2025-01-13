@@ -15,15 +15,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,21 +39,10 @@ public class DeploymentCreateAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToDeployWithDefaultUser() {
@@ -66,7 +54,7 @@ public class DeploymentCreateAuthorizationTest {
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-        .deploy(defaultUserKey);
+        .deploy(DEFAULT_USER.getUsername());
 
     // when
     assertThat(
@@ -80,15 +68,16 @@ public class DeploymentCreateAuthorizationTest {
   public void shouldBeAuthorizedToDeployWithPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    final var userKey = createUser();
-    addPermissionsToUser(userKey, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+    final var user = createUser();
+    addPermissionsToUser(
+        user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
 
     // when
     ENGINE
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
-        .deploy(userKey);
+        .deploy(user.getUsername());
 
     // when
     assertThat(
@@ -102,7 +91,7 @@ public class DeploymentCreateAuthorizationTest {
   public void shouldBeUnAuthorizedToDeployWithPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
@@ -112,7 +101,7 @@ public class DeploymentCreateAuthorizationTest {
                 "process.bpmn",
                 Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
             .expectRejection()
-            .deploy(userKey);
+            .deploy(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -121,7 +110,7 @@ public class DeploymentCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -129,7 +118,7 @@ public class DeploymentCreateAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -142,6 +131,6 @@ public class DeploymentCreateAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 }

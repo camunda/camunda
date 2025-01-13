@@ -14,14 +14,13 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,21 +37,10 @@ public class RoleCreateAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToCreateRoleWithDefaultUser() {
@@ -60,7 +48,7 @@ public class RoleCreateAuthorizationTest {
     final var roleName = UUID.randomUUID().toString();
 
     // when
-    ENGINE.role().newRole(roleName).create(defaultUserKey);
+    ENGINE.role().newRole(roleName).create(DEFAULT_USER.getUsername());
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
@@ -71,11 +59,11 @@ public class RoleCreateAuthorizationTest {
   public void shouldBeAuthorizedToCreateRoleWithPermissions() {
     // given
     final var roleName = UUID.randomUUID().toString();
-    final var userKey = createUser();
-    addPermissionsToUser(userKey, AuthorizationResourceType.ROLE, PermissionType.CREATE);
+    final var user = createUser();
+    addPermissionsToUser(user.getUserKey(), AuthorizationResourceType.ROLE, PermissionType.CREATE);
 
     // when
-    ENGINE.role().newRole(roleName).create(userKey);
+    ENGINE.role().newRole(roleName).create(user.getUsername());
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
@@ -86,10 +74,11 @@ public class RoleCreateAuthorizationTest {
   public void shouldBeUnAuthorizedToCreateRoleWithoutPermissions() {
     // given
     final var roleName = UUID.randomUUID().toString();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
-    final var rejection = ENGINE.role().newRole(roleName).expectRejection().create(userKey);
+    final var rejection =
+        ENGINE.role().newRole(roleName).expectRejection().create(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -98,7 +87,7 @@ public class RoleCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -106,7 +95,7 @@ public class RoleCreateAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -119,6 +108,6 @@ public class RoleCreateAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 }

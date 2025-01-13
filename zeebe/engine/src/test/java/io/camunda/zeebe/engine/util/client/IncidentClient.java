@@ -116,7 +116,7 @@ public final class IncidentClient {
       return expectation.apply(position);
     }
 
-    public Record<IncidentRecordValue> resolve(final long userKey) {
+    public Record<IncidentRecordValue> resolve(final String username) {
       if (incidentKey == DEFAULT_KEY) {
         incidentKey =
             RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -130,7 +130,7 @@ public final class IncidentClient {
               Protocol.decodePartitionId(incidentKey),
               incidentKey,
               IncidentIntent.RESOLVE,
-              userKey,
+              username,
               incidentRecord,
               TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 

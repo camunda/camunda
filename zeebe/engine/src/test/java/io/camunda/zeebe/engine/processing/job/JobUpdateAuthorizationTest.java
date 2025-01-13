@@ -15,9 +15,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -41,21 +41,13 @@ public class JobUpdateAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void before() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-
     ENGINE
         .deployment()
         .withXmlResource(
@@ -65,7 +57,7 @@ public class JobUpdateAuthorizationTest {
                 .serviceTask("serviceTask", t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
                 .done())
-        .deploy(defaultUserKey);
+        .deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
@@ -74,7 +66,7 @@ public class JobUpdateAuthorizationTest {
     final var jobKey = createJob();
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(1).updateRetries(defaultUserKey);
+    ENGINE.job().withKey(jobKey).withRetries(1).updateRetries(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -86,14 +78,14 @@ public class JobUpdateAuthorizationTest {
   public void shouldBeAuthorizedToUpdateJobWithUser() {
     // given
     final var jobKey = createJob();
-    final var userKey = createUser();
+    final var user = createUser();
     addPermissionsToUser(
-        userKey,
+        user.getUserKey(),
         AuthorizationResourceType.PROCESS_DEFINITION,
         PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(1).updateRetries(userKey);
+    ENGINE.job().withKey(jobKey).withRetries(1).updateRetries(user.getUsername());
 
     // then
     assertThat(
@@ -105,11 +97,16 @@ public class JobUpdateAuthorizationTest {
   public void shouldBeUnauthorizedToUpdateJobIfNoPermissions() {
     // given
     final var jobKey = createJob();
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
-        ENGINE.job().withKey(jobKey).withRetries(1).expectRejection().updateRetries(userKey);
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withRetries(1)
+            .expectRejection()
+            .updateRetries(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -119,7 +116,7 @@ public class JobUpdateAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private long createUser() {
+  private UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -127,7 +124,7 @@ public class JobUpdateAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -140,12 +137,12 @@ public class JobUpdateAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 
   private long createJob() {
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(defaultUserKey);
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .getFirst()

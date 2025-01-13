@@ -41,7 +41,7 @@ public class AnonymousAuthorizationTest {
   private static final String PROCESS_ID = "PROCESS";
   private static final String PROCESS_ID_WITH_NOT_EXISTING_FORM = "PROCESS_WITH_NOT_EXISTING_FORM";
   private static final String TENANT = "foo";
-  private static long userKey;
+  private static String username;
 
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -64,13 +64,13 @@ public class AnonymousAuthorizationTest {
 
   @BeforeClass
   public static void setUp() {
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    username = UUID.randomUUID().toString();
+    final var user = ENGINE.user().newUser(username).create().getValue();
     final var tenantKey = ENGINE.tenant().newTenant().withTenantId(TENANT).create().getKey();
     ENGINE
         .tenant()
         .addEntity(tenantKey)
-        .withEntityKey(userKey)
+        .withEntityKey(user.getUserKey())
         .withEntityType(EntityType.USER)
         .add();
 
@@ -79,11 +79,11 @@ public class AnonymousAuthorizationTest {
         .permission()
         .withPermission(PermissionType.CREATE, "*")
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
 
-    ENGINE.deployment().withXmlResource(PROCESS).deploy(userKey);
+    ENGINE.deployment().withXmlResource(PROCESS).deploy(username);
   }
 
   @Test
@@ -155,7 +155,7 @@ public class AnonymousAuthorizationTest {
         .deployment()
         .withXmlResource(PROCESS_WITH_NOT_EXISTING_FORM)
         .withTenantId(TENANT)
-        .deploy(userKey);
+        .deploy(username);
 
     final long processInstanceKey =
         ENGINE

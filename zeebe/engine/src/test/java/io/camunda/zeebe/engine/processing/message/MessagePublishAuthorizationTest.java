@@ -15,9 +15,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -44,21 +44,13 @@ public class MessagePublishAuthorizationTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @BeforeClass
   public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-
     ENGINE
         .deployment()
         .withXmlResource(
@@ -75,7 +67,7 @@ public class MessagePublishAuthorizationTest {
                 .startEvent()
                 .message(m -> m.name(START_MSG_NAME))
                 .done())
-        .deploy(defaultUserKey);
+        .deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
@@ -89,7 +81,7 @@ public class MessagePublishAuthorizationTest {
         .message()
         .withName(INTERMEDIATE_MSG_NAME)
         .withCorrelationKey(correlationKey)
-        .publish(defaultUserKey);
+        .publish(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -105,15 +97,16 @@ public class MessagePublishAuthorizationTest {
     // given
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
-    final var userKey = createUser();
-    addPermissionsToUser(userKey, AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
+    final var user = createUser();
+    addPermissionsToUser(
+        user.getUserKey(), AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
 
     // when
     ENGINE
         .message()
         .withName(INTERMEDIATE_MSG_NAME)
         .withCorrelationKey(correlationKey)
-        .publish(userKey);
+        .publish(user.getUsername());
 
     // then
     assertThat(
@@ -128,7 +121,7 @@ public class MessagePublishAuthorizationTest {
   public void shouldBeUnauthorizedToPublishMessageIfNoPermissions() {
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
@@ -137,7 +130,7 @@ public class MessagePublishAuthorizationTest {
             .withName(INTERMEDIATE_MSG_NAME)
             .withCorrelationKey(correlationKey)
             .expectRejection()
-            .publish(userKey);
+            .publish(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -146,7 +139,7 @@ public class MessagePublishAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'");
   }
 
-  private static long createUser() {
+  private static UserRecordValue createUser() {
     return ENGINE
         .user()
         .newUser(UUID.randomUUID().toString())
@@ -154,7 +147,7 @@ public class MessagePublishAuthorizationTest {
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionsToUser(
@@ -167,7 +160,7 @@ public class MessagePublishAuthorizationTest {
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 
   private void createProcessInstance(final String correlationKey) {
@@ -175,6 +168,6 @@ public class MessagePublishAuthorizationTest {
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .withVariable(CORRELATION_KEY_VARIABLE, correlationKey)
-        .create(defaultUserKey);
+        .create(DEFAULT_USER.getUsername());
   }
 }
