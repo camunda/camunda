@@ -32,8 +32,8 @@ import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -126,6 +126,7 @@ public class CommandApiServiceImplTest {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
+  @Timeout(value = 10)
   public void shouldUnsubscribeTwiceWhenTransitioningFromFollowerToInactive() {
     // given
     when(transitionContext.getPartitionId()).thenReturn(1);
@@ -163,6 +164,7 @@ public class CommandApiServiceImplTest {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/25897")
+  @Timeout(value = 10)
   public void shouldUnsubscribeOnActorClosing() {
     // given
     when(logStream.newLogStreamWriter()).thenReturn(CompletableActorFuture.completed(mock()));
@@ -177,7 +179,7 @@ public class CommandApiServiceImplTest {
     // when - closing the actor
     final ActorFuture<Void> closeFuture = commandApiService.closeAsync();
     scheduler.workUntilDone();
-    closeFuture.join(10, TimeUnit.SECONDS);
+    closeFuture.join();
 
     // then - subscriptions are cleaned up
     verify(serverTransport).unsubscribe(eq(1), eq(RequestType.QUERY));
