@@ -90,9 +90,7 @@ public class GroupController {
                 .removeMember(groupKey, userKey, EntityType.USER));
   }
 
-  @GetMapping(
-      path = "/{groupKey}/users",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  @CamundaGetMapping(path = "/{groupKey}/users")
   public ResponseEntity<UserSearchResponse> usersByGroup(
       @PathVariable("groupKey") final long groupKey) {
     return searchUsersByGroupKey(groupKey);
@@ -108,9 +106,6 @@ public class GroupController {
     }
   }
 
-  @GetMapping(
-      path = "/{groupKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   @CamundaGetMapping(path = "/{groupKey}")
   public ResponseEntity<Object> getGroup(@PathVariable final long groupKey) {
     try {
