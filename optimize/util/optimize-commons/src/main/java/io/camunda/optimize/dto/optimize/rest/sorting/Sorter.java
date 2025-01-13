@@ -8,7 +8,6 @@
 package io.camunda.optimize.dto.optimize.rest.sorting;
 
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import jakarta.ws.rs.BeanParam;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +17,7 @@ import java.util.Optional;
  */
 public abstract class Sorter<T> {
 
-  @BeanParam SortRequestDto sortRequestDto;
+  SortRequestDto sortRequestDto;
 
   public Sorter() {}
 
