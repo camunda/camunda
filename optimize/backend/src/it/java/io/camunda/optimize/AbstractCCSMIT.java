@@ -75,13 +75,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
-  protected static boolean isZeebeVersionPre84() {
-    final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*");
-    return zeebeVersionPattern
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-  }
-
   public static boolean isZeebeVersionPre85() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*|8.4.*");
     return zeebeVersionPattern
@@ -100,12 +93,20 @@ public abstract class AbstractCCSMIT extends AbstractIT {
     final Pattern zeebeVersionPattern = Pattern.compile("8.([7-9]|\\d{2,})");
     return zeebeVersionPattern
         .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
+        .matches()
+        || isZeebeVersionSnapshot();
   }
 
+  // After the 8.7.0 release, isZeebeVersion87OrLater() needs to call this method instead of
+  // isZeebeVersionSnapshot(), since latest is until then an 8.6.x release
   protected static boolean isZeebeVersionSnapshotOrLatest() {
     final String dockerVersion = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
     return dockerVersion.equalsIgnoreCase("snapshot") || dockerVersion.equalsIgnoreCase("latest");
+  }
+
+  protected static boolean isZeebeVersionSnapshot() {
+    final String dockerVersion = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
+    return dockerVersion.equalsIgnoreCase("snapshot");
   }
 
   protected static boolean isZeebeVersionWithMultiTenancy() {
@@ -295,30 +296,30 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        databaseIntegrationTestExtension.countRecordsByQuery(
-                            queryContainer, expectedIndex))
+                    databaseIntegrationTestExtension.countRecordsByQuery(
+                        queryContainer, expectedIndex))
                     .isGreaterThanOrEqualTo(minimumCount));
   }
 
   protected Map<String, List<ZeebeUserTaskRecordDto>> getZeebeExportedUserTaskEventsByElementId() {
     return getZeebeExportedProcessableEvents(
-            zeebeExtension.getZeebeRecordPrefix()
-                + "-"
-                + DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
-            getQueryForProcessableUserTaskEvents(),
-            ZeebeUserTaskRecordDto.class)
+        zeebeExtension.getZeebeRecordPrefix()
+            + "-"
+            + DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME,
+        getQueryForProcessableUserTaskEvents(),
+        ZeebeUserTaskRecordDto.class)
         .stream()
         .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 
   protected Map<String, List<ZeebeProcessInstanceRecordDto>>
-      getZeebeExportedProcessInstanceEventsByElementId() {
+  getZeebeExportedProcessInstanceEventsByElementId() {
     return getZeebeExportedProcessableEvents(
-            zeebeExtension.getZeebeRecordPrefix()
-                + "-"
-                + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-            getQueryForProcessableProcessInstanceEvents(),
-            ZeebeProcessInstanceRecordDto.class)
+        zeebeExtension.getZeebeRecordPrefix()
+            + "-"
+            + DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
+        getQueryForProcessableProcessInstanceEvents(),
+        ZeebeProcessInstanceRecordDto.class)
         .stream()
         .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
@@ -354,9 +355,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
                 event ->
                     event.getIntent().equals(ASSIGNED)
                         && ((ZeebeUserTaskRecordDto) event)
-                            .getValue()
-                            .getAssignee()
-                            .equals(assigneeId))
+                        .getValue()
+                        .getAssignee()
+                        .equals(assigneeId))
             .findFirst()
             .orElseThrow(eventNotFoundExceptionSupplier);
     return OffsetDateTime.ofInstant(
@@ -371,9 +372,9 @@ public abstract class AbstractCCSMIT extends AbstractIT {
                 event ->
                     event.getIntent().equals(ASSIGNED)
                         && ((ZeebeUserTaskRecordDto) event)
-                            .getValue()
-                            .getAssignee()
-                            .equals(assigneeId))
+                        .getValue()
+                        .getAssignee()
+                        .equals(assigneeId))
             .sorted(Comparator.comparing(ZeebeRecordDto::getTimestamp))
             .reduce((first, second) -> second)
             .orElseThrow(eventNotFoundExceptionSupplier);

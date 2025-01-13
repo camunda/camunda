@@ -366,11 +366,9 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           getOptimizeElasticClient()
               .getEsClient()
               .indices()
-              .get(GetIndexRequest.of(r -> r.index("*")))
+              .get(GetIndexRequest.of(r -> r.index(zeebeRecordPrefix + "*")))
               .result()
               .keySet()
-              .stream()
-              .filter(indexName -> indexName.contains(zeebeRecordPrefix))
               .toArray(String[]::new);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
@@ -389,13 +387,11 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
           getOptimizeElasticClient()
               .elasticsearchClient()
               .indices()
-              .get(GetIndexRequest.of(r -> r.index("*")))
+              .get(GetIndexRequest.of(r -> r.index(zeebeRecordPrefix + "*")))
               .result()
               .keySet()
               .stream()
-              .filter(
-                  indexName ->
-                      indexName.contains(zeebeRecordPrefix) && !indexName.contains(recordsToKeep))
+              .filter(indexName -> !indexName.contains(recordsToKeep))
               .toArray(String[]::new);
     } catch (final IOException e) {
       throw new OptimizeRuntimeException(e);
