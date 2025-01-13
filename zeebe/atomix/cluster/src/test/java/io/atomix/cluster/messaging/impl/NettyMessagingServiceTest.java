@@ -17,6 +17,7 @@
 package io.atomix.cluster.messaging.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -49,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -698,18 +700,49 @@ final class NettyMessagingServiceTest {
     }
 
     @Test
-    void shouldGetChannelClosedWhenNotSendingHeartbeats() {
+    void shouldGetChannelClosedWhenNotSendingHeartbeatsAfterAWhile() {
       // given
       final var subject = nextSubject();
-      final var channelPool = netty1.getChannelPool();
-      final var channel = channelPool.getChannel(netty2.address(), subject).join();
+      final var receivedHeartbeat = new AtomicBoolean(false);
+      // register for heartbeats
+      netty2.registerHandler(
+          HeartbeatHandler.HEARTBEAT_SUBJECT,
+          (addr, bytes) -> {
+            receivedHeartbeat.set(true);
+            return CompletableFuture.completedFuture(null);
+          });
+      final var clientChannel =
+          netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+      Awaitility.await("Until first heartbeat has been received on the server")
+          .until(receivedHeartbeat::get);
 
       // when - removing the `IdleStateHandler` from the pipeline such that `HeartBeatHandler` is
       // not triggered
-      channel.pipeline().remove("idle");
+      clientChannel.pipeline().remove("idle");
 
       // then - the other side notices a lack of heartbeats and closes the channel
-      assertThat(channel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(clientChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void shouldNotCloseTheConnectionIfNoHeartbeatsIsReceived() {
+      // given
+      final var subject = nextSubject();
+      // a client channel
+      final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+      // without heartbeat handler,
+      // so that client does not send any heartbeats
+      channel.pipeline().remove("heartbeat");
+
+      // when
+      // a request is made without heartbeats
+      netty1.sendAndReceive(netty2.address(), subject, new byte[0], true);
+
+      // then
+      // the channel is not closed (because the future times out)
+      final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
+      assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))
+          .isInstanceOf(TimeoutException.class);
     }
   }
 }
