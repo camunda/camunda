@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +41,12 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
   private final int partitionId;
   private final BackpressureMetrics metrics = new BackpressureMetrics();
+  private Long lastAcceptedCommandTimestamp;
 
   protected CommandRateLimiter(final CommandRateLimiterBuilder builder, final int partitionId) {
     super(builder);
     this.partitionId = partitionId;
+    lastAcceptedCommandTimestamp = 0L;
     metrics.setInflight(partitionId, 0);
     metrics.setNewLimit(partitionId, getLimit());
   }
@@ -68,17 +71,32 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     responseListeners.put(new ListenerId(streamId, requestId), listener);
   }
 
+  private boolean isProcessingStuck() {
+    final long timeSinceLastCommand = System.nanoTime() - lastAcceptedCommandTimestamp;
+    if (timeSinceLastCommand > TimeUnit.MINUTES.toNanos(10)) {
+      LOG.warn(
+          "This partition hasn't accepted commands for more than 10 minutes! Validate if the partition is stuck.");
+      LOG.warn(
+          "Current status: inFlight={} limit={} responseListeners={}",
+          getInflightCount(),
+          getLimit(),
+          responseListeners.size());
+    }
+    return false;
+  }
+
   @Override
   public boolean tryAcquire(final int streamId, final long requestId, final Intent context) {
     final Optional<Listener> acquired = acquire(context);
     return acquired
         .map(
             listener -> {
+              lastAcceptedCommandTimestamp = System.nanoTime();
               registerListener(streamId, requestId, listener);
               metrics.incInflight(partitionId);
               return true;
             })
-        .orElse(false);
+        .orElse(isProcessingStuck());
   }
 
   @Override
