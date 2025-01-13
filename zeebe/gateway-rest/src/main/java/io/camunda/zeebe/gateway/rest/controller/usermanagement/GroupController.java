@@ -8,11 +8,14 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CreateGroupRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
@@ -85,6 +88,22 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .removeMember(groupKey, userKey, EntityType.USER));
+  }
+
+  @CamundaGetMapping(path = "/{groupKey}/users")
+  public ResponseEntity<UserSearchResponse> usersByGroup(
+      @PathVariable("groupKey") final long groupKey) {
+    return searchUsersByGroupKey(groupKey);
+  }
+
+  private ResponseEntity<UserSearchResponse> searchUsersByGroupKey(final long groupKey) {
+    try {
+      // TODO - implement a usersearch by group key
+      final SearchQueryResult result = new Builder().build();
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return RestErrorMapper.mapErrorToResponse(e);
+    }
   }
 
   @CamundaGetMapping(path = "/{groupKey}")
