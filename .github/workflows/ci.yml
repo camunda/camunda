@@ -55,8 +55,6 @@ jobs:
       # Detect changes against the base branch
       - name: Detect changes
         uses: ./.github/actions/paths-filter
-        with:
-          trigger_source: "Unified CI"
         id: filter
 
   actionlint:
