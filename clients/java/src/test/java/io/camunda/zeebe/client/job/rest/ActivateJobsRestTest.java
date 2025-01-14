@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.protocol.rest.ActivatedJob;
-import io.camunda.client.protocol.rest.ActivatedJobResult;
 import io.camunda.client.protocol.rest.JobActivationRequest;
 import io.camunda.client.protocol.rest.JobActivationResponse;
 import io.camunda.client.protocol.rest.ProblemDetail;
@@ -253,7 +252,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl(
             new ZeebeObjectMapper(),
-            new ActivatedJobResult().customHeaders(new HashMap<>()).variables(variables));
+            new ActivatedJob().customHeaders(new HashMap<>()).variables(variables));
 
     // when
     final VariablesPojo variablesPojo = activatedJob.getVariablesAsType(VariablesPojo.class);

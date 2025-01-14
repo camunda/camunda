@@ -23,7 +23,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class EvaluatedDecisionInputImpl implements EvaluatedDecisionInput {
 
-  @JsonIgnore private final JsonMapper jsonMapper;
+  @JsonIgnore private JsonMapper jsonMapper;
   private final String inputId;
   private final String inputName;
   private final String inputValue;

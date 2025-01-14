@@ -52,14 +52,14 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       Arrays.asList(ContentType.TEXT_XML);
   private final ObjectMapper json;
   private final Class<T> type;
-  private final int chunkSize;
+  private final int maxCapacity;
 
   private TypedApiEntityConsumer<T> entityConsumer;
 
-  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int chunkSize) {
+  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int maxCapacity) {
     this.json = json;
     this.type = type;
-    this.chunkSize = chunkSize;
+    this.maxCapacity = maxCapacity;
   }
 
   @Override
@@ -72,7 +72,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       final boolean isResponse =
           String.class.equals(type)
               && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
-      entityConsumer = new RawApiEntityConsumer<>(isResponse, chunkSize);
+      entityConsumer = new RawApiEntityConsumer<>(isResponse);
     }
   }
 
@@ -83,7 +83,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected int capacityIncrement() {
-    return chunkSize;
+    return maxCapacity - entityConsumer.getBufferedBytes();
   }
 
   @Override

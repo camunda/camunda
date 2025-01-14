@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
-import io.camunda.client.protocol.rest.MessageCorrelationResult;
+import io.camunda.client.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.CorrelateMessageResponse;
 
@@ -45,10 +45,10 @@ public final class CorrelateMessageResponseImpl implements CorrelateMessageRespo
     return processInstanceKey;
   }
 
-  public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResult response) {
-    key = Long.parseLong(response.getMessageKey());
+  public CorrelateMessageResponseImpl setResponse(final MessageCorrelationResponse response) {
+    key = response.getMessageKey();
     tenantId = response.getTenantId();
-    processInstanceKey = Long.parseLong(response.getProcessInstanceKey());
+    processInstanceKey = response.getProcessInstanceKey();
     return this;
   }
 }

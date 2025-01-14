@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -31,6 +30,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
@@ -86,8 +86,8 @@ public final class CreateProcessInstanceCommandImpl
    * backwards compatibility in tests.
    *
    * @deprecated since 8.3.0, use {@link
-   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub, JsonMapper,
-   *     ZeebeClientConfiguration, Predicate, HttpClient, boolean)}
+   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
+   *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
    */
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -190,7 +190,7 @@ public final class CreateProcessInstanceCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        CreateProcessInstanceResult.class,
+        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
         CreateProcessInstanceResponseImpl::new,
         result);
     return result;
@@ -218,7 +218,7 @@ public final class CreateProcessInstanceCommandImpl
 
   private void sendGrpcRequest(
       final CreateProcessInstanceRequest request,
-      final StreamObserver<CreateProcessInstanceResponse> future) {
+      final StreamObserver<GatewayOuterClass.CreateProcessInstanceResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .createProcessInstance(request, future);

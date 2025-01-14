@@ -187,7 +187,7 @@ public class HttpClientFactory {
   /**
    * Creates a {@link KeyStore} from a provided PEM certificate file. The file is expected to
    * contain a PEM encoded certificate chain. This is done to maintain backwards compatibility with
-   * how TLS configuration is done in the Camunda Java client.
+   * how TLS configuration is done in the Zeebe Java client.
    *
    * <p>When loading the certificate chain into the key store, the certificate entry alias is set to
    * the index of the certificate in the chain. This technique is also used by Netty for the gRPC

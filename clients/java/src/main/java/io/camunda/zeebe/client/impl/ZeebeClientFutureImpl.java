@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.camunda.zeebe.client.impl;
 
-import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.GeneratedMessageV3;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
@@ -32,9 +33,9 @@ import java.util.function.Function;
 public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
     implements ZeebeFuture<ClientResponse>,
-        ClientResponseObserver<GeneratedMessage, BrokerResponse> {
+        ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
 
-  protected ClientCallStreamObserver<GeneratedMessage> clientCall;
+  protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;
   private final Function<BrokerResponse, ClientResponse> responseMapper;
 
   public ZeebeClientFutureImpl() {
@@ -98,7 +99,7 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   }
 
   @Override
-  public void beforeStart(final ClientCallStreamObserver<GeneratedMessage> requestStream) {
+  public void beforeStart(final ClientCallStreamObserver<GeneratedMessageV3> requestStream) {
     if (isDone()) {
       requestStream.cancel("Call was completed by the client before it was started", null);
       return;

@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
-import io.camunda.client.protocol.rest.DeploymentDecisionRequirementsResult;
-import io.camunda.client.protocol.rest.DeploymentDecisionResult;
-import io.camunda.client.protocol.rest.DeploymentFormResult;
-import io.camunda.client.protocol.rest.DeploymentMetadataResult;
-import io.camunda.client.protocol.rest.DeploymentProcessResult;
-import io.camunda.client.protocol.rest.DeploymentResult;
+import io.camunda.client.protocol.rest.DeploymentDecision;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
+import io.camunda.client.protocol.rest.DeploymentForm;
+import io.camunda.client.protocol.rest.DeploymentMetadata;
+import io.camunda.client.protocol.rest.DeploymentProcess;
+import io.camunda.client.protocol.rest.DeploymentResponse;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
@@ -41,7 +41,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private static final Logger LOG = Loggers.LOGGER;
   private static final String UNKNOWN_METADATA_WARN_MSG =
       "Expected metadata in deployment response, but encountered an unknown type of metadata."
-          + " This might happen when you've updated your Camunda cluster, but not your Camunda client."
+          + " This might happen when you've updated your Zeebe cluster, but not your Zeebe client."
           + " You may have to update the version of your zeebe-client-java dependency to resolve the issue.";
 
   private final long key;
@@ -83,11 +83,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  public DeploymentEventImpl(final DeploymentResult response) {
-    key = Long.parseLong(response.getDeploymentKey());
+  public DeploymentEventImpl(final DeploymentResponse response) {
+    key = response.getDeploymentKey();
     tenantId = response.getTenantId();
 
-    for (final DeploymentMetadataResult deployment : response.getDeployments()) {
+    for (final DeploymentMetadata deployment : response.getDeployments()) {
       addDeployedForm(deployment.getForm());
       addDeployedProcess(deployment.getProcessDefinition());
       addDeployedDecision(deployment.getDecisionDefinition());
@@ -95,7 +95,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  private void addDeployedForm(final DeploymentFormResult form) {
+  private void addDeployedForm(final DeploymentForm form) {
     Optional.ofNullable(form)
         .ifPresent(
             f ->
@@ -103,13 +103,13 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                     new FormImpl(
                         f.getFormId(),
                         f.getVersion(),
-                        Long.parseLong(f.getFormKey()),
+                        f.getFormKey(),
                         f.getResourceName(),
                         f.getTenantId())));
   }
 
   private void addDeployedDecisionRequirements(
-      final DeploymentDecisionRequirementsResult decisionRequirement) {
+      final DeploymentDecisionRequirements decisionRequirement) {
     Optional.ofNullable(decisionRequirement)
         .ifPresent(
             dr ->
@@ -118,12 +118,12 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         dr.getDecisionRequirementsId(),
                         dr.getName(),
                         dr.getVersion(),
-                        Long.parseLong(dr.getDecisionRequirementsKey()),
+                        dr.getDecisionRequirementsKey(),
                         dr.getResourceName(),
                         dr.getTenantId())));
   }
 
-  private void addDeployedDecision(final DeploymentDecisionResult decision) {
+  private void addDeployedDecision(final DeploymentDecision decision) {
     Optional.ofNullable(decision)
         .ifPresent(
             d ->
@@ -132,19 +132,19 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         d.getDecisionDefinitionId(),
                         d.getName(),
                         d.getVersion(),
-                        Long.parseLong(d.getDecisionDefinitionKey()),
+                        d.getDecisionDefinitionKey(),
                         d.getDecisionRequirementsId(),
-                        Long.parseLong(d.getDecisionRequirementsKey()),
+                        d.getDecisionRequirementsKey(),
                         d.getTenantId())));
   }
 
-  private void addDeployedProcess(final DeploymentProcessResult process) {
+  private void addDeployedProcess(final DeploymentProcess process) {
     Optional.ofNullable(process)
         .ifPresent(
             p ->
                 processes.add(
                     new ProcessImpl(
-                        Long.parseLong(p.getProcessDefinitionKey()),
+                        p.getProcessDefinitionKey(),
                         p.getProcessDefinitionId(),
                         p.getProcessDefinitionVersion(),
                         p.getResourceName(),

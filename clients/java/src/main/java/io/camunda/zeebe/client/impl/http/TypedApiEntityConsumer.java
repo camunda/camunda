@@ -164,15 +164,13 @@ public interface TypedApiEntityConsumer<T> {
   class RawApiEntityConsumer<T> implements TypedApiEntityConsumer<T> {
 
     private final boolean isResponse;
-    private final int maxCapacity;
 
     private byte[] body = new byte[1024];
 
     private int bufferedBytes;
 
-    public RawApiEntityConsumer(final boolean isResponse, final int maxCapacity) {
+    public RawApiEntityConsumer(final boolean isResponse) {
       this.isResponse = isResponse;
-      this.maxCapacity = maxCapacity;
     }
 
     @Override
@@ -193,11 +191,7 @@ public interface TypedApiEntityConsumer<T> {
       final int offset = bufferedBytes;
       bufferedBytes += src.remaining();
       if (body.length < bufferedBytes) {
-        if (bufferedBytes > maxCapacity) {
-          throw new IllegalArgumentException(
-              "The message size exceeds the maximum allowed size of " + maxCapacity);
-        }
-        body = Arrays.copyOf(body, bufferedBytes);
+        body = Arrays.copyOf(body, body.length + 1024);
       }
       src.get(body, offset, src.remaining());
     }

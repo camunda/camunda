@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.client.protocol.rest.EvaluatedDecisionResult;
+import io.camunda.client.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
@@ -40,10 +40,10 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
   private final String tenantId;
 
   public EvaluatedDecisionImpl(
-      final EvaluatedDecisionResult evaluatedDecisionItem, final JsonMapper jsonMapper) {
+      final EvaluatedDecisionItem evaluatedDecisionItem, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = evaluatedDecisionItem.getDecisionDefinitionId();
-    decisionKey = Long.parseLong(evaluatedDecisionItem.getDecisionDefinitionKey());
+    decisionKey = evaluatedDecisionItem.getDecisionDefinitionKey();
     decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
     decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
     decisionType = evaluatedDecisionItem.getDecisionDefinitionType();
@@ -74,7 +74,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
         .forEach(matchedRules::add);
   }
 
-  private void buildEvaluatedDecisionInput(final EvaluatedDecisionResult evaluatedDecisionItem) {
+  private void buildEvaluatedDecisionInput(final EvaluatedDecisionItem evaluatedDecisionItem) {
     if (evaluatedDecisionItem.getEvaluatedInputs() == null) {
       return;
     }
@@ -84,7 +84,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
             .collect(Collectors.toList()));
   }
 
-  private void buildMatchedRules(final EvaluatedDecisionResult evaluatedDecisionItem) {
+  private void buildMatchedRules(final EvaluatedDecisionItem evaluatedDecisionItem) {
     if (evaluatedDecisionItem.getMatchedRules() == null) {
       return;
     }

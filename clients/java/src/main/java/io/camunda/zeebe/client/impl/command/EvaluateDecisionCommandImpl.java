@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -80,8 +79,8 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
    * backwards compatibility in tests.
    *
    * @deprecated since 8.3.0, use {@link
-   *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub, JsonMapper,
-   *     ZeebeClientConfiguration, Predicate, HttpClient)}
+   *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub asyncStub, JsonMapper
+   *     jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
    */
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
@@ -154,7 +153,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        EvaluateDecisionResult.class,
+        io.camunda.client.protocol.rest.EvaluateDecisionResponse.class,
         response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
         result);
     return result;

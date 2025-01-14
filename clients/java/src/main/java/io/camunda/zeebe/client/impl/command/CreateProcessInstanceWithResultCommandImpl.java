@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
-import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
@@ -27,6 +26,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceWithResultResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest.Builder;
@@ -99,7 +99,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        CreateProcessInstanceResult.class,
+        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
         response -> new CreateProcessInstanceWithResultResponseImpl(jsonMapper, response),
         result);
     return result;
@@ -125,7 +125,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
 
   private void sendGrpcRequest(
       final CreateProcessInstanceWithResultRequest request,
-      final StreamObserver<CreateProcessInstanceWithResultResponse> future) {
+      final StreamObserver<GatewayOuterClass.CreateProcessInstanceWithResultResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .createProcessInstanceWithResult(request, future);

@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.UpdateRetriesJobResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
@@ -118,7 +119,7 @@ public final class JobUpdateRetriesCommandImpl
 
   private void sendGrpcRequest(
       final UpdateJobRetriesRequest request,
-      final StreamObserver<UpdateJobRetriesResponse> streamObserver) {
+      final StreamObserver<GatewayOuterClass.UpdateJobRetriesResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobRetries(request, streamObserver);

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
 import io.camunda.client.protocol.rest.PermissionDTO;

@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
@@ -116,6 +117,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
+  private static final String UNSUPPORTED_OPERATION_MSG =
+      String.format(
+          "Not supported with %s. Please use %s.",
+          ZeebeClient.class.getName(), CamundaClient.class.getName());
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -546,45 +552,38 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public FlownodeInstanceQuery newFlownodeInstanceQuery() {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public UserTaskQuery newUserTaskQuery() {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionRequirementsQuery newDecisionRequirementsQuery() {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
       final long decisionKey) {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public IncidentQuery newIncidentQuery() {
-    throw new UnsupportedOperationException(
-        "Not supported with ZeebeClient. Please use ZeebeClient.");
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override

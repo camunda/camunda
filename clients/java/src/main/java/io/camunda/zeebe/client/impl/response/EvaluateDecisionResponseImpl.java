@@ -16,7 +16,6 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
@@ -42,19 +41,20 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final long decisionInstanceKey;
 
   public EvaluateDecisionResponseImpl(
-      final EvaluateDecisionResult response, final JsonMapper jsonMapper) {
+      final io.camunda.client.protocol.rest.EvaluateDecisionResponse response,
+      final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = response.getDecisionDefinitionId();
-    decisionKey = Long.parseLong(response.getDecisionDefinitionKey());
+    decisionKey = response.getDecisionDefinitionKey();
     decisionVersion = response.getDecisionDefinitionVersion();
     decisionName = response.getDecisionDefinitionName();
     decisionRequirementsId = response.getDecisionRequirementsId();
-    decisionRequirementsKey = Long.parseLong(response.getDecisionRequirementsKey());
+    decisionRequirementsKey = response.getDecisionRequirementsKey();
     decisionOutput = response.getOutput();
     failedDecisionId = response.getFailedDecisionDefinitionId();
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
-    decisionInstanceKey = Long.parseLong(response.getDecisionInstanceKey());
+    decisionInstanceKey = response.getDecisionInstanceKey();
     buildEvaluatedDecisions(response);
   }
 
@@ -79,7 +79,8 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
         .forEach(evaluatedDecisions::add);
   }
 
-  private void buildEvaluatedDecisions(final EvaluateDecisionResult response) {
+  private void buildEvaluatedDecisions(
+      final io.camunda.client.protocol.rest.EvaluateDecisionResponse response) {
     if (response.getEvaluatedDecisions() == null) {
       return;
     }
