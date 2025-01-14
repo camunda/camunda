@@ -433,7 +433,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>8.6.6</version>
+      <version>8.6.7</version>
       <scope>test</scope>
     </dependency>
 
@@ -498,12 +498,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.vdurmont</groupId>
-      <artifactId>semver4j</artifactId>
-      <version>3.1.0</version>
     </dependency>
 
     <dependency>

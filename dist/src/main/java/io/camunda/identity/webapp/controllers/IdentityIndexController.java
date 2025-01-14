@@ -30,7 +30,8 @@ public class IdentityIndexController {
     return "identity/index";
   }
 
-  @RequestMapping(value = {"/identity/{regex:[\\w-]+}", "/identity/**/{regex:[\\w-]+}"})
+  @RequestMapping(
+      value = {"/identity/", "/identity/{regex:[\\w-]+}", "/identity/**/{regex:[\\w-]+}"})
   public String forwardToIdentity(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "identity");
   }

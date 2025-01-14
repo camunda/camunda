@@ -13,6 +13,19 @@ import {
   mockResponses,
   runningInstance,
 } from '../mocks/processInstance';
+import {clientConfigMock} from '../mocks/clientConfig';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('modifications', () => {
   for (const theme of ['light', 'dark']) {

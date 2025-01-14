@@ -117,7 +117,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.wrap(authorization);
+    this.authorization.copyFrom(authorization);
     return this;
   }
 

@@ -37,15 +37,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
   private final Map<String, Record<IncidentRecordValue>> recordsMap = new HashMap<>();
   private final String indexName;
-  private final boolean concurrencyMode;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public IncidentHandler(
-      final String indexName,
-      final boolean concurrencyMode,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
-    this.concurrencyMode = concurrencyMode;
     this.processCache = processCache;
   }
 
@@ -125,12 +121,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     }
     final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, entity);
     updateFields.put(POSITION, entity.getPosition());
-    if (concurrencyMode) {
-      batchRequest.upsertWithScript(
-          indexName, String.valueOf(entity.getKey()), entity, getScript(), updateFields);
-    } else {
-      batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
-    }
+    batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
   }
 
   @Override
@@ -192,29 +183,5 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
       updateFields.put(FLOW_NODE_ID, incidentEntity.getFlowNodeId());
     }
     return updateFields;
-  }
-
-  private static String getScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
-            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
-            + "   ctx._source.%s = params.%s; " // FLOW_NODE_ID
-            + "}"
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        BPMN_PROCESS_ID,
-        BPMN_PROCESS_ID,
-        FLOW_NODE_ID,
-        FLOW_NODE_ID);
   }
 }

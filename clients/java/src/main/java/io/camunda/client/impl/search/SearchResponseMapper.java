@@ -50,7 +50,7 @@ public final class SearchResponseMapper {
   private SearchResponseMapper() {}
 
   public static SearchQueryResponse<ProcessDefinition> toProcessDefinitionSearchResponse(
-      final ProcessDefinitionSearchQueryResponse response) {
+      final ProcessDefinitionSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessDefinition> instances =
         toSearchResponseInstances(response.getItems(), ProcessDefinitionImpl::new);
@@ -59,16 +59,16 @@ public final class SearchResponseMapper {
   }
 
   public static ProcessDefinition toProcessDefinitionGetResponse(
-      final ProcessDefinitionItem response) {
+      final ProcessDefinitionResult response) {
     return new ProcessDefinitionImpl(response);
   }
 
-  public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceItem response) {
+  public static ProcessInstance toProcessInstanceGetResponse(final ProcessInstanceResult response) {
     return new ProcessInstanceImpl(response);
   }
 
   public static SearchQueryResponse<ProcessInstance> toProcessInstanceSearchResponse(
-      final ProcessInstanceSearchQueryResponse response) {
+      final ProcessInstanceSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessInstance> instances =
         toSearchResponseInstances(response.getItems(), ProcessInstanceImpl::new);
@@ -77,7 +77,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<UserTask> toUserTaskSearchResponse(
-      final UserTaskSearchQueryResponse response) {
+      final UserTaskSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<UserTask> instances =
         toSearchResponseInstances(response.getItems(), UserTaskImpl::new);
@@ -85,7 +85,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<Variable> toVariableSearchResponse(
-      final VariableSearchQueryResponse response) {
+      final VariableSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Variable> instances =
         toSearchResponseInstances(response.getItems(), VariableImpl::new);
@@ -93,7 +93,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionDefinition> toDecisionDefinitionSearchResponse(
-      final DecisionDefinitionSearchQueryResponse response) {
+      final DecisionDefinitionSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionDefinition> instances =
         toSearchResponseInstances(response.getItems(), DecisionDefinitionImpl::new);
@@ -101,7 +101,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<FlowNodeInstance> toFlowNodeInstanceSearchResponse(
-      final FlowNodeInstanceSearchQueryResponse response) {
+      final FlowNodeInstanceSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<FlowNodeInstance> instances =
         toSearchResponseInstances(response.getItems(), FlowNodeInstanceImpl::new);
@@ -109,19 +109,19 @@ public final class SearchResponseMapper {
   }
 
   public static FlowNodeInstance toFlowNodeInstanceGetResponse(
-      final FlowNodeInstanceItem response) {
+      final FlowNodeInstanceResult response) {
     return new FlowNodeInstanceImpl(response);
   }
 
   public static SearchQueryResponse<Incident> toIncidentSearchResponse(
-      final IncidentSearchQueryResponse response) {
+      final IncidentSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Incident> incidents =
         toSearchResponseInstances(response.getItems(), IncidentImpl::new);
     return new SearchQueryResponseImpl<>(incidents, page);
   }
 
-  public static Incident toIncidentGetResponse(final IncidentItem response) {
+  public static Incident toIncidentGetResponse(final IncidentResult response) {
     return new IncidentImpl(response);
   }
 
@@ -134,7 +134,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
-      final DecisionRequirementsSearchQueryResponse response) {
+      final DecisionRequirementsSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionRequirements> instances =
         toSearchResponseInstances(response.getItems(), DecisionRequirementsImpl::new);
@@ -142,7 +142,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionInstance> toDecisionInstanceSearchResponse(
-      final DecisionInstanceSearchQueryResponse response, final JsonMapper jsonMapper) {
+      final DecisionInstanceSearchQueryResult response, final JsonMapper jsonMapper) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionInstance> instances =
         toSearchResponseInstances(

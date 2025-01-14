@@ -67,7 +67,7 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
   protected Map<String, String> getDatabaseEnvironmentVariables(final String indexPrefix) {
     return Map.of(
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL",
-        "http://host.testcontainers.internal:9205",
+        "http://host.testcontainers.internal:9200",
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
         ConnectionTypes.OPENSEARCH.name(),
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE",
@@ -88,6 +88,6 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
 
   @Override
   protected int getDatabasePort() {
-    return 9205;
+    return 9200;
   }
 }

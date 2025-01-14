@@ -26,6 +26,7 @@ import io.camunda.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
@@ -63,6 +64,7 @@ import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
@@ -103,6 +105,7 @@ import io.camunda.client.impl.command.AddPermissionsCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
+import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -139,6 +142,7 @@ import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
+import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
@@ -735,6 +739,16 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(final long groupKey) {
+    return new AssignUserToGroupCommandImpl(groupKey, httpClient);
+  }
+
+  @Override
+  public UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(final long groupKey) {
+    return new UnassignUserFromGroupCommandImpl(groupKey, httpClient);
+  }
+
+  @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
@@ -878,15 +892,14 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(
-      final long tenantKey, final long groupKey) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey, groupKey);
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
   }
 
   @Override
   public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final long tenantKey, final long groupKey) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey, groupKey);
+      final long tenantKey) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey);
   }
 
   private JobClient newJobClient() {

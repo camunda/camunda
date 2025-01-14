@@ -22,7 +22,7 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -52,7 +52,7 @@ public class FlowNodeInstanceGetRequestImpl implements FlowNodeInstanceGetReques
     httpClient.get(
         String.format("/flownode-instances/%d", flowNodeInstanceKey),
         httpRequestConfig.build(),
-        FlowNodeInstanceItem.class,
+        FlowNodeInstanceResult.class,
         SearchResponseMapper::toFlowNodeInstanceGetResponse,
         result);
     return result;

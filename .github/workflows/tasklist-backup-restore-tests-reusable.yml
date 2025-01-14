@@ -26,7 +26,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@3b999aeea283a941368c40aea4fa7ae564f87347
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -83,9 +83,9 @@ jobs:
       - name: Send Slack notification on failure
         if: failure()
         uses: slackapi/slack-github-action@v2.0.0
-        env:
-          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
         with:
+          webhook: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "workflow_name": "Backup and restore tests",

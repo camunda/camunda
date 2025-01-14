@@ -435,6 +435,34 @@ public final class ZeebeAssertHelper {
     consumer.accept(groupRecordValue);
   }
 
+  public static void assertEntityAssignedToGroup(
+      final long groupKey, final long userKey, final Consumer<GroupRecordValue> consumer) {
+    final GroupRecordValue groupRecordValue =
+        RecordingExporter.groupRecords()
+            .withIntent(GroupIntent.ENTITY_ADDED)
+            .withGroupKey(groupKey)
+            .withEntityKey(userKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(groupRecordValue).isNotNull();
+    consumer.accept(groupRecordValue);
+  }
+
+  public static void assertEntityUnassignedFromGroup(
+      final long groupKey, final long userKey, final Consumer<GroupRecordValue> consumer) {
+    final GroupRecordValue groupRecordValue =
+        RecordingExporter.groupRecords()
+            .withIntent(GroupIntent.ENTITY_REMOVED)
+            .withGroupKey(groupKey)
+            .withEntityKey(userKey)
+            .getFirst()
+            .getValue();
+
+    assertThat(groupRecordValue).isNotNull();
+    consumer.accept(groupRecordValue);
+  }
+
   public static void assertUserCreated(final String username) {
     assertUserCreated(username, u -> {});
   }

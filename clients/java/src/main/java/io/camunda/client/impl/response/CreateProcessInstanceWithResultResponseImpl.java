@@ -18,7 +18,7 @@ package io.camunda.client.impl.response;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ProcessInstanceResult;
-import io.camunda.client.protocol.rest.CreateProcessInstanceResponse;
+import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import java.util.Map;
 
@@ -35,7 +35,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   private Map<String, Object> variablesAsMap;
 
   public CreateProcessInstanceWithResultResponseImpl(
-      final JsonMapper jsonMapper, final CreateProcessInstanceResponse response) {
+      final JsonMapper jsonMapper, final CreateProcessInstanceResult response) {
     this.jsonMapper = jsonMapper;
     processDefinitionKey = Long.parseLong(response.getProcessDefinitionKey());
     bpmnProcessId = response.getProcessDefinitionId();

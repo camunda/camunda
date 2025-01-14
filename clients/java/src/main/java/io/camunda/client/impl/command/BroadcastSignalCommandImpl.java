@@ -28,7 +28,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.BroadcastSignalResponseImpl;
 import io.camunda.client.protocol.rest.SignalBroadcastRequest;
-import io.camunda.client.protocol.rest.SignalBroadcastResponse;
+import io.camunda.client.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
@@ -121,7 +121,7 @@ public final class BroadcastSignalCommandImpl
         "/signals/broadcast",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        SignalBroadcastResponse.class,
+        SignalBroadcastResult.class,
         BroadcastSignalResponseImpl::new,
         result);
     return result;

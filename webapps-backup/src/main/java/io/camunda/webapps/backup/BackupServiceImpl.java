@@ -93,12 +93,12 @@ public class BackupServiceImpl implements BackupService {
     final int count = indexPatternsOrdered.size();
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
-    var index = 0;
+    var index = 1;
     for (var indexCollection : indexPatternsOrdered) {
       final Metadata metadata = new Metadata(request.getBackupId(), version, index++, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
       // Add all the dynamic indices in the last step
-      if (index == count) {
+      if (index == count + 1) {
         indexCollection =
             indexCollection.addSkippableIndices(dynamicIndicesProvider.getAllDynamicIndices());
       }

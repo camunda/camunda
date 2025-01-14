@@ -7,83 +7,34 @@
  */
 package io.camunda.exporter.cache;
 
+import static io.camunda.exporter.utils.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
+import static io.camunda.exporter.utils.SearchDBExtension.PROCESS_INDEX;
 import static io.camunda.zeebe.model.bpmn.Bpmn.convertToString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
-import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.exporter.utils.XMLUtil;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 class ProcessCacheImplIT {
 
-  @Container
-  private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
-
-  @Container
-  private static final OpensearchContainer OPENSEARCH_CONTAINER =
-      TestSearchContainers.createDefaultOpensearchContainer();
-
-  private static ElasticsearchClient elsClient;
-  private static OpenSearchClient osClient;
-  private static final ProcessIndex PROCESS_INDEX = new ProcessIndex("test", true);
-
-  @BeforeAll
-  static void init() {
-    final var config = new ExporterConfiguration();
-    config.getConnect().setUrl(ELASTICSEARCH_CONTAINER.getHttpHostAddress());
-    elsClient = new ElasticsearchConnector(config.getConnect()).createClient();
-
-    final var osConfig = new ExporterConfiguration();
-    osConfig.getConnect().setType("opensearch");
-    osConfig.getConnect().setUrl(OPENSEARCH_CONTAINER.getHttpHostAddress());
-    osClient = new OpensearchConnector(osConfig.getConnect()).createClient();
-  }
-
-  @BeforeEach
-  void setup() {
-    new ElasticsearchEngineClient(elsClient).createIndex(PROCESS_INDEX, new IndexSettings());
-    new OpensearchEngineClient(osClient).createIndex(PROCESS_INDEX, new IndexSettings());
-  }
-
-  @AfterEach
-  void cleanup() throws IOException {
-    elsClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-    osClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-  }
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   @ParameterizedTest
   @MethodSource("provideProcessCache")
@@ -139,24 +90,41 @@ class ProcessCacheImplIT {
   }
 
   static Stream<Arguments> provideProcessCache() {
-    return Stream.of(
-        Arguments.of(
-            Named.of("ElasticSearch", getESProcessCache(PROCESS_INDEX.getFullQualifiedName()))),
-        Arguments.of(
-            Named.of("OpenSearch", getOSProcessCache(PROCESS_INDEX.getFullQualifiedName()))));
+    if (System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY) == null) {
+      return Stream.of(
+          Arguments.of(
+              Named.of(
+                  "ElasticSearch",
+                  getESProcessCache(SearchDBExtension.PROCESS_INDEX.getFullQualifiedName()))),
+          Arguments.of(
+              Named.of(
+                  "OpenSearch",
+                  getOSProcessCache(SearchDBExtension.PROCESS_INDEX.getFullQualifiedName()))));
+    } else {
+      return Stream.of(
+          Arguments.of(
+              Named.of(
+                  "OpenSearch",
+                  getOSProcessCache(SearchDBExtension.PROCESS_INDEX.getFullQualifiedName()))));
+    }
   }
 
   static Stream<Arguments> provideFailingProcessCache() {
-    return Stream.of(
-        Arguments.of(Named.of("ElasticSearch", getESProcessCache("invalid-index-name"))),
-        Arguments.of(Named.of("OpenSearch", getOSProcessCache("invalid-index-name"))));
+    if (System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY) == null) {
+      return Stream.of(
+          Arguments.of(Named.of("ElasticSearch", getESProcessCache("invalid-index-name"))),
+          Arguments.of(Named.of("OpenSearch", getOSProcessCache("invalid-index-name"))));
+    } else {
+      return Stream.of(
+          Arguments.of(Named.of("OpenSearch", getOSProcessCache("invalid-index-name"))));
+    }
   }
 
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl(
             10,
-            new ElasticSearchProcessCacheLoader(elsClient, indexName, new XMLUtil()),
+            new ElasticSearchProcessCacheLoader(SEARCH_DB.esClient(), indexName),
             new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
@@ -165,19 +133,21 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl(
             10,
-            new OpenSearchProcessCacheLoader(osClient, indexName, new XMLUtil()),
+            new OpenSearchProcessCacheLoader(SEARCH_DB.osClient(), indexName),
             new ExporterCacheMetrics("OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 
   private static void indexInElasticSearch(final ProcessEntity processEntity) {
     try {
-      elsClient.index(
-          request ->
-              request
-                  .index(PROCESS_INDEX.getFullQualifiedName())
-                  .id(processEntity.getId())
-                  .document(processEntity));
+      SEARCH_DB
+          .esClient()
+          .index(
+              request ->
+                  request
+                      .index(PROCESS_INDEX.getFullQualifiedName())
+                      .id(processEntity.getId())
+                      .document(processEntity));
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
@@ -185,12 +155,14 @@ class ProcessCacheImplIT {
 
   private static void indexInOpenSearch(final ProcessEntity processEntity) {
     try {
-      osClient.index(
-          request ->
-              request
-                  .index(PROCESS_INDEX.getFullQualifiedName())
-                  .id(processEntity.getId())
-                  .document(processEntity));
+      SEARCH_DB
+          .osClient()
+          .index(
+              request ->
+                  request
+                      .index(PROCESS_INDEX.getFullQualifiedName())
+                      .id(processEntity.getId())
+                      .document(processEntity));
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

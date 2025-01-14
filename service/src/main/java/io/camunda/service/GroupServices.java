@@ -20,13 +20,13 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberAddRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRemoveRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class GroupServices extends SearchQueryService<GroupServices, GroupQuery, GroupEntity> {
@@ -49,6 +49,14 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.group().read())))
         .searchGroups(query);
+  }
+
+  public List<GroupEntity> findAll(final GroupQuery query) {
+    return groupSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.group().read())))
+        .findAllGroups(query);
   }
 
   @Override
@@ -74,6 +82,11 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .toList();
   }
 
+  public List<GroupEntity> getGroupsByMemberKeys(final Set<Long> memberKeys) {
+    return findAll(
+        SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKeys(memberKeys)).build());
+  }
+
   public Optional<GroupEntity> findGroup(final Long groupKey) {
     return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupKey(groupKey)).build())
         .items()
@@ -92,7 +105,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> assignMember(
       final long groupKey, final long memberKey, final EntityType memberType) {
     return sendBrokerRequest(
-        new BrokerGroupMemberAddRequest(groupKey)
+        BrokerGroupMemberRequest.createAddRequest(groupKey)
             .setMemberKey(memberKey)
             .setMemberType(memberType));
   }
@@ -100,7 +113,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> removeMember(
       final long groupKey, final long memberKey, final EntityType memberType) {
     return sendBrokerRequest(
-        new BrokerGroupMemberRemoveRequest(groupKey)
+        BrokerGroupMemberRequest.createRemoveRequest(groupKey)
             .setMemberKey(memberKey)
             .setMemberType(memberType));
   }

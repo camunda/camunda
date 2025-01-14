@@ -123,6 +123,7 @@ final class BackgroundTaskManagerTest {
       // then
       assertThat(archiverRepository.isClosed).isTrue();
       assertThat(incidentRepository.isClosed).isTrue();
+      assertThat(batchOperationUpdateRepository.isClosed).isTrue();
     }
 
     @Test
@@ -138,6 +139,15 @@ final class BackgroundTaskManagerTest {
     void shouldNotThrowOnIncidentRepositoryCloseError() {
       // given
       incidentRepository.exception = new RuntimeException("foo");
+
+      // when
+      assertThatCode(taskManager::close).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldNotThrowOnBatchOperationUpdateRepositoryCloseError() {
+      // given
+      batchOperationUpdateRepository.exception = new RuntimeException("foo");
 
       // when
       assertThatCode(taskManager::close).doesNotThrowAnyException();

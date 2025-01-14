@@ -16,13 +16,16 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -191,6 +194,62 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   @Override
   public UserTaskFilter elementInstanceKey(final Long elementInstanceKey) {
     filter.setElementInstanceKey(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter creationDate(final OffsetDateTime creationDate) {
+    creationDate(b -> b.eq(creationDate));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter creationDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setCreationDate(property.build());
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter completionDate(final OffsetDateTime completionDate) {
+    completionDate(b -> b.eq(completionDate));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter completionDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setCompletionDate(property.build());
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter followUpDate(final OffsetDateTime followUpDate) {
+    followUpDate(b -> b.eq(followUpDate));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter followUpDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setFollowUpDate(property.build());
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter dueDate(final OffsetDateTime dueDate) {
+    dueDate(b -> b.eq(dueDate));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter dueDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setDueDate(property.build());
     return this;
   }
 

@@ -9,7 +9,7 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 function useInterval(fn: () => void, ms: number = 0) {
-  const interval = useRef<ReturnType<typeof setTimeout>>();
+  const interval = useRef<ReturnType<typeof setTimeout>>(null);
   const callback = useRef(fn);
   useEffect(() => {
     callback.current = fn;

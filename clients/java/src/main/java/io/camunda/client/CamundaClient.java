@@ -20,6 +20,7 @@ import io.camunda.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
+import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
@@ -52,6 +53,7 @@ import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
@@ -1070,6 +1072,42 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   DeleteGroupCommandStep1 newDeleteGroupCommand(long groupKey);
 
   /**
+   * Command to assign a user to a group.
+   *
+   * <pre>
+   *
+   *
+   * camundaClient
+   *  .newAssignUserToGroupCommand(123L)
+   *  .userKey(456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(long groupKey);
+
+  /**
+   * Command to unassign a user from a group.
+   *
+   * <pre>
+   *
+   *
+   * camundaClient
+   *  .newUnassignUserFromGroupCommand(123L)
+   *  .userKey(456L)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(long groupKey);
+
+  /**
    * Command to create a user.
    *
    * <pre>
@@ -1577,14 +1615,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignGroupToTenantCommand(tenantKey, groupKey)
+   *   .newAssignGroupToTenantCommand(tenantKey)
+   *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
    * @param tenantKey the unique identifier of the tenant
    * @return a builder to configure and send the assign group to tenant command
    */
-  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey, long groupKey);
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey);
 
   /**
    * Command to unassign a group from a tenant.
@@ -1593,13 +1632,13 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignGroupFromTenantCommand(tenantKey, groupKey)
+   *   .newUnassignGroupFromTenantCommand(tenantKey)
+   *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
    * @param tenantKey the unique identifier of the tenant
    * @return a builder to configure and send the unassign group from tenant command
    */
-  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      long tenantKey, long groupKey);
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
 }

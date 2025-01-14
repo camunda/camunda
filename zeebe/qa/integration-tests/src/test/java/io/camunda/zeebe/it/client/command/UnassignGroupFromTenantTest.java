@@ -49,13 +49,13 @@ class UnassignGroupFromTenantTest {
     groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
 
     // Assign group to tenant to set up test scenario
-    client.newAssignGroupToTenantCommand(tenantKey, groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
   }
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(tenantKey, groupKey).send().join();
+    client.newUnassignGroupFromTenantCommand(tenantKey).groupKey(groupKey).send().join();
 
     // then
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
@@ -75,7 +75,8 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey, groupKey)
+                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey)
+                    .groupKey(groupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -94,7 +95,8 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(tenantKey, nonExistentGroupKey)
+                    .newUnassignGroupFromTenantCommand(tenantKey)
+                    .groupKey(nonExistentGroupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -111,7 +113,8 @@ class UnassignGroupFromTenantTest {
             () ->
                 client
                     // Group key is not assigned
-                    .newUnassignGroupFromTenantCommand(tenantKey, groupKey + 1)
+                    .newUnassignGroupFromTenantCommand(tenantKey)
+                    .groupKey(groupKey + 1)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

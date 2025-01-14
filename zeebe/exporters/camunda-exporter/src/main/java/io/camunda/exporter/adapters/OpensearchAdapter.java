@@ -19,7 +19,6 @@ import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.OpensearchBatchRequest;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -63,8 +62,8 @@ class OpensearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final XMLUtil xmlUtil) {
-      return new OpenSearchProcessCacheLoader(client, processIndexName, xmlUtil);
+        final String processIndexName) {
+      return new OpenSearchProcessCacheLoader(client, processIndexName);
     }
 
     @Override

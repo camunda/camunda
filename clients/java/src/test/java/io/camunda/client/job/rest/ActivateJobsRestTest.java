@@ -26,9 +26,9 @@ import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
-import io.camunda.client.protocol.rest.ActivatedJob;
+import io.camunda.client.protocol.rest.ActivatedJobResult;
 import io.camunda.client.protocol.rest.JobActivationRequest;
-import io.camunda.client.protocol.rest.JobActivationResponse;
+import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -44,8 +44,8 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   @Test
   void shouldActivateJobs() {
     // given
-    final ActivatedJob activatedJob1 =
-        new ActivatedJob()
+    final ActivatedJobResult activatedJob1 =
+        new ActivatedJobResult()
             .jobKey("12")
             .type("foo")
             .processInstanceKey("123")
@@ -61,8 +61,8 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .variables(singletonMap("key", "val"))
             .tenantId("test-tenant-1");
 
-    final ActivatedJob activatedJob2 =
-        new ActivatedJob()
+    final ActivatedJobResult activatedJob2 =
+        new ActivatedJobResult()
             .jobKey("42")
             .type("foo")
             .processInstanceKey("333")
@@ -79,7 +79,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .tenantId("test-tenant-2");
 
     gatewayService.onActivateJobsRequest(
-        new JobActivationResponse().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
+        new JobActivationResult().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
 
     // when
     final ActivateJobsResponse response =
@@ -258,7 +258,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     final ActivatedJobImpl activatedJob =
         new ActivatedJobImpl(
             new CamundaObjectMapper(),
-            new ActivatedJob().customHeaders(new HashMap<>()).variables(variables));
+            new ActivatedJobResult().customHeaders(new HashMap<>()).variables(variables));
 
     // when
     final VariablesPojo variablesPojo = activatedJob.getVariablesAsType(VariablesPojo.class);
@@ -357,11 +357,11 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     variablesJob2.put("foo", "bar2");
     variablesJob2.put("joe", "doe2");
 
-    final ActivatedJob activatedJob1 = new ActivatedJob().variables(variablesJob1);
-    final ActivatedJob activatedJob2 = new ActivatedJob().variables(variablesJob2);
+    final ActivatedJobResult activatedJob1 = new ActivatedJobResult().variables(variablesJob1);
+    final ActivatedJobResult activatedJob2 = new ActivatedJobResult().variables(variablesJob2);
 
     gatewayService.onActivateJobsRequest(
-        new JobActivationResponse().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
+        new JobActivationResult().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
 
     // when
     final ActivateJobsResponse response =
@@ -387,9 +387,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     variables.put("key", "val");
     variables.put("foo", "bar");
     variables.put("joe", "doe");
-    final ActivatedJob activatedJob1 = new ActivatedJob().variables(variables);
+    final ActivatedJobResult activatedJob1 = new ActivatedJobResult().variables(variables);
 
-    gatewayService.onActivateJobsRequest(new JobActivationResponse().addJobsItem(activatedJob1));
+    gatewayService.onActivateJobsRequest(new JobActivationResult().addJobsItem(activatedJob1));
 
     // when
     final ActivateJobsResponse response =
@@ -405,9 +405,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   void shouldReturnNullIfVariableValueIsNull() {
     final Map<String, Object> variables = singletonMap("key", null);
     // given
-    final ActivatedJob activatedJob1 = new ActivatedJob().variables(variables);
+    final ActivatedJobResult activatedJob1 = new ActivatedJobResult().variables(variables);
 
-    gatewayService.onActivateJobsRequest(new JobActivationResponse().addJobsItem(activatedJob1));
+    gatewayService.onActivateJobsRequest(new JobActivationResult().addJobsItem(activatedJob1));
 
     // when
     final ActivateJobsResponse response =

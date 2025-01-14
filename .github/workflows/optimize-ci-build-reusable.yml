@@ -55,7 +55,7 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@45d6103837254054784a5a9ba2986afe4552ae8b # 2.1.29
+        uses: YunaBraska/java-info-action@41a875c0e7fa50c87dcc30fe209902e5186c47a2 # 2.1.30
         with:
           work-dir: ./optimize
 
@@ -96,7 +96,7 @@ jobs:
       #########################################################################
       # Build Docker image
       - name: Build and push Docker image
-        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6
+        uses: docker/build-push-action@b32b51a8eda65d6793cd0494a773d4f6bcef32dc # v6
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false

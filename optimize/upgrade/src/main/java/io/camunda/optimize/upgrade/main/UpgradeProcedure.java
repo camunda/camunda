@@ -131,8 +131,6 @@ public class UpgradeProcedure {
   }
 
   private void validateVersions(final Semver schemaVersion, final UpgradePlan upgradePlan) {
-    upgradeValidationService.validateDatabaseVersion(
-        dbClient, upgradePlan.getToVersion().toString());
     upgradeValidationService.validateSchemaVersions(
         schemaVersion.getValue(),
         upgradePlan.getFromVersion().getValue(),

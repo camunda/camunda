@@ -15,7 +15,7 @@ type NewProcessInstanceType = ProcessInstance & {
 
 class NewProcessInstance {
   instance: NewProcessInstanceType | null = null;
-  intervalId: NodeJS.Timeout | null = null;
+  intervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     makeObservable(this, {
