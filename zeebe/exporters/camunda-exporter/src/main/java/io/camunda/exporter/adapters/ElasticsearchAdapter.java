@@ -21,7 +21,6 @@ import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
 
@@ -63,8 +62,8 @@ class ElasticsearchAdapter implements ClientAdapter {
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
-        final String processIndexName, final XMLUtil xmlUtil) {
-      return new ElasticSearchProcessCacheLoader(client, processIndexName, xmlUtil);
+        final String processIndexName) {
+      return new ElasticSearchProcessCacheLoader(client, processIndexName);
     }
 
     @Override

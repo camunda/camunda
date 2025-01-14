@@ -18,7 +18,6 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
 import io.camunda.exporter.utils.SearchDBExtension;
-import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
@@ -35,7 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class ProcessCacheImplIT {
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   @ParameterizedTest
   @MethodSource("provideProcessCache")
@@ -125,7 +124,7 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl(
             10,
-            new ElasticSearchProcessCacheLoader(searchDB.esClient(), indexName, new XMLUtil()),
+            new ElasticSearchProcessCacheLoader(SEARCH_DB.esClient(), indexName),
             new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
@@ -134,14 +133,14 @@ class ProcessCacheImplIT {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl(
             10,
-            new OpenSearchProcessCacheLoader(searchDB.osClient(), indexName, new XMLUtil()),
+            new OpenSearchProcessCacheLoader(SEARCH_DB.osClient(), indexName),
             new ExporterCacheMetrics("OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 
   private static void indexInElasticSearch(final ProcessEntity processEntity) {
     try {
-      searchDB
+      SEARCH_DB
           .esClient()
           .index(
               request ->
@@ -156,7 +155,7 @@ class ProcessCacheImplIT {
 
   private static void indexInOpenSearch(final ProcessEntity processEntity) {
     try {
-      searchDB
+      SEARCH_DB
           .osClient()
           .index(
               request ->
