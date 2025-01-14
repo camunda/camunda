@@ -12,12 +12,10 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
@@ -58,17 +56,15 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
+    final var claimingRecord = ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
 
     // then
-    final UserTaskRecordValue recordValue = claimedRecord.getValue();
-
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
 
-    Assertions.assertThat(recordValue)
+    final var claimingRecordValue = claimingRecord.getValue();
+    Assertions.assertThat(claimingRecordValue)
         .hasUserTaskKey(userTaskKey)
         .hasAction("claim")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -86,7 +82,7 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .withKey(userTaskKey)
@@ -95,13 +91,12 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    final UserTaskRecordValue recordValue = claimedRecord.getValue();
-
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
 
-    Assertions.assertThat(recordValue)
+    final var claimingRecordValue = claimingRecord.getValue();
+    Assertions.assertThat(claimingRecordValue)
         .hasUserTaskKey(userTaskKey)
         .hasAction("customAction")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -114,14 +109,16 @@ public class ClaimUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim();
 
     // then
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
-    Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
+
+    final var claimingRecordValue = claimingRecord.getValue();
+    Assertions.assertThat(claimingRecordValue).hasAssignee("foo");
   }
 
   @Test
@@ -131,11 +128,11 @@ public class ClaimUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("").expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -144,11 +141,11 @@ public class ClaimUserTaskTest {
     final int key = 123;
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().withKey(key).withAssignee("foo").expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -163,7 +160,7 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .withKey(userTaskKey)
@@ -172,7 +169,7 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -187,11 +184,11 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().withKey(userTaskKey).withAssignee("").expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.INVALID_STATE);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
   }
 
   @Test
@@ -206,14 +203,15 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
+    final var claimingRecord = ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
 
     // then
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
-    Assertions.assertThat(claimedRecord.getValue()).hasAssignee("foo");
+
+    final var claimingRecordValue = claimingRecord.getValue();
+    Assertions.assertThat(claimingRecordValue).hasAssignee("foo");
   }
 
   @Test
@@ -225,11 +223,11 @@ public class ClaimUserTaskTest {
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).expectRejection().claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -241,7 +239,7 @@ public class ClaimUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -250,13 +248,12 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    final UserTaskRecordValue recordValue = claimedRecord.getValue();
-
-    Assertions.assertThat(claimedRecord)
+    Assertions.assertThat(claimingRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.CLAIMING);
 
-    Assertions.assertThat(recordValue).hasTenantId(tenantId);
+    final var claimingRecordValue = claimingRecord.getValue();
+    Assertions.assertThat(claimingRecordValue).hasTenantId(tenantId);
   }
 
   @Test
@@ -269,7 +266,7 @@ public class ClaimUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> claimedRecord =
+    final var claimingRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -278,6 +275,6 @@ public class ClaimUserTaskTest {
             .claim();
 
     // then
-    Assertions.assertThat(claimedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
