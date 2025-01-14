@@ -68,12 +68,12 @@
         NAME     = #{name},
         EMAIL    = #{email},
         PASSWORD = #{password}
-    WHERE USER_KEY = #{userKey}
+    WHERE USERNAME = #{username}
   </update>
 
   <delete id="delete" parameterType="java.lang.Long" flushCache="true">
     DELETE FROM USERS
-    WHERE USER_KEY = #{userKey}
+    WHERE USERNAME = #{username}
   </delete>
 
 </mapper>
