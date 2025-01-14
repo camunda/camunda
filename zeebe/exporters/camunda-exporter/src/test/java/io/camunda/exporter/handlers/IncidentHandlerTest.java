@@ -117,7 +117,7 @@ public class IncidentHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "0", inputEntity, Map.of("position", 1L));
+    verify(mockRequest, times(1)).upsert(indexName, "null", inputEntity, Map.of("position", 1L));
   }
 
   @Test
