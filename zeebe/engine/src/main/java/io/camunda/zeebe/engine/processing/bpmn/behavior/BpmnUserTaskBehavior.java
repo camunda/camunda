@@ -330,6 +330,7 @@ public final class BpmnUserTaskBehavior {
   public void userTaskAssigning(final UserTaskRecord userTaskRecord, final String assignee) {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     userTaskRecord.setAssignee(assignee);
+    userTaskRecord.setAssigneeChanged();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 
