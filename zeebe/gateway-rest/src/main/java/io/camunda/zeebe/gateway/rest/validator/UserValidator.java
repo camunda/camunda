@@ -33,14 +33,18 @@ public final class UserValidator {
   public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
     return validate(
         violations -> {
-          if (request.getUsername() == null || request.getUsername().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
-          }
+          validateUsername(request, violations);
           if (request.getPassword() == null || request.getPassword().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("password"));
           }
           violations.addAll(validateUserNameAndEmail(request.getName(), request.getEmail()));
         });
+  }
+
+  private static void validateUsername(final UserRequest request, final List<String> violations) {
+    if (request.getUsername() == null || request.getUsername().isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
+    }
   }
 
   private static List<String> validateUserNameAndEmail(final String name, final String email) {
