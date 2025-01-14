@@ -13,7 +13,7 @@ import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.metadata.DecisionInstanceReferenceDto;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.OffsetDateTime;
@@ -62,18 +62,18 @@ public class IncidentDto {
   public static <T> IncidentDto createFrom(
       final IncidentEntity incidentEntity,
       final Map<Long, String> processNames,
-      IncidentDataHolder incidentData,
-      DecisionInstanceReferenceDto rootCauseDecision) {
+      final IncidentDataHolder incidentData,
+      final DecisionInstanceReferenceDto rootCauseDecision) {
     return createFrom(
         incidentEntity, Collections.emptyList(), processNames, incidentData, rootCauseDecision);
   }
 
   public static IncidentDto createFrom(
-      IncidentEntity incidentEntity,
-      List<OperationEntity> operations,
-      Map<Long, String> processNames,
-      IncidentDataHolder incidentData,
-      DecisionInstanceReferenceDto rootCauseDecision) {
+      final IncidentEntity incidentEntity,
+      final List<OperationEntity> operations,
+      final Map<Long, String> processNames,
+      final IncidentDataHolder incidentData,
+      final DecisionInstanceReferenceDto rootCauseDecision) {
     if (incidentEntity == null) {
       return null;
     }
@@ -132,10 +132,10 @@ public class IncidentDto {
   }
 
   public static List<IncidentDto> createFrom(
-      List<IncidentEntity> incidentEntities,
-      Map<Long, List<OperationEntity>> operations,
-      Map<Long, String> processNames,
-      Map<String, IncidentDataHolder> incidentData) {
+      final List<IncidentEntity> incidentEntities,
+      final Map<Long, List<OperationEntity>> operations,
+      final Map<Long, String> processNames,
+      final Map<String, IncidentDataHolder> incidentData) {
     if (incidentEntities != null) {
       return incidentEntities.stream()
           .filter(inc -> inc != null)
@@ -152,7 +152,7 @@ public class IncidentDto {
     return new ArrayList<>();
   }
 
-  public static List<IncidentDto> sortDefault(List<IncidentDto> incidents) {
+  public static List<IncidentDto> sortDefault(final List<IncidentDto> incidents) {
     Collections.sort(incidents, INCIDENT_DEFAULT_COMPARATOR);
     return incidents;
   }
