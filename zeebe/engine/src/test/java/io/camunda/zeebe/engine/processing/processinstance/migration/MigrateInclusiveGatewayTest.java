@@ -819,4 +819,89 @@ public class MigrateInclusiveGatewayTest {
                 .formatted(processInstanceKey, "join1", "flow1", "join2"))
         .hasKey(processInstanceKey);
   }
+
+  @Test
+  public void
+      shouldRejectJoiningInclusiveGatewayMigrationIfTargetGatewayHasLessIncomingSequenceFlows() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow1")
+                    .inclusiveGateway("join1")
+                    .endEvent("end")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .connectTo("join1")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task3", b -> b.zeebeJobType("type3"))
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .inclusiveGateway("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow1")
+                    .inclusiveGateway("join2")
+                    .serviceTask("task4", b -> b.zeebeJobType("type4"))
+                    .endEvent()
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
+
+    // when
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task2", "task2")
+            .addMappingInstruction("task3", "task4")
+            .addMappingInstruction("join1", "join2")
+            .expectRejection()
+            .migrate();
+
+    // then
+    Assertions.assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to migrate process instance '%s' \
+            but target gateway with id '%s' has less incoming sequence flows \
+            than the source gateway with id '%s'. \
+            Target gateway must have at least the same number of incoming sequence flows as the source gateway."""
+                .formatted(processInstanceKey, "join2", "join1"))
+        .hasKey(processInstanceKey);
+  }
 }
