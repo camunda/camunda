@@ -158,6 +158,20 @@ public class VariableAssertTest {
               "Process instance [key: %d] should have the variables ['a', 'b', 'c', 'd'] but ['c', 'd'] don't exist.",
               PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -276,6 +290,20 @@ public class VariableAssertTest {
           .hasMessage(
               "Process instance [key: %d] should have a variable 'a' with value '-1' but was '%s'.",
               PROCESS_INSTANCE_KEY, variableValue, variableValue);
+    }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", "1"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
 
@@ -418,6 +446,23 @@ public class VariableAssertTest {
           .hasMessage(
               "Process instance [key: %d] should have the variables {\"a\":-1} but was {\"a\":%s}.",
               PROCESS_INSTANCE_KEY, variableValue);
+    }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      final Map<String, Object> expectedVariables = new HashMap<>();
+      expectedVariables.put("a", 1);
+
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
 }

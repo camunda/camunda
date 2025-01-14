@@ -689,6 +689,20 @@ public class ProcessInstanceAssertTest {
                   + "\t- 'element_D': not activated",
               PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -883,6 +897,20 @@ public class ProcessInstanceAssertTest {
                   + "\t- 'element_D': not activated",
               PROCESS_INSTANCE_KEY);
     }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
+    }
   }
 
   @Nested
@@ -1076,6 +1104,20 @@ public class ProcessInstanceAssertTest {
                   + "\t- 'element_C': active\n"
                   + "\t- 'element_D': not activated",
               PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
 }
