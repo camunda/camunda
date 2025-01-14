@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.zeebe;
 
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.task.TaskEntity;
+import io.camunda.webapps.schema.entities.task.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import java.util.Map;
 

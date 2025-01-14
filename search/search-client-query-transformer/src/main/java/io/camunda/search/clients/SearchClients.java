@@ -48,6 +48,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.task.TaskEntity;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 
@@ -178,11 +179,7 @@ public class SearchClients
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            ProcessInstanceForListViewEntity
-                .class);
+    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
   }
 
   @Override
@@ -229,8 +226,7 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
-    return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.tasklist.TaskEntity.class);
+    return getSearchExecutor().search(filter, TaskEntity.class);
   }
 
   @Override

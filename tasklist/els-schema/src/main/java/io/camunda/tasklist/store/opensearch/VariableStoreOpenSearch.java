@@ -32,7 +32,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVaria
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.task.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

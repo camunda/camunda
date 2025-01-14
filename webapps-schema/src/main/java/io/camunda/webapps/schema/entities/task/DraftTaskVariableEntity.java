@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.tasklist;
+package io.camunda.webapps.schema.entities.task;
 
+import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
 import java.util.Objects;
 
 /** Represents draft variable with its value when task is in created state. */

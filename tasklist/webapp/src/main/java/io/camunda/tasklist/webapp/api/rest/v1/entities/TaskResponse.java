@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.task.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.task.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.AccessMode;

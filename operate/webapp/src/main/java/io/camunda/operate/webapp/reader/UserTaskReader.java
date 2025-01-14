@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.task.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.task.TaskEntity;
 import java.util.List;
 import java.util.Optional;
 

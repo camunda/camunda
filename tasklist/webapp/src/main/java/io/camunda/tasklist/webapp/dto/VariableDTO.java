@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.dto;
 
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.task.SnapshotTaskVariableEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
