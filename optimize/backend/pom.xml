@@ -692,10 +692,6 @@
     <finalName>optimize-backend-${project.version}</finalName>
     <resources>
       <resource>
-        <targetPath>webapp</targetPath>
-        <directory>../client/dist</directory>
-      </resource>
-      <resource>
         <directory>src/main/resources</directory>
       </resource>
       <resource>
