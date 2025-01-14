@@ -167,7 +167,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     final FlowNodeInstanceEntity inputEntity =
         new FlowNodeInstanceEntity()
             .setId("111")
-            .setKey(111)
+            .setKey(111L)
             .setProcessInstanceKey(444L)
             .setPartitionId(1)
             .setType(FlowNodeType.SERVICE_TASK)
@@ -211,7 +211,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     final FlowNodeInstanceEntity inputEntity =
         new FlowNodeInstanceEntity()
             .setId("111")
-            .setKey(111)
+            .setKey(111L)
             .setProcessInstanceKey(444L)
             .setPartitionId(1)
             .setType(FlowNodeType.SERVICE_TASK)
