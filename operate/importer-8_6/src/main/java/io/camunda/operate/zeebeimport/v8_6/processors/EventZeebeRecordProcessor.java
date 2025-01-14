@@ -26,19 +26,19 @@ import static io.camunda.webapps.schema.descriptors.operate.template.EventTempla
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.MESSAGE_NAME;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.METADATA;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.PROCESS_KEY;
-import static io.camunda.webapps.schema.entities.operate.EventType.ELEMENT_ACTIVATING;
-import static io.camunda.webapps.schema.entities.operate.EventType.ELEMENT_COMPLETING;
+import static io.camunda.webapps.schema.entities.event.EventType.ELEMENT_ACTIVATING;
+import static io.camunda.webapps.schema.entities.event.EventType.ELEMENT_COMPLETING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.entities.event.EventEntity;
+import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
+import io.camunda.webapps.schema.entities.event.EventSourceType;
+import io.camunda.webapps.schema.entities.event.EventType;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
-import io.camunda.webapps.schema.entities.operate.EventEntity;
-import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
-import io.camunda.webapps.schema.entities.operate.EventSourceType;
-import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
