@@ -15,11 +15,11 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import jakarta.annotation.PreDestroy;
-import jakarta.ws.rs.HttpMethod;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.Method;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -143,14 +143,14 @@ public class WebhookNotificationService
       final WebhookConfiguration webhook) {
     final String httpMethod = webhook.getHttpMethod();
     final HttpEntityEnclosingRequestBase request;
-    switch (httpMethod) {
-      case HttpMethod.POST:
+    switch (Method.normalizedValueOf(httpMethod)) {
+      case Method.POST:
         request = new HttpPost(webhook.getUrl());
         break;
-      case HttpMethod.PATCH:
+      case Method.PATCH:
         request = new HttpPatch(webhook.getUrl());
         break;
-      case HttpMethod.PUT:
+      case Method.PUT:
         request = new HttpPut(webhook.getUrl());
         break;
       default:
