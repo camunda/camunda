@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -26,6 +29,7 @@ import org.junit.Test;
 public class ClaimUserTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final String DEFAULT_ACTION = "claim";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -45,7 +49,7 @@ public class ClaimUserTaskTest {
   }
 
   @Test
-  public void shouldEmitClaimingEventForClaimedUserTask() {
+  public void shouldEmitClaimAndAssigningEventsUponClaimingUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -64,14 +68,21 @@ public class ClaimUserTaskTest {
         .hasIntent(UserTaskIntent.CLAIMING);
 
     final var claimingRecordValue = claimingRecord.getValue();
-    Assertions.assertThat(claimingRecordValue)
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("claim")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee("foo")
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
-  public void shouldTrackCustomActionInClaimingEvent() {
+  public void shouldEmitClaimAndAssigningEventsUponClaimingUserTaskWithCustomAction() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -96,29 +107,17 @@ public class ClaimUserTaskTest {
         .hasIntent(UserTaskIntent.CLAIMING);
 
     final var claimingRecordValue = claimingRecord.getValue();
-    Assertions.assertThat(claimingRecordValue)
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("customAction")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
-  @Test
-  public void shouldClaimUserTaskForAssignee() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    final var claimingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim();
-
-    // then
-    Assertions.assertThat(claimingRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.CLAIMING);
-
-    final var claimingRecordValue = claimingRecord.getValue();
-    Assertions.assertThat(claimingRecordValue).hasAssignee("foo");
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction("customAction")
+                    .hasAssignee("foo")
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -194,7 +193,8 @@ public class ClaimUserTaskTest {
   @Test
   public void shouldClaimUserTaskWithAssigneeSelf() {
     // given
-    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee("foo"))).deploy();
+    final var initialAssignee = "samwise";
+    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee(initialAssignee))).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
     final long userTaskKey =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
@@ -203,7 +203,8 @@ public class ClaimUserTaskTest {
             .getKey();
 
     // when
-    final var claimingRecord = ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").claim();
+    final var claimingRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee(initialAssignee).claim();
 
     // then
     Assertions.assertThat(claimingRecord)
@@ -211,7 +212,21 @@ public class ClaimUserTaskTest {
         .hasIntent(UserTaskIntent.CLAIMING);
 
     final var claimingRecordValue = claimingRecord.getValue();
-    Assertions.assertThat(claimingRecordValue).hasAssignee("foo");
+    final var assignedRecordValue =
+        // querying for the first `ASSIGNED` record right after `CLAIMING` record
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .filter(r -> r.getPosition() > claimingRecord.getPosition())
+            .getFirst()
+            .getValue();
+
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee(initialAssignee)
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -253,7 +268,16 @@ public class ClaimUserTaskTest {
         .hasIntent(UserTaskIntent.CLAIMING);
 
     final var claimingRecordValue = claimingRecord.getValue();
-    Assertions.assertThat(claimingRecordValue).hasTenantId(tenantId);
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee("foo")
+                    .hasTenantId(tenantId));
   }
 
   @Test
