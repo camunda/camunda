@@ -54,4 +54,14 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   public OpenSearchClient osClient() {
     return osClient;
   }
+
+  @Override
+  public String esUrl() {
+    return null;
+  }
+
+  @Override
+  public String osUrl() {
+    return osUrl;
+  }
 }
