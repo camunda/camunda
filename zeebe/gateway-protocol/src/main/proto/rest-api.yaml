@@ -3234,10 +3234,8 @@ paths:
 
         Note that this currently only supports an in-memory document store, which is not meant for production use.
 
-        :::note
-        This endpoint is an [alpha feature](/components/early-access/alpha/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       parameters:
         - name: storeId
           in: query
