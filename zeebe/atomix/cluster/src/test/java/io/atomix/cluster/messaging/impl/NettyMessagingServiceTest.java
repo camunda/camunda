@@ -30,6 +30,10 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
@@ -725,7 +729,7 @@ final class NettyMessagingServiceTest {
     }
 
     @Test
-    void shouldNotCloseTheConnectionIfNoHeartbeatsIsReceived() {
+    void shouldNotCloseTheConnectionFromTheServerIfNoHeartbeatsIsReceived() {
       // given
       final var subject = nextSubject();
       // a client channel
@@ -739,6 +743,44 @@ final class NettyMessagingServiceTest {
       netty1.sendAndReceive(netty2.address(), subject, new byte[0], true);
 
       // then
+      // the channel is not closed (because the future times out)
+      final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
+      assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))
+          .isInstanceOf(TimeoutException.class);
+    }
+
+    @Test
+    void shouldNotCloseTheConnectionFromTheClientIfNoHeartbeatsIsReceived()
+        throws InterruptedException {
+      // given
+      final var subject = nextSubject();
+      // a client channel
+      final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+
+      // a Handler that does not forward back replies to heartbeats to simulate a server with an old
+      // version that does not support heartbeats
+      final var interceptingHandler =
+          new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelRead(final ChannelHandlerContext ctx, final Object msg)
+                throws Exception {
+              if (msg instanceof IdleStateEvent) {
+                // nothing
+                ctx.fireChannelRead(msg);
+              } else if (msg instanceof final ProtocolReply reply) {
+                // don't swallow the handshake
+                if (reply.id() > 1) {
+                  ReferenceCountUtil.release(msg);
+                } else {
+                  ctx.fireChannelRead(msg);
+                }
+              }
+            }
+          };
+
+      // handler added after decoder so it can see the decoded messages
+      channel.pipeline().addAfter("decoder", "interceptor", interceptingHandler);
+
       // the channel is not closed (because the future times out)
       final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
       assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))

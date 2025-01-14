@@ -104,6 +104,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
     private final AtomicLong messageIdGenerator;
     private final Address advertisedAddress;
     private final Duration heartbeatTimeout;
+    private boolean receivedAnyHeartbeats = false;
 
     Client(
         final Logger log,
@@ -118,11 +119,20 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-      if (msg instanceof final ProtocolReply reply && outstandingHeartbeats.contains(reply.id())) {
-        // remove all heartbeats sent before (and equal) to the last update.
-        // If we don't do it, the size of oustandingHeartbeats will increase for every missed
+      if (msg instanceof final ProtocolReply reply) {
+        if (outstandingHeartbeats.contains(reply.id())) {
+          // there's no subject in ProtocolReply, so we rely on oustandingHeartbeats to see if it
+          // was a reply to a heartbeat
+          receivedAnyHeartbeats = true;
+        }
+        // remove all heartbeats sent before (and equal) to the last ProtocolReply received.
+        // Note that all ProtocolReply messages (not just heartbeat messages) can indicate that
+        // the channel is still open and transmitting.
+        // If we remove from the set only the last message received, the size of
+        // oustandingHeartbeats will increase for every missed
         // heartbeat and the memory will be freed only when the channel is closed.
         outstandingHeartbeats.removeIfLong(id -> id <= reply.id());
+
         if (reply.status() != Status.OK) {
           log.warn("Received a Heartbeat response with status {}", reply.status());
         } else if (!Arrays.equals(reply.payload(), HEARTBEAT_PAYLOAD)) {
@@ -145,7 +155,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       switch (idleStateEvent.state()) {
         case READER_IDLE -> {
           // don't close the connection if we haven't sent any heartbeat yet
-          if (!outstandingHeartbeats.isEmpty()) {
+          if (receivedAnyHeartbeats && !outstandingHeartbeats.isEmpty()) {
             log.warn(
                 "Connection {} timed out on the client after not receiving a heartbeat response from the server in {}({} heartbeats pending) closing channel",
                 ctx.channel(),
