@@ -58,7 +58,8 @@ public class UserIT {
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriter, user);
 
-    final var userUpdate = UserFixtures.createRandomized(b -> b.userKey(user.userKey()));
+    final var userUpdate =
+        UserFixtures.createRandomized(b -> b.userKey(user.userKey()).username(user.username()));
     rdbmsWriter.getUserWriter().update(userUpdate);
     rdbmsWriter.flush();
 
