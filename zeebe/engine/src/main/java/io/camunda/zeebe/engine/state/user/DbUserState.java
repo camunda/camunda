@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.state.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
@@ -32,7 +31,7 @@ public class DbUserState implements UserState, MutableUserState {
   private final DbLong userKey;
   private final DbForeignKey<DbLong> fkUserKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> userKeyByUsernameColumnFamily;
-  private final ColumnFamily<DbKey, PersistedUser> userByUserKeyColumnFamily;
+  private final ColumnFamily<DbString, PersistedUser> usersColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -42,9 +41,9 @@ public class DbUserState implements UserState, MutableUserState {
     userKeyByUsernameColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, fkUserKey);
-    userByUserKeyColumnFamily =
+    usersColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERS, transactionContext, userKey, new PersistedUser());
+            ZbColumnFamilies.USERS, transactionContext, username, new PersistedUser());
   }
 
   @Override
@@ -53,7 +52,7 @@ public class DbUserState implements UserState, MutableUserState {
     userKey.wrapLong(user.getUserKey());
     persistedUser.setUser(user);
 
-    userByUserKeyColumnFamily.insert(userKey, persistedUser);
+    usersColumnFamily.insert(userKey, persistedUser);
     userKeyByUsernameColumnFamily.insert(username, fkUserKey);
   }
 
@@ -63,67 +62,67 @@ public class DbUserState implements UserState, MutableUserState {
     final var key = userKeyByUsernameColumnFamily.get(username);
     persistedUser.setUser(user);
 
-    userByUserKeyColumnFamily.update(key, persistedUser);
+    usersColumnFamily.update(key, persistedUser);
   }
 
   @Override
   public void delete(final long userKey) {
     this.userKey.wrapLong(userKey);
-    userByUserKeyColumnFamily.deleteExisting(this.userKey);
+    usersColumnFamily.deleteExisting(this.userKey);
   }
 
   @Override
   public void addRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
     persistedUser.addRoleKey(roleKey);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
   public void removeRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
     final List<Long> roleKeys = persistedUser.getRoleKeysList();
     roleKeys.remove(roleKey);
     persistedUser.setRoleKeysList(roleKeys);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
   public void addTenantId(final long userKey, final String tenantId) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
     persistedUser.addTenantId(tenantId);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
   public void removeTenant(final long userKey, final String tenantId) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
     final List<String> tenantIds = persistedUser.getTenantIdsList();
     tenantIds.remove(tenantId);
     persistedUser.setTenantIdsList(tenantIds);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
   public void addGroup(final long userKey, final long groupKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
     persistedUser.addGroupKey(groupKey);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
   public void removeGroup(final long userKey, final long groupKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
     final List<Long> groupKeys = persistedUser.getGroupKeysList();
     groupKeys.remove(groupKey);
     persistedUser.setGroupKeysList(groupKeys);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.userKey, persistedUser);
   }
 
   @Override
@@ -146,7 +145,7 @@ public class DbUserState implements UserState, MutableUserState {
   @Override
   public Optional<PersistedUser> getUser(final long userKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
 
     if (persistedUser == null) {
       return Optional.empty();
@@ -157,7 +156,7 @@ public class DbUserState implements UserState, MutableUserState {
   @Override
   public List<String> getTenantIds(final long userKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var persistedUser = usersColumnFamily.get(this.userKey);
 
     if (persistedUser == null) {
       return List.of();
