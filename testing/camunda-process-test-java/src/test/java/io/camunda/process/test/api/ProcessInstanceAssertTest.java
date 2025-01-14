@@ -24,6 +24,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
@@ -115,19 +116,29 @@ public class ProcessInstanceAssertTest {
   @Nested
   class ProcessInstanceSource {
 
+    private static final long ACTIVE_PROCESS_INSTANCE_KEY = 1L;
+    private static final long COMPLETED_PROCESS_INSTANCE_KEY = 2L;
+
     @Mock private ProcessInstanceResult processInstanceResult;
 
     @BeforeEach
     void configureMocks() throws IOException {
-      final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
+      final ProcessInstanceDto activeProcessInstance =
+          newActiveProcessInstance(ACTIVE_PROCESS_INSTANCE_KEY);
+      activeProcessInstance.setBpmnProcessId("active-process");
+
+      final ProcessInstanceDto completedProcessInstance =
+          newCompletedProcessInstance(COMPLETED_PROCESS_INSTANCE_KEY);
+      completedProcessInstance.setBpmnProcessId("completed-process");
+
       when(camundaDataSource.findProcessInstances())
-          .thenReturn(Collections.singletonList(processInstance));
+          .thenReturn(Arrays.asList(activeProcessInstance, completedProcessInstance));
     }
 
     @Test
     void shouldUseProcessInstanceEvent() throws IOException {
       // given
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when
       CamundaAssert.assertThat(processInstanceEvent).isActive();
@@ -137,12 +148,95 @@ public class ProcessInstanceAssertTest {
     }
 
     @Test
+    void shouldFailWithProcessInstanceEvent() throws IOException {
+      // given
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // when
+      Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
+          .hasMessage(
+              "Process instance [key: %d] should be active but was completed.",
+              COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
     void shouldUseProcessInstanceResult() throws IOException {
       // given
-      when(processInstanceResult.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+      when(processInstanceResult.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when
       CamundaAssert.assertThat(processInstanceResult).isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithProcessInstanceResult() throws IOException {
+      // given
+      when(processInstanceResult.getProcessInstanceKey())
+          .thenReturn(COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // when
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceResult).isActive())
+          .hasMessage(
+              "Process instance [key: %d] should be active but was completed.",
+              COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldUseByKeySelector() throws IOException {
+      // when
+      CamundaAssert.assertThat(ProcessInstanceSelectors.byKey(ACTIVE_PROCESS_INSTANCE_KEY))
+          .isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithByKeySelector() throws IOException {
+      // when
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(
+                          ProcessInstanceSelectors.byKey(COMPLETED_PROCESS_INSTANCE_KEY))
+                      .isActive())
+          .hasMessage(
+              "Process instance [key: %d] should be active but was completed.",
+              COMPLETED_PROCESS_INSTANCE_KEY);
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldUseByProcessIdSelector() throws IOException {
+      // when
+      CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId("active-process")).isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldFailWithByProcessIdSelector() throws IOException {
+      // when
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(
+                          ProcessInstanceSelectors.byProcessId("completed-process"))
+                      .isActive())
+          .hasMessage(
+              "Process instance [process-id: '%s'] should be active but was completed.",
+              "completed-process");
 
       // then
       verify(camundaDataSource).findProcessInstances();
