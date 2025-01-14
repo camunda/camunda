@@ -65,6 +65,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     final long userTaskKey = command.getKey();
 
     userTaskRecord.setAssignee(command.getValue().getAssignee());
+    userTaskRecord.setAssigneeChanged();
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CLAIMING, userTaskRecord);
