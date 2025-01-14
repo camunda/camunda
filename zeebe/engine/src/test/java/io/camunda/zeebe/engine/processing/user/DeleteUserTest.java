@@ -42,8 +42,7 @@ public class DeleteUserTest {
             .withPassword("password")
             .create();
 
-    final var deletedUser =
-        ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete().getValue();
+    final var deletedUser = ENGINE.user().deleteUser(username).delete().getValue();
 
     assertThat(deletedUser).isNotNull().hasFieldOrPropertyWithValue("userKey", userRecord.getKey());
   }
@@ -83,7 +82,7 @@ public class DeleteUserTest {
         .add();
 
     // when
-    ENGINE.user().deleteUser(userRecord.getKey()).withUsername("").delete();
+    ENGINE.user().deleteUser(username).delete();
 
     // then
     Assertions.assertThat(
@@ -111,8 +110,7 @@ public class DeleteUserTest {
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .deleteUser(1234L)
-            .withUsername("foobar")
+            .deleteUser("1234")
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
             .withPassword("Foo Bar")
@@ -122,6 +120,6 @@ public class DeleteUserTest {
     assertThat(userNotFoundRejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete user with key 1234, but a user with this key does not exist");
+            "Expected to delete user with username 1234, but a user with this username does not exist");
   }
 }
