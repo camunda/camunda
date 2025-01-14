@@ -46,11 +46,36 @@ public class AuthorizationTransformer {
         .toList();
   }
 
+  public static List<PatchAuthorizationRequest> transformApplicationAccess(
+      final long ownerKey, final List<String> applications) {
+    final var groupedPermissions =
+        applications.stream()
+            .flatMap(AuthorizationTransformer::transformApplicationAccessToAuthorizations)
+            .collect(
+                Collectors.groupingBy(
+                    ResourceTypePermissionTypeResourceId::resourceType,
+                    Collectors.groupingBy(
+                        ResourceTypePermissionTypeResourceId::permissionType,
+                        Collectors.mapping(
+                            ResourceTypePermissionTypeResourceId::resourceId,
+                            Collectors.toSet()))));
+    return groupedPermissions.entrySet().stream()
+        .map(entry -> createPatchAuthorizationRequest(ownerKey, entry))
+        .toList();
+  }
+
   private static PatchAuthorizationRequest createPatchAuthorizationRequest(
       final long ownerKey,
       final Entry<AuthorizationResourceType, Map<PermissionType, Set<String>>> entry) {
     return new PatchAuthorizationRequest(
         ownerKey, PermissionAction.ADD, entry.getKey(), entry.getValue());
+  }
+
+  private static Stream<ResourceTypePermissionTypeResourceId>
+      transformApplicationAccessToAuthorizations(final String application) {
+    return Stream.of(
+        new ResourceTypePermissionTypeResourceId(
+            AuthorizationResourceType.APPLICATION, PermissionType.ACCESS, application));
   }
 
   private static Stream<ResourceTypePermissionTypeResourceId> transformToAuthorizations(

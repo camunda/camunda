@@ -7,9 +7,16 @@
  */
 package io.camunda.migration.identity.console;
 
+import io.camunda.migration.identity.dto.Client;
+import io.camunda.migration.identity.dto.UserRoles;
+import java.util.List;
 import org.springframework.web.client.RestTemplate;
 
 public class ConsoleClient {
+
+  private static final String MIGRATION_DATA_ENDPOINT =
+      "/external/organizations/%s/clusters/%s/migrationData/%s";
+
   private final String organizationId;
   private final String clusterId;
   private final String internalClientId;
@@ -25,4 +32,16 @@ public class ConsoleClient {
     this.internalClientId = internalClientId;
     this.restTemplate = restTemplate;
   }
+
+  public List<Client> fetchClients() {
+    return fetchMigrationData().clients();
+  }
+
+  private MigrationData fetchMigrationData() {
+    return restTemplate.getForObject(
+        String.format(MIGRATION_DATA_ENDPOINT, organizationId, clusterId, internalClientId),
+        MigrationData.class);
+  }
+
+  record MigrationData(List<Client> clients, List<UserRoles> members) {}
 }

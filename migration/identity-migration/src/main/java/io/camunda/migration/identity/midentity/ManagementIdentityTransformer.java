@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity.midentity;
 
+import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
@@ -57,5 +58,15 @@ public class ManagementIdentityTransformer {
       final Role role, final Exception e) {
     return new MigrationStatusUpdateRequest(
         role.name(), MigrationEntityType.ROLE, null, e == null, e == null ? null : e.getMessage());
+  }
+
+  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+      final Client client, final Exception e) {
+    return new MigrationStatusUpdateRequest(
+        client.clientId(),
+        MigrationEntityType.CLIENT,
+        null,
+        e == null,
+        e == null ? null : e.getMessage());
   }
 }
