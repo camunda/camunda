@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
@@ -63,17 +62,15 @@ public final class AssignUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").assign();
+    final var assigningRecord = ENGINE.userTask().withKey(userTaskKey).withAssignee("foo").assign();
 
     // then
-    final UserTaskRecordValue recordValue = assignedRecord.getValue();
-
-    Assertions.assertThat(assignedRecord)
+    Assertions.assertThat(assigningRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.ASSIGNING);
 
-    Assertions.assertThat(recordValue)
+    final var assigningRecordValue = assigningRecord.getValue();
+    Assertions.assertThat(assigningRecordValue)
         .hasUserTaskKey(userTaskKey)
         .hasAction("assign")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -125,7 +122,7 @@ public final class AssignUserTaskTest {
             .getKey();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE
             .userTask()
             .withKey(userTaskKey)
@@ -134,13 +131,12 @@ public final class AssignUserTaskTest {
             .assign();
 
     // then
-    final UserTaskRecordValue recordValue = assignedRecord.getValue();
-
-    Assertions.assertThat(assignedRecord)
+    Assertions.assertThat(assigningRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.ASSIGNING);
 
-    Assertions.assertThat(recordValue)
+    final var assigningRecordValue = assigningRecord.getValue();
+    Assertions.assertThat(assigningRecordValue)
         .hasUserTaskKey(userTaskKey)
         .hasAction("customAction")
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -152,11 +148,11 @@ public final class AssignUserTaskTest {
     final int key = 123;
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE.userTask().withKey(key).withAssignee("foo").expectRejection().assign();
 
     // then
-    Assertions.assertThat(assignedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(assigningRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -166,14 +162,16 @@ public final class AssignUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").assign();
 
     // then
-    Assertions.assertThat(assignedRecord)
+    Assertions.assertThat(assigningRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.ASSIGNING);
-    Assertions.assertThat(assignedRecord.getValue()).hasAssignee("foo");
+
+    final var assigningRecordValue = assigningRecord.getValue();
+    Assertions.assertThat(assigningRecordValue).hasAssignee("foo");
   }
 
   @Test
@@ -183,14 +181,16 @@ public final class AssignUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).withoutAssignee().assign();
 
     // then
-    Assertions.assertThat(assignedRecord)
+    Assertions.assertThat(assigningRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.ASSIGNING);
-    assertThat(assignedRecord.getValue().getAssignee()).isEmpty();
+
+    final var assigningRecordValue = assigningRecord.getValue();
+    Assertions.assertThat(assigningRecordValue).hasAssignee("");
   }
 
   @Test
@@ -202,11 +202,11 @@ public final class AssignUserTaskTest {
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE.userTask().ofInstance(processInstanceKey).expectRejection().assign();
 
     // then
-    Assertions.assertThat(assignedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(assigningRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test
@@ -218,7 +218,7 @@ public final class AssignUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -227,13 +227,12 @@ public final class AssignUserTaskTest {
             .assign();
 
     // then
-    final UserTaskRecordValue recordValue = assignedRecord.getValue();
-
-    Assertions.assertThat(assignedRecord)
+    Assertions.assertThat(assigningRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.ASSIGNING);
 
-    Assertions.assertThat(recordValue).hasTenantId(tenantId);
+    final var assigningRecordValue = assigningRecord.getValue();
+    Assertions.assertThat(assigningRecordValue).hasTenantId(tenantId);
   }
 
   @Test
@@ -246,7 +245,7 @@ public final class AssignUserTaskTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
 
     // when
-    final Record<UserTaskRecordValue> assignedRecord =
+    final var assigningRecord =
         ENGINE
             .userTask()
             .ofInstance(processInstanceKey)
@@ -255,6 +254,6 @@ public final class AssignUserTaskTest {
             .assign();
 
     // then
-    Assertions.assertThat(assignedRecord).hasRejectionType(RejectionType.NOT_FOUND);
+    Assertions.assertThat(assigningRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
