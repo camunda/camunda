@@ -65,9 +65,9 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void delete(final long userKey) {
-    this.userKey.wrapLong(userKey);
-    usersColumnFamily.deleteExisting(this.userKey);
+  public void delete(final String username) {
+    this.username.wrapString(username);
+    usersColumnFamily.deleteExisting(this.username);
   }
 
   @Override

@@ -173,7 +173,7 @@ public class UserStateTest {
 
     assertThat(userState.getUser(username)).isNotEmpty();
 
-    userState.delete(userKey);
+    userState.delete(username);
 
     assertThat(userState.getUser(username)).isEmpty();
   }

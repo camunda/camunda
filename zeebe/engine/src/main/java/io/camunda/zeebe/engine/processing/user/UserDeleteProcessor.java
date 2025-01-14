@@ -148,7 +148,6 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
               .setEntityType(EntityType.USER));
     }
 
-    stateWriter.appendFollowUpEvent(
-        userKey, UserIntent.DELETED, new UserRecord().setUserKey(userKey));
+    stateWriter.appendFollowUpEvent(userKey, UserIntent.DELETED, user.getUser());
   }
 }
