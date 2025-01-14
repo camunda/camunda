@@ -47,6 +47,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 
@@ -180,7 +181,7 @@ public class SearchClients
     return getSearchExecutor()
         .search(
             filter,
-            io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
+            ProcessInstanceForListViewEntity
                 .class);
   }
 

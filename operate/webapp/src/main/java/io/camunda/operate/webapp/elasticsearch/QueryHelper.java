@@ -34,7 +34,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.search.SearchRequest;
