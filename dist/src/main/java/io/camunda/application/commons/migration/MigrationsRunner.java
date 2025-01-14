@@ -8,7 +8,6 @@
 package io.camunda.application.commons.migration;
 
 import io.camunda.migration.api.Migrator;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -35,7 +34,7 @@ public class MigrationsRunner implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) throws Exception {
     LOG.info("Starting {} migration tasks", migrators.size());
-    final List<Throwable> failures = new ArrayList<>();
+    final Exception migrationsExceptions = new Exception();
     try (final var executor = Executors.newFixedThreadPool(migrators.size())) {
       final var results = executor.invokeAll(migrators);
       for (final var result : results) {
@@ -43,13 +42,13 @@ public class MigrationsRunner implements ApplicationRunner {
           result.get();
         } catch (final ExecutionException e) {
           LOG.error("Migrator failed", e.getCause());
-          failures.add(e.getCause());
+          migrationsExceptions.addSuppressed(e.getCause());
         }
       }
     }
 
-    if (!failures.isEmpty()) {
-      throw new Exception("#" + failures.stream() + " migrations failed");
+    if (migrationsExceptions.getSuppressed().length > 0) {
+      throw migrationsExceptions;
     }
 
     LOG.info("All migration tasks completed");
