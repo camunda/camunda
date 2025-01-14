@@ -20,9 +20,12 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -32,6 +35,7 @@ public final class AssignUserTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final String DEFAULT_ACTION = "assign";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -51,7 +55,7 @@ public final class AssignUserTaskTest {
   }
 
   @Test
-  public void shouldEmitAssigningEventForUserTask() {
+  public void shouldEmitAssignEventsForUserTask() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -70,10 +74,17 @@ public final class AssignUserTaskTest {
         .hasIntent(UserTaskIntent.ASSIGNING);
 
     final var assigningRecordValue = assigningRecord.getValue();
-    Assertions.assertThat(assigningRecordValue)
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("assign")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee("foo")
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -98,7 +109,7 @@ public final class AssignUserTaskTest {
                 .withRecordKey(userTaskKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .as(
-            "Verify the sequence of intents and `assignee`, `action` properties emitted for the user task")
+            "Verify the sequence of intents, `assignee` and `action` properties emitted for the user task")
         .extracting(
             Record::getIntent, r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
         .containsExactly(
@@ -111,7 +122,7 @@ public final class AssignUserTaskTest {
   }
 
   @Test
-  public void shouldTrackCustomActionInAssigningEvent() {
+  public void shouldEmitAssignEventsWithCustomAction() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -136,10 +147,17 @@ public final class AssignUserTaskTest {
         .hasIntent(UserTaskIntent.ASSIGNING);
 
     final var assigningRecordValue = assigningRecord.getValue();
-    Assertions.assertThat(assigningRecordValue)
-        .hasUserTaskKey(userTaskKey)
-        .hasAction("customAction")
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction("customAction")
+                    .hasAssignee("foo")
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test
@@ -177,20 +195,43 @@ public final class AssignUserTaskTest {
   @Test
   public void shouldUnassignUserTaskWithNoAssignee() {
     // given
-    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee("foo"))).deploy();
+    final var initialAssignee = "pippin";
+    final var unassignAction = "unassign";
+    ENGINE.deployment().withXmlResource(process(b -> b.zeebeAssignee(initialAssignee))).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final var assigningRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withoutAssignee().assign();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withoutAssignee()
+        .withAction(unassignAction)
+        .assign();
 
     // then
-    Assertions.assertThat(assigningRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
+    final Predicate<Record<UserTaskRecordValue>> untilUserTaskUnassignedRecord =
+        r ->
+            r.getIntent() == UserTaskIntent.ASSIGNED
+                && r.getValue().getAction().equals(unassignAction);
 
-    final var assigningRecordValue = assigningRecord.getValue();
-    Assertions.assertThat(assigningRecordValue).hasAssignee("");
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(untilUserTaskUnassignedRecord))
+        .as(
+            "Verify the sequence of intents, `assignee` and `action` properties emitted for the user task")
+        .extracting(
+            Record::getIntent, r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, "", ""),
+            tuple(UserTaskIntent.CREATED, "", ""),
+            // The `assignee` property isn't yet available during the `CREATING/CREATED` events
+            // as it becomes effective only during the assignment phase.
+            tuple(UserTaskIntent.ASSIGNING, initialAssignee, ""),
+            tuple(UserTaskIntent.ASSIGNED, initialAssignee, ""),
+            // records related to user task unassignment
+            tuple(UserTaskIntent.ASSIGNING, "", unassignAction),
+            tuple(UserTaskIntent.ASSIGNED, "", unassignAction));
   }
 
   @Test
@@ -232,7 +273,16 @@ public final class AssignUserTaskTest {
         .hasIntent(UserTaskIntent.ASSIGNING);
 
     final var assigningRecordValue = assigningRecord.getValue();
-    Assertions.assertThat(assigningRecordValue).hasTenantId(tenantId);
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
+
+    assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee("foo")
+                    .hasTenantId(tenantId));
   }
 
   @Test
