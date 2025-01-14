@@ -8,11 +8,19 @@
     <version>8.7.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>client</artifactId>
-  <packaging>pom</packaging>
-  <name>Optimize Client</name>
+  <name>Optimize Webjar</name>
+  <artifactId>optimize-webjar</artifactId>
+  <packaging>jar</packaging>
+
 
   <build>
+    <resources>
+      <resource>
+        <directory>dist</directory>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources/optimize</targetPath>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>com.github.eirslett</groupId>
