@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationCreateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
@@ -39,6 +40,7 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
@@ -58,6 +60,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -80,6 +83,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
@@ -104,6 +108,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -310,6 +315,26 @@ public class RequestMapper {
     return getResult(
         GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
         () -> new UpdateGroupRequest(groupKey, groupUpdateRequest.getChangeset().getName()));
+  }
+
+  public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
+      final AuthorizationCreateRequest request) {
+    return getResult(
+        validateAuthorizationCreateRequest(request),
+        () ->
+            new CreateAuthorizationRequest(
+                request.getOwnerId(),
+                AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                request.getResourceId(),
+                AuthorizationResourceType.valueOf(request.getResourceType().name()),
+                transfomPermissions(request.getPermissions())));
+  }
+
+  private static Set<PermissionType> transfomPermissions(
+      final List<PermissionTypeEnum> permissions) {
+    return permissions.stream()
+        .map(permission -> PermissionType.valueOf(permission.name()))
+        .collect(Collectors.toSet());
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
