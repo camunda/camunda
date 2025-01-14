@@ -7,17 +7,18 @@
  */
 package io.camunda.webapps.schema.entities.operate.dmn.definition;
 
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinitionEntity> {
+public class DecisionDefinitionEntity extends AbstractExporterEntity<DecisionDefinitionEntity> {
 
   private String decisionId;
   private String name;
   private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
   public String getDecisionId() {
     return decisionId;
