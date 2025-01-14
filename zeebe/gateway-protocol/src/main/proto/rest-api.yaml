@@ -103,8 +103,7 @@ paths:
           required: true
           description: The key of the job to fail.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -156,8 +155,7 @@ paths:
           required: true
           description: The key of the job.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -209,8 +207,7 @@ paths:
           required: true
           description: The key of the job to complete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -261,8 +258,7 @@ paths:
           required: true
           description: The key of the job to update.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -315,8 +311,7 @@ paths:
           required: true
           description: Key of the incident to resolve.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The incident is marked as resolved.
@@ -351,8 +346,7 @@ paths:
           required: true
           description: The key of the user task to complete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -404,8 +398,7 @@ paths:
           required: true
           description: The key of the user task to assign.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -456,8 +449,7 @@ paths:
           required: true
           description: The key of the user task to update.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -508,8 +500,7 @@ paths:
           required: true
           description: The key of the user task.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The user task was unassigned successfully.
@@ -761,8 +752,7 @@ paths:
           required: true
           description: The key of the process instance to cancel.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -809,8 +799,7 @@ paths:
           required: true
           description: The key of the process instance that should be migrated.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -856,8 +845,7 @@ paths:
           required: true
           description: The key of the process instance that should be modified.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -1001,8 +989,7 @@ paths:
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1609,8 +1596,7 @@ paths:
           required: true
           description: The assigned key of the incident, which acts as a unique identifier for this incident.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1713,8 +1699,7 @@ paths:
             This can be the key of a process definition, the key of a decision requirements
             definition or the key of a form definition
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -1761,8 +1746,7 @@ paths:
             This can be the process instance key (as obtained during instance creation), or a given
             element, such as a service task (see the `elementInstanceKey` on the job message).
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -3151,6 +3135,12 @@ components:
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
 
+    KeyParameter:
+      description: The key parameter.
+      oneOf:
+        - type: integer
+          format: int64
+        - type: string
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
