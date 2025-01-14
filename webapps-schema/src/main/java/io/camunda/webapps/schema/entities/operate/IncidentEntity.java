@@ -8,10 +8,12 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
+public class IncidentEntity extends AbstractExporterEntity<IncidentEntity> {
 
   private ErrorType errorType;
 
@@ -38,7 +40,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private String treePath;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
 
