@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;

@@ -15,17 +15,16 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import java.util.List;
 
 public class DecisionInstanceEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity,
-        DecisionInstanceEntity> {
+        io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity, DecisionInstanceEntity> {
 
   @Override
   public DecisionInstanceEntity apply(
-      final io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity source) {
+      final io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity source) {
     return new DecisionInstanceEntity(
         source.getId(),
         source.getKey(),
@@ -46,8 +45,7 @@ public class DecisionInstanceEntityTransformer
   }
 
   private List<DecisionInstanceOutputEntity> toEvaluatedOutputs(
-      final List<io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity>
-          source) {
+      final List<io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity> source) {
     if (source == null) {
       return null;
     }
@@ -60,8 +58,7 @@ public class DecisionInstanceEntityTransformer
   }
 
   private List<DecisionInstanceInputEntity> toEvaluatedInputs(
-      final List<io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity>
-          source) {
+      final List<io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity> source) {
     if (source == null) {
       return null;
     }
@@ -83,7 +80,7 @@ public class DecisionInstanceEntityTransformer
   }
 
   private DecisionInstanceState toDecisionInstanceState(
-      final io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState source) {
+      final io.camunda.webapps.schema.entities.dmn.DecisionInstanceState source) {
     if (source == null) {
       return null;
     }

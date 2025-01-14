@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.operate.dmn.definition;
+package io.camunda.webapps.schema.entities.dmn.definition;
 
 import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
 import java.util.Objects;

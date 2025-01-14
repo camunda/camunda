@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.rest.dto.dmn.list;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +35,7 @@ public class DecisionInstanceForListDto {
   private SortValuesWrapper[] sortValues;
 
   public static DecisionInstanceForListDto createFrom(
-      final DecisionInstanceEntity entity, ObjectMapper objectMapper) {
+      final DecisionInstanceEntity entity, final ObjectMapper objectMapper) {
     return new DecisionInstanceForListDto()
         .setDecisionName(entity.getDecisionName())
         .setDecisionVersion(entity.getDecisionVersion())
@@ -48,7 +48,8 @@ public class DecisionInstanceForListDto {
   }
 
   public static List<DecisionInstanceForListDto> createFrom(
-      List<DecisionInstanceEntity> decisionInstanceEntities, ObjectMapper objectMapper) {
+      final List<DecisionInstanceEntity> decisionInstanceEntities,
+      final ObjectMapper objectMapper) {
     if (decisionInstanceEntities == null) {
       return new ArrayList<>();
     }
@@ -116,7 +117,7 @@ public class DecisionInstanceForListDto {
     return tenantId;
   }
 
-  public DecisionInstanceForListDto setTenantId(String tenantId) {
+  public DecisionInstanceForListDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -140,7 +141,7 @@ public class DecisionInstanceForListDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

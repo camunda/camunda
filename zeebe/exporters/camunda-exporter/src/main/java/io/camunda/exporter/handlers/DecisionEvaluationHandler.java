@@ -9,11 +9,11 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
