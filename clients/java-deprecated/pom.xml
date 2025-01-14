@@ -1,0 +1,15 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.camunda</groupId>
+  <artifactId>zeebe-client-java</artifactId>
+  <version>8.7.0-SNAPSHOT</version>
+  <distributionManagement>
+    <relocation>
+      <artifactId>camunda-client-java</artifactId>
+      <message>The artifact 'zeebe-client-java' has been relocated to 'camunda-client-java'.
+        Note: Relocation for 'zeebe-client-java' will be removed starting from the 8.8 release.
+        Please update your dependencies to use 'camunda-client-java' to avoid build issues.
+      </message>
+    </relocation>
+  </distributionManagement>
+</project>
