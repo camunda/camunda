@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
+public class VariableEntity extends AbstractExporterEntity<VariableEntity> {
 
   private String name;
   private String value;

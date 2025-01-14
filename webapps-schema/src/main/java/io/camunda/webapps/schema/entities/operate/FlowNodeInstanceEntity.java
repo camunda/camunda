@@ -8,11 +8,12 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceEntity> {
+public class FlowNodeInstanceEntity extends AbstractExporterEntity<FlowNodeInstanceEntity> {
 
   private String flowNodeId;
   private OffsetDateTime startDate;

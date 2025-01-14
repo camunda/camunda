@@ -8,14 +8,14 @@
 package io.camunda.webapps.schema.entities.dmn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
+public class DecisionInstanceEntity extends AbstractExporterEntity<DecisionInstanceEntity> {
 
   private Integer executionIndex;
   private DecisionInstanceState state;

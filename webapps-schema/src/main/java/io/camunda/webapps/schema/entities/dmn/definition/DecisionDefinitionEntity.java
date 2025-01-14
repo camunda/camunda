@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.entities.dmn.definition;
 
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.Objects;
 
-public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinitionEntity> {
+public class DecisionDefinitionEntity extends AbstractExporterEntity<DecisionDefinitionEntity> {
 
   private String decisionId;
   private String name;

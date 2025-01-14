@@ -15,8 +15,6 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
 
   private String aliasName;
 
-  private int partitionId;
-
   private long position;
 
   private long sequence;
@@ -49,16 +47,6 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
 
   public ImportPositionEntity setAliasName(final String aliasName) {
     this.aliasName = aliasName;
-    return this;
-  }
-
-  @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  public ImportPositionEntity setPartitionId(final int partitionId) {
-    this.partitionId = partitionId;
     return this;
   }
 
@@ -109,19 +97,13 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
 
   @Override
   public String getId() {
-    return String.format("%s-%s", partitionId, aliasName);
+    return String.format("%s-%s", getPartitionId(), aliasName);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
-        aliasName,
-        partitionId,
-        position,
-        sequence,
-        postImporterPosition,
-        indexName);
+        super.hashCode(), aliasName, position, sequence, postImporterPosition, indexName);
   }
 
   @Override
@@ -136,8 +118,7 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
       return false;
     }
     final ImportPositionEntity that = (ImportPositionEntity) o;
-    return partitionId == that.partitionId
-        && position == that.position
+    return position == that.position
         && sequence == that.sequence
         && Objects.equals(aliasName, that.aliasName)
         && Objects.equals(postImporterPosition, that.postImporterPosition)
@@ -151,7 +132,7 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
         + aliasName
         + '\''
         + ", partitionId="
-        + partitionId
+        + getPartitionId()
         + ", position="
         + position
         + ", sequence="

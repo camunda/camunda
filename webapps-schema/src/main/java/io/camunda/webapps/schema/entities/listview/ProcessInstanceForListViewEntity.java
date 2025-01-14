@@ -10,13 +10,13 @@ package io.camunda.webapps.schema.entities.listview;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
 public class ProcessInstanceForListViewEntity
-    extends OperateZeebeEntity<ProcessInstanceForListViewEntity> {
+    extends AbstractExporterEntity<ProcessInstanceForListViewEntity> {
 
   private Long processDefinitionKey;
   private String processName;

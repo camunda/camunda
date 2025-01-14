@@ -8,11 +8,12 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
+public class ProcessEntity extends AbstractExporterEntity<ProcessEntity> {
 
   private String name;
   private int version;

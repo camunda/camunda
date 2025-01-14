@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
+public class IncidentEntity extends AbstractExporterEntity<IncidentEntity> {
 
   private ErrorType errorType;
 

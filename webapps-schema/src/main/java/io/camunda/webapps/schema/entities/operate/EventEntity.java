@@ -7,10 +7,11 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class EventEntity extends OperateZeebeEntity<EventEntity> {
+public class EventEntity extends AbstractExporterEntity<EventEntity> {
 
   /** Process data. */
   private Long processDefinitionKey;
