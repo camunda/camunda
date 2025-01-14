@@ -343,8 +343,9 @@ public class UserTaskHandlerTest {
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
-            .withAssignee("provided_assignee")
             .withProcessInstanceKey(processInstanceKey)
+            .withAssignee("provided_assignee")
+            .withChangedAttributes(List.of("assignee"))
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -387,6 +388,7 @@ public class UserTaskHandlerTest {
     final var followUpDateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
+            .withProcessInstanceKey(processInstanceKey)
             // corrected data
             .withAssignee("corrected_assignee")
             .withDueDate(dueDateTime)
@@ -614,6 +616,7 @@ public class UserTaskHandlerTest {
         ImmutableUserTaskRecordValue.builder()
             .withAssignee("test-assignee")
             .withProcessInstanceKey(processInstanceKey)
+            .withChangedAttributes(List.of("assignee"))
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -653,6 +656,7 @@ public class UserTaskHandlerTest {
         ImmutableUserTaskRecordValue.builder()
             .withAssignee("")
             .withProcessInstanceKey(processInstanceKey)
+            .withChangedAttributes(List.of("assignee"))
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -815,6 +819,7 @@ public class UserTaskHandlerTest {
         ImmutableUserTaskRecordValue.builder()
             .withAssignee("test-assignee")
             .withProcessInstanceKey(processInstanceKey)
+            .withChangedAttributes(List.of("assignee"))
             .build();
 
     final Record<UserTaskRecordValue> assignTaskRecord =
