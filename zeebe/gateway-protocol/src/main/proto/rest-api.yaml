@@ -5611,9 +5611,29 @@ components:
         email:
           description: The email of the user.
           type: "string"
+    UserCreateBase:
+      type: object
+      properties:
+        username:
+          description: The username of the user.
+          type: "string"
+        name:
+          description: The name of the user.
+          type: "string"
+        email:
+          description: The email of the user.
+          type: "string"
+        type:
+          description: The type of the user.
+          type: "string"
+          enum:
+            - DEFAULT
+            - REGULAR
     UserCreateResponse:
       deprecated: true
       type: object
+      allOf:
+          - $ref: "#/components/schemas/UserCreateBase"
       properties:
         userKey:
           description: The key of the created user
@@ -5621,6 +5641,8 @@ components:
           format: int64
     UserCreateResult:
       type: object
+      allOf:
+        - $ref: "#/components/schemas/UserCreateBase"
       properties:
         userKey:
           description: The key of the created user
