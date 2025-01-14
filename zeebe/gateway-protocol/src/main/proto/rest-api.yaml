@@ -3581,7 +3581,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /users/{userKey}:
+  /users/{username}:
     delete:
       tags:
         - User
@@ -3590,13 +3590,12 @@ paths:
       description: |
         Deletes a user.
       parameters:
-        - name: userKey
+        - name: username
           in: path
           required: true
-          description: The key of the user to delete.
+          description: The username of the user to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The user was deleted successfully.
