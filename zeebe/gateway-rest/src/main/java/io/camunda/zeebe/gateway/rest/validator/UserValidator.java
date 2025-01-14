@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
@@ -21,6 +22,8 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.ProblemDetail;
 
 public final class UserValidator {
+
+  private static final int MAX_USERNAME_LENGTH = 256;
 
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
     final UserChangeset changeset = request.getChangeset();
@@ -42,8 +45,11 @@ public final class UserValidator {
   }
 
   private static void validateUsername(final UserRequest request, final List<String> violations) {
-    if (request.getUsername() == null || request.getUsername().isBlank()) {
+    final var username = request.getUsername();
+    if (username == null || username.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
+    } else if (username.length() > MAX_USERNAME_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("username", MAX_USERNAME_LENGTH));
     }
   }
 
