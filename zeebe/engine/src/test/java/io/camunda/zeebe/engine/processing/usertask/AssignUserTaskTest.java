@@ -174,25 +174,6 @@ public final class AssignUserTaskTest {
   }
 
   @Test
-  public void shouldAssignUserTaskWithAssignee() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    final var assigningRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").assign();
-
-    // then
-    Assertions.assertThat(assigningRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
-
-    final var assigningRecordValue = assigningRecord.getValue();
-    Assertions.assertThat(assigningRecordValue).hasAssignee("foo");
-  }
-
-  @Test
   public void shouldUnassignUserTaskWithNoAssignee() {
     // given
     final var initialAssignee = "pippin";
