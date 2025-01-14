@@ -17,8 +17,8 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.FlowNodeState;
+import io.camunda.webapps.schema.entities.FlowNodeType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;

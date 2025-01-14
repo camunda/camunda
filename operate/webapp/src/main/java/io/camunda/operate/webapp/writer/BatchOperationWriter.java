@@ -12,7 +12,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.util.List;

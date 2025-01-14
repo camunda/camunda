@@ -66,7 +66,7 @@ public class IncidentEntityTransformer
     };
   }
 
-  private ErrorType toErrorType(final io.camunda.webapps.schema.entities.operate.ErrorType value) {
+  private ErrorType toErrorType(final io.camunda.webapps.schema.entities.ErrorType value) {
     if (value == null) {
       return null;
     }

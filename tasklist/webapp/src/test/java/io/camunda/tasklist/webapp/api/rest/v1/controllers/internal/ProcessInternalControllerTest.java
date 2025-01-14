@@ -37,7 +37,7 @@ import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.webapps.schema.entities.form.FormEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;

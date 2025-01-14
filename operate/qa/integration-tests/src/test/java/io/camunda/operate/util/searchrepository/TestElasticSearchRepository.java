@@ -24,7 +24,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;

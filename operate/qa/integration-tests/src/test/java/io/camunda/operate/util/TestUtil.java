@@ -11,7 +11,7 @@ import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEO
 import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
-import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.webapps.schema.entities.ErrorType.JOB_NO_RETRIES;
 
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
@@ -29,10 +29,10 @@ import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEn
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.FlowNodeState;
+import io.camunda.webapps.schema.entities.FlowNodeType;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;

@@ -33,7 +33,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;

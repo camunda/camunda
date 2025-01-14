@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.rest.dto.activity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.FlowNodeState;
+import io.camunda.webapps.schema.entities.FlowNodeType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

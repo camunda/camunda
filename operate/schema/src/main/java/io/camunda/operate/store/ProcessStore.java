@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.io.IOException;

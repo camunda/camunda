@@ -11,7 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

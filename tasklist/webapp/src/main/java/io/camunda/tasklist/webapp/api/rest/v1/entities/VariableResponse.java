@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.task.DraftTaskVariableEntity;
 import io.camunda.webapps.schema.entities.task.SnapshotTaskVariableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;

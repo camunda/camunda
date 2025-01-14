@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.zeebeimport.util;
 
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;

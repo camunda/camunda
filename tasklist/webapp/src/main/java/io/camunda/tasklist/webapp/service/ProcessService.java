@@ -18,7 +18,7 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

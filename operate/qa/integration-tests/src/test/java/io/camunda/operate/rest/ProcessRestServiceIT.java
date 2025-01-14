@@ -27,7 +27,7 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;

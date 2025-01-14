@@ -15,7 +15,7 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
 import io.camunda.tasklist.zeebeimport.v860.record.value.VariableRecordValueImpl;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.*;

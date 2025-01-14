@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import java.util.List;
 
 public interface SequenceFlowStore {

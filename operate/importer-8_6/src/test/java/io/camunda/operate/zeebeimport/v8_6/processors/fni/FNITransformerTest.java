@@ -14,9 +14,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.zeebeimport.cache.FNITreePathCacheCompositeKey;
 import io.camunda.operate.zeebeimport.cache.TreePathCache;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.FlowNodeState;
+import io.camunda.webapps.schema.entities.FlowNodeType;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;

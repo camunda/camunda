@@ -39,7 +39,7 @@ import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.micrometer.core.annotation.Timed;

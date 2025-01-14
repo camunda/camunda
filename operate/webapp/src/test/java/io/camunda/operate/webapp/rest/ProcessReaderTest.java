@@ -19,7 +19,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.HashMap;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

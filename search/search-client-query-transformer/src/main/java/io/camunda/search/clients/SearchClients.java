@@ -47,6 +47,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.task.TaskEntity;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -154,7 +155,7 @@ public class SearchClients
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.FlowNodeInstanceEntity.class);
   }
 
   @Override
@@ -173,7 +174,7 @@ public class SearchClients
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.ProcessEntity.class);
+        .search(filter, ProcessEntity.class);
   }
 
   @Override
@@ -232,7 +233,7 @@ public class SearchClients
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.VariableEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.VariableEntity.class);
   }
 
   private SearchClientBasedQueryExecutor getSearchExecutor() {
@@ -279,7 +280,7 @@ public class SearchClients
                 transformers,
                 new DocumentAuthorizationQueryStrategy(this),
                 securityContext)
-            .findAll(filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+            .findAll(filter, io.camunda.webapps.schema.entities.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
   }
 }

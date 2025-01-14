@@ -21,7 +21,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.ErrorType;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.util.*;
 import java.util.stream.Collectors;
