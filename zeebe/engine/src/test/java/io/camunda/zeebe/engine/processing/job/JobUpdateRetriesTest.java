@@ -36,7 +36,7 @@ public final class JobUpdateRetriesTest {
   private static final int NEW_RETRIES = 20;
   private static final String PROCESS_ID = "process";
   private static String jobType;
-  private static long userKey;
+  private static String username;
   private static String tenantId;
 
   @Rule
@@ -46,8 +46,8 @@ public final class JobUpdateRetriesTest {
   @BeforeClass
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    username = UUID.randomUUID().toString();
+    final var userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
     final var tenantKey =
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
@@ -197,7 +197,7 @@ public final class JobUpdateRetriesTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when
@@ -219,7 +219,7 @@ public final class JobUpdateRetriesTest {
     final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
     final long jobKey = batchRecord.getValue().getJobKeys().get(0);
 
     // when

@@ -184,8 +184,8 @@ public class StreamProcessingComposite implements CommandWriter {
   @Override
   public long writeCommand(
       final Intent intent,
+      final String username,
       final UnifiedRecordValue value,
-      final long userKey,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -194,7 +194,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .newRecord(getLogName(partitionId))
             .recordType(RecordType.COMMAND)
             .intent(intent)
-            .authorizationsWithUserKey(userKey, authorizedTenants)
+            .authorizationsWithUsername(username, authorizedTenants)
             .requestId(requestId)
             .requestStreamId(requestStreamId)
             .event(value);
@@ -244,8 +244,8 @@ public class StreamProcessingComposite implements CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
+      final String username,
       final UnifiedRecordValue recordValue,
-      final long userKey,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -255,7 +255,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .recordType(RecordType.COMMAND)
             .key(key)
             .intent(intent)
-            .authorizationsWithUserKey(userKey, authorizedTenants)
+            .authorizationsWithUsername(username, authorizedTenants)
             .requestId(requestId)
             .requestStreamId(requestStreamId)
             .event(recordValue);
@@ -289,8 +289,8 @@ public class StreamProcessingComposite implements CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
+      final String username,
       final UnifiedRecordValue recordValue,
-      final long userKey,
       final String... authorizedTenants) {
     final var writer =
         streams
@@ -300,7 +300,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .requestStreamId(requestStreamId)
             .requestId(requestId)
             .intent(intent)
-            .authorizationsWithUserKey(userKey, authorizedTenants)
+            .authorizationsWithUsername(username, authorizedTenants)
             .event(recordValue);
     return writeActor.submit(writer::write).join();
   }
@@ -329,7 +329,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final long requestId,
       final Intent intent,
       final UnifiedRecordValue value,
-      final long userKey) {
+      final String username) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
@@ -337,7 +337,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .requestId(requestId)
             .requestStreamId(requestStreamId)
             .intent(intent)
-            .authorizationsWithUserKey(userKey, TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .authorizationsWithUsername(username, TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .event(value);
     return writeActor.submit(writer::write).join();
   }
@@ -361,7 +361,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int partition,
       final Intent intent,
       final UnifiedRecordValue value,
-      final long userKey) {
+      final String username) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
     final var writer =
@@ -369,7 +369,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .newRecord(getLogName(partition))
             .recordType(RecordType.COMMAND)
             .intent(intent)
-            .authorizations(userKey)
+            .usernameAuthorizations(username)
             .requestId(requestId)
             .requestStreamId(requestStreamId)
             .event(value);
@@ -417,8 +417,8 @@ public class StreamProcessingComposite implements CommandWriter {
       final int partition,
       final long key,
       final Intent intent,
+      final String username,
       final UnifiedRecordValue value,
-      final long userKey,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -428,7 +428,7 @@ public class StreamProcessingComposite implements CommandWriter {
             .key(key)
             .recordType(RecordType.COMMAND)
             .intent(intent)
-            .authorizationsWithUserKey(userKey, authorizedTenants)
+            .authorizationsWithUsername(username, authorizedTenants)
             .requestId(requestId)
             .requestStreamId(requestStreamId)
             .event(value);

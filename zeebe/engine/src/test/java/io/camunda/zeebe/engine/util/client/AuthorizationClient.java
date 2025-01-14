@@ -106,11 +106,11 @@ public final class AuthorizationClient {
       return expectation.apply(position);
     }
 
-    public Record<AuthorizationRecordValue> add(final long userKey) {
+    public Record<AuthorizationRecordValue> add(final String username) {
       expectation = expectRejection ? ADD_REJECTION_SUPPLIER : ADD_SUCCESS_SUPPLIER;
       final long position =
           writer.writeCommand(
-              AuthorizationIntent.ADD_PERMISSION, authorizationCreationRecord, userKey);
+              AuthorizationIntent.ADD_PERMISSION, username, authorizationCreationRecord);
       return expectation.apply(position);
     }
 
@@ -126,11 +126,11 @@ public final class AuthorizationClient {
       return expectation.apply(position);
     }
 
-    public Record<AuthorizationRecordValue> remove(final long userKey) {
+    public Record<AuthorizationRecordValue> remove(final String username) {
       expectation = expectRejection ? REMOVE_REJECTION_SUPPLIER : REMOVE_SUCCESS_SUPPLIER;
       final long position =
           writer.writeCommand(
-              AuthorizationIntent.REMOVE_PERMISSION, authorizationCreationRecord, userKey);
+              AuthorizationIntent.REMOVE_PERMISSION, username, authorizationCreationRecord);
       return expectation.apply(position);
     }
   }

@@ -48,7 +48,7 @@ public final class CompleteJobTest {
 
   private static final String PROCESS_ID = "process";
   private static String jobType;
-  private static long userKey;
+  private static String username;
   private static String tenantId;
 
   @Rule
@@ -58,8 +58,8 @@ public final class CompleteJobTest {
   @BeforeClass
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    username = UUID.randomUUID().toString();
+    final var userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
     final var tenantKey =
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
@@ -89,7 +89,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
     final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
 
     // when
@@ -129,7 +129,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -151,7 +151,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -173,7 +173,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -195,7 +195,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     final byte[] invalidVariables = new byte[] {1}; // positive fixnum, i.e. no object
 
@@ -222,7 +222,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -245,7 +245,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -268,7 +268,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     final JobResultCorrections corrections = new JobResultCorrections();
     corrections.setAssignee("TestAssignee");
@@ -306,7 +306,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     final JobResultCorrections corrections = new JobResultCorrections();
     corrections.setAssignee("TestAssignee");
@@ -341,7 +341,7 @@ public final class CompleteJobTest {
     // given
     ENGINE.createJob(jobType, PROCESS_ID);
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
 
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
     ENGINE.job().withKey(jobKey).complete();
@@ -361,7 +361,7 @@ public final class CompleteJobTest {
 
     // when
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).activate(userKey);
+        ENGINE.jobs().withType(jobType).activate(username);
     final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
     ENGINE.job().withKey(jobKey).fail();
 
@@ -378,7 +378,7 @@ public final class CompleteJobTest {
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
 
     // when
     final Record<JobRecordValue> jobCompletedRecord =
@@ -405,7 +405,7 @@ public final class CompleteJobTest {
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
 
     // when
     final Record<JobRecordValue> jobRecord =

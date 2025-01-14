@@ -417,13 +417,13 @@ public final class TestStreams {
       return authorizations(AuthorizationUtil.getAuthInfo(tenantIds));
     }
 
-    public FluentLogWriter authorizations(final long userKey) {
-      return authorizations(AuthorizationUtil.getAuthInfo(userKey));
+    public FluentLogWriter usernameAuthorizations(final String username) {
+      return authorizations(AuthorizationUtil.getAuthInfo(username));
     }
 
-    public FluentLogWriter authorizationsWithUserKey(
-        final long userKey, final String... tenantIds) {
-      return authorizations(AuthorizationUtil.getAuthInfo(userKey, tenantIds));
+    public FluentLogWriter authorizationsWithUsername(
+        final String username, final String... tenantIds) {
+      return authorizations(AuthorizationUtil.getUsernameAuthInfo(username, tenantIds));
     }
 
     public FluentLogWriter authorizations(final AuthInfo authorizations) {
