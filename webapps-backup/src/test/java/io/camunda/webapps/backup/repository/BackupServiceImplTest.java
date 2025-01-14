@@ -94,14 +94,14 @@ public class BackupServiceImplTest {
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
-                "test_snapshot_1_0_8",
                 "test_snapshot_1_1_8",
                 "test_snapshot_1_2_8",
                 "test_snapshot_1_3_8",
                 "test_snapshot_1_4_8",
                 "test_snapshot_1_5_8",
                 "test_snapshot_1_6_8",
-                "test_snapshot_1_7_8"));
+                "test_snapshot_1_7_8",
+                "test_snapshot_1_8_8"));
     final var backupState = backupService.getBackupState(1L);
     assertThat(backupState).isNotNull();
     assertThat(backupState.getBackupId()).isEqualTo(1L);
