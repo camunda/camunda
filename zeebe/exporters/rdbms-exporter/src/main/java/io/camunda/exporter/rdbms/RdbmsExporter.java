@@ -27,7 +27,7 @@ public class RdbmsExporter {
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
 
   private final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers;
-  private final Controller controller;
+  private Controller controller;
 
   private final long partitionId;
   private final RdbmsWriter rdbmsWriter;
@@ -43,12 +43,20 @@ public class RdbmsExporter {
 
   public RdbmsExporter(final RdbmsExporterConfig config) {
     rdbmsWriter = config.rdbmsWriter();
-    controller = config.controller();
     registeredHandlers = config.handlers();
 
     partitionId = config.partitionId();
     flushInterval = config.flushInterval();
     maxQueueSize = config.maxQueueSize();
+
+    LOG.info(
+        "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, maxQueueSize={}",
+        flushInterval,
+        maxQueueSize);
+  }
+
+  public void open(final Controller controller) {
+    this.controller = controller;
 
     if (!flushAfterEachRecord()) {
       currentFlushTask =
@@ -67,6 +75,7 @@ public class RdbmsExporter {
 
     rdbmsWriter.getExecutionQueue().registerPreFlushListener(this::updatePositionInRdbms);
     rdbmsWriter.getExecutionQueue().registerPostFlushListener(this::updatePositionInBroker);
+
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
 
