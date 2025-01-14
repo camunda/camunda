@@ -380,6 +380,43 @@ public class UserTaskHandlerTest {
   }
 
   @Test
+  void shouldResetEntityAssigneeOnTaskUnassigning() {
+    // given
+    final long processInstanceKey = 123;
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withProcessInstanceKey(processInstanceKey)
+            .withAssignee("")
+            .withChangedAttributes(List.of("assignee"))
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.ASSIGNED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    final TaskEntity taskEntity =
+        underTest
+            .createNewEntity("id")
+            .setAssignee("existing_assignee")
+            .setState(TaskState.CREATED);
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity)
+        .describedAs("Expected task entity to contain `null` as assignee after task unassigning")
+        .satisfies(
+            entity -> {
+              assertThat(entity.getAssignee()).isNull();
+              assertThat(entity.getChangedAttributes()).containsOnly("assignee");
+            });
+  }
+
+  @Test
   void shouldUpdateEntityFromRecordForAssignedIntentWithCorrectedData() {
     // given
     final long processInstanceKey = 123;
