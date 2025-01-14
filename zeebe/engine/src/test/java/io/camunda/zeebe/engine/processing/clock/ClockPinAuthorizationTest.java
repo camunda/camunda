@@ -22,7 +22,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -35,8 +34,8 @@ public class ClockPinAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -49,7 +48,7 @@ public class ClockPinAuthorizationTest {
     final var instant = Instant.now();
 
     // when
-    ENGINE.clock().pinAt(instant, DEFAULT_USER.getUsername());
+    engine.clock().pinAt(instant, DEFAULT_USER.getUsername());
 
     // when
     assertThat(RecordingExporter.clockRecords(ClockIntent.PINNED).withTimestamp(instant).exists())
@@ -66,7 +65,7 @@ public class ClockPinAuthorizationTest {
     addPermissionsToUser(user.getUserKey(), resourceType, permissionType);
 
     // when
-    ENGINE.clock().pinAt(instant, user.getUsername());
+    engine.clock().pinAt(instant, user.getUsername());
 
     // when
     assertThat(RecordingExporter.clockRecords(ClockIntent.PINNED).withTimestamp(instant).exists())
@@ -80,7 +79,7 @@ public class ClockPinAuthorizationTest {
     final var user = createUser();
 
     // when
-    final var rejection = ENGINE.clock().expectRejection().pinAt(instant, user.getUsername());
+    final var rejection = engine.clock().expectRejection().pinAt(instant, user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -89,8 +88,8 @@ public class ClockPinAuthorizationTest {
             "Insufficient permissions to perform operation 'UPDATE' on resource 'SYSTEM'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -104,7 +103,7 @@ public class ClockPinAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

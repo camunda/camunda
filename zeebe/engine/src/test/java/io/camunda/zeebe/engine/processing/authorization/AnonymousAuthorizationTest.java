@@ -25,16 +25,11 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class AnonymousAuthorizationTest {
-
-  @ClassRule
-  public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
 
   private static final String TEST_FORM_1 = "/form/test-form-2.form";
   private static final String FORM_ID_1 = "Form_6s1b76p";
@@ -42,14 +37,12 @@ public class AnonymousAuthorizationTest {
   private static final String PROCESS_ID_WITH_NOT_EXISTING_FORM = "PROCESS_WITH_NOT_EXISTING_FORM";
   private static final String TENANT = "foo";
   private static String username;
-
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType("test").zeebeJobRetries("5"))
           .endEvent()
           .done();
-
   private static final BpmnModelInstance PROCESS_WITH_NOT_EXISTING_FORM =
       Bpmn.createExecutableProcess(PROCESS_ID_WITH_NOT_EXISTING_FORM)
           .startEvent()
@@ -59,22 +52,26 @@ public class AnonymousAuthorizationTest {
           .done();
 
   @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition().withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
+
+  @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void setUp() {
+  @Before
+  public void setUp() {
     username = UUID.randomUUID().toString();
-    final var user = ENGINE.user().newUser(username).create().getValue();
-    final var tenantKey = ENGINE.tenant().newTenant().withTenantId(TENANT).create().getKey();
-    ENGINE
+    final var user = engine.user().newUser(username).create().getValue();
+    final var tenantKey = engine.tenant().newTenant().withTenantId(TENANT).create().getKey();
+    engine
         .tenant()
         .addEntity(tenantKey)
         .withEntityKey(user.getUserKey())
         .withEntityType(EntityType.USER)
         .add();
 
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withPermission(PermissionType.CREATE, "*")
@@ -83,7 +80,7 @@ public class AnonymousAuthorizationTest {
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
 
-    ENGINE.deployment().withXmlResource(PROCESS).deploy(username);
+    engine.deployment().withXmlResource(PROCESS).deploy(username);
   }
 
   @Test
@@ -94,7 +91,7 @@ public class AnonymousAuthorizationTest {
 
     // when
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(anonymous);
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(anonymous);
 
     // then
     assertThat(
@@ -111,7 +108,7 @@ public class AnonymousAuthorizationTest {
         AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, false);
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .expectRejection()
@@ -133,7 +130,7 @@ public class AnonymousAuthorizationTest {
         AuthorizationUtil.getAuthInfoWithClaim("foo", "bar");
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .expectRejection()
@@ -151,14 +148,14 @@ public class AnonymousAuthorizationTest {
   @Test
   public void shouldResolveIncidentWithAnonymousClaim() {
     // given
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(PROCESS_WITH_NOT_EXISTING_FORM)
         .withTenantId(TENANT)
         .deploy(username);
 
     final long processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID_WITH_NOT_EXISTING_FORM)
             .withTenantId(TENANT)
@@ -177,9 +174,9 @@ public class AnonymousAuthorizationTest {
 
     // when
     // deploy missing form
-    ENGINE.deployment().withJsonClasspathResource(TEST_FORM_1).withTenantId(TENANT).deploy();
+    engine.deployment().withJsonClasspathResource(TEST_FORM_1).withTenantId(TENANT).deploy();
     // resolve incident by using anonymous authorization
-    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve(anonymous);
+    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve(anonymous);
 
     // then
     assertThat(RecordingExporter.incidentRecords().onlyEvents().limit(2))

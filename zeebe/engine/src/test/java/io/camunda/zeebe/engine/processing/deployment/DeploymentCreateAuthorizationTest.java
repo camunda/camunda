@@ -23,7 +23,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -36,8 +35,8 @@ public class DeploymentCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -50,7 +49,7 @@ public class DeploymentCreateAuthorizationTest {
     final var processId = Strings.newRandomValidBpmnId();
 
     // when
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
@@ -73,7 +72,7 @@ public class DeploymentCreateAuthorizationTest {
         user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
 
     // when
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
@@ -95,7 +94,7 @@ public class DeploymentCreateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 "process.bpmn",
@@ -110,8 +109,8 @@ public class DeploymentCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -125,7 +124,7 @@ public class DeploymentCreateAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

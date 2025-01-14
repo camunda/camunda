@@ -23,8 +23,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -40,17 +39,17 @@ public class UserTaskUpdateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -69,7 +68,7 @@ public class UserTaskUpdateAuthorizationTest {
     final var processInstanceKey = createProcessInstance();
 
     // when
-    ENGINE
+    engine
         .userTask()
         .ofInstance(processInstanceKey)
         .update(new UserTaskRecord(), DEFAULT_USER.getUsername());
@@ -94,7 +93,7 @@ public class UserTaskUpdateAuthorizationTest {
         PROCESS_ID);
 
     // when
-    ENGINE
+    engine
         .userTask()
         .ofInstance(processInstanceKey)
         .update(new UserTaskRecord(), user.getUsername());
@@ -115,7 +114,7 @@ public class UserTaskUpdateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .userTask()
             .ofInstance(processInstanceKey)
             .update(new UserTaskRecord(), user.getUsername());
@@ -128,8 +127,8 @@ public class UserTaskUpdateAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -144,7 +143,7 @@ public class UserTaskUpdateAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -154,6 +153,6 @@ public class UserTaskUpdateAuthorizationTest {
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

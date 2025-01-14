@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -34,8 +33,8 @@ public class MappingCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -49,7 +48,7 @@ public class MappingCreateAuthorizationTest {
     final var claimValue = UUID.randomUUID().toString();
 
     // when
-    ENGINE
+    engine
         .mapping()
         .newMapping(claimName)
         .withClaimValue(claimValue)
@@ -74,7 +73,7 @@ public class MappingCreateAuthorizationTest {
         user.getUserKey(), AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
     // when
-    ENGINE.mapping().newMapping(claimName).withClaimValue(claimValue).create(user.getUsername());
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).create(user.getUsername());
 
     // then
     assertThat(
@@ -94,7 +93,7 @@ public class MappingCreateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .mapping()
             .newMapping(claimName)
             .withClaimValue(claimValue)
@@ -108,8 +107,8 @@ public class MappingCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -123,7 +122,7 @@ public class MappingCreateAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

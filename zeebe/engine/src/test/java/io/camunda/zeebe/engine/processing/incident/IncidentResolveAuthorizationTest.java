@@ -23,8 +23,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -39,17 +38,17 @@ public class IncidentResolveAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -67,7 +66,7 @@ public class IncidentResolveAuthorizationTest {
     final var processInstanceKey = createIncident();
 
     // when
-    ENGINE.incident().ofInstance(processInstanceKey).resolve(DEFAULT_USER.getUsername());
+    engine.incident().ofInstance(processInstanceKey).resolve(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -88,7 +87,7 @@ public class IncidentResolveAuthorizationTest {
         PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
-    ENGINE.incident().ofInstance(processInstanceKey).resolve(user.getUsername());
+    engine.incident().ofInstance(processInstanceKey).resolve(user.getUsername());
 
     // then
     assertThat(
@@ -106,7 +105,7 @@ public class IncidentResolveAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .incident()
             .ofInstance(processInstanceKey)
             .expectRejection()
@@ -120,8 +119,8 @@ public class IncidentResolveAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -135,7 +134,7 @@ public class IncidentResolveAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -145,6 +144,6 @@ public class IncidentResolveAuthorizationTest {
   }
 
   private long createIncident() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

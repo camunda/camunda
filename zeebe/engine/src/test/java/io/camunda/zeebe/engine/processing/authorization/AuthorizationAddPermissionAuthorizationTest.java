@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -35,8 +34,8 @@ public class AuthorizationAddPermissionAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -49,7 +48,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(user.getUserKey())
@@ -73,7 +72,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
         user.getUserKey(), AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
 
     // when
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(user.getUserKey())
@@ -96,7 +95,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .authorization()
             .permission()
             .withOwnerKey(user.getUserKey())
@@ -112,8 +111,8 @@ public class AuthorizationAddPermissionAuthorizationTest {
             "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -127,7 +126,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

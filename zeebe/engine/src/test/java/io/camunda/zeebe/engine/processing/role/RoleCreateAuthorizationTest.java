@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -34,8 +33,8 @@ public class RoleCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -48,7 +47,7 @@ public class RoleCreateAuthorizationTest {
     final var roleName = UUID.randomUUID().toString();
 
     // when
-    ENGINE.role().newRole(roleName).create(DEFAULT_USER.getUsername());
+    engine.role().newRole(roleName).create(DEFAULT_USER.getUsername());
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
@@ -63,7 +62,7 @@ public class RoleCreateAuthorizationTest {
     addPermissionsToUser(user.getUserKey(), AuthorizationResourceType.ROLE, PermissionType.CREATE);
 
     // when
-    ENGINE.role().newRole(roleName).create(user.getUsername());
+    engine.role().newRole(roleName).create(user.getUsername());
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withName(roleName).exists())
@@ -78,7 +77,7 @@ public class RoleCreateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE.role().newRole(roleName).expectRejection().create(user.getUsername());
+        engine.role().newRole(roleName).expectRejection().create(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -87,8 +86,8 @@ public class RoleCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'ROLE'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -102,7 +101,7 @@ public class RoleCreateAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

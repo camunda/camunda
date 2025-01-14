@@ -23,7 +23,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -36,8 +35,8 @@ public class ResourceDeletionAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -50,7 +49,7 @@ public class ResourceDeletionAuthorizationTest {
     final var processDefinitionKey = deployProcessDefinition(Strings.newRandomValidBpmnId());
 
     // when
-    ENGINE
+    engine
         .resourceDeletion()
         .withResourceKey(processDefinitionKey)
         .delete(DEFAULT_USER.getUsername());
@@ -76,7 +75,7 @@ public class ResourceDeletionAuthorizationTest {
         processId);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(processDefinitionKey).delete(user.getUsername());
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete(user.getUsername());
 
     // then
     assertThat(
@@ -94,7 +93,7 @@ public class ResourceDeletionAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE
+    engine
         .resourceDeletion()
         .withResourceKey(processDefinitionKey)
         .expectRejection()
@@ -117,7 +116,7 @@ public class ResourceDeletionAuthorizationTest {
     final var drdKey = deployDrd();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(DEFAULT_USER.getUsername());
+    engine.resourceDeletion().withResourceKey(drdKey).delete(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -137,7 +136,7 @@ public class ResourceDeletionAuthorizationTest {
         user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_DRD, drdId);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drdKey).delete(user.getUsername());
+    engine.resourceDeletion().withResourceKey(drdKey).delete(user.getUsername());
 
     // then
     assertThat(
@@ -155,7 +154,7 @@ public class ResourceDeletionAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drdKey).expectRejection().delete(user.getUsername());
+    engine.resourceDeletion().withResourceKey(drdKey).expectRejection().delete(user.getUsername());
 
     // then
     Assertions.assertThat(
@@ -174,7 +173,7 @@ public class ResourceDeletionAuthorizationTest {
     final var formKey = deployForm();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(formKey).delete(DEFAULT_USER.getUsername());
+    engine.resourceDeletion().withResourceKey(formKey).delete(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -197,7 +196,7 @@ public class ResourceDeletionAuthorizationTest {
         formId);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(formKey).delete(user.getUsername());
+    engine.resourceDeletion().withResourceKey(formKey).delete(user.getUsername());
 
     // then
     assertThat(
@@ -215,7 +214,7 @@ public class ResourceDeletionAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(formKey).expectRejection().delete(user.getUsername());
+    engine.resourceDeletion().withResourceKey(formKey).expectRejection().delete(user.getUsername());
 
     // then
     Assertions.assertThat(
@@ -228,8 +227,8 @@ public class ResourceDeletionAuthorizationTest {
                 .formatted(formId));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -244,7 +243,7 @@ public class ResourceDeletionAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -254,7 +253,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   private long deployProcessDefinition(final String processId) {
-    return ENGINE
+    return engine
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
@@ -266,7 +265,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   private long deployDrd() {
-    return ENGINE
+    return engine
         .deployment()
         .withXmlClasspathResource("/dmn/drg-force-user.dmn")
         .deploy(DEFAULT_USER.getUsername())
@@ -277,7 +276,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   private long deployForm() {
-    return ENGINE
+    return engine
         .deployment()
         .withXmlClasspathResource("/form/test-form-1.form")
         .deploy(DEFAULT_USER.getUsername())

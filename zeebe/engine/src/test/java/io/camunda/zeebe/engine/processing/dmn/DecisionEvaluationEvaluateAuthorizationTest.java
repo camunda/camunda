@@ -19,8 +19,7 @@ import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -32,28 +31,27 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
+  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DECISION_ID = "jedi_or_sith";
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
-  private static final String DECISION_ID = "jedi_or_sith";
-
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy(DEFAULT_USER.getUsername());
+  @Before
+  public void before() {
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy(DEFAULT_USER.getUsername());
   }
 
   @Test
   public void shouldBeAuthorizedToEvaluateDecisionWithDefaultUser() {
     // when
     final var response =
-        ENGINE
+        engine
             .decision()
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "red")
@@ -74,7 +72,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
 
     // when
     final var response =
-        ENGINE
+        engine
             .decision()
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "red")
@@ -91,7 +89,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .decision()
             .ofDecisionId(DECISION_ID)
             .withVariable("lightsaberColor", "red")
@@ -106,8 +104,8 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
                 .formatted(DECISION_ID));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -121,7 +119,7 @@ public class DecisionEvaluationEvaluateAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

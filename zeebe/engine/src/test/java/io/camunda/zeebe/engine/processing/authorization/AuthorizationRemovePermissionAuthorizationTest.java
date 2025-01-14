@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -33,14 +32,14 @@ public class AuthorizationRemovePermissionAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
+  private static long defaultUserKey = -1L;
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
@@ -53,7 +52,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
     addPermissionsToUser(user.getUserKey(), resourceType, permissionType, resourceId);
 
     // when
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(user.getUserKey())
@@ -79,7 +78,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
     addPermissionsToUser(user.getUserKey(), resourceType, permissionType, resourceId, "*");
 
     // when
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(user.getUserKey())
@@ -102,7 +101,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .authorization()
             .permission()
             .withOwnerKey(user.getUserKey())
@@ -118,8 +117,8 @@ public class AuthorizationRemovePermissionAuthorizationTest {
             "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -134,7 +133,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

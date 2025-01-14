@@ -22,8 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -40,20 +39,20 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
+  private static long targetProcDefKey = -1L;
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long targetProcDefKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
+  @Before
+  public void before() {
     final var deployment =
-        ENGINE
+        engine
             .deployment()
             .withXmlResource(
                 "process.bpmn",
@@ -85,7 +84,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
     final var processInstanceKey = createProcessInstance();
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -114,7 +113,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
         PROCESS_ID);
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -138,7 +137,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -156,8 +155,8 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -172,7 +171,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -182,6 +181,6 @@ public class ProcessInstanceMigrationMigrateAuthorizationTest {
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

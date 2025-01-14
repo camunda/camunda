@@ -22,8 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -41,17 +40,17 @@ public class MessagePublishAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -77,7 +76,7 @@ public class MessagePublishAuthorizationTest {
     createProcessInstance(correlationKey);
 
     // when
-    ENGINE
+    engine
         .message()
         .withName(INTERMEDIATE_MSG_NAME)
         .withCorrelationKey(correlationKey)
@@ -102,7 +101,7 @@ public class MessagePublishAuthorizationTest {
         user.getUserKey(), AuthorizationResourceType.MESSAGE, PermissionType.CREATE);
 
     // when
-    ENGINE
+    engine
         .message()
         .withName(INTERMEDIATE_MSG_NAME)
         .withCorrelationKey(correlationKey)
@@ -125,7 +124,7 @@ public class MessagePublishAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .message()
             .withName(INTERMEDIATE_MSG_NAME)
             .withCorrelationKey(correlationKey)
@@ -139,8 +138,8 @@ public class MessagePublishAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE'");
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -154,7 +153,7 @@ public class MessagePublishAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -164,7 +163,7 @@ public class MessagePublishAuthorizationTest {
   }
 
   private void createProcessInstance(final String correlationKey) {
-    ENGINE
+    engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .withVariable(CORRELATION_KEY_VARIABLE, correlationKey)

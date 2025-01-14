@@ -22,8 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,17 +37,17 @@ public class ProcessInstanceCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
@@ -59,7 +58,7 @@ public class ProcessInstanceCreateAuthorizationTest {
   public void shouldBeAuthorizedToCreateInstanceWithDefaultUser() {
     // when
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -73,7 +72,7 @@ public class ProcessInstanceCreateAuthorizationTest {
   public void shouldBeAuthorizedToCreateInstanceWithResultWithDefaultUser() {
     // when
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withResult()
@@ -99,7 +98,7 @@ public class ProcessInstanceCreateAuthorizationTest {
 
     // when
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(user.getUsername());
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(user.getUsername());
 
     // then
     assertThat(
@@ -121,7 +120,7 @@ public class ProcessInstanceCreateAuthorizationTest {
 
     // when
     final var processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withResult()
@@ -141,7 +140,7 @@ public class ProcessInstanceCreateAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .expectRejection()
@@ -162,7 +161,7 @@ public class ProcessInstanceCreateAuthorizationTest {
     final var user = createUser();
 
     // when
-    ENGINE
+    engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .expectRejection()
@@ -178,8 +177,8 @@ public class ProcessInstanceCreateAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -194,7 +193,7 @@ public class ProcessInstanceCreateAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

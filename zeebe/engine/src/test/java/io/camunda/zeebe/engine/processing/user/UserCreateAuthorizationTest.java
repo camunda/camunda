@@ -21,7 +21,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -35,8 +34,8 @@ public class UserCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
@@ -83,7 +82,7 @@ public class UserCreateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .user()
             .newUser(UUID.randomUUID().toString())
             .withPassword(UUID.randomUUID().toString())
@@ -99,8 +98,8 @@ public class UserCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
   }
 
-  private static UserRecordValue createUser(final String authorizedUsername) {
-    return ENGINE
+  private UserRecordValue createUser(final String authorizedUsername) {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -114,7 +113,7 @@ public class UserCreateAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)

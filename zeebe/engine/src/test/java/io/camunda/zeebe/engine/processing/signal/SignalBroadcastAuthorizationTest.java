@@ -22,8 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,17 +37,17 @@ public class SignalBroadcastAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -70,7 +69,7 @@ public class SignalBroadcastAuthorizationTest {
     createProcessInstance();
 
     // when
-    ENGINE.signal().withSignalName(SIGNAL_NAME).broadcast(DEFAULT_USER.getUsername());
+    engine.signal().withSignalName(SIGNAL_NAME).broadcast(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -95,7 +94,7 @@ public class SignalBroadcastAuthorizationTest {
         PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
-    ENGINE.signal().withSignalName(SIGNAL_NAME).broadcast(user.getUsername());
+    engine.signal().withSignalName(SIGNAL_NAME).broadcast(user.getUsername());
 
     // then
     assertThat(
@@ -113,7 +112,7 @@ public class SignalBroadcastAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(user.getUsername());
+        engine.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -135,7 +134,7 @@ public class SignalBroadcastAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(user.getUsername());
+        engine.signal().withSignalName(SIGNAL_NAME).expectRejection().broadcast(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -145,8 +144,8 @@ public class SignalBroadcastAuthorizationTest {
                 .formatted(PROCESS_ID));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -160,7 +159,7 @@ public class SignalBroadcastAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -170,6 +169,6 @@ public class SignalBroadcastAuthorizationTest {
   }
 
   private long createProcessInstance() {
-    return ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
   }
 }

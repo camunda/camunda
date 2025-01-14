@@ -22,8 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -41,17 +40,17 @@ public class MessageCorrelationCorrelateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void beforeAll() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -77,7 +76,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
     createProcessInstance(correlationKey);
 
     // when
-    ENGINE
+    engine
         .messageCorrelation()
         .withName(INTERMEDIATE_MSG_NAME)
         .withCorrelationKey(correlationKey)
@@ -104,7 +103,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
-    ENGINE
+    engine
         .messageCorrelation()
         .withName(INTERMEDIATE_MSG_NAME)
         .withCorrelationKey(correlationKey)
@@ -128,7 +127,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .messageCorrelation()
             .withName(INTERMEDIATE_MSG_NAME)
             .withCorrelationKey(correlationKey)
@@ -146,7 +145,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToCorrelateMessageToStartEventWithDefaultUser() {
     // when
-    ENGINE
+    engine
         .messageCorrelation()
         .withName(START_MSG_NAME)
         .withCorrelationKey("")
@@ -171,7 +170,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         PROCESS_ID);
 
     // when
-    ENGINE
+    engine
         .messageCorrelation()
         .withName(START_MSG_NAME)
         .withCorrelationKey("")
@@ -192,7 +191,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .messageCorrelation()
             .withName(START_MSG_NAME)
             .withCorrelationKey("")
@@ -220,7 +219,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         PROCESS_ID);
     final var unauthorizedProcessId = "unauthorizedProcessId";
     final var resourceName = "unauthorizedProcess.xml";
-    ENGINE
+    engine
         .deployment()
         .withXmlResource(
             resourceName,
@@ -234,7 +233,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .messageCorrelation()
             .withName(START_MSG_NAME)
             .withCorrelationKey("")
@@ -249,8 +248,8 @@ public class MessageCorrelationCorrelateAuthorizationTest {
                 .formatted(unauthorizedProcessId));
   }
 
-  private static UserRecordValue createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -272,7 +271,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
       final AuthorizationResourceType authorization,
       final PermissionType permissionType,
       final String... resourceIds) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -282,7 +281,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
   }
 
   private void createProcessInstance(final String correlationKey) {
-    ENGINE
+    engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .withVariable(CORRELATION_KEY_VARIABLE, correlationKey)

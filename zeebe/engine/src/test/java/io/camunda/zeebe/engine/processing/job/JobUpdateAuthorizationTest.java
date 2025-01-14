@@ -22,8 +22,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -38,17 +37,17 @@ public class JobUpdateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
-  @BeforeClass
-  public static void before() {
-    ENGINE
+  @Before
+  public void before() {
+    engine
         .deployment()
         .withXmlResource(
             "process.bpmn",
@@ -66,7 +65,7 @@ public class JobUpdateAuthorizationTest {
     final var jobKey = createJob();
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(1).updateRetries(DEFAULT_USER.getUsername());
+    engine.job().withKey(jobKey).withRetries(1).updateRetries(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -85,7 +84,7 @@ public class JobUpdateAuthorizationTest {
         PermissionType.UPDATE_PROCESS_INSTANCE);
 
     // when
-    ENGINE.job().withKey(jobKey).withRetries(1).updateRetries(user.getUsername());
+    engine.job().withKey(jobKey).withRetries(1).updateRetries(user.getUsername());
 
     // then
     assertThat(
@@ -101,7 +100,7 @@ public class JobUpdateAuthorizationTest {
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .job()
             .withKey(jobKey)
             .withRetries(1)
@@ -117,7 +116,7 @@ public class JobUpdateAuthorizationTest {
   }
 
   private UserRecordValue createUser() {
-    return ENGINE
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
@@ -131,7 +130,7 @@ public class JobUpdateAuthorizationTest {
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
@@ -142,7 +141,7 @@ public class JobUpdateAuthorizationTest {
 
   private long createJob() {
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
     return RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .getFirst()
