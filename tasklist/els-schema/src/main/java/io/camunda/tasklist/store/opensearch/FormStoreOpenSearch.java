@@ -19,7 +19,7 @@ import io.camunda.tasklist.util.OpenSearchUtil.QueryType;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Collections;

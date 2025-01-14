@@ -11,11 +11,10 @@ import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.FormEntity;
 
 public class FormEntityTransformer
-    implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.tasklist.FormEntity, FormEntity> {
+    implements ServiceTransformer<io.camunda.webapps.schema.entities.form.FormEntity, FormEntity> {
 
   @Override
-  public FormEntity apply(final io.camunda.webapps.schema.entities.tasklist.FormEntity value) {
+  public FormEntity apply(final io.camunda.webapps.schema.entities.form.FormEntity value) {
     return new FormEntity(
         value.getKey(),
         value.getTenantId(),
