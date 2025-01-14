@@ -16,7 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.CreateRoleResponse;
-import io.camunda.client.protocol.rest.RoleCreateResponse;
+import io.camunda.client.protocol.rest.RoleCreateResult;
 
 public class CreateRoleResponseImpl implements CreateRoleResponse {
   private long roleKey;
@@ -26,7 +26,7 @@ public class CreateRoleResponseImpl implements CreateRoleResponse {
     return roleKey;
   }
 
-  public CreateRoleResponseImpl setResponse(final RoleCreateResponse response) {
+  public CreateRoleResponseImpl setResponse(final RoleCreateResult response) {
     roleKey = Long.parseLong(response.getRoleKey());
     return this;
   }

@@ -24,6 +24,7 @@ import io.camunda.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 
@@ -221,5 +222,280 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/user-tasks/" + userTaskKey + "/form");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateExists() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.creationDate(b -> b.exists(true))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateNotExists() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.creationDate(b -> b.exists(false))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Exists()).isFalse();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateGt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.creationDate(b -> b.gt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateLt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.creationDate(b -> b.lt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateGte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.creationDate(b -> b.gte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Gte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.creationDate(b -> b.lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCreationDateEq() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.creationDate(b -> b.eq(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCreationDate().get$Eq()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCompletionDateGte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.completionDate(b -> b.gte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCompletionDate().get$Gte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCompletionDateLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.completionDate(b -> b.lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCompletionDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCompletionDateGteLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(
+            f ->
+                f.completionDate(
+                    b -> b.gte(OffsetDateTime.now().minusDays(3)).lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCompletionDate().get$Lte()).isNotNull();
+    assertThat(request.getFilter().getCompletionDate().get$Gte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByCompletionDateGtLt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(
+            f ->
+                f.completionDate(
+                    b -> b.gt(OffsetDateTime.now().minusDays(3)).lt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getCompletionDate().get$Lt()).isNotNull();
+    assertThat(request.getFilter().getCompletionDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateExists() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.exists(true))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateGt() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.gt(OffsetDateTime.now()))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateLt() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.lt(OffsetDateTime.now()))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByDueDateGteLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(
+            f -> f.dueDate(b -> b.gte(OffsetDateTime.now().minusDays(5)).lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getDueDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getDueDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateExists() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.followUpDate(b -> b.exists(true))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateGt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.followUpDate(b -> b.gt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateLt() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.followUpDate(b -> b.lt(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnUserTaskByFollowUpDateGteLte() {
+    // when
+    client
+        .newUserTaskQuery()
+        .filter(
+            f ->
+                f.followUpDate(
+                    b -> b.gte(OffsetDateTime.now().minusDays(10)).lte(OffsetDateTime.now())))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getFollowUpDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getFollowUpDate().get$Lte()).isNotNull();
   }
 }

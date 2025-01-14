@@ -29,6 +29,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
+import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -86,8 +87,8 @@ public final class CreateProcessInstanceCommandImpl
    * backwards compatibility in tests.
    *
    * @deprecated since 8.3.0, use {@link
-   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
-   *     JsonMapper jsonMapper, CamundaClientConfiguration config, Predicate retryPredicate)}
+   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub, JsonMapper,
+   *     CamundaClientConfiguration, Predicate, HttpClient, boolean)}
    */
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -190,7 +191,7 @@ public final class CreateProcessInstanceCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        io.camunda.client.protocol.rest.CreateProcessInstanceResponse.class,
+        CreateProcessInstanceResult.class,
         CreateProcessInstanceResponseImpl::new,
         result);
     return result;

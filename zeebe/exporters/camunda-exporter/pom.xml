@@ -46,11 +46,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-xml-model</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
     </dependency>
@@ -223,6 +218,12 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
       <scope>test</scope>
     </dependency>
 

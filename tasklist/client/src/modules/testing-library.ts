@@ -9,7 +9,6 @@
 import {render as baseRender} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// eslint-disable-next-line testing-library/await-async-events
 const user = userEvent.setup({delay: null});
 function render(...args: Parameters<typeof baseRender>) {
   return {

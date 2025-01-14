@@ -38,11 +38,11 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
@@ -393,7 +393,7 @@ public class ProtoBufSerializer
           builder.setPartitionLeave(
               Topology.PartitionLeaveOperation.newBuilder()
                   .setPartitionId(leaveOperation.partitionId())
-                  .setIsClusterPurge(leaveOperation.isClusterPurge()));
+                  .setMinimumAllowedReplicas(leaveOperation.minimumAllowedReplicas()));
       case final MemberJoinOperation memberJoinOperation ->
           builder.setMemberJoin(Topology.MemberJoinOperation.newBuilder().build());
       case final MemberLeaveOperation memberLeaveOperation ->
@@ -593,7 +593,7 @@ public class ProtoBufSerializer
       return new PartitionLeaveOperation(
           MemberId.from(topologyChangeOperation.getMemberId()),
           topologyChangeOperation.getPartitionLeave().getPartitionId(),
-          topologyChangeOperation.getPartitionLeave().getIsClusterPurge());
+          topologyChangeOperation.getPartitionLeave().getMinimumAllowedReplicas());
     } else if (topologyChangeOperation.hasMemberJoin()) {
       return new MemberJoinOperation(MemberId.from(topologyChangeOperation.getMemberId()));
     } else if (topologyChangeOperation.hasMemberLeave()) {

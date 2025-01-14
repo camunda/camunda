@@ -34,7 +34,7 @@ import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
@@ -114,7 +114,7 @@ public class DecisionDefinitionQueryImpl
         "/decision-definitions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        DecisionDefinitionSearchQueryResponse.class,
+        DecisionDefinitionSearchQueryResult.class,
         SearchResponseMapper::toDecisionDefinitionSearchResponse,
         result);
     return result;

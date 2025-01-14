@@ -21,7 +21,7 @@ import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.DecisionRequirementsImpl;
-import io.camunda.client.protocol.rest.DecisionRequirementsItem;
+import io.camunda.client.protocol.rest.DecisionRequirementsResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -51,7 +51,7 @@ public class DecisionRequirementsGetRequestImpl implements DecisionRequirementsG
     httpClient.get(
         String.format("/decision-requirements/%d", decisionRequirementsKey),
         httpRequestConfig.build(),
-        DecisionRequirementsItem.class,
+        DecisionRequirementsResult.class,
         DecisionRequirementsImpl::new,
         result);
     return result;

@@ -52,7 +52,7 @@ jobs:
             url: http://localhost:9200
           - database: opensearch
             testProfile: docker-os
-            url: http://localhost:9205
+            url: http://localhost:9200
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch

@@ -75,7 +75,7 @@ jobs:
       measure: false
       operate-tag: ${{ needs.benchmark-data.outputs.operate }}
       benchmark-load: >
-        -f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
+        -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
         --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
         --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
   setup-latency-benchmark:

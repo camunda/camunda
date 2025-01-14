@@ -160,14 +160,14 @@ public final class ResponseMapper {
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
     return new ActivatedJob()
-        .jobKey(String.valueOf(jobKey))
+        .jobKey(jobKey)
         .type(job.getType())
         .processDefinitionId(job.getBpmnProcessId())
         .elementId(job.getElementId())
-        .processInstanceKey(String.valueOf(job.getProcessInstanceKey()))
+        .processInstanceKey(job.getProcessInstanceKey())
         .processDefinitionVersion(job.getProcessDefinitionVersion())
-        .processDefinitionKey(String.valueOf(job.getProcessDefinitionKey()))
-        .elementInstanceKey(String.valueOf(job.getElementInstanceKey()))
+        .processDefinitionKey(job.getProcessDefinitionKey())
+        .elementInstanceKey(job.getElementInstanceKey())
         .worker(bufferAsString(job.getWorkerBuffer()))
         .retries(job.getRetries())
         .deadline(job.getDeadline())
@@ -180,9 +180,9 @@ public final class ResponseMapper {
       final MessageCorrelationRecord brokerResponse) {
     final var response =
         new MessageCorrelationResponse()
-            .messageKey(String.valueOf(brokerResponse.getMessageKey()))
+            .messageKey(brokerResponse.getMessageKey())
             .tenantId(brokerResponse.getTenantId())
-            .processInstanceKey(String.valueOf(brokerResponse.getProcessInstanceKey()));
+            .processInstanceKey(brokerResponse.getProcessInstanceKey());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
@@ -297,7 +297,7 @@ public final class ResponseMapper {
       final DeploymentRecord brokerResponse) {
     final var response =
         new DeploymentResponse()
-            .deploymentKey(String.valueOf(brokerResponse.getDeploymentKey()))
+            .deploymentKey(brokerResponse.getDeploymentKey())
             .tenantId(brokerResponse.getTenantId());
     addDeployedProcess(response, brokerResponse.getProcessesMetadata());
     addDeployedDecision(response, brokerResponse.decisionsMetadata());
@@ -311,7 +311,7 @@ public final class ResponseMapper {
 
     final var response =
         new MessagePublicationResponse()
-            .messageKey(String.valueOf(brokerResponse.getKey()))
+            .messageKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
@@ -324,7 +324,7 @@ public final class ResponseMapper {
                 new DeploymentForm()
                     .formId(form.getFormId())
                     .version(form.getVersion())
-                    .formKey(String.valueOf(form.getFormKey()))
+                    .formKey(form.getFormKey())
                     .resourceName(form.getResourceName())
                     .tenantId(form.getTenantId()))
         .map(deploymentForm -> new DeploymentMetadata().form(deploymentForm))
@@ -342,8 +342,7 @@ public final class ResponseMapper {
                     .version(decisionRequirement.getDecisionRequirementsVersion())
                     .name(decisionRequirement.getDecisionRequirementsName())
                     .tenantId(decisionRequirement.getTenantId())
-                    .decisionRequirementsKey(
-                        String.valueOf(decisionRequirement.getDecisionRequirementsKey()))
+                    .decisionRequirementsKey(decisionRequirement.getDecisionRequirementsKey())
                     .resourceName(decisionRequirement.getResourceName()))
         .map(
             deploymentDecisionRequirement ->
@@ -359,11 +358,11 @@ public final class ResponseMapper {
                 new DeploymentDecision()
                     .decisionDefinitionId(decision.getDecisionId())
                     .version(decision.getVersion())
-                    .decisionDefinitionKey(String.valueOf(decision.getDecisionKey()))
+                    .decisionDefinitionKey(decision.getDecisionKey())
                     .name(decision.getDecisionName())
                     .tenantId(decision.getTenantId())
                     .decisionRequirementsId(decision.getDecisionRequirementsId())
-                    .decisionRequirementsKey(String.valueOf(decision.getDecisionRequirementsKey())))
+                    .decisionRequirementsKey(decision.getDecisionRequirementsKey()))
         .map(deploymentDecision -> new DeploymentMetadata().decisionDefinition(deploymentDecision))
         .forEach(response::addDeploymentsItem);
   }
@@ -376,7 +375,7 @@ public final class ResponseMapper {
                 new DeploymentProcess()
                     .processDefinitionId(process.getBpmnProcessId())
                     .processDefinitionVersion(process.getVersion())
-                    .processDefinitionKey(String.valueOf(process.getProcessDefinitionKey()))
+                    .processDefinitionKey(process.getProcessDefinitionKey())
                     .tenantId(process.getTenantId())
                     .resourceName(process.getResourceName()))
         .map(deploymentProcess -> new DeploymentMetadata().processDefinition(deploymentProcess))
@@ -414,10 +413,10 @@ public final class ResponseMapper {
       final Map<String, Object> variables) {
     final var response =
         new CreateProcessInstanceResponse()
-            .processDefinitionKey(String.valueOf(processDefinitionKey))
+            .processDefinitionKey(processDefinitionKey)
             .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
-            .processInstanceKey(String.valueOf(processInstanceKey))
+            .processInstanceKey(processInstanceKey)
             .tenantId(tenantId);
     if (variables != null) {
       response.variables(variables);
@@ -430,37 +429,35 @@ public final class ResponseMapper {
       final BrokerResponse<SignalRecord> brokerResponse) {
     final var response =
         new SignalBroadcastResponse()
-            .signalKey(String.valueOf(brokerResponse.getKey()))
+            .signalKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
-    final var response = new UserCreateResponse().userKey(String.valueOf(userRecord.getUserKey()));
+    final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
-    final var response = new RoleCreateResponse().roleKey(String.valueOf(roleRecord.getRoleKey()));
+    final var response = new RoleCreateResponse().roleKey(roleRecord.getRoleKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {
-    final var response =
-        new GroupCreateResponse().groupKey(String.valueOf(groupRecord.getGroupKey()));
+    final var response = new GroupCreateResponse().groupKey(groupRecord.getGroupKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toTenantCreateResponse(final TenantRecord record) {
-    final var response =
-        new TenantCreateResponse().tenantKey(String.valueOf(record.getTenantKey()));
+    final var response = new TenantCreateResponse().tenantKey(record.getTenantKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toTenantUpdateResponse(final TenantRecord record) {
     final var response =
         new TenantUpdateResponse()
-            .tenantKey(String.valueOf(record.getTenantKey()))
+            .tenantKey(record.getTenantKey())
             .tenantId(record.getTenantId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.OK);
@@ -469,7 +466,7 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toMappingCreateResponse(final MappingRecord record) {
     final var response =
         new MappingRuleCreateResponse()
-            .mappingKey(String.valueOf(record.getMappingKey()))
+            .mappingKey(record.getMappingKey())
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -481,17 +478,16 @@ public final class ResponseMapper {
     final var response =
         new EvaluateDecisionResponse()
             .decisionDefinitionId(decisionEvaluationRecord.getDecisionId())
-            .decisionDefinitionKey(String.valueOf(decisionEvaluationRecord.getDecisionKey()))
+            .decisionDefinitionKey(decisionEvaluationRecord.getDecisionKey())
             .decisionDefinitionName(decisionEvaluationRecord.getDecisionName())
             .decisionDefinitionVersion(decisionEvaluationRecord.getDecisionVersion())
             .decisionRequirementsId(decisionEvaluationRecord.getDecisionRequirementsId())
-            .decisionRequirementsKey(
-                String.valueOf(decisionEvaluationRecord.getDecisionRequirementsKey()))
+            .decisionRequirementsKey(decisionEvaluationRecord.getDecisionRequirementsKey())
             .output(decisionEvaluationRecord.getDecisionOutput())
             .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
             .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
             .tenantId(decisionEvaluationRecord.getTenantId())
-            .decisionInstanceKey(String.valueOf(brokerResponse.getKey()));
+            .decisionInstanceKey(brokerResponse.getKey());
 
     buildEvaluatedDecisions(decisionEvaluationRecord, response);
     return new ResponseEntity<>(response, HttpStatus.OK);
@@ -572,7 +568,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobs().stream()
-          .map(j -> new ActivatedJob(Long.parseLong(j.getJobKey()), j.getRetries()))
+          .map(j -> new ActivatedJob(j.getJobKey(), j.getRetries()))
           .toList();
     }
 
@@ -586,7 +582,7 @@ public final class ResponseMapper {
       final var result = new ArrayList<ActivatedJob>(sizeExceedingJobs.size());
       for (final var job : sizeExceedingJobs) {
         try {
-          final var key = Long.parseLong(job.getJobKey());
+          final var key = job.getJobKey();
           result.add(new ActivatedJob(key, job.getRetries()));
         } catch (final NumberFormatException ignored) {
           // could happen

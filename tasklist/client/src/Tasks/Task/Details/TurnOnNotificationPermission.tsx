@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ActionableNotification} from '@carbon/react';
+import {
+  ActionableNotification,
+  unstable_FeatureFlags as FeatureFlags,
+} from '@carbon/react';
 import {requestPermission} from 'modules/os-notifications/requestPermission';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';
@@ -30,25 +33,34 @@ const TurnOnNotificationPermission: React.FC = () => {
 
   return (
     <div>
-      <ActionableNotification
-        inline
-        kind="info"
-        title={t('turnOnNotificationTitle')}
-        subtitle={t('turnOnNotificationSubtitle')}
-        actionButtonLabel={t('turnOnNotificationsActionButton')}
-        onActionButtonClick={async () => {
-          const result = await requestPermission();
-          if (result !== 'default') {
+      {/* This is a temporary fix, it should be removed once this feature is implemented on Carbon: https://github.com/camunda/camunda/issues/26648 */}
+      <FeatureFlags
+        flags={{
+          'enable-experimental-focus-wrap-without-sentinels': true,
+        }}
+      >
+        <ActionableNotification
+          inline
+          kind="info"
+          role="status"
+          aria-live="polite"
+          title={t('turnOnNotificationTitle')}
+          subtitle={t('turnOnNotificationSubtitle')}
+          actionButtonLabel={t('turnOnNotificationsActionButton')}
+          onActionButtonClick={async () => {
+            const result = await requestPermission();
+            if (result !== 'default') {
+              setIsEnabled(false);
+            }
+          }}
+          onClose={() => {
             setIsEnabled(false);
-          }
-        }}
-        onClose={() => {
-          setIsEnabled(false);
-          storeStateLocally('areNativeNotificationsEnabled', false);
-        }}
-        className={styles.actionableNotification}
-        lowContrast
-      />
+            storeStateLocally('areNativeNotificationsEnabled', false);
+          }}
+          className={styles.actionableNotification}
+          lowContrast
+        />
+      </FeatureFlags>
     </div>
   );
 };

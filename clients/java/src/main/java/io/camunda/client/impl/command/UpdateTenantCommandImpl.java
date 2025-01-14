@@ -24,7 +24,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateTenantResponseImpl;
 import io.camunda.client.protocol.rest.TenantUpdateRequest;
-import io.camunda.client.protocol.rest.TenantUpdateResponse;
+import io.camunda.client.protocol.rest.TenantUpdateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -67,7 +67,7 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
         "/tenants/" + tenantKey,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        TenantUpdateResponse.class,
+        TenantUpdateResult.class,
         response::setResponse,
         result);
     return result;

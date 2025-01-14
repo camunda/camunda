@@ -24,7 +24,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateRoleResponseImpl;
 import io.camunda.client.protocol.rest.RoleCreateRequest;
-import io.camunda.client.protocol.rest.RoleCreateResponse;
+import io.camunda.client.protocol.rest.RoleCreateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -64,7 +64,7 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
         "/roles",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        RoleCreateResponse.class,
+        RoleCreateResult.class,
         response::setResponse,
         result);
     return result;

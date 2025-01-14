@@ -24,7 +24,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateMappingResponseImpl;
 import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
-import io.camunda.client.protocol.rest.MappingRuleCreateResponse;
+import io.camunda.client.protocol.rest.MappingRuleCreateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -78,7 +78,7 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
         "/mapping-rules",
         jsonMapper.toJson(mappingRequest),
         httpRequestConfig.build(),
-        MappingRuleCreateResponse.class,
+        MappingRuleCreateResult.class,
         response::setResponse,
         result);
     return result;

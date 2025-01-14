@@ -34,6 +34,7 @@ import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -64,6 +65,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -76,6 +78,10 @@ import org.testcontainers.containers.GenericContainer;
  */
 @TestInstance(Lifecycle.PER_CLASS)
 @ExtendWith(CamundaExporterITInvocationProvider.class)
+@DisabledIfSystemProperty(
+    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    matches = "^(?=\\s*\\S).*$",
+    disabledReason = "Excluding from AWS OS IT CI")
 final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();

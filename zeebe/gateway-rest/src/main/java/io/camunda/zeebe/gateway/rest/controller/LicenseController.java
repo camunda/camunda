@@ -9,12 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.gateway.protocol.rest.LicenseResponse;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
@@ -31,7 +30,7 @@ public class LicenseController {
     this.managementServices = managementServices;
   }
 
-  @GetMapping(path = "/license", produces = MediaType.APPLICATION_JSON_VALUE)
+  @CamundaGetMapping(path = "/license")
   public LicenseResponse get() {
     final LicenseResponse response = new LicenseResponse();
     response.setValidLicense(managementServices.isCamundaLicenseValid());

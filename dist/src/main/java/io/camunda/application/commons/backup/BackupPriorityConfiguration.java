@@ -241,15 +241,13 @@ public class BackupPriorityConfiguration {
           isElasticsearch
               ? ElasticSearchSchemaManager.getAllNonDynamicMappings()
               : OpenSearchSchemaManager.getAllNonDynamicMappings();
-      if (isElasticsearch) {
-        for (final IndexMappingCreator<?> index : indices) {
-          // Optimize only has index with Priority 1 & 6, but it only has 1 static index with
-          // Priority 1. Here we can just focus on those with Prio6
-          if (index instanceof final Prio6Backup p) {
-            prio6.add(
-                new OptimizePrio6Delegate<>(
-                    (IndexMappingCreator<?> & Prio6Backup) p, optimizeIndexNameService));
-          }
+      for (final IndexMappingCreator<?> index : indices) {
+        // Optimize only has index with Priority 1 & 6, but it only has 1 static index with
+        // Priority 1. Here we can just focus on those with Prio6
+        if (index instanceof final Prio6Backup p) {
+          prio6.add(
+              new OptimizePrio6Delegate<>(
+                  (IndexMappingCreator<?> & Prio6Backup) p, optimizeIndexNameService));
         }
       }
     }

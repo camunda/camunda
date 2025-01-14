@@ -21,7 +21,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.UserTaskImpl;
-import io.camunda.client.protocol.rest.UserTaskItem;
+import io.camunda.client.protocol.rest.UserTaskResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -50,7 +50,7 @@ public class UserTaskGetRequestImpl implements UserTaskGetRequest {
     httpClient.get(
         String.format("/user-tasks/%d", userTaskKey),
         httpRequestConfig.build(),
-        UserTaskItem.class,
+        UserTaskResult.class,
         UserTaskImpl::new,
         result);
     return result;

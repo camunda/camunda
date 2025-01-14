@@ -118,6 +118,12 @@ public class SearchClients
   }
 
   @Override
+  public List<MappingEntity> findAllMappings(final MappingQuery query) {
+    return getSearchExecutor()
+        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
     return getSearchExecutor()
@@ -200,13 +206,21 @@ public class SearchClients
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery filter) {
-    return new SearchClientBasedQueryExecutor(
-            searchClient,
-            transformers,
-            new DocumentAuthorizationQueryStrategy(this),
-            securityContext)
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+  public List<TenantEntity> findAllTenants(final TenantQuery query) {
+    return getSearchExecutor()
+        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+    return getSearchExecutor()
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+  }
+
+  @Override
+  public List<GroupEntity> findAllGroups(final GroupQuery query) {
+    return getSearchExecutor()
+        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
 
   @Override

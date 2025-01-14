@@ -8,12 +8,9 @@
 package io.camunda.exporter.cache.process;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.utils.XMLUtil;
+import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +20,11 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
 
   private final OpenSearchClient client;
   private final String processIndexName;
-  private final XMLUtil xmlUtil;
 
   public OpenSearchProcessCacheLoader(
-      final OpenSearchClient client, final String processIndexName, final XMLUtil xmlUtil) {
+      final OpenSearchClient client, final String processIndexName) {
     this.client = client;
     this.processIndexName = processIndexName;
-    this.xmlUtil = xmlUtil;
   }
 
   @Override
@@ -43,7 +38,7 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersionTag(),
-          extractCallActivityIdsFromDiagram(processEntity));
+          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processEntity));
     } else {
       // This should only happen if the process was deleted from OpenSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the
@@ -51,12 +46,5 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
       LOG.debug("Process '{}' not found in OpenSearch", processDefinitionKey);
       return null;
     }
-  }
-
-  private List<String> extractCallActivityIdsFromDiagram(final ProcessEntity processEntity) {
-    final String bpmnXml = processEntity.getBpmnXml();
-    final Optional<ProcessEntity> diagramData =
-        xmlUtil.extractDiagramData(bpmnXml.getBytes(), processEntity.getBpmnProcessId());
-    return diagramData.isPresent() ? diagramData.get().getCallActivityIds() : new ArrayList<>();
   }
 }

@@ -21,7 +21,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.protocol.rest.ProcessInstanceItem;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -50,7 +50,7 @@ public class ProcessInstanceGetRequestImpl implements ProcessInstanceGetRequest 
     httpClient.get(
         String.format("/process-instances/%d", processInstanceKey),
         httpRequestConfig.build(),
-        ProcessInstanceItem.class,
+        ProcessInstanceResult.class,
         SearchResponseMapper::toProcessInstanceGetResponse,
         result);
     return result;

@@ -40,7 +40,7 @@ final class EventFromJobHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = EventTemplate.INDEX_NAME;
 
-  private final EventFromJobHandler underTest = new EventFromJobHandler(indexName, false);
+  private final EventFromJobHandler underTest = new EventFromJobHandler(indexName);
 
   @Test
   void testGetHandledValueType() {

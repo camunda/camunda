@@ -16,7 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.protocol.rest.CreateProcessInstanceResponse;
+import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class CreateProcessInstanceResponseImpl implements ProcessInstanceEvent {
@@ -36,7 +36,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     tenantId = response.getTenantId();
   }
 
-  public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResponse response) {
+  public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResult response) {
     processDefinitionKey = Long.parseLong(response.getProcessDefinitionKey());
     bpmnProcessId = response.getProcessDefinitionId();
     version = response.getProcessDefinitionVersion();

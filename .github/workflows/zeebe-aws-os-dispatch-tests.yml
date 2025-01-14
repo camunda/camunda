@@ -19,9 +19,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: 
+        group:
         - os-exporter
         - search-client-os
+        - camunda-exporter
         include:
           - group: os-exporter
             name: "Zeebe OS Exporter Integration Tests"
@@ -32,6 +33,12 @@ jobs:
           - group: search-client-os
             name: "Search Client AWS OS Integration Tests"
             maven-modules: "'io.camunda:camunda-search-client-connect'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+          - group: camunda-exporter
+            name: "Camunda Exporter AWS OS Integration Tests"
+            maven-modules: "'io.camunda:camunda-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
@@ -70,7 +77,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -D skipOptimize
+          maven-extra-args: -T1C -D skipOptimize -D skip.fe.build -D skip.yarn -D skip.docker
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -108,7 +115,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-  
+
   send-slack-notificaion:
     name: "Send slack notification on fail"
     runs-on: ubuntu-latest

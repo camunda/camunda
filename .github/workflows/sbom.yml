@@ -8,8 +8,12 @@ name: Generate and Attach SBOM
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to attach SBOMs"
+        required: true
   release:
-    types: [published]
+    types: [published,created]
   schedule:
     - cron: "0 9 * * MON"
 
@@ -91,7 +95,7 @@ jobs:
   attach_artifacts_to_release:
     runs-on: ubuntu-latest
     needs: [ frontend_sbom, generate_backend_sbom ]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Check out repository code
@@ -132,6 +136,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "release" ]; then
             echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_tag }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.release_tag }}" >> $GITHUB_ENV
           else
             latest_release=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | jq -r '.[0].tag_name')
@@ -143,13 +149,32 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for artifact in ./sboms/*/*; do
+            # Extract the file and directory names
             base_name=$(basename "$artifact")
             dir_name=$(basename "$(dirname "$artifact")")
-            unique_name="${dir_name}-${base_name}"
-            gh release upload "$RELEASE_TAG" "$artifact" \
+            unique_name="${dir_name}-${base_name}-${RELEASE_TAG}"
+
+            # Temporarily rename the artifact with the unique name
+            mv "$artifact" "./sboms/$unique_name"
+            echo "Renamed $artifact to ./sboms/$unique_name"
+
+            # Upload the artifact
+            echo "Uploading ./sboms/$unique_name to release $RELEASE_TAG"
+            gh release upload "$RELEASE_TAG" "./sboms/$unique_name" \
               --repo "camunda/camunda" \
-              --clobber \
-              --name "$unique_name"
+              --clobber
+
+            # Check the exit code of the upload command
+            if [ $? -eq 0 ]; then
+              echo "Successfully uploaded: $unique_name"
+            else
+              echo "Failed to upload: $unique_name"
+              exit 1
+            fi
+
+            # Restore the original artifact name
+            mv "./sboms/$unique_name" "$artifact"
+            echo "Restored ./sboms/$unique_name back to $artifact"
           done
 
 
