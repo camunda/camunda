@@ -40,10 +40,13 @@ public class UserWriter {
     }
   }
 
-  public void delete(final long userKey) {
+  public void delete(final UserDbModel user) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.USER, userKey, "io.camunda.db.rdbms.sql.UserMapper.delete", userKey));
+            ContextType.USER,
+            user.userKey(),
+            "io.camunda.db.rdbms.sql.UserMapper.delete",
+            user.username()));
   }
 
   private boolean mergeToQueue(

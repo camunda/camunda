@@ -71,7 +71,7 @@
     WHERE USERNAME = #{username}
   </update>
 
-  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE FROM USERS
     WHERE USERNAME = #{username}
   </delete>
