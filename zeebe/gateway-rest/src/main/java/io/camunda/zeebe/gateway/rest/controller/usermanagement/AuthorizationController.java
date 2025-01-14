@@ -11,13 +11,16 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -37,6 +40,13 @@ public class AuthorizationController {
 
   public AuthorizationController(final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
+  }
+
+  @CamundaPostMapping(path = "/authorizations}")
+  public CompletableFuture<ResponseEntity<Object>> create(
+      @RequestBody final AuthorizationCreateRequest authorizationCreateRequest) {
+    return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
   @CamundaPatchMapping(path = "/authorizations/{ownerKey}")
@@ -88,5 +98,15 @@ public class AuthorizationController {
             authorizationServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .patchAuthorization(patchAuthorizationRequest));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> create(
+      final CreateAuthorizationRequest createAuthorizationRequest) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            authorizationServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .createAuthorization(createAuthorizationRequest),
+        ResponseMapper::toAuthorizationCreateResponse);
   }
 }
