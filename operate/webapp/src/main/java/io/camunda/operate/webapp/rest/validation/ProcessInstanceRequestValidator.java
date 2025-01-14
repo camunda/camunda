@@ -15,7 +15,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.webapps.schema.entities.operate.ListenerType;
+import io.camunda.webapps.schema.entities.listener.ListenerType;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.stereotype.Component;

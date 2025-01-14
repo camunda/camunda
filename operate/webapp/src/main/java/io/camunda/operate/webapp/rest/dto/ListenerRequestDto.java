@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.rest.dto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
-import io.camunda.webapps.schema.entities.operate.ListenerType;
+import io.camunda.webapps.schema.entities.listener.ListenerType;
 import java.util.Objects;
 import java.util.Set;
 
