@@ -27,7 +27,9 @@ import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import java.util.List;
@@ -46,6 +48,30 @@ public class CamundaDataSource {
   public List<ElementInstance> findElementInstancesByProcessInstanceKey(
       final long processInstanceKey) {
     return findElementInstances(filter -> filter.processInstanceKey(processInstanceKey));
+  }
+
+  public List<ProcessInstanceSequenceFlow> findSequenceFlowsByProcessInstanceKey(
+      final long processInstanceKey) {
+    return client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+  }
+
+  public List<ProcessDefinition> findProcessDefinitionsByProcessDefinitionId(
+      final String bpmnProcessId) {
+    return client
+        .newProcessDefinitionSearchRequest()
+        .filter(filter -> filter.processDefinitionId(bpmnProcessId))
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
+  }
+
+  public String getProcessDefinitionXml(final long processDefinitionKey) {
+    return client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
+  }
+
+  public ProcessInstance getProcessInstance(final long processInstanceKey) {
+    return client.newProcessInstanceGetRequest(processInstanceKey).send().join();
   }
 
   public List<ElementInstance> findElementInstances(final Consumer<ElementInstanceFilter> filter) {
