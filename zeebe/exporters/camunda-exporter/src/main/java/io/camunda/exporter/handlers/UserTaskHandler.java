@@ -233,6 +233,14 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
   }
 
+  private void setAssignee(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
+      entity.setAssignee(null);
+    } else {
+      entity.setAssignee(record.getValue().getAssignee());
+    }
+  }
+
   /**
    * Applies changes to the user task fields based on the attributes in the {@link
    * UserTaskRecordValue}.
@@ -255,7 +263,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       entity.getChangedAttributes().add(attribute);
 
       switch (attribute) {
-        case "assignee" -> entity.setAssignee(value.getAssignee());
+        case "assignee" -> setAssignee(record, entity);
         case "candidateGroupsList" ->
             entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
         case "candidateUsersList" ->
