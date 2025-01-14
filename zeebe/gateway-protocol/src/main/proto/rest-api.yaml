@@ -3252,6 +3252,7 @@ paths:
               properties:
                 files:
                   type: array
+                  description: The documents to upload.
                   items:
                     type: string
                     format: binary
@@ -7389,10 +7390,12 @@ components:
           properties:
             createdDocuments:
               type: array
+              description: Documents that were successfully created.
               items:
                 $ref: "#/components/schemas/DocumentReference"
             failedDocuments:
               type: array
+              description: Documents that failed creation.
               items:
                 $ref: "#/components/schemas/DocumentCreationFailureDetail"
 
