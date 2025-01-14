@@ -7,32 +7,74 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
+  // TODO: remove default value in: https://github.com/camunda/camunda/issues/26883
+  private final LongProperty authenticationKeyProp = new LongProperty("authenticationKey", -1L);
+  private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
+  // TODO: remove in: https://github.com/camunda/camunda/issues/26883
   private final LongProperty ownerKeyProp = new LongProperty("ownerKey");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(
           "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
+  // TODO: remove default value in: https://github.com/camunda/camunda/issues/26883
+  private final StringProperty resourceIdProp = new StringProperty("resourceId", "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
+  // TODO: remove in: https://github.com/camunda/camunda/issues/26883
   private final ArrayProperty<Permission> permissionsProp =
       new ArrayProperty<>("permissions", Permission::new);
+  // TODO: rename in: https://github.com/camunda/camunda/issues/26883
+  private final ArrayProperty<StringValue> authorizationPermissionsProp =
+      new ArrayProperty<>("permissions", StringValue::new);
 
   public AuthorizationRecord() {
     super(4);
-    declareProperty(ownerTypeProp)
+    declareProperty(authenticationKeyProp)
+        .declareProperty(ownerIdProp)
+        .declareProperty(ownerTypeProp)
         .declareProperty(ownerKeyProp)
+        .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(permissionsProp);
+        .declareProperty(permissionsProp)
+        .declareProperty(authorizationPermissionsProp);
+  }
+
+  @Override
+  public Long getAuthenticationKey() {
+    return authenticationKeyProp.getValue();
+  }
+
+  public AuthorizationRecord setAuthenticationKey(final Long authenticationKey) {
+    authenticationKeyProp.setValue(authenticationKey);
+    return this;
+  }
+
+  @Override
+  public String getOwnerId() {
+    return bufferAsString(ownerIdProp.getValue());
+  }
+
+  public AuthorizationRecord setOwnerId(final String ownerId) {
+    ownerIdProp.setValue(ownerId);
+    return this;
   }
 
   @Override
@@ -50,8 +92,13 @@ public final class AuthorizationRecord extends UnifiedRecordValue
     return ownerTypeProp.getValue();
   }
 
-  public AuthorizationRecord setOwnerType(final AuthorizationOwnerType ownerType) {
-    ownerTypeProp.setValue(ownerType);
+  @Override
+  public String getResourceId() {
+    return bufferAsString(resourceIdProp.getValue());
+  }
+
+  public AuthorizationRecord setResourceId(final String resourceId) {
+    resourceIdProp.setValue(resourceId);
     return this;
   }
 
@@ -71,8 +118,30 @@ public final class AuthorizationRecord extends UnifiedRecordValue
         .toList();
   }
 
+  @Override
+  public Set<PermissionType> getAuthorizationPermissions() {
+    return authorizationPermissionsProp.stream()
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .map(PermissionType::valueOf)
+        .collect(Collectors.toSet());
+  }
+
+  public AuthorizationRecord setAuthorizationPermissions(final Set<PermissionType> permissions) {
+    authorizationPermissionsProp.reset();
+    permissions.forEach(
+        permission ->
+            authorizationPermissionsProp.add().wrap(BufferUtil.wrapString(permission.name())));
+    return this;
+  }
+
   public AuthorizationRecord setResourceType(final AuthorizationResourceType resourceType) {
     resourceTypeProp.setValue(resourceType);
+    return this;
+  }
+
+  public AuthorizationRecord setOwnerType(final AuthorizationOwnerType ownerType) {
+    ownerTypeProp.setValue(ownerType);
     return this;
   }
 

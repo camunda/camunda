@@ -25,13 +25,21 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableAuthorizationRecordValue.Builder.class)
 public interface AuthorizationRecordValue extends RecordValue {
 
+  Long getAuthenticationKey();
+
+  String getOwnerId();
+
   Long getOwnerKey();
 
   AuthorizationOwnerType getOwnerType();
 
+  String getResourceId();
+
   AuthorizationResourceType getResourceType();
 
   List<PermissionValue> getPermissions();
+
+  Set<PermissionType> getAuthorizationPermissions();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutablePermissionValue.Builder.class)
