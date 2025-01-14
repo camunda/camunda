@@ -99,8 +99,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     switch (record.getIntent()) {
       case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
-      case UserTaskIntent.ASSIGNED -> handleAssignment(record, entity);
-      case UserTaskIntent.UPDATED -> updateChangedAttributes(record, entity);
+      case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
+          updateChangedAttributes(record, entity);
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
       case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
@@ -231,17 +231,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   private boolean refersToPreviousVersionRecord(final long key) {
     return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
-  }
-
-  private void handleAssignment(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    entity.getChangedAttributes().add("assignee");
-    if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
-      entity.setAssignee(null);
-    } else {
-      entity.setAssignee(record.getValue().getAssignee());
-    }
-
-    updateChangedAttributes(record, entity);
   }
 
   /**
