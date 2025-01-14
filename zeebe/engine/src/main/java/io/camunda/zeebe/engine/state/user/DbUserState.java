@@ -52,7 +52,7 @@ public class DbUserState implements UserState, MutableUserState {
     userKey.wrapLong(user.getUserKey());
     persistedUser.setUser(user);
 
-    usersColumnFamily.insert(userKey, persistedUser);
+    usersColumnFamily.insert(username, persistedUser);
     userKeyByUsernameColumnFamily.insert(username, fkUserKey);
   }
 
