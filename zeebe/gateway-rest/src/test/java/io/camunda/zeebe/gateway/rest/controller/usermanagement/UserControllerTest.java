@@ -293,6 +293,27 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectUserCreationWithTooLongUsername() {
+    // given
+    final var username = "x".repeat(257);
+    final var request = validUserWithPasswordRequest().username(username);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided username exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_BASE_URL));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
   void deleteUserShouldReturnNoContent() {
     // given
     final long key = 1234L;
