@@ -52,6 +52,7 @@ import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse.TypeEnum;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
@@ -435,7 +436,20 @@ public final class ResponseMapper {
   }
 
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
-    final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
+
+    final var userType =
+        switch (userRecord.getUserType()) {
+          case DEFAULT -> TypeEnum.DEFAULT;
+          case REGULAR -> TypeEnum.REGULAR;
+        };
+
+    final var response =
+        new UserCreateResponse()
+            .userKey(userRecord.getUserKey())
+            .username(userRecord.getUsername())
+            .email(userRecord.getEmail())
+            .name(userRecord.getName())
+            .type(userType);
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

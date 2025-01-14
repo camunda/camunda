@@ -76,7 +76,18 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .isCreated();
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+          {
+            "userKey": "-1",
+            "username": "foo",
+            "name": "Foo Bar",
+            "email": "bar@baz.com",
+            "type": "REGULAR"
+          }
+        """);
 
     // then
     verify(userServices, times(1)).createUser(dto);
