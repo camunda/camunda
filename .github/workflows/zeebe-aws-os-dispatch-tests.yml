@@ -1,7 +1,13 @@
 name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 
 on:
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      os_version:
+        description: Version of AWS OS
+        type: choice
+        options:
+          - "2.9"
   schedule:
     - cron: "0 23 * * Sat"
 
@@ -13,12 +19,13 @@ defaults:
 
 jobs:
   integration-tests:
-    name: "[IT] ${{ matrix.name }}"
+    name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
     timeout-minutes: 15
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
+        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.9"')) }}
         group:
         - os-exporter
         - search-client-os
@@ -62,6 +69,20 @@ jobs:
           echo "AWS_ROLE_ARN=$(echo $AWS_ROLE_ARN)" >> "$GITHUB_ENV"
           echo "AWS_WEB_IDENTITY_TOKEN_FILE=$(echo $AWS_WEB_IDENTITY_TOKEN_FILE)" >> "$GITHUB_ENV"
           echo "AWS_STS_REGIONAL_ENDPOINTS=$(echo $AWS_STS_REGIONAL_ENDPOINTS)" >> "$GITHUB_ENV"
+          
+          if [[ "${{ matrix.os_version }}" = "2.9" ]]
+          then
+            echo "Using OS 2.9"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_9_URL }};
+          elif [[ "${{ matrix.os_version }}" = "2.10" ]]
+          then
+            echo "Using OS 2.10"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_10_URL }};
+          else
+            echo "Incorrect on usupported version of OpenSearch"
+            exit 1
+          fi
+          echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
       - uses: aws-actions/configure-aws-credentials@v4
         name: Pre-login to AWS
         with:
@@ -82,12 +103,11 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          url="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_9_URL }};
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks -D skipOptimize
-          -D camunda.it.opensearch.aws.url="$url"
+          -D camunda.it.opensearch.aws.url="${{ env.OS_URL }}"
           -P parallel-tests,extract-flaky-tests
           -pl ${{ matrix.maven-modules }}
           verify
