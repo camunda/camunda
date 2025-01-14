@@ -393,13 +393,16 @@ abstract class IncidentUpdateRepositoryIT {
           incidentTemplate.getFullQualifiedName(),
           "1",
           new IncidentEntity()
-              .setKey(1)
+              .setKey(1L)
               .setState(IncidentState.PENDING)
               .setErrorMessage("failure"));
       batchRequest.addWithId(
           incidentTemplate.getFullQualifiedName(),
           "2",
-          new IncidentEntity().setKey(2).setState(IncidentState.ACTIVE).setErrorMessage("failure"));
+          new IncidentEntity()
+              .setKey(2L)
+              .setState(IncidentState.ACTIVE)
+              .setErrorMessage("failure"));
       batchRequest.executeWithRefresh();
 
       // when
@@ -445,11 +448,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "1",
-          new ProcessInstanceForListViewEntity().setKey(1).setIncident(false));
+          new ProcessInstanceForListViewEntity().setKey(1L).setIncident(false));
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "2",
-          new ProcessInstanceForListViewEntity().setKey(2).setIncident(true));
+          new ProcessInstanceForListViewEntity().setKey(2L).setIncident(true));
       batchRequest.executeWithRefresh();
 
       // when
@@ -496,11 +499,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.addWithId(
           flowNodeInstanceTemplate.getFullQualifiedName(),
           "1",
-          new FlowNodeInstanceEntity().setKey(1).setIncident(false));
+          new FlowNodeInstanceEntity().setKey(1L).setIncident(false));
       batchRequest.addWithId(
           flowNodeInstanceTemplate.getFullQualifiedName(),
           "2",
-          new FlowNodeInstanceEntity().setKey(2).setIncident(false));
+          new FlowNodeInstanceEntity().setKey(2L).setIncident(false));
       batchRequest.executeWithRefresh();
 
       // when
@@ -924,11 +927,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "1",
-          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+          new ProcessInstanceForListViewEntity().setKey(1L).setTreePath("PI_1"));
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "2",
-          new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
+          new ProcessInstanceForListViewEntity().setKey(2L).setTreePath("PI_2"));
       batchRequest.executeWithRefresh();
 
       // when
@@ -951,11 +954,11 @@ abstract class IncidentUpdateRepositoryIT {
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "1",
-          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+          new ProcessInstanceForListViewEntity().setKey(1L).setTreePath("PI_1"));
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "2",
-          new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
+          new ProcessInstanceForListViewEntity().setKey(2L).setTreePath("PI_2"));
       batchRequest.executeWithRefresh();
 
       // when
@@ -974,12 +977,12 @@ abstract class IncidentUpdateRepositoryIT {
       // given
       final var repository = createRepository();
       final var batchRequest = clientAdapter.createBatchRequest();
-      final var flowNode = new FlowNodeInstanceForListViewEntity().setKey(2).setId("2");
+      final var flowNode = new FlowNodeInstanceForListViewEntity().setKey(2L).setId("2");
       flowNode.getJoinRelation().setParent(1L);
       batchRequest.addWithId(
           listViewTemplate.getFullQualifiedName(),
           "1",
-          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+          new ProcessInstanceForListViewEntity().setKey(1L).setTreePath("PI_1"));
       batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), flowNode, "1");
       batchRequest.executeWithRefresh();
 
