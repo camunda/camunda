@@ -50,6 +50,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.*;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -184,15 +185,15 @@ public class ListViewZeebeRecordProcessor {
       final var scopedVariables = variableRecords.getValue();
 
       for (final var scopedVariable : scopedVariables) {
+        if (!shouldProcessVariableRecord(scopedVariable)) {
+          continue;
+        }
         final var intent = scopedVariable.getIntent();
         final var variableValue = scopedVariable.getValue();
         final var variableName = variableValue.getName();
         final var cachedVariable =
             temporaryVariableCache.computeIfAbsent(
-                variableName,
-                (k) -> {
-                  return Tuple.of(intent, new VariableForListViewEntity());
-                });
+                variableName, (k) -> Tuple.of(intent, new VariableForListViewEntity()));
         final var variableEntity = cachedVariable.getRight();
         processVariableRecord(scopedVariable, variableEntity);
       }
@@ -457,6 +458,12 @@ public class ListViewZeebeRecordProcessor {
     return PI_AND_AI_START_STATES.contains(intent)
         || PI_AND_AI_FINISH_STATES.contains(intent)
         || ELEMENT_MIGRATED.name().equals(intent);
+  }
+
+  private boolean shouldProcessVariableRecord(final Record<VariableRecordValue> record) {
+    final var intent = record.getIntent().name();
+    // skip variable migrated record as it always has null in value field
+    return !VariableIntent.MIGRATED.name().equals(intent);
   }
 
   private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
