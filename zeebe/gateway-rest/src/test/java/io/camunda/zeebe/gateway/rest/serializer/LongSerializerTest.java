@@ -136,11 +136,11 @@ class LongSerializerTest {
   }
 
   @Test
-  void shouldSerializeRestClassWithNumberIfClientIs87x() throws IOException {
+  void shouldSerializeRestClassWithDefaultStringIfClientIsCamunda() throws IOException {
     // given
     doReturn(new UserTaskItem()).when(context).getCurrentValue();
     doReturn("elementInstanceKey").when(context).getCurrentName();
-    doReturn(LongSerializer.HEADER_JAVA_CLIENT_AGENT + "8.7.0")
+    doReturn("camunda-client-java/8.7.0")
         .when(httpServletRequest)
         .getHeader(HttpHeaders.USER_AGENT);
     // when
@@ -152,27 +152,11 @@ class LongSerializerTest {
   }
 
   @Test
-  void shouldSerializeRestClassWithNumberIfClientIs86x() throws IOException {
+  void shouldSerializeRestClassWithNumberIfClientIsZeebe() throws IOException {
     // given
     doReturn(new UserTaskItem()).when(context).getCurrentValue();
     doReturn("elementInstanceKey").when(context).getCurrentName();
-    doReturn(LongSerializer.HEADER_JAVA_CLIENT_AGENT + "8.6.9")
-        .when(httpServletRequest)
-        .getHeader(HttpHeaders.USER_AGENT);
-    // when
-    longSerializer.serialize(1L, jsonGenerator, null);
-    // then
-    verify(jsonGenerator).writeNumber(1L);
-    verify(jsonGenerator, never()).writeString(anyString());
-    verify(httpServletRequest).getHeader(HttpHeaders.ACCEPT);
-  }
-
-  @Test
-  void shouldSerializeRestClassWithStringIfClientIs85x() throws IOException {
-    // given
-    doReturn(new UserTaskItem()).when(context).getCurrentValue();
-    doReturn("elementInstanceKey").when(context).getCurrentName();
-    doReturn(LongSerializer.HEADER_JAVA_CLIENT_AGENT + "8.5.0")
+    doReturn(LongSerializer.HEADER_ZEEBE_CLIENT_AGENT + "8.5.0")
         .when(httpServletRequest)
         .getHeader(HttpHeaders.USER_AGENT);
     // when
