@@ -20,10 +20,13 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
-  public static final ProcessIndex PROCESS_INDEX =
-      new ProcessIndex("test-" + UUID.randomUUID(), true);
+  public static final String IDX_PROCESS_PREFIX = "idxtestprocess" + UUID.randomUUID();
 
-  public static final FormIndex FORM_INDEX = new FormIndex("test-" + UUID.randomUUID(), true);
+  public static final ProcessIndex PROCESS_INDEX = new ProcessIndex(IDX_PROCESS_PREFIX, true);
+
+  public static final String IDX_FORM_PREFIX = "idxtestform" + UUID.randomUUID();
+
+  public static final FormIndex FORM_INDEX = new FormIndex(IDX_FORM_PREFIX, true);
 
   public static final String IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY =
       "camunda.it.opensearch.aws.url";

@@ -8,6 +8,7 @@
 package io.camunda.exporter.cache;
 
 import static io.camunda.exporter.utils.SearchDBExtension.FORM_INDEX;
+import static io.camunda.exporter.utils.SearchDBExtension.IDX_FORM_PREFIX;
 import static io.camunda.exporter.utils.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
@@ -48,14 +49,14 @@ class FormCacheIT {
   void shouldLoadFormEntityFromBackend(final FormCacheArgument formCacheArgument)
       throws IOException {
     // given
-    final var formEntity = new FormEntity().setId("3").setFormId("test").setVersion(1L);
+    final var formEntity = new FormEntity().setId("3").setFormId(IDX_FORM_PREFIX).setVersion(1L);
     formCacheArgument.indexer().accept(formEntity);
 
     // when
     final var form = formCacheArgument.formCache().get("3");
 
     // then
-    final var expectedCachedFormEntity = new CachedFormEntity("test", 1L);
+    final var expectedCachedFormEntity = new CachedFormEntity(IDX_FORM_PREFIX, 1L);
     assertThat(form).isPresent().get().isEqualTo(expectedCachedFormEntity);
   }
 
