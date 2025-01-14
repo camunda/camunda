@@ -51,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -708,6 +709,7 @@ final class NettyMessagingServiceTest {
       // given
       final var subject = nextSubject();
       final var receivedHeartbeat = new AtomicBoolean(false);
+      netty2.forwardHeartbeats(true);
       // register for heartbeats
       netty2.registerHandler(
           HeartbeatHandler.HEARTBEAT_SUBJECT,
@@ -717,6 +719,7 @@ final class NettyMessagingServiceTest {
           });
       final var clientChannel =
           netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+
       Awaitility.await("Until first heartbeat has been received on the server")
           .until(receivedHeartbeat::get);
 
@@ -732,6 +735,14 @@ final class NettyMessagingServiceTest {
     void shouldNotCloseTheConnectionFromTheServerIfNoHeartbeatsIsReceived() {
       // given
       final var subject = nextSubject();
+      netty2.forwardHeartbeats(true);
+      final var receivedHeartbeats = new AtomicInteger(0);
+      netty2.registerHandler(
+          HeartbeatHandler.HEARTBEAT_SUBJECT,
+          (addr, bytes) -> {
+            receivedHeartbeats.incrementAndGet();
+            return CompletableFuture.completedFuture(null);
+          });
       // a client channel
       final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
       // without heartbeat handler,
@@ -747,6 +758,7 @@ final class NettyMessagingServiceTest {
       final var timeout = defaultConfig().getHeartbeatTimeout().toSeconds() + 1;
       assertThatThrownBy(() -> channel.closeFuture().get(timeout, TimeUnit.SECONDS))
           .isInstanceOf(TimeoutException.class);
+      assertThat(receivedHeartbeats.get()).isEqualTo(0);
     }
 
     @Test

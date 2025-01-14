@@ -141,6 +141,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
   private final String actorSchedulerName;
 
+  // flag for passing heartbeats down the pipeline
+  private boolean forwardHeartbeats = false;
+
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
     this(cluster, advertisedAddress, config, ProtocolVersion.latest(), "");
@@ -921,6 +924,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
     }
   }
 
+  @VisibleForTesting
+  boolean forwardHeartbeats() {
+    return forwardHeartbeats;
+  }
+
+  @VisibleForTesting
+  void forwardHeartbeats(final boolean forwardHeartbeatsToHandlers) {
+    forwardHeartbeats = forwardHeartbeatsToHandlers;
+  }
+
   /** Channel initializer for basic connections. */
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -1064,8 +1077,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final var heartbeatHandler =
           isClient
               ? new HeartbeatHandler.Client(
-                  log, messageIdGenerator, advertisedAddress, config.getHeartbeatTimeout())
-              : new HeartbeatHandler.Server(log);
+                  log,
+                  messageIdGenerator,
+                  advertisedAddress,
+                  config.getHeartbeatTimeout(),
+                  forwardHeartbeats)
+              : new HeartbeatHandler.Server(log, forwardHeartbeats);
       context.pipeline().remove(this);
       context.pipeline().addLast("encoder", protocol.newEncoder());
       context.pipeline().addLast("decoder", protocol.newDecoder());

@@ -47,23 +47,27 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   static final String HEARTBEAT_SUBJECT = "internal-heartbeat";
   static final byte[] HEARTBEAT_PAYLOAD = new byte[0];
   protected final Logger log;
+  protected final boolean forwardHeartbeats;
 
-  protected HeartbeatHandler(final Logger log) {
+  protected HeartbeatHandler(final Logger log, final boolean forwardHeartbeats) {
     this.log = log;
+    this.forwardHeartbeats = forwardHeartbeats;
   }
 
   static final class Server extends HeartbeatHandler {
     boolean receivedHeartbeat = false;
 
-    Server(final Logger log) {
-      super(log);
+    Server(final Logger log, final boolean fireHeartbeats) {
+      super(log, fireHeartbeats);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+      boolean heartbeatReceived = false;
       if (msg instanceof final ProtocolRequest request
           && request.subject().equals(HEARTBEAT_SUBJECT)) {
         receivedHeartbeat = true;
+        heartbeatReceived = true;
         ctx.writeAndFlush(createHeartbeat(request.id()));
         if (!Arrays.equals(request.payload(), HEARTBEAT_PAYLOAD)) {
           log.warn(
@@ -75,7 +79,9 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
 
       // Pass the message to the next handler.
       // Handlers downstream can receive heartbeats as well
-      ctx.fireChannelRead(msg);
+      if (!heartbeatReceived || forwardHeartbeats) {
+        ctx.fireChannelRead(msg);
+      }
     }
 
     @Override
@@ -110,8 +116,9 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
         final Logger log,
         final AtomicLong messageIdGenerator,
         final Address advertisedAddress,
-        final Duration heartbeatTimeout) {
-      super(log);
+        final Duration heartbeatTimeout,
+        final boolean fireHeartbeats) {
+      super(log, fireHeartbeats);
       this.messageIdGenerator = messageIdGenerator;
       this.advertisedAddress = advertisedAddress;
       this.heartbeatTimeout = heartbeatTimeout;
@@ -119,11 +126,13 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+      boolean heartbeatReceived = forwardHeartbeats;
       if (msg instanceof final ProtocolReply reply) {
         if (outstandingHeartbeats.contains(reply.id())) {
           // there's no subject in ProtocolReply, so we rely on oustandingHeartbeats to see if it
           // was a reply to a heartbeat
           receivedAnyHeartbeats = true;
+          heartbeatReceived = true;
         }
         // remove all heartbeats sent before (and equal) to the last ProtocolReply received.
         // Note that all ProtocolReply messages (not just heartbeat messages) can indicate that
@@ -144,7 +153,9 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       }
 
       // Pass the message to the next handler, even though it's a heartbeat.
-      ctx.fireChannelRead(msg);
+      if (!heartbeatReceived || forwardHeartbeats) {
+        ctx.fireChannelRead(msg);
+      }
     }
 
     @Override
