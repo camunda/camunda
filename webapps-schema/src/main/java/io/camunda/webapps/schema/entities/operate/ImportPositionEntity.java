@@ -52,6 +52,7 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
     return this;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }

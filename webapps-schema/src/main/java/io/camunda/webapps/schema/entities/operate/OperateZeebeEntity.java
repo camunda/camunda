@@ -25,6 +25,7 @@ public abstract class OperateZeebeEntity<T extends OperateZeebeEntity<T>>
     return (T) this;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }

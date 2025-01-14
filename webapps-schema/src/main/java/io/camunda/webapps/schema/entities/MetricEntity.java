@@ -7,11 +7,13 @@
  */
 package io.camunda.webapps.schema.entities;
 
-import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MetricEntity extends TasklistEntity<MetricEntity> {
+public class MetricEntity extends AbstractExporterEntity<MetricEntity> {
+
+  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private String event;
   private String value;
   private OffsetDateTime eventTime;
@@ -50,6 +52,15 @@ public class MetricEntity extends TasklistEntity<MetricEntity> {
 
   public MetricEntity setEventTime(final OffsetDateTime eventTime) {
     this.eventTime = eventTime;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public MetricEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

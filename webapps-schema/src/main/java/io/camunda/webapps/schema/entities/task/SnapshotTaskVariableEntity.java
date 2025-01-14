@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.task;
 
-import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents variable with its value at the moment when task was completed. */
-public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVariableEntity> {
+public class SnapshotTaskVariableEntity extends AbstractExporterEntity<SnapshotTaskVariableEntity> {
 
+  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
@@ -73,6 +75,15 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
 
   public SnapshotTaskVariableEntity setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public SnapshotTaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

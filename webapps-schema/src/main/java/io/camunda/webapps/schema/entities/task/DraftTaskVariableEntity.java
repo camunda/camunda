@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.entities.task;
 
-import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents draft variable with its value when task is in created state. */
-public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEntity> {
+public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVariableEntity> {
 
+  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
@@ -61,6 +63,15 @@ public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEnt
 
   public DraftTaskVariableEntity setIsPreview(final boolean preview) {
     isPreview = preview;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DraftTaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

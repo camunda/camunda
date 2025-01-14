@@ -8,13 +8,16 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class FormEntity extends TasklistEntity<FormEntity> {
+public class FormEntity extends AbstractExporterEntity<FormEntity> {
 
   @JsonProperty("bpmnId")
   private String formId;
 
+  private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private String schema;
   private Long version;
   private Boolean isDeleted;
@@ -72,6 +75,15 @@ public class FormEntity extends TasklistEntity<FormEntity> {
 
   public FormEntity setEmbedded(final boolean embedded) {
     this.embedded = embedded;
+    return this;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public FormEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

@@ -63,10 +63,12 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
     return this;
   }
 
+  @Override
   public Integer getPartitionId() {
     return partitionId;
   }
 
+  @Override
   public PostImporterQueueEntity setPartitionId(final Integer partitionId) {
     this.partitionId = partitionId;
     return this;
