@@ -13,30 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.client;
+package io.camunda.process.test.api.assertions;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import java.util.List;
-import java.util.stream.Collectors;
 
-public class FlowNodeInstancesResponseDto {
+/** A selector for BPMN elements. */
+@FunctionalInterface
+public interface ElementSelector {
 
-  private List<FlowNodeInstanceDto> items;
-  private long total;
+  /**
+   * Checks if the element matches the selector.
+   *
+   * @param element the BPMN element
+   * @return {@code true} if the element matches, otherwise {@code false}
+   */
+  boolean test(FlowNodeInstance element);
 
-  public List<FlowNodeInstance> getItems() {
-    return items.stream().map(FlowNodeInstance.class::cast).collect(Collectors.toList());
-  }
-
-  public void setItems(final List<FlowNodeInstanceDto> items) {
-    this.items = items;
-  }
-
-  public long getTotal() {
-    return total;
-  }
-
-  public void setTotal(final long total) {
-    this.total = total;
+  /**
+   * Returns a string representation of the selector. It is used to build the failure message of an
+   * assertion. Default: {@link Object#toString()}.
+   *
+   * @return the string representation
+   */
+  default String describe() {
+    return toString();
   }
 }
