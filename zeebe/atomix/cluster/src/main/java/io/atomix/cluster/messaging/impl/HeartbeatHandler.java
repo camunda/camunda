@@ -9,11 +9,39 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
 
+/**
+ * HeartbeatHandler allows to add two-way heartbeats to a connection. To do so, both parties must
+ * add as a first element of their channel pipeline an {@link
+ * io.netty.handler.timeout.IdleStateHandler} with the same timeout configuration (as different
+ * timeout may lead to false positives).
+ *
+ * <p>The client must then add a {@link HeartbeatHandler.Client} handler to its pipeline and the
+ * server a {@link HeartbeatHandler.Server}.
+ *
+ * <p>
+ *
+ * <ul>
+ *   <li>Heartbeats are initiated by the client. The client sends a heartbeat if he hasn't written
+ *       anything in the channel for a while ({@link io.netty.handler.timeout.IdleStateHandler} will
+ *       emit an event when such condition occurs
+ *   <li>The server, upon receiving a heartbeat (in a {@link ProtocolRequest} message), will reply
+ *       with a heartbeat response (in a {@link ProtocolReply})
+ *   <li>If the client does not receive any message for a while ({@link
+ *       io.netty.handler.timeout.IdleStateHandler} will emit an event when such condition occurs)
+ *       it will close the connection
+ *   <li>When the server has detected that it did not receive anything for a while ({@link
+ *       io.netty.handler.timeout.IdleStateHandler} will emit such event), it will close the
+ *       connection if he has detected at least one heartbeat. This condition allows the server to
+ *       not prematurely close the connection if the client's does not send any heartbeats (i.e. was
+ *       an older version).
+ * </ul>
+ */
 abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   // DO NOT CHANGE: changing the subject is a backward INCOMPATIBLE change.
   static final String HEARTBEAT_SUBJECT = "internal-heartbeat";
@@ -45,7 +73,8 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
         }
       }
 
-      // Pass the message to the next handler, even though it's a heartbeat.
+      // Pass the message to the next handler.
+      // Handlers downstream can receive heartbeats as well
       ctx.fireChannelRead(msg);
     }
 
@@ -55,9 +84,11 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
         return;
       }
       if (idleStateEvent.state() == IdleState.READER_IDLE) {
-        // don't close the connection if we did not receive any heartbeat
+        // don't close the connection if we never receive any heartbeat
         if (receivedHeartbeat) {
-          log.warn("Connection {} timed out on the server, closing channel", ctx.channel());
+          log.warn(
+              "Connection {} on the server timed out after idling with no heartbeats from the client, closing channel.",
+              ctx.channel());
           ctx.close();
         }
       }
@@ -72,17 +103,25 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
     private final LongHashSet outstandingHeartbeats = new LongHashSet();
     private final AtomicLong messageIdGenerator;
     private final Address advertisedAddress;
+    private final Duration heartbeatTimeout;
 
-    Client(final Logger log, final AtomicLong messageIdGenerator, final Address advertisedAddress) {
+    Client(
+        final Logger log,
+        final AtomicLong messageIdGenerator,
+        final Address advertisedAddress,
+        final Duration heartbeatTimeout) {
       super(log);
       this.messageIdGenerator = messageIdGenerator;
       this.advertisedAddress = advertisedAddress;
+      this.heartbeatTimeout = heartbeatTimeout;
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
       if (msg instanceof final ProtocolReply reply && outstandingHeartbeats.contains(reply.id())) {
-        // remove all heartbeats sent before the last update
+        // remove all heartbeats sent before (and equal) to the last update.
+        // If we don't do it, the size of oustandingHeartbeats will increase for every missed
+        // heartbeat and the memory will be freed only when the channel is closed.
         outstandingHeartbeats.removeIfLong(id -> id <= reply.id());
         if (reply.status() != Status.OK) {
           log.warn("Received a Heartbeat response with status {}", reply.status());
@@ -105,9 +144,13 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       }
       switch (idleStateEvent.state()) {
         case READER_IDLE -> {
-          // don't close the connection if we did not send any heartbeat
+          // don't close the connection if we haven't sent any heartbeat yet
           if (!outstandingHeartbeats.isEmpty()) {
-            log.warn("Connection {} timed out on the client, closing channel", ctx.channel());
+            log.warn(
+                "Connection {} timed out on the client after not receiving a heartbeat response from the server in {}({} heartbeats pending) closing channel",
+                ctx.channel(),
+                heartbeatTimeout,
+                outstandingHeartbeats.size());
             outstandingHeartbeats.clear();
             ctx.close();
           }

@@ -1063,7 +1063,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final MessagingProtocol protocol = protocolVersion.createProtocol(advertisedAddress);
       final var heartbeatHandler =
           isClient
-              ? new HeartbeatHandler.Client(log, messageIdGenerator, advertisedAddress)
+              ? new HeartbeatHandler.Client(
+                  log, messageIdGenerator, advertisedAddress, config.getHeartbeatTimeout())
               : new HeartbeatHandler.Server(log);
       context.pipeline().remove(this);
       context.pipeline().addLast("encoder", protocol.newEncoder());
