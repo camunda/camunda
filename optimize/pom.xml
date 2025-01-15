@@ -150,11 +150,6 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-      <dependency>
-        <groupId>jakarta.ws.rs</groupId>
-        <artifactId>jakarta.ws.rs-api</artifactId>
-        <version>${jakarta.rs-api.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 

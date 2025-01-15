@@ -92,11 +92,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>jakarta.ws.rs</groupId>
-      <artifactId>jakarta.ws.rs-api</artifactId>
-    </dependency>
-
     <!-- IDENTITY-->
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
