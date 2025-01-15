@@ -76,7 +76,7 @@ public class UserStateTest {
     // when/then
     assertThatThrownBy(() -> userState.create(user))
         .isInstanceOf(ZeebeDbInconsistentException.class)
-        .hasMessage("Key DbLong{2} in ColumnFamily USERS already exists");
+        .hasMessage("Key %s in ColumnFamily USERS already exists".formatted(username));
   }
 
   @DisplayName("should return the correct user by username")
