@@ -189,13 +189,13 @@ public class RequestMapper {
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
   }
 
-  public static Either<ProblemDetail, UpdateUserRequest> toUserUpdateRequest(
+  public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
       final UserUpdateRequest updateRequest, final String username) {
     final UserChangeset changeset = updateRequest.getChangeset();
     return getResult(
         validateUserUpdateRequest(updateRequest),
         () ->
-            new UpdateUserRequest(
+            new UserDTO(
                 username, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
   }
 
@@ -879,8 +879,6 @@ public class RequestMapper {
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
-  public record UpdateUserRequest(String username, String name, String email, String password) {}
-
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
 
@@ -907,8 +905,6 @@ public class RequestMapper {
   public record CreateRoleRequest(String name) {}
 
   public record UpdateRoleRequest(long roleKey, String name) {}
-
-  public record CreateTenantRequest(String tenantId, String name) {}
 
   public record CreateGroupRequest(String name) {}
 

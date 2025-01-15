@@ -18,7 +18,6 @@ import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -77,14 +76,11 @@ public class UserController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateUser(final UpdateUserRequest request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+  private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
+    return RequestMapper.executeServiceMethod(
         () ->
-            userServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .updateUser(
-                    new UserDTO(
-                        request.username(), request.name(), request.email(), request.password())));
+            userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request),
+        ResponseMapper::toUserCreateResponse);
   }
 
   @CamundaPutMapping(
