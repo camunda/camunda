@@ -64,8 +64,7 @@
     parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
     flushCache="true">
     UPDATE USERS
-    SET USERNAME = #{username},
-        NAME     = #{name},
+    SET NAME     = #{name},
         EMAIL    = #{email},
         PASSWORD = #{password}
     WHERE USERNAME = #{username}
