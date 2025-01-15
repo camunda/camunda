@@ -293,10 +293,10 @@ public class UserStateTest {
 
     // when
     final var tenantId = "tenant-1";
-    userState.addTenantId(userKey, tenantId);
+    userState.addTenantId(username, tenantId);
 
     // then
-    final var persistedUser = userState.getUser(userKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getTenantIdsList()).contains(tenantId);
   }
 
@@ -321,11 +321,11 @@ public class UserStateTest {
     // when
     final var tenantId1 = "tenant-1";
     final var tenantId2 = "tenant-2";
-    userState.addTenantId(userKey, tenantId1);
-    userState.addTenantId(userKey, tenantId2);
+    userState.addTenantId(username, tenantId1);
+    userState.addTenantId(username, tenantId2);
 
     // then
-    final var persistedUser = userState.getUser(userKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getTenantIdsList()).containsExactlyInAnyOrder(tenantId1, tenantId2);
   }
 
@@ -348,14 +348,14 @@ public class UserStateTest {
             .setPassword(password));
 
     final var tenantId1 = "tenant-1";
-    userState.addTenantId(userKey, tenantId1);
+    userState.addTenantId(username, tenantId1);
 
     // when
     final var tenantId2 = "tenant-2";
-    userState.addTenantId(userKey, tenantId2);
+    userState.addTenantId(username, tenantId2);
 
     // then
-    final var persistedUser = userState.getUser(userKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getTenantIdsList()).containsExactlyInAnyOrder(tenantId1, tenantId2);
   }
 
@@ -400,13 +400,13 @@ public class UserStateTest {
             .setEmail(email)
             .setPassword(password));
     final var tenantId = "test-tenant-id";
-    userState.addTenantId(userKey, tenantId);
+    userState.addTenantId(username, tenantId);
 
     // when
     userState.removeTenant(userKey, tenantId);
 
     // then
-    final var persistedUser = userState.getUser(userKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getTenantIdsList()).isEmpty();
   }
 }
