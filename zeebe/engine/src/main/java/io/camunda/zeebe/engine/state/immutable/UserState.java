@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.user.PersistedUser;
-import java.util.List;
 import java.util.Optional;
 
 public interface UserState {
@@ -22,6 +21,4 @@ public interface UserState {
    * @return An optional containing the user if it was found, otherwise an empty optional
    */
   Optional<PersistedUser> getUser(final long userKey);
-
-  List<String> getTenantIds(final long userKey);
 }
