@@ -457,8 +457,9 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toAuthorizationCreateResponse(
       final AuthorizationRecord authorizationRecord) {
-    final var response = new AuthorizationCreateResponse();
-    // TODO: add set method https://github.com/camunda/camunda/issues/26883
+    final var response =
+        new AuthorizationCreateResponse()
+            .authorizationKey(authorizationRecord.getAuthenticationKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

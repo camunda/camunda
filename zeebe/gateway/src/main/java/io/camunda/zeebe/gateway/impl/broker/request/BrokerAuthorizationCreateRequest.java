@@ -28,7 +28,7 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
   }
 
   public BrokerAuthorizationCreateRequest setOwnerId(final String ownerId) {
-    // TODO: add set method https://github.com/camunda/camunda/issues/26883
+    requestDto.setOwnerId(ownerId);
     return this;
   }
 
@@ -38,7 +38,7 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
   }
 
   public BrokerAuthorizationCreateRequest setResourceId(final String resourceId) {
-    // TODO: add set method https://github.com/camunda/camunda/issues/26883
+    requestDto.setResourceId(resourceId);
     return this;
   }
 
@@ -49,7 +49,8 @@ public class BrokerAuthorizationCreateRequest extends BrokerExecuteCommand<Autho
   }
 
   public BrokerAuthorizationCreateRequest setPermissions(final Set<PermissionType> permissions) {
-    // TODO: add set method https://github.com/camunda/camunda/issues/26883
+    // TODO: rename in: https://github.com/camunda/camunda/issues/26883
+    requestDto.setAuthorizationPermissions(permissions);
     return this;
   }
 
