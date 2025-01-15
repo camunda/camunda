@@ -328,7 +328,6 @@
               <dep>org.codehaus.janino:janino</dep>
               <dep>org.eclipse.angus:jakarta.mail</dep>
               <dep>org.springframework:spring-tx</dep>
-              <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
               <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
               <dep>org.springframework.boot:spring-boot-starter-web</dep>
               <dep>software.amazon.awssdk:sdk-core</dep>
