@@ -26,18 +26,18 @@ public class DbUserState implements UserState, MutableUserState {
 
   private final DbString username;
   private final DbLong userKey;
-  private final DbForeignKey<DbLong> fkUserKey;
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> userKeyByUsernameColumnFamily;
+  private final DbForeignKey<DbString> fkUsername;
+  private final ColumnFamily<DbLong, DbForeignKey<DbString>> userKeyByUsernameColumnFamily;
   private final ColumnFamily<DbString, PersistedUser> usersColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     username = new DbString();
     userKey = new DbLong();
-    fkUserKey = new DbForeignKey<>(userKey, ZbColumnFamilies.USERS);
+    fkUsername = new DbForeignKey<>(username, ZbColumnFamilies.USERS);
     userKeyByUsernameColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, fkUserKey);
+            ZbColumnFamilies.USERNAME_BY_USER_KEY, transactionContext, userKey, fkUsername);
     usersColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USERS, transactionContext, username, new PersistedUser());
@@ -50,7 +50,7 @@ public class DbUserState implements UserState, MutableUserState {
     persistedUser.setUser(user);
 
     usersColumnFamily.insert(username, persistedUser);
-    userKeyByUsernameColumnFamily.insert(username, fkUserKey);
+    userKeyByUsernameColumnFamily.insert(userKey, fkUsername);
   }
 
   @Override
@@ -135,12 +135,10 @@ public class DbUserState implements UserState, MutableUserState {
   @Override
   public Optional<PersistedUser> getUser(final long userKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = usersColumnFamily.get(this.userKey);
+    final var username = userKeyByUsernameColumnFamily.get(this.userKey);
 
-    if (persistedUser == null) {
-      return Optional.empty();
-    }
-    return Optional.of(persistedUser.copy());
+    return Optional.ofNullable(username)
+        .flatMap(dbUsername -> getUser(dbUsername.inner().toString()));
   }
 
   @Override
