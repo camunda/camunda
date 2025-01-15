@@ -116,10 +116,10 @@ public final class JobActivationClient {
     return expectation.apply(partitionId, position);
   }
 
-  public Record<JobBatchRecordValue> activate(final long userKey) {
+  public Record<JobBatchRecordValue> activate(final String username) {
     final long position =
         writer.writeCommandOnPartition(
-            partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord, userKey);
+            partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord, username);
 
     return expectation.apply(partitionId, position);
   }

@@ -8,7 +8,6 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ public record RdbmsExporterConfig(
     long partitionId,
     Duration flushInterval,
     int maxQueueSize,
-    Controller controller,
     RdbmsWriter rdbmsWriter,
     Map<ValueType, List<RdbmsExportHandler>> handlers) {
 
@@ -35,7 +33,6 @@ public record RdbmsExporterConfig(
     private long partitionId;
     private Duration flushInterval;
     private int maxQueueSize;
-    private Controller controller;
     private RdbmsWriter rdbmsWriter;
     private Map<ValueType, List<RdbmsExportHandler>> handlers = new HashMap<>();
 
@@ -51,11 +48,6 @@ public record RdbmsExporterConfig(
 
     public Builder maxQueueSize(final int value) {
       maxQueueSize = value;
-      return this;
-    }
-
-    public Builder controller(final Controller value) {
-      controller = value;
       return this;
     }
 
@@ -80,7 +72,7 @@ public record RdbmsExporterConfig(
 
     public RdbmsExporterConfig build() {
       return new RdbmsExporterConfig(
-          partitionId, flushInterval, maxQueueSize, controller, rdbmsWriter, handlers);
+          partitionId, flushInterval, maxQueueSize, rdbmsWriter, handlers);
     }
   }
 }

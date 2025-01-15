@@ -535,13 +535,11 @@ public class RequestMapper {
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
-    final Map<String, Object> claims = new HashMap<>();
-    claims.put(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
-
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
-    if (requestAuthentication != null) {
+    final Map<String, Object> claims = new HashMap<>();
 
+    if (requestAuthentication != null) {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaPrincipal authenticatedPrincipal) {
         authenticatedRoleKeys.addAll(
@@ -550,6 +548,7 @@ public class RequestMapper {
                 .toList());
         if (authenticatedPrincipal instanceof final CamundaUser user) {
           authenticatedUserKey = user.getUserKey();
+          claims.put(Authorization.AUTHORIZED_USERNAME, user.getUsername());
         }
       }
 
@@ -558,10 +557,6 @@ public class RequestMapper {
             .getTokenAttributes()
             .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
       }
-    }
-
-    if (authenticatedUserKey != null) {
-      claims.put(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
     }
 
     return new Builder()

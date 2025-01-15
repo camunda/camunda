@@ -30,7 +30,7 @@ final class ReschedulingTaskTest {
   @Test
   void shouldRescheduleTaskOnError() {
     // given
-    final var task = new ReschedulingTask(new FailingJob(), 1, 10, executor, LOGGER);
+    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, executor, LOGGER);
 
     // when
     task.run();
@@ -45,7 +45,7 @@ final class ReschedulingTaskTest {
   @Test
   void shouldRescheduleTaskOnErrorWithDelay() {
     // given
-    final var task = new ReschedulingTask(new FailingJob(), 1, 10, executor, LOGGER);
+    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, executor, LOGGER);
 
     // when
     task.run();
@@ -81,7 +81,7 @@ final class ReschedulingTaskTest {
             return CompletableFuture.completedFuture(1);
           }
         };
-    final var task = new ReschedulingTask(job, 1, 10L, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 1, 10L, 1000, executor, LOGGER);
 
     // when
     task.run();
@@ -110,7 +110,7 @@ final class ReschedulingTaskTest {
             return null;
           }
         };
-    final var task = new ReschedulingTask(job, 1, 10L, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 1, 10L, 1000, executor, LOGGER);
 
     // when
     task.run();
@@ -132,7 +132,7 @@ final class ReschedulingTaskTest {
             return CompletableFuture.completedFuture(1);
           }
         };
-    final var task = new ReschedulingTask(job, 2, 10L, executor, LOGGER);
+    final var task = new ReschedulingTask(job, 2, 10L, 1000, executor, LOGGER);
 
     // when
     task.run();
@@ -150,6 +150,36 @@ final class ReschedulingTaskTest {
     inOrder
         .verify(executor, Mockito.timeout(5_000).times(1))
         .schedule(task, 14L, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
+  void shouldRespectMaxDelayWhenRescheduleOnPartialBatch() {
+    // given
+    final var job =
+        new ArchiverJob() {
+          @Override
+          public CompletableFuture<Integer> archiveNextBatch() {
+            return CompletableFuture.completedFuture(1);
+          }
+        };
+    final var task = new ReschedulingTask(job, 2, 10L, 12L, executor, LOGGER);
+
+    // when
+    task.run();
+
+    // then
+    // FYI - the back off is exponential, but at low values it looks like it's always adding the
+    // same value
+    final var inOrder = Mockito.inOrder(executor);
+    inOrder
+        .verify(executor, Mockito.timeout(5_000).times(1))
+        .schedule(task, 10L, TimeUnit.MILLISECONDS);
+    inOrder
+        .verify(executor, Mockito.timeout(5_000).times(1))
+        .schedule(task, 12L, TimeUnit.MILLISECONDS);
+    inOrder
+        .verify(executor, Mockito.timeout(5_000).times(1))
+        .schedule(task, 12L, TimeUnit.MILLISECONDS);
   }
 
   private static final class FailingJob implements ArchiverJob {

@@ -28,6 +28,7 @@ public final class ReschedulingTask implements Runnable {
       final BackgroundTask task,
       final int minimumWorkCount,
       final long delayBetweenRunsMs,
+      final long maxDelayBetweenRunsMs,
       final ScheduledExecutorService executor,
       final Logger logger) {
     this.task = task;
@@ -35,7 +36,7 @@ public final class ReschedulingTask implements Runnable {
     this.executor = executor;
     this.logger = logger;
 
-    idleStrategy = new ExponentialBackoff(60_000, delayBetweenRunsMs, 1.2, 0);
+    idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
     errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
   }
 

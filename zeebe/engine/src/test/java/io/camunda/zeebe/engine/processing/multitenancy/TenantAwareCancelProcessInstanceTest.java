@@ -68,7 +68,7 @@ public class TenantAwareCancelProcessInstanceTest {
   @Test
   public void shouldRejectCancelInstanceForUnauthorizedTenant() {
     // given
-    final var userKey = ENGINE.user().newUser("username").create().getValue().getUserKey();
+    final var user = ENGINE.user().newUser("username").create().getValue();
     final var tenantKey =
         ENGINE
             .tenant()
@@ -81,7 +81,7 @@ public class TenantAwareCancelProcessInstanceTest {
         .tenant()
         .addEntity(tenantKey)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityKey(user.getUserKey())
         .add();
 
     ENGINE
@@ -104,7 +104,7 @@ public class TenantAwareCancelProcessInstanceTest {
             .processInstance()
             .withInstanceKey(processInstanceKey)
             .expectRejection()
-            .cancel(userKey);
+            .cancel(user.getUsername());
 
     // then
     assertThat(rejection)

@@ -262,13 +262,13 @@ class RdbmsExporterTest {
 
     final var builder =
         new RdbmsExporterConfig.Builder()
-            .controller(controller)
             .rdbmsWriter(rdbmsWriter)
             .partitionId(0)
             .flushInterval(Duration.ofMillis(500))
             .maxQueueSize(100);
 
     exporter = new RdbmsExporter(builderFunction.apply(builder).build());
+    exporter.open(controller);
   }
 
   private static final class StubExecutionQueue implements ExecutionQueue {
