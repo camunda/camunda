@@ -52,32 +52,49 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 public final class ResponseMapper {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
   public static JobActivationResult<JobActivationResponse> toActivateJobsResponse(
       final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
+    long currentResponseSize = 0L;
     final JobActivationResponse response = new JobActivationResponse();
+
+    final List<ActivatedJob> sizeExceedingJobs = new ArrayList<>();
+    final List<ActivatedJob> responseJobs = new ArrayList<>();
 
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
       final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
 
-      response.addJobsItem(activatedJob);
+      // This is the message size of the message from the broker, not the size of the REST message
+      final int activatedJobSize = job.getLength();
+      if (currentResponseSize + activatedJobSize <= activationResponse.maxResponseSize()) {
+        responseJobs.add(activatedJob);
+        currentResponseSize += activatedJobSize;
+      } else {
+        sizeExceedingJobs.add(activatedJob);
+      }
     }
 
-    return new RestJobActivationResult(response);
+    response.setJobs(responseJobs);
+
+    return new RestJobActivationResult(response, sizeExceedingJobs);
   }
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
@@ -363,9 +380,13 @@ public final class ResponseMapper {
   static class RestJobActivationResult implements JobActivationResult<JobActivationResponse> {
 
     private final JobActivationResponse response;
+    private final List<io.camunda.zeebe.gateway.protocol.rest.ActivatedJob> sizeExceedingJobs;
 
-    RestJobActivationResult(final JobActivationResponse response) {
+    RestJobActivationResult(
+        final JobActivationResponse response,
+        final List<io.camunda.zeebe.gateway.protocol.rest.ActivatedJob> sizeExceedingJobs) {
       this.response = response;
+      this.sizeExceedingJobs = sizeExceedingJobs;
     }
 
     @Override
@@ -387,7 +408,12 @@ public final class ResponseMapper {
 
     @Override
     public List<ActivatedJob> getJobsToDefer() {
-      return Collections.emptyList();
+      final var result = new ArrayList<ActivatedJob>(sizeExceedingJobs.size());
+      for (final var job : sizeExceedingJobs) {
+        final var key = job.getJobKey();
+        result.add(new ActivatedJob(key, job.getRetries()));
+      }
+      return result;
     }
   }
 }
