@@ -4041,9 +4041,7 @@ components:
             - name
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     TenantSearchQueryRequest:
@@ -4109,9 +4107,7 @@ components:
             - dueDate
             - priority
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     UserTaskSearchQueryRequest:
@@ -4143,9 +4139,7 @@ components:
             - scopeKey
             - processInstanceKey
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     UserTaskVariableSearchQueryRequest:
@@ -4413,9 +4407,7 @@ components:
             - scopeKey
             - processInstanceKey
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     VariableSearchQueryRequest:
@@ -4554,9 +4546,7 @@ components:
             - processDefinitionId
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     ProcessDefinitionSearchQueryRequest:
@@ -4683,9 +4673,7 @@ components:
             - incident
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     ProcessInstanceSearchQueryRequest:
@@ -5111,9 +5099,7 @@ components:
             - incidentKey
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     FlowNodeInstanceSearchQueryRequest:
@@ -5340,9 +5326,7 @@ components:
             - decisionRequirementsKey
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     DecisionDefinitionSearchQueryRequest:
@@ -5407,9 +5391,7 @@ components:
             - jobKey
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     IncidentSearchQueryRequest:
@@ -5771,9 +5753,7 @@ components:
             - ownerKey
             - resourceType
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     AuthorizationSearchQueryRequest:
@@ -5899,9 +5879,7 @@ components:
             - name
             - email
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     UserSearchQueryRequest:
@@ -5930,9 +5908,7 @@ components:
             - claimValue
             - name
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     MappingSearchQueryRequest:
@@ -6208,9 +6184,7 @@ components:
             - roleKey
             - name
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     RoleSearchQueryRequest:
@@ -6332,9 +6306,7 @@ components:
             - groupKey
             - name
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     GroupSearchQueryRequest:
@@ -7082,9 +7054,7 @@ components:
             - decisionRequirementsId
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     DecisionRequirementsSearchQueryRequest:
@@ -7391,9 +7361,7 @@ components:
             - decisionDefinitionType
             - tenantId
         order:
-          description: The order in which to sort the related field.
-          allOf:
-            - $ref: "#/components/schemas/SortOrderEnum"
+          $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
     DecisionInstanceSearchQueryRequest:
@@ -7603,6 +7571,7 @@ components:
         - UNKNOWN
     SortOrderEnum:
       description: The order in which to sort the related field.
+      type: string
       enum:
         - ASC
         - DESC
