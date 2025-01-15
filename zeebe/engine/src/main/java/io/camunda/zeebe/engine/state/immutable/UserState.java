@@ -10,11 +10,8 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import java.util.List;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public interface UserState {
-
-  Optional<PersistedUser> getUser(final DirectBuffer username);
 
   Optional<PersistedUser> getUser(final String username);
 

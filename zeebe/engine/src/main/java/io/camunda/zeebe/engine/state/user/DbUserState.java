@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbUserState implements UserState, MutableUserState {
 
@@ -122,18 +121,6 @@ public class DbUserState implements UserState, MutableUserState {
     groupKeys.remove(groupKey);
     persistedUser.setGroupKeysList(groupKeys);
     usersColumnFamily.update(this.username, persistedUser);
-  }
-
-  @Override
-  public Optional<PersistedUser> getUser(final DirectBuffer username) {
-    this.username.wrapBuffer(username);
-    final var key = userKeyByUsernameColumnFamily.get(this.username);
-
-    if (key == null) {
-      return Optional.empty();
-    }
-
-    return getUser(key.inner().getValue());
   }
 
   @Override
