@@ -16,11 +16,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest.ActionEnum;
+import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
@@ -58,6 +61,131 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void setup() {
     when(authorizationServices.withAuthentication(any(Authentication.class)))
         .thenReturn(authorizationServices);
+  }
+
+  @Test
+  void createAuthorizationShouldReturnTheKey() {
+    final var authorizationKey = 1L;
+    final var ownerId = "ownerId";
+    final var resourceId = "resourceId";
+
+    final var request =
+        new AuthorizationCreateRequest()
+            .ownerId(ownerId)
+            .ownerType(OwnerTypeEnum.USER)
+            .resourceId(resourceId)
+            .resourceType(ResourceTypeEnum.PROCESS_DEFINITION)
+            .permissions(List.of(PermissionTypeEnum.CREATE));
+
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthenticationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setResourceId(resourceId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setAuthorizationPermissions(Set.of(PermissionType.CREATE));
+
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(authorizationRecord));
+
+    webClient
+        .post()
+        .uri("/v2/authorizations")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+            {
+              "authorizationKey": "%s"
+            }"""
+                .formatted(authorizationKey));
+
+    final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
+    verify(authorizationServices, times(1)).createAuthorization(captor.capture());
+    final var capturedRequest = captor.getValue();
+    assertEquals(ownerId, capturedRequest.ownerId());
+    assertEquals(authorizationRecord.getOwnerType(), capturedRequest.ownerType());
+    assertEquals(resourceId, capturedRequest.resourceId());
+    assertEquals(authorizationRecord.getResourceType(), capturedRequest.resourceType());
+    assertEquals(1, capturedRequest.permissions().size());
+    assertEquals(authorizationRecord.getAuthorizationPermissions(), capturedRequest.permissions());
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidCreationRequests")
+  public void createAuthorizationShouldReturnBadRequest(
+      final AuthorizationCreateRequest request, final String errorMessage) {
+    final var expectedBody = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+    expectedBody.setTitle(INVALID_ARGUMENT.name());
+    expectedBody.setInstance(URI.create("/v2/authorizations"));
+    expectedBody.setDetail(errorMessage);
+
+    webClient
+        .post()
+        .uri("/v2/authorizations")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  private static Stream<Arguments> provideInvalidCreationRequests() {
+    final var permissions = List.of(PermissionTypeEnum.CREATE);
+
+    return Stream.of(
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(permissions),
+            "No ownerId provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(permissions),
+            "No ownerType provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(permissions),
+            "No resourceId provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .permissions(permissions),
+            "No resourceType provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.DEPLOYMENT),
+            "No permissions provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(List.of()),
+            "No permissions provided."));
   }
 
   @Test
@@ -100,7 +228,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     final var capturedRequest = captor.getValue();
     assertEquals(capturedRequest.ownerKey(), authorizationRecord.getOwnerKey());
     assertEquals(capturedRequest.resourceType(), authorizationRecord.getResourceType());
-    assertEquals(capturedRequest.permissions().size(), 1);
+    assertEquals(1, capturedRequest.permissions().size());
     assertEquals(
         capturedRequest.permissions().get(permission.getPermissionType()),
         permission.getResourceIds());
