@@ -17,7 +17,12 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record UserTaskDbQuery(UserTaskFilter filter, UserTaskSort sort, SearchQueryPage page, String legacyId, String legacyProcessInstanceId) {
+public record UserTaskDbQuery(
+    UserTaskFilter filter,
+    UserTaskSort sort,
+    SearchQueryPage page,
+    String legacyId,
+    String legacyProcessInstanceId) {
 
   public UserTaskDbQuery {
     // There should be a default in the SearchQueryPage, so this should never happen

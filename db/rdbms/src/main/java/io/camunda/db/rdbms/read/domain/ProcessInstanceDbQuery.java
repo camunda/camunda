@@ -16,7 +16,10 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceDbQuery(
-    ProcessInstanceFilter filter, DbQuerySorting<ProcessInstanceEntity> sort, DbQueryPage page, String legacyProcessInstanceId) {
+    ProcessInstanceFilter filter,
+    DbQuerySorting<ProcessInstanceEntity> sort,
+    DbQueryPage page,
+    String legacyProcessInstanceId) {
 
   public static ProcessInstanceDbQuery of(
       final Function<ProcessInstanceDbQuery.Builder, ObjectBuilder<ProcessInstanceDbQuery>> fn) {

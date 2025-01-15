@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record IncidentDbQuery(
-    IncidentFilter filter, DbQuerySorting<IncidentEntity> sort, DbQueryPage page, String legacyId, String legacyProcessInstanceId) {
+    IncidentFilter filter,
+    DbQuerySorting<IncidentEntity> sort,
+    DbQueryPage page,
+    String legacyId,
+    String legacyProcessInstanceId) {
 
   public static IncidentDbQuery of(
       final Function<IncidentDbQuery.Builder, ObjectBuilder<IncidentDbQuery>> fn) {

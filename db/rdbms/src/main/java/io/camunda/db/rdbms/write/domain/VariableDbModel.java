@@ -12,7 +12,6 @@ import static io.camunda.util.ValueTypeUtil.mapBoolean;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
-
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -34,20 +33,21 @@ public final class VariableDbModel {
   private final String legacyId;
   private final String legacyProcessInstanceId;
 
-  public VariableDbModel(Long variableKey,
-                         String legacyId,
-                         String legacyProcessInstanceId,
-                         Long processInstanceKey,
-                         String processDefinitionId,
-                         Long scopeKey,
-                         ValueTypeEnum type,
-                         String name,
-                         Double doubleValue,
-                         Long longValue,
-                         String value,
-                         String fullValue,
-                         String tenantId,
-                         boolean isPreview) {
+  public VariableDbModel(
+      Long variableKey,
+      String legacyId,
+      String legacyProcessInstanceId,
+      Long processInstanceKey,
+      String processDefinitionId,
+      Long scopeKey,
+      ValueTypeEnum type,
+      String name,
+      Double doubleValue,
+      Long longValue,
+      String value,
+      String fullValue,
+      String tenantId,
+      boolean isPreview) {
     this.variableKey = variableKey;
     this.name = name;
     this.type = type;
@@ -64,16 +64,22 @@ public final class VariableDbModel {
     this.legacyProcessInstanceId = legacyProcessInstanceId;
   }
 
-  public VariableDbModel copy(final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>> builderFunction) {
-    return builderFunction.apply(new VariableDbModelBuilder().legacyId(legacyId)
-        .legacyProcessInstanceId(legacyProcessInstanceId)
-        .variableKey(this.variableKey)
-        .value(this.value)
-        .name(this.name)
-        .scopeKey(this.scopeKey)
-        .processInstanceKey(this.processInstanceKey)
-        .processDefinitionId(this.processDefinitionId)
-        .tenantId(this.tenantId)).build();
+  public VariableDbModel copy(
+      final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
+          builderFunction) {
+    return builderFunction
+        .apply(
+            new VariableDbModelBuilder()
+                .legacyId(legacyId)
+                .legacyProcessInstanceId(legacyProcessInstanceId)
+                .variableKey(this.variableKey)
+                .value(this.value)
+                .name(this.name)
+                .scopeKey(this.scopeKey)
+                .processInstanceKey(this.processInstanceKey)
+                .processDefinitionId(this.processDefinitionId)
+                .tenantId(this.tenantId))
+        .build();
   }
 
   public Long variableKey() {
@@ -134,33 +140,93 @@ public final class VariableDbModel {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)
+    if (obj == this) {
       return true;
-    if (obj == null || obj.getClass() != this.getClass())
+    }
+    if (obj == null || obj.getClass() != this.getClass()) {
       return false;
-    var that = (VariableDbModel) obj;
-    return Objects.equals(this.variableKey, that.variableKey) && Objects.equals(this.name, that.name) && Objects.equals(
-        this.type, that.type) && Objects.equals(this.doubleValue, that.doubleValue) && Objects.equals(this.longValue,
-        that.longValue) && Objects.equals(this.value, that.value) && Objects.equals(this.fullValue, that.fullValue)
-        && this.isPreview == that.isPreview && Objects.equals(this.scopeKey, that.scopeKey) && Objects.equals(
-        this.processInstanceKey, that.processInstanceKey) && Objects.equals(this.processDefinitionId,
-        that.processDefinitionId) && Objects.equals(this.tenantId, that.tenantId) && Objects.equals(this.legacyId,
-        that.legacyId) && Objects.equals(this.legacyProcessInstanceId, that.legacyProcessInstanceId);
+    }
+    final var that = (VariableDbModel) obj;
+    return Objects.equals(this.variableKey, that.variableKey)
+        && Objects.equals(this.name, that.name)
+        && Objects.equals(this.type, that.type)
+        && Objects.equals(this.doubleValue, that.doubleValue)
+        && Objects.equals(this.longValue, that.longValue)
+        && Objects.equals(this.value, that.value)
+        && Objects.equals(this.fullValue, that.fullValue)
+        && this.isPreview == that.isPreview
+        && Objects.equals(this.scopeKey, that.scopeKey)
+        && Objects.equals(this.processInstanceKey, that.processInstanceKey)
+        && Objects.equals(this.processDefinitionId, that.processDefinitionId)
+        && Objects.equals(this.tenantId, that.tenantId)
+        && Objects.equals(this.legacyId, that.legacyId)
+        && Objects.equals(this.legacyProcessInstanceId, that.legacyProcessInstanceId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(variableKey, name, type, doubleValue, longValue, value, fullValue, isPreview, scopeKey,
-        processInstanceKey, processDefinitionId, tenantId, legacyId, legacyProcessInstanceId);
+    return Objects.hash(
+        variableKey,
+        name,
+        type,
+        doubleValue,
+        longValue,
+        value,
+        fullValue,
+        isPreview,
+        scopeKey,
+        processInstanceKey,
+        processDefinitionId,
+        tenantId,
+        legacyId,
+        legacyProcessInstanceId);
   }
 
   @Override
   public String toString() {
-    return "VariableDbModel[" + "variableKey=" + variableKey + ", " + "name=" + name + ", " + "type=" + type + ", "
-        + "doubleValue=" + doubleValue + ", " + "longValue=" + longValue + ", " + "value=" + value + ", " + "fullValue="
-        + fullValue + ", " + "isPreview=" + isPreview + ", " + "scopeKey=" + scopeKey + ", " + "processInstanceKey="
-        + processInstanceKey + ", " + "processDefinitionId=" + processDefinitionId + ", " + "tenantId=" + tenantId
-        + ", " + "legacyId=" + legacyId + ", " + "legacyProcessInstanceId=" + legacyProcessInstanceId + ']';
+    return "VariableDbModel["
+        + "variableKey="
+        + variableKey
+        + ", "
+        + "name="
+        + name
+        + ", "
+        + "type="
+        + type
+        + ", "
+        + "doubleValue="
+        + doubleValue
+        + ", "
+        + "longValue="
+        + longValue
+        + ", "
+        + "value="
+        + value
+        + ", "
+        + "fullValue="
+        + fullValue
+        + ", "
+        + "isPreview="
+        + isPreview
+        + ", "
+        + "scopeKey="
+        + scopeKey
+        + ", "
+        + "processInstanceKey="
+        + processInstanceKey
+        + ", "
+        + "processDefinitionId="
+        + processDefinitionId
+        + ", "
+        + "tenantId="
+        + tenantId
+        + ", "
+        + "legacyId="
+        + legacyId
+        + ", "
+        + "legacyProcessInstanceId="
+        + legacyProcessInstanceId
+        + ']';
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -175,8 +241,7 @@ public final class VariableDbModel {
     private String legacyId;
     private String legacyProcessInstanceId;
 
-    public VariableDbModelBuilder() {
-    }
+    public VariableDbModelBuilder() {}
 
     public VariableDbModelBuilder legacyId(final String id) {
       legacyId = id;
@@ -238,26 +303,75 @@ public final class VariableDbModel {
     }
 
     private VariableDbModel getModel(final String value) {
-      return new VariableDbModel(variableKey, legacyId, legacyProcessInstanceId, processInstanceKey,
-          processDefinitionId, scopeKey, ValueTypeEnum.STRING, name, null, null, value, null, tenantId, false);
+      return new VariableDbModel(
+          variableKey,
+          legacyId,
+          legacyProcessInstanceId,
+          processInstanceKey,
+          processDefinitionId,
+          scopeKey,
+          ValueTypeEnum.STRING,
+          name,
+          null,
+          null,
+          value,
+          null,
+          tenantId,
+          false);
     }
 
     private VariableDbModel getModelWithPreview() {
-      return new VariableDbModel(variableKey, legacyId, legacyProcessInstanceId, processInstanceKey,
-          processDefinitionId, scopeKey, ValueTypeEnum.STRING, name, null, null,
-          value.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD), value, tenantId, true);
+      return new VariableDbModel(
+          variableKey,
+          legacyId,
+          legacyProcessInstanceId,
+          processInstanceKey,
+          processDefinitionId,
+          scopeKey,
+          ValueTypeEnum.STRING,
+          name,
+          null,
+          null,
+          value.substring(0, DEFAULT_VARIABLE_SIZE_THRESHOLD),
+          value,
+          tenantId,
+          true);
     }
 
     private VariableDbModel getLongModel() {
-      return new VariableDbModel(variableKey, legacyId, legacyProcessInstanceId, processInstanceKey,
-          processDefinitionId, scopeKey, ValueTypeEnum.LONG, name, null, Long.parseLong(value), value, null, tenantId,
+      return new VariableDbModel(
+          variableKey,
+          legacyId,
+          legacyProcessInstanceId,
+          processInstanceKey,
+          processDefinitionId,
+          scopeKey,
+          ValueTypeEnum.LONG,
+          name,
+          null,
+          Long.parseLong(value),
+          value,
+          null,
+          tenantId,
           false);
     }
 
     private VariableDbModel getDoubleModel() {
-      return new VariableDbModel(variableKey, legacyId, legacyProcessInstanceId, processInstanceKey,
-          processDefinitionId, scopeKey, ValueTypeEnum.DOUBLE, name, Double.parseDouble(value), null, value, null,
-          tenantId, false);
+      return new VariableDbModel(
+          variableKey,
+          legacyId,
+          legacyProcessInstanceId,
+          processInstanceKey,
+          processDefinitionId,
+          scopeKey,
+          ValueTypeEnum.DOUBLE,
+          name,
+          Double.parseDouble(value),
+          null,
+          value,
+          null,
+          tenantId,
+          false);
     }
   }
 }

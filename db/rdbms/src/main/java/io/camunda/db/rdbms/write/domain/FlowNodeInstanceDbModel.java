@@ -32,22 +32,23 @@ public final class FlowNodeInstanceDbModel implements Copyable<FlowNodeInstanceD
   private final String legacyProcessInstanceId;
   private final Boolean hasIncident;
 
-  public FlowNodeInstanceDbModel(Long flowNodeInstanceKey,
-                                 String legacyId,
-                                 String legacyProcessInstanceId,
-                                 String flowNodeId,
-                                 Long processInstanceKey,
-                                 String processDefinitionId,
-                                 Long processDefinitionKey,
-                                 FlowNodeType type,
-                                 FlowNodeState state,
-                                 OffsetDateTime startDate,
-                                 OffsetDateTime endDate,
-                                 String tenantId,
-                                 String treePath,
-                                 Long incidentKey,
-                                 Long numSubprocessIncidents,
-                                 Boolean hasIncident) {
+  public FlowNodeInstanceDbModel(
+      Long flowNodeInstanceKey,
+      String legacyId,
+      String legacyProcessInstanceId,
+      String flowNodeId,
+      Long processInstanceKey,
+      String processDefinitionId,
+      Long processDefinitionKey,
+      FlowNodeType type,
+      FlowNodeState state,
+      OffsetDateTime startDate,
+      OffsetDateTime endDate,
+      String tenantId,
+      String treePath,
+      Long incidentKey,
+      Long numSubprocessIncidents,
+      Boolean hasIncident) {
     this.flowNodeInstanceKey = flowNodeInstanceKey;
     this.processInstanceKey = processInstanceKey;
     this.processDefinitionKey = processDefinitionKey;
@@ -67,23 +68,28 @@ public final class FlowNodeInstanceDbModel implements Copyable<FlowNodeInstanceD
   }
 
   @Override
-  public FlowNodeInstanceDbModel copy(final Function<ObjectBuilder<FlowNodeInstanceDbModel>, ObjectBuilder<FlowNodeInstanceDbModel>> builderFunction) {
-    return builderFunction.apply(new FlowNodeInstanceDbModelBuilder()
-        .legacyId(legacyId)
-        .legacyProcessInstanceId(legacyProcessInstanceId)
-        .flowNodeInstanceKey(flowNodeInstanceKey)
-        .processInstanceKey(processInstanceKey)
-        .processDefinitionKey(processDefinitionKey)
-        .processDefinitionId(processDefinitionId)
-        .startDate(startDate)
-        .endDate(endDate)
-        .flowNodeId(flowNodeId)
-        .treePath(treePath)
-        .type(type)
-        .state(state)
-        .incidentKey(incidentKey)
-        .numSubprocessIncidents(numSubprocessIncidents)
-        .tenantId(tenantId)).build();
+  public FlowNodeInstanceDbModel copy(
+      final Function<ObjectBuilder<FlowNodeInstanceDbModel>, ObjectBuilder<FlowNodeInstanceDbModel>>
+          builderFunction) {
+    return builderFunction
+        .apply(
+            new FlowNodeInstanceDbModelBuilder()
+                .legacyId(legacyId)
+                .legacyProcessInstanceId(legacyProcessInstanceId)
+                .flowNodeInstanceKey(flowNodeInstanceKey)
+                .processInstanceKey(processInstanceKey)
+                .processDefinitionKey(processDefinitionKey)
+                .processDefinitionId(processDefinitionId)
+                .startDate(startDate)
+                .endDate(endDate)
+                .flowNodeId(flowNodeId)
+                .treePath(treePath)
+                .type(type)
+                .state(state)
+                .incidentKey(incidentKey)
+                .numSubprocessIncidents(numSubprocessIncidents)
+                .tenantId(tenantId))
+        .build();
   }
 
   public Long flowNodeInstanceKey() {
@@ -152,38 +158,102 @@ public final class FlowNodeInstanceDbModel implements Copyable<FlowNodeInstanceD
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)
+    if (obj == this) {
       return true;
-    if (obj == null || obj.getClass() != this.getClass())
+    }
+    if (obj == null || obj.getClass() != this.getClass()) {
       return false;
-    var that = (FlowNodeInstanceDbModel) obj;
-    return Objects.equals(this.flowNodeInstanceKey, that.flowNodeInstanceKey) && Objects.equals(this.processInstanceKey,
-        that.processInstanceKey) && Objects.equals(this.processDefinitionKey, that.processDefinitionKey) && Objects.equals(this.processDefinitionId,
-        that.processDefinitionId) && Objects.equals(this.startDate, that.startDate) && Objects.equals(this.endDate, that.endDate) && Objects.equals(this.flowNodeId,
-        that.flowNodeId) && Objects.equals(this.treePath, that.treePath) && Objects.equals(this.type, that.type)
-        && Objects.equals(this.state, that.state) && Objects.equals(this.incidentKey, that.incidentKey) && Objects.equals(this.numSubprocessIncidents,
-        that.numSubprocessIncidents) && Objects.equals(this.tenantId, that.tenantId) && Objects.equals(this.legacyId,
-        that.legacyId) && Objects.equals(this.legacyProcessInstanceId, that.legacyProcessInstanceId);
+    }
+    final var that = (FlowNodeInstanceDbModel) obj;
+    return Objects.equals(this.flowNodeInstanceKey, that.flowNodeInstanceKey)
+        && Objects.equals(this.processInstanceKey, that.processInstanceKey)
+        && Objects.equals(this.processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(this.processDefinitionId, that.processDefinitionId)
+        && Objects.equals(this.startDate, that.startDate)
+        && Objects.equals(this.endDate, that.endDate)
+        && Objects.equals(this.flowNodeId, that.flowNodeId)
+        && Objects.equals(this.treePath, that.treePath)
+        && Objects.equals(this.type, that.type)
+        && Objects.equals(this.state, that.state)
+        && Objects.equals(this.incidentKey, that.incidentKey)
+        && Objects.equals(this.numSubprocessIncidents, that.numSubprocessIncidents)
+        && Objects.equals(this.tenantId, that.tenantId)
+        && Objects.equals(this.legacyId, that.legacyId)
+        && Objects.equals(this.legacyProcessInstanceId, that.legacyProcessInstanceId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(flowNodeInstanceKey, processInstanceKey, processDefinitionKey, processDefinitionId, startDate,
-        endDate, flowNodeId, treePath, type, state, incidentKey, numSubprocessIncidents, tenantId, legacyId,
+    return Objects.hash(
+        flowNodeInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        processDefinitionId,
+        startDate,
+        endDate,
+        flowNodeId,
+        treePath,
+        type,
+        state,
+        incidentKey,
+        numSubprocessIncidents,
+        tenantId,
+        legacyId,
         legacyProcessInstanceId);
   }
 
   @Override
   public String toString() {
-    return "FlowNodeInstanceDbModel[" + "flowNodeInstanceKey=" + flowNodeInstanceKey + ", " + "processInstanceKey="
-        + processInstanceKey + ", " + "processDefinitionKey=" + processDefinitionKey + ", " + "processDefinitionId="
-        + processDefinitionId + ", " + "startDate=" + startDate + ", " + "endDate=" + endDate + ", " + "flowNodeId="
-        + flowNodeId + ", " + "treePath=" + treePath + ", " + "type=" + type + ", " + "state=" + state + ", "
-        + "incidentKey=" + incidentKey + ", " + "numSubprocessIncidents=" + numSubprocessIncidents + ", " + "tenantId="
-        + tenantId + ", " + "legacyId=" + legacyId + ", " + "legacyProcessInstanceId=" + legacyProcessInstanceId + ']';
+    return "FlowNodeInstanceDbModel["
+        + "flowNodeInstanceKey="
+        + flowNodeInstanceKey
+        + ", "
+        + "processInstanceKey="
+        + processInstanceKey
+        + ", "
+        + "processDefinitionKey="
+        + processDefinitionKey
+        + ", "
+        + "processDefinitionId="
+        + processDefinitionId
+        + ", "
+        + "startDate="
+        + startDate
+        + ", "
+        + "endDate="
+        + endDate
+        + ", "
+        + "flowNodeId="
+        + flowNodeId
+        + ", "
+        + "treePath="
+        + treePath
+        + ", "
+        + "type="
+        + type
+        + ", "
+        + "state="
+        + state
+        + ", "
+        + "incidentKey="
+        + incidentKey
+        + ", "
+        + "numSubprocessIncidents="
+        + numSubprocessIncidents
+        + ", "
+        + "tenantId="
+        + tenantId
+        + ", "
+        + "legacyId="
+        + legacyId
+        + ", "
+        + "legacyProcessInstanceId="
+        + legacyProcessInstanceId
+        + ']';
   }
 
-  public static class FlowNodeInstanceDbModelBuilder implements ObjectBuilder<FlowNodeInstanceDbModel> {
+  public static class FlowNodeInstanceDbModelBuilder
+      implements ObjectBuilder<FlowNodeInstanceDbModel> {
 
     private Long flowNodeInstanceKey;
     private Long processInstanceKey;
@@ -203,8 +273,7 @@ public final class FlowNodeInstanceDbModel implements Copyable<FlowNodeInstanceD
     private Boolean hasIncident;
 
     // Public constructor to initialize the builder
-    public FlowNodeInstanceDbModelBuilder() {
-    }
+    public FlowNodeInstanceDbModelBuilder() {}
 
     // Builder methods for each field
     public FlowNodeInstanceDbModelBuilder legacyId(final String id) {
@@ -271,7 +340,8 @@ public final class FlowNodeInstanceDbModel implements Copyable<FlowNodeInstanceD
       return numSubprocessIncidents;
     }
 
-    public FlowNodeInstanceDbModelBuilder numSubprocessIncidents(final Long numSubprocessIncidents) {
+    public FlowNodeInstanceDbModelBuilder numSubprocessIncidents(
+        final Long numSubprocessIncidents) {
       this.numSubprocessIncidents = numSubprocessIncidents;
       return this;
     }
@@ -309,8 +379,7 @@ public final class FlowNodeInstanceDbModel implements Copyable<FlowNodeInstanceD
           treePath,
           incidentKey,
           numSubprocessIncidents,
-          hasIncident
-      );
+          hasIncident);
     }
   }
 }

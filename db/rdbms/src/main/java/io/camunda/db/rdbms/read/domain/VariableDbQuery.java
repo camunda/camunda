@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record VariableDbQuery(
-    VariableFilter filter, DbQuerySorting<VariableEntity> sort, DbQueryPage page, String legacyId, String legacyProcessInstanceId) {
+    VariableFilter filter,
+    DbQuerySorting<VariableEntity> sort,
+    DbQueryPage page,
+    String legacyId,
+    String legacyProcessInstanceId) {
 
   public static VariableDbQuery of(
       final Function<VariableDbQuery.Builder, ObjectBuilder<VariableDbQuery>> fn) {

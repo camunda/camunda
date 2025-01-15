@@ -8,12 +8,7 @@
 package io.camunda.db.rdbms.read.mapper;
 
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
-import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.entities.UserTaskEntity;
-import io.camunda.search.entities.UserTaskEntity.UserTaskState;
-
-import java.time.OffsetDateTime;
 
 public class ProcessInstanceEntityMapper {
 
@@ -31,7 +26,6 @@ public class ProcessInstanceEntityMapper {
         dbModel.endDate(),
         dbModel.state(),
         null,
-        dbModel.tenantId()
-    );
+        dbModel.tenantId());
   }
 }

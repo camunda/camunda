@@ -22,11 +22,12 @@ public final class FlowNodeInstanceDbQuery {
   private final String legacyId;
   private final String legacyProcessInstanceId;
 
-  public FlowNodeInstanceDbQuery(FlowNodeInstanceFilter filter,
-                                 DbQuerySorting<FlowNodeInstanceEntity> sort,
-                                 DbQueryPage page,
-                                 String legacyId,
-                                 String legacyProcessInstanceId) {
+  public FlowNodeInstanceDbQuery(
+      FlowNodeInstanceFilter filter,
+      DbQuerySorting<FlowNodeInstanceEntity> sort,
+      DbQueryPage page,
+      String legacyId,
+      String legacyProcessInstanceId) {
     this.filter = filter;
     this.sort = sort;
     this.page = page;
@@ -34,7 +35,8 @@ public final class FlowNodeInstanceDbQuery {
     this.legacyProcessInstanceId = legacyProcessInstanceId;
   }
 
-  public static FlowNodeInstanceDbQuery of(final Function<Builder, ObjectBuilder<FlowNodeInstanceDbQuery>> fn) {
+  public static FlowNodeInstanceDbQuery of(
+      final Function<Builder, ObjectBuilder<FlowNodeInstanceDbQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
@@ -60,13 +62,18 @@ public final class FlowNodeInstanceDbQuery {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)
+    if (obj == this) {
       return true;
-    if (obj == null || obj.getClass() != this.getClass())
+    }
+    if (obj == null || obj.getClass() != this.getClass()) {
       return false;
-    var that = (FlowNodeInstanceDbQuery) obj;
-    return Objects.equals(this.filter, that.filter) && Objects.equals(this.sort, that.sort) && Objects.equals(this.page,
-        that.page) && Objects.equals(this.legacyId, that.legacyId) && Objects.equals(this.legacyProcessInstanceId, that.legacyProcessInstanceId);
+    }
+    final var that = (FlowNodeInstanceDbQuery) obj;
+    return Objects.equals(this.filter, that.filter)
+        && Objects.equals(this.sort, that.sort)
+        && Objects.equals(this.page, that.page)
+        && Objects.equals(this.legacyId, that.legacyId)
+        && Objects.equals(this.legacyProcessInstanceId, that.legacyProcessInstanceId);
   }
 
   @Override
@@ -76,13 +83,28 @@ public final class FlowNodeInstanceDbQuery {
 
   @Override
   public String toString() {
-    return "FlowNodeInstanceDbQuery[" + "filter=" + filter + ", " + "sort=" + sort + ", " + "page=" + page + ", "
-        + "legacyId=" + legacyId + ", " + "legacyProcessInstanceId=" + legacyProcessInstanceId + ']';
+    return "FlowNodeInstanceDbQuery["
+        + "filter="
+        + filter
+        + ", "
+        + "sort="
+        + sort
+        + ", "
+        + "page="
+        + page
+        + ", "
+        + "legacyId="
+        + legacyId
+        + ", "
+        + "legacyProcessInstanceId="
+        + legacyProcessInstanceId
+        + ']';
   }
 
   public static final class Builder implements ObjectBuilder<FlowNodeInstanceDbQuery> {
 
-    private static final FlowNodeInstanceFilter EMPTY_FILTER = FilterBuilders.flowNodeInstance().build();
+    private static final FlowNodeInstanceFilter EMPTY_FILTER =
+        FilterBuilders.flowNodeInstance().build();
 
     private FlowNodeInstanceFilter filter;
     private DbQuerySorting<FlowNodeInstanceEntity> sort;
@@ -115,11 +137,16 @@ public final class FlowNodeInstanceDbQuery {
       return this;
     }
 
-    public Builder filter(final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
+    public Builder filter(
+        final Function<FlowNodeInstanceFilter.Builder, ObjectBuilder<FlowNodeInstanceFilter>> fn) {
       return filter(FilterBuilders.flowNodeInstance(fn));
     }
 
-    public Builder sort(final Function<DbQuerySorting.Builder<FlowNodeInstanceEntity>, ObjectBuilder<DbQuerySorting<FlowNodeInstanceEntity>>> fn) {
+    public Builder sort(
+        final Function<
+                DbQuerySorting.Builder<FlowNodeInstanceEntity>,
+                ObjectBuilder<DbQuerySorting<FlowNodeInstanceEntity>>>
+            fn) {
       return sort(DbQuerySorting.of(fn));
     }
 
