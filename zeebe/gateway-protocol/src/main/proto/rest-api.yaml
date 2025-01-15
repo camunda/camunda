@@ -4557,6 +4557,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
     AdvancedIntegerFilter:
+      title: Advanced filter
       description: Advanced integer (int32) filter.
       type: object
       properties:
@@ -4599,8 +4600,11 @@ components:
       oneOf:
         - type: integer
           format: int32
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedIntegerFilter"
     BasicLongFilter:
+      title: Advanced filter
       description: Basic advanced long (int64) filter.
       type: object
       properties:
@@ -4622,6 +4626,7 @@ components:
             type: integer
             format: int64
     AdvancedLongFilter:
+      title: Advanced filter
       description: Advanced long (int64) filter.
       allOf:
         - $ref: "#/components/schemas/BasicLongFilter"
@@ -4644,6 +4649,7 @@ components:
               type: integer
               format: int64
     AdvancedStringFilter:
+      title: Advanced filter
       description: Advanced string filter.
       type: object
       properties:
@@ -4667,6 +4673,7 @@ components:
             Supported wildcard characters depend on the configured search client.
           type: string
     AdvancedProcessInstanceStateFilter:
+      title: Advanced filter
       description: Advanced ProcessInstanceStateEnum filter.
       type: object
       properties:
@@ -4692,6 +4699,7 @@ components:
             Supported wildcard characters depend on the configured search client.
           type: string
     AdvancedDateTimeFilter:
+      title: Advanced filter
       description: Advanced date-time filter.
       type: object
       properties:
@@ -4734,6 +4742,8 @@ components:
       oneOf:
         - type: integer
           format: int64
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/BasicLongFilter"
     LongFilterProperty:
       description: Long property with full advanced search capabilities.
@@ -4741,18 +4751,26 @@ components:
       oneOf:
         - type: integer
           format: int64
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedLongFilter"
     StringFilterProperty:
       description: String property with full advanced search capabilities.
       type: object
       oneOf:
         - type: string
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedStringFilter"
     ProcessInstanceStateFilterProperty:
       description: ProcessInstanceStateEnum property with full advanced search capabilities.
       type: object
       oneOf:
-        - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.
@@ -4760,6 +4778,8 @@ components:
       oneOf:
         - type: string
           format: date-time
+          title: Exact match
+          description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
