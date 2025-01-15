@@ -42,7 +42,7 @@ public class AuthorizationController {
     this.authorizationServices = authorizationServices;
   }
 
-  @CamundaPostMapping(path = "/authorizations}")
+  @CamundaPostMapping(path = "/authorizations")
   public CompletableFuture<ResponseEntity<Object>> create(
       @RequestBody final AuthorizationCreateRequest authorizationCreateRequest) {
     return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
