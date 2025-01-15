@@ -51,8 +51,7 @@ public class DeleteUserMultiPartitionTest {
 
     engine
         .user()
-        .deleteUser(userRecord.getKey())
-        .withUsername(username)
+        .deleteUser(username)
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")
@@ -123,8 +122,7 @@ public class DeleteUserMultiPartitionTest {
 
     engine
         .user()
-        .deleteUser(userRecord.getKey())
-        .withUsername(username)
+        .deleteUser(username)
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")
@@ -157,8 +155,7 @@ public class DeleteUserMultiPartitionTest {
     // when
     engine
         .user()
-        .deleteUser(userRecord.getKey())
-        .withUsername("foobar")
+        .deleteUser("foobar")
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
         .withPassword("password")

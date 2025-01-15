@@ -54,10 +54,13 @@ public class UserController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
-  @CamundaDeleteMapping(path = "/{key}")
-  public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final long key) {
+  @CamundaDeleteMapping(path = "/{username}")
+  public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
-        () -> userServices.withAuthentication(RequestMapper.getAuthentication()).deleteUser(key));
+        () ->
+            userServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .deleteUser(username));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {

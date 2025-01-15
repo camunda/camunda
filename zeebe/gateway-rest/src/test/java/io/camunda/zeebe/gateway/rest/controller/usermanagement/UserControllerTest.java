@@ -326,23 +326,24 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void deleteUserShouldReturnNoContent() {
     // given
-    final long key = 1234L;
+    final String username = "tester";
 
-    final var userRecord = new UserRecord().setUserKey(key);
+    final var userRecord = new UserRecord().setUsername(username);
 
-    when(userServices.deleteUser(key)).thenReturn(CompletableFuture.completedFuture(userRecord));
+    when(userServices.deleteUser(username))
+        .thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
     webClient
         .delete()
-        .uri(USER_BASE_URL + "/{key}", key)
+        .uri("%s/%s".formatted(USER_BASE_URL, username))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(userServices, times(1)).deleteUser(key);
+    verify(userServices, times(1)).deleteUser(username);
   }
 
   @Test
