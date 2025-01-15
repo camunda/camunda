@@ -5566,7 +5566,7 @@ components:
       type: object
       properties:
         ownerId:
-          description: The id of the owner of the permissions.
+          description: The ID of the owner of the permissions.
           type: string
         ownerType:
           description: The type of the owner of the permissions.
@@ -5574,7 +5574,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/OwnerTypeEnum"
         resourceId:
-          description: The id of the resource to add permissions to.
+          description: The ID of the resource to add permissions to.
           type: string
         resourceType:
           description: The type of resource to add permissions to.
