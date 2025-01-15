@@ -14,24 +14,24 @@ import java.util.function.Function;
 public class UpsertMerger<T extends Copyable<T>> implements QueueItemMerger {
 
   private final ContextType contextType;
-  private final Long key;
+  private final Object id;
   private final Class<T> clazz;
   private final Function<ObjectBuilder<T>, ObjectBuilder<T>> mergeFunction;
 
   public UpsertMerger(
       final ContextType contextType,
-      final Long key,
+      final Object id,
       final Class<T> clazz,
       final Function<? extends ObjectBuilder<T>, ? extends ObjectBuilder<T>> mergeFunction) {
     this.contextType = contextType;
-    this.key = key;
+    this.id = id;
     this.clazz = clazz;
     this.mergeFunction = (Function<ObjectBuilder<T>, ObjectBuilder<T>>) mergeFunction;
   }
 
   @Override
   public boolean canBeMerged(final QueueItem queueItem) {
-    return queueItem.id().equals(key)
+    return queueItem.id().equals(id)
         && queueItem.contextType() == contextType
         && clazz.isInstance(queueItem.parameter());
   }

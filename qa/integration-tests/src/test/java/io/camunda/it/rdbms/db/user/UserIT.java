@@ -79,7 +79,7 @@ public class UserIT {
     final var instance = userReader.findOne(user.userKey()).orElse(null);
     compareUsers(instance, user);
 
-    rdbmsWriter.getUserWriter().delete(user);
+    rdbmsWriter.getUserWriter().delete(user.username());
     rdbmsWriter.flush();
 
     final var deletedInstance = userReader.findOne(user.userKey()).orElse(null);

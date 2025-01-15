@@ -300,10 +300,10 @@
 
   <changeSet id="create_user_table" author="cthiel">
     <createTable tableName="USERS">
-      <column name="USER_KEY" type="BIGINT" >
+      <column name="USERNAME" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
-      <column name="USERNAME" type="VARCHAR(255)" />
+      <column name="USER_KEY" type="BIGINT"/>
       <column name="NAME" type="VARCHAR(255)" />
       <column name="EMAIL" type="VARCHAR(255)" />
       <column name="PASSWORD" type="VARCHAR(255)" />
