@@ -12,9 +12,11 @@ import static io.camunda.application.Profile.getAuthProfiles;
 import static io.camunda.application.Profile.getWebappProfiles;
 
 import io.camunda.application.Profile;
+import io.camunda.authentication.config.AuthenticationProperties;
 import java.util.Set;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.Environment;
 
 /** Adds the "auth" if none of the {@link Profile#getAuthProfiles()} is set as an active profile. */
 public class DefaultAuthenticationInitializer
@@ -23,13 +25,16 @@ public class DefaultAuthenticationInitializer
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
-    final var activeProfiles = Set.of(env.getActiveProfiles());
-    if (shouldApplyDefaultAuthenticationProfile(activeProfiles)) {
+    if (shouldApplyDefaultAuthenticationProfile(env)) {
       env.addActiveProfile(DEFAULT_AUTH_PROFILE.getId());
     }
   }
 
-  protected boolean shouldApplyDefaultAuthenticationProfile(final Set<String> activeProfiles) {
+  protected boolean shouldApplyDefaultAuthenticationProfile(final Environment environment) {
+    if (environment.getProperty(AuthenticationProperties.METHOD) != null) {
+      return false;
+    }
+    final Set<String> activeProfiles = Set.of(environment.getActiveProfiles());
     return webappProfileIsPresent(activeProfiles) && !authProfileIsPresent(activeProfiles);
   }
 

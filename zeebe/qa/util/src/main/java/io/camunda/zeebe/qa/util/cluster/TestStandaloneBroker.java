@@ -17,6 +17,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -73,7 +74,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 InitializationConfiguration.DEFAULT_USER_PASSWORD,
                 InitializationConfiguration.DEFAULT_USER_NAME,
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
+    securityConfig.getAuthentication().getBasic().setAllowUnauthenticatedApiAccess(true);
+    withAuthenticationMethod(AuthenticationMethod.BASIC);
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
   }
 
   @Override
