@@ -8,6 +8,8 @@
 package io.camunda.db.rdbms.write.domain;
 
 import static io.camunda.util.ValueTypeUtil.mapBoolean;
+import static io.camunda.util.ValueTypeUtil.mapDouble;
+import static io.camunda.util.ValueTypeUtil.mapLong;
 
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
@@ -36,13 +38,13 @@ public record VariableDbModel(
     return builderFunction
         .apply(
             new VariableDbModelBuilder()
-                .variableKey(this.variableKey)
-                .value(this.value)
-                .name(this.name)
-                .scopeKey(this.scopeKey)
-                .processInstanceKey(this.processInstanceKey)
-                .processDefinitionId(this.processDefinitionId)
-                .tenantId(this.tenantId))
+                .variableKey(variableKey)
+                .value(value)
+                .name(name)
+                .scopeKey(scopeKey)
+                .processInstanceKey(processInstanceKey)
+                .processDefinitionId(processDefinitionId)
+                .tenantId(tenantId))
         .build();
   }
 
@@ -94,6 +96,7 @@ public record VariableDbModel(
     }
 
     // Build method to create the record
+    @Override
     public VariableDbModel build() {
       if (value != null && value.length() > DEFAULT_VARIABLE_SIZE_THRESHOLD) {
         return getModelWithPreview();
@@ -101,17 +104,18 @@ public record VariableDbModel(
         return switch (ValueTypeUtil.getValueType(value)) {
           case LONG -> getLongModel();
           case DOUBLE -> getDoubleModel();
-          case BOOLEAN -> getModel(mapBoolean(value));
-          default -> getModel(value);
+          case BOOLEAN -> getModel(ValueTypeEnum.BOOLEAN, mapBoolean(value));
+          case NULL -> getModel(ValueTypeEnum.NULL, null);
+          default -> getModel(ValueTypeEnum.STRING, value);
         };
       }
     }
 
-    private VariableDbModel getModel(final String value) {
+    private VariableDbModel getModel(final ValueTypeEnum valueTypeEnum, final String value) {
       return new VariableDbModel(
           variableKey,
           name,
-          ValueTypeEnum.STRING,
+          valueTypeEnum,
           null,
           null,
           value,
@@ -145,7 +149,7 @@ public record VariableDbModel(
           name,
           ValueTypeEnum.LONG,
           null,
-          Long.parseLong(value),
+          mapLong(value),
           value,
           null,
           false,
@@ -160,7 +164,7 @@ public record VariableDbModel(
           variableKey,
           name,
           ValueTypeEnum.DOUBLE,
-          Double.parseDouble(value),
+          mapDouble(value),
           null,
           value,
           null,

@@ -8,16 +8,45 @@
 package io.camunda.util;
 
 import io.camunda.search.entities.ValueTypeEnum;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
+/** Utility class for determining the value type of an object. */
 public class ValueTypeUtil {
 
+  public static final String JSON_NULL = "null";
+
+  /**
+   * Determines the value type of the given value.
+   *
+   * <p>
+   *
+   * <ul>
+   *   <li>If the value is null or string "null", the method returns {@link ValueTypeEnum#NULL}.
+   *   <li>If the value is a boolean or string boolean ("true", "false", ...) the method returns
+   *       {@link ValueTypeEnum#BOOLEAN}.
+   *   <li>If the value is a long or integer or a numeric string without ".", the method returns
+   *       {@link ValueTypeEnum#LONG}.
+   *   <li>If the value is a double or a numeric string with ".", the method returns {@link
+   *       ValueTypeEnum#DOUBLE}.
+   *   <li>If the value is any other string (can also contain json), the method returns {@link
+   *       ValueTypeEnum#STRING}.
+   * </ul>
+   */
   public static ValueTypeEnum getValueType(final Object value) {
     if (value == null) {
       return ValueTypeEnum.NULL;
     }
 
     if (value instanceof final String stringValue) {
+      if (JSON_NULL.equalsIgnoreCase(stringValue)) {
+        return ValueTypeEnum.NULL;
+      }
+
+      if ("true".equalsIgnoreCase(stringValue) || "false".equalsIgnoreCase(stringValue)) {
+        return ValueTypeEnum.BOOLEAN;
+      }
+
       if (!NumberUtils.isParsable(stringValue)) {
         return ValueTypeEnum.STRING;
       } else {
@@ -75,7 +104,7 @@ public class ValueTypeUtil {
     if (value instanceof Boolean) {
       return String.valueOf(value);
     } else if (value instanceof final String stringValue) {
-      return String.valueOf(Boolean.parseBoolean(stringValue));
+      return BooleanUtils.toBooleanObject(stringValue).toString();
     } else {
       return null;
     }
