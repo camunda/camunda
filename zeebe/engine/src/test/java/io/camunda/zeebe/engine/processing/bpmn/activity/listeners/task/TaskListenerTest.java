@@ -121,7 +121,8 @@ public class TaskListenerTest {
         userTask ->
             Assertions.assertThat(userTask)
                 .hasAction("my_custom_action")
-                .hasVariables(Map.of("foo_var", "bar")));
+                .hasVariables(Map.of("foo_var", "bar"))
+                .hasNoChangedAttributes());
     assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
@@ -167,7 +168,10 @@ public class TaskListenerTest {
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask ->
-            Assertions.assertThat(userTask).hasAssignee("me").hasAction("my_assign_action"));
+            Assertions.assertThat(userTask)
+                .hasAssignee("me")
+                .hasAction("my_assign_action")
+                .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE));
   }
 
   @Test
@@ -388,7 +392,10 @@ public class TaskListenerTest {
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask ->
-            Assertions.assertThat(userTask).hasAssignee("test_user").hasAction("claim_action"));
+            Assertions.assertThat(userTask)
+                .hasAssignee("test_user")
+                .hasAction("claim_action")
+                .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE));
   }
 
   @Test
@@ -429,17 +436,20 @@ public class TaskListenerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .as(
-            "Verify the sequence of intents and `assignee`, `action` properties emitted for the user task")
+            "Verify the sequence of intents, `assignee`, `action` and `changedAttributes` properties emitted for the user task")
         .extracting(
-            Record::getIntent, r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
+            Record::getIntent,
+            r -> r.getValue().getAssignee(),
+            r -> r.getValue().getAction(),
+            r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action),
-            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action),
-            tuple(UserTaskIntent.ASSIGNING, assignee, action),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action),
-            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action),
-            tuple(UserTaskIntent.ASSIGNED, assignee, action));
+            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
   }
 
   @Test
