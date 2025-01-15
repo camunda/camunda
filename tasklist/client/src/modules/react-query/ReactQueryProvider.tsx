@@ -8,7 +8,7 @@
 
 import {QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
-import {lazy, useEffect, useState, Suspense} from 'react';
+import {lazy, Suspense, useEffect, useState} from 'react';
 import {reactQueryClient} from './reactQueryClient';
 
 const ReactQueryDevtoolsProduction = lazy(() =>

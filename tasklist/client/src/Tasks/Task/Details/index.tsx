@@ -12,7 +12,7 @@ import type {CurrentUser, Process, Task} from 'modules/types';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useTask} from 'modules/queries/useTask';
 import {useProcessDefinition} from 'modules/queries/useProcessDefinition';
-import {useTaskDetailsParams, pages} from 'modules/routing';
+import {pages, useTaskDetailsParams} from 'modules/routing';
 import {DetailsSkeleton} from './DetailsSkeleton';
 import {TabListNav} from './TabListNav';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';

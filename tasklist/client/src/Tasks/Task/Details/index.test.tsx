@@ -6,15 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse, http} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, Routes, Route} from 'react-router-dom';
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-  within,
-} from 'modules/testing-library';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {render, screen, waitForElementToBeRemoved, within,} from 'modules/testing-library';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';

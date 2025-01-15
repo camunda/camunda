@@ -8,12 +8,7 @@
 
 import type {FieldValidator} from 'final-form';
 import {useEffect, useState} from 'react';
-import {
-  Field,
-  useField,
-  type FieldInputProps,
-  type FieldMetaState,
-} from 'react-final-form';
+import {Field, type FieldInputProps, type FieldMetaState, useField,} from 'react-final-form';
 
 type Props = Omit<React.ComponentProps<typeof Field>, 'validate'> & {
   addExtraDelay: boolean;

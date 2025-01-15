@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  differenceInHours,
-  differenceInSeconds,
-  formatDistanceToNowStrict,
-} from 'date-fns';
+import {differenceInHours, differenceInSeconds, formatDistanceToNowStrict,} from 'date-fns';
 import {formatDate} from 'modules/utils/formatDate';
 import {useEffect, useState} from 'react';
 import {t} from 'i18next';

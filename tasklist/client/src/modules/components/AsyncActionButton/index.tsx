@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type InlineLoadingProps, Button, InlineLoading} from '@carbon/react';
+import {Button, InlineLoading, type InlineLoadingProps} from '@carbon/react';
 import React, {useEffect} from 'react';
 import styles from './styles.module.scss';
 import cn from 'classnames';

@@ -11,7 +11,7 @@ import {CollapsiblePanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {HttpResponse, http} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';

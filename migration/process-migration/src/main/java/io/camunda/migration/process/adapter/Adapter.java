@@ -8,7 +8,7 @@
 package io.camunda.migration.process.adapter;
 
 import io.camunda.migration.api.MigrationException;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.VersionUtil;

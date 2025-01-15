@@ -7,7 +7,7 @@
  */
 
 import {TextInput as BaseTextInput} from '@carbon/react';
-import {useEffect, useRef, forwardRef, useImperativeHandle} from 'react';
+import {forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
 import type {FieldInputProps} from 'react-final-form';
 
 type TextInputRef = HTMLInputElement | null;

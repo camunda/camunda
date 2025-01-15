@@ -7,13 +7,9 @@
  */
 
 import {Component} from './index';
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitForElementToBeRemoved,} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
+import {clearStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';

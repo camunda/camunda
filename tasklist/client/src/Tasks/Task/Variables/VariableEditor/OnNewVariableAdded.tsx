@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef, useEffect} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {useFieldArray} from 'react-final-form-arrays';
 
 const OnNewVariableAdded: React.FC<{execute: () => void; name: string}> = ({

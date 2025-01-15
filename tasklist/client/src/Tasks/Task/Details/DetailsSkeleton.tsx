@@ -8,11 +8,11 @@
 
 import {
   ButtonSkeleton,
-  StructuredListSkeleton,
   ContainedList,
   ContainedListItem,
   Section,
   SkeletonText,
+  StructuredListSkeleton,
   TabsSkeleton,
 } from '@carbon/react';
 import {TaskDetailsRow} from 'modules/components/TaskDetailsLayout';

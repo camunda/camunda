@@ -7,7 +7,7 @@
  */
 
 import {useMemo, useRef, useState} from 'react';
-import type {Form, Variable, CurrentUser, Task} from 'modules/types';
+import type {CurrentUser, Form, Task, Variable} from 'modules/types';
 import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
@@ -24,7 +24,7 @@ import {useForm} from 'modules/queries/useForm';
 import {useVariables} from 'modules/queries/useVariables';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';
 import {FailedVariableFetchError} from 'modules/components/FailedVariableFetchError';
-import {Pattern, match} from 'ts-pattern';
+import {match, Pattern} from 'ts-pattern';
 import {CompleteTaskButton} from 'modules/components/CompleteTaskButton';
 import {useTranslation} from 'react-i18next';
 

@@ -9,17 +9,11 @@
 import {useState} from 'react';
 import styles from './styles.module.scss';
 import sharedStyles from 'modules/styles/panelHeader.module.scss';
-import {
-  Button,
-  ButtonSet,
-  Layer,
-  OverflowMenu,
-  OverflowMenuItem,
-} from '@carbon/react';
-import {SidePanelOpen, SidePanelClose, Filter} from '@carbon/react/icons';
+import {Button, ButtonSet, Layer, OverflowMenu, OverflowMenuItem,} from '@carbon/react';
+import {Filter, SidePanelClose, SidePanelOpen} from '@carbon/react/icons';
 import cn from 'classnames';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {useTaskFilters, type TaskFilters} from 'modules/hooks/useTaskFilters';
+import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'modules/custom-filters/prepareCustomFiltersParams';
 import {getStateLocally} from 'modules/utils/localStorage';

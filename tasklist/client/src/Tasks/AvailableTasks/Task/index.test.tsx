@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, fireEvent} from 'modules/testing-library';
+import {fireEvent, render, screen} from 'modules/testing-library';
 import {Task} from './index';
 import {MemoryRouter} from 'react-router-dom';
+import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 import {LocationLog} from 'modules/utils/LocationLog';
-import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<

@@ -8,7 +8,7 @@
 
 import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {type RequestError, request} from 'modules/request';
+import {request, type RequestError} from 'modules/request';
 import type {ProcessInstance} from 'modules/types';
 
 function useStartExternalProcess(

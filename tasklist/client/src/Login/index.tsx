@@ -6,22 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useLocation, useNavigate, type Location} from 'react-router-dom';
+import {type Location, useLocation, useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
-import {Form, Field} from 'react-final-form';
+import {Field, Form} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {authenticationStore} from 'modules/stores/authentication';
 import {pages} from 'modules/routing';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 import {Disclaimer} from './Disclaimer';
 import {
-  TextInput,
-  PasswordInput,
+  Button,
   Column,
   Grid,
-  Stack,
   InlineNotification,
-  Button,
+  PasswordInput,
+  Stack,
+  TextInput,
 } from '@carbon/react';
 import {LoadingSpinner} from './LoadingSpinner';
 import {CamundaLogo} from 'modules/components/CamundaLogo';

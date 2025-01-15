@@ -8,8 +8,8 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VAR_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VAR_VALUE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_NAME;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

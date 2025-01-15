@@ -7,7 +7,7 @@
  */
 
 import {createPortal} from 'react-dom';
-import {Modal as BaseModal, ComposedModal} from '@carbon/react';
+import {ComposedModal, Modal as BaseModal} from '@carbon/react';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 type Props =

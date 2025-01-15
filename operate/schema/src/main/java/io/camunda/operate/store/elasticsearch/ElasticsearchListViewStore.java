@@ -20,7 +20,7 @@ import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;

@@ -6,13 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  type UseQueryOptions,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import {useQuery, useQueryClient, type UseQueryOptions,} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {type RequestError, request} from 'modules/request';
+import {request, type RequestError} from 'modules/request';
 import type {Task} from 'modules/types';
 
 function getUseTaskQueryKey(id: Task['id']) {

@@ -12,11 +12,10 @@ import io.camunda.search.entities.VariableEntity;
 
 public class VariableEntityTransformer
     implements ServiceTransformer<
-    io.camunda.webapps.schema.entities.VariableEntity, VariableEntity> {
+        io.camunda.webapps.schema.entities.VariableEntity, VariableEntity> {
 
   @Override
-  public VariableEntity apply(
-      final io.camunda.webapps.schema.entities.VariableEntity source) {
+  public VariableEntity apply(final io.camunda.webapps.schema.entities.VariableEntity source) {
     return new VariableEntity(
         source.getKey(),
         source.getName(),

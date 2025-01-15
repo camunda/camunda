@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.io.IOException;
 import java.util.Collections;
 import org.elasticsearch.ElasticsearchException;
@@ -37,15 +37,15 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
   private RestHighLevelClient esClient;
 
   @Override
-  protected void initClient(BackupRestoreTestContext testContext) {
-    this.esClient = testContext.getEsClient();
+  protected void initClient(final BackupRestoreTestContext testContext) {
+    esClient = testContext.getEsClient();
   }
 
   @Override
   protected void refreshIndices() {
     try {
       esClient.indices().refresh(new RefreshRequest("tasklist-*"), RequestOptions.DEFAULT);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error("Error in refreshing ElasticSearch indices", e);
     }
   }
@@ -64,13 +64,13 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
             .setRefresh(true);
     try {
       esClient.updateByQuery(updateRequest, RequestOptions.DEFAULT);
-    } catch (ElasticsearchException | IOException e) {
+    } catch (final ElasticsearchException | IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  protected long countEntitiesForAlias(String alias) throws IOException {
+  protected long countEntitiesForAlias(final String alias) throws IOException {
     final SearchRequest searchRequest = new SearchRequest(alias);
     searchRequest.source().size(1000);
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);

@@ -7,9 +7,9 @@
  */
 
 import {
+  validateDuplicateNames,
   validateNameCharacters,
   validateNameComplete,
-  validateDuplicateNames,
   validateValueComplete,
   validateValueJSON,
 } from './index';

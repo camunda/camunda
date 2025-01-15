@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;

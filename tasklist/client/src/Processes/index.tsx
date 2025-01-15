@@ -7,23 +7,18 @@
  */
 
 import {
-  Search,
-  Grid,
   Column,
-  Stack,
-  Link,
-  Layer,
   Dropdown,
+  Grid,
+  Layer,
+  Link,
+  Search,
   SkeletonPlaceholder,
+  Stack,
 } from '@carbon/react';
 import {ProcessTile} from './ProcessTile';
 import debounce from 'lodash/debounce';
-import {
-  useLocation,
-  useNavigate,
-  useMatch,
-  useSearchParams,
-} from 'react-router-dom';
+import {useLocation, useMatch, useNavigate, useSearchParams,} from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
@@ -41,7 +36,9 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
 import {useMultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown';
-import {MultiTenancyDropdown} from 'modules/components/useMultiTenancyDropdown/MultiTenancyDropdown';
+import {
+  MultiTenancyDropdown
+} from 'modules/components/useMultiTenancyDropdown/MultiTenancyDropdown';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 

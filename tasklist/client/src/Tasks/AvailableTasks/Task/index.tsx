@@ -12,17 +12,9 @@ import {t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
-import {
-  Calendar,
-  CheckmarkFilled,
-  Warning,
-  Notification,
-} from '@carbon/icons-react';
+import {Calendar, CheckmarkFilled, Notification, Warning,} from '@carbon/icons-react';
 import {pages} from 'modules/routing';
-import {
-  formatISODate,
-  formatISODateTime,
-} from 'modules/utils/formatDateRelative';
+import {formatISODate, formatISODateTime,} from 'modules/utils/formatDateRelative';
 import {unraw} from 'modules/utils/unraw';
 import type {CurrentUser, Task as TaskType} from 'modules/types';
 import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';

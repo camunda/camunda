@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef, useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import {FormManager} from '../../formManager';
 import {render} from 'modules/testing-library';
 import {getFieldLabels} from './getFieldLabels';

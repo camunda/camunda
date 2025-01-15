@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ActionableNotification,
-  unstable_FeatureFlags as FeatureFlags,
-} from '@carbon/react';
+import {ActionableNotification, unstable_FeatureFlags as FeatureFlags,} from '@carbon/react';
 import {requestPermission} from 'modules/os-notifications/requestPermission';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef, useEffect, useLayoutEffect, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react-lite';
 import {BpmnJS} from 'modules/bpmn-js/BpmnJS';
 import {DiagramControls} from './DiagramControls';

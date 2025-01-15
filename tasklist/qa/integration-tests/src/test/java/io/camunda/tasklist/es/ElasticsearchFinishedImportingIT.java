@@ -22,7 +22,7 @@ import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import io.camunda.tasklist.zeebeimport.es.RecordsReaderElasticSearch;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;

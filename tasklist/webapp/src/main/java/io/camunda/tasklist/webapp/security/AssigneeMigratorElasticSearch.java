@@ -7,12 +7,12 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.io.IOException;
 import java.util.Collections;
 import org.elasticsearch.client.RequestOptions;

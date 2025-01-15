@@ -21,7 +21,7 @@ import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.FlowNodeState;
 import io.camunda.webapps.schema.entities.FlowNodeType;

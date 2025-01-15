@@ -8,12 +8,12 @@
 
 import {
   type InfiniteData,
-  type UseInfiniteQueryOptions,
   useInfiniteQuery,
+  type UseInfiniteQueryOptions,
   useQueryClient,
 } from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {type RequestError, request} from 'modules/request';
+import {request, type RequestError} from 'modules/request';
 import type {Task} from 'modules/types';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import type {TaskFilters} from 'modules/hooks/useTaskFilters';

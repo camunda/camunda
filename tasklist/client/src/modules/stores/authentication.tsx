@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {makeObservable, observable, action} from 'mobx';
+import {action, makeObservable, observable} from 'mobx';
 import {api} from 'modules/api';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 import {request} from 'modules/request';

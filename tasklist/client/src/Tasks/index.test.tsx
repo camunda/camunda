@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
+import {fireEvent, render, screen, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {Component} from './index';

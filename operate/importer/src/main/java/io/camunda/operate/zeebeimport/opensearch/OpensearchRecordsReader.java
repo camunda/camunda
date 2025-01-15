@@ -38,7 +38,7 @@ import io.camunda.operate.zeebeimport.ImportListener;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;

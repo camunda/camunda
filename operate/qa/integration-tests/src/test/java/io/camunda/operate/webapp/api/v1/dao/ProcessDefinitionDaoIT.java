@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -19,7 +19,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

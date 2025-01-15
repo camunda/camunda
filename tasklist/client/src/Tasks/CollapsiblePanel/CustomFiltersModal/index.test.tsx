@@ -11,7 +11,7 @@ import {CustomFiltersModal} from './index';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {HttpResponse, http} from 'msw';
+import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {createMockProcess} from 'modules/queries/useProcesses';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';

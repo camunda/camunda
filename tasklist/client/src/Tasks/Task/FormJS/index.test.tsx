@@ -7,10 +7,7 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {
-  assignedTaskWithForm,
-  unassignedTaskWithForm,
-} from 'modules/mock-schema/mocks/task';
+import {assignedTaskWithForm, unassignedTaskWithForm,} from 'modules/mock-schema/mocks/task';
 import {FormJS} from './index';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';

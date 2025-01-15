@@ -20,7 +20,7 @@ import io.camunda.operate.webapp.api.v1.entities.opensearch.OpensearchIncident;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

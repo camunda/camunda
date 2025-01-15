@@ -35,7 +35,7 @@ import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import java.util.Collections;

@@ -8,11 +8,11 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.SCOPE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.SCOPE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VALUE;
 
 public class VariableFieldSortingTransformer implements FieldSortingTransformer {
 

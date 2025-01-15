@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from '@/utils/zeebeClient';
+import {createInstances, deploy} from '@/utils/zeebeClient';
 import {test} from '@/test-fixtures';
 import {sleep} from '@/utils/sleep';
 

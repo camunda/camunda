@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  getVariableFieldName,
-  getNewVariablePrefix,
-} from './getVariableFieldName';
+import {getNewVariablePrefix, getVariableFieldName,} from './getVariableFieldName';
 
 describe('getVariableFieldName', () => {
   it('should get variable field name', () => {

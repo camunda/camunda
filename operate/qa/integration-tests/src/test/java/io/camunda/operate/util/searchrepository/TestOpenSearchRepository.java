@@ -20,8 +20,8 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.indexRequestBui
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.reindexRequestBuilder;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.CollectionUtil.toSafeArrayOfStrings;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,7 +31,7 @@ import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.Convertable;
 import io.camunda.operate.util.MapPath;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;

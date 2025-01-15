@@ -11,9 +11,9 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_VALUE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_NAME;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingFilter;

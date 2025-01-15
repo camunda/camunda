@@ -15,7 +15,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.BackoffIdleStrategy;
 import io.camunda.tasklist.zeebe.ImportValueType;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import jakarta.annotation.PostConstruct;

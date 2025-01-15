@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.api.v1.rest;
 import static io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController.AS_XML;
 import static io.camunda.operate.webapp.api.v1.rest.ProcessDefinitionController.URI;
 import static io.camunda.operate.webapp.api.v1.rest.SearchController.SEARCH;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

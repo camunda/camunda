@@ -18,7 +18,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

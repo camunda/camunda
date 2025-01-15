@@ -12,7 +12,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {HttpResponse, http} from 'msw';
+import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 
 const createWrapper = (

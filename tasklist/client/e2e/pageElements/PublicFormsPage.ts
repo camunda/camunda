@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Page, Locator} from '@playwright/test';
+import type {Locator, Page} from '@playwright/test';
 
 class PublicFormsPage {
   private page: Page;

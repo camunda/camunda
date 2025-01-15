@@ -16,7 +16,7 @@ import {
   StructuredListWrapper,
   TextInput,
 } from '@carbon/react';
-import {Popup, Close} from '@carbon/react/icons';
+import {Close, Popup} from '@carbon/react/icons';
 import type {Variable} from 'modules/types';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -25,16 +25,13 @@ import {LoadingTextarea} from './LoadingTextarea';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
 import {mergeValidators} from './mergeValidators';
 import type {FormValues} from '../types';
+import {createNewVariableFieldName, createVariableFieldName,} from '../createVariableFieldName';
 import {
-  createVariableFieldName,
-  createNewVariableFieldName,
-} from '../createVariableFieldName';
-import {
-  validateValueJSON,
+  validateDuplicateNames,
   validateNameCharacters,
   validateNameComplete,
-  validateDuplicateNames,
   validateValueComplete,
+  validateValueJSON,
 } from '../validators';
 import styles from './styles.module.scss';
 import cn from 'classnames';

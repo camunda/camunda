@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.writer;
 
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import java.util.Map;
 import java.util.Objects;
 

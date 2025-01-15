@@ -6,16 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Suspense, lazy, useRef, useState} from 'react';
+import {lazy, Suspense, useRef, useState} from 'react';
 import {Form} from 'react-final-form';
 import intersection from 'lodash/intersection';
 import get from 'lodash/get';
 import arrayMutators from 'final-form-arrays';
 import {match, Pattern} from 'ts-pattern';
 import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
-import {Information, Add} from '@carbon/react/icons';
+import {Add, Information} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import type {Variable, CurrentUser, Task} from 'modules/types';
+import type {CurrentUser, Task, Variable} from 'modules/types';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {
   ScrollableContent,

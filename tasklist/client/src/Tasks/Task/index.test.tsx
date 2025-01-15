@@ -9,12 +9,7 @@
 import {Component} from './index';
 import {Component as LayoutComponent} from './Details';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor, waitForElementToBeRemoved,} from 'modules/testing-library';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';

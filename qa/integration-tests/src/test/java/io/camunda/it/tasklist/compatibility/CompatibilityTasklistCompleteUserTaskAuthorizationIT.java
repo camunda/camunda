@@ -16,7 +16,7 @@ import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;

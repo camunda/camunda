@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-  within,
-} from 'modules/testing-library';
+import {render, screen, waitForElementToBeRemoved, within,} from 'modules/testing-library';
 import {AvailableTasks} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';

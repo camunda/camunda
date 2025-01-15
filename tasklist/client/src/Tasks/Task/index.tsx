@@ -7,17 +7,9 @@
  */
 
 import {useEffect} from 'react';
-import {
-  useLocation,
-  useNavigate,
-  useOutletContext,
-  useSearchParams,
-} from 'react-router-dom';
+import {useLocation, useNavigate, useOutletContext, useSearchParams,} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
-import {
-  useCompleteTask,
-  completionErrorMap,
-} from 'modules/mutations/useCompleteTask';
+import {completionErrorMap, useCompleteTask,} from 'modules/mutations/useCompleteTask';
 import {useTranslation} from 'react-i18next';
 import {pages, useTaskDetailsParams} from 'modules/routing';
 import type {Task as TaskType, Variable} from 'modules/types';

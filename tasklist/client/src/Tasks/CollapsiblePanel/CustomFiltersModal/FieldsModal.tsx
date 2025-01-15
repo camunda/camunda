@@ -11,6 +11,7 @@ import {
   Button,
   DatePicker,
   DatePickerInput,
+  FormGroup,
   ModalBody,
   ModalFooter,
   ModalHeader,
@@ -20,9 +21,8 @@ import {
   SelectItem,
   TextInput,
   Toggle,
-  FormGroup,
 } from '@carbon/react';
-import {Close, Add} from '@carbon/react/icons';
+import {Add, Close} from '@carbon/react/icons';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';

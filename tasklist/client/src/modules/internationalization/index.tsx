@@ -13,10 +13,10 @@ import translationsDe from './locales/de.json';
 import translationsEs from './locales/es.json';
 
 import {
-  enUS as dateLocaleEnUS,
-  fr as dateLocaleFr,
   de as dateLocaleDe,
+  enUS as dateLocaleEnUS,
   es as dateLocaleEs,
+  fr as dateLocaleFr,
   type Locale,
 } from 'date-fns/locale';
 

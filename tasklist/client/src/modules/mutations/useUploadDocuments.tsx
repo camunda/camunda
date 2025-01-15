@@ -8,7 +8,7 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {type RequestError, request} from 'modules/request';
+import {request, type RequestError} from 'modules/request';
 
 type Payload = {
   files: Map<string, File[]>;

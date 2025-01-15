@@ -13,7 +13,7 @@ import {Restricted} from 'modules/components/Restricted';
 import {useTasks} from 'modules/queries/useTasks';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {useEffect} from 'react';
-import {useTranslation, Trans} from 'react-i18next';
+import {Trans, useTranslation} from 'react-i18next';
 import {decodeTaskEmptyPageRef} from 'modules/utils/reftags';
 import {useSearchParams} from 'react-router-dom';
 import {tracking} from 'modules/tracking';

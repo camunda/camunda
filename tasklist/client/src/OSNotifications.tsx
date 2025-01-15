@@ -9,11 +9,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useTasks} from 'modules/queries/useTasks';
 import {encodeTaskEmptyPageRef} from 'modules/utils/reftags';
-import {
-  type NavigateFunction,
-  useBeforeUnload,
-  useNavigate,
-} from 'react-router-dom';
+import {type NavigateFunction, useBeforeUnload, useNavigate,} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {pages} from 'modules/routing';
 import type {TaskFilters} from 'modules/hooks/useTaskFilters';

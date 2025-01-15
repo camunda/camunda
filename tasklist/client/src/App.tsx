@@ -10,11 +10,11 @@
 
 import {useEffect} from 'react';
 import {
+  createBrowserRouter,
+  createRoutesFromElements,
   Outlet,
   Route,
   RouterProvider,
-  createBrowserRouter,
-  createRoutesFromElements,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {Notifications} from 'modules/notifications';

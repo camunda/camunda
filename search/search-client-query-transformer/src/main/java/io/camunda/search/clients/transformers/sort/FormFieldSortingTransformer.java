@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.FormIndex.VERSION;
 
 public class FormFieldSortingTransformer implements FieldSortingTransformer {
 

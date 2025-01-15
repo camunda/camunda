@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect} from 'react';
+import {useEffect, useState} from 'react';
 
 const QUERY = '(prefers-reduced-motion: no-preference)';
 

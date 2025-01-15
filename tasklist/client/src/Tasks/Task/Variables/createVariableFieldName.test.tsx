@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  createVariableFieldName,
-  createNewVariableFieldName,
-} from './createVariableFieldName';
+import {createNewVariableFieldName, createVariableFieldName,} from './createVariableFieldName';
 
 describe('createVariableFieldName', () => {
   it('should create variable field name', () => {

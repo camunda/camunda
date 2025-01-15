@@ -9,10 +9,10 @@
 import styles from './styles.module.scss';
 import {Popover} from '@carbon/react';
 import {
+  Critical,
+  SkillLevelAdvanced,
   SkillLevelBasic,
   SkillLevelIntermediate,
-  SkillLevelAdvanced,
-  Critical,
 } from '@carbon/icons-react';
 import {LabelWithPopover} from './LabelWithPopover';
 import {getPriorityLabel} from 'modules/utils/getPriorityLabel';

@@ -7,10 +7,10 @@
  */
 package io.camunda.operate.util;
 
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;

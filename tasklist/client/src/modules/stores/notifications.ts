@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {action, observable, makeObservable} from 'mobx';
+import {action, makeObservable, observable} from 'mobx';
 import {ToastNotification} from '@carbon/react';
 
 const NOTIFICATION_TIMEOUT = 5000;

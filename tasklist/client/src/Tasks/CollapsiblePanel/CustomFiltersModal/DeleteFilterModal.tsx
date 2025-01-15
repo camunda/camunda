@@ -8,7 +8,7 @@
 
 import {Modal} from 'modules/components/Modal';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {useTranslation, Trans} from 'react-i18next';
+import {Trans, useTranslation} from 'react-i18next';
 
 type Props = {
   isOpen: boolean;

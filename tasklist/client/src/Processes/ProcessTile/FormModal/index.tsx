@@ -12,14 +12,7 @@ import type {Process} from 'modules/types';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {
-  TextInputSkeleton,
-  Loading,
-  Modal,
-  Copy,
-  InlineNotification,
-  Layer,
-} from '@carbon/react';
+import {Copy, InlineNotification, Layer, Loading, Modal, TextInputSkeleton,} from '@carbon/react';
 import {Share} from '@carbon/react/icons';
 import {match} from 'ts-pattern';
 import {FormJSRenderer} from 'modules/components/FormJSRenderer';

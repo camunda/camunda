@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {storeStateLocally, getStateLocally, clearStateLocally} from '.';
+import {clearStateLocally, getStateLocally, storeStateLocally} from '.';
 
 const KEY_NAME = 'theme';
 
