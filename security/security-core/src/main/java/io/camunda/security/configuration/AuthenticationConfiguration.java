@@ -12,6 +12,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 public class AuthenticationConfiguration {
 
   private AuthenticationMethod method = AuthenticationMethod.NONE;
+  private BasicAuthenticationConfiguration basicAuthenticationConfiguration;
 
   public AuthenticationMethod getMethod() {
     return method;
@@ -19,5 +20,13 @@ public class AuthenticationConfiguration {
 
   public void setMethod(final AuthenticationMethod method) {
     this.method = method;
+  }
+
+  public BasicAuthenticationConfiguration getBasic() {
+    return basicAuthenticationConfiguration;
+  }
+
+  public void setBasic(final BasicAuthenticationConfiguration configuration) {
+    basicAuthenticationConfiguration = configuration;
   }
 }
