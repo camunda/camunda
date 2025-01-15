@@ -50,7 +50,7 @@ public class UserController {
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserDTO(null, userRequest)
+    return RequestMapper.toUserDTO(userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
@@ -70,10 +70,10 @@ public class UserController {
         ResponseMapper::toUserCreateResponse);
   }
 
-  @CamundaPatchMapping(path = "/{userKey}")
+  @CamundaPatchMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
-      @PathVariable final long userKey, @RequestBody final UserUpdateRequest userUpdateRequest) {
-    return RequestMapper.toUserUpdateRequest(userUpdateRequest, userKey)
+      @PathVariable final String username, @RequestBody final UserUpdateRequest userUpdateRequest) {
+    return RequestMapper.toUserUpdateRequest(userUpdateRequest, username)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
   }
 
@@ -84,11 +84,7 @@ public class UserController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .updateUser(
                     new UserDTO(
-                        request.userKey(),
-                        "",
-                        request.name(),
-                        request.email(),
-                        request.password())));
+                        request.username(), request.name(), request.email(), request.password())));
   }
 
   @CamundaPutMapping(

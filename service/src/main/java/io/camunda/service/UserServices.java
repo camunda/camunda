@@ -68,7 +68,6 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserUpdateRequest()
-            .setUserKey(request.userKey())
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
@@ -79,6 +78,5 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     return sendBrokerRequest(new BrokerUserDeleteRequest().setUsername(username));
   }
 
-  public record UserDTO(
-      Long userKey, String username, String name, String email, String password) {}
+  public record UserDTO(String username, String name, String email, String password) {}
 }
