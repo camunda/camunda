@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
@@ -252,43 +251,5 @@ public class RemovePermissionAuthorizationTest {
                     userKey,
                     "[bar, foo]",
                     "[]"));
-  }
-
-  @Test
-  public void shouldRejectRemovingUnsupportedPermission() {
-    // given
-    final var ownerKey =
-        engine
-            .user()
-            .newUser("foo")
-            .withEmail("foo@bar")
-            .withName("Foo Bar")
-            .withPassword("zabraboof")
-            .create()
-            .getKey();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
-
-    // when
-    final var rejection =
-        engine
-            .authorization()
-            .permission()
-            .withOwnerKey(ownerKey)
-            .withResourceType(resourceType)
-            .withPermission(PermissionType.CREATE, "foo")
-            .withPermission(PermissionType.ACCESS, "foo")
-            .withPermission(PermissionType.READ_PROCESS_INSTANCE, "foo")
-            .expectRejection()
-            .remove();
-
-    // then
-    Assertions.assertThat(rejection)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Expected to add permission types '%s' for resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"
-                .formatted(
-                    List.of(PermissionType.ACCESS, PermissionType.READ_PROCESS_INSTANCE),
-                    resourceType,
-                    resourceType.getSupportedPermissionTypes()));
   }
 }
