@@ -11,11 +11,11 @@ import static io.camunda.zeebe.it.util.AuthorizationsUtil.createClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -49,7 +49,7 @@ final class BasicAuthOverRestIT {
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAdditionalProfile(Profile.AUTH_BASIC);
+          .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
   void beforeEach() {
