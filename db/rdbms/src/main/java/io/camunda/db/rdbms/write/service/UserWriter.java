@@ -32,12 +32,7 @@ public class UserWriter {
     final boolean wasMerged =
         mergeToQueue(
             user.username(),
-            b ->
-                b.userKey(user.userKey())
-                    .username(user.username())
-                    .name(user.name())
-                    .email(user.email())
-                    .password(user.password()));
+            b -> b.name(user.name()).email(user.email()).password(user.password()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
