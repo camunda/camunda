@@ -79,7 +79,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     final var authorizationRecord =
         new AuthorizationRecord()
-            .setAuthenticationKey(authorizationKey)
+            .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceId(resourceId)

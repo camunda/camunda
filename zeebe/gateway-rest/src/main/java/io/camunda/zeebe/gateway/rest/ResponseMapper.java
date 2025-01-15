@@ -459,7 +459,7 @@ public final class ResponseMapper {
       final AuthorizationRecord authorizationRecord) {
     final var response =
         new AuthorizationCreateResponse()
-            .authorizationKey(authorizationRecord.getAuthenticationKey());
+            .authorizationKey(authorizationRecord.getAuthorizationKey());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
