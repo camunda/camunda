@@ -92,7 +92,7 @@ public class TasklistPermissionServices {
   private boolean isWithoutAuthenticatedUserKey(final Authentication authentication) {
     // when the provided authentication does not contain a user key,
     // then the authorization check cannot be performed.
-    // the authorization key is only provided when running with profile "auth-basic",
+    // the authorization key is only provided when running with the BASIC authentication method
     // in other cases the authorization check must not happen
     return authentication == null || authentication.authenticatedUserKey() == null;
   }

@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.security.se;
 
 import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aCamundaUser;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.AUTH_BASIC;
+import static io.camunda.tasklist.webapp.security.TasklistProfileService.CONSOLIDATED_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
@@ -33,7 +33,8 @@ import org.springframework.stereotype.Component;
 
 @Configuration
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE + " & !" + AUTH_BASIC)
+@Profile(
+    "!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE + " & !" + CONSOLIDATED_AUTH_PROFILE)
 /*
  * Required as primary for now due to a clashing bean in the always active Identity service classes.
  * In future versions this class will be removed and the Identity service will be used instead.

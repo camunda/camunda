@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.time.Duration;
@@ -36,10 +36,10 @@ public class OperateMultiTenancyIT {
   private long processDefinitionKey2;
 
   @ZeebeIntegration.TestZeebe
-  private TestStandaloneCamunda testInstance =
+  private final TestStandaloneCamunda testInstance =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withAdditionalProfile(Profile.AUTH_BASIC)
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
           .withMultiTenancyEnabled();
 
   @BeforeEach
