@@ -126,7 +126,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromProcessDefinitionSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::processDefinition,
             SearchQueryRequestMapper::applyProcessDefinitionSortField);
     final var filter = toProcessDefinitionFilter(request.getFilter());
@@ -141,7 +142,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::processInstance,
             SearchQueryRequestMapper::applyProcessInstanceSortField);
     final var filter = toProcessInstanceFilter(request.getFilter());
@@ -155,7 +157,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromRoleSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::roleSearchQuery);
@@ -169,7 +171,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromGroupSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::group,
             SearchQueryRequestMapper::applyGroupSortField);
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::groupSearchQuery);
@@ -183,7 +185,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromTenantSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::tenant,
             SearchQueryRequestMapper::applyTenantSortField);
     final var filter = toTenantFilter(request.getFilter());
@@ -198,7 +200,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromMappingSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::mapping,
             SearchQueryRequestMapper::applyMappingSortField);
     final var filter = toMappingFilter(request.getFilter());
@@ -213,7 +215,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromDecisionDefinitionSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::decisionDefinition,
             SearchQueryRequestMapper::applyDecisionDefinitionSortField);
     final var filter = toDecisionDefinitionFilter(request.getFilter());
@@ -228,7 +231,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromDecisionRequirementsSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::decisionRequirements,
             SearchQueryRequestMapper::applyDecisionRequirementsSortField);
     final var filter = toDecisionRequirementsFilter(request.getFilter());
@@ -244,7 +248,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::flowNodeInstance,
             SearchQueryRequestMapper::applyFlownodeInstanceSortField);
     final var filter = toFlownodeInstanceFilter(request.getFilter());
@@ -259,7 +264,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromDecisionInstanceSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::decisionInstance,
             SearchQueryRequestMapper::applyDecisionInstanceSortField);
     final var filter = toDecisionInstanceFilter(request.getFilter());
@@ -336,7 +342,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromUserTaskSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::userTask,
             SearchQueryRequestMapper::applyUserTaskSortField);
     final var filter = toUserTaskFilter(request.getFilter());
@@ -353,7 +359,8 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromUserTaskVariableSearchQuerySortRequest(
+                request.getSort()),
             SortOptionBuilders::variable,
             SearchQueryRequestMapper::applyVariableSortField);
 
@@ -383,7 +390,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromVariableSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::variable,
             SearchQueryRequestMapper::applyVariableSortField);
     final VariableFilter filter = toVariableFilter(request.getFilter());
@@ -426,7 +433,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromUserSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::user,
             SearchQueryRequestMapper::applyUserSortField);
     final var filter = toUserFilter(request.getFilter());
@@ -441,7 +448,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::incident,
             SearchQueryRequestMapper::applyIncidentSortField);
     final var filter = toIncidentFilter(request.getFilter());
@@ -1008,8 +1015,8 @@ public final class SearchQueryRequestMapper {
       final List<String> validationErrors = new ArrayList<>();
       final var builder = builderSupplier.get();
       for (final SearchQuerySortRequest sort : sorting) {
-        validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
-        applySortOrder(sort.getOrder(), builder);
+        validationErrors.addAll(sortFieldMapper.apply(sort.field(), builder));
+        applySortOrder(sort.order(), builder);
       }
 
       return validationErrors.isEmpty()
@@ -1046,9 +1053,10 @@ public final class SearchQueryRequestMapper {
 
   private static void applySortOrder(
       final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
-    switch (order) {
-      case DESC -> builder.desc();
-      default -> builder.asc();
+    if (order == SortOrderEnum.DESC) {
+      builder.desc();
+    } else {
+      builder.asc();
     }
   }
 
@@ -1090,7 +1098,7 @@ public final class SearchQueryRequestMapper {
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            request.getSort(),
+            SearchQuerySortRequestMapper.fromAuthorizationSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::authorization,
             SearchQueryRequestMapper::applyAuthorizationSortField);
     final var filter = toAuthorizationFilter(request.getFilter());

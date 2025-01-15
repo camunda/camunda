@@ -30,13 +30,14 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +75,7 @@ public class DecisionInstanceQueryImpl
   @Override
   public DecisionInstanceQuery sort(final DecisionInstanceSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(SearchQuerySortRequestMapper.toDecisionInstanceSearchQuerySortRequest(sorting));
     return this;
   }
 

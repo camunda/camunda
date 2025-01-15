@@ -148,7 +148,17 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 }
           ]
       }""",
-            q -> q.sort(s -> s.decisionDefinitionName().desc())));
+            q -> q.sort(s -> s.decisionDefinitionName().desc())),
+        new TestArguments(
+            """
+      {
+          "sort": [
+                {
+                    "field": "decisionDefinitionName"
+                }
+          ]
+      }""",
+            q -> q.sort(s -> s.decisionDefinitionName().asc())));
   }
 
   @ParameterizedTest

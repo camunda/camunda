@@ -30,13 +30,14 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.IncidentFilterRequest;
 import io.camunda.client.protocol.rest.IncidentSearchQueryRequest;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +94,7 @@ public class IncidentQueryImpl
   @Override
   public IncidentQuery sort(final IncidentSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(SearchQuerySortRequestMapper.toIncidentSearchQuerySortRequest(sorting));
     return this;
   }
 

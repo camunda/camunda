@@ -4029,13 +4029,31 @@ components:
           description: The set of keys of members assigned to the tenant.
           items:
             type: string
-
+    TenantSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - key
+            - name
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     TenantSearchQueryRequest:
       description: Tenant search request
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantSearchQuerySortRequest"
         filter:
           description: The tenant search filters.
           allOf:
@@ -4075,23 +4093,65 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TenantResult"
-
+    UserTaskSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - creationDate
+            - completionDate
+            - followUpDate
+            - dueDate
+            - priority
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     UserTaskSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskSearchQuerySortRequest"
         filter:
           description: The user task search filters.
           allOf:
             - $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskVariableSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - value
+            - name
+            - tenantId
+            - variableKey
+            - scopeKey
+            - processInstanceKey
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     UserTaskVariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: User task search query request.
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskVariableSearchQuerySortRequest"
         filter:
           description: The user task variable search filters.
           allOf:
@@ -4332,12 +4392,34 @@ components:
         formKey:
           type: string
           description: The key of the form.
+    VariableSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - value
+            - name
+            - tenantId
+            - variableKey
+            - scopeKey
+            - processInstanceKey
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     VariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       description: Variable search query request.
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/VariableSearchQuerySortRequest"
         filter:
           description: The variable search filters.
           allOf:
@@ -4448,11 +4530,34 @@ components:
         processInstanceKey:
           description: The key of the process instance of this variable.
           type: string
+    ProcessDefinitionSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionKey
+            - name
+            - resourceName
+            - version
+            - versionTag
+            - processDefinitionId
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     ProcessDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionSearchQuerySortRequest"
         filter:
           description: The process definition search filters.
           allOf:
@@ -4546,12 +4651,41 @@ components:
         processDefinitionKey:
           description: The key for this process definition.
           type: string
+    ProcessInstanceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - key
+            - bpmnProcessId
+            - processName
+            - processVersion
+            - processVersionTag
+            - processDefinitionKey
+            - parentProcessInstanceKey
+            - parentFlowNodeInstanceKey
+            - startDate
+            - endDate
+            - state
+            - incident
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     ProcessInstanceSearchQueryRequest:
       description: Process instance search request.
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceSearchQuerySortRequest"
         filter:
           description: The process instance search filters.
           allOf:
@@ -4945,13 +5079,39 @@ components:
           type: integer
           format: int64
           minimum: 1
-
+    FlowNodeInstanceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - flowNodeInstanceKey
+            - processInstanceKey
+            - processDefinitionKey
+            - processDefinitionId
+            - startDate
+            - endDate
+            - flowNodeId
+            - type
+            - state
+            - incidentKey
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     FlowNodeInstanceSearchQueryRequest:
       description: Flow node instance search request
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowNodeInstanceSearchQuerySortRequest"
         filter:
           description: The flow node instance search filters.
           allOf:
@@ -5150,11 +5310,34 @@ components:
         incidentKey:
           description: Incident key associated with this flow node instance.
           type: string
+    DecisionDefinitionSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - decisionDefinitionKey
+            - decisionDefinitionId
+            - name
+            - version
+            - decisionRequirementsId
+            - decisionRequirementsKey
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     DecisionDefinitionSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionDefinitionSearchQuerySortRequest"
         filter:
           description: The decision definition search filters.
           allOf:
@@ -5187,11 +5370,39 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision definition.
+    IncidentSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - incidentKey
+            - processDefinitionKey
+            - processDefinitionId
+            - processInstanceKey
+            - errorType
+            - errorMessage
+            - flowNodeId
+            - flowNodeInstanceKey
+            - creationTime
+            - state
+            - jobKey
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     IncidentSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
         filter:
           description: The incident search filters.
           allOf:
@@ -5530,11 +5741,30 @@ components:
           description: The permissions to add/remove.
           items:
             $ref: "#/components/schemas/PermissionDTO"
+    AuthorizationSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - ownerType
+            - ownerKey
+            - resourceType
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     AuthorizationSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthorizationSearchQuerySortRequest"
         filter:
           description: The authorization search filters.
           allOf:
@@ -5653,20 +5883,59 @@ components:
         userKey:
           description: The key of the created user
           type: string
+    UserSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - username
+            - name
+            - email
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     UserSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserSearchQuerySortRequest"
         filter:
           description: The user search filters.
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
+    MappingSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - mappingKey
+            - claimName
+            - claimValue
+            - name
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     MappingSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingSearchQuerySortRequest"
         filter:
           description: The mapping search filters.
           allOf:
@@ -5920,11 +6189,30 @@ components:
           description: The set of keys of members assigned to the role.
           items:
             type: string
+    RoleSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - roleKey
+            - name
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     RoleSearchQueryRequest:
       description: Role search request.
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleSearchQuerySortRequest"
     RoleSearchQueryResponse:
       description: Role search response. Key attributes as numeric values.
       deprecated: true
@@ -6023,12 +6311,30 @@ components:
           description: The set of keys of members assigned to the group.
           items:
             type: string
+    GroupSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - groupKey
+            - name
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     GroupSearchQueryRequest:
       description: Group search request.
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupSearchQuerySortRequest"
         filter:
           description: The group search filters.
           allOf:
@@ -6699,12 +7005,6 @@ components:
     SearchQueryRequest:
       type: object
       properties:
-        sort:
-          description: Sort field criteria.
-          type: array
-          items:
-            allOf:
-              - $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
           description: Pagination criteria.
           allOf:
@@ -6731,16 +7031,6 @@ components:
           type: array
           items:
             type: object
-    SearchQuerySortRequest:
-      type: object
-      properties:
-        field:
-          description: The field to sort by.
-          type: string
-        order:
-          $ref: "#/components/schemas/SortOrderEnum"
-      required:
-        - field
     SearchQueryResponse:
       type: object
       properties:
@@ -6766,11 +7056,32 @@ components:
           type: array
           items:
             type: object
+    DecisionRequirementsSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - decisionRequirementsKey
+            - name
+            - version
+            - decisionRequirementsId
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     DecisionRequirementsSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionRequirementsSearchQuerySortRequest"
         filter:
           description: The decision definition search filters.
           allOf:
@@ -7044,11 +7355,40 @@ components:
         outputValue:
           description: The value of the evaluated decision output.
           type: string
+    DecisionInstanceSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - decisionInstanceKey
+            - decisionInstanceId
+            - state
+            - evaluationDate
+            - evaluationFailure
+            - processDefinitionKey
+            - processInstanceId
+            - decisionDefinitionKey
+            - decisionDefinitionId
+            - decisionDefinitionName
+            - decisionDefinitionVersion
+            - decisionDefinitionType
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     DecisionInstanceSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionInstanceSearchQuerySortRequest"
         filter:
           description: The decision instance search filters.
           allOf:
@@ -7246,6 +7586,7 @@ components:
         - UNKNOWN
     SortOrderEnum:
       description: The order in which to sort the related field.
+      type: string
       enum:
         - ASC
         - DESC

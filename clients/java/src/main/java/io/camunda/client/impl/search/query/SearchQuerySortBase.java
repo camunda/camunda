@@ -15,8 +15,8 @@
  */
 package io.camunda.client.impl.search.query;
 
+import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import java.util.ArrayList;
 import java.util.List;
