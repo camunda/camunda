@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.user;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -125,7 +123,13 @@ public class DbUserState implements UserState, MutableUserState {
 
   @Override
   public Optional<PersistedUser> getUser(final String username) {
-    return getUser(wrapString(username));
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
+
+    if (persistedUser == null) {
+      return Optional.empty();
+    }
+    return Optional.of(persistedUser.copy());
   }
 
   @Override
