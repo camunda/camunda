@@ -593,13 +593,6 @@
       <artifactId>spring-core</artifactId>
     </dependency>
 
-    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-client</artifactId>
-      <version>3.1.9</version>
-    </dependency>
-
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.eclipse.angus</groupId>
