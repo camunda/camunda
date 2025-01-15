@@ -628,11 +628,6 @@
       <artifactId>spring-web</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.glassfish.jersey.core</groupId>
-      <artifactId>jersey-server</artifactId>
-    </dependency>
-
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>jakarta.servlet</groupId>
