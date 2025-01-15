@@ -104,6 +104,7 @@ final class TestSupport {
             ValueType.SCALE,
             ValueType.REDISTRIBUTION,
             // these are not yet supported
+            ValueType.AUTHORIZATION,
             ValueType.ROLE,
             ValueType.TENANT,
             ValueType.GROUP,
