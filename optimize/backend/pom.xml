@@ -145,19 +145,6 @@
       <version>${version.spring-boot}</version>
     </dependency>
 
-    <!-- this is necessary. Dependency:analyze error suppressed -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-jersey</artifactId>
-      <version>${version.spring-boot}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.javassist</groupId>
-          <artifactId>javassist</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
     <dependency>
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
