@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.search.filter.IncidentFilter}
+ */
+@Deprecated
 public interface IncidentFilter extends SearchRequestFilter {
 
   /**

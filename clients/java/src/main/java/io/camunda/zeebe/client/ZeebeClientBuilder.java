@@ -28,6 +28,11 @@ import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
+/**
+ * @deprecated since 8.7 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.CamundaClientBuilder}
+ */
+@Deprecated
 public interface ZeebeClientBuilder {
 
   /**

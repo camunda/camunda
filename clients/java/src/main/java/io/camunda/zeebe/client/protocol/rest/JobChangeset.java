@@ -20,7 +20,11 @@ import java.util.Objects;
 /**
  * Added to keep compatibility with the previous version of the client. Used in {@link
  * io.camunda.zeebe.client.api.command.UpdateJobCommandStep1#update(JobChangeset)}
+ *
+ * @deprecated since 8.7 for removal in 8.8, replaced by #TODO
+ *     https://github.com/camunda/camunda/issues/26851
  */
+@Deprecated
 public class JobChangeset {
 
   private final io.camunda.client.protocol.rest.JobChangeset delegate;

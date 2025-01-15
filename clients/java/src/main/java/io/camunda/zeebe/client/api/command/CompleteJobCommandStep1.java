@@ -19,6 +19,11 @@ import io.camunda.zeebe.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.CompleteJobCommandStep1}
+ */
+@Deprecated
 public interface CompleteJobCommandStep1
     extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
         FinalCommandStep<CompleteJobResponse> {
