@@ -16,12 +16,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -35,64 +34,62 @@ public class UserCreateAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToCreateUserWithDefaultUser() {
     // when
-    final long userKey = createUser(defaultUserKey);
+    final var user = createUser(DEFAULT_USER.getUsername());
 
     // then
-    assertThat(RecordingExporter.userRecords(UserIntent.CREATED).withUserKey(userKey).exists())
+    assertThat(
+            RecordingExporter.userRecords(UserIntent.CREATED)
+                .withUserKey(user.getUserKey())
+                .withUsername(user.getUsername())
+                .exists())
         .isTrue();
   }
 
   @Test
   public void shouldBeAuthorizedToCreateUserWithPermissions() {
     // given
-    final var authorizedUserKey = createUser(defaultUserKey);
-    addPermissionsToUser(authorizedUserKey, AuthorizationResourceType.USER, PermissionType.CREATE);
+    final var authorizedUser = createUser(DEFAULT_USER.getUsername());
+    addPermissionsToUser(
+        authorizedUser.getUserKey(), AuthorizationResourceType.USER, PermissionType.CREATE);
 
     // when
-    final var userKey = createUser(authorizedUserKey);
+    final var user = createUser(authorizedUser.getUsername());
 
     // then
-    assertThat(RecordingExporter.userRecords(UserIntent.CREATED).withUserKey(userKey).exists())
+    assertThat(
+            RecordingExporter.userRecords(UserIntent.CREATED)
+                .withUserKey(user.getUserKey())
+                .withUsername(user.getUsername())
+                .exists())
         .isTrue();
   }
 
   @Test
   public void shouldBeUnAuthorizedToCreateUserWithoutPermissions() {
     // given
-    final var unauthorizedUserKey = createUser(defaultUserKey);
+    final var unauthorizedUser = createUser(DEFAULT_USER.getUsername());
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .user()
             .newUser(UUID.randomUUID().toString())
             .withPassword(UUID.randomUUID().toString())
             .withName(UUID.randomUUID().toString())
             .withEmail(UUID.randomUUID().toString())
             .expectRejection()
-            .create(unauthorizedUserKey);
+            .create(unauthorizedUser.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -101,27 +98,27 @@ public class UserCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'USER'");
   }
 
-  private static long createUser(final long authorizedUserKey) {
-    return ENGINE
+  private UserRecordValue createUser(final String authorizedUsername) {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
-        .create(authorizedUserKey)
-        .getKey();
+        .create(authorizedUsername)
+        .getValue();
   }
 
   private void addPermissionsToUser(
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 }

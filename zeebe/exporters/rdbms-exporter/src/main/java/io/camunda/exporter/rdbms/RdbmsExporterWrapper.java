@@ -46,10 +46,6 @@ public class RdbmsExporterWrapper implements Exporter {
   private final RdbmsService rdbmsService;
   private RdbmsWriter rdbmsWriter;
 
-  // configuration
-  private Duration flushInterval;
-  private int maxQueueSize;
-
   private RdbmsExporter exporter;
 
   public RdbmsExporterWrapper(final RdbmsService rdbmsService) {
@@ -58,37 +54,26 @@ public class RdbmsExporterWrapper implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    if (context.getConfiguration().getArguments() != null) {
-      final var arguments = context.getConfiguration().getArguments();
-      final var flushIntervalMillis =
-          (Integer) arguments.getOrDefault("flushInterval", DEFAULT_FLUSH_INTERVAL);
-      flushInterval = Duration.ofMillis(flushIntervalMillis);
-      maxQueueSize = (Integer) arguments.getOrDefault("maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
-    } else {
-      flushInterval = Duration.ofMillis(DEFAULT_FLUSH_INTERVAL);
-      maxQueueSize = DEFAULT_MAX_QUEUE_SIZE;
-    }
+    final var maxQueueSize = readMaxQueueSize(context);
 
-    LOG.info(
-        "[RDBMS Exporter] Configuration: flushInterval={}, maxQueueSize={}",
-        flushInterval,
-        maxQueueSize);
     partitionId = context.getPartitionId();
 
     rdbmsWriter = rdbmsService.createWriter(partitionId, maxQueueSize);
+
+    final var builder =
+        new RdbmsExporterConfig.Builder()
+            .partitionId(partitionId)
+            .flushInterval(readFlushInterval(context))
+            .maxQueueSize(maxQueueSize)
+            .rdbmsWriter(rdbmsWriter);
+    createHandlers(partitionId, rdbmsWriter, builder);
+
+    exporter = new RdbmsExporter(builder.build());
   }
 
   @Override
   public void open(final Controller controller) {
-    final var builder =
-        new RdbmsExporterConfig.Builder()
-            .partitionId(partitionId)
-            .flushInterval(flushInterval)
-            .maxQueueSize(maxQueueSize)
-            .controller(controller)
-            .rdbmsWriter(rdbmsWriter);
-    createHandlers(partitionId, rdbmsWriter, builder);
-    exporter = new RdbmsExporter(builder.build());
+    exporter.open(controller);
   }
 
   @Override
@@ -104,6 +89,26 @@ public class RdbmsExporterWrapper implements Exporter {
   @Override
   public void purge() throws Exception {
     exporter.purge();
+  }
+
+  private Duration readFlushInterval(final Context context) {
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null) {
+      final var flushIntervalMillis =
+          (Integer) arguments.getOrDefault("flushInterval", DEFAULT_FLUSH_INTERVAL);
+      return Duration.ofMillis(flushIntervalMillis);
+    } else {
+      return Duration.ofMillis(DEFAULT_FLUSH_INTERVAL);
+    }
+  }
+
+  private int readMaxQueueSize(final Context context) {
+    final var arguments = context.getConfiguration().getArguments();
+    if (arguments != null) {
+      return (Integer) arguments.getOrDefault("maxQueueSize", DEFAULT_MAX_QUEUE_SIZE);
+    } else {
+      return DEFAULT_MAX_QUEUE_SIZE;
+    }
   }
 
   private static void createHandlers(

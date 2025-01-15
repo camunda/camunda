@@ -89,8 +89,8 @@ public final class UserClient {
       return expectation.apply(position);
     }
 
-    public Record<UserRecordValue> create(final long userKey) {
-      final long position = writer.writeCommand(UserIntent.CREATE, userCreationRecord, userKey);
+    public Record<UserRecordValue> create(final String username) {
+      final long position = writer.writeCommand(UserIntent.CREATE, username, userCreationRecord);
       return expectation.apply(position);
     }
 

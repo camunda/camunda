@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.query;
 
 import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.SearchRequestBuilders.userTaskVariableFilter;
 import static io.camunda.client.api.search.SearchRequestBuilders.variableSort;
 
 import io.camunda.client.api.CamundaFuture;
@@ -35,6 +36,7 @@ import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
 import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
+import io.camunda.client.protocol.rest.VariableUserTaskFilterRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -80,12 +82,14 @@ public class UserTaskVariableQueryImpl
 
   @Override
   public UserTaskVariableQuery filter(final UserTaskVariableFilter value) {
-    return null; // There is no Filter for UserTaskVariableQuery
+    final VariableUserTaskFilterRequest filter = provideSearchRequestProperty(value);
+    request.setFilter(filter);
+    return this;
   }
 
   @Override
   public UserTaskVariableQuery filter(final Consumer<UserTaskVariableFilter> fn) {
-    return null; // There is no Filter for UserTaskVariableQuery
+    return filter(userTaskVariableFilter(fn));
   }
 
   @Override

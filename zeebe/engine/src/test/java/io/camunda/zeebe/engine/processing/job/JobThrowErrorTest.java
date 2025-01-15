@@ -46,7 +46,7 @@ public final class JobThrowErrorTest {
   private static final String PROCESS_ID = "process";
   private static String jobType;
   private static final String ERROR_CODE = "ERROR";
-  private static long userKey;
+  private static String username;
   private static String tenantId;
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -54,15 +54,15 @@ public final class JobThrowErrorTest {
   @BeforeClass
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
-    final var username = UUID.randomUUID().toString();
-    userKey = ENGINE.user().newUser(username).create().getValue().getUserKey();
+    username = UUID.randomUUID().toString();
+    final var user = ENGINE.user().newUser(username).create().getValue();
     final var tenantKey =
         ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
         .addEntity(tenantKey)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityKey(user.getUserKey())
         .add();
 
     ENGINE
@@ -70,7 +70,7 @@ public final class JobThrowErrorTest {
         .permission()
         .withPermission(PermissionType.UPDATE_PROCESS_INSTANCE, PROCESS_ID)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
         .withOwnerType(AuthorizationOwnerType.USER)
         .add();
   }
@@ -502,7 +502,7 @@ public final class JobThrowErrorTest {
     // given
     final String falseTenantId = "foo";
     final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(userKey);
+    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
 
     // when
     final Record<JobRecordValue> result =

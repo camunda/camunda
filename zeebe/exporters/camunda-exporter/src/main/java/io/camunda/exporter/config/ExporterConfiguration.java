@@ -288,6 +288,7 @@ public class ExporterConfiguration {
     private int rolloverBatchSize = 100;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
+    private int maxDelayBetweenRuns = 60000;
 
     public boolean isRolloverEnabled() {
       return rolloverEnabled;
@@ -341,27 +342,34 @@ public class ExporterConfiguration {
       this.delayBetweenRuns = delayBetweenRuns;
     }
 
+    public int getMaxDelayBetweenRuns() {
+      return maxDelayBetweenRuns;
+    }
+
+    public void setMaxDelayBetweenRuns(final int maxDelayBetweenRuns) {
+      this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+    }
+
     @Override
     public String toString() {
-      return "RetentionConfiguration{"
+      return "ArchiverConfiguration{"
           + "rolloverEnabled="
           + rolloverEnabled
-          + '\''
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''
           + ", rolloverInterval='"
           + rolloverInterval
           + '\''
-          + ", rolloverBatchSize='"
+          + ", rolloverBatchSize="
           + rolloverBatchSize
-          + '\''
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving
           + '\''
-          + ", delayBetweenRuns='"
+          + ", delayBetweenRuns="
           + delayBetweenRuns
-          + '\''
+          + ", maxDelayBetweenRuns="
+          + maxDelayBetweenRuns
           + '}';
     }
   }
@@ -386,6 +394,7 @@ public class ExporterConfiguration {
   public static final class PostExportConfiguration {
     private int batchSize = 100;
     private int delayBetweenRuns = 2000;
+    private int maxDelayBetweenRuns = 60000;
     private boolean ignoreMissingData = false;
 
     public int getBatchSize() {
@@ -404,6 +413,14 @@ public class ExporterConfiguration {
       this.delayBetweenRuns = delayBetweenRuns;
     }
 
+    public int getMaxDelayBetweenRuns() {
+      return maxDelayBetweenRuns;
+    }
+
+    public void setMaxDelayBetweenRuns(final int maxDelayBetweenRuns) {
+      this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+    }
+
     public boolean isIgnoreMissingData() {
       return ignoreMissingData;
     }
@@ -419,6 +436,8 @@ public class ExporterConfiguration {
           + batchSize
           + ", delayBetweenRuns="
           + delayBetweenRuns
+          + ", maxDelayBetweenRuns="
+          + maxDelayBetweenRuns
           + ", ignoreMissingData="
           + ignoreMissingData
           + '}';

@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        zeebe-version: [8.3.0, 8.4.0, 8.5.0, 8.6.0, latest, snapshot]
+        zeebe-version: [8.3.0, 8.4.0, 8.5.0, 8.6.0, snapshot]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       # Parses the pom within less than second and exposes every value as an output of the step

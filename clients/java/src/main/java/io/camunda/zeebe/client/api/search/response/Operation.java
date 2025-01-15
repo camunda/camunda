@@ -13,10 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.client;
+package io.camunda.zeebe.client.api.search.response;
 
-public enum FlowNodeInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED
+public interface Operation {
+
+  String getId();
+
+  String getBatchOperationId();
+
+  String getType();
+
+  String getState();
+
+  String getErrorMessage();
+
+  String getCompletedDate();
 }

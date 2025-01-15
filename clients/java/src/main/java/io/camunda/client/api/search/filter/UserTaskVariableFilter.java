@@ -15,6 +15,24 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
-public interface UserTaskVariableFilter extends SearchRequestFilter {}
+public interface UserTaskVariableFilter extends SearchRequestFilter {
+  /**
+   * Filters variables by the specified name.
+   *
+   * @param name the name of the variable
+   * @return the updated filter
+   */
+  UserTaskVariableFilter name(final String name);
+
+  /**
+   * Filters variables by the specified name using {@link StringProperty} consumer.
+   *
+   * @param fn the name {@link StringProperty} consumer of the variable
+   * @return the updated filter
+   */
+  UserTaskVariableFilter name(final Consumer<StringProperty> fn);
+}
