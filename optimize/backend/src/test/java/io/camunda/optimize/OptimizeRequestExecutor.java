@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
