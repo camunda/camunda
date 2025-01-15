@@ -403,7 +403,7 @@ public class UserStateTest {
     userState.addTenantId(username, tenantId);
 
     // when
-    userState.removeTenant(userKey, tenantId);
+    userState.removeTenant(username, tenantId);
 
     // then
     final var persistedUser = userState.getUser(username).get();

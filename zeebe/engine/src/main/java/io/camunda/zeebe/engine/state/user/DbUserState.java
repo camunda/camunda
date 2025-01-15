@@ -97,13 +97,13 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public void removeTenant(final long userKey, final String tenantId) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = usersColumnFamily.get(this.userKey);
+  public void removeTenant(final String username, final String tenantId) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     final List<String> tenantIds = persistedUser.getTenantIdsList();
     tenantIds.remove(tenantId);
     persistedUser.setTenantIdsList(tenantIds);
-    usersColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override

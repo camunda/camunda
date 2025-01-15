@@ -47,7 +47,11 @@ public class TenantDeletedApplier implements TypedEventApplier<TenantIntent, Ten
       final Map<EntityType, List<Long>> entities, final String tenantId) {
     final List<Long> userEntities = entities.get(EntityType.USER);
     if (userEntities != null) {
-      userEntities.forEach(userKey -> userState.removeTenant(userKey, tenantId));
+      userEntities.forEach(
+          userKey ->
+              userState
+                  .getUser(userKey)
+                  .ifPresent(user -> userState.removeTenant(user.getUsername(), tenantId)));
     }
   }
 
