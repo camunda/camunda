@@ -37,6 +37,8 @@ public class UserTaskDbModel {
   private String serializedCustomHeaders;
   private Map<String, String> customHeaders;
   private Integer priority;
+  private String legacyId;
+  private String legacyProcessInstanceId;
 
   public UserTaskDbModel(final Long userTaskKey) {
     this.userTaskKey = userTaskKey;
@@ -60,7 +62,9 @@ public class UserTaskDbModel {
       final String externalFormReference,
       final Integer processDefinitionVersion,
       final Map<String, String> customHeaders,
-      final Integer priority) {
+      final Integer priority,
+      final String legacyId,
+      final String legacyProcessInstanceId) {
     this.userTaskKey = userTaskKey;
     this.elementId = elementId;
     this.processDefinitionId = processDefinitionId;
@@ -80,9 +84,27 @@ public class UserTaskDbModel {
     this.customHeaders = customHeaders;
     serializedCustomHeaders = CustomHeaderSerializer.serialize(customHeaders);
     this.priority = priority;
+    this.legacyId = legacyId;
+    this.legacyProcessInstanceId = legacyProcessInstanceId;
   }
 
   // Methods without get/set prefix
+
+  public String getLegacyProcessInstanceId() {
+    return legacyProcessInstanceId;
+  }
+
+  public void setLegacyProcessInstanceId(String legacyProcessInstanceId) {
+    this.legacyProcessInstanceId = legacyProcessInstanceId;
+  }
+
+  public String getLegacyId() {
+    return legacyId;
+  }
+
+  public void setLegacyId(String legacyId) {
+    this.legacyId = legacyId;
+  }
 
   public Long userTaskKey() {
     return userTaskKey;
@@ -255,6 +277,8 @@ public class UserTaskDbModel {
 
   public Builder toBuilder() {
     return new Builder()
+        .legacyId(legacyId)
+        .legacyProcessInstanceId(legacyProcessInstanceId)
         .userTaskKey(userTaskKey)
         .elementId(elementId)
         .processDefinitionId(processDefinitionId)
@@ -299,6 +323,8 @@ public class UserTaskDbModel {
     private Integer processDefinitionVersion;
     private Map<String, String> customHeaders;
     private Integer priority;
+    private String legacyId;
+    private String legacyProcessInstanceId;
 
     // Public constructor to initialize the builder
     public Builder() {}
@@ -309,6 +335,16 @@ public class UserTaskDbModel {
     }
 
     // Builder methods for each field
+    public Builder legacyId(final String id) {
+      legacyId = id;
+      return this;
+    }
+
+    public Builder legacyProcessInstanceId(final String id) {
+      legacyProcessInstanceId = id;
+      return this;
+    }
+
     public Builder userTaskKey(final Long userTaskKey) {
       this.userTaskKey = userTaskKey;
       return this;
@@ -431,7 +467,9 @@ public class UserTaskDbModel {
               externalFormReference,
               processDefinitionVersion,
               customHeaders,
-              priority);
+              priority,
+              legacyId,
+              legacyProcessInstanceId);
 
       model.candidateUsers(candidateUsers);
       model.candidateGroups(candidateGroups);

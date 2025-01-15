@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record VariableDbQuery(
-    VariableFilter filter, DbQuerySorting<VariableEntity> sort, DbQueryPage page) {
+    VariableFilter filter, DbQuerySorting<VariableEntity> sort, DbQueryPage page, String legacyId, String legacyProcessInstanceId) {
 
   public static VariableDbQuery of(
       final Function<VariableDbQuery.Builder, ObjectBuilder<VariableDbQuery>> fn) {
@@ -30,6 +30,18 @@ public record VariableDbQuery(
     private VariableFilter filter;
     private DbQuerySorting<VariableEntity> sort;
     private DbQueryPage page;
+    private String legacyId;
+    private String legacyProcessInstanceId;
+
+    public Builder legacyId(String id) {
+      legacyId = id;
+      return this;
+    }
+
+    public Builder legacyProcessInstanceId(String id) {
+      legacyProcessInstanceId = id;
+      return this;
+    }
 
     public Builder filter(final VariableFilter value) {
       filter = value;
@@ -63,7 +75,7 @@ public record VariableDbQuery(
     public VariableDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new VariableDbQuery(filter, sort, page);
+      return new VariableDbQuery(filter, sort, page, legacyId, legacyProcessInstanceId);
     }
   }
 }

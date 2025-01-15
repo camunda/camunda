@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceDbQuery(
-    ProcessInstanceFilter filter, DbQuerySorting<ProcessInstanceEntity> sort, DbQueryPage page) {
+    ProcessInstanceFilter filter, DbQuerySorting<ProcessInstanceEntity> sort, DbQueryPage page, String legacyProcessInstanceId) {
 
   public static ProcessInstanceDbQuery of(
       final Function<ProcessInstanceDbQuery.Builder, ObjectBuilder<ProcessInstanceDbQuery>> fn) {
@@ -31,6 +31,12 @@ public record ProcessInstanceDbQuery(
     private ProcessInstanceFilter filter;
     private DbQuerySorting<ProcessInstanceEntity> sort;
     private DbQueryPage page;
+    private String legacyProcessInstanceId;
+
+    public Builder legacyProcessInstanceId(String legacyProcessInstanceId) {
+      this.legacyProcessInstanceId = legacyProcessInstanceId;
+      return this;
+    }
 
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
@@ -64,7 +70,7 @@ public record ProcessInstanceDbQuery(
     public ProcessInstanceDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new ProcessInstanceDbQuery(filter, sort, page);
+      return new ProcessInstanceDbQuery(filter, sort, page, legacyProcessInstanceId);
     }
   }
 }

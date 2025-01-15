@@ -15,14 +15,14 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, PROCESS_DEFINITION_ID, CREATION_DATE,
+    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, LEGACY_ID, LEGACY_PI_ID, ELEMENT_ID, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                            PRIORITY)
-    VALUES (#{userTaskKey}, #{elementId}, #{processDefinitionId}, #{creationDate},
+    VALUES (#{userTaskKey}, #{legacyId}, #{legacyProcessInstanceId}, #{elementId}, #{processDefinitionId}, #{creationDate},
             #{completionDate},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
@@ -57,6 +57,8 @@
     <constructor>
       <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
     </constructor>
+    <result property="legacyId" column="LEGACY_ID" javaType="java.lang.String"/>
+    <result property="legacyProcessInstanceId" column="LEGACY_PI_ID" javaType="java.lang.String"/>
     <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
     <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
       javaType="java.lang.String"/>
@@ -98,6 +100,8 @@
     cu.CANDIDATE_USER
     FROM
     (SELECT
+    ut.LEGACY_ID,
+    ut.LEGACY_PI_ID,
     ut.USER_TASK_KEY,
     ut.ELEMENT_ID,
     ut.PROCESS_DEFINITION_ID,
@@ -160,6 +164,12 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
+    <if test="legacyId != null and !legacyId.isEmpty()">
+      AND LEGACY_ID = #{legacyId}
+    </if>
+    <if test="legacyProcessInstanceId != null and !legacyProcessInstanceId.isEmpty()">
+      AND LEGACY_ID = #{legacyProcessInstanceId}
+    </if>
     <!-- basic filters -->
     <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
       AND ut.USER_TASK_KEY IN

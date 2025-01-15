@@ -34,7 +34,7 @@ public class UserTaskReader {
             new UserTaskDbQuery(
                 new UserTaskFilter.Builder().userTaskKeys(key).build(),
                 UserTaskSort.of(b -> b),
-                SearchQueryPage.of(b -> b)))
+                SearchQueryPage.of(b -> b), null, null))
         .hits()
         .getFirst();
   }

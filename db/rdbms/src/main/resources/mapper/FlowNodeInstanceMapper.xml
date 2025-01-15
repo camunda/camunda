@@ -22,6 +22,8 @@
     SELECT * FROM (
     SELECT
     FLOW_NODE_INSTANCE_KEY,
+    LEGACY_ID,
+    LEGACY_PI_ID,
     FLOW_NODE_ID,
     PROCESS_INSTANCE_KEY,
     PROCESS_DEFINITION_ID,
@@ -33,6 +35,7 @@
     TENANT_ID,
     TREE_PATH,
     INCIDENT_KEY,
+    NUM_SUBPROCESS_INCIDENTS,
     CASE
     WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN TRUE
     ELSE FALSE
@@ -47,6 +50,12 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
+    <if test="legacyId != null and !legacyId.isEmpty()">
+      AND LEGACY_ID = #{legacyId}
+    </if>
+    <if test="legacyProcessInstanceId != null and !legacyProcessInstanceId.isEmpty()">
+      AND LEGACY_PI_ID = #{legacyProcessInstanceId}
+    </if>
     <!-- basic filters -->
     <if test="filter.flowNodeInstanceKeys != null and !filter.flowNodeInstanceKeys.isEmpty()">
       AND FLOW_NODE_INSTANCE_KEY IN
@@ -96,32 +105,33 @@
     </if>
   </sql>
 
-  <resultMap id="searchResultMap" type="io.camunda.search.entities.FlowNodeInstanceEntity">
-    <constructor>
-      <idArg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
-      <arg column="TREE_PATH" javaType="java.lang.String"/>
-      <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
-      <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>
-      <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
-      <arg column="INCIDENT_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-    </constructor>
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+    <id property="flowNodeInstanceKey" column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="legacyId" column="LEGACY_ID" javaType="java.lang.String"/>
+    <result property="legacyProcessInstanceId" column="LEGACY_PI_ID" javaType="java.lang.String"/>
+    <result property="flowNodeId" column="FLOW_NODE_ID" javaType="java.lang.String"/>
+    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+    <result property="type" column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
+    <result property="state" column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>
+    <result property="startDate" column="START_DATE" javaType="java.time.OffsetDateTime"/>
+    <result property="endDate" column="END_DATE" javaType="java.time.OffsetDateTime"/>
+    <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+    <result property="treePath" column="TREE_PATH" javaType="java.lang.String"/>
+    <result property="incidentKey" column="INCIDENT_KEY" javaType="java.lang.Long"/>
+    <result property="hasIncident" column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
+    <!--<result property="numSubprocessIncidents" column="NUM_SUBPROCESS_INCIDENTS" javaType="java.lang.Long"/>-->
   </resultMap>
 
   <insert
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
+    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, LEGACY_ID, LEGACY_PI_ID, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
                                     START_DATE, END_DATE, TENANT_ID, TREE_PATH, INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS)
-    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
+    VALUES (#{flowNodeInstanceKey}, #{legacyId}, #{legacyProcessInstanceId}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{treePath}, #{incidentKey}, #{numSubprocessIncidents})

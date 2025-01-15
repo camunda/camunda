@@ -17,7 +17,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record UserTaskDbQuery(UserTaskFilter filter, UserTaskSort sort, SearchQueryPage page) {
+public record UserTaskDbQuery(UserTaskFilter filter, UserTaskSort sort, SearchQueryPage page, String legacyId, String legacyProcessInstanceId) {
 
   public UserTaskDbQuery {
     // There should be a default in the SearchQueryPage, so this should never happen
@@ -38,6 +38,18 @@ public record UserTaskDbQuery(UserTaskFilter filter, UserTaskSort sort, SearchQu
 
     private UserTaskFilter filter;
     private UserTaskSort sort;
+    private String legacyId;
+    private String legacyProcessInstanceId;
+
+    public Builder legacyId(String id) {
+      legacyId = id;
+      return this;
+    }
+
+    public Builder legacyProcessInstanceId(String id) {
+      legacyProcessInstanceId = id;
+      return this;
+    }
 
     public Builder filter(final UserTaskFilter value) {
       filter = value;
@@ -68,7 +80,7 @@ public record UserTaskDbQuery(UserTaskFilter filter, UserTaskSort sort, SearchQu
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
       final var page = page() != null ? page().sanitize() : SearchQueryPage.DEFAULT;
-      return new UserTaskDbQuery(filter, sort, page);
+      return new UserTaskDbQuery(filter, sort, page, legacyId, legacyProcessInstanceId);
     }
   }
 }

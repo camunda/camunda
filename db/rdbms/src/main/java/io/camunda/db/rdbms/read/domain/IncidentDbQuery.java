@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record IncidentDbQuery(
-    IncidentFilter filter, DbQuerySorting<IncidentEntity> sort, DbQueryPage page) {
+    IncidentFilter filter, DbQuerySorting<IncidentEntity> sort, DbQueryPage page, String legacyId, String legacyProcessInstanceId) {
 
   public static IncidentDbQuery of(
       final Function<IncidentDbQuery.Builder, ObjectBuilder<IncidentDbQuery>> fn) {
@@ -30,6 +30,18 @@ public record IncidentDbQuery(
     private IncidentFilter filter;
     private DbQuerySorting<IncidentEntity> sort;
     private DbQueryPage page;
+    private String legacyId;
+    private String legacyProcessInstanceId;
+
+    public Builder legacyId(String id) {
+      legacyId = id;
+      return this;
+    }
+
+    public Builder legacyProcessInstanceId(String id) {
+      legacyProcessInstanceId = id;
+      return this;
+    }
 
     public Builder filter(final IncidentFilter value) {
       filter = value;
@@ -63,7 +75,7 @@ public record IncidentDbQuery(
     public IncidentDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new IncidentDbQuery(filter, sort, page);
+      return new IncidentDbQuery(filter, sort, page, legacyId, legacyProcessInstanceId);
     }
   }
 }

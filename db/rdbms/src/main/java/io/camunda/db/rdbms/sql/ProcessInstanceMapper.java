@@ -27,7 +27,7 @@ public interface ProcessInstanceMapper {
 
   Long count(ProcessInstanceDbQuery filter);
 
-  List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
+  List<ProcessInstanceDbModel> search(ProcessInstanceDbQuery filter);
 
   record EndProcessInstanceDto(
       long processInstanceKey,

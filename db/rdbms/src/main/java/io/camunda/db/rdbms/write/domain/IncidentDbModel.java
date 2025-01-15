@@ -11,45 +11,167 @@ import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.function.Function;
 
-public record IncidentDbModel(
-    Long incidentKey,
-    Long processDefinitionKey,
-    String processDefinitionId,
-    Long processInstanceKey,
-    Long flowNodeInstanceKey,
-    String flowNodeId,
-    Long jobKey,
-    ErrorType errorType,
-    String errorMessage,
-    OffsetDateTime creationDate,
-    IncidentState state,
-    String treePath,
-    String tenantId)
-    implements DbModel<IncidentDbModel> {
+public final class IncidentDbModel implements DbModel<IncidentDbModel> {
+  private final Long incidentKey;
+  private final Long flowNodeInstanceKey;
+  private final String flowNodeId;
+  private final Long processInstanceKey;
+  private final String processDefinitionId;
+  private final Long processDefinitionKey;
+  private final String errorMessage;
+  private final ErrorType errorType;
+  private final IncidentState state;
+  private final OffsetDateTime creationDate;
+  private final Long jobKey;
+  private final String treePath;
+  private final String tenantId;
+  private final String legacyId;
+  private final String legacyProcessInstanceId;
+
+  public IncidentDbModel(Long incidentKey,
+                         Long flowNodeInstanceKey,
+                         String flowNodeId,
+                         Long processInstanceKey,
+                         String processDefinitionId,
+                         Long processDefinitionKey,
+                         String errorMessage,
+                         ErrorType errorType,
+                         IncidentState state,
+                         OffsetDateTime creationDate,
+                         Long jobKey,
+                         String treePath,
+                         String tenantId,
+                         String legacyId,
+                         String legacyProcessInstanceId) {
+    this.incidentKey = incidentKey;
+    this.flowNodeInstanceKey = flowNodeInstanceKey;
+    this.flowNodeId = flowNodeId;
+    this.processInstanceKey = processInstanceKey;
+    this.processDefinitionId = processDefinitionId;
+    this.processDefinitionKey = processDefinitionKey;
+    this.errorMessage = errorMessage;
+    this.errorType = errorType;
+    this.state = state;
+    this.creationDate = creationDate;
+    this.jobKey = jobKey;
+    this.treePath = treePath;
+    this.tenantId = tenantId;
+    this.legacyId = legacyId;
+    this.legacyProcessInstanceId = legacyProcessInstanceId;
+  }
 
   @Override
-  public IncidentDbModel copy(
-      final Function<ObjectBuilder<IncidentDbModel>, ObjectBuilder<IncidentDbModel>>
-          builderFunction) {
-    return builderFunction
-        .apply(
-            new Builder()
-                .incidentKey(incidentKey)
-                .processDefinitionKey(processDefinitionKey)
-                .processDefinitionId(processDefinitionId)
-                .processInstanceKey(processInstanceKey)
-                .flowNodeInstanceKey(flowNodeInstanceKey)
-                .flowNodeId(flowNodeId)
-                .jobKey(jobKey)
-                .errorType(errorType)
-                .errorMessage(errorMessage)
-                .creationDate(creationDate)
-                .state(state)
-                .treePath(treePath)
-                .tenantId(tenantId))
-        .build();
+  public IncidentDbModel copy(final Function<ObjectBuilder<IncidentDbModel>, ObjectBuilder<IncidentDbModel>> builderFunction) {
+    return builderFunction.apply(new Builder().incidentKey(incidentKey)
+        .processDefinitionKey(processDefinitionKey)
+        .processDefinitionId(processDefinitionId)
+        .processInstanceKey(processInstanceKey)
+        .flowNodeInstanceKey(flowNodeInstanceKey)
+        .flowNodeId(flowNodeId)
+        .jobKey(jobKey)
+        .errorType(errorType)
+        .errorMessage(errorMessage)
+        .creationDate(creationDate)
+        .state(state)
+        .treePath(treePath)
+        .tenantId(tenantId)).build();
+  }
+
+  public Long incidentKey() {
+    return incidentKey;
+  }
+
+  public Long flowNodeInstanceKey() {
+    return flowNodeInstanceKey;
+  }
+
+  public String flowNodeId() {
+    return flowNodeId;
+  }
+
+  public Long processInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public String processDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public Long processDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public String errorMessage() {
+    return errorMessage;
+  }
+
+  public ErrorType errorType() {
+    return errorType;
+  }
+
+  public IncidentState state() {
+    return state;
+  }
+
+  public OffsetDateTime creationDate() {
+    return creationDate;
+  }
+
+  public Long jobKey() {
+    return jobKey;
+  }
+
+  public String treePath() {
+    return treePath;
+  }
+
+  public String tenantId() {
+    return tenantId;
+  }
+
+  public String legacyId() {
+    return legacyId;
+  }
+
+  public String legacyProcessInstanceId() {
+    return legacyProcessInstanceId;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this)
+      return true;
+    if (obj == null || obj.getClass() != this.getClass())
+      return false;
+    var that = (IncidentDbModel) obj;
+    return Objects.equals(this.incidentKey, that.incidentKey) && Objects.equals(this.flowNodeInstanceKey, that.flowNodeInstanceKey) && Objects.equals(this.flowNodeId,
+        that.flowNodeId) && Objects.equals(this.processInstanceKey, that.processInstanceKey) && Objects.equals(this.processDefinitionId,
+        that.processDefinitionId) && Objects.equals(this.processDefinitionKey, that.processDefinitionKey) && Objects.equals(this.errorMessage,
+        that.errorMessage) && Objects.equals(this.errorType, that.errorType) && Objects.equals(this.state, that.state) && Objects.equals(this.creationDate,
+        that.creationDate) && Objects.equals(this.jobKey, that.jobKey) && Objects.equals(this.treePath, that.treePath) && Objects.equals(
+        this.tenantId, that.tenantId) && Objects.equals(this.legacyId, that.legacyId) && Objects.equals(this.legacyProcessInstanceId,
+        that.legacyProcessInstanceId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(incidentKey, flowNodeInstanceKey, flowNodeId, processInstanceKey, processDefinitionId,
+        processDefinitionKey, errorMessage, errorType, state, creationDate, jobKey, treePath, tenantId, legacyId,
+        legacyProcessInstanceId);
+  }
+
+  @Override
+  public String toString() {
+    return "IncidentDbModel[" + "incidentKey=" + incidentKey + ", " + "flowNodeInstanceKey=" + flowNodeInstanceKey
+        + ", " + "flowNodeId=" + flowNodeId + ", " + "processInstanceKey=" + processInstanceKey + ", "
+        + "processDefinitionId=" + processDefinitionId + ", " + "processDefinitionKey=" + processDefinitionKey + ", "
+        + "errorMessage=" + errorMessage + ", " + "errorType=" + errorType + ", " + "state=" + state + ", "
+        + "creationDate=" + creationDate + ", " + "jobKey=" + jobKey + ", " + "treePath=" + treePath + ", "
+        + "tenantId=" + tenantId + ", " + "legacyId=" + legacyId + ", " + "legacyProcessInstanceId="
+        + legacyProcessInstanceId + ']';
   }
 
   public static class Builder implements ObjectBuilder<IncidentDbModel> {
@@ -67,6 +189,18 @@ public record IncidentDbModel(
     private IncidentState state;
     private String treePath;
     private String tenantId;
+    private String legacyId;
+    private String legacyProcessInstanceId;
+
+    public Builder legacyId(final String id) {
+      legacyId = id;
+      return this;
+    }
+
+    public Builder legacyProcessInstanceId(final String id) {
+      legacyProcessInstanceId = id;
+      return this;
+    }
 
     public Builder incidentKey(final Long incidentKey) {
       this.incidentKey = incidentKey;
@@ -135,20 +269,9 @@ public record IncidentDbModel(
 
     @Override
     public IncidentDbModel build() {
-      return new IncidentDbModel(
-          incidentKey,
-          processDefinitionKey,
-          processDefinitionId,
-          processInstanceKey,
-          flowNodeInstanceKey,
-          flowNodeId,
-          jobKey,
-          errorType,
-          errorMessage,
-          creationDate,
-          state,
-          treePath,
-          tenantId);
+      return new IncidentDbModel(incidentKey, flowNodeInstanceKey, flowNodeId, processInstanceKey, processDefinitionId,
+          processDefinitionKey, errorMessage, errorType, state, creationDate, jobKey, treePath, tenantId, legacyId,
+          legacyProcessInstanceId);
     }
   }
 }
