@@ -365,7 +365,6 @@
               <dep>commons-collections:commons-collections</dep>
               <dep>org.apache.httpcomponents:httpcore-nio</dep>
               <dep>org.apache.tika:tika-core</dep>
-              <dep>org.glassfish.jersey.core:jersey-client</dep>
               <dep>org.opensearch.client:opensearch-java</dep>
               <dep>org.opensearch.client:opensearch-rest-client</dep>
             </ignoredNonTestScopedDependencies>
