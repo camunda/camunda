@@ -7,10 +7,12 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
-public class TasklistImportPositionIndex extends TasklistIndexDescriptor implements Prio1Backup {
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
+
+public class TasklistImportPositionIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "import-position";
   public static final String INDEX_VERSION = "8.2.0";
@@ -35,5 +37,10 @@ public class TasklistImportPositionIndex extends TasklistIndexDescriptor impleme
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return TASK_LIST.toString();
   }
 }

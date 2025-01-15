@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import java.util.Optional;
 
-public class TaskTemplate extends TasklistTemplateDescriptor
+public class TaskTemplate extends AbstractTemplateDescriptor
     implements Prio2Backup, ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "task";
@@ -82,6 +84,11 @@ public class TaskTemplate extends TasklistTemplateDescriptor
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return TASK_LIST.toString();
   }
 
   @Override

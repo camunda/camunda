@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 import java.util.Optional;
 
-public class TasklistMetricIndex extends TasklistIndexDescriptor implements Prio5Backup {
+public class TasklistMetricIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "metric";
   public static final String INDEX_VERSION = "8.3.0";
@@ -40,5 +42,10 @@ public class TasklistMetricIndex extends TasklistIndexDescriptor implements Prio
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return TASK_LIST.toString();
   }
 }

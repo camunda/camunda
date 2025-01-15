@@ -7,11 +7,13 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import java.util.Optional;
 
-public class MessageTemplate extends OperateTemplateDescriptor implements Prio4Backup {
+public class MessageTemplate extends AbstractTemplateDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "message";
 
@@ -44,5 +46,10 @@ public class MessageTemplate extends OperateTemplateDescriptor implements Prio4B
   @Override
   public String getVersion() {
     return "8.5.0";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

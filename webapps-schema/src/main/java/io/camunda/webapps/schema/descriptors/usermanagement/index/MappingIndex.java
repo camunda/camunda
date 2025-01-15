@@ -7,10 +7,11 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
-public class MappingIndex extends UserManagementIndexDescriptor implements Prio5Backup {
+public class MappingIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "mapping";
   public static final String INDEX_VERSION = "8.7.0";
 
@@ -26,6 +27,11 @@ public class MappingIndex extends UserManagementIndexDescriptor implements Prio5
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return ComponentNames.CAMUNDA.toString();
   }
 
   @Override
