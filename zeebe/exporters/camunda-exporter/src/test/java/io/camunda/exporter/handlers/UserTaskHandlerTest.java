@@ -366,6 +366,7 @@ public class UserTaskHandlerTest {
         .satisfies(
             entity -> {
               assertThat(entity.getAssignee()).isEqualTo("provided_assignee");
+              assertThat(entity.getChangedAttributes()).containsOnly("assignee");
               assertThat(entity.getState()).isEqualTo(TaskState.CREATED);
             })
         .describedAs(
@@ -470,6 +471,14 @@ public class UserTaskHandlerTest {
               assertThat(entity.getPriority()).isEqualTo(88);
               assertThat(entity.getCandidateGroups()).contains("corrected_group1");
               assertThat(entity.getCandidateUsers()).contains("corrected_user1", "corrected_user2");
+              assertThat(entity.getChangedAttributes())
+                  .containsOnly(
+                      "assignee",
+                      "dueDate",
+                      "followUpDate",
+                      "priority",
+                      "candidateGroupsList",
+                      "candidateUsersList");
             });
   }
 
@@ -478,10 +487,7 @@ public class UserTaskHandlerTest {
     // given
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
-        ImmutableUserTaskRecordValue.builder()
-            .from(factory.generateObject(UserTaskRecordValue.class))
-            .withProcessInstanceKey(processInstanceKey)
-            .build();
+        ImmutableUserTaskRecordValue.builder().withProcessInstanceKey(processInstanceKey).build();
 
     final Record<UserTaskRecordValue> taskRecord =
         factory.generateRecord(
@@ -496,11 +502,16 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
 
     // then
-    assertThat(taskEntity.getState()).isEqualTo(TaskState.COMPLETED);
-    assertThat(taskEntity.getCompletionTime())
-        .isEqualTo(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+    final var expectedCompletionTime =
+        ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp()));
     assertThat(taskEntity)
+        .describedAs("Expected task entity to have COMPLETED state and timestamp")
+        .satisfies(
+            entity -> {
+              assertThat(entity.getState()).isEqualTo(TaskState.COMPLETED);
+              assertThat(entity.getCompletionTime()).isEqualTo(expectedCompletionTime);
+              assertThat(entity.getChangedAttributes()).isEmpty();
+            })
         .describedAs(
             "Expected not changed user task record fields to have `null` values in task entity")
         .extracting(
@@ -564,6 +575,14 @@ public class UserTaskHandlerTest {
               assertThat(entity.getPriority()).isEqualTo(22);
               assertThat(entity.getCandidateGroups()).contains("corrected_group1");
               assertThat(entity.getCandidateUsers()).contains("corrected_user1", "corrected_user2");
+              assertThat(entity.getChangedAttributes())
+                  .containsOnly(
+                      "assignee",
+                      "dueDate",
+                      "followUpDate",
+                      "priority",
+                      "candidateGroupsList",
+                      "candidateUsersList");
             })
         .describedAs("Expected task entity to contain updated completion fields")
         .satisfies(
