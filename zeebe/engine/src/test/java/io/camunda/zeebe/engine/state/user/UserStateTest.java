@@ -240,10 +240,10 @@ public class UserStateTest {
 
     // when
     final long roleKey = 1L;
-    userState.addRole(userKey, roleKey);
+    userState.addRole(username, roleKey);
 
     // then
-    final var persistedUser = userState.getUser(userKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getRoleKeysList()).contains(roleKey);
   }
 
@@ -263,13 +263,13 @@ public class UserStateTest {
             .setEmail(email)
             .setPassword(password));
     final long roleKey = 1L;
-    userState.addRole(userKey, roleKey);
+    userState.addRole(username, roleKey);
 
     // when
     userState.removeRole(userKey, roleKey);
 
     // then
-    final var persistedUser = userState.getUser(userKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getRoleKeysList()).isEmpty();
   }
 

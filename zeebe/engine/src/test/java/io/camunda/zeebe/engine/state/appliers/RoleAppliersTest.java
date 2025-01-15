@@ -142,19 +142,20 @@ public class RoleAppliersTest {
   @Test
   void shouldRemoveEntityFromRoleWithTypeUser() {
     // given
-    final long entityKey = 1L;
+    final var username = "foo";
+    final var userKey = 123L;
     userState.create(
         new UserRecord()
-            .setUserKey(entityKey)
-            .setUsername("username")
+            .setUserKey(userKey)
+            .setUsername(username)
             .setName("Foo")
             .setEmail("foo@bar.com")
             .setPassword("password"));
     final long roleKey = 11L;
-    userState.addRole(entityKey, roleKey);
+    userState.addRole(username, roleKey);
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.USER);
+    roleRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // when
@@ -162,7 +163,7 @@ public class RoleAppliersTest {
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    final var persistedUser = userState.getUser(entityKey).get();
+    final var persistedUser = userState.getUser(username).get();
     assertThat(persistedUser.getRoleKeysList()).isEmpty();
   }
 
