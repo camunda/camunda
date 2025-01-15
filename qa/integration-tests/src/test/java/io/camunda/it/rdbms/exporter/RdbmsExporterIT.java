@@ -30,6 +30,7 @@ import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -137,6 +138,8 @@ class RdbmsExporterIT {
     final var key = ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
     final var processDefinition = rdbmsService.getProcessDefinitionReader().findOne(key);
     assertThat(processDefinition).isNotEmpty();
+    assertThat(processDefinition).map(ProcessDefinitionEntity::bpmnXml).isPresent();
+    assertThat(processDefinition).map(ProcessDefinitionEntity::formId).contains("test");
   }
 
   @Test
