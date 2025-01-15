@@ -80,7 +80,7 @@
       <column name="VAR_NAME" type="VARCHAR(255)" />
       <column name="DOUBLE_VALUE" type="DOUBLE"/>
       <column name="LONG_VALUE" type="BIGINT"/>
-      <column name="VAR_VALUE" type="CLOB"/> <!-- max length of 8191 -->
+      <column name="VAR_VALUE" type="VARCHAR(8192)"/>
       <column name="VAR_FULL_VALUE" type="CLOB"/>
       <column name="TENANT_ID" type="VARCHAR(255)" />
       <column name="IS_PREVIEW" type="BOOLEAN"/>
@@ -92,6 +92,11 @@
     <createIndex tableName="VARIABLE" indexName="IDX_VARIABLE_TENANT_ID">
       <column name="TENANT_ID" />
     </createIndex>
+
+    <modifySql dbms="oracle">
+      <!-- Oracle only supports a size 4000 characters in varchar2 -->
+      <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
+    </modifySql>
   </changeSet>
 
 
