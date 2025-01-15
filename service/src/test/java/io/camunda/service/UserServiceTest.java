@@ -77,7 +77,7 @@ public class UserServiceTest {
     when(authentication.claims()).thenReturn(Map.of());
     final var userRecord = new UserRecord();
     final var username = "test";
-    userRecord.setUserKey(1234L).setUsername(username);
+    userRecord.setUsername(username);
     when(brokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
