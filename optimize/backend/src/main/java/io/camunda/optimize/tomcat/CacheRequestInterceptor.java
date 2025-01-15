@@ -26,7 +26,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
 public class CacheRequestInterceptor implements HandlerInterceptor {
-  private static final Logger log = LoggerFactory.getLogger(CacheRequestInterceptor.class);
+  private final Logger log = LoggerFactory.getLogger(CacheRequestInterceptor.class);
 
   @Override
   public void postHandle(
