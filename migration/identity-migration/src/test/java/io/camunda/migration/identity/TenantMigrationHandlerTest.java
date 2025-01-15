@@ -8,11 +8,13 @@
 package io.camunda.migration.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -50,6 +53,18 @@ final class TenantMigrationHandlerTest {
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             this.tenantServices);
+  }
+
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchTenants(anyInt())).thenThrow(new NotImplementedException());
+
+    // when
+    assertThrows(NotImplementedException.class, migrationHandler::migrate);
+
+    // then
+    verify(managementIdentityClient).fetchTenants(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
   }
 
   @Test

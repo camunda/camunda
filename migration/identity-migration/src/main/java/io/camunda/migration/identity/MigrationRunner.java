@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -60,6 +61,9 @@ public class MigrationRunner implements Migrator {
         roleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
         break;
+      } catch (final NotImplementedException e) {
+        LOGGER.error("Identity endpoint is not implemented {}", e.getCode());
+        throw e;
       } catch (final Exception e) {
         LOGGER.warn("Migration failed, let's retry!", e);
         Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
