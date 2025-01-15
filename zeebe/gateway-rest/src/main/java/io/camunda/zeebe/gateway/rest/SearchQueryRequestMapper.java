@@ -1015,8 +1015,8 @@ public final class SearchQueryRequestMapper {
       final List<String> validationErrors = new ArrayList<>();
       final var builder = builderSupplier.get();
       for (final SearchQuerySortRequest sort : sorting) {
-        validationErrors.addAll(sortFieldMapper.apply(sort.getField(), builder));
-        applySortOrder(sort.getOrder(), builder);
+        validationErrors.addAll(sortFieldMapper.apply(sort.field(), builder));
+        applySortOrder(sort.order(), builder);
       }
 
       return validationErrors.isEmpty()
@@ -1053,13 +1053,10 @@ public final class SearchQueryRequestMapper {
 
   private static void applySortOrder(
       final SortOrderEnum order, final SortOption.AbstractBuilder<?> builder) {
-    if (order == null) {
-      builder.asc();
+    if (order == SortOrderEnum.DESC) {
+      builder.desc();
     } else {
-      switch (order) {
-        case DESC -> builder.desc();
-        default -> builder.asc();
-      }
+      builder.asc();
     }
   }
 
