@@ -37,7 +37,11 @@ public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRec
     // Remove roles from users if EntityType.USER exists
     final var userEntities = entities.get(EntityType.USER);
     if (userEntities != null) {
-      userEntities.forEach(userKey -> userState.removeRole(userKey, roleKey));
+      userEntities.forEach(
+          userKey ->
+              userState
+                  .getUser(userKey)
+                  .ifPresent(user -> userState.removeRole(user.getUsername(), roleKey)));
     }
     // todo remove entity from mapping state
     // delete role from authorization state

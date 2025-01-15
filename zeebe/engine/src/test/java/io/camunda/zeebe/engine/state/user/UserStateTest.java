@@ -266,7 +266,7 @@ public class UserStateTest {
     userState.addRole(username, roleKey);
 
     // when
-    userState.removeRole(userKey, roleKey);
+    userState.removeRole(username, roleKey);
 
     // then
     final var persistedUser = userState.getUser(username).get();
