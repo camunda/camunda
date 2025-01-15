@@ -15,8 +15,6 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.protocol.rest.UserCreateResult.TypeEnum;
-
 public interface CreateUserResponse {
 
   /**
@@ -46,11 +44,4 @@ public interface CreateUserResponse {
    * @return the email of the created user.
    */
   String getEmail();
-
-  /**
-   * Returns the type of the created user.
-   *
-   * @return the type of the created user.
-   */
-  TypeEnum getUserType();
 }

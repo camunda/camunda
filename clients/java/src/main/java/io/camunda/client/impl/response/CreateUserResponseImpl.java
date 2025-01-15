@@ -18,7 +18,6 @@ package io.camunda.client.impl.response;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.protocol.rest.UserCreateResult;
-import io.camunda.client.protocol.rest.UserCreateResult.TypeEnum;
 
 public class CreateUserResponseImpl implements CreateUserResponse {
 
@@ -27,7 +26,6 @@ public class CreateUserResponseImpl implements CreateUserResponse {
   private String username;
   private String name;
   private String email;
-  private TypeEnum userType;
 
   public CreateUserResponseImpl(final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
@@ -38,7 +36,6 @@ public class CreateUserResponseImpl implements CreateUserResponse {
     username = response.getUsername();
     name = response.getName();
     email = response.getEmail();
-    userType = response.getType();
     return this;
   }
 
@@ -60,10 +57,5 @@ public class CreateUserResponseImpl implements CreateUserResponse {
   @Override
   public String getEmail() {
     return email;
-  }
-
-  @Override
-  public TypeEnum getUserType() {
-    return userType;
   }
 }

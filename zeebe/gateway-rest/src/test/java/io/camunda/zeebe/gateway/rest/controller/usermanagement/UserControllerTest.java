@@ -84,8 +84,7 @@ public class UserControllerTest extends RestControllerTest {
             "userKey": "-1",
             "username": "foo",
             "name": "Foo Bar",
-            "email": "bar@baz.com",
-            "type": "REGULAR"
+            "email": "bar@baz.com"
           }
         """);
 

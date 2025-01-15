@@ -5623,12 +5623,6 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        type:
-          description: The type of the user.
-          type: "string"
-          enum:
-            - DEFAULT
-            - REGULAR
     UserCreateResponse:
       deprecated: true
       type: object
