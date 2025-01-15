@@ -7,8 +7,20 @@
  */
 package io.camunda.security.entity;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 public enum AuthenticationMethod {
   NONE,
   BASIC,
-  OIDC
+  OIDC;
+
+  public static Optional<AuthenticationMethod> parse(final String value) {
+    if (value == null) {
+      return Optional.empty();
+    }
+    return Arrays.stream(values())
+        .filter(method -> method.name().equalsIgnoreCase(value))
+        .findFirst();
+  }
 }
