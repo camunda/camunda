@@ -110,6 +110,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<UserResource
     throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
   }
 
+  // TODO verify the correct permissions are set here
   private static List<PermissionType> convertPermission(final Entry<String, List<String>> e) {
     if (e.getKey().startsWith("read")) {
       return List.of(PermissionType.READ);

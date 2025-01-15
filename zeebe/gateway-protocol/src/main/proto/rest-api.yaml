@@ -5675,6 +5675,8 @@ components:
         - READ_PROCESS_INSTANCE
         - READ_USER_TASK
         - READ_DECISION_INSTANCE
+        - READ_PROCESS_DEFINITION
+        - READ_DECISION_DEFINITION
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
         - UPDATE_USER_TASK
@@ -5683,6 +5685,7 @@ components:
         - DELETE_DRD
         - DELETE_FORM
         - DELETE_PROCESS_INSTANCE
+        - DELETE_DECISION_INSTANCE
     ResourceTypeEnum:
       description: The type of resource to add/remove permissions to/from.
       enum:

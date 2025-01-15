@@ -18,7 +18,9 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.T
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCESS_INSTANCE;
@@ -140,6 +142,14 @@ public final class Authorization {
 
     public Builder read() {
       return permissionType(READ);
+    }
+
+    public Builder readProcessDefinition() {
+      return permissionType(READ_PROCESS_DEFINITION);
+    }
+
+    public Builder readDecisionDefinition() {
+      return permissionType(READ_DECISION_DEFINITION);
     }
 
     public Builder readProcessInstance() {

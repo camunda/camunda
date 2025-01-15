@@ -79,7 +79,9 @@ public class TasklistAssignUserTaskAuthorizationIT {
           ADMIN_USER_PASSWORD,
           new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.READ, List.of("*")),
+              ResourceTypeEnum.PROCESS_DEFINITION,
+              PermissionTypeEnum.READ_PROCESS_DEFINITION,
+              List.of("*")),
           new Permissions(
               ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.READ_USER_TASK, List.of("*")),
           new Permissions(
@@ -91,7 +93,6 @@ public class TasklistAssignUserTaskAuthorizationIT {
               PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
               List.of("*")),
           new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
     }
 

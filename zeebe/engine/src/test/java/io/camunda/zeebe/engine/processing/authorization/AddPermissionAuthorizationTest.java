@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class AddPermissionAuthorizationTest {
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
-            .withPermission(PermissionType.DELETE, "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "bar")
             .add()
             .getValue();
 
@@ -67,7 +68,7 @@ public class AddPermissionAuthorizationTest {
         .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
         .containsExactly(
             tuple(PermissionType.CREATE, Set.of("foo")),
-            tuple(PermissionType.DELETE, Set.of("bar")));
+            tuple(PermissionType.DELETE_PROCESS, Set.of("bar")));
   }
 
   @Test
@@ -112,7 +113,7 @@ public class AddPermissionAuthorizationTest {
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar", "baz")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
         .add()
         .getValue();
 
@@ -123,7 +124,7 @@ public class AddPermissionAuthorizationTest {
             .permission()
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
             .add();
 
@@ -134,7 +135,7 @@ public class AddPermissionAuthorizationTest {
         .hasRejectionReason(
             "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'"
                 .formatted(
-                    PermissionType.DELETE,
+                    PermissionType.DELETE_PROCESS,
                     AuthorizationResourceType.DEPLOYMENT,
                     "[bar, foo]",
                     ownerKey,
@@ -162,7 +163,7 @@ public class AddPermissionAuthorizationTest {
         .withOwnerKey(roleKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar", "baz")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
         .add()
         .getValue();
 
@@ -173,7 +174,7 @@ public class AddPermissionAuthorizationTest {
             .permission()
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .add();
 
     // then
@@ -211,7 +212,7 @@ public class AddPermissionAuthorizationTest {
         .withOwnerKey(groupKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar", "baz")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar", "baz")
         .add()
         .getValue();
 
@@ -222,7 +223,7 @@ public class AddPermissionAuthorizationTest {
             .permission()
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .add();
 
     // then
@@ -233,5 +234,44 @@ public class AddPermissionAuthorizationTest {
             AuthorizationRecordValue::getResourceType)
         .containsExactly(
             ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
+  }
+
+  @Test
+  public void shouldRejectAddingUnsupportedPermission() {
+    // given
+    final var ownerKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .permission()
+            .withOwnerKey(ownerKey)
+            .withResourceType(resourceType)
+            .withPermission(PermissionType.CREATE, "foo")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo")
+            .withPermission(PermissionType.ACCESS, "foo")
+            .withPermission(PermissionType.READ_PROCESS_INSTANCE, "foo")
+            .expectRejection()
+            .add();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to add permission types '%s' for resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"
+                .formatted(
+                    List.of(PermissionType.ACCESS, PermissionType.READ_PROCESS_INSTANCE),
+                    resourceType,
+                    resourceType.getSupportedPermissionTypes()));
   }
 }

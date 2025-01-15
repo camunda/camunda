@@ -7,7 +7,7 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,13 +64,16 @@ public class OperatePermissionsIT {
     // create super user that can read all process definitions
     final var superCamundaClient =
         authorizationsUtil.createUserAndClient(
-            SUPER_USER, "password", new Permissions(PROCESS_DEFINITION, READ, List.of("*")));
+            SUPER_USER,
+            "password",
+            new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")));
     superOperateClient = testInstance.newOperateClient(SUPER_USER, "password");
     // create restricted user that can only read process definition 1
     authorizationsUtil.createUserWithPermissions(
         RESTRICTED_USER,
         "password",
-        new Permissions(PROCESS_DEFINITION, READ, List.of(PROCESS_DEFINITION_ID_1)));
+        new Permissions(
+            PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of(PROCESS_DEFINITION_ID_1)));
     restrictedOperateClient = testInstance.newOperateClient(RESTRICTED_USER, "password");
 
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
