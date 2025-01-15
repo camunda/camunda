@@ -136,7 +136,6 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
-        github.event_name == 'schedule' ||
         steps.filter-common.outputs.protobuf-change == 'true'
       }}
   openapi-changes:
