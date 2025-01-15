@@ -267,7 +267,7 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getUserRecord(
-      final Long userKey, final UserIntent intent) {
+      final Long userKey, final String username, final UserIntent intent) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.USER);
 
     return ImmutableRecord.builder()
@@ -280,6 +280,7 @@ public class RecordFixtures {
             ImmutableUserRecordValue.builder()
                 .from((UserRecordValue) recordValueRecord.getValue())
                 .withUserKey(userKey)
+                .withUsername(username)
                 .build())
         .build();
   }

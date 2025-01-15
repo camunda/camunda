@@ -265,7 +265,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportUpdateAndDeleteUser() {
     // given
-    final var userRecord = getUserRecord(42L, UserIntent.CREATED);
+    final var userRecord = getUserRecord(42L, "test", UserIntent.CREATED);
     final var userRecordValue = ((UserRecordValue) userRecord.getValue());
 
     // when
@@ -281,7 +281,7 @@ class RdbmsExporterIT {
     assertThat(user.get().password()).isEqualTo(userRecordValue.getPassword());
 
     // given
-    final var updateUserRecord = getUserRecord(42L, UserIntent.UPDATED);
+    final var updateUserRecord = getUserRecord(42L, "test", UserIntent.UPDATED);
     final var updateUserRecordValue = ((UserRecordValue) updateUserRecord.getValue());
 
     // when
@@ -297,7 +297,7 @@ class RdbmsExporterIT {
     assertThat(updatedUser.get().password()).isEqualTo(updateUserRecordValue.getPassword());
 
     // when
-    exporter.export(getUserRecord(42L, UserIntent.DELETED));
+    exporter.export(getUserRecord(42L, "test", UserIntent.DELETED));
 
     // then
     final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());

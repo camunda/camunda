@@ -64,16 +64,15 @@
     parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
     flushCache="true">
     UPDATE USERS
-    SET USERNAME = #{username},
-        NAME     = #{name},
+    SET NAME     = #{name},
         EMAIL    = #{email},
         PASSWORD = #{password}
-    WHERE USER_KEY = #{userKey}
+    WHERE USERNAME = #{username}
   </update>
 
-  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String" flushCache="true">
     DELETE FROM USERS
-    WHERE USER_KEY = #{userKey}
+    WHERE USERNAME = #{username}
   </delete>
 
 </mapper>
