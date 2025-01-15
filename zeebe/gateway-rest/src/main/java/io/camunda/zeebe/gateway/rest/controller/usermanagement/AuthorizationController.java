@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -47,6 +48,16 @@ public class AuthorizationController {
       @RequestBody final AuthorizationCreateRequest authorizationCreateRequest) {
     return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
+  }
+
+  @CamundaDeleteMapping(path = "/authorizations/{authorizationKey}")
+  public CompletableFuture<ResponseEntity<Object>> deleteAuthorization(
+      @PathVariable final long authorizationKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            authorizationServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .deleteAuthorization(authorizationKey));
   }
 
   @CamundaPatchMapping(path = "/authorizations/{ownerKey}")
