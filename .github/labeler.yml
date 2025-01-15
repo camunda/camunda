@@ -97,6 +97,4 @@ deprecated-client:
           - any-glob-to-any-file:
               - 'clients/java/src/main/java/io/camunda/zeebe/**'
               - 'clients/java/src/test/java/io/camunda/zeebe/**'
-      - base-branch:
-          - 'main' # TODO remove in https://github.com/camunda/camunda/issues/26820
-          - 'stable/8.7'
+      - base-branch: 'main' # TODO replace with 'backport stable/8.7' in https://github.com/camunda/camunda/issues/26820

@@ -19,7 +19,11 @@ import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import java.util.List;
 
-/** Interface for defining user task filters in search queries. */
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.search.filter.UserTaskFilter}
+ */
+@Deprecated
 public interface UserTaskFilter extends SearchRequestFilter {
 
   /**

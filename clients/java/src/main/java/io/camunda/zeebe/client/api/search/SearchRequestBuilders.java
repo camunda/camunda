@@ -30,6 +30,11 @@ import io.camunda.zeebe.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 import java.util.function.Consumer;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.search.SearchRequestBuilders}
+ */
+@Deprecated
 public final class SearchRequestBuilders {
 
   private SearchRequestBuilders() {}
