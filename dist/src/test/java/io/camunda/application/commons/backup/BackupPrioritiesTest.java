@@ -59,17 +59,18 @@ class BackupPrioritiesTest {
   }
 
   @Test
-  public void allImplementationsContainIndicesFromAllApps() {
-    final var operate =
+  public void allImplementationsContainReferencesToIndicesAndTemplates() {
+    final var index =
         ALL_IMPLEMENTATIONS.stream()
-            .filter(clz -> clz.getPackage().getName().contains("operate"))
+            .filter(clz -> clz.getPackage().getName().contains("index"))
             .toList();
-    assertThat(operate).isNotEmpty();
-    final var tasklist =
+    assertThat(index).isNotEmpty();
+    final var template =
         ALL_IMPLEMENTATIONS.stream()
-            .filter(clz -> clz.getPackage().getName().contains("tasklist"))
+            .filter(clz -> clz.getPackage().getName().contains("template"))
             .toList();
-    assertThat(tasklist).isNotEmpty();
+    assertThat(template).isNotEmpty();
+    /* Optimize entities not present in webapps-schema */
     final var optimize =
         ALL_IMPLEMENTATIONS.stream()
             .filter(clz -> clz.getPackage().getName().contains("optimize"))
