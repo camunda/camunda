@@ -189,7 +189,7 @@ public final class CallActivityProcessor
   private Either<Failure, Void> validateProcessDepth(final BpmnElementContext context) {
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
     final int processDepth = processInstance.getProcessDepth();
-    final var isExceedingMaxDepth = processDepth >= maxProcessDepth;
+    final var isExceedingMaxDepth = (processDepth + 1) > maxProcessDepth;
     if (isExceedingMaxDepth) {
       final var message = MAX_DEPTH_EXCEEDED_MESSAGE.formatted(maxProcessDepth);
       return Either.left(new Failure(message, ErrorType.CALLED_ELEMENT_ERROR));
