@@ -54,22 +54,6 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPostMapping(path = "/users/{userKey}/authorizations/search")
-  public ResponseEntity<AuthorizationSearchResponse> searchUserAuthorizations(
-      @PathVariable("userKey") final long userKey,
-      @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
-    var finalQuery = query;
-    if (query == null) {
-      finalQuery = new AuthorizationSearchQueryRequest();
-    }
-    if (finalQuery.getFilter() == null) {
-      finalQuery.setFilter(new AuthorizationFilterRequest());
-    }
-    finalQuery.getFilter().ownerType(OwnerTypeEnum.USER).ownerKey(userKey);
-    return SearchQueryRequestMapper.toAuthorizationQuery(finalQuery)
-        .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
   private ResponseEntity<AuthorizationSearchResponse> search(final AuthorizationQuery query) {
     try {
       final var result =
