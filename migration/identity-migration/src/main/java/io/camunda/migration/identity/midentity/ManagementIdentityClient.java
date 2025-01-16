@@ -9,6 +9,7 @@ package io.camunda.migration.identity.midentity;
 
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
+import io.camunda.migration.identity.dto.MigrationStatusRecord;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
@@ -89,6 +90,20 @@ public class ManagementIdentityClient {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(MIGRATION_ROLES_ENDPOINT, Role[].class, pageSize)))
+        .toList();
+  }
+
+  public List<MigrationStatusRecord> fetchMigrationStatus(
+      final MigrationEntityType entityType, final Boolean successful) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_MARK_STATUS_ENDPOINT
+                        + "?entityType="
+                        + entityType
+                        + "&success="
+                        + successful,
+                    MigrationStatusRecord[].class)))
         .toList();
   }
 

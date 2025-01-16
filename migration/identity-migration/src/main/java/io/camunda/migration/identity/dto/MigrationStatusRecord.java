@@ -5,8 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.dto;
 
-import io.camunda.migration.identity.dto.Role;
-
-public abstract class RoleMigrationHandler extends MigrationHandler<Role> {}
+public record MigrationStatusRecord(String entityId, boolean success, String error) {}

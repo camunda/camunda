@@ -7,6 +7,6 @@
  */
 package io.camunda.migration.identity;
 
-import io.camunda.migration.identity.dto.Role;
+import io.camunda.migration.identity.dto.Client;
 
-public abstract class RoleMigrationHandler extends MigrationHandler<Role> {}
+public abstract class ClientMigrationHandler extends MigrationHandler<Client> {}

@@ -20,7 +20,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -49,10 +48,7 @@ final class TenantMigrationHandlerTest {
     this.tenantServices = tenantServices;
     migrationHandler =
         new TenantMigrationHandler(
-            Authentication.none(),
-            managementIdentityClient,
-            new ManagementIdentityTransformer(),
-            this.tenantServices);
+            Authentication.none(), managementIdentityClient, this.tenantServices);
   }
 
   @Test

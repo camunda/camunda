@@ -7,13 +7,13 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.midentity.ManagementIdentityTransformer.toMigrationStatusUpdateRequest;
 import static io.camunda.migration.identity.transformer.AuthorizationTransformer.transform;
 
 import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
@@ -27,33 +27,20 @@ import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnMissingBean(ConsoleClient.class)
-public class SMRoleMigrationHandler implements RoleMigrationHandler {
+public class SMRoleMigrationHandler extends RoleMigrationHandler {
   private static final Logger LOG = LoggerFactory.getLogger(SMRoleMigrationHandler.class);
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
   private final ManagementIdentityClient managementIdentityClient;
-  private final ManagementIdentityTransformer managementIdentityTransformer;
 
   public SMRoleMigrationHandler(
       final RoleServices roleServices,
       final AuthorizationServices authorizationServices,
       final Authentication servicesAuthentication,
-      final ManagementIdentityClient managementIdentityClient,
-      final ManagementIdentityTransformer managementIdentityTransformer) {
+      final ManagementIdentityClient managementIdentityClient) {
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
     this.roleServices = roleServices.withAuthentication(servicesAuthentication);
     this.managementIdentityClient = managementIdentityClient;
-    this.managementIdentityTransformer = managementIdentityTransformer;
-  }
-
-  @Override
-  public void migrate() {
-    LOG.debug("Migrating roles");
-    List<Role> roles;
-    do {
-      roles = managementIdentityClient.fetchRoles(SIZE);
-      managementIdentityClient.updateMigrationStatus(roles.stream().map(this::createRole).toList());
-    } while (!roles.isEmpty());
   }
 
   private MigrationStatusUpdateRequest createRole(final Role role) {
@@ -66,7 +53,7 @@ public class SMRoleMigrationHandler implements RoleMigrationHandler {
               .orElseGet(() -> roleServices.createRole(role.name()).join().getRoleKey());
     } catch (final Exception e) {
       LOG.error("create or finding role with name {} failed", role.name(), e);
-      return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);
+      return toMigrationStatusUpdateRequest(role, e);
     }
 
     try {
@@ -76,9 +63,19 @@ public class SMRoleMigrationHandler implements RoleMigrationHandler {
     } catch (final Exception e) {
       LOG.error("patch authorization for role failed", e);
       if (!isConflictError(e)) {
-        return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, e);
+        return toMigrationStatusUpdateRequest(role, e);
       }
     }
-    return managementIdentityTransformer.toMigrationStatusUpdateRequest(role, null);
+    return toMigrationStatusUpdateRequest(role, null);
+  }
+
+  @Override
+  protected List<Role> fetchBatch() {
+    return managementIdentityClient.fetchRoles(SIZE);
+  }
+
+  @Override
+  protected void process(final List<Role> batch) {
+    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::createRole).toList());
   }
 }

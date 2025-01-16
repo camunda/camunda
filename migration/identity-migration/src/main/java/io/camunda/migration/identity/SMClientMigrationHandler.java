@@ -8,20 +8,20 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.dto.Role;
+import io.camunda.migration.identity.dto.Client;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnBean(ConsoleClient.class)
-public class SaaSRoleMigrationHandler extends RoleMigrationHandler {
+@ConditionalOnMissingBean(ConsoleClient.class)
+public class SMClientMigrationHandler extends ClientMigrationHandler {
 
   @Override
-  protected List<Role> fetchBatch() {
+  protected List<Client> fetchBatch() {
     return List.of();
   }
 
   @Override
-  protected void process(final List<Role> batch) {}
+  protected void process(final List<Client> batch) {}
 }

@@ -22,7 +22,6 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Role.Permission;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
@@ -52,21 +51,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RoleMigrationHandlerTest {
+public class SMRoleMigrationHandlerTest {
   private final ManagementIdentityClient managementIdentityClient;
 
   private final RoleServices roleServices;
 
   private final AuthorizationServices authorizationServices;
 
-  private final ManagementIdentityTransformer managementIdentityTransformer =
-      new ManagementIdentityTransformer();
-
   private final SMRoleMigrationHandler migrationHandler;
 
   @Captor private ArgumentCaptor<PatchAuthorizationRequest> patchAuthorizationRequestCaptor;
 
-  public RoleMigrationHandlerTest(
+  public SMRoleMigrationHandlerTest(
       @Mock final ManagementIdentityClient managementIdentityClient,
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices,
       @Mock(answer = Answers.RETURNS_SELF) final RoleServices roleServices) {
@@ -75,11 +71,7 @@ public class RoleMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     migrationHandler =
         new SMRoleMigrationHandler(
-            roleServices,
-            authorizationServices,
-            Authentication.none(),
-            managementIdentityClient,
-            managementIdentityTransformer);
+            roleServices, authorizationServices, Authentication.none(), managementIdentityClient);
     when(this.roleServices.createRole(anyString()))
         .thenReturn(CompletableFuture.completedFuture(new RoleRecord().setRoleKey(1L)))
         .thenReturn(CompletableFuture.completedFuture(new RoleRecord().setRoleKey(2L)));

@@ -35,6 +35,7 @@ public class MigrationRunner implements Migrator {
   private final UserTenantsMigrationHandler userTenantsMigrationHandler;
   private final RoleMigrationHandler roleMigrationHandler;
   private final GroupMigrationHandler groupMigrationHandler;
+  private final ClientMigrationHandler clientMigrationHandler;
 
   public MigrationRunner(
       final AuthorizationMigrationHandler authorizationMigrationHandler,
@@ -42,13 +43,15 @@ public class MigrationRunner implements Migrator {
       final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler,
       final UserTenantsMigrationHandler userTenantsMigrationHandler,
       final RoleMigrationHandler roleMigrationHandler,
-      final GroupMigrationHandler groupMigrationHandler) {
+      final GroupMigrationHandler groupMigrationHandler,
+      final ClientMigrationHandler clientMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
     this.tenantMigrationHandler = tenantMigrationHandler;
     this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
     this.userTenantsMigrationHandler = userTenantsMigrationHandler;
     this.roleMigrationHandler = roleMigrationHandler;
     this.groupMigrationHandler = groupMigrationHandler;
+    this.clientMigrationHandler = clientMigrationHandler;
   }
 
   @Override
@@ -66,6 +69,7 @@ public class MigrationRunner implements Migrator {
         groupMigrationHandler.migrate();
         roleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
+        clientMigrationHandler.migrate();
         break;
       } catch (final NotImplementedException e) {
         LOGGER.error("Identity endpoint is not implemented {}", e.getCode());

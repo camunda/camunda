@@ -23,7 +23,6 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserTenants;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -69,11 +68,7 @@ final class UserTenantsMigrationHandlerTest {
     this.tenantServices = tenantServices;
     this.mappingServices = mappingServices;
     migrationHandler =
-        new UserTenantsMigrationHandler(
-            managementIdentityClient,
-            new ManagementIdentityTransformer(),
-            tenantServices,
-            mappingServices);
+        new UserTenantsMigrationHandler(managementIdentityClient, tenantServices, mappingServices);
   }
 
   @Test

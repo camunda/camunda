@@ -14,11 +14,9 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserTenants;
-import org.springframework.stereotype.Component;
 
-@Component
 public class ManagementIdentityTransformer {
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Tenant tenant, final Exception e) {
     return new MigrationStatusUpdateRequest(
         tenant.tenantId(),
@@ -28,7 +26,7 @@ public class ManagementIdentityTransformer {
         e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final MappingRule mappingRule, final Exception e) {
     return new MigrationStatusUpdateRequest(
         mappingRule.getName(),
@@ -38,7 +36,7 @@ public class ManagementIdentityTransformer {
         e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final UserTenants tenantUser, final Exception e) {
     return new MigrationStatusUpdateRequest(
         tenantUser.id(),
@@ -48,19 +46,19 @@ public class ManagementIdentityTransformer {
         e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Group group, final Exception e) {
     return new MigrationStatusUpdateRequest(
         group.id(), MigrationEntityType.GROUP, null, e == null, e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Role role, final Exception e) {
     return new MigrationStatusUpdateRequest(
         role.name(), MigrationEntityType.ROLE, null, e == null, e == null ? null : e.getMessage());
   }
 
-  public MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
+  public static MigrationStatusUpdateRequest toMigrationStatusUpdateRequest(
       final Client client, final Exception e) {
     return new MigrationStatusUpdateRequest(
         client.clientId(),

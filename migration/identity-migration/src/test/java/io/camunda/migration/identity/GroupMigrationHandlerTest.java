@@ -20,7 +20,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -50,11 +49,7 @@ public class GroupMigrationHandlerTest {
     this.managementIdentityClient = managementIdentityClient;
     this.groupService = groupService;
     migrationHandler =
-        new GroupMigrationHandler(
-            Authentication.none(),
-            managementIdentityClient,
-            new ManagementIdentityTransformer(),
-            groupService);
+        new GroupMigrationHandler(Authentication.none(), managementIdentityClient, groupService);
   }
 
   @Test
