@@ -1221,7 +1221,7 @@ public final class CallActivityTest {
                             .zeebePropagateAllParentVariables(false))
                 .endEvent("done")
                 .moveToLastExclusiveGateway()
-                .conditionExpression("depth > 1010")
+                .conditionExpression("depth > %d".formatted(CUSTOM_CALL_ACTIVITY_DEPTH + 1))
                 .userTask("inspect_failure")
                 .endEvent("failed")
                 .done())
