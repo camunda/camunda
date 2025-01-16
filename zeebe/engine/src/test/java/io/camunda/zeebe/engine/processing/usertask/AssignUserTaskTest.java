@@ -188,12 +188,7 @@ public final class AssignUserTaskTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .withoutAssignee()
-        .withAction(unassignAction)
-        .assign();
+    ENGINE.userTask().ofInstance(processInstanceKey).unassign();
 
     // then
     final Predicate<Record<UserTaskRecordValue>> untilUserTaskUnassignedRecord =

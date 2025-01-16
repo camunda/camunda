@@ -398,12 +398,7 @@ public class MigrateUserTaskTest {
     // Note that while the user task is migrated, it's properties did not change even though they're
     // different in the target process. Because re-evaluation of these expressions is not yet
     // supported.
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .withKey(userTaskKey)
-        .withoutAssignee()
-        .assign();
+    ENGINE.userTask().ofInstance(processInstanceKey).withKey(userTaskKey).unassign();
     ENGINE
         .userTask()
         .ofInstance(processInstanceKey)
