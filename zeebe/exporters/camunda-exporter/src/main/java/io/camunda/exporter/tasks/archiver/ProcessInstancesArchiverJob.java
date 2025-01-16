@@ -9,7 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.util.FunctionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

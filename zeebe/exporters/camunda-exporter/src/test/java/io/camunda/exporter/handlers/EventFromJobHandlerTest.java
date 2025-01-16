@@ -9,17 +9,17 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.handlers.EventFromJobHandler.ID_PATTERN;
 import static io.camunda.exporter.handlers.EventFromJobHandler.JOB_EVENTS;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_CUSTOM_HEADERS;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_RETRIES;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_TYPE;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_WORKER;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_CUSTOM_HEADERS;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_KEY;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_RETRIES;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.JOB_WORKER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.event.EventSourceType;

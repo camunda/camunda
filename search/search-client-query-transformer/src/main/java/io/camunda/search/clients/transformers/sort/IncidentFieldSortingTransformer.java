@@ -8,17 +8,17 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.CREATION_TIME;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.ERROR_MSG;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.ERROR_TYPE;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.JOB_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.CREATION_TIME;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.JOB_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.STATE;
 
 public class IncidentFieldSortingTransformer implements FieldSortingTransformer {
 

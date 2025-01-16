@@ -8,9 +8,9 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

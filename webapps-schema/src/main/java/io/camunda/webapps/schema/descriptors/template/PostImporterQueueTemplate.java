@@ -5,43 +5,34 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.template;
+package io.camunda.webapps.schema.descriptors.template;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import java.util.Optional;
 
-public class VariableTemplate extends AbstractTemplateDescriptor
+public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
 
-  public static final String INDEX_NAME = "variable";
+  public static final String INDEX_NAME = "post-importer-queue";
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String SCOPE_KEY = "scopeKey";
-  public static final String NAME = "name";
-  public static final String VALUE = "value";
-  public static final String FULL_VALUE = "fullValue";
-  public static final String IS_PREVIEW = "isPreview";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
-  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
-  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String ACTION_TYPE = "actionType";
+  public static final String CREATION_TIME = "creationTime";
+  public static final String INTENT = "intent";
+  public static final String PARTITION_ID = "partitionId";
 
-  public VariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
+  public PostImporterQueueTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

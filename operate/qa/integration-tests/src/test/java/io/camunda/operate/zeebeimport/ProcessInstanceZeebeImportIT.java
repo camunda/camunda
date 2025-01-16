@@ -28,7 +28,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.FlowNodeState;
 import io.camunda.webapps.schema.entities.FlowNodeType;

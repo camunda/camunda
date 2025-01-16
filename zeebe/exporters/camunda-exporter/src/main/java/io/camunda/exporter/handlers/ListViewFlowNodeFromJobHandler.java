@@ -8,8 +8,8 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOB_POSITION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_POSITION;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;

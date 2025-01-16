@@ -8,16 +8,16 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.END_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.INCIDENT_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.START_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.START_DATE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TYPE;
 
 public class FlowNodeInstanceFieldSortingTransformer implements FieldSortingTransformer {
 
