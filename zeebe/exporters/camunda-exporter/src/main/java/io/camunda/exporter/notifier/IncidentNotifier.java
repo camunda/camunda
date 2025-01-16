@@ -80,21 +80,23 @@ public class IncidentNotifier {
       if (status / 100 == 2) {
         LOGGER.debug("Incident notification is sent");
       } else if (status == 401) {
-        LOGGER.debug("Incident notification recieved 401 response");
+        LOGGER.debug("Incident notification unauthorized. Retrying with a new token");
         // retry
         status = notifyOnIncidents(incidents, m2mTokenManager.getToken(true));
         if (status / 100 == 2) {
           LOGGER.debug("Incident notification is sent");
         } else {
-          LOGGER.error("Failed to send incident notification. Response status: " + status);
+          LOGGER.warn(
+              "Failed to send incident notification after retrying with a new token. Response status: "
+                  + status);
         }
       } else {
-        LOGGER.error("Failed to send incident notification. Response status: " + status);
+        LOGGER.warn("Failed to send incident notification. Response status: " + status);
       }
     } catch (final JsonProcessingException e) {
-      LOGGER.error("Failed to create incident notification request: " + e.getMessage(), e);
+      LOGGER.warn("Failed to create incident notification request: " + e.getMessage(), e);
     } catch (final Exception e) {
-      LOGGER.error("Failed to notify on incidents: " + e.getMessage(), e);
+      LOGGER.warn("Failed to notify on incidents: " + e.getMessage(), e);
     }
   }
 
