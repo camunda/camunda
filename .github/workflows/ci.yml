@@ -53,4 +53,4 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: CURL
-        run: curl http://localhost:9200
+        run: curl http://0.0.0.0:9200
