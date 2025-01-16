@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -42,6 +43,40 @@ public class AuthorizationStateTest {
             1L, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
     // then
     assertThat(persistedAuth).isEmpty();
+  }
+
+  @Test
+  void shouldCreateAuthorization() {
+    // given
+    final var authorizationKey = 1L;
+    final String ownerId = "ownerId";
+    final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
+    final String resourceId = "resourceId";
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setAuthorizationKey(authorizationKey)
+            .setOwnerId(ownerId)
+            .setOwnerType(ownerType)
+            .setResourceId(resourceId)
+            .setResourceType(resourceType)
+            .setAuthorizationPermissions(permissions);
+
+    // when
+    authorizationState.create(authorizationKey, authorizationRecord);
+
+    // then
+    final var persistedAuthorization = authorizationState.get(authorizationKey);
+    assertThat(persistedAuthorization).isPresent();
+    final var authorization = persistedAuthorization.get();
+    assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
+    assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
+    assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceId()).isEqualTo(resourceId);
+    assertThat(authorization.getResourceType()).isEqualTo(resourceType);
+    assertThat(authorization.getAuthorizationPermissions())
+        .containsExactlyInAnyOrderElementsOf(permissions);
   }
 
   @Test
