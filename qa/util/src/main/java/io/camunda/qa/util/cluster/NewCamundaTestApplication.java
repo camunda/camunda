@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.client.CamundaClientBuilder;
@@ -301,10 +300,6 @@ public final class NewCamundaTestApplication
 
     withProperty("camunda.database.type", DatabaseType.ELASTICSEARCH);
     withProperty("camunda.database.indexPrefix", prefix);
-    final var searchClient = new SearchClientProperties();
-    searchClient.setUrl(elasticSearchUrl);
-    searchClient.setIndexPrefix(prefix);
-    withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
     return this;
   }
 
@@ -358,13 +353,6 @@ public final class NewCamundaTestApplication
     withProperty("camunda.database.indexPrefix", prefix);
     withProperty("camunda.database.username", adminUser);
     withProperty("camunda.database.password", adminPassword);
-    final var searchClient = new SearchClientProperties();
-    searchClient.setUrl(elasticSearchUrl);
-    searchClient.setType(DatabaseType.OPENSEARCH.toString());
-    searchClient.setIndexPrefix(prefix);
-    searchClient.setUsername(adminUser);
-    searchClient.setPassword(adminPassword);
-    withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
     return this;
   }
 
