@@ -62,10 +62,10 @@ import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
