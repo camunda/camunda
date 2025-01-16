@@ -204,52 +204,6 @@ class VariableQueryTest {
   }
 
   @Test
-  void shouldQueryByProcessInstanceKeyFilterGtLt() {
-    // when
-    final var result =
-        camundaClient
-            .newVariableQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b ->
-                            b.gt(variable.getProcessInstanceKey() - 1)
-                                .lt(variable.getProcessInstanceKey() + 1)))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(5);
-    assertThat(
-            result.items().stream()
-                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
-        .isTrue();
-  }
-
-  @Test
-  void shouldQueryByProcessInstanceKeyFilterGteLte() {
-    // when
-    final var result =
-        camundaClient
-            .newVariableQuery()
-            .filter(
-                f ->
-                    f.processInstanceKey(
-                        b ->
-                            b.gte(variable.getProcessInstanceKey())
-                                .lte(variable.getProcessInstanceKey())))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(5);
-    assertThat(
-            result.items().stream()
-                .allMatch(v -> v.getProcessInstanceKey().equals(variable.getProcessInstanceKey())))
-        .isTrue();
-  }
-
-  @Test
   void shouldQueryByProcessInstanceKeyFilterIn() {
     // when
     final var result =

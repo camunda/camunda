@@ -103,16 +103,6 @@ public abstract class RestControllerTest {
         .forEach(streamBuilder::add);
   }
 
-  public static void longOperationTestCases(
-      final Stream.Builder<Arguments> streamBuilder,
-      final String filterKey,
-      final Function<List<Operation<Long>>, Object> builderMethod) {
-    basicLongOperationTestCases(streamBuilder, filterKey, builderMethod);
-    LONG_OPERATIONS.stream()
-        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, false))
-        .forEach(streamBuilder::add);
-  }
-
   public static Operation<Integer> toIntOperation(final Operation<Long> op) {
     return new Operation<>(
         op.operator(),
