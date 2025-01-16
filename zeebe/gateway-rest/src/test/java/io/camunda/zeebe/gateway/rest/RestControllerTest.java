@@ -47,13 +47,15 @@ public abstract class RestControllerTest {
           List.of(Operation.exists(true)),
           List.of(Operation.exists(false)),
           List.of(Operation.in(5L, 10L)));
-  public static final List<List<Operation<String>>> STRING_OPERATIONS =
+  public static final List<List<Operation<String>>> BASIC_STRING_OPERATIONS =
       List.of(
           List.of(Operation.eq("this")),
           List.of(Operation.neq("that")),
           List.of(Operation.exists(true)),
           List.of(Operation.exists(false)),
-          List.of(Operation.in("this", "that")),
+          List.of(Operation.in("this", "that")));
+  public static final List<List<Operation<String>>> STRING_OPERATIONS =
+      List.of(
           List.of(Operation.like("th%")),
           List.of(Operation.in("this", "that"), Operation.like("th%")));
   public static final List<List<Operation<OffsetDateTime>>> DATE_TIME_OPERATIONS =
@@ -123,10 +125,22 @@ public abstract class RestControllerTest {
         .forEach(streamBuilder::add);
   }
 
+  public static void basicStringOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<String>>, Object> builderMethod) {
+    BASIC_STRING_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
+        .forEach(streamBuilder::add);
+  }
+
   public static void stringOperationTestCases(
       final Stream.Builder<Arguments> streamBuilder,
       final String filterKey,
       final Function<List<Operation<String>>, Object> builderMethod) {
+    BASIC_STRING_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
+        .forEach(streamBuilder::add);
     STRING_OPERATIONS.stream()
         .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
         .forEach(streamBuilder::add);

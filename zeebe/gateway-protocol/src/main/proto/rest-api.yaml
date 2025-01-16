@@ -4824,6 +4824,7 @@ components:
             type: integer
             format: int64
     BasicStringFilter:
+      title: Advanced filter
       description: Basic advanced string filter.
       type: object
       properties:
@@ -4841,29 +4842,6 @@ components:
           type: array
           items:
             type: string
-    AdvancedLongFilter:
-      title: Advanced filter
-      description: Advanced long (int64) filter.
-      allOf:
-        - $ref: "#/components/schemas/BasicLongFilter"
-        - type: object
-          properties:
-            $gt:
-              description: Greater than comparison with the provided value.
-              type: integer
-              format: int64
-            $gte:
-              description: Greater than or equal comparison with the provided value.
-              type: integer
-              format: int64
-            $lt:
-              description: Lower than comparison with the provided value.
-              type: integer
-              format: int64
-            $lte:
-              description: Lower than or equal comparison with the provided value.
-              type: integer
-              format: int64
     AdvancedStringFilter:
       title: Advanced filter
       description: Advanced string filter.
@@ -4954,16 +4932,9 @@ components:
       type: object
       oneOf:
         - type: string
-        - $ref: "#/components/schemas/BasicStringFilter"
-    LongFilterProperty:
-      description: Long property with full advanced search capabilities.
-      type: object
-      oneOf:
-        - type: integer
-          format: int64
           title: Exact match
           description: Matches the value exactly.
-        - $ref: "#/components/schemas/AdvancedLongFilter"
+        - $ref: "#/components/schemas/BasicStringFilter"
     StringFilterProperty:
       description: String property with full advanced search capabilities.
       type: object

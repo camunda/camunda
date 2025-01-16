@@ -14,9 +14,9 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedDateTimeFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
-import io.camunda.zeebe.gateway.protocol.rest.AdvancedLongFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedStringFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilter;
+import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilter;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -64,13 +64,6 @@ class AdvancedSearchFilterUtilTest {
     RestControllerTest.BASIC_LONG_OPERATIONS.stream()
         .map(ops -> Arguments.of(BasicLongFilter.class, Long.class, Long.class, ops))
         .forEach(streamBuilder::add);
-    // AdvancedLongFilter
-    RestControllerTest.BASIC_LONG_OPERATIONS.stream()
-        .map(ops -> Arguments.of(AdvancedLongFilter.class, Long.class, Long.class, ops))
-        .forEach(streamBuilder::add);
-    RestControllerTest.LONG_OPERATIONS.stream()
-        .map(ops -> Arguments.of(AdvancedLongFilter.class, Long.class, Long.class, ops))
-        .forEach(streamBuilder::add);
     // AdvancedIntegerFilter
     RestControllerTest.BASIC_LONG_OPERATIONS.stream()
         .map(ops -> ops.stream().map(RestControllerTest::toIntOperation).toList())
@@ -80,7 +73,14 @@ class AdvancedSearchFilterUtilTest {
         .map(ops -> ops.stream().map(RestControllerTest::toIntOperation).toList())
         .map(ops -> Arguments.of(AdvancedIntegerFilter.class, Integer.class, Integer.class, ops))
         .forEach(streamBuilder::add);
+    // BasicStringFilter
+    RestControllerTest.BASIC_STRING_OPERATIONS.stream()
+        .map(ops -> Arguments.of(BasicStringFilter.class, String.class, String.class, ops))
+        .forEach(streamBuilder::add);
     // AdvancedStringFilter
+    RestControllerTest.BASIC_STRING_OPERATIONS.stream()
+        .map(ops -> Arguments.of(AdvancedStringFilter.class, String.class, String.class, ops))
+        .forEach(streamBuilder::add);
     RestControllerTest.STRING_OPERATIONS.stream()
         .map(ops -> Arguments.of(AdvancedStringFilter.class, String.class, String.class, ops))
         .forEach(streamBuilder::add);
@@ -113,7 +113,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   public void shouldMapToStringOperations() {
     // given
-    final var filter = new AdvancedLongFilter();
+    final var filter = new BasicLongFilter();
     filter.set$Eq(10L);
     // when
     final var actual = AdvancedSearchFilterUtil.mapToOperations(filter, String.class);
@@ -125,7 +125,7 @@ class AdvancedSearchFilterUtilTest {
   @Test
   void shouldThrowExceptionWhenCannotConvert() {
     // given
-    final var filter = new AdvancedLongFilter();
+    final var filter = new BasicLongFilter();
     filter.set$Eq(10L);
 
     // when/then
