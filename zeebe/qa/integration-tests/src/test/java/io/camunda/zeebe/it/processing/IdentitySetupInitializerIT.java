@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
-import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -80,8 +79,7 @@ final class IdentitySetupInitializerIT {
         .isNotNull()
         .hasUsername(username)
         .hasName(name)
-        .hasEmail(email)
-        .hasUserType(UserType.DEFAULT);
+        .hasEmail(email);
     final var passwordMatches = passwordEncoder.matches(password, createdUser.getPassword());
     assertTrue(passwordMatches);
 
@@ -206,8 +204,7 @@ final class IdentitySetupInitializerIT {
         .isNotNull()
         .hasUsername(user1.getUsername())
         .hasName(user1.getName())
-        .hasEmail(user1.getEmail())
-        .hasUserType(UserType.DEFAULT);
+        .hasEmail(user1.getEmail());
     assertTrue(passwordEncoder.matches(user1.getPassword(), firstUser.getPassword()));
 
     final var secondUser = record.getUsers().getLast();
@@ -215,8 +212,7 @@ final class IdentitySetupInitializerIT {
         .isNotNull()
         .hasUsername(user2.getUsername())
         .hasName(user2.getName())
-        .hasEmail(user2.getEmail())
-        .hasUserType(UserType.DEFAULT);
+        .hasEmail(user2.getEmail());
     assertTrue(passwordEncoder.matches(user2.getPassword(), secondUser.getPassword()));
   }
 
