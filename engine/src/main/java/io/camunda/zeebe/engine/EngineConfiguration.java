@@ -111,7 +111,8 @@ public final class EngineConfiguration {
     return maxProcessDepth;
   }
 
-  public void setMaxProcessDepth(final int maxProcessDepth) {
+  public EngineConfiguration setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+    return this;
   }
 }
