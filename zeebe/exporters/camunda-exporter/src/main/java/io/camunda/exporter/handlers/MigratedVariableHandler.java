@@ -9,8 +9,8 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;

@@ -34,6 +34,8 @@ import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -42,8 +44,6 @@ import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
