@@ -19,7 +19,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

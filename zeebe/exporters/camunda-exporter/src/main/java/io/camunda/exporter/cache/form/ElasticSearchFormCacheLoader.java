@@ -13,7 +13,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.SourceConfigBuilders;
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.io.IOException;
 import org.slf4j.Logger;

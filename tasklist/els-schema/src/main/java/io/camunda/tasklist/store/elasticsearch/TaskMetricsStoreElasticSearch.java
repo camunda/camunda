@@ -8,16 +8,16 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
-import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex.VALUE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;

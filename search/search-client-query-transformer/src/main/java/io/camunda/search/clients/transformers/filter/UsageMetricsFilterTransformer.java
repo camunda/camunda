@@ -16,7 +16,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.util.ArrayList;
 import java.util.List;
 
