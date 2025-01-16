@@ -33,6 +33,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
@@ -43,6 +44,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -425,14 +427,19 @@ final class CamundaExporterIT {
     assertThat(expectedHandlers).isNotEmpty();
     expectedHandlers.forEach(
         exportHandler -> {
-          final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
+          ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
+          if (exportHandler.getEntityType().equals(UserTaskVariableBatch.class)) {
+            assertThat(expectedEntity).isInstanceOf(UserTaskVariableBatch.class);
+            expectedEntity = ((UserTaskVariableBatch) expectedEntity).getVariables().getFirst();
+          }
           final ExporterEntity<?> responseEntity;
           try {
             responseEntity =
                 clientAdapter.get(
-                    expectedEntity.getId(),
-                    exportHandler.getIndexName(),
-                    exportHandler.getEntityType());
+                    expectedEntity.getId(), exportHandler.getIndexName(), getType(exportHandler));
+            if (exportHandler.getEntityType().equals(UserTaskVariableBatch.class)) {
+              assertThat(responseEntity).isInstanceOf(TaskVariableEntity.class);
+            }
           } catch (final IOException e) {
             fail("Failed to find expected entity " + expectedEntity, e);
             return;
@@ -444,6 +451,17 @@ final class CamundaExporterIT {
                   exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
               .isEqualTo(expectedEntity);
         });
+  }
+
+  /**
+   * For the {@link UserTaskVariableBatch} the actual persisted entities are of {@link
+   * TaskVariableEntity}
+   */
+  private Class<? extends ExporterEntity<? extends ExporterEntity<?>>> getType(
+      final ExportHandler<?, ?> handler) {
+    return handler.getEntityType().equals(UserTaskVariableBatch.class)
+        ? TaskVariableEntity.class
+        : handler.getEntityType();
   }
 
   @TestTemplate
