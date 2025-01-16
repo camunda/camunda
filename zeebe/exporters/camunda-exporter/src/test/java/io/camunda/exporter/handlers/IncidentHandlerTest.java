@@ -341,7 +341,7 @@ public class IncidentHandlerTest {
 
     // then
     assertThat(incidentEntity.getErrorType())
-        .isEqualTo(io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES);
+        .isEqualTo(io.camunda.webapps.schema.entities.ErrorType.JOB_NO_RETRIES);
   }
 
   /**
@@ -373,7 +373,7 @@ public class IncidentHandlerTest {
     // then
     assertThat(incidentEntity.getErrorType())
         .isEqualTo(
-            io.camunda.webapps.schema.entities.operate.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
+            io.camunda.webapps.schema.entities.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
   }
 
   @Test
@@ -401,7 +401,7 @@ public class IncidentHandlerTest {
 
     // then
     assertThat(incidentEntity.getErrorType())
-        .isEqualTo(io.camunda.webapps.schema.entities.operate.ErrorType.TASK_LISTENER_NO_RETRIES);
+        .isEqualTo(io.camunda.webapps.schema.entities.ErrorType.TASK_LISTENER_NO_RETRIES);
   }
 
   private String concurrencyScriptMock() {

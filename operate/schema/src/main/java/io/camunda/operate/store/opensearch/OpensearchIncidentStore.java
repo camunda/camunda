@@ -22,7 +22,7 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.ErrorType;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

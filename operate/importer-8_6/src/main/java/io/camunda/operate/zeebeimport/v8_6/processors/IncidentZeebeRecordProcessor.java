@@ -22,7 +22,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.ErrorType;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;

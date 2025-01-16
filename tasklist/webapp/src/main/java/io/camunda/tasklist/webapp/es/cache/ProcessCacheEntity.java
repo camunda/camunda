@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;

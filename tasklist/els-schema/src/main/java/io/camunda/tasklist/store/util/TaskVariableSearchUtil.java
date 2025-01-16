@@ -12,8 +12,8 @@ import static java.util.stream.Collectors.toList;
 
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.CollectionUtil;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;

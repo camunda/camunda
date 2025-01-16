@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;

@@ -43,11 +43,11 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 
 public class FlowNodeInstanceEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity, FlowNodeInstanceEntity> {
+    io.camunda.webapps.schema.entities.FlowNodeInstanceEntity, FlowNodeInstanceEntity> {
 
   @Override
   public FlowNodeInstanceEntity apply(
-      final io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity value) {
+      final io.camunda.webapps.schema.entities.FlowNodeInstanceEntity value) {
     return new FlowNodeInstanceEntity(
         value.getKey(),
         value.getProcessInstanceKey(),
@@ -64,7 +64,7 @@ public class FlowNodeInstanceEntityTransformer
         value.getTenantId());
   }
 
-  private FlowNodeType toType(final io.camunda.webapps.schema.entities.operate.FlowNodeType value) {
+  private FlowNodeType toType(final io.camunda.webapps.schema.entities.FlowNodeType value) {
     if (value == null) {
       return null;
     }
@@ -99,7 +99,7 @@ public class FlowNodeInstanceEntityTransformer
   }
 
   private FlowNodeState toState(
-      final io.camunda.webapps.schema.entities.operate.FlowNodeState value) {
+      final io.camunda.webapps.schema.entities.FlowNodeState value) {
     if (value == null) {
       return null;
     }

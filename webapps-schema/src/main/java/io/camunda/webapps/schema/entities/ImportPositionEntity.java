@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.operate;
+package io.camunda.webapps.schema.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.Objects;
 
 public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionEntity> {

@@ -13,7 +13,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.ImportJobAbstract;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;

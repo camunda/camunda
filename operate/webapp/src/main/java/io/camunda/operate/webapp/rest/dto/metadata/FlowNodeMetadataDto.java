@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto.metadata;
 
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.FlowNodeType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

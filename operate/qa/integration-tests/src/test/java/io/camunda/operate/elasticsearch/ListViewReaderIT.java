@@ -24,7 +24,7 @@ import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEn
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.FlowNodeState;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;

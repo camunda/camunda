@@ -11,9 +11,9 @@ import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeIns
 import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.webapps.schema.entities.operate.FlowNodeState.ACTIVE;
-import static io.camunda.webapps.schema.entities.operate.FlowNodeState.COMPLETED;
-import static io.camunda.webapps.schema.entities.operate.FlowNodeState.TERMINATED;
+import static io.camunda.webapps.schema.entities.FlowNodeState.ACTIVE;
+import static io.camunda.webapps.schema.entities.FlowNodeState.COMPLETED;
+import static io.camunda.webapps.schema.entities.FlowNodeState.TERMINATED;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -23,7 +23,7 @@ import io.camunda.operate.webapp.opensearch.OpensearchAggregationDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.FlowNodeType;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;

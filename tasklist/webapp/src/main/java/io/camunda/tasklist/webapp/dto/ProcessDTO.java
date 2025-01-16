@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.dto;
 
 import io.camunda.tasklist.util.CollectionUtil;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 
 public class ProcessDTO {
 

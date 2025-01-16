@@ -8,7 +8,7 @@
 package io.camunda.operate.store;
 
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.ErrorType;
 import java.util.List;
 import java.util.Map;
 
