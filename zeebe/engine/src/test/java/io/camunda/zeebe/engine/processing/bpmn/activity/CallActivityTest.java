@@ -1242,6 +1242,15 @@ public final class CallActivityTest {
         maximum depth, or use process instance modification to adjust the process instance.\
         """
                 .formatted(CUSTOM_CALL_ACTIVITY_DEPTH));
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withName("depth")
+                .withScopeKey(incident.getElementInstanceKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that we cannot call the call activity with a depth greater than 10")
+        .hasValue("%d".formatted(CUSTOM_CALL_ACTIVITY_DEPTH + 1));
   }
 
   private void deployDefaultParentAndChildProcess() {
