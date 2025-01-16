@@ -26,16 +26,20 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
-import io.camunda.it.utils.CamundaITInvocationProvider;
+import io.camunda.it.utils.CamundaTestDBExtension;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(CamundaITInvocationProvider.class)
+@ExtendWith(CamundaTestDBExtension.class)
+@EnabledIfSystemProperty(
+    named = CamundaTestDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE,
+    matches = ".*")
 public class NewProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
@@ -43,7 +47,6 @@ public class NewProcessInstanceAndFlowNodeInstanceQueryTest {
 
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
-
   private static CamundaClient camundaClient;
 
   @BeforeAll
