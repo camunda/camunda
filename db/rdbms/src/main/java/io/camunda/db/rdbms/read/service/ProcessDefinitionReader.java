@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
+import io.camunda.db.rdbms.read.mapper.ProcessDefinitionEntityMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessDefinitionSearchColumn;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -49,7 +50,10 @@ public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinit
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processDefinitionMapper.count(dbQuery);
-    final var hits = processDefinitionMapper.search(dbQuery);
+    final var hits =
+        processDefinitionMapper.search(dbQuery).stream()
+            .map(ProcessDefinitionEntityMapper::toEntity)
+            .toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }

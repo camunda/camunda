@@ -22,12 +22,13 @@
     SELECT PROCESS_DEFINITION_KEY,
     PROCESS_DEFINITION_ID,
     RESOURCE_NAME,
-    BPMN_XML,
     NAME,
     TENANT_ID,
     VERSION_TAG,
     VERSION,
-    FORM_ID
+    BPMN_XML,
+    FORM_ID,
+    LEGACY_ID
     FROM ${prefix}PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     ) t
@@ -38,6 +39,9 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
+    <if test="legacyId != null and !legacyId.isEmpty()">
+      AND LEGACY_ID = #{legacyId}
+    </if>
     <!-- basic filters -->
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
       AND PROCESS_DEFINITION_KEY IN
@@ -82,18 +86,17 @@
     </if>
   </sql>
 
-  <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">
-    <constructor>
-      <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="NAME" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="BPMN_XML" javaType="java.lang.String"/>
-      <arg column="RESOURCE_NAME" javaType="java.lang.String"/>
-      <arg column="VERSION" javaType="java.lang.Integer"/>
-      <arg column="VERSION_TAG" javaType="java.lang.String"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="FORM_ID" javaType="java.lang.String"/>
-    </constructor>
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel">
+      <id property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <result property="processDefinitionId" column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <result property="resourceName" column="RESOURCE_NAME" javaType="java.lang.String"/>
+      <result property="name" column="NAME" javaType="java.lang.String"/>
+      <result property="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+      <result property="versionTag" column="VERSION_TAG" javaType="java.lang.String"/>
+      <result property="version" column="VERSION" javaType="java.lang.Integer"/>
+      <result property="bpmnXml" column="BPMN_XML" javaType="java.lang.String"/>
+      <result property="formId" column="FORM_ID" javaType="java.lang.String"/>
+      <result property="legacyId" column="LEGACY_ID" javaType="java.lang.String"/>
   </resultMap>
 
   <insert
@@ -101,8 +104,8 @@
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel"
     flushCache="true">
     INSERT INTO ${prefix}PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
-                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID)
+                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID, LEGACY_ID)
     VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
-            #{tenantId}, #{versionTag}, #{version}, #{formId})
+            #{tenantId}, #{versionTag}, #{version}, #{formId}, #{legacyId})
   </insert>
 </mapper>

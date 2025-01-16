@@ -18,7 +18,8 @@ import java.util.function.Function;
 public record ProcessDefinitionDbQuery(
     ProcessDefinitionFilter filter,
     DbQuerySorting<ProcessDefinitionEntity> sort,
-    DbQueryPage page) {
+    DbQueryPage page,
+    String legacyId) {
 
   public static ProcessDefinitionDbQuery of(
       final Function<Builder, ObjectBuilder<ProcessDefinitionDbQuery>> fn) {
@@ -33,6 +34,7 @@ public record ProcessDefinitionDbQuery(
     private ProcessDefinitionFilter filter;
     private DbQuerySorting<ProcessDefinitionEntity> sort;
     private DbQueryPage page;
+    private String legacyId;
 
     public ProcessDefinitionDbQuery.Builder filter(final ProcessDefinitionFilter value) {
       filter = value;
@@ -47,6 +49,11 @@ public record ProcessDefinitionDbQuery(
 
     public ProcessDefinitionDbQuery.Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public ProcessDefinitionDbQuery.Builder legacyId(String id) {
+      legacyId = id;
       return this;
     }
 
@@ -68,7 +75,8 @@ public record ProcessDefinitionDbQuery(
     public ProcessDefinitionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new ProcessDefinitionDbQuery(filter, sort, page);
+      return new ProcessDefinitionDbQuery(filter, sort, page, legacyId);
     }
+
   }
 }
