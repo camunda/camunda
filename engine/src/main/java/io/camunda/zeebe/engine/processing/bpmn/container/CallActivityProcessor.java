@@ -160,6 +160,10 @@ public final class CallActivityProcessor
     transitionToTerminated(element, callActivityContext);
   }
 
+  /**
+   * Returns a failure if the process depth of the called instance is about to exceed the maximum
+   * allowed depth. Otherwise, returns a right.
+   */
   private Either<Failure, Void> validateProcessDepth(final BpmnElementContext context) {
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
     final int processDepth = processInstance.getProcessDepth();
