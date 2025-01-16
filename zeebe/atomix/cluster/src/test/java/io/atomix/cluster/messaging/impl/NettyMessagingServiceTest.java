@@ -709,7 +709,7 @@ final class NettyMessagingServiceTest {
       // given
       final var subject = nextSubject();
       final var receivedHeartbeat = new AtomicBoolean(false);
-      netty2.forwardHeartbeats(true);
+      netty2.enableHeartbeatsForwarding();
       // register for heartbeats
       netty2.registerHandler(
           HeartbeatHandler.HEARTBEAT_SUBJECT,
@@ -725,7 +725,7 @@ final class NettyMessagingServiceTest {
 
       // when - removing the `IdleStateHandler` from the pipeline such that `HeartBeatHandler` is
       // not triggered
-      clientChannel.pipeline().remove("idle");
+      clientChannel.pipeline().remove(HeartbeatHandler.IDLE_STATE_HANDLER_NAME);
 
       // then - the other side notices a lack of heartbeats and closes the channel
       assertThat(clientChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
@@ -735,7 +735,7 @@ final class NettyMessagingServiceTest {
     void shouldNotCloseTheConnectionFromTheServerIfNoHeartbeatsIsReceived() {
       // given
       final var subject = nextSubject();
-      netty2.forwardHeartbeats(true);
+      netty2.enableHeartbeatsForwarding();
       final var receivedHeartbeats = new AtomicInteger(0);
       netty2.registerHandler(
           HeartbeatHandler.HEARTBEAT_SUBJECT,
@@ -743,11 +743,10 @@ final class NettyMessagingServiceTest {
             receivedHeartbeats.incrementAndGet();
             return CompletableFuture.completedFuture(null);
           });
+      // heartbeats are not sent from the client
+      netty1.disableHeartbeats();
       // a client channel
       final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
-      // without heartbeat handler,
-      // so that client does not send any heartbeats
-      channel.pipeline().remove("heartbeat");
 
       // when
       // a request is made without heartbeats
@@ -762,10 +761,35 @@ final class NettyMessagingServiceTest {
     }
 
     @Test
+    void shouldSendHeartbeatTimeoutFromClientToServer() throws Exception {
+      // given
+      final var subject = nextSubject();
+      // new service with a different timeout;
+      final var netty3Config = defaultConfig();
+      // heartbeatTimeout on netty3 (server) is very small
+      netty3Config
+          .setHeartbeatTimeout(Duration.ofMillis(2))
+          .setHeartbeatInterval(Duration.ofMillis(1));
+      try (final var netty3 =
+          new NettyMessagingService(CLUSTER_NAME, newAddress(), netty3Config, "testingPrefix")) {
+        startMessagingServices(netty3);
+        // when
+        final var clientChannel =
+            netty1.getChannelPool().getChannel(netty3.address(), subject).join();
+        // then
+        // the channel stays open because netty3's config are ignored
+        assertThatThrownBy(() -> clientChannel.closeFuture().get(1, TimeUnit.SECONDS))
+            .isInstanceOf(TimeoutException.class);
+      }
+    }
+
+    @Test
     void shouldNotCloseTheConnectionFromTheClientIfNoHeartbeatsIsReceived()
         throws InterruptedException {
       // given
       final var subject = nextSubject();
+      // the server does not support heartbeats
+      netty2.disableHeartbeats();
       // a client channel
       final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
 
