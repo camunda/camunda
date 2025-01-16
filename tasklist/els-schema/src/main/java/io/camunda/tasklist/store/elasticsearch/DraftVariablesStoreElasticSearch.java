@@ -17,7 +17,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.Collection;

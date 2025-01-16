@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -30,15 +30,15 @@ public class BackupRestoreDataGeneratorOpenSearch extends AbstractBackupRestoreD
   private OpenSearchClient openSearchClient;
 
   @Override
-  protected void initClient(BackupRestoreTestContext testContext) {
-    this.openSearchClient = testContext.getOsClient();
+  protected void initClient(final BackupRestoreTestContext testContext) {
+    openSearchClient = testContext.getOsClient();
   }
 
   @Override
   protected void refreshIndices() {
     try {
       openSearchClient.indices().refresh(RefreshRequest.of(r -> r.index("tasklist-*")));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error("Error in refreshing OpenSearch indices", e);
     }
   }
@@ -55,13 +55,13 @@ public class BackupRestoreDataGeneratorOpenSearch extends AbstractBackupRestoreD
                           s.inline(
                               is -> is.lang("painless").source("ctx._source.assignee = 'demo'")))
                   .refresh(true));
-    } catch (OpenSearchException | IOException e) {
+    } catch (final OpenSearchException | IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  protected long countEntitiesForAlias(String alias) throws IOException {
+  protected long countEntitiesForAlias(final String alias) throws IOException {
     return openSearchClient
         .search(sr -> sr.index(alias).size(1000), Void.class)
         .hits()

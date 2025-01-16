@@ -11,7 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;

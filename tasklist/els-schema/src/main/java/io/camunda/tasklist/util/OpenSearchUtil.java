@@ -18,7 +18,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import jakarta.json.JsonArray;
 import java.io.IOException;
 import java.util.ArrayList;
