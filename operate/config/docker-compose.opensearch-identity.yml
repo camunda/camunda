@@ -45,7 +45,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.0.7
+    image: bitnami/keycloak:26.1.0
     volumes:
       - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:
