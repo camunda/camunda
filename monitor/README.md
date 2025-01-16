@@ -24,6 +24,28 @@ namespace and pod label as `local` and `broker-*`.
 > will need to run either `docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml down -v`
 > or `docker volume prune`
 
+### Testing with local Zeebe
+
+When you want to use a local Zeebe Broker, you need to locally modify the config:
+- enable Prometheus Docker container to access localhost ports:
+
+```yaml
+# add to the prometheus service
+extra_hosts:
+- "host.docker.internal:host-gateway"
+```
+
+- add the local Zeebe broker to Prometheus config:
+
+  ```yaml
+  # add to scrape_configs
+  - job_name: 'zeebe_local'
+    metrics_path: /actuator/prometheus
+    static_configs:
+         - targets: ['host.docker.internal:9600']
+
+  ```
+
 ### Grafana
 
 You can find [here](grafana/zeebe.json) a pre-built Grafana dashboard to
