@@ -49,13 +49,14 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenant);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            tenantServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .createTenant(tenantDTO),
-        ResponseMapper::toTenantCreateResponse);
+  @CamundaGetMapping(path = "/{tenantId}")
+  public ResponseEntity<TenantItem> getTenant(@PathVariable final String tenantId) {
+    try {
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toTenant(tenantServices.getById(tenantId)));
+    } catch (final Exception exception) {
+      return RestErrorMapper.mapErrorToResponse(exception);
+    }
   }
 
   @CamundaPatchMapping(path = "/{tenantKey}")
