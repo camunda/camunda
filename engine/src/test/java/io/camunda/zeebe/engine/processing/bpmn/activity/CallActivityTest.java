@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -22,11 +24,13 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -780,7 +784,7 @@ public final class CallActivityTest {
                             .zeebePropagateAllParentVariables(false))
                 .endEvent("done")
                 .moveToLastExclusiveGateway()
-                .conditionExpression("depth > 1000")
+                .conditionExpression("depth > %d".formatted(CUSTOM_CALL_ACTIVITY_DEPTH + 1))
                 .userTask("inspect_failure")
                 .endEvent("failed")
                 .done())
