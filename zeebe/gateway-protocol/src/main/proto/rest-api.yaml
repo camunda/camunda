@@ -2426,34 +2426,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /authorizations/{authorizationKey}:
-    delete:
-      tags:
-        - Authorization
-      operationId: deleteAuthorization
-      summary: Delete authorization
-      description: Deletes the authorization with the given key.
-      parameters:
-        - name: authorizationKey
-          in: path
-          required: true
-          description: The key of the authorization to delete.
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "204":
-          description: The authorization was deleted successfully.
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          description: The authorization with the authorizationKey was not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-  /authorizations/{ownerKey}:
     patch:
       tags:
         - Authorization
@@ -2461,7 +2433,7 @@ paths:
       summary: Update authorization
       description: Manage the permissions assigned to the authorization.
       parameters:
-        - name: ownerKey
+        - name: authorizationKey
           in: path
           required: true
           description: The key of the owner of the authorization.
@@ -2501,6 +2473,34 @@ paths:
           description: |
             The request to add or remove permissions to an authorization was in conflict.
             More details are provided in the response body.
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Authorization
+      operationId: deleteAuthorization
+      summary: Delete authorization
+      description: Deletes the authorization with the given key.
+      parameters:
+        - name: authorizationKey
+          in: path
+          required: true
+          description: The key of the authorization to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The authorization was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The authorization with the authorizationKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /authorizations/search:
