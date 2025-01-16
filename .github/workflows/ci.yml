@@ -230,7 +230,7 @@ jobs:
     needs: [ detect-changes ]
     timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubuntu-latest
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
