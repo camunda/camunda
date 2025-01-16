@@ -464,8 +464,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
-  /tenants/{tenantKey}:
     patch:
       tags:
         - Tenant

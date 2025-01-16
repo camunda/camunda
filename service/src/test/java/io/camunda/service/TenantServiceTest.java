@@ -86,7 +86,7 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByKey(100L);
+    final var searchQueryResult = services.getById("tenant-id");
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -100,7 +100,7 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByKey(100L);
+    final var searchQueryResult = services.getById("tenant-id");
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -109,12 +109,11 @@ public class TenantServiceTest {
   @Test
   public void shouldThrowExceptionIfNotFoundByKey() {
     // given
-    final var key = 100L;
     when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
 
-    assertThatCode(() -> services.getByKey(key))
+    assertThatCode(() -> services.getById("non-existent-tenant-id"))
         .isInstanceOf(NotFoundException.class)
         .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found");
   }
