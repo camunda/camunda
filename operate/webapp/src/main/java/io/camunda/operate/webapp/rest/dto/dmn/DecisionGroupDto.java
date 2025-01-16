@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.*;
 
@@ -29,13 +29,13 @@ public class DecisionGroupDto {
   private List<DecisionDto> decisions;
 
   public static List<DecisionGroupDto> createFrom(
-      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
+      final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
     return createFrom(decisionsGrouped, null);
   }
 
   public static List<DecisionGroupDto> createFrom(
-      Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
-      PermissionsService permissionsService) {
+      final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped,
+      final PermissionsService permissionsService) {
     final List<DecisionGroupDto> groups = new ArrayList<>();
     decisionsGrouped.values().stream()
         .forEach(
@@ -61,7 +61,7 @@ public class DecisionGroupDto {
     return decisionId;
   }
 
-  public void setDecisionId(String decisionId) {
+  public void setDecisionId(final String decisionId) {
     this.decisionId = decisionId;
   }
 
@@ -69,7 +69,7 @@ public class DecisionGroupDto {
     return tenantId;
   }
 
-  public DecisionGroupDto setTenantId(String tenantId) {
+  public DecisionGroupDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -78,7 +78,7 @@ public class DecisionGroupDto {
     return name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 
@@ -86,7 +86,7 @@ public class DecisionGroupDto {
     return permissions;
   }
 
-  public void setPermissions(Set<String> permissions) {
+  public void setPermissions(final Set<String> permissions) {
     this.permissions = permissions;
   }
 
@@ -94,7 +94,7 @@ public class DecisionGroupDto {
     return decisions;
   }
 
-  public void setDecisions(List<DecisionDto> decisions) {
+  public void setDecisions(final List<DecisionDto> decisions) {
     this.decisions = decisions;
   }
 
@@ -104,7 +104,7 @@ public class DecisionGroupDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -121,7 +121,7 @@ public class DecisionGroupDto {
 
   public static class DecisionGroupComparator implements Comparator<DecisionGroupDto> {
     @Override
-    public int compare(DecisionGroupDto o1, DecisionGroupDto o2) {
+    public int compare(final DecisionGroupDto o1, final DecisionGroupDto o2) {
 
       // when sorting "name" field has higher priority than "bpmnProcessId" field
       if (o1.getName() == null && o2.getName() == null) {

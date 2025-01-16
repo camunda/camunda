@@ -129,16 +129,14 @@ public class SearchClients
     return getSearchExecutor()
         .search(
             filter,
-            io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity
-                .class);
+            io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity.class);
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery filter) {
     return getSearchExecutor()
-        .search(
-            filter, io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
   }
 
   @Override
@@ -147,8 +145,7 @@ public class SearchClients
     return getSearchExecutor()
         .search(
             filter,
-            io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity
-                .class);
+            io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity.class);
   }
 
   @Override
