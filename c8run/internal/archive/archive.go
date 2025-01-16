@@ -35,7 +35,10 @@ func DownloadFile(filepath string, url string, authToken string) error {
 	if err != nil {
 		return fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url)
 	}
-	if authToken != "" {
+
+	if strings.HasPrefix(authToken, "Basic ") {
+		req.Header.Add("Authorization", authToken)
+	} else if authToken != "" {
 		req.Header.Add("Authorization", "Bearer "+authToken)
 	}
 
