@@ -13,9 +13,9 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -23,7 +23,9 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
+public class DbAuthorizationState implements MutableAuthorizationState {
+
+  private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
 
   private final DbLong ownerKey;
   private final DbString resourceType;
@@ -34,6 +36,11 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   private final DbString ownerType;
   // owner key -> owner type
   private final ColumnFamily<DbLong, DbString> ownerTypeByOwnerKeyColumnFamily;
+
+  // authorization key -> authorization
+  private final DbLong authorizationKey;
+  private final ColumnFamily<DbLong, PersistedAuthorization>
+      authorizationByAuthorizationKeyColumnFamily;
 
   public DbAuthorizationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -52,6 +59,14 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     ownerTypeByOwnerKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY, transactionContext, ownerKey, ownerType);
+
+    authorizationKey = new DbLong();
+    authorizationByAuthorizationKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AUTHORIZATIONS,
+            transactionContext,
+            authorizationKey,
+            new PersistedAuthorization());
   }
 
   @Override
@@ -69,6 +84,14 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
 
     identifiers.addResourceIdentifiers(permissionType, resourceIds);
     permissionsColumnFamily.upsert(ownerKeyAndResourceType, identifiers);
+  }
+
+  @Override
+  public void create(final long authorizationKey, final AuthorizationRecord authorization) {
+    this.authorizationKey.wrapLong(authorizationKey);
+    persistedAuthorization.wrap(authorization);
+    authorizationByAuthorizationKeyColumnFamily.insert(
+        this.authorizationKey, persistedAuthorization);
   }
 
   @Override
@@ -111,6 +134,14 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   public void deleteOwnerTypeByKey(final long ownerKey) {
     this.ownerKey.wrapLong(ownerKey);
     ownerTypeByOwnerKeyColumnFamily.deleteExisting(this.ownerKey);
+  }
+
+  @Override
+  public Optional<PersistedAuthorization> get(final long authorizationKey) {
+    this.authorizationKey.wrapLong(authorizationKey);
+    final var persistedAuthorization =
+        authorizationByAuthorizationKeyColumnFamily.get(this.authorizationKey);
+    return Optional.ofNullable(persistedAuthorization);
   }
 
   @Override
