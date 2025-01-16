@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.client;
+package io.camunda.v2.it.client;
 
 import static io.camunda.it.client.QueryTest.assertSorted;
 import static io.camunda.it.client.QueryTest.deployResource;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @EnabledIfSystemProperty(
     named = CamundaTestDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE,
     matches = ".*")
-public class NewProcessInstanceAndFlowNodeInstanceQueryTest {
+public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
