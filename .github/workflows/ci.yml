@@ -44,6 +44,7 @@ jobs:
         image: registry:2
         ports:
           - 5000:5000
+    container: ubuntu
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
