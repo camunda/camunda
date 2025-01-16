@@ -28,7 +28,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
 
-  public static final int DEFAULT_CALL_ACTIVITY_MAX_DEPTH = 1000;
+  public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -44,7 +44,7 @@ public final class EngineConfiguration {
 
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
 
-  private int defaultCallActivityMaxDepth = DEFAULT_CALL_ACTIVITY_MAX_DEPTH;
+  private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -140,11 +140,11 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getDefaultCallActivityMaxDepth() {
-    return defaultCallActivityMaxDepth;
+  public int getMaxProcessDepth() {
+    return maxProcessDepth;
   }
 
-  public void setDefaultCallActivityMaxDepth(final int defaultCallActivityMaxDepth) {
-    this.defaultCallActivityMaxDepth = defaultCallActivityMaxDepth;
+  public void setMaxProcessDepth(final int maxProcessDepth) {
+    this.maxProcessDepth = maxProcessDepth;
   }
 }
