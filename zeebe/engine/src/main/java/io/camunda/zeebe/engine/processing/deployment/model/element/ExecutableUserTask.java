@@ -44,4 +44,8 @@ public final class ExecutableUserTask extends ExecutableJobWorkerTask {
   public boolean hasTaskListeners(final ZeebeTaskListenerEventType eventType) {
     return !getTaskListeners(eventType).isEmpty();
   }
+
+  public boolean hasTaskListeners() {
+    return !getTaskListeners().isEmpty();
+  }
 }
