@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
-  private final Map<String, Record<IncidentRecordValue>> recordsMap = new HashMap<>();
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final IncidentNotifier incidentNotifier;
@@ -114,24 +113,23 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
     entity.setTreePath(buildTreePath(record));
 
-    recordsMap.put(entity.getId(), record);
+    final Intent intent = (record == null) ? null : record.getIntent();
+    if (intent == null) {
+      LOGGER.warn("Intent is null for incident: id {}", entity.getId());
+    }
+    if (Objects.equals(intent, IncidentIntent.CREATED)) {
+      incidentNotifier.notifyAsync(List.of(entity));
+    }
   }
 
   @Override
   public void flush(final IncidentEntity entity, final BatchRequest batchRequest) {
-    final String id = entity.getId();
-    final Record<IncidentRecordValue> record = recordsMap.get(id);
-    final Intent intent = (record == null) ? null : record.getIntent();
-    if (intent == null) {
-      LOGGER.warn("Intent is null for incident: id {}", id);
-    }
-    final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intent, entity);
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    updateFields.put(PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    updateFields.put(FLOW_NODE_ID, entity.getFlowNodeId());
     updateFields.put(POSITION, entity.getPosition());
     batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
-
-    if (Objects.equals(intent, IncidentIntent.CREATED)) {
-      incidentNotifier.notifyAsync(List.of(entity));
-    }
   }
 
   @Override
@@ -182,16 +180,5 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     }
 
     return treePath.toString();
-  }
-
-  private static Map<String, Object> getUpdateFieldsMapByIntent(
-      final Intent intent, final IncidentEntity incidentEntity) {
-    final Map<String, Object> updateFields = new HashMap<>();
-    if (Objects.equals(intent, IncidentIntent.MIGRATED)) {
-      updateFields.put(BPMN_PROCESS_ID, incidentEntity.getBpmnProcessId());
-      updateFields.put(PROCESS_DEFINITION_KEY, incidentEntity.getProcessDefinitionKey());
-      updateFields.put(FLOW_NODE_ID, incidentEntity.getFlowNodeId());
-    }
-    return updateFields;
   }
 }
