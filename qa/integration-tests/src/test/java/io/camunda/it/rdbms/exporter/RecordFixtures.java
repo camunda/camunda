@@ -243,12 +243,15 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getTenantRecord(
-      final Long tenantKey, final TenantIntent intent) {
-    return getTenantRecord(tenantKey, intent, null);
+      final Long tenantKey, final String tenantId, final TenantIntent intent) {
+    return getTenantRecord(tenantKey, tenantId, intent, null);
   }
 
   protected static ImmutableRecord<RecordValue> getTenantRecord(
-      final Long tenantKey, final TenantIntent intent, final Long entityKey) {
+      final Long tenantKey,
+      final String tenantId,
+      final TenantIntent intent,
+      final Long entityKey) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.TENANT);
     return ImmutableRecord.builder()
         .from(recordValueRecord)
@@ -259,6 +262,7 @@ public class RecordFixtures {
         .withValue(
             ImmutableTenantRecordValue.builder()
                 .from((TenantRecordValue) recordValueRecord.getValue())
+                .withTenantId(tenantId)
                 .withTenantKey(tenantKey)
                 .withEntityKey(entityKey != null ? entityKey : 0)
                 .withEntityType(entityKey != null ? EntityType.USER : null)

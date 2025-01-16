@@ -23,24 +23,24 @@ public class TenantWriter {
     this.executionQueue = executionQueue;
   }
 
-  public void create(final TenantDbModel flowNode) {
+  public void create(final TenantDbModel tenant) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
-            flowNode.tenantKey(),
+            tenant.tenantKey(),
             "io.camunda.db.rdbms.sql.TenantMapper.insert",
-            flowNode));
+            tenant));
   }
 
   public void update(final TenantDbModel tenant) {
     final boolean wasMerged =
-        mergeToQueue(tenant.tenantKey(), b -> b.tenantId(tenant.tenantId()).name(tenant.name()));
+        mergeToQueue(tenant.tenantId(), b -> b.tenantId(tenant.tenantId()).name(tenant.name()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.TENANT,
-              tenant.tenantKey(),
+              tenant.tenantId(),
               "io.camunda.db.rdbms.sql.TenantMapper.update",
               tenant));
     }
@@ -64,24 +64,25 @@ public class TenantWriter {
             member));
   }
 
-  public void delete(final long tenantKey) {
+  public void delete(final TenantDbModel tenant) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
-            tenantKey,
+            tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.delete",
-            tenantKey));
+            tenant.tenantId()));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
-            tenantKey,
+            tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.deleteAllMembers",
-            tenantKey));
+            tenant.tenantKey()));
   }
 
   private boolean mergeToQueue(
-      final long key, final Function<TenantDbModel.Builder, TenantDbModel.Builder> mergeFunction) {
+      final String tenantId,
+      final Function<TenantDbModel.Builder, TenantDbModel.Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
-        new UpsertMerger<>(ContextType.TENANT, key, TenantDbModel.class, mergeFunction));
+        new UpsertMerger<>(ContextType.TENANT, tenantId, TenantDbModel.class, mergeFunction));
   }
 }
