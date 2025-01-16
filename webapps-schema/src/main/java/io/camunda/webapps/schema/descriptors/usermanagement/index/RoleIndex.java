@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import java.util.Optional;
 
-public class RoleIndex extends UserManagementIndexDescriptor implements Prio5Backup {
+public class RoleIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "role";
   public static final String INDEX_VERSION = "8.7.0";
 
@@ -35,7 +37,17 @@ public class RoleIndex extends UserManagementIndexDescriptor implements Prio5Bac
   }
 
   @Override
+  public String getComponentName() {
+    return ComponentNames.CAMUNDA.toString();
+  }
+
+  @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.empty();
   }
 }

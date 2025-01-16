@@ -7,10 +7,12 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
+import java.util.Optional;
 
-public class AuthorizationIndex extends UserManagementIndexDescriptor implements Prio5Backup {
+public class AuthorizationIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "authorization";
   public static final String INDEX_VERSION = "8.7.0";
 
@@ -32,7 +34,17 @@ public class AuthorizationIndex extends UserManagementIndexDescriptor implements
   }
 
   @Override
+  public String getComponentName() {
+    return ComponentNames.CAMUNDA.toString();
+  }
+
+  @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.empty();
   }
 }
