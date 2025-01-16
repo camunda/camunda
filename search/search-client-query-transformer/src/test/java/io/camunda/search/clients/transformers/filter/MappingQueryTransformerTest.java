@@ -16,7 +16,7 @@ import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.MappingFilter.Builder;
 import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.index.MappingIndex;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;

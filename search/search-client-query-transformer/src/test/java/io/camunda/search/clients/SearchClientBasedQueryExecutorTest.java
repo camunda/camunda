@@ -33,7 +33,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.time.OffsetDateTime;
 import java.util.List;

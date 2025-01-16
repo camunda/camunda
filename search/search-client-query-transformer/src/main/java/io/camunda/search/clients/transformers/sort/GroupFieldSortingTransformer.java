@@ -7,8 +7,8 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 public class GroupFieldSortingTransformer implements FieldSortingTransformer {
 

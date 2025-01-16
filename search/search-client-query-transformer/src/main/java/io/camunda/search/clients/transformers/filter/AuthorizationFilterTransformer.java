@@ -11,12 +11,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_TYPE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_RESOURCEIDS;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_TYPE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_KEY;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.PERMISSIONS;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.PERMISSIONS_RESOURCEIDS;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.PERMISSIONS_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
