@@ -29,7 +29,7 @@ public final class ExecutableUserTask extends ExecutableJobWorkerTask {
     this.userTaskProperties = userTaskProperties;
   }
 
-  public List<TaskListener> getTaskListeners(ZeebeTaskListenerEventType eventType) {
+  public List<TaskListener> getTaskListeners(final ZeebeTaskListenerEventType eventType) {
     return taskListeners.stream().filter(tl -> tl.getEventType() == eventType).toList();
   }
 
@@ -43,5 +43,9 @@ public final class ExecutableUserTask extends ExecutableJobWorkerTask {
 
   public boolean hasTaskListeners(final ZeebeTaskListenerEventType eventType) {
     return !getTaskListeners(eventType).isEmpty();
+  }
+
+  public boolean hasTaskListeners() {
+    return !getTaskListeners().isEmpty();
   }
 }

@@ -171,6 +171,62 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("samwise").assign();
+
+    completeJobs(processInstanceKey, listenerType);
+
+    final var listenerJob =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listenerType + "_2")
+            .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(jobRecords(JobIntent.CANCELED).withProcessInstanceKey(processInstanceKey).getFirst())
+        .extracting(Record::getKey)
+        .isEqualTo(listenerJob.getKey());
+  }
+
+  @Test
+  public void shouldResolveTaskListenerIncidentWhenTerminatingElementInstance() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("samwise").assign();
+
+    completeJobs(processInstanceKey, listenerType);
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType + "_2").withRetries(0).fail();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(IncidentIntent.RESOLVED)
+                .getFirst())
+        .extracting(Record::getKey)
+        .isEqualTo(incident.getKey());
+  }
+
+  @Test
   public void shouldRejectUserTaskAssignmentWhenTaskListenerRejectsTheOperation() {
     // given
     final long processInstanceKey =
