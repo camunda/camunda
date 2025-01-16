@@ -59,7 +59,7 @@ public class OperatePermissionsIT {
   @BeforeAll
   public static void beforeAll() throws Exception {
     final var authorizationsUtil =
-        AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress());
+        AuthorizationsUtil.create(testInstance, testInstance.getDBHostAddress());
     final var defaultClient = authorizationsUtil.getDefaultClient();
     // create super user that can read all process definitions
     final var superCamundaClient =

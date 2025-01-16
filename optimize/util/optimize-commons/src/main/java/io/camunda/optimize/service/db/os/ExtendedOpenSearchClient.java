@@ -33,7 +33,6 @@ import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpMapper;
-import org.opensearch.client.json.ObjectBuilderDeserializer;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -41,10 +40,6 @@ import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
-import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse.Builder;
-import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
 import org.opensearch.client.transport.JsonEndpoint;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.endpoints.EndpointWithResponseMapperAttr;
@@ -181,40 +176,6 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
     final JsonEndpoint<Map<String, Object>, HashMap, ErrorResponse> endpoint =
         arbitraryEndpoint(method, path, getDeserializer(HashMap.class));
     return arbitraryRequest(json, endpoint);
-  }
-
-  /**
-   * Standard opensearch GetSnapshotResponse builder considers fields "total" and "remaining" to be
-   * mandatory in response. Hovever, OS server doesn't provide them, so workarounding the
-   * getSnapshots request by setting them to 0.
-   */
-  public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
-      throws IOException, OpenSearchException {
-    final JsonpMapper jsonpMapper = transport.jsonpMapper();
-    final String snapshots = String.join(",", getSnapshotRequest.snapshot());
-    final JsonpDeserializer<GetSnapshotResponse> deserializer =
-        ObjectBuilderDeserializer.lazy(
-            () -> new Builder().total(0).remaining(0),
-            op ->
-                op.add(
-                    Builder::snapshots,
-                    JsonpDeserializer.arrayDeserializer(SnapshotInfo._DESERIALIZER),
-                    "snapshots"));
-    final String json =
-        arbitraryRequestAsString(
-            "GET", format("/_snapshot/%s/%s", getSnapshotRequest.repository(), snapshots), "{}");
-    return deserialize(json, deserializer);
-  }
-
-  private <R> R deserialize(final String json, final JsonpDeserializer<R> deserializer) {
-    try (final JsonParser parser = parser(json)) {
-      return deserializer.deserialize(parser, transport.jsonpMapper());
-    }
-  }
-
-  private JsonParser parser(final String json) {
-    final InputStream is = new ByteArrayInputStream(json.getBytes());
-    return transport.jsonpMapper().jsonProvider().createParser(is);
   }
 
   private <R> R arbitraryRequest(

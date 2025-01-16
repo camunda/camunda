@@ -25,7 +25,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 
-public class TestRestManagementClient {
+public class TestRestManagementClient implements AutoCloseable {
 
   private static final ObjectMapper OBJECT_MAPPER =
       JsonMapper.builder().addModule(new JavaTimeModule()).build();
@@ -106,5 +106,10 @@ public class TestRestManagementClient {
     } catch (final IOException | InterruptedException e) {
       return Either.left(e);
     }
+  }
+
+  @Override
+  public void close() throws Exception {
+    httpClient.close();
   }
 }

@@ -11,5 +11,6 @@ public enum SnapshotState {
   FAILED,
   PARTIAL,
   STARTED,
-  SUCCESS;
+  SUCCESS,
+  IN_PROGRESS;
 }
