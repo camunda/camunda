@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,16 +58,24 @@ public class IncidentNotifier {
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final IncidentNotifierConfiguration configuration;
   private final HttpClient httpClient;
+  private final Executor executor;
 
   public IncidentNotifier(
       final M2mTokenManager m2mTokenManager,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final IncidentNotifierConfiguration configuration,
-      final HttpClient httpClient) {
+      final HttpClient httpClient,
+      final Executor executor) {
     this.m2mTokenManager = m2mTokenManager;
     this.processCache = processCache;
     this.configuration = configuration;
     this.httpClient = httpClient;
+    this.executor = executor;
+  }
+
+  public void notifyAsync(final List<IncidentEntity> incidents) {
+    CompletableFuture.runAsync(() -> notifyOnIncidents(incidents), executor);
+    LOGGER.debug("Incident notification is scheduled");
   }
 
   public void notifyOnIncidents(final List<IncidentEntity> incidents) {

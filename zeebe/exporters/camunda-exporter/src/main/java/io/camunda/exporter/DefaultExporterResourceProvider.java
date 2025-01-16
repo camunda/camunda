@@ -97,6 +97,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.net.http.HttpClient;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * This is the class where teams should make their components such as handlers, and index/index
@@ -109,6 +111,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private Set<ExportHandler<?, ?>> exportHandlers;
 
   private ExporterMetadata exporterMetadata;
+  private ExecutorService executor;
 
   @Override
   public void init(
@@ -138,9 +141,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     final M2mTokenManager m2mTokenManager =
         new M2mTokenManager(configuration.getNotifier(), HttpClient.newHttpClient());
+    executor = Executors.newVirtualThreadPerTaskExecutor();
     final IncidentNotifier incidentNotifier =
         new IncidentNotifier(
-            m2mTokenManager, processCache, configuration.getNotifier(), HttpClient.newHttpClient());
+            m2mTokenManager,
+            processCache,
+            configuration.getNotifier(),
+            HttpClient.newHttpClient(),
+            executor);
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
@@ -194,7 +202,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromProcessInstanceHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
-                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache,
+                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(),
+                processCache,
                 incidentNotifier),
             new SequenceFlowHandler(
                 indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
@@ -248,6 +257,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
             new MigratedVariableHandler(
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()));
+  }
+
+  @Override
+  public void close() {
+    if (executor != null) {
+      executor.shutdown();
+    }
   }
 
   @Override

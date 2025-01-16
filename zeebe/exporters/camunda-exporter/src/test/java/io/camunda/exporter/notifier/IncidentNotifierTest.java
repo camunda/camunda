@@ -87,7 +87,7 @@ class IncidentNotifierTest {
     final IncidentNotifierConfiguration configuration = new IncidentNotifierConfiguration();
     configuration.setWebhook(ALERT_WEBHOOKURL_URL);
     incidentNotifier =
-        new IncidentNotifier(m2mTokenManager, processCache, configuration, httpClient);
+        new IncidentNotifier(m2mTokenManager, processCache, configuration, httpClient, null);
     when(processCache.get(any()))
         .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null)));
   }

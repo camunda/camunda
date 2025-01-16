@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   private final IncidentNotifier incidentNotifier;
 
   public IncidentHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final String indexName,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final IncidentNotifier incidentNotifier) {
     this.indexName = indexName;
     this.processCache = processCache;
@@ -130,7 +130,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
 
     if (Objects.equals(intent, IncidentIntent.CREATED)) {
-      CompletableFuture.runAsync(() -> incidentNotifier.notifyOnIncidents(List.of(entity)));
+      incidentNotifier.notifyAsync(List.of(entity));
     }
   }
 
