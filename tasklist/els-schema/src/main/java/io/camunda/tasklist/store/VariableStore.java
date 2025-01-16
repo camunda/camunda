@@ -113,7 +113,8 @@ public interface VariableStore {
       return super.get(currentFlowNodeInstanceId);
     }
 
-    public void setParent(final String currentFlowNodeInstanceId, final String parentFlowNodeInstanceId) {
+    public void setParent(
+        final String currentFlowNodeInstanceId, final String parentFlowNodeInstanceId) {
       super.put(currentFlowNodeInstanceId, parentFlowNodeInstanceId);
     }
 
@@ -148,7 +149,8 @@ public interface VariableStore {
     private List<String> varNames;
     private Set<String> fieldNames = new HashSet<>();
 
-    public static GetVariablesRequest createFrom(final TaskEntity taskEntity, final Set<String> fieldNames) {
+    public static GetVariablesRequest createFrom(
+        final TaskEntity taskEntity, final Set<String> fieldNames) {
       return new GetVariablesRequest()
           .setTaskId(String.valueOf(taskEntity.getKey()))
           .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
@@ -166,7 +168,9 @@ public interface VariableStore {
     }
 
     public static GetVariablesRequest createFrom(
-        final TaskSearchView taskSearchView, final List<String> varNames, final Set<String> fieldNames) {
+        final TaskSearchView taskSearchView,
+        final List<String> varNames,
+        final Set<String> fieldNames) {
       return new GetVariablesRequest()
           .setTaskId(taskSearchView.getId())
           .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())

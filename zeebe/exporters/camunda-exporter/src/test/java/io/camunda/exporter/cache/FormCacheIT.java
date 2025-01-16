@@ -18,7 +18,7 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.utils.SearchDBExtension;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.function.Consumer;

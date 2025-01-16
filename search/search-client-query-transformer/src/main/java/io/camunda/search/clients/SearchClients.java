@@ -161,7 +161,7 @@ public class SearchClients
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.tasklist.FormEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.form.FormEntity.class);
   }
 
   @Override

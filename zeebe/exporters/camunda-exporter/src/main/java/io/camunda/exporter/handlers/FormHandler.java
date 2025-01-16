@@ -10,7 +10,7 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;

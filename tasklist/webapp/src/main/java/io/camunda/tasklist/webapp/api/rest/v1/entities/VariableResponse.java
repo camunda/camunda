@@ -68,8 +68,7 @@ public class VariableResponse {
   }
 
   public VariableResponse addDraft(final DraftTaskVariableEntity draftTaskVariable) {
-    draft =
-        new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue());
+    draft = new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue());
     return this;
   }
 
