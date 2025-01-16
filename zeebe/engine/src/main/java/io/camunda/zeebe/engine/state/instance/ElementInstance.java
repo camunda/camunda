@@ -49,8 +49,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    *
    * @since 8.7
    */
-  private final IntegerProperty calledProcessDepthProp =
-      new IntegerProperty("calledProcessDepth", 0);
+  private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
 
   public ElementInstance() {
     super(13);
@@ -67,7 +66,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(userTaskKeyProp)
         .declareProperty(executionListenerIndexProp)
-        .declareProperty(calledProcessDepthProp);
+        .declareProperty(processDepth);
   }
 
   public ElementInstance(
@@ -256,11 +255,11 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     executionListenerIndexProp.setValue(0);
   }
 
-  public int getCalledProcessDepth() {
-    return calledProcessDepthProp.getValue();
+  public int getProcessDepth() {
+    return processDepth.getValue();
   }
 
-  public void setCalledProcessDept(final int depth) {
-    calledProcessDepthProp.setValue(depth);
+  public void setProcessDepth(final int depth) {
+    processDepth.setValue(depth);
   }
 }

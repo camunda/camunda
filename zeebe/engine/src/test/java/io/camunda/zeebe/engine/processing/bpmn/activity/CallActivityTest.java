@@ -42,8 +42,7 @@ public final class CallActivityTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withEngineConfig(
-              config -> config.setDefaultCallActivityMaxDepth(CUSTOM_CALL_ACTIVITY_DEPTH))
+          .withEngineConfig(config -> config.setMaxProcessDepth(CUSTOM_CALL_ACTIVITY_DEPTH))
           .withFeatureFlags(
               new FeatureFlags(
                   true, true, true, true, ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR, true));
