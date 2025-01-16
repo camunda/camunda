@@ -77,10 +77,9 @@ public class UserController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
-    return RequestMapper.executeServiceMethod(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request),
-        ResponseMapper::toUserCreateResponse);
+            userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
   }
 
   @CamundaPutMapping(
