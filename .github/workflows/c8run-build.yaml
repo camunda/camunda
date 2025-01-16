@@ -35,6 +35,18 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci NEXUS_USERNAME;
+            secret/data/products/distribution/ci NEXUS_PASSWORD;
+
       - name: print architecture
         run: arch
 
@@ -43,6 +55,8 @@ jobs:
         working-directory: ./c8run
         env:
           GH_TOKEN: ${{ github.token }}
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       - if: ${{ matrix.os == 'macos-13' }}
         name: Set env
@@ -108,11 +122,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci NEXUS_USERNAME;
+            secret/data/products/distribution/ci NEXUS_PASSWORD;
+
       - name: make a package
         run: .\package.bat
         working-directory: .\c8run
         env:
           GH_TOKEN: ${{ github.token }}
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
       - uses: actions/setup-java@v4
         with:
