@@ -98,7 +98,7 @@ public final class BpmnElementProcessors {
     processors.put(
         BpmnElementType.CALL_ACTIVITY,
         new CallActivityProcessor(
-            bpmnBehaviors, stateTransitionBehavior, config.getDefaultCallActivityMaxDepth()));
+            bpmnBehaviors, stateTransitionBehavior, config.getMaxProcessDepth()));
 
     // events
     processors.put(

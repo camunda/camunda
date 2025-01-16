@@ -40,19 +40,19 @@ public final class CallActivityProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
-  private final int maxCallActivityDepth;
+  private final int maxProcessDepth;
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
-      final int maxCallActivityDepth) {
+      final int maxProcessDepth) {
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     stateBehavior = bpmnBehaviors.stateBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
-    this.maxCallActivityDepth = maxCallActivityDepth;
+    this.maxProcessDepth = maxProcessDepth;
   }
 
   @Override
@@ -68,8 +68,8 @@ public final class CallActivityProcessor
             ok -> {
               final var processInstance =
                   stateBehavior.getElementInstance(context.getProcessInstanceKey());
-              final int calledProcessDepth = processInstance.getCalledProcessDepth();
-              if (calledProcessDepth >= maxCallActivityDepth) {
+              final int processDepth = processInstance.getProcessDepth();
+              if (processDepth >= maxProcessDepth) {
                 return Either.left(
                     new Failure(
                         """
@@ -78,7 +78,7 @@ public final class CallActivityProcessor
                         Cancel the root process instance if this was unintentional. \
                         Otherwise, consider increasing the maximum depth, \
                         or use process instance modification to adjust the process instance."""
-                            .formatted(maxCallActivityDepth),
+                            .formatted(maxProcessDepth),
                         ErrorType.CALLED_ELEMENT_ERROR));
               }
               return Either.right(null);
