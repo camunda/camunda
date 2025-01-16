@@ -7,11 +7,13 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-public class PostImporterQueueTemplate extends OperateTemplateDescriptor
+public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
 
   public static final String INDEX_NAME = "post-importer-queue";
@@ -36,5 +38,10 @@ public class PostImporterQueueTemplate extends OperateTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.3.0";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }
