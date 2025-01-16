@@ -3607,56 +3607,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /users/{userKey}/authorizations/search:
-    post:
-      tags:
-        - Authorization
-      summary: "Query user authorizations"
-      description: |
-        Search for user authorizations based on given criteria.
-      operationId: "findUserAuthorizations"
-      parameters:
-        - name: userKey
-          in: path
-          required: true
-          description: The key of the userKey of the authorization.
-          schema:
-            type: integer
-            format: int64
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AuthorizationSearchQueryRequest"
-        required: true
-      responses:
-        "200":
-          description: The user authorization search result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthorizationSearchResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/AuthorizationSearchResponse"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/AuthorizationSearchResult"
-        "400":
-          description: >
-            The user authorization search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
   /users/{username}:
     delete:
       tags:
