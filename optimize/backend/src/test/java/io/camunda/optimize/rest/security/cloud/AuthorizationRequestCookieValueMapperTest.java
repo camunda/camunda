@@ -25,7 +25,7 @@ public class AuthorizationRequestCookieValueMapperTest {
     final OAuth2AuthorizationRequest authorizationRequest =
         OAuth2AuthorizationRequest.authorizationCode()
             .authorizationUri("https://weblogin.cloud.dev.ultrawombat.com/authorize")
-            .redirectUri("http://localhost:8090/sso-callback?uuid=optimize")
+            .redirectUri("http://localhost:8080/sso-callback?uuid=optimize")
             .clientId("whatever")
             .scopes(Set.of("openid", "profile"))
             .state("myState")

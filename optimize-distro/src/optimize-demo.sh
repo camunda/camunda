@@ -13,13 +13,13 @@
 # the documentation: https://docs.camunda.io/optimize/${docs.version}/self-managed/optimize-deployment/install-and-start/
 
 function checkStartup {
-	RETRIES=20
+  RETRIES=20
     SLEEP_TIME=20
     URL=$1
     NAME=$2
     COMMAND="curl -XGET $URL"
 
-	until ${COMMAND}&>/dev/null;
+  until ${COMMAND}&>/dev/null;
       do
         sleep ${SLEEP_TIME}
         RETRIES=$(( RETRIES - 1 ))
@@ -30,7 +30,7 @@ function checkStartup {
         echo "Polling $NAME ... $RETRIES retries left"
       fi
     done
-	echo "$NAME has successfully been started.";
+  echo "$NAME has successfully been started.";
 }
 
 # make sure to kill background/ child processes as well
@@ -80,7 +80,7 @@ SCRIPT_PATH="./optimize-startup.sh"
 bash "$SCRIPT_PATH" "$@" </dev/null > "$OPTIMIZE_STARTUP_LOG_FILE" 2>&1 &
 
 # Check if Optimize has been started
-URL="http://localhost:8090"
+URL="http://localhost:8080"
 checkStartup $URL "Camunda Optimize"
 
 # Open Optimize in the browser
@@ -96,16 +96,16 @@ if [ -z "$BROWSER" ]; then
 fi
 
 if [ -z "$BROWSER" ]; then
-  (sleep 10; echo -e "Sorry for the inconvenience, but it wasn't possible to locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8090/login";) &
+  (sleep 10; echo -e "Sorry for the inconvenience, but it wasn't possible to locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8080/login";) &
 else
-  (sleep 2; $BROWSER "http://localhost:8090";) &
+  (sleep 2; $BROWSER "http://localhost:8080";) &
 fi
 
 # print some info for the user
 echo
 echo "You can now view Camunda Optimize in your browser."
 echo
-echo -e "\t http://localhost:8090"
+echo -e "\t http://localhost:8080"
 echo
 
 wait

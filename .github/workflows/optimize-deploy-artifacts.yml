@@ -77,7 +77,7 @@ jobs:
         IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
 
     - name: Wait for Optimize to start
-      run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
+      run: ./.github/optimize/scripts/wait-for.sh http://localhost:8080/ready
     - name: Execute health check and push docker image
       uses: ./.github/actions/execute-healthcheck-and-push-image
       with:

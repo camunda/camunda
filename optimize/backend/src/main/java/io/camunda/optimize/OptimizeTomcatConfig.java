@@ -13,19 +13,13 @@ import io.camunda.optimize.rest.HealthRestService;
 import io.camunda.optimize.rest.LocalizationRestService;
 import io.camunda.optimize.rest.UIConfigurationRestService;
 import io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig;
-import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.PanelNotificationConstants;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import java.util.Optional;
 import org.apache.catalina.connector.Connector;
-import org.apache.coyote.http2.Http2Protocol;
-import org.apache.tomcat.util.net.SSLHostConfig;
-import org.apache.tomcat.util.net.SSLHostConfigCertificate;
-import org.apache.tomcat.util.net.SSLHostConfigCertificate.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,20 +83,9 @@ public class OptimizeTomcatConfig {
           factory.setContextPath(contextPath.get());
         }
 
-        // NOTE: With the current implementation, we are always installing 2 connectors,
-        //   one for HTTP, one for HTTPs. The latter can be HTTP/1.1 or HTTP/2 depending
-        //   on the configuration.
-
         factory.addConnectorCustomizers(
             connector -> {
-              configureHttpConnector(connector);
-            });
-
-        factory.addAdditionalTomcatConnectors(
-            new Connector() {
-              {
-                configureHttpsConnector(this);
-              }
+              applyCommonConfiguration(connector);
             });
       }
     };
@@ -139,27 +122,6 @@ public class OptimizeTomcatConfig {
     return registrationBean;
   }
 
-  public int getPort(final String portType) {
-    final String portProperty = environment.getProperty(portType);
-    if (portProperty != null) {
-      try {
-        return Integer.parseInt(portProperty);
-      } catch (final NumberFormatException exception) {
-        throw new OptimizeConfigurationException("Error while determining container port");
-      }
-    }
-
-    if (portType.equals(EnvironmentPropertiesConstants.HTTPS_PORT_KEY)) {
-      return configurationService.getContainerHttpsPort();
-    }
-
-    final Optional<Integer> httpPort = configurationService.getContainerHttpPort();
-    if (httpPort.isEmpty()) {
-      throw new OptimizeConfigurationException("HTTP port not configured");
-    }
-    return httpPort.get();
-  }
-
   public Optional<String> getContextPath() {
     // If the property is set by env var (the case when starting a new Optimize in ITs), this takes
     // precedence over config
@@ -170,56 +132,12 @@ public class OptimizeTomcatConfig {
     return contextPath;
   }
 
-  private SSLHostConfig getSslHostConfig() {
-    final SSLHostConfig sslHostConfig = new SSLHostConfig();
-    sslHostConfig.setHostName(configurationService.getContainerHost());
-
-    final SSLHostConfigCertificate cert =
-        new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
-    cert.setCertificateKeystoreFile(configurationService.getContainerKeystoreLocation());
-    cert.setCertificateKeystorePassword(configurationService.getContainerKeystorePassword());
-    sslHostConfig.addCertificate(cert);
-
-    return sslHostConfig;
-  }
-
-  private void enableGzipSupport(final Connector connector) {
-    connector.setProperty("compression", "on");
-    connector.setProperty("compressionMinSize", "23");
-    connector.setProperty("compressionNoCompressionMethods", ""); // all methods
-    connector.setProperty("useSendfile", "false");
-    connector.setProperty("compressableMimeType", String.join(",", COMPRESSED_MIME_TYPES));
-  }
-
   private void applyCommonConfiguration(final Connector connector) {
-    connector.setXpoweredBy(false); // do not send server version header
-    enableGzipSupport(connector);
     connector.setProperty(
         "maxHttpRequestHeaderSize",
         String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
     connector.setProperty(
         "maxHttpResponseHeaderSize",
         String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
-  }
-
-  private void configureHttpConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
-    connector.setScheme("http");
-    connector.setSecure(false);
-  }
-
-  public void configureHttpsConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
-    connector.setScheme("https");
-    connector.setSecure(true);
-
-    connector.setProperty("protocol", HTTP11_NIO_PROTOCOL);
-    if (configurationService.getContainerHttp2Enabled()) {
-      connector.addUpgradeProtocol(new Http2Protocol());
-    }
-
-    connector.addSslHostConfig(getSslHostConfig());
   }
 }

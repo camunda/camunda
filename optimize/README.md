@@ -55,7 +55,7 @@ docker-compose -f docker-compose.ccsm-without-optimize.yml up -d
 ```
 
 This will start all the components of Identity, Elasticsearch, Zeebe, and Optimize. Optimize will be
-available at localhost:8090.
+available at localhost:8080.
 
 Optimize then needs to be started in C8SM mode, and with the following environment variables:
 

@@ -95,7 +95,7 @@ jobs:
         working-directory: ./optimize/client
         run: yarn start &
       - name: Wait for backend to start
-        run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/api/readyz
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:8080/api/readyz
       - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
       - name: 'start e2e test'

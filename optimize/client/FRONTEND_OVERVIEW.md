@@ -48,10 +48,10 @@ Below is a simplified visual representation of the routing setup:
 
 ## Proxying API requests
 
-To handle API requests in development, we use a proxy setup to forward requests from the front-end server (running on `localhost:3000`) to the backend server (running on `localhost:8090`). Here is an example of how this works:
+To handle API requests in development, we use a proxy setup to forward requests from the front-end server (running on `localhost:3000`) to the backend server (running on `localhost:8080`). Here is an example of how this works:
 
 1. When the `Home.js` component loads entities by calling `loadEntities()`, it makes a request to `/api/entities`.
-2. The request made to `/api/entities` by the front-end is forwarded to `localhost:8090/api/entities` on the backend server, which returns the list of entities to the front-end.
+2. The request made to `/api/entities` by the front-end is forwarded to `localhost:8080/api/entities` on the backend server, which returns the list of entities to the front-end.
 
 ## Project folder structure
 

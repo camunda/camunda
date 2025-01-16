@@ -61,7 +61,7 @@ yarn start-backend-cloud
 ```
 
 > **Tip:**
-> Ensure no active Docker containers are running on the Optimize ports (e.g., 8090) before starting the backend.
+> Ensure no active Docker containers are running on the Optimize ports (e.g., 8080) before starting the backend.
 
 Then, in a new terminal:
 

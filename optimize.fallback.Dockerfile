@@ -62,7 +62,7 @@ ENV WAIT_FOR_TIMEOUT=30
 ENV TZ=UTC
 ENV CONTAINER_HOST=0.0.0.0
 
-EXPOSE 8090 8091
+EXPOSE 8080 8091
 
 RUN apk update && apk upgrade && \
     apk add --no-cache bash openjdk21-jre tzdata

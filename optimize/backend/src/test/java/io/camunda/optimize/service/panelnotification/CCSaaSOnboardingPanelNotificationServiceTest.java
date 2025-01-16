@@ -63,7 +63,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
     returnedDefWithName.setName(PROCESS_NAME);
     when(definitionService.getDefinition(any(), any(), any(), any()))
         .thenReturn(Optional.of(returnedDefWithName));
-    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8090/" + CLUSTER_ID);
+    when(rootUrlGenerator.getRootUrl()).thenReturn("http://localhost:8080/" + CLUSTER_ID);
 
     // when
     final ArgumentCaptor<PanelNotificationRequestDto> actualNotification =
@@ -98,7 +98,7 @@ public class CCSaaSOnboardingPanelNotificationServiceTest {
         .identifier("initialVisitToInstantDashboard")
         .href(
             String.format(
-                "http://localhost:8090/%s/#/dashboard/instant/%s", CLUSTER_ID, PROCESS_KEY))
+                "http://localhost:8080/%s/#/dashboard/instant/%s", CLUSTER_ID, PROCESS_KEY))
         .label("View instant preview dashboard")
         .build();
   }

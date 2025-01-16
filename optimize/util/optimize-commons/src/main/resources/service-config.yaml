@@ -102,7 +102,7 @@ container:
   ports:
     # A port number that will be used by Optimize to process HTTP connections.
     # If set to null, ~ or left empty, http connections won't be accepted.
-    http: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP:8090}
+    http: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP:8080}
     # A port number that will be used by Optimize to process
     # secure HTTPS connections.
     https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}

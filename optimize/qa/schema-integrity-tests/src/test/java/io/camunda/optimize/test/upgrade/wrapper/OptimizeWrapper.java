@@ -46,7 +46,7 @@ public class OptimizeWrapper {
     this.optimizeVersion = optimizeVersion;
     this.databaseType = databaseType;
     optimizeDirectory = baseDirectory + "/" + optimizeVersion;
-    requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8090/api");
+    requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8080/api");
     this.databasePort = databasePort;
   }
 

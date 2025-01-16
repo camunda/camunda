@@ -63,7 +63,7 @@ start /b "Camunda Optimize" cmd /c "%BASEDIR%\optimize-startup.bat" %* >"%OPTIMI
 
 
 :: command to query optimize
-set COMMAND=curl.exe -f -XGET http://localhost:8090
+set COMMAND=curl.exe -f -XGET http://localhost:8080
 :: query Optimize if it's up
 set RETRIES=5
 :while2
@@ -82,13 +82,13 @@ if %ERRORLEVEL% neq 0 (
 echo Optimize has successfully been started.
 
 :: open Optimize in the browser
-start "" http://localhost:8090
+start "" http://localhost:8080
 
 :: print some info for the user
-set TAB=^ ^ ^ ^ 
+set TAB=^ ^ ^ ^
 echo.
 echo You can now view Camunda Optimize in your browser.
 echo.
-echo %TAB%http://localhost:8090
+echo %TAB%http://localhost:8080
 echo.
 
