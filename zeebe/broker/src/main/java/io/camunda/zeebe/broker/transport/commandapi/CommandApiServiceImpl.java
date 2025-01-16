@@ -27,10 +27,14 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CommandApiServiceImpl extends Actor
     implements DiskSpaceUsageListener, CommandApiService {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger("io.camunda.zeebe.broker.transport.backpressure.CommandRateLimiter");
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
@@ -91,6 +95,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   public Consumer<TypedRecord<?>> getOnProcessedListener(final int partitionId) {
     final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
+    LOG.debug("Get OnProcessedListener for partition {} - {}", partitionId, partitionLimiter);
     return typedRecord -> {
       if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {
         partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
