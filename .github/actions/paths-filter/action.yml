@@ -136,7 +136,7 @@ outputs:
     value: >-
       ${{
         github.event_name == 'push' ||
-        steps.filter-common.outputs.protobuf-change == 'true'
+        (steps.filter-common.outputs.protobuf-change == 'true' &&  github.event_name != 'schedule')
       }}
   openapi-changes:
     description: Output whether any C8 OpenAPI code has changed
