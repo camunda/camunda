@@ -14,7 +14,7 @@ import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.util.LazySupplier;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import java.util.List;
 import java.util.function.Supplier;

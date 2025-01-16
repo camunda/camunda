@@ -17,8 +17,8 @@ import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

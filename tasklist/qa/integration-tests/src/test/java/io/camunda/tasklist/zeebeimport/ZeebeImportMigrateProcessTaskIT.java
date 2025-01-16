@@ -19,7 +19,7 @@ import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

@@ -8,8 +8,8 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.OffsetDateTime;

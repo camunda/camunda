@@ -39,8 +39,8 @@ import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService
 import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;

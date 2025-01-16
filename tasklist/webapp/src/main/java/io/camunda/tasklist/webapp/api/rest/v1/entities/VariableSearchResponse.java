@@ -8,8 +8,8 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import io.camunda.webapps.schema.entities.VariableEntity;
-import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
-import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -37,7 +37,7 @@ public class VariableSearchResponse {
     return id;
   }
 
-  public VariableSearchResponse setId(String id) {
+  public VariableSearchResponse setId(final String id) {
     this.id = id;
     return this;
   }
@@ -46,7 +46,7 @@ public class VariableSearchResponse {
     return name;
   }
 
-  public VariableSearchResponse setName(String name) {
+  public VariableSearchResponse setName(final String name) {
     this.name = name;
     return this;
   }
@@ -55,13 +55,13 @@ public class VariableSearchResponse {
     return value;
   }
 
-  public VariableSearchResponse setValue(String value) {
+  public VariableSearchResponse setValue(final String value) {
     this.value = value;
     return this;
   }
 
   public VariableSearchResponse resetValue() {
-    this.value = null;
+    value = null;
     return this;
   }
 
@@ -69,7 +69,7 @@ public class VariableSearchResponse {
     return isValueTruncated;
   }
 
-  public VariableSearchResponse setIsValueTruncated(boolean valueTruncated) {
+  public VariableSearchResponse setIsValueTruncated(final boolean valueTruncated) {
     isValueTruncated = valueTruncated;
     return this;
   }
@@ -78,7 +78,7 @@ public class VariableSearchResponse {
     return previewValue;
   }
 
-  public VariableSearchResponse setPreviewValue(String previewValue) {
+  public VariableSearchResponse setPreviewValue(final String previewValue) {
     this.previewValue = previewValue;
     return this;
   }
@@ -87,13 +87,13 @@ public class VariableSearchResponse {
     return draft;
   }
 
-  public VariableSearchResponse setDraft(DraftSearchVariableValue draft) {
+  public VariableSearchResponse setDraft(final DraftSearchVariableValue draft) {
     this.draft = draft;
     return this;
   }
 
-  public VariableSearchResponse addDraft(DraftTaskVariableEntity draftTaskVariable) {
-    this.draft =
+  public VariableSearchResponse addDraft(final DraftTaskVariableEntity draftTaskVariable) {
+    draft =
         new DraftSearchVariableValue()
             .setValue(draftTaskVariable.getFullValue())
             .setIsValueTruncated(draftTaskVariable.getIsPreview())
@@ -101,7 +101,7 @@ public class VariableSearchResponse {
     return this;
   }
 
-  public static VariableSearchResponse createFrom(VariableEntity variableEntity) {
+  public static VariableSearchResponse createFrom(final VariableEntity variableEntity) {
     return new VariableSearchResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
@@ -114,7 +114,7 @@ public class VariableSearchResponse {
   }
 
   public static VariableSearchResponse createFrom(
-      VariableEntity variableEntity, DraftTaskVariableEntity draftTaskVariable) {
+      final VariableEntity variableEntity, final DraftTaskVariableEntity draftTaskVariable) {
     return createFrom(variableEntity)
         .setDraft(
             new DraftSearchVariableValue()
@@ -123,7 +123,7 @@ public class VariableSearchResponse {
                 .setPreviewValue(draftTaskVariable.getValue()));
   }
 
-  public static VariableSearchResponse createFrom(DraftTaskVariableEntity draftTaskVariable) {
+  public static VariableSearchResponse createFrom(final DraftTaskVariableEntity draftTaskVariable) {
     return new VariableSearchResponse()
         .setId(draftTaskVariable.getId())
         .setName(draftTaskVariable.getName())
@@ -134,7 +134,7 @@ public class VariableSearchResponse {
                 .setPreviewValue(draftTaskVariable.getValue()));
   }
 
-  public static VariableSearchResponse createFrom(SnapshotTaskVariableEntity variableEntity) {
+  public static VariableSearchResponse createFrom(final SnapshotTaskVariableEntity variableEntity) {
     return new VariableSearchResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
@@ -144,7 +144,12 @@ public class VariableSearchResponse {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(id, name, value, isValueTruncated, previewValue, draft);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -158,11 +163,6 @@ public class VariableSearchResponse {
         && Objects.equals(value, that.value)
         && Objects.equals(previewValue, that.previewValue)
         && Objects.equals(draft, that.draft);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, value, isValueTruncated, previewValue, draft);
   }
 
   @Override
@@ -191,13 +191,13 @@ public class VariableSearchResponse {
       return value;
     }
 
-    public DraftSearchVariableValue setValue(String value) {
+    public DraftSearchVariableValue setValue(final String value) {
       this.value = value;
       return this;
     }
 
     public DraftSearchVariableValue resetValue() {
-      this.value = null;
+      value = null;
       return this;
     }
 
@@ -205,7 +205,7 @@ public class VariableSearchResponse {
       return isValueTruncated;
     }
 
-    public DraftSearchVariableValue setIsValueTruncated(boolean valueTruncated) {
+    public DraftSearchVariableValue setIsValueTruncated(final boolean valueTruncated) {
       isValueTruncated = valueTruncated;
       return this;
     }
@@ -214,13 +214,18 @@ public class VariableSearchResponse {
       return previewValue;
     }
 
-    public DraftSearchVariableValue setPreviewValue(String previewValue) {
+    public DraftSearchVariableValue setPreviewValue(final String previewValue) {
       this.previewValue = previewValue;
       return this;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public int hashCode() {
+      return Objects.hash(value, isValueTruncated, previewValue);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -231,11 +236,6 @@ public class VariableSearchResponse {
       return isValueTruncated == that.isValueTruncated
           && Objects.equals(value, that.value)
           && Objects.equals(previewValue, that.previewValue);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(value, isValueTruncated, previewValue);
     }
 
     @Override

@@ -15,7 +15,7 @@ import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

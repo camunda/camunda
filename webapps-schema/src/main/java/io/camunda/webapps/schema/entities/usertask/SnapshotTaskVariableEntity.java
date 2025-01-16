@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.tasklist;
+package io.camunda.webapps.schema.entities.usertask;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-/** Represents draft variable with its value when task is in created state. */
-public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVariableEntity> {
+/** Represents variable with its value at the moment when task was completed. */
+public class SnapshotTaskVariableEntity extends AbstractExporterEntity<SnapshotTaskVariableEntity> {
 
   private String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
@@ -20,12 +20,15 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
   private String value;
   private String fullValue;
   private boolean isPreview;
+  private Long processInstanceKey;
+
+  public SnapshotTaskVariableEntity() {}
 
   public String getTaskId() {
     return taskId;
   }
 
-  public DraftTaskVariableEntity setTaskId(final String taskId) {
+  public SnapshotTaskVariableEntity setTaskId(final String taskId) {
     this.taskId = taskId;
     return this;
   }
@@ -34,7 +37,7 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     return name;
   }
 
-  public DraftTaskVariableEntity setName(final String name) {
+  public SnapshotTaskVariableEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -43,7 +46,7 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     return value;
   }
 
-  public DraftTaskVariableEntity setValue(final String value) {
+  public SnapshotTaskVariableEntity setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -52,7 +55,7 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     return fullValue;
   }
 
-  public DraftTaskVariableEntity setFullValue(final String fullValue) {
+  public SnapshotTaskVariableEntity setFullValue(final String fullValue) {
     this.fullValue = fullValue;
     return this;
   }
@@ -61,8 +64,17 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     return isPreview;
   }
 
-  public DraftTaskVariableEntity setIsPreview(final boolean preview) {
+  public SnapshotTaskVariableEntity setIsPreview(final boolean preview) {
     isPreview = preview;
+    return this;
+  }
+
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public SnapshotTaskVariableEntity setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
@@ -70,7 +82,7 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     return tenantId;
   }
 
-  public DraftTaskVariableEntity setTenantId(final String tenantId) {
+  public SnapshotTaskVariableEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -91,12 +103,12 @@ public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVar
     if (!super.equals(o)) {
       return false;
     }
-    final DraftTaskVariableEntity that = (DraftTaskVariableEntity) o;
+    final SnapshotTaskVariableEntity that = (SnapshotTaskVariableEntity) o;
     return isPreview == that.isPreview
+        && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
-        && Objects.equals(fullValue, that.fullValue)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(fullValue, that.fullValue);
   }
 }

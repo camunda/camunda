@@ -156,13 +156,13 @@ import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEnt
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;

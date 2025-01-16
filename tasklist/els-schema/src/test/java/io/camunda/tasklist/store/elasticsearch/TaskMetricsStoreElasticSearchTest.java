@@ -28,7 +28,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -150,7 +150,8 @@ public class TaskMetricsStoreElasticSearchTest {
     assertThat(result).isEmpty();
   }
 
-  private SearchRequest buildSearchRequest(OffsetDateTime now, OffsetDateTime oneHourBefore) {
+  private SearchRequest buildSearchRequest(
+      final OffsetDateTime now, final OffsetDateTime oneHourBefore) {
     final BoolQueryBuilder rangeQuery =
         boolQuery()
             .must(QueryBuilders.termsQuery(EVENT, EVENT_TASK_COMPLETED_BY_ASSIGNEE))

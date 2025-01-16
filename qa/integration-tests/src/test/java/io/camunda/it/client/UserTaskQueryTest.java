@@ -16,7 +16,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
