@@ -36,6 +36,12 @@ jobs:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
         ports:
           - 9200:9200
+        env:
+          xpack.security.enabled: "false"
+          discovery.type: "single-node"
+          action.destructive_requires_name: "false"
+
+
       registry:
         image: registry:2
         ports:
