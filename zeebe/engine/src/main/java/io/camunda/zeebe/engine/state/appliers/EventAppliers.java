@@ -510,8 +510,7 @@ public final class EventAppliers implements EventApplier {
     register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
     register(
         RoleIntent.DELETED,
-        new RoleDeletedApplier(
-            state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
+        new RoleDeletedApplier(state.getRoleState(), state.getAuthorizationState()));
   }
 
   private void registerGroupAppliers(final MutableProcessingState state) {

@@ -48,9 +48,7 @@ public class RoleAppliersTest {
     mappingState = processingState.getMappingState();
     roleDeletedApplier =
         new RoleDeletedApplier(
-            processingState.getRoleState(),
-            processingState.getUserState(),
-            processingState.getAuthorizationState());
+            processingState.getRoleState(), processingState.getAuthorizationState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);
     roleEntityRemovedApplier = new RoleEntityRemovedApplier(processingState);
   }
