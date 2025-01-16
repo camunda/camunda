@@ -31,14 +31,14 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
-final class ProcessInstanceElementActivatingApplier
+final class ProcessInstanceElementActivatingV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public ProcessInstanceElementActivatingApplier(
+  public ProcessInstanceElementActivatingV2Applier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
