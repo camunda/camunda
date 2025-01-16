@@ -7,8 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
-import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import java.util.Optional;
 
