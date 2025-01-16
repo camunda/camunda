@@ -16,6 +16,7 @@
 package io.camunda;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
+import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -63,7 +64,7 @@ public class ProcessIntegrationTest {
 
     // when
     assertThat(processInstance)
-        .hasActiveElements("Received tracking code")
+        .hasActiveElements(byName("Received tracking code"))
         .hasVariable("shipping_id", shippingId);
 
     client
@@ -76,7 +77,10 @@ public class ProcessIntegrationTest {
     // then
     assertThat(processInstance)
         .hasCompletedElements(
-            "Collect money", "Fetch items", "Ship parcel", "Received tracking code")
+            byName("Collect money"),
+            byName("Fetch items"),
+            byName("Ship parcel"),
+            byName("Received tracking code"))
         .isCompleted();
 
     verify(paymentService).processPayment(orderId);
@@ -104,15 +108,15 @@ public class ProcessIntegrationTest {
 
     // when
     assertThat(processInstance)
-        .hasActiveElements("Received tracking code")
+        .hasActiveElements(byName("Received tracking code"))
         .hasVariable("shipping_id", shippingId);
 
     processTestContext.increaseTime(Duration.ofDays(2));
 
     // then
     assertThat(processInstance)
-        .hasCompletedElements("Request tracking code")
-        .hasActiveElements("Received tracking code")
+        .hasCompletedElements(byName("Request tracking code"))
+        .hasActiveElements(byName("Received tracking code"))
         .isActive();
 
     verify(paymentService).processPayment(orderId);

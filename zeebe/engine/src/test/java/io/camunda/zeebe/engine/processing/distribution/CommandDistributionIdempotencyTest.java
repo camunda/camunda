@@ -483,11 +483,7 @@ public class CommandDistributionIdempotencyTest {
                 UserIntent.DELETE,
                 () -> {
                   final var user = createUser();
-                  ENGINE
-                      .user()
-                      .deleteUser(user.getKey())
-                      .withUsername(UUID.randomUUID().toString())
-                      .delete();
+                  ENGINE.user().deleteUser(user.getValue().getUsername()).delete();
                 },
                 2),
             UserDeleteProcessor.class,

@@ -20,6 +20,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -390,9 +391,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             """
                 {
                   "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
+                  "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unknown sortBy: unknownField.",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
@@ -610,14 +611,27 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturnVariableForValidUserTaskKey() {
+    final var request =
+        """
+            {
+                "filter":
+                    {
+                        "name": "varName"
+                    }
+
+            }""";
+
     when(userTaskServices.searchUserTaskVariables(
-            VALID_USER_TASK_KEY, variableSearchQuery().build()))
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build()))
         .thenReturn(SEARCH_VAR_QUERY_RESULT);
     // when and then
     webClient
         .post()
         .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables/search")
         .accept(APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
@@ -625,7 +639,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_VARIABLE_RESULT_JSON);
 
     verify(userTaskServices)
-        .searchUserTaskVariables(VALID_USER_TASK_KEY, variableSearchQuery().build());
+        .searchUserTaskVariables(
+            VALID_USER_TASK_KEY,
+            variableSearchQuery().filter(f -> f.nameOperations(Operation.eq("varName"))).build());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {

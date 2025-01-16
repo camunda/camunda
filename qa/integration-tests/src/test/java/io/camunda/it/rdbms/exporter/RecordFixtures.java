@@ -51,6 +51,9 @@ import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRequir
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +106,16 @@ public class RecordFixtures {
     final io.camunda.zeebe.protocol.record.Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.PROCESS);
 
+    final byte[] resource;
+    try {
+      final var resourceUrl =
+          RecordFixtures.class.getClassLoader().getResource("process/process_start_form.bpmn");
+      assert resourceUrl != null;
+      resource = Files.readAllBytes(Path.of(resourceUrl.getPath()));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+
     return ImmutableRecord.builder()
         .from(recordValueRecord)
         .withIntent(ProcessIntent.CREATED)
@@ -112,6 +125,8 @@ public class RecordFixtures {
         .withValue(
             ImmutableProcess.builder()
                 .from((Process) recordValueRecord.getValue())
+                .withResource(resource)
+                .withBpmnProcessId("Process_11hxie4")
                 .withVersion(1)
                 .build())
         .build();
@@ -252,7 +267,7 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getUserRecord(
-      final Long userKey, final UserIntent intent) {
+      final Long userKey, final String username, final UserIntent intent) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.USER);
 
     return ImmutableRecord.builder()
@@ -265,6 +280,7 @@ public class RecordFixtures {
             ImmutableUserRecordValue.builder()
                 .from((UserRecordValue) recordValueRecord.getValue())
                 .withUserKey(userKey)
+                .withUsername(username)
                 .build())
         .build();
   }

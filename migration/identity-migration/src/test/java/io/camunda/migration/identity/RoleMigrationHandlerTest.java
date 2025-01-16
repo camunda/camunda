@@ -8,12 +8,14 @@
 package io.camunda.migration.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
@@ -40,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -82,6 +85,18 @@ public class RoleMigrationHandlerTest {
         .thenReturn(CompletableFuture.completedFuture(new RoleRecord().setRoleKey(2L)));
     when(authorizationServices.patchAuthorization(any()))
         .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+  }
+
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchRoles(anyInt())).thenThrow(new NotImplementedException());
+
+    // when
+    assertThrows(NotImplementedException.class, migrationHandler::migrate);
+
+    // then
+    verify(managementIdentityClient).fetchRoles(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
   }
 
   @Test

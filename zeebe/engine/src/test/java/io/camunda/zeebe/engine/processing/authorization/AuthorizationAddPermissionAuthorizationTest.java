@@ -14,15 +14,13 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -36,43 +34,32 @@ public class AuthorizationAddPermissionAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  @ClassRule
-  public static final EngineRule ENGINE =
+  @Rule
+  public final EngineRule engine =
       EngineRule.singlePartition()
-          .withoutAwaitingIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
-  private static long defaultUserKey = -1L;
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
-
-  @BeforeClass
-  public static void beforeAll() {
-    defaultUserKey =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DEFAULT_USER.getUsername())
-            .getFirst()
-            .getKey();
-  }
 
   @Test
   public void shouldBeAuthorizedToAddPermissionsWithDefaultUser() {
     // given
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
-    ENGINE
+    engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-        .withPermission(PermissionType.DELETE, "*")
-        .add(defaultUserKey);
+        .withPermission(PermissionType.CREATE, "*")
+        .add(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
-                .withOwnerKey(userKey)
+                .withOwnerKey(user.getUserKey())
                 .exists())
         .isTrue();
   }
@@ -80,22 +67,23 @@ public class AuthorizationAddPermissionAuthorizationTest {
   @Test
   public void shouldBeAuthorizedToAddPermissionsWithUser() {
     // given
-    final var userKey = createUser();
-    addPermissionToUser(userKey, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
+    final var user = createUser();
+    addPermissionToUser(
+        user.getUserKey(), AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
 
     // when
-    ENGINE
+    engine
         .authorization()
         .permission()
-        .withOwnerKey(userKey)
+        .withOwnerKey(user.getUserKey())
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-        .withPermission(PermissionType.DELETE, "*")
-        .add(userKey);
+        .withPermission(PermissionType.CREATE, "*")
+        .add(user.getUsername());
 
     // then
     assertThat(
             RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
-                .withOwnerKey(userKey)
+                .withOwnerKey(user.getUserKey())
                 .exists())
         .isTrue();
   }
@@ -103,18 +91,18 @@ public class AuthorizationAddPermissionAuthorizationTest {
   @Test
   public void shouldBeForbiddenToAddPermissionsIfNoPermissions() {
     // given
-    final var userKey = createUser();
+    final var user = createUser();
 
     // when
     final var rejection =
-        ENGINE
+        engine
             .authorization()
             .permission()
-            .withOwnerKey(userKey)
+            .withOwnerKey(user.getUserKey())
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.DELETE, "*")
             .expectRejection()
-            .add(userKey);
+            .add(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
@@ -123,27 +111,27 @@ public class AuthorizationAddPermissionAuthorizationTest {
             "Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'");
   }
 
-  private static long createUser() {
-    return ENGINE
+  private UserRecordValue createUser() {
+    return engine
         .user()
         .newUser(UUID.randomUUID().toString())
         .withPassword(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())
         .create()
-        .getKey();
+        .getValue();
   }
 
   private void addPermissionToUser(
       final long userKey,
       final AuthorizationResourceType authorization,
       final PermissionType permissionType) {
-    ENGINE
+    engine
         .authorization()
         .permission()
         .withOwnerKey(userKey)
         .withResourceType(authorization)
         .withPermission(permissionType, "*")
-        .add(defaultUserKey);
+        .add(DEFAULT_USER.getUsername());
   }
 }

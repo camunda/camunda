@@ -18,10 +18,12 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.process.test.api.assertions.ElementSelector;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
-import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
-import io.camunda.process.test.impl.client.FlowNodeInstanceState;
 import io.camunda.process.test.impl.client.ProcessInstanceDto;
 import io.camunda.process.test.impl.client.ProcessInstanceState;
 import java.util.Arrays;
@@ -69,22 +71,52 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   }
 
   @Override
-  public ProcessInstanceAssert hasActiveElements(final String... elementNames) {
-    hasElementsInState(elementNames, FlowNodeInstanceState.ACTIVE, Objects::nonNull);
+  public ProcessInstanceAssert hasActiveElements(final String... elementIds) {
+    hasElementsInState(
+        asElementIdSelectors(elementIds), FlowNodeInstanceState.ACTIVE, Objects::nonNull);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasCompletedElements(final String... elementNames) {
+  public ProcessInstanceAssert hasActiveElements(final ElementSelector... elementSelectors) {
     hasElementsInState(
-        elementNames, FlowNodeInstanceState.COMPLETED, ProcessInstanceAssertj::isEnded);
+        Arrays.asList(elementSelectors), FlowNodeInstanceState.ACTIVE, Objects::nonNull);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasTerminatedElements(final String... elementNames) {
+  public ProcessInstanceAssert hasCompletedElements(final String... elementIds) {
     hasElementsInState(
-        elementNames, FlowNodeInstanceState.TERMINATED, ProcessInstanceAssertj::isEnded);
+        asElementIdSelectors(elementIds),
+        FlowNodeInstanceState.COMPLETED,
+        ProcessInstanceAssertj::isEnded);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCompletedElements(final ElementSelector... elementSelectors) {
+    hasElementsInState(
+        Arrays.asList(elementSelectors),
+        FlowNodeInstanceState.COMPLETED,
+        ProcessInstanceAssertj::isEnded);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElements(final String... elementIds) {
+    hasElementsInState(
+        asElementIdSelectors(elementIds),
+        FlowNodeInstanceState.TERMINATED,
+        ProcessInstanceAssertj::isEnded);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasTerminatedElements(final ElementSelector... elementSelectors) {
+    hasElementsInState(
+        Arrays.asList(elementSelectors),
+        FlowNodeInstanceState.TERMINATED,
+        ProcessInstanceAssertj::isEnded);
     return this;
   }
 
@@ -104,6 +136,10 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
     variableAssertj.hasVariables(variables);
     return this;
+  }
+
+  private static List<ElementSelector> asElementIdSelectors(final String[] elementIds) {
+    return Arrays.stream(elementIds).map(ElementSelectors::byId).collect(Collectors.toList());
   }
 
   private void hasProcessInstanceInState(
@@ -142,54 +178,70 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   }
 
   private void hasElementsInState(
-      final String[] elementNames,
+      final List<ElementSelector> elementSelectors,
       final FlowNodeInstanceState expectedState,
-      final Predicate<FlowNodeInstanceDto> waitCondition) {
+      final Predicate<FlowNodeInstance> waitCondition) {
 
-    final AtomicReference<List<FlowNodeInstanceDto>> reference =
+    final AtomicReference<List<FlowNodeInstance>> reference =
         new AtomicReference<>(Collections.emptyList());
-
-    final List<String> elementNamesList = Arrays.asList(elementNames);
 
     try {
       Awaitility.await()
           .ignoreException(CamundaClientNotFoundException.class)
           .failFast(
-              () ->
-                  reference.get().stream()
-                      .filter(waitCondition)
-                      .map(FlowNodeInstanceDto::getFlowNodeName)
-                      .collect(Collectors.toSet())
-                      .containsAll(elementNamesList))
+              () -> {
+                final List<FlowNodeInstance> flowNodeInstances =
+                    reference.get().stream().filter(waitCondition).collect(Collectors.toList());
+                return elementSelectors.stream()
+                    .allMatch(
+                        elementSelector ->
+                            flowNodeInstances.stream().anyMatch(elementSelector::test));
+              })
           .untilAsserted(
               () -> {
-                final List<FlowNodeInstanceDto> flowNodeInstances =
+                final List<FlowNodeInstance> flowNodeInstances =
                     dataSource.getFlowNodeInstancesByProcessInstanceKey(actual);
                 reference.set(flowNodeInstances);
 
-                assertThat(flowNodeInstances)
-                    .filteredOn(FlowNodeInstanceDto::getState, expectedState)
-                    .extracting(FlowNodeInstanceDto::getFlowNodeName)
-                    .contains(elementNames);
+                final List<FlowNodeInstance> flowNodeInstancesInState =
+                    flowNodeInstances.stream()
+                        .filter(
+                            flowNodeInstance -> flowNodeInstance.getState().equals(expectedState))
+                        .collect(Collectors.toList());
+
+                assertThat(elementSelectors)
+                    .allMatch(
+                        elementSelector ->
+                            flowNodeInstancesInState.stream().anyMatch(elementSelector::test));
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
 
-      final Map<String, FlowNodeInstanceState> elementStateByName =
-          reference.get().stream()
-              .filter(flowNode -> elementNamesList.contains(flowNode.getFlowNodeName()))
-              .collect(
-                  Collectors.toMap(
-                      FlowNodeInstanceDto::getFlowNodeName, FlowNodeInstanceDto::getState));
+      final List<ElementSelector> selectorsNotMatched =
+          elementSelectors.stream()
+              .filter(
+                  elementSelector ->
+                      reference.get().stream()
+                          .noneMatch(
+                              element ->
+                                  elementSelector.test(element)
+                                      && element.getState().equals(expectedState)))
+              .collect(Collectors.toList());
 
       final String elementsNotInState =
-          Arrays.stream(elementNames)
-              .filter(elementName -> !expectedState.equals(elementStateByName.get(elementName)))
+          selectorsNotMatched.stream()
               .map(
-                  elementName ->
-                      String.format(
-                          "\t- '%s': %s",
-                          elementName, formatState(elementStateByName.get(elementName))))
+                  elementSelector -> {
+                    final FlowNodeInstanceState elementState =
+                        reference.get().stream()
+                            .filter(elementSelector::test)
+                            .findFirst()
+                            .map(FlowNodeInstance::getState)
+                            .orElse(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
+
+                    return String.format(
+                        "\t- '%s': %s", elementSelector.describe(), formatState(elementState));
+                  })
               .collect(Collectors.joining("\n"));
 
       final String failureMessage =
@@ -197,7 +249,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
               "%s should have %s elements %s but the following elements were not %s:\n%s",
               AssertFormatUtil.formatProcessInstance(actual),
               formatState(expectedState),
-              AssertFormatUtil.formatNames(elementNames),
+              formatElementSelectors(elementSelectors),
               formatState(expectedState),
               elementsNotInState);
       fail(failureMessage);
@@ -208,7 +260,7 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
     return processInstance != null && processInstance.getEndDate() != null;
   }
 
-  private static boolean isEnded(final FlowNodeInstanceDto flowNodeInstance) {
+  private static boolean isEnded(final FlowNodeInstance flowNodeInstance) {
     return flowNodeInstance.getEndDate() != null;
   }
 
@@ -221,10 +273,16 @@ public class ProcessInstanceAssertj extends AbstractAssert<ProcessInstanceAssert
   }
 
   private static String formatState(final FlowNodeInstanceState state) {
-    if (state == null) {
+    if (state == null || state == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
       return "not activated";
     } else {
       return state.name().toLowerCase();
     }
+  }
+
+  private static String formatElementSelectors(final List<ElementSelector> elementSelectors) {
+    final List<String> selectorList =
+        elementSelectors.stream().map(ElementSelector::describe).collect(Collectors.toList());
+    return AssertFormatUtil.formatNames(selectorList);
   }
 }

@@ -26,7 +26,7 @@ public class TasklistPermissionServices {
   private static final List<String> WILD_CARD_PERMISSION =
       List.of(IdentityProperties.ALL_RESOURCES);
   private static final Authorization READ_PROC_DEF_AUTH_CHECK =
-      Authorization.of(a -> a.processDefinition().read());
+      Authorization.of(a -> a.processDefinition().readProcessDefinition());
   private static final Authorization CREATE_PROC_INST_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().createProcessInstance());
   private static final Authorization UPDATE_USER_TASK_AUTH_CHECK =

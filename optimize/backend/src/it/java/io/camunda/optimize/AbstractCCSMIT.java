@@ -75,13 +75,6 @@ public abstract class AbstractCCSMIT extends AbstractIT {
         .matches();
   }
 
-  protected static boolean isZeebeVersionPre84() {
-    final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*");
-    return zeebeVersionPattern
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
-  }
-
   public static boolean isZeebeVersionPre85() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.0.*|8.1.*|8.2.*|8.3.*|8.4.*");
     return zeebeVersionPattern
@@ -99,13 +92,14 @@ public abstract class AbstractCCSMIT extends AbstractIT {
   protected static boolean isZeebeVersion87OrLater() {
     final Pattern zeebeVersionPattern = Pattern.compile("8.([7-9]|\\d{2,})");
     return zeebeVersionPattern
-        .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
-        .matches();
+            .matcher(IntegrationTestConfigurationUtil.getZeebeDockerVersion())
+            .matches()
+        || isZeebeVersionSnapshot();
   }
 
-  protected static boolean isZeebeVersionSnapshotOrLatest() {
+  protected static boolean isZeebeVersionSnapshot() {
     final String dockerVersion = IntegrationTestConfigurationUtil.getZeebeDockerVersion();
-    return dockerVersion.equalsIgnoreCase("snapshot") || dockerVersion.equalsIgnoreCase("latest");
+    return dockerVersion.equalsIgnoreCase("snapshot");
   }
 
   protected static boolean isZeebeVersionWithMultiTenancy() {

@@ -30,13 +30,14 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.search.SearchQuerySortRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.DecisionDefinitionFilterRequest;
 import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
 import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +75,8 @@ public class DecisionDefinitionQueryImpl
   @Override
   public DecisionDefinitionQuery sort(final DecisionDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(sorting);
+    request.setSort(
+        SearchQuerySortRequestMapper.toDecisionDefinitionSearchQuerySortRequest(sorting));
     return this;
   }
 

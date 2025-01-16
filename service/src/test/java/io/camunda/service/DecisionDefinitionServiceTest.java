@@ -90,7 +90,9 @@ public final class DecisionDefinitionServiceTest {
     when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(requirementEntity), null, null));
     when(securityContextProvider.isAuthorized(
-            "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
+            "decId",
+            authentication,
+            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
         .thenReturn(true);
 
     // when
@@ -128,7 +130,9 @@ public final class DecisionDefinitionServiceTest {
     when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
     when(securityContextProvider.isAuthorized(
-            "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
+            "decId",
+            authentication,
+            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
         .thenReturn(true);
 
     // then
@@ -148,7 +152,9 @@ public final class DecisionDefinitionServiceTest {
     when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null, null));
     when(securityContextProvider.isAuthorized(
-            "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
+            "decId",
+            authentication,
+            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
         .thenReturn(true);
 
     // when
@@ -168,7 +174,9 @@ public final class DecisionDefinitionServiceTest {
     when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null, null));
     when(securityContextProvider.isAuthorized(
-            "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
+            "decId",
+            authentication,
+            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
         .thenReturn(false);
 
     // when
@@ -177,7 +185,8 @@ public final class DecisionDefinitionServiceTest {
     // then
     final var exception = assertThrows(ForbiddenException.class, executable);
     assertThat(exception.getMessage())
-        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'");
+        .isEqualTo(
+            "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
   }
 
   @Test
@@ -190,7 +199,9 @@ public final class DecisionDefinitionServiceTest {
     when(client.searchDecisionDefinitions(any()))
         .thenReturn(new SearchQueryResult(1, List.of(definitionEntity), null, null));
     when(securityContextProvider.isAuthorized(
-            "decId", authentication, Authorization.of(a -> a.decisionDefinition().read())))
+            "decId",
+            authentication,
+            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
         .thenReturn(false);
 
     // when
@@ -199,7 +210,8 @@ public final class DecisionDefinitionServiceTest {
     // then
     final var exception = assertThrows(ForbiddenException.class, executable);
     assertThat(exception.getMessage())
-        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'");
+        .isEqualTo(
+            "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
     verify(decisionRequirementSearchClient, never())
         .searchDecisionRequirements(any(DecisionRequirementsQuery.class));
   }

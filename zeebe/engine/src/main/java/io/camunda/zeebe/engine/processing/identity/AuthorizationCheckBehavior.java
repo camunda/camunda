@@ -134,7 +134,7 @@ public final class AuthorizationCheckBehavior {
     return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
   }
 
-  private static Optional<Long> getUserKey(final AuthorizationRequest request) {
+  private Optional<Long> getUserKey(final AuthorizationRequest request) {
     return getUserKey(request.getCommand());
   }
 
@@ -319,9 +319,11 @@ public final class AuthorizationCheckBehavior {
         : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private static Optional<Long> getUserKey(final TypedRecord<?> command) {
+  private Optional<Long> getUserKey(final TypedRecord<?> command) {
     return Optional.ofNullable(
-        (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+            (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME))
+        .flatMap(userState::getUser)
+        .map(PersistedUser::getUserKey);
   }
 
   private static Stream<UserTokenClaim> extractUserTokenClaims(final TypedRecord<?> command) {

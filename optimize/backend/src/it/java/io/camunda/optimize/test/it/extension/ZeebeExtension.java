@@ -59,7 +59,7 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     final int databasePort;
     final String zeebeExporterClassName;
     if (IntegrationTestConfigurationUtil.getDatabaseType().equals(DatabaseType.OPENSEARCH)) {
-      databasePort = 9205;
+      databasePort = 9200;
       zeebeExporterClassName = ZEEBE_OPENSEARCH_EXPORTER;
     } else {
       databasePort = 9200;
@@ -250,6 +250,10 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
     camundaClient.newResolveIncidentCommand(incidentKey).send().join();
   }
 
+  public String getZeebeRecordPrefix() {
+    return zeebeRecordPrefix;
+  }
+
   private void handleSingleJob(final String jobType, final JobHandler jobHandler) {
     final AtomicBoolean jobCompleted = new AtomicBoolean(false);
     final JobWorker jobWorker =
@@ -286,9 +290,5 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       camundaClient.close();
       camundaClient = null;
     }
-  }
-
-  public String getZeebeRecordPrefix() {
-    return zeebeRecordPrefix;
   }
 }

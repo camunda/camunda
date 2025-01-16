@@ -79,7 +79,7 @@ public class TenantAwareModifyProcessInstanceTest {
   @Test
   public void shouldRejectModifyInstanceForUnauthorizedTenant() {
     // given
-    final var userKey = ENGINE.user().newUser("username").create().getValue().getUserKey();
+    final var user = ENGINE.user().newUser("username").create().getValue();
     final var tenantKey =
         ENGINE
             .tenant()
@@ -92,7 +92,7 @@ public class TenantAwareModifyProcessInstanceTest {
         .tenant()
         .addEntity(tenantKey)
         .withEntityType(EntityType.USER)
-        .withEntityKey(userKey)
+        .withEntityKey(user.getUserKey())
         .add();
 
     ENGINE
@@ -124,7 +124,7 @@ public class TenantAwareModifyProcessInstanceTest {
             .activateElement("task")
             .terminateElement(task.getKey())
             .expectRejection()
-            .modify(userKey);
+            .modify(user.getUsername());
 
     // then
     assertThat(rejection)

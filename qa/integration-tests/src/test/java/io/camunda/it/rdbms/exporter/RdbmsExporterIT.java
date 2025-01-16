@@ -30,6 +30,7 @@ import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.security.entity.Permission;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -137,6 +138,8 @@ class RdbmsExporterIT {
     final var key = ((Process) processDefinitionRecord.getValue()).getProcessDefinitionKey();
     final var processDefinition = rdbmsService.getProcessDefinitionReader().findOne(key);
     assertThat(processDefinition).isNotEmpty();
+    assertThat(processDefinition).map(ProcessDefinitionEntity::bpmnXml).isPresent();
+    assertThat(processDefinition).map(ProcessDefinitionEntity::formId).contains("test");
   }
 
   @Test
@@ -262,7 +265,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportUpdateAndDeleteUser() {
     // given
-    final var userRecord = getUserRecord(42L, UserIntent.CREATED);
+    final var userRecord = getUserRecord(42L, "test", UserIntent.CREATED);
     final var userRecordValue = ((UserRecordValue) userRecord.getValue());
 
     // when
@@ -278,7 +281,7 @@ class RdbmsExporterIT {
     assertThat(user.get().password()).isEqualTo(userRecordValue.getPassword());
 
     // given
-    final var updateUserRecord = getUserRecord(42L, UserIntent.UPDATED);
+    final var updateUserRecord = getUserRecord(42L, "test", UserIntent.UPDATED);
     final var updateUserRecordValue = ((UserRecordValue) updateUserRecord.getValue());
 
     // when
@@ -294,7 +297,7 @@ class RdbmsExporterIT {
     assertThat(updatedUser.get().password()).isEqualTo(updateUserRecordValue.getPassword());
 
     // when
-    exporter.export(getUserRecord(42L, UserIntent.DELETED));
+    exporter.export(getUserRecord(42L, "test", UserIntent.DELETED));
 
     // then
     final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());

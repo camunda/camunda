@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 public class ManagementIdentityClient {
@@ -47,29 +45,21 @@ public class ManagementIdentityClient {
     this.organizationId = organizationId;
   }
 
-  public List<UserResourceAuthorization> fetchUserResourceAuthorizations(
-      final UserResourceAuthorization lastRecord, final int pageSize) {
+  public List<UserResourceAuthorization> fetchUserResourceAuthorizations(final int pageSize) {
     return new ArrayList<>();
   }
 
   public void markAuthorizationsAsMigrated(final Collection<UserResourceAuthorization> migrated) {}
 
   public List<TenantMappingRule> fetchTenantMappingRules(final int pageSize) {
-    try {
-      return Arrays.stream(
-              Objects.requireNonNull(
-                  restTemplate.getForObject(
-                      MIGRATION_MAPPING_RULE_ENDPOINT,
-                      TenantMappingRule[].class,
-                      pageSize,
-                      MappingRuleType.TENANT)))
-          .toList();
-    } catch (final HttpStatusCodeException e) {
-      if (e.getStatusCode() == HttpStatus.NO_CONTENT) {
-        return new ArrayList<>();
-      }
-      throw e;
-    }
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_MAPPING_RULE_ENDPOINT,
+                    TenantMappingRule[].class,
+                    pageSize,
+                    MappingRuleType.TENANT)))
+        .toList();
   }
 
   public List<UserTenants> fetchUserTenants(final int pageSize) {

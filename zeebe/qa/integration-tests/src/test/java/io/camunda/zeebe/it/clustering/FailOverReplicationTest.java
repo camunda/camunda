@@ -122,18 +122,18 @@ public class FailOverReplicationTest {
 
     clusteringRule.fillSegments(followers, segmentCount);
     final var snapshotMetadata = awaitSnapshot(newLeader);
-    // previous leader might have taken a snapshot already because of internal processing activity
-    final var firstSnapshotOnPreviousLeader =
-        clusteringRule.getSnapshot(previousLeader).orElse(null);
 
     // when
     clusteringRule.connect(previousLeader);
 
     // then -- reconnected member is forced to receive a snapshot because leader has compacted the
     // log after taking the snapshot.
-    final var receivedSnapshot =
-        clusteringRule.waitForNewSnapshotAtBroker(previousLeader, firstSnapshotOnPreviousLeader);
-    assertThat(receivedSnapshot).isEqualTo(snapshotMetadata);
+    Awaitility.await("snapshot received")
+        .pollInterval(Duration.ofMillis(100))
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(clusteringRule.getSnapshot(previousLeader)).hasValue(snapshotMetadata));
   }
 
   // regression test for https://github.com/zeebe-io/zeebe/issues/4810

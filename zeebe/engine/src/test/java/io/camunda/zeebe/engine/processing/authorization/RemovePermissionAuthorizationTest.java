@@ -48,7 +48,7 @@ public class RemovePermissionAuthorizationTest {
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar")
         .add()
         .getValue();
 
@@ -60,7 +60,7 @@ public class RemovePermissionAuthorizationTest {
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
-            .withPermission(PermissionType.DELETE, "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "bar")
             .remove()
             .getValue();
 
@@ -76,7 +76,7 @@ public class RemovePermissionAuthorizationTest {
         .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
         .containsExactly(
             tuple(PermissionType.CREATE, Set.of("foo")),
-            tuple(PermissionType.DELETE, Set.of("bar")));
+            tuple(PermissionType.DELETE_PROCESS, Set.of("bar")));
   }
 
   @Test
@@ -121,7 +121,7 @@ public class RemovePermissionAuthorizationTest {
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar")
         .add()
         .getValue();
 
@@ -132,7 +132,7 @@ public class RemovePermissionAuthorizationTest {
             .permission()
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
             .remove();
 
@@ -143,7 +143,7 @@ public class RemovePermissionAuthorizationTest {
         .hasRejectionReason(
             "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'"
                 .formatted(
-                    PermissionType.DELETE,
+                    PermissionType.DELETE_PROCESS,
                     AuthorizationResourceType.DEPLOYMENT,
                     "[bar, foo]",
                     ownerKey,
@@ -171,7 +171,7 @@ public class RemovePermissionAuthorizationTest {
         .withOwnerKey(roleKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar")
         .add()
         .getValue();
     engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
@@ -183,7 +183,7 @@ public class RemovePermissionAuthorizationTest {
             .permission()
             .withOwnerKey(userKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
             .remove();
 
@@ -194,7 +194,7 @@ public class RemovePermissionAuthorizationTest {
         .hasRejectionReason(
             "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'"
                 .formatted(
-                    PermissionType.DELETE,
+                    PermissionType.DELETE_PROCESS,
                     AuthorizationResourceType.DEPLOYMENT,
                     "[bar, foo]",
                     userKey,
@@ -222,7 +222,7 @@ public class RemovePermissionAuthorizationTest {
         .withOwnerKey(groupKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar")
+        .withPermission(PermissionType.DELETE_PROCESS, "bar")
         .add()
         .getValue();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
@@ -234,7 +234,7 @@ public class RemovePermissionAuthorizationTest {
             .permission()
             .withOwnerKey(userKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
-            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .withPermission(PermissionType.DELETE_PROCESS, "foo", "bar")
             .expectRejection()
             .remove();
 
@@ -245,7 +245,7 @@ public class RemovePermissionAuthorizationTest {
         .hasRejectionReason(
             "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'"
                 .formatted(
-                    PermissionType.DELETE,
+                    PermissionType.DELETE_PROCESS,
                     AuthorizationResourceType.DEPLOYMENT,
                     "[bar, foo]",
                     userKey,

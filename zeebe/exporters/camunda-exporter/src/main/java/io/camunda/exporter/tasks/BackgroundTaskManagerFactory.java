@@ -128,15 +128,18 @@ public final class BackgroundTaskManagerFactory {
             logger),
         1,
         postExport.getDelayBetweenRuns(),
+        postExport.getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
 
   private ReschedulingTask buildBatchOperationUpdateTask() {
+    final var postExport = config.getPostExport();
     return new ReschedulingTask(
         new BatchOperationUpdateTask(batchOperationUpdateRepository, logger, executor),
-        config.getArchiver().getRolloverBatchSize(),
-        config.getArchiver().getDelayBetweenRuns(),
+        1,
+        postExport.getDelayBetweenRuns(),
+        postExport.getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
@@ -179,6 +182,7 @@ public final class BackgroundTaskManagerFactory {
         task,
         config.getArchiver().getRolloverBatchSize(),
         config.getArchiver().getDelayBetweenRuns(),
+        config.getArchiver().getMaxDelayBetweenRuns(),
         executor,
         logger);
   }

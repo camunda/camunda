@@ -69,13 +69,14 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
           ADMIN_USER_PASSWORD,
           new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.READ, List.of(PROCESS_ID)),
+              ResourceTypeEnum.PROCESS_DEFINITION,
+              PermissionTypeEnum.READ_PROCESS_DEFINITION,
+              List.of(PROCESS_ID)),
           new Permissions(
               ResourceTypeEnum.PROCESS_DEFINITION,
               PermissionTypeEnum.READ_PROCESS_INSTANCE,
               List.of(PROCESS_ID)),
           new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
           new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
     }
 

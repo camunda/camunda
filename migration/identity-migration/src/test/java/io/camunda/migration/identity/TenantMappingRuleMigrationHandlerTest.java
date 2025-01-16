@@ -8,6 +8,7 @@
 package io.camunda.migration.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -15,6 +16,7 @@ import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.MappingRule.Operator;
@@ -38,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -66,6 +69,19 @@ final class TenantMappingRuleMigrationHandlerTest {
             new ManagementIdentityTransformer(),
             tenantServices,
             mappingServices);
+  }
+
+  @Test
+  void stopWhenIdentityEndpointNotFound() {
+    when(managementIdentityClient.fetchTenantMappingRules(anyInt()))
+        .thenThrow(new NotImplementedException());
+
+    // when
+    assertThrows(NotImplementedException.class, migrationHandler::migrate);
+
+    // then
+    verify(managementIdentityClient).fetchTenantMappingRules(anyInt());
+    verifyNoMoreInteractions(managementIdentityClient);
   }
 
   @Test

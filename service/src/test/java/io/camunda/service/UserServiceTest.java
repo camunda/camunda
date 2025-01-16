@@ -76,15 +76,16 @@ public class UserServiceTest {
     // when
     when(authentication.claims()).thenReturn(Map.of());
     final var userRecord = new UserRecord();
-    userRecord.setUserKey(1234L);
+    final var username = "test";
+    userRecord.setUsername(username);
     when(brokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
-    services.deleteUser(1234L);
+    services.deleteUser(username);
 
     verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
-    final var request = userDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getUserKey()).isEqualTo(1234L);
-    assertThat(request.getRequestWriter().getUsername()).isEmpty();
+    final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
+    assertThat(request.getUsername()).isEqualTo(username);
+    assertThat(request.getUserKey()).isEqualTo(-1L);
   }
 }

@@ -13,10 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.impl.client;
+package io.camunda.zeebe.client.api.response;
 
-public enum FlowNodeInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED
+import java.util.List;
+
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.response.MatchedDecisionRule}
+ */
+@Deprecated
+public interface MatchedDecisionRule {
+
+  /**
+   * @return the id of the matched rule
+   */
+  String getRuleId();
+
+  /**
+   * @return the index of the matched rule
+   */
+  int getRuleIndex();
+
+  /**
+   * @return the evaluated decision outputs
+   */
+  List<EvaluatedDecisionOutput> getEvaluatedOutputs();
+
+  /**
+   * @return the record encoded as JSON
+   */
+  String toJson();
 }

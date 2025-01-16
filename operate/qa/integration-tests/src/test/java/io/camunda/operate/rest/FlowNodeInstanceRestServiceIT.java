@@ -71,7 +71,8 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
 
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
         .thenReturn(false);
     final MvcResult mvcResult =
         postRequestShouldFailWithNoAuthorization(FLOW_NODE_INSTANCE_URL, requestDto);
@@ -96,7 +97,8 @@ public class FlowNodeInstanceRestServiceIT extends OperateAbstractIT {
     when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
         .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForProcess(
+            bpmnProcessId, IdentityPermission.READ_PROCESS_INSTANCE))
         .thenReturn(true);
     when(flowNodeInstanceReader.getFlowNodeInstances(requestDto)).thenReturn(new LinkedHashMap<>());
     final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, requestDto);
