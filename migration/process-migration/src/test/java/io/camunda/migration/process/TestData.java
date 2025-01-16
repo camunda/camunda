@@ -7,7 +7,7 @@
  */
 package io.camunda.migration.process;
 
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;

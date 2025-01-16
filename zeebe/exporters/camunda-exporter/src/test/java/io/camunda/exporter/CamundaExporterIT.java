@@ -38,7 +38,7 @@ import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;

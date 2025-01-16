@@ -16,7 +16,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;

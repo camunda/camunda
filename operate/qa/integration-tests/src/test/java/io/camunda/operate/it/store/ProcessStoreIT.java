@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;

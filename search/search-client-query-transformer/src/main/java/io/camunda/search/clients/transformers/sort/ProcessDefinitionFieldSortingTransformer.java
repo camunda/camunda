@@ -8,12 +8,12 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.RESOURCE_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION_TAG;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_TAG;
 
 public class ProcessDefinitionFieldSortingTransformer implements FieldSortingTransformer {
 

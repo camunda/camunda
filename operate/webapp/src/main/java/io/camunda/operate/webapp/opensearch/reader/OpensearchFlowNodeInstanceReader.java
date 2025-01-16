@@ -17,7 +17,7 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ElasticsearchUtil.TERMS_AGG_SIZE;
 import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.DECISION_ID;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.EVALUATION_DATE;

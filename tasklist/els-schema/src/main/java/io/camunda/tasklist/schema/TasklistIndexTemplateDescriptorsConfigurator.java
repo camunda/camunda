@@ -11,7 +11,7 @@ import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.UserIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;

@@ -9,11 +9,11 @@ package io.camunda.operate.schema;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.MetricIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;

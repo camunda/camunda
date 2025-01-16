@@ -23,7 +23,7 @@ import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.io.InputStream;

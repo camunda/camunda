@@ -25,7 +25,7 @@ import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.util.NumberThrottleable;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.*;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;

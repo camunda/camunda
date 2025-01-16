@@ -8,7 +8,7 @@
 package io.camunda.exporter.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Optional;
 import java.util.UUID;
