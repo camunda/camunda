@@ -99,7 +99,7 @@ public final class BpmnElementProcessors {
     processors.put(
         BpmnElementType.CALL_ACTIVITY,
         new CallActivityProcessor(
-            bpmnBehaviors, stateTransitionBehavior, config.getDefaultCallActivityMaxDepth()));
+            bpmnBehaviors, stateTransitionBehavior, config.getMaxProcessDepth()));
     processors.put(
         BpmnElementType.AD_HOC_SUB_PROCESS,
         new AdHocSubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));

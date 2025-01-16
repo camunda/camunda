@@ -137,7 +137,7 @@ final class ProcessInstanceElementActivatingApplier
         final var parentProcessInstance =
             elementInstanceState.getInstance(
                 elementInstance.getValue().getParentProcessInstanceKey());
-        elementInstance.setCalledProcessDept(parentProcessInstance.getCalledProcessDepth() + 1);
+        elementInstance.setProcessDepth(parentProcessInstance.getProcessDepth() + 1);
         elementInstanceState.updateInstance(elementInstance);
       }
     }
