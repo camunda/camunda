@@ -189,6 +189,29 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   @Test
+  void deleteAuthorizationShouldReturnNoContent() {
+    // given
+    final long authorizationKey = 100L;
+
+    final var record = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+
+    when(authorizationServices.deleteAuthorization(authorizationKey))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    // when
+    webClient
+        .delete()
+        .uri("/v2/authorizations/%s".formatted(authorizationKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(authorizationServices, times(1)).deleteAuthorization(authorizationKey);
+  }
+
+  @Test
   void patchAuthorizationShouldReturnNoContent() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
