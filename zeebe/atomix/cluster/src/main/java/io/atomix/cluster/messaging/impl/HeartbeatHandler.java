@@ -10,6 +10,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.ReferenceCountUtil;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -97,6 +98,8 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       // Handlers downstream can receive heartbeats as well
       if (!heartbeatReceived || forwardHeartbeats) {
         ctx.fireChannelRead(msg);
+      } else {
+        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -158,11 +161,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
       boolean heartbeatReceived = forwardHeartbeats;
       if (msg instanceof final ProtocolReply reply) {
-        if (outstandingHeartbeats.contains(reply.id())) {
-          // there's no subject in ProtocolReply, so we rely on oustandingHeartbeats to see if it
-          // was a reply to a heartbeat
-          heartbeatReceived = true;
-        }
+        final var isHeartbeat = outstandingHeartbeats.contains(reply.id());
         // remove all heartbeats sent before (and equal) to the last ProtocolReply received.
         // Note that all ProtocolReply messages (not just heartbeat messages) can indicate that
         // the channel is still open and transmitting.
@@ -170,20 +169,27 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
         // oustandingHeartbeats will increase for every missed
         // heartbeat and the memory will be freed only when the channel is closed.
         outstandingHeartbeats.removeIfLong(id -> id <= reply.id());
+        if (isHeartbeat) {
+          // there's no subject in ProtocolReply, so we rely on oustandingHeartbeats to see if it
+          // was a reply to a heartbeat
+          heartbeatReceived = true;
 
-        if (reply.status() != Status.OK) {
-          log.warn("Received a Heartbeat response with status {}", reply.status());
-        } else if (!Arrays.equals(reply.payload(), HEARTBEAT_PAYLOAD)) {
-          log.warn(
-              "Received unexpected heartbeat payload, perhaps the message subject {} is accidentally reused: {}",
-              HEARTBEAT_SUBJECT,
-              reply);
+          if (reply.status() != Status.OK) {
+            log.warn("Received a Heartbeat response with status {}", reply.status());
+          } else if (!Arrays.equals(reply.payload(), HEARTBEAT_PAYLOAD)) {
+            log.warn(
+                "Received unexpected heartbeat payload, perhaps the message subject {} is accidentally reused: {}",
+                HEARTBEAT_SUBJECT,
+                reply);
+          }
         }
       }
 
       // Pass the message to the next handler, even though it's a heartbeat.
       if (!heartbeatReceived || forwardHeartbeats) {
         ctx.fireChannelRead(msg);
+      } else {
+        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -206,18 +212,26 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
           }
         }
         case WRITER_IDLE -> {
-          ctx.writeAndFlush(createHeartbeat());
+          ctx.writeAndFlush(createOutstandingHeartbeat());
         }
         default -> {}
       }
     }
 
-    private ProtocolRequest createHeartbeat() {
-      return new ProtocolRequest(
-          messageIdGenerator.incrementAndGet(),
-          advertisedAddress,
-          HEARTBEAT_SUBJECT,
-          HEARTBEAT_PAYLOAD);
+    /**
+     * Creates a heartbeat and insert its id in the map
+     *
+     * @return a heartbeat
+     */
+    private ProtocolRequest createOutstandingHeartbeat() {
+      final var heartbeat =
+          new ProtocolRequest(
+              messageIdGenerator.incrementAndGet(),
+              advertisedAddress,
+              HEARTBEAT_SUBJECT,
+              HEARTBEAT_PAYLOAD);
+      outstandingHeartbeats.add(heartbeat.id());
+      return heartbeat;
     }
   }
 }
