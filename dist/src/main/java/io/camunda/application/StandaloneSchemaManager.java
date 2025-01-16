@@ -91,6 +91,7 @@ public class StandaloneSchemaManager {
 
     final ExporterConfiguration exporterConfig = new ExporterConfiguration();
     exporterConfig.setConnect(connectConfiguration);
+    exporterConfig.getIndex().setPrefix(connectConfiguration.getIndexPrefix());
 
     final IndexDescriptors indexDescriptors =
         new IndexDescriptors(connectConfiguration.getIndexPrefix(), IS_ELASTICSEARCH);
