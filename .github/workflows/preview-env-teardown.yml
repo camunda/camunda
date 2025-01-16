@@ -36,6 +36,21 @@ jobs:
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
     #########################################################################
+    # Setup: Generate Github Token for the Github App
+    - name: Generate a GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      with:
+        github-app-id-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_ID
+        github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+        github-app-private-key-vault-key: GITHUB_PREVIEW_ENVIRONMENTS_APP_PRIVATE_KEY
+        github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+
+    #########################################################################
     # Setup: checkout code. This is required because we are using
     # composite actions and deployment manifests.
     - name: Checkout
@@ -50,6 +65,7 @@ jobs:
         argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
         argocd_server: argocd.int.camunda.com
+        github_token: ${{ steps.github-token.outputs.token }}
 
   clean:
     if: always() && needs.teardown-preview.result != 'skipped'
