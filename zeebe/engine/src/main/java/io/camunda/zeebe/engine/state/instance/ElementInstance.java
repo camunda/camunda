@@ -56,7 +56,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    * @since 8.7
    */
   private final IntegerProperty calledProcessDepthProp =
-      new IntegerProperty("calledProcessDepth", -1);
+      new IntegerProperty("calledProcessDepth", 0);
 
   public ElementInstance() {
     super(14);
