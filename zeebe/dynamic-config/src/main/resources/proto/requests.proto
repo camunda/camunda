@@ -51,6 +51,7 @@ message ClusterPatchRequest {
   optional uint32 newPartitionCount = 3;
   optional uint32 newReplicationFactor = 4;
   bool dryRun = 5;
+  optional topology_protocol.PartitionsDistribution newPartitionsDistribution = 6;
 }
 
 message ForceRemoveBrokersRequest {
