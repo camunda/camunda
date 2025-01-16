@@ -2377,6 +2377,54 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /authorizations:
+    post:
+      tags:
+        - Authorization
+      operationId: createAuthorization
+      summary: Create authorization
+      description: Create the authorization.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: |
+            The authorization was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationCreateResult"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationCreateResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationCreateResult"
+        "400":
+          description: |
+            The authorization could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            The owner was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /authorizations/{ownerKey}:
     patch:
       tags:
@@ -5664,6 +5712,7 @@ components:
           description: The amount of executed decision instances.
           type: integer
           format: int64
+
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       enum:
@@ -5725,6 +5774,54 @@ components:
           uniqueItems: true
           items:
             type: string
+
+    AuthorizationCreateRequest:
+      type: object
+      properties:
+        ownerId:
+          description: The ID of the owner of the permissions.
+          type: string
+        ownerType:
+          description: The type of the owner of the permissions.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/OwnerTypeEnum"
+        resourceId:
+          description: The ID of the resource to add permissions to.
+          type: string
+        resourceType:
+          description: The type of resource to add permissions to.
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/ResourceTypeEnum"
+        permissions:
+          type: array
+          description: The permissions to add.
+          items:
+            type: string
+            allOf:
+             - $ref: "#/components/schemas/PermissionTypeEnum"
+      required:
+        - ownerId
+        - ownerType
+        - resourceId
+        - resourceType
+        - permissions
+    AuthorizationCreateResponse:
+      deprecated: true
+      type: object
+      properties:
+        authorizationKey:
+          description: The key of the created authorization.
+          type: integer
+          format: int64
+    AuthorizationCreateResult:
+      type: object
+      properties:
+        authorizationKey:
+          description: The key of the created authorization.
+          type: string
+
     AuthorizationPatchRequest:
       type: object
       properties:

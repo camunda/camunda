@@ -2705,8 +2705,11 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
+                    .setAuthorizationKey(1L)
                     .setOwnerKey(1L)
+                    .setOwnerId("ownerId")
                     .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceId("resourceId")
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT)
                     .addPermission(
                         new Permission()
@@ -2714,11 +2717,15 @@ final class JsonSerializableToJsonTest {
                             .addResourceId("*")
                             .addResourceId("bpmnProcessId:foo"))
                     .addPermission(
-                        new Permission().setPermissionType(PermissionType.READ).addResourceId("*")),
+                        new Permission().setPermissionType(PermissionType.READ).addResourceId("*"))
+                    .setAuthorizationPermissions(Set.of(PermissionType.CREATE)),
         """
         {
+          "authorizationKey": 1,
           "ownerKey": 1,
+          "ownerId": "ownerId",
           "ownerType": "USER",
+          "resourceId": "resourceId",
           "resourceType": "DEPLOYMENT",
           "permissions": [
             {
@@ -2729,6 +2736,9 @@ final class JsonSerializableToJsonTest {
               "permissionType": "READ",
               "resourceIds": ["*"]
             }
+          ],
+          "authorizationPermissions": [
+            "CREATE"
           ]
         }
         """
@@ -2745,10 +2755,14 @@ final class JsonSerializableToJsonTest {
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
+          "authorizationKey": -1,
+          "ownerId": "",
           "ownerKey": 1,
           "ownerType": "UNSPECIFIED",
+          "resourceId": "",
           "resourceType": "DEPLOYMENT",
-          "permissions": []
+          "permissions": [],
+          "authorizationPermissions": []
         }
         """
       },

@@ -25,6 +25,7 @@ import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecision;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
@@ -55,6 +56,7 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -451,6 +453,14 @@ public final class ResponseMapper {
             .signalKey(brokerResponse.getKey())
             .tenantId(brokerResponse.getResponse().getTenantId());
     return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toAuthorizationCreateResponse(
+      final AuthorizationRecord authorizationRecord) {
+    final var response =
+        new AuthorizationCreateResponse()
+            .authorizationKey(authorizationRecord.getAuthorizationKey());
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {

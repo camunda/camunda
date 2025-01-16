@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_NESTED_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -30,6 +31,33 @@ public final class AuthorizationRequestValidator {
               PermissionTypeEnum.DELETE_PROCESS, ResourceTypeEnum.DEPLOYMENT,
               PermissionTypeEnum.DELETE_DRD, ResourceTypeEnum.DEPLOYMENT,
               PermissionTypeEnum.DELETE_FORM, ResourceTypeEnum.DEPLOYMENT);
+
+  public static Optional<ProblemDetail> validateAuthorizationCreateRequest(
+      final AuthorizationCreateRequest request) {
+    return validate(
+        violations -> {
+          // owner validation
+          if (request.getOwnerId() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerId"));
+          }
+          if (request.getOwnerType() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerType"));
+          }
+
+          // resource validation
+          if (request.getResourceId() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceId"));
+          }
+          if (request.getResourceType() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
+          }
+
+          // permissions validation
+          if (request.getPermissions() == null || request.getPermissions().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("permissions"));
+          }
+        });
+  }
 
   public static Optional<ProblemDetail> validateAuthorizationAssignRequest(
       final AuthorizationPatchRequest authorizationPatchRequest) {
