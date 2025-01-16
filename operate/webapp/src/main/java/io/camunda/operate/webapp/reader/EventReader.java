@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.event.EventEntity;
 
 public interface EventReader {
   EventEntity getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId);
