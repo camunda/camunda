@@ -185,10 +185,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setState(TaskState.CREATED)
-        .setAssignee(
-            ExporterUtil.isEmpty(record.getValue().getAssignee())
-                ? null
-                : record.getValue().getAssignee())
+        .setAssignee(getAssigneeOrNull(record))
         .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
         .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
         .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
@@ -233,12 +230,11 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     return key < exporterMetadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK);
   }
 
-  private void setAssignee(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+  private static String getAssigneeOrNull(final Record<UserTaskRecordValue> record) {
     if (ExporterUtil.isEmpty(record.getValue().getAssignee())) {
-      entity.setAssignee(null);
-    } else {
-      entity.setAssignee(record.getValue().getAssignee());
+      return null;
     }
+    return record.getValue().getAssignee();
   }
 
   /**
@@ -263,7 +259,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       entity.getChangedAttributes().add(attribute);
 
       switch (attribute) {
-        case "assignee" -> setAssignee(record, entity);
+        case "assignee" -> entity.setAssignee(getAssigneeOrNull(record));
         case "candidateGroupsList" ->
             entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
         case "candidateUsersList" ->
