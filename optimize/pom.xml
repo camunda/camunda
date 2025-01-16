@@ -358,6 +358,7 @@
               <dep>org.mockito:mockito-inline</dep>
               <dep>org.mockito:mockito-junit-jupiter</dep>
               <dep>org.springframework.boot:spring-boot-starter-test</dep>
+              <dep>org.glassfish.jersey.core:jersey-client</dep>
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies combine.children="append">
               <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
