@@ -132,12 +132,9 @@ public class IncidentNotifier {
       incidentFields.put(FIELD_NAME_FLOW_NODE_INSTANCE_KEY, inc.getFlowNodeInstanceKey());
       incidentFields.put(FIELD_NAME_JOB_KEY, inc.getJobKey());
       incidentFields.put(FIELD_NAME_PROCESS_KEY, inc.getProcessDefinitionKey());
-      // TODO in operate it used to retry to get the process with a wait time,I don't think we need
-      // that
       final Optional<CachedProcessEntity> process = processCache.get(inc.getProcessDefinitionKey());
       if (process.isPresent()) {
-        // FIXME do we need this?
-        // incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, process.get().getBpmnProcessId());
+        incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, inc.getBpmnProcessId());
         incidentFields.put(FIELD_NAME_PROCESS_NAME, process.get().name());
         incidentFields.put(FIELD_NAME_PROCESS_VERSION, process.get().versionTag());
       }
