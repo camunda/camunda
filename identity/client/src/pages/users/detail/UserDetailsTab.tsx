@@ -23,18 +23,14 @@ const UserDetails: FC<UserDetailsProps> = ({ user, loading }) => {
       label={t("User details")}
       data={[
         {
-          label: t("Username"),
-          value: user.username,
-        },
-        { label: t("Email"), value: user.email || "-" },
-        {
           label: t("Name"),
           value: user.name,
         },
         {
-          label: t("Key"),
-          value: user.key,
+          label: t("Username"),
+          value: user.username,
         },
+        { label: t("Email"), value: user.email || "-" },
       ]}
       loading={loading}
     />
