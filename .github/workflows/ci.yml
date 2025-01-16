@@ -43,6 +43,10 @@ jobs:
     #container: ubuntu
     steps:
       - uses: actions/checkout@v4
+      - name: Docker
+        run: |
+          docker run -d -p 9200:9200 -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms1024m -Xmx1024m" docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+
 #      - uses: ./.github/actions/setup-build
 #        with:
 #          maven-cache-key-modifier: it-elasticsearch
@@ -50,4 +54,4 @@ jobs:
 #          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
 #          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: CURL
-        run: curl elasticsearch:9200
+        run: curl http://localhost:9200
