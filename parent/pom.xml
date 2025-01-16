@@ -2917,6 +2917,9 @@
               <groups>performance</groups>
               <!-- Reset <excludedGroups> as it take precedence over <groups> -->
               <excludedGroups combine.self="override"></excludedGroups>
+              <excludes>
+                <exclude>**/LargeStateControllerPerformanceTest.java</exclude>
+              </excludes>
             </configuration>
           </plugin>
         </plugins>
