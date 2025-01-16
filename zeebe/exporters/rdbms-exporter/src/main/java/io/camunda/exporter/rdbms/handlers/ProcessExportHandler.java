@@ -10,7 +10,6 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
