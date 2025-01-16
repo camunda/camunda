@@ -1091,19 +1091,21 @@ public final class CallActivityTest {
         .deploy();
 
     // when
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
+    ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
 
     // then
-    Assertions.assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst().getValue())
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withElementId("go_deeper")
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(incident)
         .describedAs("Expect that incident is raised due to the depth limit")
         .hasErrorMessage(
             """
-        The call activity has reached the maximum depth of %d. This is likely due to a recursive call. \
-        Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
-        maximum depth, or use process instance modification to adjust the process instance.\
-        """
+            The call activity has reached the maximum depth of %d. This is likely due to a recursive call. \
+            Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
+            maximum depth, or use process instance modification to adjust the process instance."""
                 .formatted(CUSTOM_CALL_ACTIVITY_DEPTH));
 
     Assertions.assertThat(
