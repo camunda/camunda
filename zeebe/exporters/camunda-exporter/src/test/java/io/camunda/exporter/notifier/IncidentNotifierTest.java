@@ -8,6 +8,7 @@
 package io.camunda.exporter.notifier;
 
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_ALERTS;
+import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_BPMN_PROCESS_ID;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_CREATION_TIME;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_ERROR_MESSAGE;
 import static io.camunda.exporter.notifier.IncidentNotifier.FIELD_NAME_ERROR_TYPE;
@@ -24,6 +25,7 @@ import static io.camunda.exporter.notifier.IncidentNotifier.MESSAGE;
 import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,6 +57,7 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -93,11 +96,13 @@ class IncidentNotifierTest {
   }
 
   @Test
-  public void testIncidentsNotificationIsSent() throws IOException, InterruptedException {
+  public void shouldSendNotificationWithIncidents() throws IOException, InterruptedException {
+    // given
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     final HttpResponse mock = mock(HttpResponse.class);
     when(mock.statusCode()).thenReturn(204);
     when(httpClient.send(any(), any())).thenReturn(mock);
+
     // when
     final List<IncidentEntity> incidents =
         asList(createIncident(incident1Id), createIncident(incident2Id));
@@ -105,8 +110,7 @@ class IncidentNotifierTest {
 
     // then
     final ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
-    verify(httpClient, times(1))
-        .send(requestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString()));
+    verify(httpClient).send(requestCaptor.capture(), eq(HttpResponse.BodyHandlers.ofString()));
     final HttpRequest request = requestCaptor.getValue();
     assertThat(request.uri().toString()).isEqualTo(ALERT_WEBHOOKURL_URL);
     assertThat(request.headers().allValues("Authorization").getFirst())
@@ -126,7 +130,9 @@ class IncidentNotifierTest {
   }
 
   @Test
-  public void testTokenIsNotValid() throws IOException, InterruptedException {
+  public void shouldRequestNewTokenAndRetryWhenTokenIsInvalid()
+      throws IOException, InterruptedException {
+    // given
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     given(m2mTokenManager.getToken(anyBoolean())).willReturn(m2mToken);
     // the first call will return UNAUTHORIZED, the second - OK
@@ -140,7 +146,7 @@ class IncidentNotifierTest {
 
     // then
     // new token was requested
-    verify(m2mTokenManager, times(1)).getToken(eq(true));
+    verify(m2mTokenManager).getToken(eq(true));
     // incident data was sent
     final ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
     verify(httpClient, times(2))
@@ -161,22 +167,28 @@ class IncidentNotifierTest {
   }
 
   @Test
-  public void testNotificationFailed() throws IOException, InterruptedException {
+  public void shouldFailSilentlyOnErrorResponse() throws IOException, InterruptedException {
+    // given
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     // webhook returns status 500
     final HttpResponse mock = mock(HttpResponse.class);
     when(mock.statusCode()).thenReturn(500);
     given(httpClient.send(any(), any())).willReturn(mock);
 
-    // when
     final List<IncidentEntity> incidents = asList(createIncident(incident1Id));
     incidentNotifier.notifyOnIncidents(incidents);
 
-    // silently fails without exception
+    // when
+    final ThrowingCallable notify = () -> incidentNotifier.notifyOnIncidents(incidents);
+
+    // then
+    assertThatCode(notify).doesNotThrowAnyException();
   }
 
   @Test
-  public void testNotificationFailedFromSecondAttempt() throws IOException, InterruptedException {
+  public void shouldFailSilentlyOnErrorAfterReAuthorization()
+      throws IOException, InterruptedException {
+    // given
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     given(m2mTokenManager.getToken(anyBoolean())).willReturn(m2mToken);
     // the first call will return UNAUTHORIZED, the second - 500
@@ -184,28 +196,31 @@ class IncidentNotifierTest {
     when(mock.statusCode()).thenReturn(401).thenReturn(500);
     given(httpClient.send(any(), any())).willReturn(mock, mock);
 
-    // when
     final List<IncidentEntity> incidents = List.of(createIncident(incident1Id));
-    incidentNotifier.notifyOnIncidents(incidents);
+
+    // when
+    final ThrowingCallable notify = () -> incidentNotifier.notifyOnIncidents(incidents);
 
     // then
+    assertThatCode(notify).doesNotThrowAnyException();
     // new token was requested
-    verify(m2mTokenManager, times(1)).getToken(eq(true));
-    // silently fails without exception
+    verify(m2mTokenManager).getToken(eq(true));
   }
 
   @Test
-  public void testNotificationFailedWithException() throws IOException, InterruptedException {
+  public void shouldFailSilentlyIfConnectionFailed() throws IOException, InterruptedException {
+    // given
     given(m2mTokenManager.getToken()).willReturn(m2mToken);
     // notification will throw exception
     given(httpClient.send(any(), any())).willThrow(new RuntimeException("Something went wrong"));
 
-    // when
     final List<IncidentEntity> incidents = List.of(createIncident(incident1Id));
-    incidentNotifier.notifyOnIncidents(incidents);
+
+    // when
+    final ThrowingCallable notify = () -> incidentNotifier.notifyOnIncidents(incidents);
 
     // then
-    // silently fails without exception
+    assertThatCode(notify).doesNotThrowAnyException();
   }
 
   private String extractBody(final HttpRequest.BodyPublisher bodyPublisher)
@@ -246,6 +261,7 @@ class IncidentNotifierTest {
     assertThat(incidentFields.get(FIELD_NAME_JOB_KEY)).isEqualTo(jobKey.intValue());
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_KEY))
         .isEqualTo(processDefinitionKey.intValue());
+    assertThat(incidentFields.get(FIELD_NAME_BPMN_PROCESS_ID)).isEqualTo(bpmnProcessId);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_NAME)).isEqualTo(processName);
     assertThat(incidentFields.get(FIELD_NAME_PROCESS_VERSION)).isEqualTo(processVersion);
     assertThat(incidentFields.get(FIELD_NAME_FLOW_NODE_INSTANCE_KEY))

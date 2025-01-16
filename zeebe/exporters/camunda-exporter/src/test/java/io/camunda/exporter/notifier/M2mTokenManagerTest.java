@@ -83,7 +83,8 @@ class M2mTokenManagerTest {
   }
 
   @Test
-  public void testGetTokenFromCache() throws IOException, InterruptedException {
+  public void shouldReturnCachedTokenOnSubsequentCalls() throws IOException, InterruptedException {
+    // given
     final HttpResponse response =
         mock(
             HttpResponse.class,
@@ -111,7 +112,8 @@ class M2mTokenManagerTest {
   }
 
   @Test
-  public void testTokenWithForceUpdate() throws IOException, InterruptedException {
+  public void shouldRequestNewTokenWhenForceUpdate() throws IOException, InterruptedException {
+    // given
     final HttpResponse response =
         mock(
             HttpResponse.class,
@@ -144,7 +146,8 @@ class M2mTokenManagerTest {
   }
 
   @Test
-  public void testTokenIsExpired() throws IOException, InterruptedException {
+  public void shouldRequestNewTokenIfCachedTokenIsExpired()
+      throws IOException, InterruptedException {
     // given
     final String mockExpiredJwtToken =
         JWT.create()
@@ -169,6 +172,8 @@ class M2mTokenManagerTest {
 
     // when asking for token again
     final String token = m2mTokenManager.getToken();
+
+    // then
     assertAuth0IsRequested(1);
     assertThat(token).isEqualTo(mockJwtToken);
   }
