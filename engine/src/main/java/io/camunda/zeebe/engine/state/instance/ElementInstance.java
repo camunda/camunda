@@ -49,7 +49,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
 
   public ElementInstance() {
-    super(11);
+    super(12);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
