@@ -17,10 +17,10 @@ public enum IncidentState {
   RESOLVED("RESOLVED"),
   PENDING(null);
 
-  private static final Map<String, IncidentState> intentMap = new HashMap<>();
+  private static final Map<String, IncidentState> INTENT_MAP = new HashMap<>();
 
   static {
-    Arrays.stream(IncidentState.values()).forEach(is -> intentMap.put(is.getZeebeIntent(), is));
+    Arrays.stream(IncidentState.values()).forEach(is -> INTENT_MAP.put(is.getZeebeIntent(), is));
   }
 
   private final String zeebeIntent;
@@ -30,7 +30,7 @@ public enum IncidentState {
   }
 
   public static IncidentState createFrom(final String zeebeIntent) {
-    return intentMap.get(zeebeIntent);
+    return INTENT_MAP.get(zeebeIntent);
   }
 
   public String getZeebeIntent() {

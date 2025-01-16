@@ -372,8 +372,7 @@ public class IncidentHandlerTest {
 
     // then
     assertThat(incidentEntity.getErrorType())
-        .isEqualTo(
-            io.camunda.webapps.schema.entities.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
+        .isEqualTo(io.camunda.webapps.schema.entities.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
   }
 
   @Test
