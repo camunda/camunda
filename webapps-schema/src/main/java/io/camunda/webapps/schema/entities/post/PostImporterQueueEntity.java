@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.operate.post;
+package io.camunda.webapps.schema.entities.post;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
@@ -27,66 +27,25 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
 
   private Long position;
 
+  @Override
   public Long getKey() {
     return key;
   }
 
+  @Override
   public PostImporterQueueEntity setKey(final Long key) {
     this.key = key;
     return this;
   }
 
-  public PostImporterActionType getActionType() {
-    return actionType;
-  }
-
-  public PostImporterQueueEntity setActionType(final PostImporterActionType actionType) {
-    this.actionType = actionType;
-    return this;
-  }
-
-  public String getIntent() {
-    return intent;
-  }
-
-  public PostImporterQueueEntity setIntent(final String intent) {
-    this.intent = intent;
-    return this;
-  }
-
-  public OffsetDateTime getCreationTime() {
-    return creationTime;
-  }
-
-  public PostImporterQueueEntity setCreationTime(final OffsetDateTime creationTime) {
-    this.creationTime = creationTime;
-    return this;
-  }
-
+  @Override
   public Integer getPartitionId() {
     return partitionId;
   }
 
+  @Override
   public PostImporterQueueEntity setPartitionId(final Integer partitionId) {
     this.partitionId = partitionId;
-    return this;
-  }
-
-  public Long getProcessInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public PostImporterQueueEntity setProcessInstanceKey(final Long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-    return this;
-  }
-
-  public Long getPosition() {
-    return position;
-  }
-
-  public PostImporterQueueEntity setPosition(final Long position) {
-    this.position = position;
     return this;
   }
 
@@ -122,5 +81,50 @@ public class PostImporterQueueEntity extends AbstractExporterEntity<PostImporter
         && Objects.equals(partitionId, that.partitionId)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(position, that.position);
+  }
+
+  public PostImporterActionType getActionType() {
+    return actionType;
+  }
+
+  public PostImporterQueueEntity setActionType(final PostImporterActionType actionType) {
+    this.actionType = actionType;
+    return this;
+  }
+
+  public String getIntent() {
+    return intent;
+  }
+
+  public PostImporterQueueEntity setIntent(final String intent) {
+    this.intent = intent;
+    return this;
+  }
+
+  public OffsetDateTime getCreationTime() {
+    return creationTime;
+  }
+
+  public PostImporterQueueEntity setCreationTime(final OffsetDateTime creationTime) {
+    this.creationTime = creationTime;
+    return this;
+  }
+
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public PostImporterQueueEntity setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public Long getPosition() {
+    return position;
+  }
+
+  public PostImporterQueueEntity setPosition(final Long position) {
+    this.position = position;
+    return this;
   }
 }
