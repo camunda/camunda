@@ -30,7 +30,19 @@ func DownloadFile(filepath string, url string) error {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url)
+	}
+
+	if strings.HasPrefix(authToken, "Basic ") {
+		req.Header.Add("Authorization", authToken)
+	} else if authToken != "" {
+		req.Header.Add("Authorization", "Bearer "+authToken)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("DownloadFile: failed to download from url: %s\n%w\n%s", url, err, debug.Stack())
 	}
