@@ -16,7 +16,7 @@ import io.camunda.operate.util.RetryOperation;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
-import io.camunda.optimize.rest.exceptions.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
