@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import io.camunda.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;

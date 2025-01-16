@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.qa.util.testcontainers;
+package io.camunda.zeebe.test.testcontainers;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import java.time.Duration;
