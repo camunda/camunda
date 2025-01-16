@@ -18,7 +18,6 @@ import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -50,7 +49,7 @@ public class UserController {
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserDTO(null, userRequest)
+    return RequestMapper.toUserDTO(userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
@@ -70,25 +69,17 @@ public class UserController {
         ResponseMapper::toUserCreateResponse);
   }
 
-  @CamundaPatchMapping(path = "/{userKey}")
+  @CamundaPatchMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> updateUser(
-      @PathVariable final long userKey, @RequestBody final UserUpdateRequest userUpdateRequest) {
-    return RequestMapper.toUserUpdateRequest(userUpdateRequest, userKey)
+      @PathVariable final String username, @RequestBody final UserUpdateRequest userUpdateRequest) {
+    return RequestMapper.toUserUpdateRequest(userUpdateRequest, username)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUser);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateUser(final UpdateUserRequest request) {
+  private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            userServices
-                .withAuthentication(RequestMapper.getAuthentication())
-                .updateUser(
-                    new UserDTO(
-                        request.userKey(),
-                        "",
-                        request.name(),
-                        request.email(),
-                        request.password())));
+            userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
   }
 
   @CamundaPutMapping(

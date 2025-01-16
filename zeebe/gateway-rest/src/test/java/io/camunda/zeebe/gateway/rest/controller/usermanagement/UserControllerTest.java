@@ -349,12 +349,12 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void updateUserShouldReturnNoContent() {
     // given
-    final UserDTO user = new UserDTO(100L, "", "Alice", "test+alice@camunda.com", null);
+    final String username = "alice-test";
+    final UserDTO user = new UserDTO(username, "Alice", "test+alice@camunda.com", null);
     when(userServices.updateUser(any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new UserRecord()
-                    .setUserKey(user.userKey())
                     .setName(user.name())
                     .setUsername(user.username())
                     .setEmail(user.email())));
@@ -362,7 +362,7 @@ public class UserControllerTest extends RestControllerTest {
     // when / then
     webClient
         .patch()
-        .uri("%s/%s".formatted(USER_BASE_URL, user.userKey()))
+        .uri("%s/%s".formatted(USER_BASE_URL, user.username()))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
@@ -376,7 +376,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   private UserDTO validCreateUserRequest() {
-    return new UserDTO(null, "foo", "Foo Bar", "bar@baz.com", "zabraboof");
+    return new UserDTO("foo", "Foo Bar", "bar@baz.com", "zabraboof");
   }
 
   private UserRequest validUserWithPasswordRequest() {

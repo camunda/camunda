@@ -194,14 +194,14 @@ public class RequestMapper {
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
   }
 
-  public static Either<ProblemDetail, UpdateUserRequest> toUserUpdateRequest(
-      final UserUpdateRequest updateRequest, final long userKey) {
+  public static Either<ProblemDetail, UserDTO> toUserUpdateRequest(
+      final UserUpdateRequest updateRequest, final String username) {
     final UserChangeset changeset = updateRequest.getChangeset();
     return getResult(
         validateUserUpdateRequest(updateRequest),
         () ->
-            new UpdateUserRequest(
-                userKey, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
+            new UserDTO(
+                username, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -436,13 +436,11 @@ public class RequestMapper {
         () -> new DocumentLinkParams(Duration.ofMillis(documentLinkRequest.getTimeToLive())));
   }
 
-  public static Either<ProblemDetail, UserDTO> toUserDTO(
-      final Long userKey, final UserRequest request) {
+  public static Either<ProblemDetail, UserDTO> toUserDTO(final UserRequest request) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
             new UserDTO(
-                userKey,
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
@@ -906,8 +904,6 @@ public class RequestMapper {
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
-  public record UpdateUserRequest(long userKey, String name, String email, String password) {}
-
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
 
@@ -934,8 +930,6 @@ public class RequestMapper {
   public record CreateRoleRequest(String name) {}
 
   public record UpdateRoleRequest(long roleKey, String name) {}
-
-  public record CreateTenantRequest(String tenantId, String name) {}
 
   public record CreateGroupRequest(String name) {}
 
