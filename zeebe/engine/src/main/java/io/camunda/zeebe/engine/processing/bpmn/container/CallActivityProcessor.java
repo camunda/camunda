@@ -32,6 +32,13 @@ import org.agrona.DirectBuffer;
 public final class CallActivityProcessor
     implements BpmnElementContainerProcessor<ExecutableCallActivity> {
 
+  public static final String MAX_DEPTH_EXCEEDED_MESSAGE =
+      """
+      The call activity has reached the maximum depth of %d. \
+      This is likely due to a recursive call. \
+      Cancel the root process instance if this was unintentional. \
+      Otherwise, consider increasing the maximum depth, \
+      or use process instance modification to adjust the process instance.""";
   private static final String UNABLE_TO_COMPLETE_FROM_STATE_MESSAGE =
       "Expected to complete call activity after child completed, but call activity cannot be completed from state '%s'";
   private static final String UNABLE_TO_TERMINATE_FROM_STATE_MESSAGE =
@@ -72,25 +79,7 @@ public final class CallActivityProcessor
       final ExecutableCallActivity element, final BpmnElementContext context) {
     return variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(
-            ok -> {
-              final var processInstance =
-                  stateBehavior.getElementInstance(context.getProcessInstanceKey());
-              final int processDepth = processInstance.getProcessDepth();
-              if (processDepth >= maxProcessDepth) {
-                return Either.left(
-                    new Failure(
-                        """
-                        The call activity has reached the maximum depth of %d. \
-                        This is likely due to a recursive call. \
-                        Cancel the root process instance if this was unintentional. \
-                        Otherwise, consider increasing the maximum depth, \
-                        or use process instance modification to adjust the process instance."""
-                            .formatted(maxProcessDepth),
-                        ErrorType.CALLED_ELEMENT_ERROR));
-              }
-              return Either.right(null);
-            });
+        .flatMap(ok -> validateProcessDepth(context));
   }
 
   @Override
@@ -195,6 +184,17 @@ public final class CallActivityProcessor
     }
 
     transitionToTerminated(element, callActivityContext);
+  }
+
+  private Either<Failure, Void> validateProcessDepth(final BpmnElementContext context) {
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    final int processDepth = processInstance.getProcessDepth();
+    final var isExceedingMaxDepth = processDepth >= maxProcessDepth;
+    if (isExceedingMaxDepth) {
+      final var message = MAX_DEPTH_EXCEEDED_MESSAGE.formatted(maxProcessDepth);
+      return Either.left(new Failure(message, ErrorType.CALLED_ELEMENT_ERROR));
+    }
+    return Either.right(null);
   }
 
   private void transitionToTerminated(
