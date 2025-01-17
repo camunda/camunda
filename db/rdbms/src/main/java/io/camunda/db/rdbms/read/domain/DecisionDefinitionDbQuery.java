@@ -18,7 +18,8 @@ import java.util.function.Function;
 public record DecisionDefinitionDbQuery(
     DecisionDefinitionFilter filter,
     DbQuerySorting<DecisionDefinitionEntity> sort,
-    DbQueryPage page) {
+    DbQueryPage page,
+    String legacyId) {
 
   public static DecisionDefinitionDbQuery of(
       final Function<Builder, ObjectBuilder<DecisionDefinitionDbQuery>> fn) {
@@ -33,6 +34,7 @@ public record DecisionDefinitionDbQuery(
     private DecisionDefinitionFilter filter;
     private DbQuerySorting<DecisionDefinitionEntity> sort;
     private DbQueryPage page;
+    private String legacyId;
 
     public DecisionDefinitionDbQuery.Builder filter(final DecisionDefinitionFilter value) {
       filter = value;
@@ -47,6 +49,11 @@ public record DecisionDefinitionDbQuery(
 
     public DecisionDefinitionDbQuery.Builder page(final DbQueryPage value) {
       page = value;
+      return this;
+    }
+
+    public DecisionDefinitionDbQuery.Builder legacyId(String id) {
+      legacyId = id;
       return this;
     }
 
@@ -68,7 +75,7 @@ public record DecisionDefinitionDbQuery(
     public DecisionDefinitionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new DecisionDefinitionDbQuery(filter, sort, page);
+      return new DecisionDefinitionDbQuery(filter, sort, page, legacyId);
     }
   }
 }

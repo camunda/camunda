@@ -218,6 +218,7 @@
       <column name="DECISION_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
+      <column name="LEGACY_ID" type="VARCHAR(200)" />
       <column name="DECISION_DEFINITION_ID" type="VARCHAR(200)" />
       <column name="NAME" type="VARCHAR(200)" />
       <column name="TENANT_ID" type="VARCHAR(255)" />
