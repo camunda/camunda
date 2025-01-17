@@ -20,6 +20,7 @@ import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ class OpensearchBatchRequestTest {
 
   private static final String ID = "id";
   private static final String INDEX = "index";
+  private static final String INDEX_WITH_HANDLER = "indexWithHandler";
   private OpensearchBatchRequest batchRequest;
   private OpenSearchClient osClient;
   private Builder requestBuilder;
@@ -433,5 +435,32 @@ class OpensearchBatchRequestTest {
     // Then
     assertThatThrownBy(callable).isInstanceOf(PersistenceException.class);
     verify(osClient).bulk(any(BulkRequest.class));
+  }
+
+  @Test
+  void shouldUseCustomErrorHandlerIfProvided() throws IOException {
+    // Given
+    final TestExporterEntity entity = new TestExporterEntity().setId(ID);
+
+    final Consumer<String> errorHandler = mock(Consumer.class);
+    batchRequest.onError(INDEX_WITH_HANDLER, errorHandler);
+
+    final BulkResponseItem item = mock(BulkResponseItem.class);
+    when(item.id()).thenReturn("1");
+    when(item.error())
+        .thenReturn(new ErrorCause.Builder().type("string_error").reason("error").build());
+    when(item.index()).thenReturn(INDEX_WITH_HANDLER);
+
+    final BulkResponse bulkResponse = mock(BulkResponse.class);
+    when(bulkResponse.items()).thenReturn(List.of(item));
+
+    when(osClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
+
+    // When
+    batchRequest.add(INDEX_WITH_HANDLER, entity);
+    batchRequest.execute();
+
+    // Then
+    verify(errorHandler).accept(any());
   }
 }
