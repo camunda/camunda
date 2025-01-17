@@ -9,9 +9,11 @@
 import { FC, PointerEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
-import { spacing06, styles, textSecondary } from "@carbon/elements";
+import { spacing04, spacing06, styles, textSecondary } from "@carbon/elements";
 import { cssSize } from "src/utility/style";
 import { useNavigate } from "react-router";
+import { DocumentationLink } from "src/components/documentation";
+import useTranslate from "src/utility/localization";
 
 export const PageTitle = styled.h2`
   font-size: ${styles.heading04.fontSize};
@@ -29,6 +31,31 @@ export const PageSubTitle = styled.p`
 const Page = styled(Content)`
   height: 100%;
 `;
+
+type PageHeaderProps = {
+  title: string;
+  linkText: string;
+  linkUrl: string;
+};
+
+export const PageHeader: FC<PageHeaderProps> = ({
+  title,
+  linkText,
+  linkUrl,
+}) => {
+  const { Translate } = useTranslate();
+  return (
+    <Stack gap={spacing04}>
+      <PageTitle>{title}</PageTitle>
+      <PageSubTitle>
+        <Translate>For more information, see documentation on</Translate>{" "}
+        <DocumentationLink path={linkUrl} withIcon>
+          {linkText}
+        </DocumentationLink>
+      </PageSubTitle>
+    </Stack>
+  );
+};
 
 const StyledBreadcrumb = styled(Breadcrumb)`
   margin-left: ${cssSize(2)};
