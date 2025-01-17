@@ -471,13 +471,12 @@ paths:
       summary: Update tenant
       description: Updates an existing tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -521,13 +520,12 @@ paths:
       summary: Delete tenant
       description: Deletes an existing tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The tenant was deleted successfully.
