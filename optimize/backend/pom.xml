@@ -607,6 +607,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.eclipse.angus</groupId>
