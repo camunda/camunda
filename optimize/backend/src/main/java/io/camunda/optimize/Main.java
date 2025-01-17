@@ -11,6 +11,8 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,14 +26,15 @@ public class Main {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
 
   public static void main(final String[] args) {
-    System.setProperty("integrationTest", "true");
-
     final SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();
-    optimize.setDefaultProperties(
-        Collections.singletonMap(
-            ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort()));
+
+    final Map<String, Object> defaultProperties = new HashMap<>();
+    defaultProperties.put(ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort());
+    defaultProperties.put("useLegacyPort", "true");
+
+    optimize.setDefaultProperties(defaultProperties);
 
     optimize.run(args);
   }

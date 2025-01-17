@@ -30,7 +30,10 @@ import org.springframework.context.annotation.Configuration;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-    properties = {INTEGRATION_TESTS + "=true"})
+    properties = {
+        INTEGRATION_TESTS + "=true",
+        "useLegacyPort=true"
+    })
 @Configuration
 public abstract class AbstractIT {
 

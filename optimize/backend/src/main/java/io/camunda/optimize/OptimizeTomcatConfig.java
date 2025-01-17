@@ -21,11 +21,6 @@ import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import java.util.Optional;
-import org.apache.catalina.connector.Connector;
-import org.apache.coyote.http2.Http2Protocol;
-import org.apache.tomcat.util.net.SSLHostConfig;
-import org.apache.tomcat.util.net.SSLHostConfigCertificate;
-import org.apache.tomcat.util.net.SSLHostConfigCertificate.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +38,7 @@ public class OptimizeTomcatConfig {
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeTomcatConfig.class);
 
   private static final String[] COMPRESSED_MIME_TYPES = {
-      "application/json", "text/html", "application/x-font-ttf", "image/svg+xml"
+    "application/json", "text/html", "application/x-font-ttf", "image/svg+xml"
   };
 
   private static final String LOGIN_ENDPOINT = "/login";
@@ -53,32 +48,30 @@ public class OptimizeTomcatConfig {
   public static final String ALLOWED_URL_EXTENSION =
       String.join(
           "|",
-          new String[]{
-              URL_BASE,
-              LOGIN_ENDPOINT,
-              METRICS_ENDPOINT,
-              CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
-              CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
-              CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
-              CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
-              CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
-              CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
-              HealthRestService.READYZ_PATH,
-              LocalizationRestService.LOCALIZATION_PATH,
-              OptimizeTomcatConfig.EXTERNAL_SUB_PATH,
-              OptimizeResourceConstants.REST_API_PATH,
-              OptimizeResourceConstants.STATIC_RESOURCE_PATH,
-              OptimizeResourceConstants.ACTUATOR_ENDPOINT,
-              PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
-              UIConfigurationRestService.UI_CONFIGURATION_PATH
+          new String[] {
+            URL_BASE,
+            LOGIN_ENDPOINT,
+            METRICS_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
+            CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
+            HealthRestService.READYZ_PATH,
+            LocalizationRestService.LOCALIZATION_PATH,
+            OptimizeTomcatConfig.EXTERNAL_SUB_PATH,
+            OptimizeResourceConstants.REST_API_PATH,
+            OptimizeResourceConstants.STATIC_RESOURCE_PATH,
+            OptimizeResourceConstants.ACTUATOR_ENDPOINT,
+            PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
+            UIConfigurationRestService.UI_CONFIGURATION_PATH
           });
 
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
 
-  @Autowired
-  private ConfigurationService configurationService;
-  @Autowired
-  private Environment environment;
+  @Autowired private ConfigurationService configurationService;
+  @Autowired private Environment environment;
 
   @Bean
   WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatFactoryCustomizer() {
@@ -93,7 +86,7 @@ public class OptimizeTomcatConfig {
 
         factory.addConnectorCustomizers(
             connector -> {
-              if("true".equals(System.getProperty("integrationTest", "false"))) {
+              if ("true".equals(environment.getProperty("useLegacyPort"))) {
                 connector.setPort(8090);
               }
 
@@ -109,7 +102,7 @@ public class OptimizeTomcatConfig {
   }
 
   @Bean
-    /* redirect to /# when the endpoint is not valid. do this rather than showing an error page */
+  /* redirect to /# when the endpoint is not valid. do this rather than showing an error page */
   FilterRegistrationBean<URLRedirectFilter> urlRedirector() {
     LOG.debug("Registering filter 'urlRedirector'...");
 
