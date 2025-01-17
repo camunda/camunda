@@ -6,6 +6,9 @@
 html {
   @include theme($g10);
 }
+body {
+  background-color: var(--cds-layer-02) !important;
+}
 
 h1 {
   @include type-style("heading-04");
