@@ -37,7 +37,8 @@ public class ProcessInstanceElementMigratedApplierTest {
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     processInstanceElementMigratedApplier =
-        new ProcessInstanceElementMigratedApplier(elementInstanceState, processState);
+        new ProcessInstanceElementMigratedApplier(
+            elementInstanceState, processState, processingState.getMessageState());
   }
 
   @Test

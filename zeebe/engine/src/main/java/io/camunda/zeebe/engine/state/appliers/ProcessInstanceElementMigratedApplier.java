@@ -11,12 +11,14 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
+import org.agrona.DirectBuffer;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
 final class ProcessInstanceElementMigratedApplier
@@ -24,11 +26,15 @@ final class ProcessInstanceElementMigratedApplier
 
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final MutableMessageState messageState;
 
   public ProcessInstanceElementMigratedApplier(
-      final MutableElementInstanceState elementInstanceState, final ProcessState processState) {
+      final MutableElementInstanceState elementInstanceState,
+      final ProcessState processState,
+      final MutableMessageState messageState) {
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.messageState = messageState;
   }
 
   @Override
@@ -36,6 +42,21 @@ final class ProcessInstanceElementMigratedApplier
     if (value.getBpmnElementType() == BpmnElementType.SEQUENCE_FLOW) {
       migrateTakenSequenceFlow(value);
       return;
+    }
+
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      final DirectBuffer correlationKey =
+          messageState.getProcessInstanceCorrelationKey(value.getProcessInstanceKey());
+
+      if (correlationKey != null && correlationKey.capacity() > 0) {
+        // unlock old process instance
+        final var previousBpmnProcessId =
+            elementInstanceState
+                .getInstance(elementInstanceKey)
+                .getValue()
+                .getBpmnProcessIdBuffer();
+        messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
+      }
     }
 
     final var previousProcessDefinitionKey = new AtomicLong();
