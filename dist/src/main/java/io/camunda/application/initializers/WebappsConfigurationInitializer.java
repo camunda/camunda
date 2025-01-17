@@ -15,6 +15,7 @@ import static io.camunda.application.Profile.SSO_AUTH;
 import static io.camunda.application.Profile.TASKLIST;
 
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.operate.webapp.security.OperateURIs;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
