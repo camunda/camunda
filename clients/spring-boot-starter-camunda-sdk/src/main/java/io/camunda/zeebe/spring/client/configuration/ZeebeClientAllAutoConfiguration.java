@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getOrLegacyOrDefault;
+import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getLegacyOrLatestOrDefault;
 import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
 
 import io.camunda.client.api.JsonMapper;
@@ -66,10 +66,10 @@ public class ZeebeClientAllAutoConfiguration {
   @ConditionalOnMissingBean
   public ZeebeClientExecutorService zeebeClientExecutorService() {
     return ZeebeClientExecutorService.createDefault(
-        getOrLegacyOrDefault(
+        getLegacyOrLatestOrDefault(
             "NumJobWorkerExecutionThreads",
-            () -> camundaClientProperties.getZeebe().getExecutionThreads(),
             configurationProperties::getNumJobWorkerExecutionThreads,
+            () -> camundaClientProperties.getZeebe().getExecutionThreads(),
             DEFAULT.getNumJobWorkerExecutionThreads(),
             null));
   }

@@ -25,15 +25,15 @@ public class PropertyUtilTest {
   @Test
   void shouldPreferLegacy() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
-            "Test", () -> "prop", () -> "legacy", "default", new HashMap<>());
+        PropertyUtil.getLegacyOrLatestOrDefault(
+            "Test", () -> "legacy", () -> "prop", "default", new HashMap<>());
     assertThat(property).isEqualTo("legacy");
   }
 
   @Test
   void shouldApplyDefault() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrLatestOrDefault(
             "Test", () -> null, () -> null, "default", new HashMap<>());
     assertThat(property).isEqualTo("default");
   }
@@ -41,20 +41,20 @@ public class PropertyUtilTest {
   @Test
   void shouldIgnoreDefaultOnLegacy() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
-            "Test", () -> "prop", () -> "default", "default", new HashMap<>());
+        PropertyUtil.getLegacyOrLatestOrDefault(
+            "Test", () -> "default", () -> "prop", "default", new HashMap<>());
     assertThat(property).isEqualTo("prop");
   }
 
   @Test
   void shouldHandleExceptionOnPropertySupplier() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrLatestOrDefault(
             "Test",
+            () -> null,
             () -> {
               throw new NullPointerException();
             },
-            () -> null,
             "default",
             new HashMap<>());
     assertThat(property).isEqualTo("default");
@@ -63,12 +63,12 @@ public class PropertyUtilTest {
   @Test
   void shouldHandleExceptionOnLegacyPropertySupplier() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrLatestOrDefault(
             "Test",
-            () -> null,
             () -> {
               throw new NullPointerException();
             },
+            () -> null,
             "default",
             new HashMap<>());
     assertThat(property).isEqualTo("default");

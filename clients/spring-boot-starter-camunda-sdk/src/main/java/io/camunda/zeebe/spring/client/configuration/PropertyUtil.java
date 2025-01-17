@@ -27,18 +27,18 @@ public class PropertyUtil {
   /**
    * Returns the property in the given relevance: legacyProperty, property,defaultProperty
    *
+   * @param <T> the type of the property
    * @param propertyName the name of the property, used for logging
-   * @param propertySupplier a function to supply the property, may throw
    * @param legacyPropertySupplier a function to supply the legacy property, may throw
+   * @param latestPropertySupplier a function to supply the property, may throw
    * @param defaultProperty the default to apply if nothing else suits, may be null
    * @param configCache the cache to save the property to, may be null
    * @return the property resolved
-   * @param <T> the type of the property
    */
-  public static <T> T getOrLegacyOrDefault(
+  public static <T> T getLegacyOrLatestOrDefault(
       final String propertyName,
-      final Supplier<T> propertySupplier,
       final Supplier<T> legacyPropertySupplier,
+      final Supplier<T> latestPropertySupplier,
       final T defaultProperty,
       final Map<String, Object> configCache) {
 
@@ -50,7 +50,7 @@ public class PropertyUtil {
     }
     T property = getPropertyFromSupplier(legacyPropertySupplier, propertyName, "legacy");
     if (property == null || property.equals(defaultProperty)) {
-      property = getPropertyFromSupplier(propertySupplier, propertyName, "property");
+      property = getPropertyFromSupplier(latestPropertySupplier, propertyName, "property");
     }
     if (property == null || property.equals(defaultProperty)) {
       LOG.debug("Property {}: not set or default, using default", propertyName);
@@ -79,8 +79,8 @@ public class PropertyUtil {
       final Supplier<T> propertySupplier,
       final T defaultProperty,
       final Map<String, Object> configCache) {
-    return getOrLegacyOrDefault(
-        propertyName, propertySupplier, noPropertySupplier(), defaultProperty, configCache);
+    return getLegacyOrLatestOrDefault(
+        propertyName, noPropertySupplier(), propertySupplier, defaultProperty, configCache);
   }
 
   private static <T> Supplier<T> noPropertySupplier() {

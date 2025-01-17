@@ -83,172 +83,172 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public String getGatewayAddress() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "GatewayAddress",
-        this::composeGatewayAddress,
         () -> PropertiesUtil.getZeebeGatewayAddress(properties),
+        this::composeGatewayAddress,
         DEFAULT.getGatewayAddress(),
         configCache);
   }
 
   @Override
   public URI getRestAddress() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "RestAddress",
-        () -> camundaClientProperties.getZeebe().getRestAddress(),
         () -> properties.getBroker().getRestAddress(),
+        () -> camundaClientProperties.getZeebe().getRestAddress(),
         DEFAULT.getRestAddress(),
         configCache);
   }
 
   @Override
   public URI getGrpcAddress() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "GrpcAddress",
-        () -> camundaClientProperties.getZeebe().getGrpcAddress(),
         properties::getGrpcAddress,
+        () -> camundaClientProperties.getZeebe().getGrpcAddress(),
         DEFAULT.getGrpcAddress(),
         configCache);
   }
 
   @Override
   public String getDefaultTenantId() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultTenantId",
+        properties::getDefaultTenantId,
         prioritized(
             DEFAULT.getDefaultTenantId(),
             List.of(
                 () -> camundaClientProperties.getTenantIds().get(0),
                 () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds().get(0))),
-        properties::getDefaultTenantId,
         DEFAULT.getDefaultTenantId(),
         configCache);
   }
 
   @Override
   public List<String> getDefaultJobWorkerTenantIds() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultJobWorkerTenantIds",
+        properties::getDefaultJobWorkerTenantIds,
         prioritized(
             DEFAULT.getDefaultJobWorkerTenantIds(),
             List.of(
                 camundaClientProperties::getTenantIds,
                 () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds())),
-        properties::getDefaultJobWorkerTenantIds,
         DEFAULT.getDefaultJobWorkerTenantIds(),
         configCache);
   }
 
   @Override
   public int getNumJobWorkerExecutionThreads() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "NumJobWorkerExecutionThreads",
-        () -> camundaClientProperties.getZeebe().getExecutionThreads(),
         () -> properties.getWorker().getThreads(),
+        () -> camundaClientProperties.getZeebe().getExecutionThreads(),
         DEFAULT.getNumJobWorkerExecutionThreads(),
         configCache);
   }
 
   @Override
   public int getDefaultJobWorkerMaxJobsActive() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultJobWorkerMaxJobsActive",
-        () -> camundaClientProperties.getZeebe().getDefaults().getMaxJobsActive(),
         () -> properties.getWorker().getMaxJobsActive(),
+        () -> camundaClientProperties.getZeebe().getDefaults().getMaxJobsActive(),
         DEFAULT.getDefaultJobWorkerMaxJobsActive(),
         configCache);
   }
 
   @Override
   public String getDefaultJobWorkerName() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultJobWorkerName",
-        () -> camundaClientProperties.getZeebe().getDefaults().getName(),
         () -> properties.getWorker().getDefaultName(),
+        () -> camundaClientProperties.getZeebe().getDefaults().getName(),
         DEFAULT.getDefaultJobWorkerName(),
         configCache);
   }
 
   @Override
   public Duration getDefaultJobTimeout() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultJobTimeout",
-        () -> camundaClientProperties.getZeebe().getDefaults().getTimeout(),
         () -> properties.getJob().getTimeout(),
+        () -> camundaClientProperties.getZeebe().getDefaults().getTimeout(),
         DEFAULT.getDefaultJobTimeout(),
         configCache);
   }
 
   @Override
   public Duration getDefaultJobPollInterval() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultJobPollInterval",
-        () -> camundaClientProperties.getZeebe().getDefaults().getPollInterval(),
         () -> properties.getJob().getPollInterval(),
+        () -> camundaClientProperties.getZeebe().getDefaults().getPollInterval(),
         DEFAULT.getDefaultJobPollInterval(),
         configCache);
   }
 
   @Override
   public Duration getDefaultMessageTimeToLive() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultMessageTimeToLive",
-        () -> camundaClientProperties.getZeebe().getMessageTimeToLive(),
         () -> properties.getMessage().getTimeToLive(),
+        () -> camundaClientProperties.getZeebe().getMessageTimeToLive(),
         DEFAULT.getDefaultMessageTimeToLive(),
         configCache);
   }
 
   @Override
   public Duration getDefaultRequestTimeout() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultRequestTimeout",
+        properties::getRequestTimeout,
         prioritized(
             DEFAULT.getDefaultRequestTimeout(),
             List.of(
                 () -> camundaClientProperties.getZeebe().getRequestTimeout(),
                 () -> camundaClientProperties.getZeebe().getDefaults().getRequestTimeout())),
-        properties::getRequestTimeout,
         DEFAULT.getDefaultRequestTimeout(),
         configCache);
   }
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "PlaintextConnectionEnabled",
-        this::composePlaintext,
         () -> properties.getSecurity().isPlaintext(),
+        this::composePlaintext,
         DEFAULT.isPlaintextConnectionEnabled(),
         configCache);
   }
 
   @Override
   public String getCaCertificatePath() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "CaCertificatePath",
-        () -> camundaClientProperties.getZeebe().getCaCertificatePath(),
         () -> properties.getSecurity().getCertPath(),
+        () -> camundaClientProperties.getZeebe().getCaCertificatePath(),
         DEFAULT.getCaCertificatePath(),
         configCache);
   }
 
   @Override
   public CredentialsProvider getCredentialsProvider() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "CredentialsProvider",
-        this::credentialsProvider,
         this::legacyCredentialsProvider,
+        this::credentialsProvider,
         null,
         configCache);
   }
 
   @Override
   public Duration getKeepAlive() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "KeepAlive",
-        () -> camundaClientProperties.getZeebe().getKeepAlive(),
         () -> properties.getBroker().getKeepAlive(),
+        () -> camundaClientProperties.getZeebe().getKeepAlive(),
         DEFAULT.getKeepAlive(),
         configCache);
   }
@@ -270,20 +270,20 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public String getOverrideAuthority() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "OverrideAuthority",
-        () -> camundaClientProperties.getZeebe().getOverrideAuthority(),
         () -> properties.getSecurity().getOverrideAuthority(),
+        () -> camundaClientProperties.getZeebe().getOverrideAuthority(),
         DEFAULT.getOverrideAuthority(),
         configCache);
   }
 
   @Override
   public int getMaxMessageSize() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "MaxMessageSize",
-        () -> camundaClientProperties.getZeebe().getMaxMessageSize(),
         () -> properties.getMessage().getMaxMessageSize(),
+        () -> camundaClientProperties.getZeebe().getMaxMessageSize(),
         DEFAULT.getMaxMessageSize(),
         configCache);
   }
@@ -304,20 +304,20 @@ public class CamundaClientConfigurationImpl implements CamundaClientConfiguratio
 
   @Override
   public boolean ownsJobWorkerExecutor() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "ownsJobWorkerExecutor",
-        zeebeClientExecutorService::isOwnedByZeebeClient,
         properties::ownsJobWorkerExecutor,
+        zeebeClientExecutorService::isOwnedByZeebeClient,
         DEFAULT.ownsJobWorkerExecutor(),
         configCache);
   }
 
   @Override
   public boolean getDefaultJobWorkerStreamEnabled() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrLatestOrDefault(
         "DefaultJobWorkerStreamEnabled",
-        () -> camundaClientProperties.getZeebe().getDefaults().getStreamEnabled(),
         properties::getDefaultJobWorkerStreamEnabled,
+        () -> camundaClientProperties.getZeebe().getDefaults().getStreamEnabled(),
         DEFAULT.getDefaultJobWorkerStreamEnabled(),
         configCache);
   }
