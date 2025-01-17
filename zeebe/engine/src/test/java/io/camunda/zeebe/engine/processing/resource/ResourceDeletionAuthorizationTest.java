@@ -70,7 +70,7 @@ public class ResourceDeletionAuthorizationTest {
     final var user = createUser();
     addPermissionsToUser(
         user.getUserKey(),
-        AuthorizationResourceType.DEPLOYMENT,
+        AuthorizationResourceType.RESOURCE,
         PermissionType.DELETE_PROCESS,
         processId);
 
@@ -133,7 +133,7 @@ public class ResourceDeletionAuthorizationTest {
     final var drdKey = deployDrd();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.DELETE_DRD, drdId);
+        user.getUserKey(), AuthorizationResourceType.RESOURCE, PermissionType.DELETE_DRD, drdId);
 
     // when
     engine.resourceDeletion().withResourceKey(drdKey).delete(user.getUsername());
@@ -190,10 +190,7 @@ public class ResourceDeletionAuthorizationTest {
     final var formKey = deployForm();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(),
-        AuthorizationResourceType.DEPLOYMENT,
-        PermissionType.DELETE_FORM,
-        formId);
+        user.getUserKey(), AuthorizationResourceType.RESOURCE, PermissionType.DELETE_FORM, formId);
 
     // when
     engine.resourceDeletion().withResourceKey(formKey).delete(user.getUsername());

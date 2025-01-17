@@ -90,7 +90,7 @@ public class PermissionsService {
   public boolean hasPermissionForDeployment(
       final Long deploymentKey, final IdentityPermission identityPermission) {
     return hasPermissionForResource(
-        deploymentKey.toString(), AuthorizationResourceType.DEPLOYMENT, identityPermission);
+        deploymentKey.toString(), AuthorizationResourceType.RESOURCE, identityPermission);
   }
 
   /**

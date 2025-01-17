@@ -69,7 +69,7 @@ public class DeploymentCreateAuthorizationTest {
     final var processId = Strings.newRandomValidBpmnId();
     final var user = createUser();
     addPermissionsToUser(
-        user.getUserKey(), AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+        user.getUserKey(), AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
 
     // when
     engine

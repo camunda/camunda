@@ -54,7 +54,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .add();
 
@@ -121,7 +121,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .add();
 
@@ -156,7 +156,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
         .authorization()
         .permission()
         .withOwnerKey(ownerKey)
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "foo")
         .add();
 

@@ -69,7 +69,7 @@ public class RemovePermissionsTest {
             .limit(1)
             .getFirst()
             .getValue();
-    assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.DEPLOYMENT);
+    assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.RESOURCE);
     assertThat(recordValue.getOwnerType()).isEqualTo(AuthorizationOwnerType.USER);
     final var permission = recordValue.getPermissions().getFirst();
     assertThat(permission.getPermissionType()).isEqualTo(PermissionType.CREATE);

@@ -52,7 +52,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
         .authorization()
         .permission()
         .withOwnerKey(user.getUserKey())
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "*")
         .add(DEFAULT_USER.getUsername());
 
@@ -76,7 +76,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
         .authorization()
         .permission()
         .withOwnerKey(user.getUserKey())
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermission(PermissionType.CREATE, "*")
         .add(user.getUsername());
 
@@ -99,7 +99,7 @@ public class AuthorizationAddPermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(user.getUserKey())
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE, "*")
             .expectRejection()
             .add(user.getUsername());

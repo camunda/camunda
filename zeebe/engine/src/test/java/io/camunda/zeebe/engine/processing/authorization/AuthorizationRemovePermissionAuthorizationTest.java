@@ -32,7 +32,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
-  private static long defaultUserKey = -1L;
+  private static final long defaultUserKey = -1L;
 
   @Rule
   public final EngineRule engine =
@@ -46,7 +46,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
   public void shouldBeAuthorizedToRemovePermissionsWithDefaultUser() {
     // given
     final var resourceId = "resourceId";
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var user = createUser();
     addPermissionsToUser(user.getUserKey(), resourceType, permissionType, resourceId);
@@ -105,7 +105,7 @@ public class AuthorizationRemovePermissionAuthorizationTest {
             .authorization()
             .permission()
             .withOwnerKey(user.getUserKey())
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermission(PermissionType.DELETE, "*")
             .expectRejection()
             .remove(user.getUsername());
