@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Configuration;
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
     properties = {
         INTEGRATION_TESTS + "=true",
-        "useLegacyPort=true"
+        "useLegacyPort=true" // TODO: Remove once we read the configuration from the single application
     })
 @Configuration
 public abstract class AbstractIT {

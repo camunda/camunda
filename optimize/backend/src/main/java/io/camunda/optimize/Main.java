@@ -32,6 +32,8 @@ public class Main {
 
     final Map<String, Object> defaultProperties = new HashMap<>();
     defaultProperties.put(ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort());
+
+    // TODO: Remove once we read the configuration from the single application
     defaultProperties.put("useLegacyPort", "true");
 
     optimize.setDefaultProperties(defaultProperties);

@@ -86,6 +86,7 @@ public class OptimizeTomcatConfig {
 
         factory.addConnectorCustomizers(
             connector -> {
+              // TODO: Remove once we read the configuration from the single application
               if ("true".equals(environment.getProperty("useLegacyPort"))) {
                 connector.setPort(8090);
               }
