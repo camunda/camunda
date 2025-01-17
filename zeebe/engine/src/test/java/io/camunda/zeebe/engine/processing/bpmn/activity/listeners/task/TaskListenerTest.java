@@ -1448,7 +1448,7 @@ public class TaskListenerTest {
             // initial values that were before task assignment using the corrections.
             tuple(UserTaskIntent.ASSIGNED, List.of("candidateGroupsList", "dueDate")));
 
-    final var createUserTaskValue =
+    final var createdUserTaskValue =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst()
@@ -1461,11 +1461,11 @@ public class TaskListenerTest {
 
     Assertions.assertThat(assignedUserTaskValue)
         // unchanged properties
-        .hasFollowUpDate(createUserTaskValue.getFollowUpDate())
-        .hasCandidateUsersList(createUserTaskValue.getCandidateUsersList())
+        .hasFollowUpDate(createdUserTaskValue.getFollowUpDate())
+        .hasCandidateUsersList(createdUserTaskValue.getCandidateUsersList())
         // properties reset to their initial values
-        .hasAssignee(createUserTaskValue.getAssignee())
-        .hasPriority(createUserTaskValue.getPriority())
+        .hasAssignee(createdUserTaskValue.getAssignee())
+        .hasPriority(createdUserTaskValue.getPriority())
         // changed properties
         .hasDueDate("corrected_due_date")
         .hasCandidateGroupsList("hobbits")
