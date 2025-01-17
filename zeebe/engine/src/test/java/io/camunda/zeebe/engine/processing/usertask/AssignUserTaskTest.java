@@ -79,6 +79,9 @@ public final class AssignUserTaskTest {
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
     assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure ASSIGNING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
@@ -155,6 +158,9 @@ public final class AssignUserTaskTest {
             .getValue();
 
     assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure ASSIGNING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
@@ -197,6 +203,9 @@ public final class AssignUserTaskTest {
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
     assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure ASSIGNING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
@@ -303,11 +312,15 @@ public final class AssignUserTaskTest {
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
     assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure ASSIGNING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
                     .hasAction(DEFAULT_ACTION)
                     .hasAssignee("foo")
+                    .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE)
                     .hasTenantId(tenantId));
   }
 

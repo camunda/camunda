@@ -73,6 +73,9 @@ public class ClaimUserTaskTest {
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
     assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
@@ -113,6 +116,9 @@ public class ClaimUserTaskTest {
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
     assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
@@ -223,6 +229,9 @@ public class ClaimUserTaskTest {
             .getValue();
 
     assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
@@ -232,7 +241,7 @@ public class ClaimUserTaskTest {
                     .hasAssignee(initialAssignee)
                     .describedAs(
                         "Expect that the `changedAttributes` field is empty because the task was "
-                            + "claimed by the same user and the `assignee` value did not change.")
+                            + "claimed by the same user and the `assignee` value did not change")
                     .hasNoChangedAttributes());
   }
 
@@ -279,6 +288,9 @@ public class ClaimUserTaskTest {
         RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
 
     assertThat(List.of(claimingRecordValue, assignedRecordValue))
+        .describedAs(
+            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
+                + "as dependent applications will rely on them to update user task data internally")
         .allSatisfy(
             recordValue ->
                 Assertions.assertThat(recordValue)
