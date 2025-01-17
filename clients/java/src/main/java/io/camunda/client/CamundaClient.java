@@ -1644,7 +1644,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
 
   /**
-   * Command to create give an owner an authorization
+   * Command to create an authorization
    *
    * <p>Example usage:
    *
