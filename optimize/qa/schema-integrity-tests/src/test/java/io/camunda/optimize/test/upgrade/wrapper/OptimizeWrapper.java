@@ -68,6 +68,7 @@ public class OptimizeWrapper {
     final Map<String, String> envVars = new HashMap<>();
     envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
     envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(databasePort));
+    envVars.put("SERVER_PORT", "8090");
     processBuilder.environment().putAll(envVars);
     upgradeProcess = processBuilder.start();
   }
