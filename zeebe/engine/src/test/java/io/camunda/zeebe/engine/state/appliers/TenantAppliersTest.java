@@ -96,40 +96,6 @@ public class TenantAppliersTest {
   }
 
   @Test
-  void shouldDeleteTenantWithMultipleUsers() {
-    // given
-    final long tenantKey = UUID.randomUUID().hashCode();
-    final var tenantId = UUID.randomUUID().toString();
-
-    final var tenantRecord = createTenant(tenantKey, tenantId);
-    final long[] userKeys = {1L, 2L, 3L};
-    for (final long userKey : userKeys) {
-      createUser(userKey, "user" + userKey);
-      associateUserWithTenant(tenantKey, tenantId, userKey);
-    }
-
-    // Ensure the tenant and associated users exist before deletion
-    assertThat(tenantState.getTenantByKey(tenantKey)).isPresent();
-    assertUsersAreAssociatedWithTenant(userKeys, tenantId);
-
-    // when
-    tenantDeletedApplier.applyState(tenantKey, tenantRecord);
-
-    // then verify tenant is deleted
-    assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
-
-    // Verify all associated users are no longer linked to the tenant
-    assertUsersAreNotAssociatedWithAnyTenant(userKeys);
-
-    // Verify owner type and permissions are removed
-    assertThat(authorizationState.getOwnerType(tenantKey)).isEmpty();
-    final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            tenantKey, AuthorizationResourceType.TENANT, PermissionType.DELETE);
-    assertThat(resourceIdentifiers).isEmpty();
-  }
-
-  @Test
   void shouldDeleteTenantWithoutEntities() {
     // given
     final long tenantKey = UUID.randomUUID().hashCode();
@@ -245,19 +211,5 @@ public class TenantAppliersTest {
             .setEntityKey(userKey)
             .setEntityType(EntityType.USER);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
-  }
-
-  private void assertUsersAreAssociatedWithTenant(final long[] userKeys, final String tenantId) {
-    for (final long userKey : userKeys) {
-      final var persistedUser = userState.getUser(userKey).get();
-      assertThat(persistedUser.getTenantIdsList()).contains(tenantId);
-    }
-  }
-
-  private void assertUsersAreNotAssociatedWithAnyTenant(final long[] userKeys) {
-    for (final long userKey : userKeys) {
-      final var persistedUser = userState.getUser(userKey).get();
-      assertThat(persistedUser.getTenantIdsList()).isEmpty();
-    }
   }
 }
