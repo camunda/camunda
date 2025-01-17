@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceInputEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
@@ -36,10 +37,10 @@ public class DecisionEvaluationHandler
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionEvaluationHandler.class);
   private static final String ID_PATTERN = "%s-%d";
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public DecisionEvaluationHandler(final String indexName) {
-    this.indexName = indexName;
+  public DecisionEvaluationHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -117,12 +118,12 @@ public class DecisionEvaluationHandler
 
   @Override
   public void flush(final DecisionInstanceEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private int getEvaluatedDecisionValueIndex(

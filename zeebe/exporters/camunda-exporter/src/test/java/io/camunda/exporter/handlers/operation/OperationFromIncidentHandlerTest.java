@@ -21,7 +21,7 @@ class OperationFromIncidentHandlerTest extends AbstractOperationHandlerTest<Inci
 
   @BeforeEach
   void setUp() {
-    underTest = new OperationFromIncidentHandler(indexName);
+    underTest = new OperationFromIncidentHandler(index);
     valueType = ValueType.INCIDENT;
   }
 

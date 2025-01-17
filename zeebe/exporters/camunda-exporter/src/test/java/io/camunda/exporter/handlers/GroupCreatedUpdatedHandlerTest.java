@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,8 +31,8 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 public class GroupCreatedUpdatedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-group";
-  private final GroupCreatedUpdatedHandler underTest = new GroupCreatedUpdatedHandler(indexName);
+  private final IndexDescriptor index = new GroupIndex("", true);
+  private final GroupCreatedUpdatedHandler underTest = new GroupCreatedUpdatedHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -117,6 +119,6 @@ public class GroupCreatedUpdatedHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 }

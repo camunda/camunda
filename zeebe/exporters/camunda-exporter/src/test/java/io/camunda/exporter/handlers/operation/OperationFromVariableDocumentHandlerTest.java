@@ -21,7 +21,7 @@ class OperationFromVariableDocumentHandlerTest
 
   @BeforeEach
   void setUp() {
-    underTest = new OperationFromVariableDocumentHandler(indexName);
+    underTest = new OperationFromVariableDocumentHandler(index);
     valueType = ValueType.VARIABLE_DOCUMENT;
   }
 

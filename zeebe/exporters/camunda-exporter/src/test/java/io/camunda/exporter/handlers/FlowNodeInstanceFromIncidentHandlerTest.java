@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -29,9 +30,9 @@ import org.junit.jupiter.api.Test;
 public class FlowNodeInstanceFromIncidentHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-flownode-instance";
+  private final IndexDescriptor index = new FlowNodeInstanceTemplate("", true);
   private final FlowNodeInstanceFromIncidentHandler underTest =
-      new FlowNodeInstanceFromIncidentHandler(indexName);
+      new FlowNodeInstanceFromIncidentHandler(index);
 
   @Test
   public void testGetHandledValueType() {
@@ -99,7 +100,7 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
 
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index.getIndexName(), inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test

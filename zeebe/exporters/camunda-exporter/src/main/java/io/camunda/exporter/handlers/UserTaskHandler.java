@@ -12,6 +12,7 @@ import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -46,15 +47,15 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
 
-  private final String indexName;
+  private final IndexDescriptor index;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterMetadata exporterMetadata;
 
   public UserTaskHandler(
-      final String indexName,
+      final IndexDescriptor index,
       final ExporterEntityCache<String, CachedFormEntity> formCache,
       final ExporterMetadata exporterMetadata) {
-    this.indexName = indexName;
+    this.index = index;
     this.formCache = formCache;
     this.exporterMetadata = exporterMetadata;
   }
@@ -121,7 +122,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.upsertWithRouting(
-        indexName,
+        index.getIndexName(),
         previousVersionRecord ? String.valueOf(entity.getKey()) : entity.getId(),
         entity,
         updateFields,
@@ -129,8 +130,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private Map<String, Object> getUpdatedFields(final TaskEntity entity) {

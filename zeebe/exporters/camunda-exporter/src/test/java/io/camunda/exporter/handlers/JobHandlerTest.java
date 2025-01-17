@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.operate.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -48,9 +49,9 @@ import org.mockito.Mockito;
 
 final class JobHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = JobTemplate.INDEX_NAME;
+  private final IndexDescriptor index = new JobTemplate("", true);
 
-  private final JobHandler underTest = new JobHandler(indexName);
+  private final JobHandler underTest = new JobHandler(index);
 
   @Test
   void testGetHandledValueType() {

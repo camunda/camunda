@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -32,8 +33,8 @@ public class EventFromProcessInstanceHandler
           ProcessInstanceIntent.ELEMENT_COMPLETED,
           ProcessInstanceIntent.ELEMENT_TERMINATED);
 
-  public EventFromProcessInstanceHandler(final String indexName) {
-    super(indexName);
+  public EventFromProcessInstanceHandler(final IndexDescriptor index) {
+    super(index);
   }
 
   @Override

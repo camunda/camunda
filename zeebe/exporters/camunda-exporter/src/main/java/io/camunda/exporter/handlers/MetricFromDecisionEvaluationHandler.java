@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -28,10 +29,10 @@ public class MetricFromDecisionEvaluationHandler
       "EVENT_DECISION_INSTANCE_EVALUATED";
   private static final String ID_PATTERN = "%d-%d";
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public MetricFromDecisionEvaluationHandler(final String indexName) {
-    this.indexName = indexName;
+  public MetricFromDecisionEvaluationHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -82,11 +83,11 @@ public class MetricFromDecisionEvaluationHandler
 
   @Override
   public void flush(final MetricEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

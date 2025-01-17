@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,10 +22,10 @@ public class TaskCompletedMetricHandler
     implements ExportHandler<MetricEntity, UserTaskRecordValue> {
 
   protected static final String EVENT_TASK_COMPLETED_BY_ASSIGNEE = "task_completed_by_assignee";
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public TaskCompletedMetricHandler(final String indexName) {
-    this.indexName = indexName;
+  public TaskCompletedMetricHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -63,11 +64,11 @@ public class TaskCompletedMetricHandler
 
   @Override
   public void flush(final MetricEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

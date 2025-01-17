@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -33,10 +34,10 @@ import org.junit.jupiter.api.Test;
 
 public class MetricFromDecisionEvaluationHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = MetricIndex.INDEX_NAME;
+  private final IndexDescriptor index = new MetricIndex("", true);
 
   private final MetricFromDecisionEvaluationHandler underTest =
-      new MetricFromDecisionEvaluationHandler(indexName);
+      new MetricFromDecisionEvaluationHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -160,6 +161,6 @@ public class MetricFromDecisionEvaluationHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 }

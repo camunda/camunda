@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
@@ -40,10 +41,10 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public FlowNodeInstanceFromProcessInstanceHandler(final String indexName) {
-    this.indexName = indexName;
+  public FlowNodeInstanceFromProcessInstanceHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -167,12 +168,12 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     if (entity.getPosition() != null) {
       updateFields.put(FlowNodeInstanceTemplate.POSITION, entity.getPosition());
     }
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index.getIndexName(), entity.getId(), entity, updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private boolean isOfType(

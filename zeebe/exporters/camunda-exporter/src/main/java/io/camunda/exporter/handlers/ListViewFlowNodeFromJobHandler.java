@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOB_POSITION;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -30,10 +31,10 @@ public class ListViewFlowNodeFromJobHandler
 
   private static final Set<Intent> FAILED_JOB_EVENTS = Set.of(JobIntent.FAIL, JobIntent.FAILED);
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public ListViewFlowNodeFromJobHandler(final String indexName) {
-    this.indexName = indexName;
+  public ListViewFlowNodeFromJobHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -101,11 +102,15 @@ public class ListViewFlowNodeFromJobHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index.getIndexName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(processInstanceKey));
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

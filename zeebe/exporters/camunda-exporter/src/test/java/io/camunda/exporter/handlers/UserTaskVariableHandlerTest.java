@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
@@ -36,8 +37,8 @@ import org.mockito.ArgumentCaptor;
 public class UserTaskVariableHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-tasklist-task";
-  private final UserTaskVariableHandler underTest = new UserTaskVariableHandler(indexName, 100);
+  private final IndexDescriptor index = new TaskTemplate("", true);
+  private final UserTaskVariableHandler underTest = new UserTaskVariableHandler(index, 100);
 
   @Test
   void testGetHandledValueType() {
@@ -146,7 +147,7 @@ public class UserTaskVariableHandlerTest {
     assertThat(variableBatch.getVariables()).hasSize(2);
     verify(mockRequest, times(2))
         .upsertWithRouting(
-            eq(indexName),
+            eq(index.getIndexName()),
             idCaptor.capture(),
             entityCaptor.capture(),
             updateFieldsCaptor.capture(),

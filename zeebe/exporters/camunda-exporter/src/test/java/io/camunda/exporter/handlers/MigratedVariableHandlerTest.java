@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -30,8 +31,8 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class MigratedVariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "variable";
-  private final MigratedVariableHandler underTest = new MigratedVariableHandler(indexName);
+  private final IndexDescriptor index = new VariableTemplate("", true);
+  private final MigratedVariableHandler underTest = new MigratedVariableHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -119,7 +120,8 @@ public class MigratedVariableHandlerTest {
     updateFields.put(VariableTemplate.POSITION, inputEntity.getPosition());
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, inputEntity.getId(), inputEntity, updateFields);
+    verify(mockRequest, times(1))
+        .upsert(index.getIndexName(), inputEntity.getId(), inputEntity, updateFields);
   }
 
   @Test

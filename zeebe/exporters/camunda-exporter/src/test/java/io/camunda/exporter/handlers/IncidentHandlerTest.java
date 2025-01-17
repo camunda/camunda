@@ -20,6 +20,8 @@ import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -38,9 +40,9 @@ import org.junit.jupiter.api.Test;
 
 public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-incident";
+  private final IndexDescriptor index = new IncidentTemplate("", true);
   private final TestProcessCache processCache = new TestProcessCache();
-  private final IncidentHandler underTest = new IncidentHandler(indexName, processCache);
+  private final IncidentHandler underTest = new IncidentHandler(index, processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -117,7 +119,8 @@ public class IncidentHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "0", inputEntity, Map.of("position", 1L));
+    verify(mockRequest, times(1))
+        .upsert(index.getIndexName(), "0", inputEntity, Map.of("position", 1L));
   }
 
   @Test

@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT_POSITION;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,10 +30,10 @@ public class ListViewFlowNodeFromIncidentHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewFlowNodeFromIncidentHandler.class);
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public ListViewFlowNodeFromIncidentHandler(final String indexName) {
-    this.indexName = indexName;
+  public ListViewFlowNodeFromIncidentHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -100,12 +101,16 @@ public class ListViewFlowNodeFromIncidentHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index.getIndexName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(processInstanceKey));
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   public String trimWhitespace(final String str) {

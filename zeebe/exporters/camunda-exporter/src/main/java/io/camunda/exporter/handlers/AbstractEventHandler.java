@@ -27,6 +27,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.EventTempla
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.PROCESS_KEY;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventSourceType;
 import io.camunda.webapps.schema.entities.operate.EventType;
@@ -39,10 +40,10 @@ import java.util.Map;
 public abstract class AbstractEventHandler<R extends RecordValue>
     implements ExportHandler<EventEntity, R> {
   protected static final String ID_PATTERN = "%s_%s";
-  protected final String indexName;
+  protected final IndexDescriptor index;
 
-  public AbstractEventHandler(final String indexName) {
-    this.indexName = indexName;
+  public AbstractEventHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -56,8 +57,8 @@ public abstract class AbstractEventHandler<R extends RecordValue>
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   protected void loadEventGeneralData(final Record<R> record, final EventEntity eventEntity) {
@@ -110,6 +111,6 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     }
 
     // write event
-    batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
+    batchRequest.upsert(index.getIndexName(), entity.getId(), entity, jsonMap);
   }
 }

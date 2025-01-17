@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -25,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 public class SequenceFlowHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "sequence-flow";
-  private final SequenceFlowHandler underTest = new SequenceFlowHandler(indexName);
+  private final IndexDescriptor index = new SequenceFlowTemplate("", true);
+  private final SequenceFlowHandler underTest = new SequenceFlowHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -108,7 +110,7 @@ public class SequenceFlowHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

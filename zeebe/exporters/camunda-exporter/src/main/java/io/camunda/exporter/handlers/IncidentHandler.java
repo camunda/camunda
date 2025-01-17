@@ -15,6 +15,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
@@ -36,12 +37,13 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
   private final Map<String, Record<IncidentRecordValue>> recordsMap = new HashMap<>();
-  private final String indexName;
+  private final IndexDescriptor index;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public IncidentHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
-    this.indexName = indexName;
+      final IndexDescriptor index,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+    this.index = index;
     this.processCache = processCache;
   }
 
@@ -121,12 +123,13 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     }
     final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, entity);
     updateFields.put(POSITION, entity.getPosition());
-    batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
+    batchRequest.upsert(
+        index.getIndexName(), String.valueOf(entity.getKey()), entity, updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private String buildTreePath(final Record<IncidentRecordValue> record) {

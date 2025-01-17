@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -26,8 +28,8 @@ import org.junit.jupiter.api.Test;
 final class DecisionHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-decision";
-  private final DecisionHandler underTest = new DecisionHandler(indexName);
+  private final IndexDescriptor index = new DecisionIndex("", true);
+  private final DecisionHandler underTest = new DecisionHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -111,7 +113,7 @@ final class DecisionHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

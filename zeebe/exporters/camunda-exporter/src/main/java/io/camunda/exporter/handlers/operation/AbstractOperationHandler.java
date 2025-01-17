@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.operation;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -23,10 +24,10 @@ import java.util.Map;
 public abstract class AbstractOperationHandler<R extends RecordValue>
     implements ExportHandler<OperationEntity, R> {
 
-  protected final String indexName;
+  protected final IndexDescriptor index;
 
-  public AbstractOperationHandler(final String indexName) {
-    this.indexName = indexName;
+  public AbstractOperationHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -66,11 +67,11 @@ public abstract class AbstractOperationHandler<R extends RecordValue>
     updateFields.put(OperationTemplate.LOCK_OWNER, entity.getLockOwner());
     updateFields.put(OperationTemplate.LOCK_EXPIRATION_TIME, entity.getLockExpirationTime());
 
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.update(index.getIndexName(), entity.getId(), updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

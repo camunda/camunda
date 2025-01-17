@@ -15,6 +15,8 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,9 +31,9 @@ import org.junit.jupiter.api.Test;
 public class FormHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-form";
+  private final IndexDescriptor index = new FormIndex("", true);
   private final TestFormCache formCache = new TestFormCache();
-  private final FormHandler underTest = new FormHandler(indexName, formCache);
+  private final FormHandler underTest = new FormHandler(index, formCache);
 
   @Test
   void testGetHandledValueType() {
@@ -97,7 +99,7 @@ public class FormHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test
@@ -110,7 +112,7 @@ public class FormHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

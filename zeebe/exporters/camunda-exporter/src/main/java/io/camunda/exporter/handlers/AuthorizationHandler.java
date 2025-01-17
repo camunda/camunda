@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.security.entity.Permission;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,10 +21,10 @@ import java.util.stream.Collectors;
 
 public class AuthorizationHandler
     implements ExportHandler<AuthorizationEntity, AuthorizationRecordValue> {
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public AuthorizationHandler(final String indexName) {
-    this.indexName = indexName;
+  public AuthorizationHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -65,12 +66,12 @@ public class AuthorizationHandler
   @Override
   public void flush(final AuthorizationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private List<Permission> getPermissions(final List<PermissionValue> permissionValues) {

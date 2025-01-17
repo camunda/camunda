@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.operation;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -15,8 +16,8 @@ import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 public class OperationFromVariableDocumentHandler
     extends AbstractOperationHandler<VariableDocumentRecordValue> {
 
-  public OperationFromVariableDocumentHandler(final String indexName) {
-    super(indexName);
+  public OperationFromVariableDocumentHandler(final IndexDescriptor index) {
+    super(index);
   }
 
   @Override

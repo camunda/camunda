@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.operation;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -14,8 +15,8 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
 public class OperationFromIncidentHandler extends AbstractOperationHandler<IncidentRecordValue> {
 
-  public OperationFromIncidentHandler(final String indexName) {
-    super(indexName);
+  public OperationFromIncidentHandler(final IndexDescriptor index) {
+    super(index);
   }
 
   @Override

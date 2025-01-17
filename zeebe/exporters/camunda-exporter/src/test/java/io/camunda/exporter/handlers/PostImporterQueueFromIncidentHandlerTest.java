@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -26,9 +28,9 @@ import org.junit.jupiter.api.Test;
 public class PostImporterQueueFromIncidentHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-post-import-queue";
+  private final IndexDescriptor index = new PostImporterQueueTemplate("", true);
   private final PostImporterQueueFromIncidentHandler underTest =
-      new PostImporterQueueFromIncidentHandler(indexName);
+      new PostImporterQueueFromIncidentHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -118,7 +120,7 @@ public class PostImporterQueueFromIncidentHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

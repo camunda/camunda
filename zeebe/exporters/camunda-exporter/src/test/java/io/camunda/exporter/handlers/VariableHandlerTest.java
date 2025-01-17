@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,9 +29,9 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class VariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "variable";
+  private final IndexDescriptor index = new VariableTemplate("", true);
   private final int variableSizeThreshold = 10;
-  private final VariableHandler underTest = new VariableHandler(indexName, variableSizeThreshold);
+  private final VariableHandler underTest = new VariableHandler(index, variableSizeThreshold);
 
   @Test
   void testGetHandledValueType() {
@@ -111,7 +113,7 @@ public class VariableHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test
@@ -129,7 +131,7 @@ public class VariableHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

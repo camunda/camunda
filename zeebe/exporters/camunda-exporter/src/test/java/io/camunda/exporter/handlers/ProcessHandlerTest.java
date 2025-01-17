@@ -15,6 +15,8 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,9 +33,9 @@ import org.junit.jupiter.api.Test;
 
 public class ProcessHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-process";
+  private final IndexDescriptor index = new ProcessIndex("", true);
   private final TestProcessCache processCache = new TestProcessCache();
-  private final ProcessHandler underTest = new ProcessHandler(indexName, processCache);
+  private final ProcessHandler underTest = new ProcessHandler(index, processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -99,7 +101,7 @@ public class ProcessHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

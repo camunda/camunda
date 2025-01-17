@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.ExporterBatchWriter.Builder;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -308,7 +309,7 @@ public class ExporterBatchWriterMultipleHandlersTest {
     }
 
     @Override
-    public String getIndexName() {
+    public IndexDescriptor getIndex() {
       return null;
     }
   }

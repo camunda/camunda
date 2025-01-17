@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
@@ -21,10 +22,10 @@ import java.util.Map;
 
 public class MigratedVariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public MigratedVariableHandler(final String indexName) {
-    this.indexName = indexName;
+  public MigratedVariableHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -73,11 +74,11 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     updateFields.put(VariableTemplate.POSITION, entity.getPosition());
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index.getIndexName(), entity.getId(), entity, updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

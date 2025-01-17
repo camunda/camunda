@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskProcessInstanceEntity;
@@ -22,10 +23,10 @@ import java.util.List;
 public class UserTaskProcessInstanceHandler
     implements ExportHandler<TaskProcessInstanceEntity, ProcessInstanceRecordValue> {
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public UserTaskProcessInstanceHandler(final String indexName) {
-    this.indexName = indexName;
+  public UserTaskProcessInstanceHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -68,11 +69,11 @@ public class UserTaskProcessInstanceHandler
 
   @Override
   public void flush(final TaskProcessInstanceEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

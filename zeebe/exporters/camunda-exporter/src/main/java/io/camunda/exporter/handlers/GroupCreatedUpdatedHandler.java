@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -23,10 +24,10 @@ public class GroupCreatedUpdatedHandler implements ExportHandler<GroupEntity, Gr
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(GroupIntent.CREATED, GroupIntent.UPDATED);
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public GroupCreatedUpdatedHandler(final String indexName) {
-    this.indexName = indexName;
+  public GroupCreatedUpdatedHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -65,11 +66,11 @@ public class GroupCreatedUpdatedHandler implements ExportHandler<GroupEntity, Gr
   @Override
   public void flush(final GroupEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

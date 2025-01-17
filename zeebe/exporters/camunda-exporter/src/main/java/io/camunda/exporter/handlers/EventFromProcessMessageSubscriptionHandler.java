@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
@@ -27,8 +28,8 @@ public class EventFromProcessMessageSubscriptionHandler
   public static final Set<Intent> STATES =
       Set.of(ProcessMessageSubscriptionIntent.CREATED, ProcessMessageSubscriptionIntent.MIGRATED);
 
-  public EventFromProcessMessageSubscriptionHandler(final String indexName) {
-    super(indexName);
+  public EventFromProcessMessageSubscriptionHandler(final IndexDescriptor index) {
+    super(index);
   }
 
   @Override

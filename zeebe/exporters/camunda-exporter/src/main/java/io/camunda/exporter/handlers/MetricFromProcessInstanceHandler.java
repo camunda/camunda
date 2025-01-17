@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -25,10 +26,10 @@ public class MetricFromProcessInstanceHandler
   protected static final int EMPTY_PARENT_PROCESS_INSTANCE_ID = -1;
   protected static final String EVENT_PROCESS_INSTANCE_STARTED = "EVENT_PROCESS_INSTANCE_STARTED";
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public MetricFromProcessInstanceHandler(final String indexName) {
-    this.indexName = indexName;
+  public MetricFromProcessInstanceHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -76,11 +77,11 @@ public class MetricFromProcessInstanceHandler
 
   @Override
   public void flush(final MetricEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

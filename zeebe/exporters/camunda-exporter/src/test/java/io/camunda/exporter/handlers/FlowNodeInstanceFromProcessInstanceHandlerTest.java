@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
@@ -38,9 +39,9 @@ import org.junit.jupiter.api.Test;
 
 public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-list-view";
+  private final IndexDescriptor index = new FlowNodeInstanceTemplate("", true);
   private final FlowNodeInstanceFromProcessInstanceHandler underTest =
-      new FlowNodeInstanceFromProcessInstanceHandler(indexName);
+      new FlowNodeInstanceFromProcessInstanceHandler(index);
 
   @Test
   public void testGetHandledValueType() {
@@ -185,7 +186,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     underTest.flush(inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index.getIndexName(), inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -218,7 +219,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     underTest.flush(inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index.getIndexName(), inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test

@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -25,8 +27,8 @@ import org.junit.jupiter.api.Test;
 
 public class UserCreatedUpdatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-user";
-  private final UserCreatedUpdatedHandler underTest = new UserCreatedUpdatedHandler(indexName);
+  private final IndexDescriptor index = new UserIndex("", true);
+  private final UserCreatedUpdatedHandler underTest = new UserCreatedUpdatedHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -116,6 +118,6 @@ public class UserCreatedUpdatedHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 }

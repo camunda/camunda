@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -18,10 +19,10 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
 public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public RoleMemberRemovedHandler(final String indexName) {
-    this.indexName = indexName;
+  public RoleMemberRemovedHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -61,11 +62,12 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleR
   @Override
   public void flush(final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent().toString());
+    batchRequest.deleteWithRouting(
+        index.getIndexName(), entity.getId(), entity.getJoin().parent().toString());
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

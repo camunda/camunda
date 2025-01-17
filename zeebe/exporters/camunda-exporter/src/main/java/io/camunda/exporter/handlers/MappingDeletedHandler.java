@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -17,10 +18,10 @@ import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import java.util.List;
 
 public class MappingDeletedHandler implements ExportHandler<MappingEntity, MappingRecordValue> {
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public MappingDeletedHandler(final String indexName) {
-    this.indexName = indexName;
+  public MappingDeletedHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -61,11 +62,11 @@ public class MappingDeletedHandler implements ExportHandler<MappingEntity, Mappi
   @Override
   public void flush(final MappingEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index.getIndexName(), entity.getId());
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

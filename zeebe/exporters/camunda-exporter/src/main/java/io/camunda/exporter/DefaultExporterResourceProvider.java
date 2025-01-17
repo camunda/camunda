@@ -135,110 +135,71 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     exportHandlers =
         Set.of(
-            new RoleCreateUpdateHandler(
-                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleMemberAddedHandler(
-                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleMemberRemovedHandler(
-                indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new UserCreatedUpdatedHandler(
-                indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
-            new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
-            new AuthorizationHandler(
-                indexDescriptors.get(AuthorizationIndex.class).getFullQualifiedName()),
-            new TenantCreateUpdateHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
-            new TenantDeletedHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
-            new TenantEntityAddedHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
-            new TenantEntityRemovedHandler(
-                indexDescriptors.get(TenantIndex.class).getFullQualifiedName()),
-            new GroupCreatedUpdatedHandler(
-                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new GroupEntityAddedHandler(
-                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new GroupEntityRemovedHandler(
-                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
-            new DecisionHandler(indexDescriptors.get(DecisionIndex.class).getFullQualifiedName()),
+            new RoleCreateUpdateHandler(indexDescriptors.get(RoleIndex.class)),
+            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class)),
+            new RoleMemberAddedHandler(indexDescriptors.get(RoleIndex.class)),
+            new RoleMemberRemovedHandler(indexDescriptors.get(RoleIndex.class)),
+            new UserCreatedUpdatedHandler(indexDescriptors.get(UserIndex.class)),
+            new UserDeletedHandler(indexDescriptors.get(UserIndex.class)),
+            new AuthorizationHandler(indexDescriptors.get(AuthorizationIndex.class)),
+            new TenantCreateUpdateHandler(indexDescriptors.get(TenantIndex.class)),
+            new TenantDeletedHandler(indexDescriptors.get(TenantIndex.class)),
+            new TenantEntityAddedHandler(indexDescriptors.get(TenantIndex.class)),
+            new TenantEntityRemovedHandler(indexDescriptors.get(TenantIndex.class)),
+            new GroupCreatedUpdatedHandler(indexDescriptors.get(GroupIndex.class)),
+            new GroupEntityAddedHandler(indexDescriptors.get(GroupIndex.class)),
+            new GroupEntityRemovedHandler(indexDescriptors.get(GroupIndex.class)),
+            new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class)),
+            new DecisionHandler(indexDescriptors.get(DecisionIndex.class)),
             new ListViewProcessInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(), processCache),
-            new ListViewFlowNodeFromIncidentHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
-            new ListViewFlowNodeFromJobHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(ListViewTemplate.class), processCache),
+            new ListViewFlowNodeFromIncidentHandler(indexDescriptors.get(ListViewTemplate.class)),
+            new ListViewFlowNodeFromJobHandler(indexDescriptors.get(ListViewTemplate.class)),
             new ListViewFlowNodeFromProcessInstanceHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
-            new ListViewVariableFromVariableHandler(
-                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(ListViewTemplate.class)),
+            new ListViewVariableFromVariableHandler(indexDescriptors.get(ListViewTemplate.class)),
             new VariableHandler(
-                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(VariableTemplate.class),
                 configuration.getIndex().getVariableSizeThreshold()),
-            new DecisionRequirementsHandler(
-                indexDescriptors.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
+            new DecisionRequirementsHandler(indexDescriptors.get(DecisionRequirementsIndex.class)),
             new PostImporterQueueFromIncidentHandler(
-                indexDescriptors.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(PostImporterQueueTemplate.class)),
             new FlowNodeInstanceFromIncidentHandler(
-                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(FlowNodeInstanceTemplate.class)),
             new FlowNodeInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
-            new IncidentHandler(
-                indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
-            new SequenceFlowHandler(
-                indexDescriptors.get(SequenceFlowTemplate.class).getFullQualifiedName()),
-            new DecisionEvaluationHandler(
-                indexDescriptors.get(DecisionInstanceTemplate.class).getFullQualifiedName()),
-            new ProcessHandler(
-                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(), processCache),
-            new MetricFromProcessInstanceHandler(
-                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
-            new TaskCompletedMetricHandler(
-                indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName()),
-            new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
-            new FormHandler(
-                indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
-            new EventFromIncidentHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
-            new EventFromJobHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
-            new EventFromProcessInstanceHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(FlowNodeInstanceTemplate.class)),
+            new IncidentHandler(indexDescriptors.get(IncidentTemplate.class), processCache),
+            new SequenceFlowHandler(indexDescriptors.get(SequenceFlowTemplate.class)),
+            new DecisionEvaluationHandler(indexDescriptors.get(DecisionInstanceTemplate.class)),
+            new ProcessHandler(indexDescriptors.get(ProcessIndex.class), processCache),
+            new MetricFromProcessInstanceHandler(indexDescriptors.get(MetricIndex.class)),
+            new TaskCompletedMetricHandler(indexDescriptors.get(TasklistMetricIndex.class)),
+            new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class)),
+            new FormHandler(indexDescriptors.get(FormIndex.class), formCache),
+            new EventFromIncidentHandler(indexDescriptors.get(EventTemplate.class)),
+            new EventFromJobHandler(indexDescriptors.get(EventTemplate.class)),
+            new EventFromProcessInstanceHandler(indexDescriptors.get(EventTemplate.class)),
             new EventFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(EventTemplate.class)),
             new UserTaskHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
-                formCache,
-                exporterMetadata),
+                indexDescriptors.get(TaskTemplate.class), formCache, exporterMetadata),
             new UserTaskJobBasedHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
-                formCache,
-                exporterMetadata),
-            new UserTaskProcessInstanceHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(TaskTemplate.class), formCache, exporterMetadata),
+            new UserTaskProcessInstanceHandler(indexDescriptors.get(TaskTemplate.class)),
             new UserTaskVariableHandler(
-                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(TaskTemplate.class),
                 configuration.getIndex().getVariableSizeThreshold()),
             new UserTaskCompletionVariableHandler(
-                indexDescriptors.get(SnapshotTaskVariableTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(SnapshotTaskVariableTemplate.class),
                 configuration.getIndex().getVariableSizeThreshold()),
-            new OperationFromProcessInstanceHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new OperationFromVariableDocumentHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new OperationFromIncidentHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new MappingCreatedHandler(
-                indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
-            new MappingDeletedHandler(
-                indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
-            new MetricFromDecisionEvaluationHandler(
-                indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
-            new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),
-            new MigratedVariableHandler(
-                indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()));
+            new OperationFromProcessInstanceHandler(indexDescriptors.get(OperationTemplate.class)),
+            new OperationFromVariableDocumentHandler(indexDescriptors.get(OperationTemplate.class)),
+            new OperationFromIncidentHandler(indexDescriptors.get(OperationTemplate.class)),
+            new MappingCreatedHandler(indexDescriptors.get(MappingIndex.class)),
+            new MappingDeletedHandler(indexDescriptors.get(MappingIndex.class)),
+            new MetricFromDecisionEvaluationHandler(indexDescriptors.get(MetricIndex.class)),
+            new JobHandler(indexDescriptors.get(JobTemplate.class)),
+            new MigratedVariableHandler(indexDescriptors.get(VariableTemplate.class)));
   }
 
   @Override

@@ -16,6 +16,7 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
@@ -47,11 +48,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final String indexName;
+  private final IndexDescriptor index;
 
   public ListViewProcessInstanceFromProcessInstanceHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
-    this.indexName = indexName;
+      final IndexDescriptor index,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+    this.index = index;
     this.processCache = processCache;
   }
 
@@ -178,12 +180,12 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       updateFields.put(ListViewTemplate.STATE, entity.getState());
     }
 
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index.getIndexName(), entity.getId(), entity, updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {

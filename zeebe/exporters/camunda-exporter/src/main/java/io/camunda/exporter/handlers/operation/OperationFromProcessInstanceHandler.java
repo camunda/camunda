@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.operation;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -21,8 +22,8 @@ public class OperationFromProcessInstanceHandler
     extends AbstractOperationHandler<ProcessInstanceRecordValue> {
   protected static final Set<Intent> ELIGIBLE_STATES = Set.of(ELEMENT_MIGRATED, ELEMENT_TERMINATED);
 
-  public OperationFromProcessInstanceHandler(final String indexName) {
-    super(indexName);
+  public OperationFromProcessInstanceHandler(final IndexDescriptor index) {
+    super(index);
   }
 
   @Override

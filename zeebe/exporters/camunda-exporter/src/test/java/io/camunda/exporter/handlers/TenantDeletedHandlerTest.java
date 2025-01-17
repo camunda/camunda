@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -24,8 +26,8 @@ import org.junit.jupiter.api.Test;
 
 public class TenantDeletedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-tenant";
-  private final TenantDeletedHandler underTest = new TenantDeletedHandler(indexName);
+  private final IndexDescriptor index = new TenantIndex("", true);
+  private final TenantDeletedHandler underTest = new TenantDeletedHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -80,6 +82,6 @@ public class TenantDeletedHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
+    verify(mockRequest, times(1)).delete(index.getIndexName(), inputEntity.getId());
   }
 }

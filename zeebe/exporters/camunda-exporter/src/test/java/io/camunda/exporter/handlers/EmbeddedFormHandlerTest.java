@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -32,8 +34,8 @@ import org.junit.jupiter.api.Test;
 public class EmbeddedFormHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-form";
-  private final EmbeddedFormHandler underTest = new EmbeddedFormHandler(indexName);
+  private final IndexDescriptor index = new FormIndex("", true);
+  private final EmbeddedFormHandler underTest = new EmbeddedFormHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -105,7 +107,7 @@ public class EmbeddedFormHandlerTest {
     underTest.flush(batch, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test
@@ -122,8 +124,8 @@ public class EmbeddedFormHandlerTest {
     underTest.flush(batch, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, firstInputEntity);
-    verify(mockRequest, times(1)).add(indexName, secondInputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), firstInputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), secondInputEntity);
   }
 
   @Test

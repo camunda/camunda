@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
@@ -34,11 +35,11 @@ public class UserTaskCompletionVariableHandler
   private static final String ID_PATTERN = "%s-%s";
   private static final ObjectMapper MAPPER = new ObjectMapper();
   protected final int variableSizeThreshold;
-  private final String indexName;
+  private final IndexDescriptor index;
 
   public UserTaskCompletionVariableHandler(
-      final String indexName, final int variableSizeThreshold) {
-    this.indexName = indexName;
+      final IndexDescriptor index, final int variableSizeThreshold) {
+    this.index = index;
     this.variableSizeThreshold = variableSizeThreshold;
   }
 
@@ -86,8 +87,8 @@ public class UserTaskCompletionVariableHandler
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private void flushSnapshotTaskVariableEntity(
@@ -96,7 +97,7 @@ public class UserTaskCompletionVariableHandler
     updateFields.put(SnapshotTaskVariableTemplate.VALUE, entity.getValue());
     updateFields.put(SnapshotTaskVariableTemplate.FULL_VALUE, entity.getFullValue());
     updateFields.put(SnapshotTaskVariableTemplate.IS_PREVIEW, entity.getIsPreview());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index.getIndexName(), entity.getId(), entity, updateFields);
   }
 
   private SnapshotTaskVariableEntity createSnapshotVariableEntity(

@@ -17,6 +17,7 @@ import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -51,11 +52,11 @@ public class UserTaskJobBasedHandlerTest {
           JobIntent.FAILED);
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-tasklist-task";
+  private final IndexDescriptor index = new TaskTemplate("", true);
   private final TestFormCache formCache = new TestFormCache();
   private final ExporterMetadata exporterMetadata = new ExporterMetadata();
   private final UserTaskJobBasedHandler underTest =
-      new UserTaskJobBasedHandler(indexName, formCache, exporterMetadata);
+      new UserTaskJobBasedHandler(index, formCache, exporterMetadata);
 
   @BeforeEach
   void resetMetadata() {
@@ -215,7 +216,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
@@ -247,7 +248,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             String.valueOf(recordKey),
             inputEntity,
             updateFieldsMap,
@@ -493,7 +494,7 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(jobRecordValue.getBpmnProcessId());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -529,7 +530,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -593,7 +594,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -659,7 +660,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -725,7 +726,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,
@@ -783,7 +784,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             taskEntity.getId(),
             taskEntity,
             expectedUpdates,

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -31,7 +32,7 @@ import org.junit.jupiter.api.Test;
 abstract class AbstractOperationHandlerTest<R extends RecordValue> {
   protected AbstractOperationHandler<R> underTest;
   protected final ProtocolFactory factory = new ProtocolFactory();
-  protected final String indexName = OperationTemplate.INDEX_NAME;
+  protected final IndexDescriptor index = new OperationTemplate("", true);
   protected ValueType valueType;
 
   @Test
@@ -121,7 +122,7 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
     underTest.flush(entity, mockRequest);
 
     // then
-    verify(mockRequest).update(indexName, entity.getId(), expectedUpdateFields);
+    verify(mockRequest).update(index.getIndexName(), entity.getId(), expectedUpdateFields);
   }
 
   protected Record<R> generateRecord(final Intent intent) {

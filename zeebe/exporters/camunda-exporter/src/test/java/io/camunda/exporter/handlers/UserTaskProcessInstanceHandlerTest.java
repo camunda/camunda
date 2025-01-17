@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskProcessInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -37,9 +39,9 @@ public class UserTaskProcessInstanceHandlerTest {
           BpmnElementType.USER_TASK,
           BpmnElementType.MULTI_INSTANCE_BODY);
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-tasklist-task";
+  private final IndexDescriptor index = new TaskTemplate("", true);
   private final UserTaskProcessInstanceHandler underTest =
-      new UserTaskProcessInstanceHandler(indexName);
+      new UserTaskProcessInstanceHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -125,7 +127,7 @@ public class UserTaskProcessInstanceHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @Test

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -45,10 +46,10 @@ import org.junit.jupiter.api.Test;
 public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-list-view";
+  private final IndexDescriptor index = new ListViewTemplate("", true);
   private final TestProcessCache processCache = new TestProcessCache();
   private final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, processCache);
+      new ListViewProcessInstanceFromProcessInstanceHandler(index, processCache);
 
   @Test
   public void testGetHandledValueType() {
@@ -200,7 +201,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1))
+        .upsert(index.getIndexName(), "111", inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -229,7 +231,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1))
+        .upsert(index.getIndexName(), "111", inputEntity, expectedUpdateFields);
   }
 
   @Test

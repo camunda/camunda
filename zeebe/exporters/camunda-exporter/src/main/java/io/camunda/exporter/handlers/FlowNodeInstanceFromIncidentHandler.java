@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -26,10 +27,10 @@ public class FlowNodeInstanceFromIncidentHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FlowNodeInstanceFromIncidentHandler.class);
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public FlowNodeInstanceFromIncidentHandler(final String indexName) {
-    this.indexName = indexName;
+  public FlowNodeInstanceFromIncidentHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -72,11 +73,11 @@ public class FlowNodeInstanceFromIncidentHandler
   public void flush(final FlowNodeInstanceEntity entity, final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index.getIndexName(), entity.getId(), entity, updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VAR_VALUE;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,10 +30,10 @@ public class ListViewVariableFromVariableHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewVariableFromVariableHandler.class);
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public ListViewVariableFromVariableHandler(final String indexName) {
-    this.indexName = indexName;
+  public ListViewVariableFromVariableHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -94,11 +95,15 @@ public class ListViewVariableFromVariableHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index.getIndexName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(processInstanceKey));
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

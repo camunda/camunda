@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -28,9 +29,9 @@ import org.junit.jupiter.api.Test;
 
 final class DecisionRequirementsHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = DecisionRequirementsIndex.INDEX_NAME;
+  private final IndexDescriptor index = new DecisionRequirementsIndex("", true);
 
-  private final DecisionRequirementsHandler underTest = new DecisionRequirementsHandler(indexName);
+  private final DecisionRequirementsHandler underTest = new DecisionRequirementsHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -144,7 +145,7 @@ final class DecisionRequirementsHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   private Record<DecisionRequirementsRecordValue> generateRecord(

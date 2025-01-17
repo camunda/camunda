@@ -12,6 +12,7 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.exporter.utils.ProcessCacheUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -24,12 +25,13 @@ import java.util.List;
 
 public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
-  private final String indexName;
+  private final IndexDescriptor index;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public ProcessHandler(
-      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
-    this.indexName = indexName;
+      final IndexDescriptor index,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
+    this.index = index;
     this.processCache = processCache;
   }
 
@@ -92,12 +94,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   @Override
   public void flush(final ProcessEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private void extractProcessModelData(final Process process, final ProcessEntity entity) {

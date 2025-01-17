@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,10 +22,10 @@ import java.util.List;
 public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
   private final int variableSizeThreshold;
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public VariableHandler(final String indexName, final int variableSizeThreshold) {
-    this.indexName = indexName;
+  public VariableHandler(final IndexDescriptor index, final int variableSizeThreshold) {
+    this.index = index;
     this.variableSizeThreshold = variableSizeThreshold;
   }
 
@@ -84,11 +85,11 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
   @Override
   public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

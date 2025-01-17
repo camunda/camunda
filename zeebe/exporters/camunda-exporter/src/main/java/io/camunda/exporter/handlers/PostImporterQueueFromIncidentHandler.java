@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,10 +22,10 @@ import java.util.List;
 public class PostImporterQueueFromIncidentHandler
     implements ExportHandler<PostImporterQueueEntity, IncidentRecordValue> {
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public PostImporterQueueFromIncidentHandler(final String indexName) {
-    this.indexName = indexName;
+  public PostImporterQueueFromIncidentHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -77,11 +78,11 @@ public class PostImporterQueueFromIncidentHandler
 
   @Override
   public void flush(final PostImporterQueueEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

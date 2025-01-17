@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventMetadataEntity;
@@ -33,8 +34,8 @@ public class EventFromJobHandler extends AbstractEventHandler<JobRecordValue> {
           JobIntent.CANCELED,
           JobIntent.MIGRATED);
 
-  public EventFromJobHandler(final String indexName) {
-    super(indexName);
+  public EventFromJobHandler(final IndexDescriptor index) {
+    super(index);
   }
 
   @Override

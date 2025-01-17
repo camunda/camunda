@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.entities.operate.EventEntity;
 import io.camunda.webapps.schema.entities.operate.EventSourceType;
@@ -33,10 +34,10 @@ import org.mockito.Mockito;
 
 final class EventFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = EventTemplate.INDEX_NAME;
+  private final IndexDescriptor index = new EventTemplate("", true);
 
   private final EventFromProcessInstanceHandler underTest =
-      new EventFromProcessInstanceHandler(indexName);
+      new EventFromProcessInstanceHandler(index);
 
   @Test
   void testGetHandledValueType() {

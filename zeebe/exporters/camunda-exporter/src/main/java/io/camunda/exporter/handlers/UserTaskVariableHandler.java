@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
@@ -32,10 +33,10 @@ public class UserTaskVariableHandler
 
   private static final String ID_PATTERN = "%s-%s";
   protected final int variableSizeThreshold;
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public UserTaskVariableHandler(final String indexName, final int variableSizeThreshold) {
-    this.indexName = indexName;
+  public UserTaskVariableHandler(final IndexDescriptor index, final int variableSizeThreshold) {
+    this.index = index;
     this.variableSizeThreshold = variableSizeThreshold;
   }
 
@@ -104,13 +105,17 @@ public class UserTaskVariableHandler
               updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, v.getFullValue());
               updateFields.put(TaskTemplate.IS_TRUNCATED, v.getIsTruncated());
               batchRequest.upsertWithRouting(
-                  indexName, v.getId(), v, updateFields, String.valueOf(v.getProcessInstanceId()));
+                  index.getIndexName(),
+                  v.getId(),
+                  v,
+                  updateFields,
+                  String.valueOf(v.getProcessInstanceId()));
             });
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private TaskVariableEntity createVariableFromRecord(final Record<VariableRecordValue> record) {

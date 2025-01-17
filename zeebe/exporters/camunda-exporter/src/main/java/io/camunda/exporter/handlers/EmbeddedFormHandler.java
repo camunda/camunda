@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -22,10 +23,10 @@ import java.util.Optional;
 public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Process> {
 
   private static final String FORM_ID_PATTERN = "%s_%s";
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public EmbeddedFormHandler(final String indexName) {
-    this.indexName = indexName;
+  public EmbeddedFormHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -67,12 +68,13 @@ public class EmbeddedFormHandler implements ExportHandler<EmbeddedFormBatch, Pro
   @Override
   public void flush(final EmbeddedFormBatch entity, final BatchRequest batchRequest) {
     final var forms = entity.getForms();
-    Optional.ofNullable(forms).ifPresent(l -> l.forEach(f -> batchRequest.add(indexName, f)));
+    Optional.ofNullable(forms)
+        .ifPresent(l -> l.forEach(f -> batchRequest.add(index.getIndexName(), f)));
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private List<FormEntity> mapToFormEntities(

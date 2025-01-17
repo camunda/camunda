@@ -18,6 +18,7 @@ import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -53,15 +54,15 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
           JobIntent.RECURRED_AFTER_BACKOFF,
           JobIntent.FAILED);
 
-  private final String indexName;
+  private final IndexDescriptor index;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterMetadata exporterMetadata;
 
   public UserTaskJobBasedHandler(
-      final String indexName,
+      final IndexDescriptor index,
       final ExporterEntityCache<String, CachedFormEntity> formCache,
       final ExporterMetadata exporterMetadata) {
-    this.indexName = indexName;
+    this.index = index;
     this.formCache = formCache;
     this.exporterMetadata = exporterMetadata;
   }
@@ -145,7 +146,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     final boolean previousVersionRecord = refersToPreviousVersionRecord(entity.getKey());
 
     batchRequest.upsertWithRouting(
-        indexName,
+        index.getIndexName(),
         previousVersionRecord ? String.valueOf(entity.getKey()) : taskEntityId,
         entity,
         updateFields,
@@ -153,8 +154,8 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private Map<String, Object> getUpdatedFields(final TaskEntity entity) {

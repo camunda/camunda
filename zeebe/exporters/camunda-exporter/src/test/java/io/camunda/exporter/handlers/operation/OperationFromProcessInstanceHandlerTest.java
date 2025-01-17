@@ -24,7 +24,7 @@ class OperationFromProcessInstanceHandlerTest
 
   @BeforeEach
   void setUp() {
-    underTest = new OperationFromProcessInstanceHandler(indexName);
+    underTest = new OperationFromProcessInstanceHandler(index);
     valueType = ValueType.PROCESS_INSTANCE;
   }
 

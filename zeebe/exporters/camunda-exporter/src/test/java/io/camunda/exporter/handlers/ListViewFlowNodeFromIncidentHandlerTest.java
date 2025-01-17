@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,9 +29,9 @@ import org.mockito.Mockito;
 public class ListViewFlowNodeFromIncidentHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-list-view";
+  private final IndexDescriptor index = new ListViewTemplate("", true);
   private final ListViewFlowNodeFromIncidentHandler underTest =
-      new ListViewFlowNodeFromIncidentHandler(indexName);
+      new ListViewFlowNodeFromIncidentHandler(index);
 
   @Test
   public void testGetHandledValueType() {
@@ -89,7 +91,7 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,

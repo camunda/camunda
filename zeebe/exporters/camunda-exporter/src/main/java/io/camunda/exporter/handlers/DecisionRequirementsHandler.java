@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -23,10 +24,10 @@ public class DecisionRequirementsHandler
     implements ExportHandler<DecisionRequirementsEntity, DecisionRequirementsRecordValue> {
   private static final Charset CHARSET = StandardCharsets.UTF_8;
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public DecisionRequirementsHandler(final String indexName) {
-    this.indexName = indexName;
+  public DecisionRequirementsHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -74,11 +75,11 @@ public class DecisionRequirementsHandler
 
   @Override
   public void flush(final DecisionRequirementsEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

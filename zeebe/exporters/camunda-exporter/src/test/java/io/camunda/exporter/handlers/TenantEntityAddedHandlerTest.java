@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -24,8 +25,8 @@ import org.junit.jupiter.api.Test;
 public class TenantEntityAddedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-tenant";
-  private final TenantEntityAddedHandler underTest = new TenantEntityAddedHandler(indexName);
+  private final IndexDescriptor index = new TenantIndex("", true);
+  private final TenantEntityAddedHandler underTest = new TenantEntityAddedHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -85,6 +86,6 @@ public class TenantEntityAddedHandlerTest {
 
     // then
     verify(mockRequest, times(1))
-        .addWithRouting(indexName, inputEntity, String.valueOf(joinRelation.parent()));
+        .addWithRouting(index.getIndexName(), inputEntity, String.valueOf(joinRelation.parent()));
   }
 }

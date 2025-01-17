@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -19,10 +20,10 @@ import java.util.List;
 
 public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupRecordValue> {
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public GroupDeletedHandler(final String indexName) {
-    this.indexName = indexName;
+  public GroupDeletedHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -61,11 +62,11 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
   @Override
   public void flush(final GroupEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index.getIndexName(), entity.getId());
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

@@ -13,6 +13,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
@@ -38,8 +40,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class DecisionEvaluationHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-decision-evaluation";
-  private final DecisionEvaluationHandler underTest = new DecisionEvaluationHandler(indexName);
+  private final IndexDescriptor index = new DecisionInstanceTemplate("", true);
+  private final DecisionEvaluationHandler underTest = new DecisionEvaluationHandler(index);
 
   @Test
   void testGetHandledValueType() {
@@ -111,7 +113,7 @@ public class DecisionEvaluationHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index.getIndexName(), inputEntity);
   }
 
   @ParameterizedTest

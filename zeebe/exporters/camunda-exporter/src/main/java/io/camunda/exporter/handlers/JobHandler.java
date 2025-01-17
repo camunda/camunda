@@ -21,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.TIME;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -47,10 +48,10 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
   private static final Set<JobIntent> FAILED_JOB_EVENTS =
       Set.of(JobIntent.FAILED, JobIntent.ERROR_THROWN);
 
-  protected final String indexName;
+  protected final IndexDescriptor index;
 
-  public JobHandler(final String indexName) {
-    this.indexName = indexName;
+  public JobHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -140,11 +141,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     if (FAILED_JOB_EVENTS.stream().anyMatch(i -> jobEntity.getState().equals(i.name()))) {
       updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
     }
-    batchRequest.upsert(indexName, jobEntity.getId(), jobEntity, updateFields);
+    batchRequest.upsert(index.getIndexName(), jobEntity.getId(), jobEntity, updateFields);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
@@ -38,10 +39,10 @@ public class ListViewFlowNodeFromProcessInstanceHandler
   private static final Set<Intent> PI_AND_AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public ListViewFlowNodeFromProcessInstanceHandler(final String indexName) {
-    this.indexName = indexName;
+  public ListViewFlowNodeFromProcessInstanceHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -130,12 +131,12 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, processInstanceKey.toString());
+        index.getIndexName(), entity.getId(), entity, updateFields, processInstanceKey.toString());
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 
   private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {

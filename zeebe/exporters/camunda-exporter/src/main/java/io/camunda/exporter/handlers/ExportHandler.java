@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -76,8 +77,5 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    */
   void flush(T entity, BatchRequest batchRequest) throws PersistenceException;
 
-  /**
-   * @return the index name that the handler entities are flushed to.
-   */
-  String getIndexName();
+  IndexDescriptor getIndex();
 }

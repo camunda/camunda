@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -19,10 +20,10 @@ import java.util.List;
 
 public class TenantEntityRemovedHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
 
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public TenantEntityRemovedHandler(final String indexName) {
-    this.indexName = indexName;
+  public TenantEntityRemovedHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -64,11 +65,11 @@ public class TenantEntityRemovedHandler implements ExportHandler<TenantEntity, T
   public void flush(final TenantEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.deleteWithRouting(
-        indexName, entity.getId(), String.valueOf(entity.getJoin().parent()));
+        index.getIndexName(), entity.getId(), String.valueOf(entity.getJoin().parent()));
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

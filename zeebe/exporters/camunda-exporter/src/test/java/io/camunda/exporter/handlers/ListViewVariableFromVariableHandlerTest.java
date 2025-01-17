@@ -16,6 +16,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,9 +31,9 @@ import org.junit.jupiter.api.Test;
 public class ListViewVariableFromVariableHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-list-view";
+  private final IndexDescriptor index = new ListViewTemplate("", true);
   private final ListViewVariableFromVariableHandler underTest =
-      new ListViewVariableFromVariableHandler(indexName);
+      new ListViewVariableFromVariableHandler(index);
 
   @Test
   public void testGetHandledValueType() {
@@ -90,7 +92,7 @@ public class ListViewVariableFromVariableHandlerTest {
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index.getIndexName(),
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,

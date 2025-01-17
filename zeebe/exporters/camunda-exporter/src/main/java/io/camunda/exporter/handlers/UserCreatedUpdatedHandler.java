@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,10 +22,10 @@ import java.util.Set;
 public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, UserRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(UserIntent.CREATED, UserIntent.UPDATED);
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public UserCreatedUpdatedHandler(final String indexName) {
-    this.indexName = indexName;
+  public UserCreatedUpdatedHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -67,11 +68,11 @@ public class UserCreatedUpdatedHandler implements ExportHandler<UserEntity, User
   @Override
   public void flush(final UserEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }

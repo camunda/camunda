@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,10 +21,10 @@ public class SequenceFlowHandler
     implements ExportHandler<SequenceFlowEntity, ProcessInstanceRecordValue> {
 
   private static final String ID_PATTERN = "%s_%s";
-  private final String indexName;
+  private final IndexDescriptor index;
 
-  public SequenceFlowHandler(final String indexName) {
-    this.indexName = indexName;
+  public SequenceFlowHandler(final IndexDescriptor index) {
+    this.index = index;
   }
 
   @Override
@@ -70,11 +71,11 @@ public class SequenceFlowHandler
 
   @Override
   public void flush(final SequenceFlowEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index.getIndexName(), entity);
   }
 
   @Override
-  public String getIndexName() {
-    return indexName;
+  public IndexDescriptor getIndex() {
+    return index;
   }
 }
