@@ -133,6 +133,9 @@ public class OptimizeTomcatConfig {
   }
 
   private void applyCommonConfiguration(final Connector connector) {
+    // the port is compatible with the single-application settings
+    connector.setPort(configurationService.getContainerHttpsPort());
+
     connector.setProperty(
         "maxHttpRequestHeaderSize",
         String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));

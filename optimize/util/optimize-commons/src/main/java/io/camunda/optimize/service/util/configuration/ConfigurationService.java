@@ -803,14 +803,16 @@ public class ConfigurationService {
   }
 
   public Integer getContainerHttpsPort() {
-    if (containerHttpsPort == null) {
-      containerHttpsPort =
-          configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTPS_PORT, Integer.class);
-      if (containerHttpsPort == null) {
-        throw new OptimizeConfigurationException(
-            "Optimize container https port is not allowed to be null!");
-      }
+    if (containerHttpsPort != null) {
+      return containerHttpsPort;
     }
+
+    String serverPort = System.getenv("SERVER_PORT");
+    if (serverPort == null) {
+      serverPort = "8080";
+    }
+
+    containerHttpsPort = Integer.parseInt(serverPort);
     return containerHttpsPort;
   }
 
@@ -840,12 +842,12 @@ public class ConfigurationService {
     // it during tests. Thus it is still null initially
     // and need to be checked therefore.
     //noinspection OptionalAssignedToNull
-    if (containerHttpPort == null) {
-      containerHttpPort =
-          Optional.ofNullable(
-              configJsonContext.read(
-                  ConfigurationServiceConstants.CONTAINER_HTTP_PORT, Integer.class));
+    if (containerHttpPort != null) {
+      return containerHttpPort;
     }
+
+    final int httpsPort = getContainerHttpsPort();
+    containerHttpPort = Optional.of(httpsPort);
     return containerHttpPort;
   }
 
