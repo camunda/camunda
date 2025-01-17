@@ -25,7 +25,7 @@ public final class TenantFixtures extends CommonFixtures {
   }
 
   public static void createAndSaveRandomTenants(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    createAndSaveRandomTenants(rdbmsWriter, b -> b.name("Test tenant"));
   }
 
   public static void createAndSaveRandomTenants(

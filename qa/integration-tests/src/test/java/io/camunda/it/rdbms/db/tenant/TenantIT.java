@@ -159,7 +159,7 @@ public class TenantIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader reader = rdbmsService.getTenantReader();
 
-    createAndSaveRandomTenants(rdbmsWriter);
+    createAndSaveRandomTenants(rdbmsWriter, b -> b.name("test"));
     final var instance = createAndSaveTenant(rdbmsWriter);
 
     final var searchResult =
