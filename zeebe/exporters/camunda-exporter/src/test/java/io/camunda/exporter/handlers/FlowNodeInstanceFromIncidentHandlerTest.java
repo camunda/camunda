@@ -80,7 +80,7 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
     final FlowNodeInstanceEntity inputEntity =
         new FlowNodeInstanceEntity()
             .setId("123")
-            .setKey(567)
+            .setKey(567L)
             .setPartitionId(3)
             .setFlowNodeId("A")
             .setProcessInstanceKey(345L)

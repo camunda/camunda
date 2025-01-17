@@ -9,15 +9,15 @@ package io.camunda.webapps.schema.entities.operate.listview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 public class FlowNodeInstanceForListViewEntity
-    extends OperateZeebeEntity<FlowNodeInstanceForListViewEntity> {
+    extends AbstractExporterEntity<FlowNodeInstanceForListViewEntity> {
 
   private Long processInstanceKey;
   private String activityId;
