@@ -360,16 +360,16 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/react@1.73.0":
-  version "1.73.0"
-  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.73.0.tgz#b2d2bc28593330d869304eeff6ca922ff083cef8"
-  integrity sha512-C7yPkl07qkhqxSIxGasFGKZCCVEgx9k/4iMZ0HkeKi9Pxp/fOZ+xDEG7HwNUSOWZB/n06yBMTqDJvnl8Op/Pww==
+"@carbon/react@1.74.0":
+  version "1.74.0"
+  resolved "https://registry.yarnpkg.com/@carbon/react/-/react-1.74.0.tgz#663c252e80e6ee81f78440acf1d40a1945b74825"
+  integrity sha512-/jDRPp5x4T4HVp5VWbbm0RchLRBI3D0U+ymz8pAO37itwOzxs46Wzu1tHW0w57ripOU2KcPuurANEtnRAemgyQ==
   dependencies:
     "@babel/runtime" "^7.24.7"
     "@carbon/feature-flags" "^0.24.0"
     "@carbon/icons-react" "^11.53.0"
     "@carbon/layout" "^11.28.0"
-    "@carbon/styles" "^1.72.0"
+    "@carbon/styles" "^1.73.0"
     "@floating-ui/react" "^0.26.0"
     "@ibm/telemetry-js" "^1.5.0"
     classnames "2.5.1"
@@ -385,17 +385,17 @@
     use-resize-observer "^6.0.0"
     window-or-global "^1.0.1"
 
-"@carbon/styles@^1.72.0":
-  version "1.72.0"
-  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.72.0.tgz#b19abe1e0ff663537d954d65174778bf62e891f6"
-  integrity sha512-IRVa+Ou8Va42/Cn76hI1/Y/g0EFJkTWG4/6+BtJZFjHrf++gD7QwE1Ul9t8oNzbp13Gz5M+knIimQACdzINW9A==
+"@carbon/styles@^1.73.0":
+  version "1.73.0"
+  resolved "https://registry.yarnpkg.com/@carbon/styles/-/styles-1.73.0.tgz#4e7a78890b217cae66df4d3a046070db23b9bb8c"
+  integrity sha512-T96dWqekz9LJ7ln/cUCdV9NyHo8CKKS7HPag+kfiCUg8ss5Gm2nZ3B17TzW/njT0xsofPbffN04FHKj76YR+bQ==
   dependencies:
     "@carbon/colors" "^11.28.0"
     "@carbon/feature-flags" "^0.24.0"
     "@carbon/grid" "^11.30.0"
     "@carbon/layout" "^11.28.0"
     "@carbon/motion" "^11.24.0"
-    "@carbon/themes" "^11.44.0"
+    "@carbon/themes" "^11.45.0"
     "@carbon/type" "^11.34.0"
     "@ibm/plex" "6.0.0-next.6"
     "@ibm/plex-mono" "0.0.3-alpha.0"
@@ -407,17 +407,6 @@
     "@ibm/plex-sans-thai-looped" "0.0.3-alpha.0"
     "@ibm/plex-serif" "0.0.3-alpha.0"
     "@ibm/telemetry-js" "^1.5.0"
-
-"@carbon/themes@^11.44.0":
-  version "11.44.0"
-  resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.44.0.tgz#499c7294e3943965579c347e3be9a362dd25a274"
-  integrity sha512-5UDn3U6xgwwgVx87HoOmsgOXb3JywKZ9cxKj0x8gyGNywTJFA22EtJEoVUa5/i/MSivp6q4mUcjNd2ImATuFHA==
-  dependencies:
-    "@carbon/colors" "^11.28.0"
-    "@carbon/layout" "^11.28.0"
-    "@carbon/type" "^11.34.0"
-    "@ibm/telemetry-js" "^1.5.0"
-    color "^4.0.0"
 
 "@carbon/themes@^11.45.0":
   version "11.45.0"
