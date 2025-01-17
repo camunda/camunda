@@ -11,6 +11,7 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -396,7 +398,7 @@ final class CamundaExporterIT {
             responseEntity =
                 clientAdapter.get(
                     expectedEntity.getId(),
-                    exportHandler.getIndexName(),
+                    exportHandler.getIndex().getIndexName(),
                     exportHandler.getEntityType());
           } catch (final IOException e) {
             fail("Failed to find expected entity " + expectedEntity, e);
@@ -409,6 +411,37 @@ final class CamundaExporterIT {
                   exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
               .isEqualTo(expectedEntity);
         });
+  }
+
+  @TestTemplate
+  void shouldNotFailWhenUpdatingOperationWithNoDocument(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+    // given
+    final ValueType valueType = ValueType.INCIDENT;
+    final Record record =
+        factory.generateRecord(
+            valueType,
+            r ->
+                r.withBrokerVersion("8.7.0")
+                    .withIntent(IncidentIntent.RESOLVED)
+                    .withTimestamp(System.currentTimeMillis()));
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata());
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // act
+    assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
   }
 
   @TestTemplate
@@ -447,7 +480,9 @@ final class CamundaExporterIT {
       final var handler = entry.getKey();
       final var entityId = entry.getValue();
 
-      assertThat(clientAdapter.get(entityId, handler.getIndexName(), handler.getEntityType()))
+      assertThat(
+              clientAdapter.get(
+                  entityId, handler.getIndex().getIndexName(), handler.getEntityType()))
           .isNull();
     }
   }
@@ -600,7 +635,8 @@ final class CamundaExporterIT {
       final var recordId = authHandler.generateIds(record).getFirst();
 
       assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+              clientAdapter.get(
+                  recordId, authHandler.getIndex().getIndexName(), authHandler.getEntityType()))
           .isNull();
     }
 
@@ -638,7 +674,8 @@ final class CamundaExporterIT {
       final var recordId = authHandler.generateIds(record).getFirst();
 
       assertThat(
-              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+              clientAdapter.get(
+                  recordId, authHandler.getIndex().getIndexName(), authHandler.getEntityType()))
           .isNotNull();
     }
 

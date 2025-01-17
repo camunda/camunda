@@ -9,6 +9,7 @@ package io.camunda.exporter.store;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -20,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -73,6 +75,9 @@ public class ExporterBatchWriter {
       final ExporterEntity entity = entityAndHandler.entity();
       for (final var handler : entityAndHandler.handlers()) {
         handler.flush(entity, batchRequest);
+        final var index = handler.getIndex();
+        final Consumer<String> errorHandler = getErrorHandler(index);
+        batchRequest.onError(index.getIndexName(), errorHandler);
       }
     }
     batchRequest.execute();
@@ -85,6 +90,16 @@ public class ExporterBatchWriter {
 
   public int getBatchSize() {
     return cachedEntities.size();
+  }
+
+  private Consumer<String> getErrorHandler(final IndexDescriptor index) {
+    return switch (index.getErrorHandlingBehavior()) {
+      case SWALLOW -> error -> {};
+      case THROW ->
+          error -> {
+            throw new PersistenceException(error);
+          };
+    };
   }
 
   public static class Builder {
