@@ -137,7 +137,12 @@ public class ClaimUserTaskTest {
 
     // when
     final var claimingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("").expectRejection().claim();
+        ENGINE
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withoutAssignee()
+            .expectRejection()
+            .claim();
 
     // then
     Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
@@ -193,7 +198,7 @@ public class ClaimUserTaskTest {
 
     // when
     final var claimingRecord =
-        ENGINE.userTask().withKey(userTaskKey).withAssignee("").expectRejection().claim();
+        ENGINE.userTask().withKey(userTaskKey).withoutAssignee().expectRejection().claim();
 
     // then
     Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.INVALID_STATE);
