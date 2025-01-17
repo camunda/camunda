@@ -132,7 +132,7 @@ final class BasicAuthOverRestIT {
           .hasMessageContaining("title: FORBIDDEN")
           .hasMessageContaining("status: 403")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
     }
   }
 }

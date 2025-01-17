@@ -106,7 +106,7 @@ public class ResourceDeletionAuthorizationTest {
                 .getFirst())
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'"
+            "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(processId));
   }
 
@@ -163,7 +163,7 @@ public class ResourceDeletionAuthorizationTest {
                 .getFirst())
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'"
+            "Insufficient permissions to perform operation 'DELETE_DRD' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(drdId));
   }
 
@@ -220,7 +220,7 @@ public class ResourceDeletionAuthorizationTest {
                 .getFirst())
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT', required resource identifiers are one of '[*, %s]'"
+            "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(formId));
   }
 

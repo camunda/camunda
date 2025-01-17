@@ -106,7 +106,7 @@ public class DeploymentCreateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
   }
 
   private UserRecordValue createUser() {

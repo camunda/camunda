@@ -138,7 +138,7 @@ public class BasicAuthOverGrpcIT {
           .isInstanceOf(ClientStatusException.class)
           .hasMessageContaining("FORBIDDEN")
           .hasMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'DEPLOYMENT'");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE'");
     }
   }
 }
