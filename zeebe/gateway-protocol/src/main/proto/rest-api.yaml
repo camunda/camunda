@@ -8105,7 +8105,7 @@ components:
           type: integer
           format: int32
           description: The assigned decision requirements version.
-        name:
+        decisionRequirementsName:
           type: string
           description: The DMN name of the decision requirements, as parsed during deployment.
         tenantId:
