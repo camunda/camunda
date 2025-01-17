@@ -7,9 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorHandlingBehavior;
 import java.util.Optional;
 
-public interface IndexDescriptor {
+public interface IndexDescriptor extends ErrorHandlingBehavior {
 
   String TENANT_ID = "tenantId";
 

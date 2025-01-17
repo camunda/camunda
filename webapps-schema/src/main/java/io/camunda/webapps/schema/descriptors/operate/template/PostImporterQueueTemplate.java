@@ -8,11 +8,12 @@
 package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
 public class PostImporterQueueTemplate extends OperateTemplateDescriptor
-    implements ProcessInstanceDependant, Prio4Backup {
+    implements ProcessInstanceDependant, Prio4Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "post-importer-queue";
 

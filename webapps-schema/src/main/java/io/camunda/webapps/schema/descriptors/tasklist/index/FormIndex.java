@@ -9,10 +9,11 @@ package io.camunda.webapps.schema.descriptors.tasklist.index;
 
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 import java.util.Optional;
 
-public class FormIndex extends TasklistIndexDescriptor implements Prio5Backup {
+public class FormIndex extends TasklistIndexDescriptor implements Prio5Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "form";
   public static final String INDEX_VERSION = "8.4.0";

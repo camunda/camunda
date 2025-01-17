@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.schema.util;
 
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 
-public class TestDynamicIndex extends OperateIndexDescriptor {
+public class TestDynamicIndex extends OperateIndexDescriptor implements ErrorThrowing {
 
   public TestDynamicIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

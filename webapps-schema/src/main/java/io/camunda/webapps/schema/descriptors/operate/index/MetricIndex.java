@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.descriptors.operate.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import java.util.Optional;
 
-public class MetricIndex extends OperateIndexDescriptor implements Prio5Backup {
+public class MetricIndex extends OperateIndexDescriptor implements Prio5Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "metric";
   public static final String ID = "id";

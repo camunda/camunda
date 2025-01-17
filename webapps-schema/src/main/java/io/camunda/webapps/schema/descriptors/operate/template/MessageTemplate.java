@@ -8,10 +8,12 @@
 package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import java.util.Optional;
 
-public class MessageTemplate extends OperateTemplateDescriptor implements Prio4Backup {
+public class MessageTemplate extends OperateTemplateDescriptor
+    implements Prio4Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "message";
 

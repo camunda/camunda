@@ -8,9 +8,11 @@
 package io.camunda.webapps.schema.descriptors.tasklist.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
-public class TasklistImportPositionIndex extends TasklistIndexDescriptor implements Prio1Backup {
+public class TasklistImportPositionIndex extends TasklistIndexDescriptor
+    implements Prio1Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "import-position";
   public static final String INDEX_VERSION = "8.2.0";

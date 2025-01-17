@@ -104,6 +104,11 @@ public class OpenSearchSchemaTestHelper implements SchemaTestHelper {
     schemaManager.createIndex(
         new OperateIndexDescriptor(properties.getOpensearch().getIndexPrefix(), false) {
           @Override
+          public ErrorHandling getErrorHandlingBehavior() {
+            return ErrorHandling.THROW;
+          }
+
+          @Override
           public String getIndexName() {
             return indexDescriptor.getIndexName();
           }

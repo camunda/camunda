@@ -8,11 +8,12 @@
 package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorSwallowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
 public class OperationTemplate extends OperateTemplateDescriptor
-    implements ProcessInstanceDependant, Prio3Backup {
+    implements ProcessInstanceDependant, Prio3Backup, ErrorSwallowing {
 
   public static final String INDEX_NAME = "operation";
 

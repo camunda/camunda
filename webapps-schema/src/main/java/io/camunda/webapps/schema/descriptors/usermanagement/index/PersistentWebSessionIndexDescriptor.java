@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
 public class PersistentWebSessionIndexDescriptor extends UserManagementIndexDescriptor
-    implements Prio5Backup {
+    implements Prio5Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "web-session";
   public static final String INDEX_VERSION = "8.7.0";

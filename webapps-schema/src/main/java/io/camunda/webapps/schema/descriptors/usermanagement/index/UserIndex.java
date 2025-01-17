@@ -8,9 +8,10 @@
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
-public class UserIndex extends UserManagementIndexDescriptor implements Prio5Backup {
+public class UserIndex extends UserManagementIndexDescriptor implements Prio5Backup, ErrorThrowing {
   public static final String INDEX_NAME = "user";
   public static final String INDEX_VERSION = "8.7.0";
 

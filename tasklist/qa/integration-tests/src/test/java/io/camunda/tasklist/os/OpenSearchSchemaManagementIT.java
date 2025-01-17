@@ -176,6 +176,11 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
   private IndexDescriptor createIndexDescriptor() {
     return new IndexDescriptor() {
       @Override
+      public ErrorHandling getErrorHandlingBehavior() {
+        return ErrorHandling.THROW;
+      }
+
+      @Override
       public String getFullQualifiedName() {
         return getFullIndexName();
       }

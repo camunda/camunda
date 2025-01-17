@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.descriptors.operate.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import java.util.Optional;
 
-public class DecisionIndex extends OperateIndexDescriptor implements Prio4Backup {
+public class DecisionIndex extends OperateIndexDescriptor implements Prio4Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "decision";
   public static final String ID = "id";

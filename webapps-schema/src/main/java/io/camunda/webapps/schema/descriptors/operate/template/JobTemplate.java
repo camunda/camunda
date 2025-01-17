@@ -8,12 +8,13 @@
 package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import java.util.Optional;
 
 public class JobTemplate extends OperateTemplateDescriptor
-    implements ProcessInstanceDependant, Prio4Backup {
+    implements ProcessInstanceDependant, Prio4Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "job";
 

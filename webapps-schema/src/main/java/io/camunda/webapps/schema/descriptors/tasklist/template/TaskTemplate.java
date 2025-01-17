@@ -8,12 +8,13 @@
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import java.util.Optional;
 
 public class TaskTemplate extends TasklistTemplateDescriptor
-    implements Prio2Backup, ProcessInstanceDependant {
+    implements Prio2Backup, ProcessInstanceDependant, ErrorThrowing {
 
   public static final String INDEX_NAME = "task";
   public static final String INDEX_VERSION = "8.5.0";

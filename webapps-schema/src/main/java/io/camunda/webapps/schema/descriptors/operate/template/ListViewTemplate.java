@@ -8,10 +8,12 @@
 package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import java.util.Optional;
 
-public class ListViewTemplate extends OperateTemplateDescriptor implements Prio2Backup {
+public class ListViewTemplate extends OperateTemplateDescriptor
+    implements Prio2Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "list-view";
 

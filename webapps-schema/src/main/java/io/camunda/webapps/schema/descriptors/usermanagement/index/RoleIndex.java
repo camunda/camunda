@@ -8,11 +8,12 @@
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
-public class RoleIndex extends UserManagementIndexDescriptor implements Prio5Backup {
+public class RoleIndex extends UserManagementIndexDescriptor implements Prio5Backup, ErrorThrowing {
   public static final String INDEX_NAME = "role";
   public static final String INDEX_VERSION = "8.7.0";
 

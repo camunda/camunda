@@ -8,10 +8,12 @@
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import java.util.Optional;
 
-public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio4Backup {
+public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor
+    implements Prio4Backup, ErrorThrowing {
 
   public static final String INDEX_NAME = "draft-task-variable";
   public static final String INDEX_VERSION = "8.3.0";

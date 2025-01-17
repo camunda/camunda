@@ -8,9 +8,10 @@
 package io.camunda.tasklist.schema.indices;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.errorHandling.ErrorThrowing;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
-public class UserIndex extends TasklistIndexDescriptor implements Prio5Backup {
+public class UserIndex extends TasklistIndexDescriptor implements Prio5Backup, ErrorThrowing {
 
   public static final String ID = "id";
   public static final String USER_ID = "userId";
