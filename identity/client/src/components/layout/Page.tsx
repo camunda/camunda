@@ -9,9 +9,12 @@
 import { FC, PointerEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
-import { spacing06 } from "@carbon/elements";
+import { spacing06, spacing07, spacing09 } from "@carbon/elements";
 import { cssSize } from "src/utility/style";
 import { useNavigate } from "react-router";
+import { DocumentationDescription } from "src/components/entityList";
+import { DocumentationLink } from "src/components/documentation";
+import useTranslate from "src/utility/localization";
 
 export const PageTitle = styled.h2`
   margin-bottom: ${cssSize(3)};
@@ -21,6 +24,38 @@ export const PageTitle = styled.h2`
 const Page = styled(Content)`
   height: 100%;
 `;
+
+const PageHeaderContainer = styled.div<{ $largeBottomMargin?: boolean }>`
+  margin-bottom: ${({ $largeBottomMargin }) =>
+    $largeBottomMargin ? spacing09 : spacing07};
+`;
+
+type PageHeaderProps = {
+  title: string;
+  linkText: string;
+  linkUrl: string;
+  largeBottomMargin?: boolean;
+};
+
+export const PageHeader: FC<PageHeaderProps> = ({
+  title,
+  linkText,
+  linkUrl,
+  largeBottomMargin = false,
+}) => {
+  const { Translate } = useTranslate();
+  return (
+    <PageHeaderContainer $largeBottomMargin={largeBottomMargin}>
+      <h1>{title}</h1>
+      <DocumentationDescription>
+        <Translate>For more information, see documentation on</Translate>{" "}
+        <DocumentationLink path={linkUrl} withIcon={true}>
+          {linkText}
+        </DocumentationLink>
+      </DocumentationDescription>
+    </PageHeaderContainer>
+  );
+};
 
 const StyledBreadcrumb = styled(Breadcrumb)`
   margin-left: ${cssSize(2)};
