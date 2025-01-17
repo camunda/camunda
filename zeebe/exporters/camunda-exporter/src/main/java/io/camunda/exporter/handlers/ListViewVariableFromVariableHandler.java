@@ -16,6 +16,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +48,10 @@ public class ListViewVariableFromVariableHandler
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return true;
+    if (!record.getIntent().equals(VariableIntent.MIGRATED)) {
+      return true;
+    }
+    return false;
   }
 
   @Override
