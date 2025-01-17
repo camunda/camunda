@@ -75,6 +75,19 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             () -> new NotFoundException("Group with groupKey %d not found".formatted(groupKey)));
   }
 
+  public Optional<GroupEntity> findGroupByName(final String name) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.name(name)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
+  public GroupEntity getGroupByName(final String name) {
+    return findGroupByName(name)
+        .orElseThrow(
+            () -> new NotFoundException("Group with group name %s not found".formatted(name)));
+  }
+
   public List<GroupEntity> getGroupsByUserKey(final long userKey) {
     return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKey(userKey)).build())
         .items()
