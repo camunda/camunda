@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
@@ -20,6 +18,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Arrays;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -28,8 +28,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -37,6 +40,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -44,25 +48,29 @@ import org.springframework.security.web.SecurityFilterChain;
 @Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
-  public static final String LOGIN_URL = "/login";
-  public static final String LOGOUT_URL = "/logout";
-
-  public static final String[] UNAUTHENTICATED_PATHS =
-      new String[] {
-        "/login",
-        "/logout",
-        // endpoint for failure forwarding
-        "/error",
-        // all actuator endpoints
-        "/actuator/**",
-        // endpoints defined in BrokerHealthRoutes
-        "/ready",
-        "/health",
-        "/startup",
-        // deprecated Tasklist v1 Public Endpoints
-        "/v1/external/process/**",
-        "/new/**"
-      };
+  private static final String LOGIN_URL = "/login";
+  private static final String LOGOUT_URL = "/logout";
+  private static final Set<String> UNAUTHENTICATED_PATHS =
+      Set.of(
+          LOGIN_URL,
+          "/",
+          // webapps are single page apps
+          "/identity/**",
+          "/operate/**",
+          "/tasklist/**",
+          // these v2 endpoints are public
+          "/v2/license",
+          // endpoint for failure forwarding
+          "/error",
+          // all actuator endpoints
+          "/actuator/**",
+          // endpoints defined in BrokerHealthRoutes
+          "/ready",
+          "/health",
+          "/startup",
+          // deprecated Tasklist v1 Public Endpoints
+          "/v1/external/process/**",
+          "/new/**");
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
@@ -85,18 +93,9 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  public SecurityFilterChain securityFilterChain(final HttpSecurity httpSecurity) {
-    try {
-      return httpSecurity.build();
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Bean
   @Primary
   @Profile("auth-oidc")
-  public HttpSecurity oidcHttpSecurity(
+  public SecurityFilterChain oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
       final ClientRegistrationRepository clientRegistrationRepository)
@@ -118,7 +117,8 @@ public class WebSecurityConfig {
                 logout
                     .logoutUrl(LOGOUT_URL)
                     .logoutSuccessHandler(this::genericSuccessHandler)
-                    .deleteCookies());
+                    .deleteCookies())
+        .build();
   }
 
   private void genericSuccessHandler(
@@ -129,50 +129,117 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Primary
   @Profile("auth-basic")
-  public HttpSecurity localHttpSecurity(
+  @Order(1)
+  public SecurityFilterChain httpBasicAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
-    LOG.info("Configuring basic auth login");
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
-        .httpBasic(withDefaults())
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
+    LOG.info("HTTP Basic authentication is enabled");
+    // Require valid credentials when a basic auth header is present.
+    return baseHttpSecurity(
+            withSecurityMatcher(httpSecurity, WebSecurityConfig::isBasicAuthRequest),
+            authFailureHandler)
+        .httpBasic(Customizer.withDefaults())
+        .build();
   }
 
-  private HttpSecurity baseHttpSecurity(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler) {
-    try {
-      return httpSecurity
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) ->
-                  authorizeHttpRequests
-                      .requestMatchers(UNAUTHENTICATED_PATHS)
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .headers(
-              (headers) ->
-                  headers.httpStrictTransportSecurity(
-                      (httpStrictTransportSecurity) ->
-                          httpStrictTransportSecurity
-                              .includeSubDomains(true)
-                              .maxAgeInSeconds(63072000)
-                              .preload(true)))
-          .exceptionHandling(
-              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
+  @Bean
+  @Profile("auth-basic")
+  @Order(2)
+  public SecurityFilterChain loginAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    return buildLoginAuthSecurityFilterChain(httpSecurity, authFailureHandler);
+  }
+
+  public SecurityFilterChain buildLoginAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    LOG.info("Configuring login auth");
+    return baseHttpSecurity(httpSecurity, authFailureHandler)
+        .formLogin(
+            formLogin ->
+                formLogin
+                    .loginPage(LOGIN_URL)
+                    .loginProcessingUrl(LOGIN_URL)
+                    .failureHandler(authFailureHandler)
+                    .successHandler(this::genericSuccessHandler))
+        .logout(
+            (logout) ->
+                logout
+                    .logoutUrl(LOGOUT_URL)
+                    .logoutSuccessHandler(this::genericSuccessHandler)
+                    .deleteCookies(SESSION_COOKIE))
+        .exceptionHandling(
+            exceptionHandling ->
+                exceptionHandling
+                    .authenticationEntryPoint(authFailureHandler)
+                    .accessDeniedHandler(authFailureHandler))
+        .build();
   }
 
   @Bean
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
+  }
+
+  private static boolean isBasicAuthRequest(final HttpServletRequest request) {
+    final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+    // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
+    if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
+      return true;
+    }
+    // If it's an API request and there's no session cookie, also treat the request as a basic auth
+    // request. This is a workaround for Java's HTTP client, which only sends an Authorization
+    // header after the server sends a WWW-Authenticate header in a 401 response.
+    if (isApiRequest(request) && !hasSessionCookie(request)) {
+      return true;
+    }
+    return false;
+  }
+
+  private static boolean hasSessionCookie(final HttpServletRequest request) {
+    if (request.getCookies() == null) {
+      return false;
+    }
+    return Arrays.stream(request.getCookies())
+        .anyMatch(cookie -> cookie.getName().equals(SESSION_COOKIE));
+  }
+
+  private static boolean isApiRequest(final HttpServletRequest request) {
+    return request.getRequestURI().contains("/v2/") || request.getRequestURI().contains("/api/");
+  }
+
+  private static HttpSecurity withSecurityMatcher(
+      final HttpSecurity httpSecurity, final RequestMatcher requestMatcher) {
+    return httpSecurity.securityMatchers(matchers -> matchers.requestMatchers(requestMatcher));
+  }
+
+  private HttpSecurity baseHttpSecurity(
+      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      throws Exception {
+    return httpSecurity
+        .authorizeHttpRequests(
+            (authorizeHttpRequests) ->
+                authorizeHttpRequests
+                    .requestMatchers(UNAUTHENTICATED_PATHS.toArray(String[]::new))
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .headers(
+            (headers) ->
+                headers.httpStrictTransportSecurity(
+                    (httpStrictTransportSecurity) ->
+                        httpStrictTransportSecurity
+                            .includeSubDomains(true)
+                            .maxAgeInSeconds(63072000)
+                            .preload(true)))
+        .exceptionHandling(
+            (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+        .csrf(AbstractHttpConfigurer::disable)
+        .cors(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .anonymous(AbstractHttpConfigurer::disable);
   }
 }
