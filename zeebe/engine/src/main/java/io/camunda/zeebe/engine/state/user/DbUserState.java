@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.user;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.camunda.zeebe.db.ColumnFamily;
-import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
@@ -22,7 +19,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbUserState implements UserState, MutableUserState {
 
@@ -30,21 +26,21 @@ public class DbUserState implements UserState, MutableUserState {
 
   private final DbString username;
   private final DbLong userKey;
-  private final DbForeignKey<DbLong> fkUserKey;
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> userKeyByUsernameColumnFamily;
-  private final ColumnFamily<DbKey, PersistedUser> userByUserKeyColumnFamily;
+  private final DbForeignKey<DbString> fkUsername;
+  private final ColumnFamily<DbLong, DbForeignKey<DbString>> userKeyByUsernameColumnFamily;
+  private final ColumnFamily<DbString, PersistedUser> usersColumnFamily;
 
   public DbUserState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     username = new DbString();
     userKey = new DbLong();
-    fkUserKey = new DbForeignKey<>(userKey, ZbColumnFamilies.USERS);
+    fkUsername = new DbForeignKey<>(username, ZbColumnFamilies.USERS);
     userKeyByUsernameColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USER_KEY_BY_USERNAME, transactionContext, username, fkUserKey);
-    userByUserKeyColumnFamily =
+            ZbColumnFamilies.USERNAME_BY_USER_KEY, transactionContext, userKey, fkUsername);
+    usersColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USERS, transactionContext, userKey, new PersistedUser());
+            ZbColumnFamilies.USERS, transactionContext, username, new PersistedUser());
   }
 
   @Override
@@ -53,100 +49,82 @@ public class DbUserState implements UserState, MutableUserState {
     userKey.wrapLong(user.getUserKey());
     persistedUser.setUser(user);
 
-    userByUserKeyColumnFamily.insert(userKey, persistedUser);
-    userKeyByUsernameColumnFamily.insert(username, fkUserKey);
+    usersColumnFamily.insert(username, persistedUser);
+    userKeyByUsernameColumnFamily.insert(userKey, fkUsername);
   }
 
   @Override
   public void update(final UserRecord user) {
     username.wrapBuffer(user.getUsernameBuffer());
-    final var key = userKeyByUsernameColumnFamily.get(username);
     persistedUser.setUser(user);
 
-    userByUserKeyColumnFamily.update(key, persistedUser);
+    usersColumnFamily.update(username, persistedUser);
   }
 
   @Override
-  public void delete(final long userKey) {
-    this.userKey.wrapLong(userKey);
-    userByUserKeyColumnFamily.deleteExisting(this.userKey);
+  public void delete(final String username) {
+    this.username.wrapString(username);
+    usersColumnFamily.deleteExisting(this.username);
   }
 
   @Override
-  public void addRole(final long userKey, final long roleKey) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+  public void addRole(final String username, final long roleKey) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     persistedUser.addRoleKey(roleKey);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
-  public void removeRole(final long userKey, final long roleKey) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+  public void removeRole(final String username, final long roleKey) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     final List<Long> roleKeys = persistedUser.getRoleKeysList();
     roleKeys.remove(roleKey);
     persistedUser.setRoleKeysList(roleKeys);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
-  public void addTenantId(final long userKey, final String tenantId) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+  public void addTenantId(final String username, final String tenantId) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     persistedUser.addTenantId(tenantId);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
-  public void removeTenant(final long userKey, final String tenantId) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+  public void removeTenant(final String username, final String tenantId) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     final List<String> tenantIds = persistedUser.getTenantIdsList();
     tenantIds.remove(tenantId);
     persistedUser.setTenantIdsList(tenantIds);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
-  public void addGroup(final long userKey, final long groupKey) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+  public void addGroup(final String username, final long groupKey) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     persistedUser.addGroupKey(groupKey);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
-  public void removeGroup(final long userKey, final long groupKey) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+  public void removeGroup(final String username, final long groupKey) {
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
     final List<Long> groupKeys = persistedUser.getGroupKeysList();
     groupKeys.remove(groupKey);
     persistedUser.setGroupKeysList(groupKeys);
-    userByUserKeyColumnFamily.update(this.userKey, persistedUser);
-  }
-
-  @Override
-  public Optional<PersistedUser> getUser(final DirectBuffer username) {
-    this.username.wrapBuffer(username);
-    final var key = userKeyByUsernameColumnFamily.get(this.username);
-
-    if (key == null) {
-      return Optional.empty();
-    }
-
-    return getUser(key.inner().getValue());
+    usersColumnFamily.update(this.username, persistedUser);
   }
 
   @Override
   public Optional<PersistedUser> getUser(final String username) {
-    return getUser(wrapString(username));
-  }
-
-  @Override
-  public Optional<PersistedUser> getUser(final long userKey) {
-    this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    this.username.wrapString(username);
+    final var persistedUser = usersColumnFamily.get(this.username);
 
     if (persistedUser == null) {
       return Optional.empty();
@@ -155,13 +133,11 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
-  public List<String> getTenantIds(final long userKey) {
+  public Optional<PersistedUser> getUser(final long userKey) {
     this.userKey.wrapLong(userKey);
-    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+    final var username = userKeyByUsernameColumnFamily.get(this.userKey);
 
-    if (persistedUser == null) {
-      return List.of();
-    }
-    return persistedUser.getTenantIdsList();
+    return Optional.ofNullable(username)
+        .flatMap(dbUsername -> getUser(dbUsername.inner().toString()));
   }
 }
