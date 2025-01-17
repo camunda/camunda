@@ -37,7 +37,7 @@ public final class AuthorizationRequestValidator {
     return validate(
         violations -> {
           // owner validation
-          if (request.getOwnerId() == null) {
+          if (request.getOwnerId() == null || request.getOwnerId().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerId"));
           }
           if (request.getOwnerType() == null) {
@@ -45,7 +45,7 @@ public final class AuthorizationRequestValidator {
           }
 
           // resource validation
-          if (request.getResourceId() == null) {
+          if (request.getResourceId() == null || request.getResourceId().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceId"));
           }
           if (request.getResourceType() == null) {

@@ -152,6 +152,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
             "No ownerId provided."),
         Arguments.of(
             new AuthorizationCreateRequest()
+                .ownerId("")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("resourceId")
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(permissions),
+            "No ownerId provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
                 .ownerId("ownerId")
                 .resourceId("resourceId")
                 .resourceType(ResourceTypeEnum.DEPLOYMENT)
@@ -161,6 +169,14 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationCreateRequest()
                 .ownerId("ownerId")
                 .ownerType(OwnerTypeEnum.USER)
+                .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                .permissions(permissions),
+            "No resourceId provided."),
+        Arguments.of(
+            new AuthorizationCreateRequest()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("")
                 .resourceType(ResourceTypeEnum.DEPLOYMENT)
                 .permissions(permissions),
             "No resourceId provided."),

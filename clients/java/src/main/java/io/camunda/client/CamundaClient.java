@@ -28,6 +28,7 @@ import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
+import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
@@ -1641,4 +1642,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the unassign group from tenant command
    */
   UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
+
+  /**
+   * Command to create an authorization
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newCreateAuthorizationCommand(tenantKey)
+   *   .ownerId(ownerId)
+   *   .ownerType(ownerType)
+   *   .resourceId(resourceId)
+   *   .resourceType(resourceType)
+   *   .permission(PermissionType.READ)
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the create authorization command
+   */
+  CreateAuthorizationCommandStep1 newCreateAuthorizationCommand();
 }
