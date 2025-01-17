@@ -9,8 +9,10 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.collections.LongHashSet;
 import org.slf4j.Logger;
@@ -46,6 +48,9 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   // DO NOT CHANGE: changing the subject is a backward INCOMPATIBLE change.
   static final String HEARTBEAT_SUBJECT = "internal-heartbeat";
   static final byte[] HEARTBEAT_PAYLOAD = new byte[0];
+  static final String IDLE_STATE_HANDLER_NAME = "idle";
+  static final String HEARTBEAT_HANDLER_NAME = "heartbeat";
+
   protected final Logger log;
   protected final boolean forwardHeartbeats;
 
@@ -55,10 +60,22 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
   }
 
   static final class Server extends HeartbeatHandler {
-    boolean receivedHeartbeat = false;
+    private final Duration heartbeatTimeout;
 
-    Server(final Logger log, final boolean fireHeartbeats) {
+    Server(final Logger log, final Duration heartbeatTimeout, final boolean fireHeartbeats) {
       super(log, fireHeartbeats);
+      this.heartbeatTimeout = heartbeatTimeout;
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+      if (ctx.channel().isActive()) {
+        ctx.pipeline()
+            .addFirst(
+                IDLE_STATE_HANDLER_NAME,
+                // server is only interested in readIdleTime
+                new IdleStateHandler(heartbeatTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
+      }
     }
 
     @Override
@@ -66,7 +83,6 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       boolean heartbeatReceived = false;
       if (msg instanceof final ProtocolRequest request
           && request.subject().equals(HEARTBEAT_SUBJECT)) {
-        receivedHeartbeat = true;
         heartbeatReceived = true;
         ctx.writeAndFlush(createHeartbeat(request.id()));
         if (!Arrays.equals(request.payload(), HEARTBEAT_PAYLOAD)) {
@@ -91,12 +107,10 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       }
       if (idleStateEvent.state() == IdleState.READER_IDLE) {
         // don't close the connection if we never receive any heartbeat
-        if (receivedHeartbeat) {
-          log.warn(
-              "Connection {} on the server timed out after idling with no heartbeats from the client, closing channel.",
-              ctx.channel());
-          ctx.close();
-        }
+        log.warn(
+            "Connection {} on the server timed out after idling with no heartbeats from the client, closing channel.",
+            ctx.channel());
+        ctx.close();
       }
     }
 
@@ -110,18 +124,34 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
     private final AtomicLong messageIdGenerator;
     private final Address advertisedAddress;
     private final Duration heartbeatTimeout;
-    private boolean receivedAnyHeartbeats = false;
+    private final Duration heartbeatInterval;
 
     Client(
         final Logger log,
         final AtomicLong messageIdGenerator,
         final Address advertisedAddress,
         final Duration heartbeatTimeout,
+        final Duration heartbeatInterval,
         final boolean fireHeartbeats) {
       super(log, fireHeartbeats);
       this.messageIdGenerator = messageIdGenerator;
       this.advertisedAddress = advertisedAddress;
       this.heartbeatTimeout = heartbeatTimeout;
+      this.heartbeatInterval = heartbeatInterval;
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+      if (ctx.channel().isActive()) {
+        ctx.pipeline()
+            .addFirst(
+                IDLE_STATE_HANDLER_NAME,
+                new IdleStateHandler(
+                    heartbeatTimeout.toMillis(),
+                    heartbeatInterval.toMillis(),
+                    0,
+                    TimeUnit.MILLISECONDS));
+      }
     }
 
     @Override
@@ -131,7 +161,6 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
         if (outstandingHeartbeats.contains(reply.id())) {
           // there's no subject in ProtocolReply, so we rely on oustandingHeartbeats to see if it
           // was a reply to a heartbeat
-          receivedAnyHeartbeats = true;
           heartbeatReceived = true;
         }
         // remove all heartbeats sent before (and equal) to the last ProtocolReply received.
@@ -166,7 +195,7 @@ abstract sealed class HeartbeatHandler extends ChannelDuplexHandler {
       switch (idleStateEvent.state()) {
         case READER_IDLE -> {
           // don't close the connection if we haven't sent any heartbeat yet
-          if (receivedAnyHeartbeats && !outstandingHeartbeats.isEmpty()) {
+          if (!outstandingHeartbeats.isEmpty()) {
             log.warn(
                 "Connection {} timed out on the client after not receiving a heartbeat response from the server in {}({} heartbeats pending) closing channel",
                 ctx.channel(),
