@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-public class ListViewFlowNodeFromProcesInstanceHandlerTest {
+public class ListViewFlowNodeFromProcessInstanceHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
@@ -119,6 +119,24 @@ public class ListViewFlowNodeFromProcesInstanceHandlerTest {
             ValueType.PROCESS_INSTANCE,
             r ->
                 r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(processInstanceRecordValue));
+    // when - then
+    assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();
+  }
+
+  @Test
+  public void shouldNotHandleSequenceFlowRecord() {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.SEQUENCE_FLOW)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED)
                     .withValue(processInstanceRecordValue));
     // when - then
     assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();
