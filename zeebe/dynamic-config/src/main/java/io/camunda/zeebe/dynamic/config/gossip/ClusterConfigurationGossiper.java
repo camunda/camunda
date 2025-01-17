@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -54,6 +55,7 @@ public final class ClusterConfigurationGossiper
 
   // The handler which can merge configuration updates and reacts to the changes.
   private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
+  private final MeterRegistry meterRegistry;
 
   public ClusterConfigurationGossiper(
       final ConcurrencyControl executor,
@@ -61,13 +63,15 @@ public final class ClusterConfigurationGossiper
       final ClusterMembershipService membershipService,
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
-      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler) {
+      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
+      final MeterRegistry meterRegistry) {
     this.executor = executor;
     this.communicationService = communicationService;
     this.membershipService = membershipService;
     this.config = config;
     this.serializer = serializer;
     this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
+    this.meterRegistry = meterRegistry;
   }
 
   public CompletableActorFuture<Void> start() {
@@ -177,7 +181,7 @@ public final class ClusterConfigurationGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
-    TopologyMetrics.updateFromTopology(updatedConfiguration);
+    TopologyMetrics.updateFromTopology(updatedConfiguration, meterRegistry);
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {

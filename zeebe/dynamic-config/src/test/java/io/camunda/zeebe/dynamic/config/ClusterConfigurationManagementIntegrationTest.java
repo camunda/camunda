@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -253,6 +254,7 @@ class ClusterConfigurationManagementIntegrationTest {
             new ClusterConfigurationGossiperConfig(
                 Duration.ofSeconds(1), Duration.ofMillis(100), 2),
             true,
+            new SimpleMeterRegistry(),
             new NoopClusterChangeExecutor());
     return new TestNode(cluster, service);
   }
