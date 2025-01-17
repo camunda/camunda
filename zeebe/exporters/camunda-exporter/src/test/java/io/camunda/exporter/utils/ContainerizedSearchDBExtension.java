@@ -71,4 +71,14 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   public OpenSearchClient osClient() {
     return osClient;
   }
+
+  @Override
+  public String esUrl() {
+    return elasticsearchContainer.getHttpHostAddress();
+  }
+
+  @Override
+  public String osUrl() {
+    return opensearchContainer.getHttpHostAddress();
+  }
 }

@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Optional;
-import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -20,11 +20,13 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
-  public static final String IDX_PROCESS_PREFIX = "idxtestprocess" + UUID.randomUUID();
+  public static final String IDX_PROCESS_PREFIX =
+      "idxtestprocess" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
 
   public static final ProcessIndex PROCESS_INDEX = new ProcessIndex(IDX_PROCESS_PREFIX, true);
 
-  public static final String IDX_FORM_PREFIX = "idxtestform" + UUID.randomUUID();
+  public static final String IDX_FORM_PREFIX =
+      "idxtestform" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
 
   public static final FormIndex FORM_INDEX = new FormIndex(IDX_FORM_PREFIX, true);
 
@@ -44,4 +46,8 @@ public abstract class SearchDBExtension
   public abstract ElasticsearchClient esClient();
 
   public abstract OpenSearchClient osClient();
+
+  public abstract String esUrl();
+
+  public abstract String osUrl();
 }

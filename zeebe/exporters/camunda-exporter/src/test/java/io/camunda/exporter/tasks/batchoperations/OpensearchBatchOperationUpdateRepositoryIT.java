@@ -9,28 +9,21 @@ package io.camunda.exporter.tasks.batchoperations;
 
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Container;
 
 final class OpensearchBatchOperationUpdateRepositoryIT extends BatchOperationUpdateRepositoryIT {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpensearchBatchOperationUpdateRepositoryIT.class);
 
-  @Container
-  private static final OpensearchContainer<?> CONTAINER =
-      TestSearchContainers.createDefaultOpensearchContainer();
-
   private final OpenSearchAsyncClient client;
 
   public OpensearchBatchOperationUpdateRepositoryIT() {
-    super(CONTAINER.getHttpHostAddress(), false);
+    super(searchDB.osUrl(), false);
     final var connector = new OpensearchConnector(config.getConnect());
     client = connector.createAsyncClient();
   }
