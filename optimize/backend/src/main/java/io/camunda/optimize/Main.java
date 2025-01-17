@@ -24,6 +24,8 @@ public class Main {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(Main.class);
 
   public static void main(final String[] args) {
+    System.setProperty("integrationTest", "true");
+
     final SpringApplication optimize = new SpringApplication(Main.class);
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();

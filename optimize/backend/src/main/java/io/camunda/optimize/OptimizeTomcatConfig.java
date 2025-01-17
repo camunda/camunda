@@ -43,7 +43,7 @@ public class OptimizeTomcatConfig {
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeTomcatConfig.class);
 
   private static final String[] COMPRESSED_MIME_TYPES = {
-    "application/json", "text/html", "application/x-font-ttf", "image/svg+xml"
+      "application/json", "text/html", "application/x-font-ttf", "image/svg+xml"
   };
 
   private static final String LOGIN_ENDPOINT = "/login";
@@ -53,30 +53,32 @@ public class OptimizeTomcatConfig {
   public static final String ALLOWED_URL_EXTENSION =
       String.join(
           "|",
-          new String[] {
-            URL_BASE,
-            LOGIN_ENDPOINT,
-            METRICS_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
-            HealthRestService.READYZ_PATH,
-            LocalizationRestService.LOCALIZATION_PATH,
-            OptimizeTomcatConfig.EXTERNAL_SUB_PATH,
-            OptimizeResourceConstants.REST_API_PATH,
-            OptimizeResourceConstants.STATIC_RESOURCE_PATH,
-            OptimizeResourceConstants.ACTUATOR_ENDPOINT,
-            PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
-            UIConfigurationRestService.UI_CONFIGURATION_PATH
+          new String[]{
+              URL_BASE,
+              LOGIN_ENDPOINT,
+              METRICS_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
+              CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
+              HealthRestService.READYZ_PATH,
+              LocalizationRestService.LOCALIZATION_PATH,
+              OptimizeTomcatConfig.EXTERNAL_SUB_PATH,
+              OptimizeResourceConstants.REST_API_PATH,
+              OptimizeResourceConstants.STATIC_RESOURCE_PATH,
+              OptimizeResourceConstants.ACTUATOR_ENDPOINT,
+              PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
+              UIConfigurationRestService.UI_CONFIGURATION_PATH
           });
 
   private static final String HTTP11_NIO_PROTOCOL = "org.apache.coyote.http11.Http11Nio2Protocol";
 
-  @Autowired private ConfigurationService configurationService;
-  @Autowired private Environment environment;
+  @Autowired
+  private ConfigurationService configurationService;
+  @Autowired
+  private Environment environment;
 
   @Bean
   WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatFactoryCustomizer() {
@@ -89,27 +91,25 @@ public class OptimizeTomcatConfig {
           factory.setContextPath(contextPath.get());
         }
 
-        // NOTE: With the current implementation, we are always installing 2 connectors,
-        //   one for HTTP, one for HTTPs. The latter can be HTTP/1.1 or HTTP/2 depending
-        //   on the configuration.
-
         factory.addConnectorCustomizers(
             connector -> {
-              configureHttpConnector(connector);
-            });
-
-        factory.addAdditionalTomcatConnectors(
-            new Connector() {
-              {
-                configureHttpsConnector(this);
+              if("true".equals(System.getProperty("integrationTest", "false"))) {
+                connector.setPort(8090);
               }
+
+              connector.setProperty(
+                  "maxHttpRequestHeaderSize",
+                  String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
+              connector.setProperty(
+                  "maxHttpResponseHeaderSize",
+                  String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
             });
       }
     };
   }
 
   @Bean
-  /* redirect to /# when the endpoint is not valid. do this rather than showing an error page */
+    /* redirect to /# when the endpoint is not valid. do this rather than showing an error page */
   FilterRegistrationBean<URLRedirectFilter> urlRedirector() {
     LOG.debug("Registering filter 'urlRedirector'...");
 
@@ -168,58 +168,5 @@ public class OptimizeTomcatConfig {
       return configurationService.getContextPath();
     }
     return contextPath;
-  }
-
-  private SSLHostConfig getSslHostConfig() {
-    final SSLHostConfig sslHostConfig = new SSLHostConfig();
-    sslHostConfig.setHostName(configurationService.getContainerHost());
-
-    final SSLHostConfigCertificate cert =
-        new SSLHostConfigCertificate(sslHostConfig, Type.UNDEFINED);
-    cert.setCertificateKeystoreFile(configurationService.getContainerKeystoreLocation());
-    cert.setCertificateKeystorePassword(configurationService.getContainerKeystorePassword());
-    sslHostConfig.addCertificate(cert);
-
-    return sslHostConfig;
-  }
-
-  private void enableGzipSupport(final Connector connector) {
-    connector.setProperty("compression", "on");
-    connector.setProperty("compressionMinSize", "23");
-    connector.setProperty("compressionNoCompressionMethods", ""); // all methods
-    connector.setProperty("useSendfile", "false");
-    connector.setProperty("compressableMimeType", String.join(",", COMPRESSED_MIME_TYPES));
-  }
-
-  private void applyCommonConfiguration(final Connector connector) {
-    connector.setXpoweredBy(false); // do not send server version header
-    enableGzipSupport(connector);
-    connector.setProperty(
-        "maxHttpRequestHeaderSize",
-        String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
-    connector.setProperty(
-        "maxHttpResponseHeaderSize",
-        String.valueOf(configurationService.getMaxResponseHeaderSizeInBytes()));
-  }
-
-  private void configureHttpConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
-    connector.setScheme("http");
-    connector.setSecure(false);
-  }
-
-  public void configureHttpsConnector(final Connector connector) {
-    applyCommonConfiguration(connector);
-    connector.setPort(getPort(EnvironmentPropertiesConstants.HTTPS_PORT_KEY));
-    connector.setScheme("https");
-    connector.setSecure(true);
-
-    connector.setProperty("protocol", HTTP11_NIO_PROTOCOL);
-    if (configurationService.getContainerHttp2Enabled()) {
-      connector.addUpgradeProtocol(new Http2Protocol());
-    }
-
-    connector.addSslHostConfig(getSslHostConfig());
   }
 }
