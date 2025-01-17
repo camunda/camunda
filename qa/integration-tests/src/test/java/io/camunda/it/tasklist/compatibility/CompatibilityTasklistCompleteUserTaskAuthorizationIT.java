@@ -17,7 +17,7 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
@@ -207,7 +207,7 @@ public class CompatibilityTasklistCompleteUserTaskAuthorizationIT {
         SearchQueryBuilders.and(
             SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
             SearchQueryBuilders.term(
-                TaskTemplate.IMPLEMENTATION, TaskImplementation.JOB_WORKER.name()));
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
     Awaitility.await("should create a job-based user task")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
