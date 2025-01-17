@@ -292,6 +292,7 @@ jobs:
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -Dit.test=io/camunda/v2/**
           -Dcamunda.it.database.type=es
+          -Dfailsafe.failIfNoSpecifiedTests=false
           -pl 'qa/integration-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
