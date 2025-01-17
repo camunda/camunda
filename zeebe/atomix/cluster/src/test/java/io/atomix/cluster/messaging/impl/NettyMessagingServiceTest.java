@@ -687,6 +687,7 @@ final class NettyMessagingServiceTest {
     @RegressionTest("https://github.com/camunda/camunda/issues/14837")
     void shouldNotLeakUdpSockets() throws IOException {
       // given
+      final var initialUdpSocketCount = udpSocketCount();
       // the configured amount of threads for Netty's epoll transport
       final var maxConnections = Runtime.getRuntime().availableProcessors() * 2;
       final var subject = nextSubject();
@@ -701,7 +702,11 @@ final class NettyMessagingServiceTest {
       // then - there seems to be a slight amount more than maxConnections normally, but without the
       // fix this was way, way, way more, so it should be fine to allow a little bit more than the
       // expected max number of connections
-      assertThat(udpSocketCount()).isLessThanOrEqualTo(maxConnections * 2L);
+      Awaitility.await("all sockets are closed")
+          .untilAsserted(
+              () ->
+                  assertThat(udpSocketCount() - initialUdpSocketCount)
+                      .isLessThan(maxConnections * 2L));
     }
 
     @Test
