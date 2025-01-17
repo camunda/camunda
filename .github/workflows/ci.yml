@@ -834,6 +834,7 @@ jobs:
       - build-tasklist-backend
       - docker-checks
       - identity-frontend-tests
+      - elasticsearch-integration-tests
       - integration-tests
       - java-checks
       - java-unit-tests
