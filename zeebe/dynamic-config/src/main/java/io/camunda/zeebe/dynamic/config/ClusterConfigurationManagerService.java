@@ -35,6 +35,7 @@ import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -56,6 +57,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterConfigurationRequestServer configurationRequestServer;
   private final Actor gossipActor;
   private final Actor managerActor;
+  private final MeterRegistry meterRegistry;
   private final ClusterChangeExecutor clusterChangeExecutor;
 
   public ClusterConfigurationManagerService(
@@ -64,7 +66,9 @@ public final class ClusterConfigurationManagerService
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
       final boolean enablePartitionScaling,
+      final MeterRegistry meterRegistry,
       final ClusterChangeExecutor clusterChangeExecutor) {
+    this.meterRegistry = meterRegistry;
     this.clusterChangeExecutor = clusterChangeExecutor;
     this.memberShipService = memberShipService;
     try {
@@ -89,7 +93,8 @@ public final class ClusterConfigurationManagerService
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            clusterConfigurationManager::onGossipReceived);
+            clusterConfigurationManager::onGossipReceived,
+            this.meterRegistry);
     isCoordinator = localMemberId.id().equals(COORDINATOR_ID);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(

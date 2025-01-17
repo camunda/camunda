@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,8 @@ public class GatewayClusterConfigurationService extends Actor
   public GatewayClusterConfigurationService(
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
-      final ClusterConfigurationGossiperConfig config) {
+      final ClusterConfigurationGossiperConfig config,
+      final MeterRegistry meterRegistry) {
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             this,
@@ -43,7 +45,8 @@ public class GatewayClusterConfigurationService extends Actor
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            this::updateClusterTopology);
+            this::updateClusterTopology,
+            meterRegistry);
   }
 
   private void updateClusterTopology(final ClusterConfiguration clusterConfiguration) {
