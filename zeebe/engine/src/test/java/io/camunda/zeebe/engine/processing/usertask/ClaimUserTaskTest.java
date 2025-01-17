@@ -228,9 +228,12 @@ public class ClaimUserTaskTest {
                 Assertions.assertThat(recordValue)
                     .hasUserTaskKey(userTaskKey)
                     .hasAction(DEFAULT_ACTION)
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                     .hasAssignee(initialAssignee)
-                    .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE)
-                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+                    .describedAs(
+                        "Expect that the `changedAttributes` field is empty because the task was "
+                            + "claimed by the same user and the `assignee` value did not change.")
+                    .hasNoChangedAttributes());
   }
 
   @Test

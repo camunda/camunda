@@ -1364,6 +1364,116 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldTrackOnlyChangedAttributesDuringUserTaskAssignmentWithMultipleListeners() {
+    // given
+    final int initialPriority = 42;
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeTaskPriority(Integer.toString(initialPriority))
+                        .zeebeTaskListener(listener -> listener.assigning().type(listenerType))
+                        .zeebeTaskListener(
+                            listener -> listener.assigning().type(listenerType + "_2"))
+                        .zeebeTaskListener(
+                            listener -> listener.assigning().type(listenerType + "_3"))));
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("merry").assign();
+
+    // The first listener applies corrections to the `assignee`, `dueDate`, and `priority` fields
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("pippin")
+                        .setDueDate("corrected_due_date")
+                        .setPriority(84))
+                .setCorrectedAttributes(List.of("assignee", "dueDate", "priority")))
+        .complete();
+
+    // The second listener resets the `assignee` and `priority` to their initial user task values
+    // before the task assignment
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("") // Clears the assignee to mark the task as unassigned
+                        .setPriority(initialPriority))
+                .setCorrectedAttributes(List.of("assignee", "priority")))
+        .complete();
+
+    // The third listener corrects the `candidateGroupsList`
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_3")
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections().setCandidateGroupsList(List.of("hobbits")))
+                .setCorrectedAttributes(List.of("candidateGroupsList")))
+        .complete();
+
+    // then
+    // Verify the sequence of intents and the `changedAttributes` emitted for the user task
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .limit(record -> record.getIntent() == UserTaskIntent.ASSIGNED))
+        .as("Verify the user task lifecycle and tracking of `changedAttributes`")
+        .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, List.of()),
+            tuple(UserTaskIntent.CREATED, List.of()),
+            tuple(UserTaskIntent.ASSIGN, List.of()),
+            tuple(UserTaskIntent.ASSIGNING, List.of("assignee")),
+            tuple(
+                UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("assignee", "dueDate", "priority")),
+            tuple(UserTaskIntent.CORRECTED, List.of("assignee", "dueDate", "priority")),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("assignee", "priority")),
+            tuple(UserTaskIntent.CORRECTED, List.of("assignee", "priority")),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("candidateGroupsList")),
+            tuple(UserTaskIntent.CORRECTED, List.of("candidateGroupsList")),
+            // As a result, `changedAttributes` contains only `dueDate` and `candidateGroupsList`
+            // because these are the only properties that differ from the original values of the
+            // created user task. All other properties were either unchanged or reset to their
+            // initial values that were before task assignment using the corrections.
+            tuple(UserTaskIntent.ASSIGNED, List.of("candidateGroupsList", "dueDate")));
+
+    final var createUserTaskValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+    final var assignedUserTaskValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(assignedUserTaskValue)
+        // unchanged properties
+        .hasFollowUpDate(createUserTaskValue.getFollowUpDate())
+        .hasCandidateUsersList(createUserTaskValue.getCandidateUsersList())
+        // properties reset to their initial values
+        .hasAssignee(createUserTaskValue.getAssignee())
+        .hasPriority(createUserTaskValue.getPriority())
+        // changed properties
+        .hasDueDate("corrected_due_date")
+        .hasCandidateGroupsList("hobbits")
+        .hasOnlyChangedAttributes("candidateGroupsList", "dueDate")
+        .hasAction("assign");
+  }
+
+  @Test
   public void shouldPersistCorrectedUserTaskDataWhenAssigningOnCreationTaskListenerCompleted() {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.assigning,

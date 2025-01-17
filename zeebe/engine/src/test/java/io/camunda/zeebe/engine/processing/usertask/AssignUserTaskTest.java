@@ -127,6 +127,47 @@ public final class AssignUserTaskTest {
   }
 
   @Test
+  public void shouldNotUpdateChangedAttributesWhenTaskAssignedToSameAssignee() {
+    // given
+    final var assignee = "frodo";
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeAssignee(assignee))).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // when
+    final var assigningRecord =
+        ENGINE.userTask().withKey(userTaskKey).withAssignee(assignee).assign();
+
+    // then
+    Assertions.assertThat(assigningRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(UserTaskIntent.ASSIGNING);
+
+    final var assigningRecordValue = assigningRecord.getValue();
+    final var assignedRecordValue =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .filter(r -> r.getPosition() > assigningRecord.getPosition())
+            .getFirst()
+            .getValue();
+
+    assertThat(List.of(assigningRecordValue, assignedRecordValue))
+        .allSatisfy(
+            recordValue ->
+                Assertions.assertThat(recordValue)
+                    .hasUserTaskKey(userTaskKey)
+                    .hasAction(DEFAULT_ACTION)
+                    .hasAssignee(assignee)
+                    .describedAs(
+                        "Expect that `changedAttributes` is empty as the task was assigned to the same assignee")
+                    .hasNoChangedAttributes()
+                    .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+  }
+
+  @Test
   public void shouldEmitAssignEventsWithCustomAction() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
