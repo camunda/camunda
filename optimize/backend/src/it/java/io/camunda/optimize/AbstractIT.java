@@ -78,9 +78,11 @@ public abstract class AbstractIT {
   }
 
   private String[] prepareArgs(final Map<String, String> argMap) {
-    // TODO: check whether the single application has this value configured somewhere and read it
-    //   from there, in case.
-    final String httpPort = "8080";
+    // Compatibility between dist and optimiz-distro. To remove when optimize-distro is removed.
+    String httpPort = System.getenv("SERVER_PORT");
+    if (httpPort == null) {
+      httpPort = "8080";
+    }
 
     final String actuatorPort =
         getArg(
