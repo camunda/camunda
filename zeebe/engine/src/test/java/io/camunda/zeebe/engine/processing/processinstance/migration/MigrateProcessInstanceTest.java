@@ -20,6 +20,11 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+<<<<<<< HEAD
+=======
+import org.assertj.core.api.Assertions;
+import java.util.List;
+>>>>>>> 21ea1a08 (test: verify message correlated to process instance after migration)
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -194,4 +199,64 @@ public class MigrateProcessInstanceTest {
         .hasBpmnProcessId(processId)
         .hasElementId(processId);
   }
+
+  @Test
+  public void shouldAdjustMessageCardinalityTrackingWhenMigratedForProcessInstance() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("msg_start")
+                    .message("msg1")
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("msg_start")
+                    .message("msg2")
+                    .serviceTask("B", t -> t.zeebeJobType("B"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    ENGINE.message().withName("msg1").withCorrelationKey("cardinality").publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId(processId)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // when
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    ENGINE.message().withName("msg1").withCorrelationKey("cardinality").publish();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withBpmnProcessId(processId)
+                .withElementId(processId)
+                .skip(1) // skip the first activation
+                .exists())
+        .isTrue();
+  }
+
 }
