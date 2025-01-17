@@ -28,15 +28,14 @@ import java.util.stream.StreamSupport;
 public class PersistedAuthorization extends UnpackedObject implements DbValue {
 
   private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey");
-  private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
+  private final StringProperty ownerIdProp = new StringProperty("ownerId");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
-      new EnumProperty<>(
-          "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
+      new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
-  private final ArrayProperty<StringValue> authorizationPermissionsProp =
-      new ArrayProperty<>("authorizationPermissions", StringValue::new);
+  private final ArrayProperty<StringValue> permissionsProp =
+      new ArrayProperty<>("permissions", StringValue::new);
 
   public PersistedAuthorization() {
     super(6);
@@ -45,7 +44,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .declareProperty(ownerTypeProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
-        .declareProperty(authorizationPermissionsProp);
+        .declareProperty(permissionsProp);
   }
 
   public void wrap(final AuthorizationRecord authorizationRecord) {
@@ -54,7 +53,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
         .setOwnerType(authorizationRecord.getOwnerType())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
-        .setAuthorizationPermissions(authorizationRecord.getAuthorizationPermissions());
+        .setPermissions(authorizationRecord.getAuthorizationPermissions());
   }
 
   public long getAuthorizationKey() {
@@ -102,25 +101,23 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public Set<PermissionType> getAuthorizationPermissions() {
-    return StreamSupport.stream(authorizationPermissionsProp.spliterator(), false)
+  public Set<PermissionType> getPermissions() {
+    return StreamSupport.stream(permissionsProp.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .map(PermissionType::valueOf)
         .collect(Collectors.toSet());
   }
 
-  public PersistedAuthorization setAuthorizationPermissions(
-      final Set<PermissionType> authorizationPermissions) {
-    authorizationPermissionsProp.reset();
-    authorizationPermissions.forEach(
-        permission ->
-            authorizationPermissionsProp.add().wrap(BufferUtil.wrapString(permission.name())));
+  public PersistedAuthorization setPermissions(final Set<PermissionType> permissions) {
+    permissionsProp.reset();
+    permissions.forEach(
+        permission -> permissionsProp.add().wrap(BufferUtil.wrapString(permission.name())));
     return this;
   }
 
-  public PersistedAuthorization addAuthorizationPermission(final PermissionType permission) {
-    authorizationPermissionsProp.add().wrap(BufferUtil.wrapString(permission.name()));
+  public PersistedAuthorization addPermission(final PermissionType permission) {
+    permissionsProp.add().wrap(BufferUtil.wrapString(permission.name()));
     return this;
   }
 }

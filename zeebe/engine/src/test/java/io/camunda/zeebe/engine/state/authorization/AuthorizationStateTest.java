@@ -75,8 +75,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
-    assertThat(authorization.getAuthorizationPermissions())
-        .containsExactlyInAnyOrderElementsOf(permissions);
+    assertThat(authorization.getPermissions()).containsExactlyInAnyOrderElementsOf(permissions);
   }
 
   @Test
