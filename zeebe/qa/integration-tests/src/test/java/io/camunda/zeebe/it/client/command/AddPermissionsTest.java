@@ -51,7 +51,7 @@ public class AddPermissionsTest {
     // when
     client
         .newAddPermissionsCommand(ownerKey)
-        .resourceType(ResourceTypeEnum.DEPLOYMENT)
+        .resourceType(ResourceTypeEnum.RESOURCE)
         .permission(PermissionTypeEnum.CREATE)
         .resourceId("resourceId")
         .send()
@@ -80,7 +80,7 @@ public class AddPermissionsTest {
     final var future =
         client
             .newAddPermissionsCommand(nonExistingOwnerKey)
-            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .resourceType(ResourceTypeEnum.RESOURCE)
             .permission(PermissionTypeEnum.CREATE)
             .resourceId("resourceId")
             .send();

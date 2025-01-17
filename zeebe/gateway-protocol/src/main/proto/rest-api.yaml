@@ -5762,7 +5762,7 @@ components:
         - APPLICATION
         - SYSTEM
         - TENANT
-        - DEPLOYMENT
+        - RESOURCE
         - PROCESS_DEFINITION
         - DECISION_REQUIREMENTS_DEFINITION
         - DECISION_DEFINITION

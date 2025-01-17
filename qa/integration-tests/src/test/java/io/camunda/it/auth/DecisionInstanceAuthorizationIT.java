@@ -11,7 +11,7 @@ import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE_DECISION_INSTANCE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_DECISION_INSTANCE;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -47,7 +47,7 @@ class DecisionInstanceAuthorizationIT {
           ADMIN,
           "password",
           List.of(
-              new Permissions(DEPLOYMENT, CREATE, List.of("*")),
+              new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(DECISION_DEFINITION, CREATE_DECISION_INSTANCE, List.of("*")),
               new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*"))));
   private static final User RESTRICTED_USER =

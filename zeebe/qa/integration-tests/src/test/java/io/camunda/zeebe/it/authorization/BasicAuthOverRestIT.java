@@ -90,7 +90,7 @@ final class BasicAuthOverRestIT {
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when

@@ -28,9 +28,9 @@ public final class AuthorizationRequestValidator {
   private static final Map<PermissionTypeEnum, ResourceTypeEnum>
       RESOURCE_SPECIFIC_PERMISSION_TYPES =
           Map.of(
-              PermissionTypeEnum.DELETE_PROCESS, ResourceTypeEnum.DEPLOYMENT,
-              PermissionTypeEnum.DELETE_DRD, ResourceTypeEnum.DEPLOYMENT,
-              PermissionTypeEnum.DELETE_FORM, ResourceTypeEnum.DEPLOYMENT);
+              PermissionTypeEnum.DELETE_PROCESS, ResourceTypeEnum.RESOURCE,
+              PermissionTypeEnum.DELETE_DRD, ResourceTypeEnum.RESOURCE,
+              PermissionTypeEnum.DELETE_FORM, ResourceTypeEnum.RESOURCE);
 
   public static Optional<ProblemDetail> validateAuthorizationCreateRequest(
       final AuthorizationCreateRequest request) {

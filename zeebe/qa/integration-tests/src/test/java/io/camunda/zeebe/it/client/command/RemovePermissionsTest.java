@@ -48,7 +48,7 @@ public class RemovePermissionsTest {
   void shouldRemovePermissionsFromOwner() {
     // given
     final long ownerKey = createUser();
-    final var resourceType = ResourceTypeEnum.DEPLOYMENT;
+    final var resourceType = ResourceTypeEnum.RESOURCE;
     final var permissionType = PermissionTypeEnum.CREATE;
     final var resourceId = "resourceId";
     addPermissionToOwner(ownerKey, resourceType, permissionType, resourceId);
@@ -85,7 +85,7 @@ public class RemovePermissionsTest {
     final var future =
         client
             .newRemovePermissionsCommand(nonExistingOwnerKey)
-            .resourceType(ResourceTypeEnum.DEPLOYMENT)
+            .resourceType(ResourceTypeEnum.RESOURCE)
             .permission(PermissionTypeEnum.CREATE)
             .resourceId("resourceId")
             .send();

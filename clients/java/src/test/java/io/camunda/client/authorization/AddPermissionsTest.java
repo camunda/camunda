@@ -37,7 +37,7 @@ public final class AddPermissionsTest extends ClientRestTest {
     // when
     client
         .newAddPermissionsCommand(1L)
-        .resourceType(ResourceTypeEnum.DEPLOYMENT)
+        .resourceType(ResourceTypeEnum.RESOURCE)
         .permission(PermissionTypeEnum.CREATE)
         .resourceId("resourceId1")
         .permission(PermissionTypeEnum.UPDATE)
@@ -52,7 +52,7 @@ public final class AddPermissionsTest extends ClientRestTest {
     final AuthorizationPatchRequest request =
         gatewayService.getLastRequest(AuthorizationPatchRequest.class);
     assertThat(request.getAction()).isEqualTo(ActionEnum.ADD);
-    assertThat(request.getResourceType()).isEqualTo(ResourceTypeEnum.DEPLOYMENT);
+    assertThat(request.getResourceType()).isEqualTo(ResourceTypeEnum.RESOURCE);
 
     assertThat(request.getPermissions())
         .hasSize(3)
@@ -90,7 +90,7 @@ public final class AddPermissionsTest extends ClientRestTest {
             () ->
                 client
                     .newAddPermissionsCommand(1L)
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permission(null)
                     .resourceId("resourceId")
                     .send()
@@ -106,7 +106,7 @@ public final class AddPermissionsTest extends ClientRestTest {
             () ->
                 client
                     .newAddPermissionsCommand(1L)
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permission(PermissionTypeEnum.CREATE)
                     .resourceId(null)
                     .send()
@@ -122,7 +122,7 @@ public final class AddPermissionsTest extends ClientRestTest {
             () ->
                 client
                     .newAddPermissionsCommand(1L)
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permission(PermissionTypeEnum.CREATE)
                     .resourceId("")
                     .send()
@@ -138,7 +138,7 @@ public final class AddPermissionsTest extends ClientRestTest {
             () ->
                 client
                     .newAddPermissionsCommand(1L)
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permission(PermissionTypeEnum.CREATE)
                     .resourceIds(null)
                     .send()
@@ -154,7 +154,7 @@ public final class AddPermissionsTest extends ClientRestTest {
             () ->
                 client
                     .newAddPermissionsCommand(1L)
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permission(PermissionTypeEnum.CREATE)
                     .resourceIds(Collections.emptyList())
                     .send()

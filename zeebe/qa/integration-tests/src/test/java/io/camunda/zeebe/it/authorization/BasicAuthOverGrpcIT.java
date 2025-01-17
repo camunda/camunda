@@ -97,7 +97,7 @@ public class BasicAuthOverGrpcIT {
     authUtil.createUserWithPermissions(
         username,
         password,
-        new Permissions(ResourceTypeEnum.DEPLOYMENT, PermissionTypeEnum.CREATE, List.of("*")));
+        new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")));
 
     try (final var client = authUtil.createClientGrpc(username, password)) {
       // when

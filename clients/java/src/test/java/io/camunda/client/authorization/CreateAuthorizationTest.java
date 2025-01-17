@@ -37,7 +37,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
         .ownerId("ownerId")
         .ownerType(OwnerTypeEnum.USER)
         .resourceId("resourceId")
-        .resourceType(ResourceTypeEnum.DEPLOYMENT)
+        .resourceType(ResourceTypeEnum.RESOURCE)
         .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
         .send()
         .join();
@@ -48,7 +48,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
     assertThat(request.getOwnerId()).isEqualTo("ownerId");
     assertThat(request.getOwnerType()).isEqualTo(OwnerTypeEnum.USER);
     assertThat(request.getResourceId()).isEqualTo("resourceId");
-    assertThat(request.getResourceType()).isEqualTo(ResourceTypeEnum.DEPLOYMENT);
+    assertThat(request.getResourceType()).isEqualTo(ResourceTypeEnum.RESOURCE);
     assertThat(request.getPermissions())
         .containsExactly(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ);
   }
@@ -63,7 +63,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId(null)
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
                     .send()
                     .join())
@@ -81,7 +81,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("")
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
                     .send()
                     .join())
@@ -99,7 +99,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("ownerId")
                     .ownerType(null)
                     .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
                     .send()
                     .join())
@@ -117,7 +117,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("ownerId")
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId(null)
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
                     .send()
                     .join())
@@ -135,7 +135,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("ownerId")
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(Arrays.asList(PermissionTypeEnum.CREATE, PermissionTypeEnum.READ))
                     .send()
                     .join())
@@ -171,7 +171,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("ownerId")
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(null)
                     .send()
                     .join())
@@ -189,7 +189,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("ownerId")
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permissions(new ArrayList<>())
                     .send()
                     .join())
@@ -207,7 +207,7 @@ public class CreateAuthorizationTest extends ClientRestTest {
                     .ownerId("ownerId")
                     .ownerType(OwnerTypeEnum.USER)
                     .resourceId("resourceId")
-                    .resourceType(ResourceTypeEnum.DEPLOYMENT)
+                    .resourceType(ResourceTypeEnum.RESOURCE)
                     .permission(null)
                     .send()
                     .join())
