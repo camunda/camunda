@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
 import java.util.List;
 import org.junit.ClassRule;
@@ -265,4 +266,163 @@ public class MigrateProcessInstanceTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldAdjustMessageCardinalityTrackingWhenMigratedForTargetProcess() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("msg_start")
+                    .message("msg1")
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("msg_start")
+                    .message("msg2")
+                    .serviceTask("B", t -> t.zeebeJobType("B"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    ENGINE.message().withName("msg1").withCorrelationKey("cardinality").publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId(processId)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // when
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    final long messagePosition =
+        ENGINE
+            .message()
+            .withName("msg2")
+            .withCorrelationKey("cardinality")
+            .publish()
+            .getSourceRecordPosition();
+
+    // broadcast a record to have something to limit the stream on
+    final var limitPosition = ENGINE.signal().withSignalName("dummy").broadcast().getPosition();
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .between(messagePosition, limitPosition)
+                .processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(r -> r.getValue().getElementId())
+        .describedAs("Expect that the target process is not activated")
+        .doesNotContain(targetProcessId);
+
+    // complete existing target instance
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    // start new target instance
+    ENGINE.message().withName("msg2").withCorrelationKey("cardinality").publish();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withBpmnProcessId(targetProcessId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldAdjustMessageCardinalityTrackingWhenMigratedForTargetProcessWithMessageTTL() {
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent("msg_start")
+                    .message("msg1")
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent("msg_start")
+                    .message("msg2")
+                    .serviceTask("B", t -> t.zeebeJobType("B"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    ENGINE.message().withName("msg1").withCorrelationKey("cardinality").publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId(processId)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // when
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    final long messagePosition =
+        ENGINE
+            .message()
+            .withName("msg2")
+            .withCorrelationKey("cardinality")
+            .withTimeToLive(Duration.ofMinutes(1)) // create message with TTL
+            .publish()
+            .getSourceRecordPosition();
+
+    // broadcast a record to have something to limit the stream on
+    final var limitPosition = ENGINE.signal().withSignalName("dummy").broadcast().getPosition();
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .between(messagePosition, limitPosition)
+                .processInstanceRecords()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(r -> r.getValue().getElementId())
+        .describedAs("Expect that the target process is not activated")
+        .doesNotContain(targetProcessId);
+
+    // complete existing target instance
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.PROCESS)
+                .withBpmnProcessId(targetProcessId)
+                .withElementId(targetProcessId)
+                .exists())
+        .describedAs("Expect that the target process is activated for the message with TTL")
+        .isTrue();
+  }
 }
