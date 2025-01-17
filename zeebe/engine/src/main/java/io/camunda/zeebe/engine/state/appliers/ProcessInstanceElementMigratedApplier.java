@@ -56,6 +56,9 @@ final class ProcessInstanceElementMigratedApplier
                 .getValue()
                 .getBpmnProcessIdBuffer();
         messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
+
+        // lock the target process for the correlation key
+        messageState.putActiveProcessInstance(value.getBpmnProcessIdBuffer(), correlationKey);
       }
     }
 
