@@ -7,7 +7,6 @@
     <bpmn:sequenceFlow id="Flow_0a17qbl" sourceRef="StartEvent_1" targetRef="user-task" />
     <bpmn:userTask id="user-task">
       <bpmn:extensionElements>
-        <zeebe:userTask />
         <zeebe:assignmentDefinition assignee="bar" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0a17qbl</bpmn:incoming>
