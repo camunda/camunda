@@ -32,7 +32,6 @@ public class AuthorizationRemovePermissionAuthorizationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
-  private static final long defaultUserKey = -1L;
 
   @Rule
   public final EngineRule engine =
