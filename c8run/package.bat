@@ -7,6 +7,16 @@ set ELASTICSEARCH_VERSION=8.13.4
 set BASEDIR=%~dp0
 echo BASEDIR=%BASEDIR%
 
+if not defined JAVA_ARTIFACTS_USER (
+    echo Error: JAVA_ARTIFACTS_USER env var not set or is empty.
+    exit /b 1
+)
+
+if not defined JAVA_ARTIFACTS_PASSWORD (
+    echo Error: JAVA_ARTIFACTS_PASSWORD env var is not set or is empty.
+    exit /b 1
+)
+
 REM Delete testing data before tar
 rmdir /S /Q elasticsearch-%ELASTICSEARCH_VERSION%
 rmdir /S /Q camunda-zeebe-%CAMUNDA_VERSION%
@@ -27,9 +37,8 @@ tar -xf camunda-zeebe-%CAMUNDA_VERSION%.zip -C %BASEDIR%
 
 set connectorsFileName=connector-runtime-bundle-%CAMUNDA_CONNECTORS_VERSION%-with-dependencies.jar
 if not exist "%connectorsFileName%" (
-    curl -L -o "%connectorsFileName%" "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/%CAMUNDA_CONNECTORS_VERSION%/%connectorsFileName%"
+    curl -L --user "%JAVA_ARTIFACTS_USER%:%JAVA_ARTIFACTS_PASSWORD%" -o "%connectorsFileName%" "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/%CAMUNDA_CONNECTORS_VERSION%/%connectorsFileName%"
 )
-
 
 go build -C windows -trimpath -o ..\c8run.exe
 
