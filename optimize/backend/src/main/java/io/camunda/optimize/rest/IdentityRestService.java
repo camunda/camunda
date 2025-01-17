@@ -10,15 +10,17 @@ package io.camunda.optimize.rest;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
-import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import io.camunda.optimize.dto.optimize.rest.UserResponseDto;
+import io.camunda.optimize.dto.optimize.rest.UserServiceResponseDto;
+import io.camunda.optimize.rest.security.newwork.UserService;
+import io.camunda.optimize.rest.security.newwork.UserServiceUserDto;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.ws.rs.NotFoundException;
 import java.util.Optional;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +37,7 @@ public class IdentityRestService {
 
   private final AbstractIdentityService identityService;
   private final SessionService sessionService;
+  @Autowired private UserService userService;
 
   public IdentityRestService(
       final AbstractIdentityService identityService, final SessionService sessionService) {
@@ -61,15 +64,23 @@ public class IdentityRestService {
         .getIdentityWithMetadataForIdAsUser(userId, identityId)
         .orElseThrow(
             () ->
-                new NotFoundException(
+                new OptimizeRuntimeException(
                     "Could find neither a user nor a group with the id [" + identityId + "]."));
   }
 
   @GetMapping(path = CURRENT_USER_IDENTITY_SUB_PATH)
-  public UserResponseDto getCurrentUser(final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
-    final UserDto currentUserDto =
-        identityService.getCurrentUserById(userId, request).orElseGet(() -> new UserDto(userId));
-    return new UserResponseDto(currentUserDto, identityService.getEnabledAuthorizations());
+  public UserServiceResponseDto getCurrentUser(final HttpServletRequest request) {
+    final UserServiceUserDto x = userService.getCurrentUser();
+    final String userId = x.getUserId();
+    // this throws an error related to 'invalid issuer URL'
+    // final UserDto currentUserDto =
+    //    identityService.getCurrentUserById(userId, request).orElseGet(() -> new UserDto(userId));
+    // figure out how to fetch authorizations from identity with `userService`, so that
+    // i can remove the call to indentityService
+
+    // demo/demo has no tenant/group/role, those will need to be set up
+
+    // will need to massage the new data into the existing dto
+    return new UserServiceResponseDto(x, identityService.getEnabledAuthorizations());
   }
 }

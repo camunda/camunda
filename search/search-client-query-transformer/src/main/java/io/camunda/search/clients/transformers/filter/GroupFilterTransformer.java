@@ -8,10 +8,8 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.MEMBER_KEY;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -31,11 +29,6 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
     return and(
         term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()),
         filter.groupKey() == null ? null : term(KEY, filter.groupKey()),
-        filter.name() == null ? null : term(NAME, filter.name()),
-        filter.memberKey() == null
-            ? null
-            : hasChildQuery(
-                IdentityJoinRelationshipType.MEMBER.getType(),
-                term(MEMBER_KEY, filter.memberKey())));
+        filter.name() == null ? null : term(NAME, filter.name()));
   }
 }
