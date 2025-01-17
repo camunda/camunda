@@ -7,11 +7,17 @@
  */
 package io.camunda.authentication.config;
 
+import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
+
+import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.BasicAuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -19,6 +25,7 @@ import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +55,13 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Profile("auth-basic|auth-oidc")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
+
+  private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
+
   private static final String LOGIN_URL = "/login";
   private static final String LOGOUT_URL = "/logout";
+
+  private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**", "/api/**");
   private static final Set<String> UNAUTHENTICATED_PATHS =
       Set.of(
           LOGIN_URL,
@@ -71,8 +83,6 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**",
           "/new/**");
-
-  private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
@@ -100,7 +110,7 @@ public class WebSecurityConfig {
       final AuthFailureHandler authFailureHandler,
       final ClientRegistrationRepository clientRegistrationRepository)
       throws Exception {
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
+    return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
         .oauth2ResourceServer(
             oauth2 ->
                 oauth2.jwt(
@@ -132,13 +142,26 @@ public class WebSecurityConfig {
   @Profile("auth-basic")
   @Order(1)
   public SecurityFilterChain httpBasicAuthSecurityFilterChain(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      final HttpSecurity httpSecurity,
+      final AuthFailureHandler authFailureHandler,
+      final SecurityConfiguration securityConfiguration)
       throws Exception {
     LOG.info("HTTP Basic authentication is enabled");
-    // Require valid credentials when a basic auth header is present.
     return baseHttpSecurity(
-            withSecurityMatcher(httpSecurity, WebSecurityConfig::isBasicAuthRequest),
-            authFailureHandler)
+            withSecurityMatcher(
+                httpSecurity,
+                request ->
+                    isBasicAuthRequest(request)
+                        // If authentication isn't disabled for the API, all API requests without a
+                        // session cookie are treated as basic auth requests to work around a
+                        // limitation of Java's HTTP client, which only sends an Authorization
+                        // header after the server sends a WWW-Authenticate header in a 401
+                        // response.
+                        || !isUnprotectedApiAccessAllowed(securityConfiguration)
+                            && isApiRequest(request)
+                            && !hasSessionCookie(request)),
+            authFailureHandler,
+            UNAUTHENTICATED_PATHS)
         .httpBasic(Customizer.withDefaults())
         .build();
   }
@@ -146,17 +169,32 @@ public class WebSecurityConfig {
   @Bean
   @Profile("auth-basic")
   @Order(2)
+  public SecurityFilterChain unprotectedApiAccessSecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final AuthFailureHandler authFailureHandler,
+      final SecurityConfiguration securityConfiguration)
+      throws Exception {
+    if (!isUnprotectedApiAccessAllowed(securityConfiguration)) {
+      return null;
+    }
+    LOG.warn(
+        "The API is accessible without authentication. Please disable camunda.security.authentication.basic.allow-unauthenticated-api-access for any deployment.");
+    return baseHttpSecurity(
+            withSecurityMatcher(
+                httpSecurity, request -> isApiRequest(request) && !hasSessionCookie(request)),
+            authFailureHandler,
+            Sets.union(UNAUTHENTICATED_PATHS, API_PATHS))
+        .build();
+  }
+
+  @Bean
+  @Profile("auth-basic")
+  @Order(3)
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
-    return buildLoginAuthSecurityFilterChain(httpSecurity, authFailureHandler);
-  }
-
-  public SecurityFilterChain buildLoginAuthSecurityFilterChain(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
-      throws Exception {
     LOG.info("Configuring login auth");
-    return baseHttpSecurity(httpSecurity, authFailureHandler)
+    return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
         .formLogin(
             formLogin ->
                 formLogin
@@ -184,19 +222,18 @@ public class WebSecurityConfig {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
   }
 
+  private static boolean isUnprotectedApiAccessAllowed(final SecurityConfiguration configuration) {
+    return Optional.ofNullable(configuration)
+        .map(SecurityConfiguration::getAuthentication)
+        .map(AuthenticationConfiguration::getBasic)
+        .map(BasicAuthenticationConfiguration::getAllowUnauthenticatedApiAccess)
+        .orElse(false);
+  }
+
   private static boolean isBasicAuthRequest(final HttpServletRequest request) {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
     // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
-    if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
-      return true;
-    }
-    // If it's an API request and there's no session cookie, also treat the request as a basic auth
-    // request. This is a workaround for Java's HTTP client, which only sends an Authorization
-    // header after the server sends a WWW-Authenticate header in a 401 response.
-    if (isApiRequest(request) && !hasSessionCookie(request)) {
-      return true;
-    }
-    return false;
+    return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
   }
 
   private static boolean hasSessionCookie(final HttpServletRequest request) {
@@ -208,7 +245,7 @@ public class WebSecurityConfig {
   }
 
   private static boolean isApiRequest(final HttpServletRequest request) {
-    return request.getRequestURI().contains("/v2/") || request.getRequestURI().contains("/api/");
+    return API_PATHS.stream().anyMatch(path -> antMatcher(path).matches(request));
   }
 
   private static HttpSecurity withSecurityMatcher(
@@ -217,13 +254,15 @@ public class WebSecurityConfig {
   }
 
   private HttpSecurity baseHttpSecurity(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+      final HttpSecurity httpSecurity,
+      final AuthFailureHandler authFailureHandler,
+      final Set<String> unauthenticatedPaths)
       throws Exception {
     return httpSecurity
         .authorizeHttpRequests(
             (authorizeHttpRequests) ->
                 authorizeHttpRequests
-                    .requestMatchers(UNAUTHENTICATED_PATHS.toArray(String[]::new))
+                    .requestMatchers(unauthenticatedPaths.toArray(String[]::new))
                     .permitAll()
                     .anyRequest()
                     .authenticated())
