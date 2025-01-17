@@ -133,8 +133,12 @@ public class OptimizeTomcatConfig {
   }
 
   private void applyCommonConfiguration(final Connector connector) {
-    // the port is compatible with the single-application settings
-    connector.setPort(configurationService.getContainerHttpsPort());
+    // This is useful for optimize-distro and it's compatible with dist.
+    // TODO: Remove once optimize-distro is removed.
+    final String serverPort = System.getenv("SERVER_PORT");
+    if (serverPort != null && !"8080".equals(serverPort)) {
+      connector.setPort(Integer.parseInt(serverPort));
+    }
 
     connector.setProperty(
         "maxHttpRequestHeaderSize",

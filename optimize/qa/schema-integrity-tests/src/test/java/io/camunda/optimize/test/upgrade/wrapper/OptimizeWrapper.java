@@ -68,7 +68,6 @@ public class OptimizeWrapper {
     final Map<String, String> envVars = new HashMap<>();
     envVars.put("OPTIMIZE_ELASTICSEARCH_HTTP_PORT", String.valueOf(databasePort));
     envVars.put("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT", String.valueOf(databasePort));
-    envVars.put("SERVER_PORT", "8090");
     processBuilder.environment().putAll(envVars);
     upgradeProcess = processBuilder.start();
   }
@@ -141,6 +140,7 @@ public class OptimizeWrapper {
     }
     envVars.put("OPTIMIZE_API_ACCESS_TOKEN", "secret");
     envVars.put("SPRING_PROFILES_ACTIVE", "ccsm");
+    envVars.put("SERVER_PORT", "8090");
     return envVars;
   }
 
