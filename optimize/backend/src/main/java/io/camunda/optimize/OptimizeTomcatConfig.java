@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.util.configuration.EnvironmentProperti
 import io.camunda.optimize.rest.HealthRestService;
 import io.camunda.optimize.rest.LocalizationRestService;
 import io.camunda.optimize.rest.UIConfigurationRestService;
-import io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.PanelNotificationConstants;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -52,12 +51,6 @@ public class OptimizeTomcatConfig {
             URL_BASE,
             LOGIN_ENDPOINT,
             METRICS_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_JWKS_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_AUTH_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_TOKEN_ENDPOINT,
-            CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
             HealthRestService.READYZ_PATH,
             LocalizationRestService.LOCALIZATION_PATH,
             OptimizeTomcatConfig.EXTERNAL_SUB_PATH,

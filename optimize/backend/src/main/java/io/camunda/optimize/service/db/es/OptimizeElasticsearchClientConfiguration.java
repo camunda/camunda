@@ -9,6 +9,7 @@ package io.camunda.optimize.service.db.es;
 
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonProvider;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
@@ -28,26 +29,33 @@ import org.springframework.context.annotation.Configuration;
 @Conditional(ElasticSearchCondition.class)
 public class OptimizeElasticsearchClientConfiguration {
 
-  private static final Logger LOG =
-      org.slf4j.LoggerFactory.getLogger(OptimizeElasticsearchClientConfiguration.class);
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
   private final ElasticSearchSchemaManager elasticSearchSchemaManager;
   private final PluginRepository pluginRepository = new PluginRepository();
+  private final OptimizeElasticsearchClient optimizeElasticsearchClient;
 
   public OptimizeElasticsearchClientConfiguration(
       final ConfigurationService configurationService,
       final OptimizeIndexNameService optimizeIndexNameService,
-      final ElasticSearchSchemaManager elasticSearchSchemaManager) {
+      final ElasticSearchSchemaManager elasticSearchSchemaManager,
+      final BackoffCalculator backoffCalculator) {
     this.configurationService = configurationService;
     this.optimizeIndexNameService = optimizeIndexNameService;
     this.elasticSearchSchemaManager = elasticSearchSchemaManager;
+
+    // Create client within the constructor and reuse it later for the beans
+    this.optimizeElasticsearchClient = createOptimizeElasticsearchClient(backoffCalculator);
   }
 
   @Bean
-  public OptimizeElasticsearchClient optimizeElasticsearchClient(
-      final BackoffCalculator backoffCalculator) {
-    return createOptimizeElasticsearchClient(backoffCalculator);
+  public OptimizeElasticsearchClient optimizeElasticsearchClient() {
+    return this.optimizeElasticsearchClient;
+  }
+
+  @Bean
+  public ElasticsearchClient elasticsearchClient() {
+    return this.optimizeElasticsearchClient.elasticsearchClient();
   }
 
   @Bean

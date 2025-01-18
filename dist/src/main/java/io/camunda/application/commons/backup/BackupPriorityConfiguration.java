@@ -268,7 +268,9 @@ public class BackupPriorityConfiguration {
             // in this check.
             skipEmptyOptional());
     if (indexOptional.isEmpty()) {
-      throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
+      // throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
+      // TODO: check this change with Carlo Sana
+      return "";
     }
     return indexOptional.get();
   }
