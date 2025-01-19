@@ -191,6 +191,11 @@ func stopDocker(extractedComposePath string) error {
 	return nil
 }
 
+func usage(exitcode int) {
+	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n  package\n", os.Args[0])
+	os.Exit(exitcode)
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -231,7 +236,9 @@ func main() {
 	baseCommand := ""
 	// insideConfigFlag := false
 
-	if os.Args[1] == "start" {
+        if len(os.Args) == 1 {
+                usage(1)
+        } else if os.Args[1] == "start" {
 		baseCommand = "start"
 	} else if os.Args[1] == "stop" {
 		baseCommand = "stop"
@@ -240,10 +247,9 @@ func main() {
 	} else if os.Args[1] == "clean" {
 		baseCommand = "clean"
 	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
-		fmt.Println("Usage: c8run [command] [options]\nCommands:\n  start\n  stop\n  package")
-		os.Exit(0)
+		usage(0)
 	} else {
-		panic("Unsupported operation")
+		panic(fmt.Sprintln("Unsupported operation", os.Args[0]))
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
