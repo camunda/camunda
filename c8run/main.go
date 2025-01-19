@@ -102,6 +102,48 @@ func getC8RunPlatform() C8Run {
 	panic("Unsupported operating system")
 }
 
+
+func startDocker(extractedComposePath string) error {
+	os.Chdir(extractedComposePath)
+
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+
+	composeCmd := exec.Command("docker", "compose", "up", "-d")
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+	os.Chdir("..")
+	return nil
+}
+
+func stopDocker(extractedComposePath string) error {
+	os.Chdir(extractedComposePath)
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+	composeCmd := exec.Command("docker", "compose", "down")
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+	os.Chdir("..")
+	return nil
+}
+
+func usage(exitcode int) {
+	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n  package\n", os.Args[0])
+	os.Exit(exitcode)
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -136,7 +178,9 @@ func main() {
 	baseCommand := ""
 	// insideConfigFlag := false
 
-	if os.Args[1] == "start" {
+        if len(os.Args) == 1 {
+                usage(1)
+        } else if os.Args[1] == "start" {
 		baseCommand = "start"
 	} else if os.Args[1] == "stop" {
 		baseCommand = "stop"
@@ -145,10 +189,9 @@ func main() {
 	} else if os.Args[1] == "clean" {
 		baseCommand = "clean"
 	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
-		fmt.Println("Usage: c8run [command] [options]\nCommands:\n  start\n  stop\n  package\n")
-		os.Exit(0)
+		usage(0)
 	} else {
-		panic("Unsupported operation")
+		panic(fmt.Sprintln("Unsupported operation", os.Args[0]))
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
