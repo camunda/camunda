@@ -30,8 +30,11 @@ public final class TopologyMetrics {
   private static final String LABEL_OUTCOME = "outcome";
 
   private static final Duration[] OPERATION_DURATION_BUCKETS =
-      Stream.of(1, 2, 5, 10, 30, 60, 120, 180, 300, 600) // Missing 0.1 - complains about it
-          .map(Duration::ofSeconds)
+      //      Stream.of(1, 2, 5, 10, 30, 60, 120, 180, 300, 600) // Missing 0.1 - complains about it
+      //          .map(Duration::ofSeconds)
+      //          .toArray(Duration[]::new);
+      Stream.of(100, 1000, 2000, 5000, 10000, 30000, 60000, 120000, 180000, 300000, 600000)
+          .map(Duration::ofMillis)
           .toArray(Duration[]::new);
 
   private static final Gauge CHANGE_ID =
@@ -40,6 +43,7 @@ public final class TopologyMetrics {
           .name("cluster_changes_id")
           .help("The id of the cluster topology change plan")
           .register();
+
   private static final Enumeration CHANGE_STATUS =
       Enumeration.build()
           .namespace(NAMESPACE)
@@ -81,14 +85,11 @@ public final class TopologyMetrics {
   private static final io.micrometer.core.instrument.MeterRegistry meterRegistry =
       Metrics.globalRegistry;
 
-  io.micrometer.core.instrument.Gauge myGauge =
-      io.micrometer.core.instrument.Gauge.builder(
-              NAMESPACE + "_cluster_topology_version",
-              () -> {
-                return null;
-              })
-          .description("The version of the cluster topology")
-          .register(meterRegistry);
+  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_ID;
+  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_STATUS; // TODO: ENUMERATION
+  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_VERSION;
+  private static io.micrometer.core.instrument.Gauge MICRO_PENDING_OPERATIONS;
+  private static io.micrometer.core.instrument.Gauge MICRO_COMPLETED_OPERATIONS;
 
   public static void updateFromTopology(final ClusterConfiguration topology) {
 
@@ -104,14 +105,52 @@ public final class TopologyMetrics {
             .map(ClusterChangePlan::status)
             .or(() -> topology.lastChange().map(CompletedChange::status))
             .orElse(Status.COMPLETED));
+
+    MICRO_CHANGE_ID =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_changes_id_micro",
+                () -> topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L))
+            .description("The id of the cluster topology change plan")
+            .register(meterRegistry);
     CHANGE_ID.set(topology.pendingChanges().map(ClusterChangePlan::id).orElse(0L));
+
+    MICRO_CHANGE_VERSION =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_changes_version_micro",
+                () -> topology.pendingChanges().map(ClusterChangePlan::version).orElse(0))
+            .description("The version of the cluster topology change plan")
+            .register(meterRegistry);
     CHANGE_VERSION.set(topology.pendingChanges().map(ClusterChangePlan::version).orElse(0));
+
+    MICRO_PENDING_OPERATIONS =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_changes_operations_pending_micro",
+                () ->
+                    topology
+                        .pendingChanges()
+                        .map(ClusterChangePlan::pendingOperations)
+                        .map(List::size)
+                        .orElse(0))
+            .description("Number of pending changes in the current change plan")
+            .register(meterRegistry);
     PENDING_OPERATIONS.set(
         topology
             .pendingChanges()
             .map(ClusterChangePlan::pendingOperations)
             .map(List::size)
             .orElse(0));
+
+    MICRO_COMPLETED_OPERATIONS =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_changes_operations_completed_micro",
+                () ->
+                    topology
+                        .pendingChanges()
+                        .map(ClusterChangePlan::completedOperations)
+                        .map(List::size)
+                        .orElse(0))
+            .description("Number of completed changes in the current change plan")
+            .register(meterRegistry);
     COMPLETED_OPERATIONS.set(
         topology
             .pendingChanges()
@@ -148,13 +187,6 @@ public final class TopologyMetrics {
     }
 
     static OperationObserver startOperation(final ClusterConfigurationChangeOperation operation) {
-      // Do only if it doesn't exist
-      io.micrometer.core.instrument.Timer.builder(NAMESPACE + "_cluster_changes_operation_duration")
-          .description("Duration it takes to apply an operation")
-          .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
-          .sla(OPERATION_DURATION_BUCKETS)
-          .register(meterRegistry);
-
       return new OperationObserver(
           operation,
           OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer(),
@@ -174,12 +206,8 @@ public final class TopologyMetrics {
     }
 
     public void failed() {
-      if (clusterChangeOperationTimerSample != null) {
+      if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
         clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
-        //            meterRegistry.timer(
-        //                NAMESPACE + "_cluster_changes_operation_duration",
-        //                LABEL_OPERATION,
-        //                operation.getClass().getSimpleName()));
       }
       if (timer != null) {
         timer.close();
@@ -201,12 +229,8 @@ public final class TopologyMetrics {
     }
 
     public void applied() {
-      if (clusterChangeOperationTimerSample != null) {
+      if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
         clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
-        //            meterRegistry.timer(
-        //                NAMESPACE + "_cluster_changes_operation_duration",
-        //                LABEL_OPERATION,
-        //                operation.getClass().getSimpleName()));
       }
       if (timer != null) {
         timer.close();
