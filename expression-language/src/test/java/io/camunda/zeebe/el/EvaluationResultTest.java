@@ -90,6 +90,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"PT2H\""));
   }
 
   @Test
@@ -103,6 +104,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"P2M\""));
   }
 
   @Test
@@ -119,6 +121,8 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer())
+        .isEqualTo(asMsgPack("\"2020-04-01T10:31:10+02:00[Europe/Berlin]\""));
   }
 
   @Test
@@ -134,6 +138,7 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"2020-04-01T10:31:10\""));
   }
 
   @Test
@@ -225,6 +230,34 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("{'x':\"2020-04-02\"}"));
+  }
+
+  @Test
+  public void shouldReturnNormalizedDuration() {
+    final var evaluationResult = evaluateExpression("=duration(\"P5D\")");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.DURATION);
+    assertThat(evaluationResult.getDuration()).isEqualTo(Duration.ofDays(5));
+    assertThat(evaluationResult.getPeriod()).isNull();
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"P5D\""));
+  }
+
+  @Test
+  public void shouldReturnNormalizedPeriod() {
+    final var evaluationResult = evaluateExpression("=duration(\"P2Y\")");
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.PERIOD);
+    assertThat(evaluationResult.getDuration()).isNull();
+    assertThat(evaluationResult.getPeriod()).isEqualTo(Period.ofYears(2));
+    assertThat(evaluationResult.getBoolean()).isNull();
+    assertThat(evaluationResult.getString()).isNull();
+    assertThat(evaluationResult.getNumber()).isNull();
+    assertThat(evaluationResult.getList()).isNull();
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"P2Y\""));
   }
 
   private EvaluationResult evaluateExpression(final String expression) {
