@@ -157,6 +157,12 @@
     </dependency>
 
     <dependency>
+      <groupId>commons-collections</groupId>
+      <artifactId>commons-collections</artifactId>
+      <version>3.2.2</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
       <scope>provided</scope>
@@ -236,6 +242,7 @@
             <dependency>io.camunda:zeebe-protocol-impl</dependency>
             <dependency>io.camunda:zeebe-protocol-jackson</dependency>
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
+            <dependency>commons-collections:commons-collections</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
