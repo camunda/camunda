@@ -30,9 +30,6 @@ public final class TopologyMetrics {
   private static final String LABEL_OUTCOME = "outcome";
 
   private static final Duration[] OPERATION_DURATION_BUCKETS =
-      //      Stream.of(1, 2, 5, 10, 30, 60, 120, 180, 300, 600) // Missing 0.1 - complains about it
-      //          .map(Duration::ofSeconds)
-      //          .toArray(Duration[]::new);
       Stream.of(100, 1000, 2000, 5000, 10000, 30000, 60000, 120000, 180000, 300000, 600000)
           .map(Duration::ofMillis)
           .toArray(Duration[]::new);
