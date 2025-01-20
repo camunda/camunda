@@ -181,7 +181,7 @@ public final class ClusterConfigurationGossiper
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
-    TopologyMetrics.updateFromTopology(updatedConfiguration, meterRegistry);
+    TopologyMetrics.updateFromTopology(updatedConfiguration);
   }
 
   private void notifyListeners(final ClusterConfiguration updatedTopology) {

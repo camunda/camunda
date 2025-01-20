@@ -12,28 +12,28 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tag;
-import io.prometheus.client.Counter;
 import io.prometheus.client.Enumeration;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Timer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public final class TopologyMetrics {
   private static final String NAMESPACE = "zeebe";
   private static final String LABEL_OPERATION = "operation";
   private static final String LABEL_OUTCOME = "outcome";
 
-  private static final Gauge TOPOLOGY_VERSION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("cluster_topology_version")
-          .help("The version of the cluster topology")
-          .register();
+  private static final Duration[] OPERATION_DURATION_BUCKETS =
+      Stream.of(1, 2, 5, 10, 30, 60, 120, 180, 300, 600) // Missing 0.1 - complains about it
+          .map(Duration::ofSeconds)
+          .toArray(Duration[]::new);
+
   private static final Gauge CHANGE_ID =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -69,37 +69,34 @@ public final class TopologyMetrics {
   private static final Histogram OPERATION_DURATION =
       Histogram.build()
           .namespace(NAMESPACE)
-          .name("cluster_changes_operation_duration")
+          .name("cluster_changes_operation_duration_old")
           .help("Duration it takes to apply an operation")
           .labelNames(LABEL_OPERATION)
           .buckets(0.1, 1, 2, 5, 10, 30, 60, 120, 180, 300, 600)
-          .register();
-  private static final Counter OPERATION_ATTEMPTS =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("cluster_changes_operation_attempts")
-          .help("Number of attempts per operation type")
-          .labelNames(LABEL_OPERATION, LABEL_OUTCOME)
           .register();
 
   private static final ConcurrentHashMap<String, io.micrometer.core.instrument.Counter>
       operationAttempts = new ConcurrentHashMap<>();
 
-  //  @Autowired
-  //  private MeterRegistry registry;
-  private static io.micrometer.core.instrument.MeterRegistry meterRegistry;
+  private static final io.micrometer.core.instrument.MeterRegistry meterRegistry =
+      Metrics.globalRegistry;
 
-  private static io.micrometer.core.instrument.Gauge MICROMETER_TOPOLOGY_VERSION;
+  io.micrometer.core.instrument.Gauge myGauge =
+      io.micrometer.core.instrument.Gauge.builder(
+              NAMESPACE + "_cluster_topology_version",
+              () -> {
+                return null;
+              })
+          .description("The version of the cluster topology")
+          .register(meterRegistry);
 
-  public static void updateFromTopology(
-      final ClusterConfiguration topology, final MeterRegistry meterRegistry) {
-    TopologyMetrics.meterRegistry = meterRegistry;
-    TOPOLOGY_VERSION.set(topology.version());
-    MICROMETER_TOPOLOGY_VERSION =
-        io.micrometer.core.instrument.Gauge.builder(
-                NAMESPACE + "_cluster_topology_version_micro", () -> topology.version())
-            .description("The version of the cluster topology")
-            .register(meterRegistry);
+  public static void updateFromTopology(final ClusterConfiguration topology) {
+
+    // TOPOLOGY_VERSION Gauge
+    io.micrometer.core.instrument.Gauge.builder(
+            NAMESPACE + "_cluster_topology_version", () -> topology.version())
+        .description("The version of the cluster topology")
+        .register(meterRegistry);
 
     CHANGE_STATUS.state(
         topology
@@ -131,16 +128,37 @@ public final class TopologyMetrics {
   public static final class OperationObserver {
     private final ClusterConfigurationChangeOperation operation;
     private final Timer timer;
+    private final io.micrometer.core.instrument.Timer.Sample clusterChangeOperationTimerSample;
+    private final io.micrometer.core.instrument.Timer clusterChangeOperationTimer;
 
     private OperationObserver(
-        final ClusterConfigurationChangeOperation operation, final Timer timer) {
+        final ClusterConfigurationChangeOperation operation,
+        final Timer timer,
+        final io.micrometer.core.instrument.Timer.Sample clusterChangeOperationTimerSample) {
       this.operation = operation;
       this.timer = timer;
+      this.clusterChangeOperationTimerSample = clusterChangeOperationTimerSample;
+      clusterChangeOperationTimer =
+          io.micrometer.core.instrument.Timer.builder(
+                  NAMESPACE + "_cluster_changes_operation_duration")
+              .description("Duration it takes to apply an operation")
+              .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
+              .sla(OPERATION_DURATION_BUCKETS)
+              .register(meterRegistry);
     }
 
     static OperationObserver startOperation(final ClusterConfigurationChangeOperation operation) {
+      // Do only if it doesn't exist
+      io.micrometer.core.instrument.Timer.builder(NAMESPACE + "_cluster_changes_operation_duration")
+          .description("Duration it takes to apply an operation")
+          .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
+          .sla(OPERATION_DURATION_BUCKETS)
+          .register(meterRegistry);
+
       return new OperationObserver(
-          operation, OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer());
+          operation,
+          OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer(),
+          io.micrometer.core.instrument.Timer.start(meterRegistry));
     }
 
     protected io.micrometer.core.instrument.Counter newCounter(
@@ -156,12 +174,18 @@ public final class TopologyMetrics {
     }
 
     public void failed() {
+      if (clusterChangeOperationTimerSample != null) {
+        clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
+        //            meterRegistry.timer(
+        //                NAMESPACE + "_cluster_changes_operation_duration",
+        //                LABEL_OPERATION,
+        //                operation.getClass().getSimpleName()));
+      }
       if (timer != null) {
         timer.close();
-        OPERATION_ATTEMPTS.labels(operation.getClass().getSimpleName(), "failed").inc();
         final String key =
             NAMESPACE
-                + "_cluster_changes_operation_attempts_micro#"
+                + "_cluster_changes_operation_attempts#"
                 + operation.getClass().getSimpleName()
                 + "#failed";
         final io.micrometer.core.instrument.Counter counter =
@@ -169,7 +193,7 @@ public final class TopologyMetrics {
                 key,
                 k ->
                     newCounter(
-                        NAMESPACE + "_cluster_changes_operation_attempts_micro",
+                        NAMESPACE + "_cluster_changes_operation_attempts",
                         operation.getClass().getSimpleName(),
                         "failed"));
         counter.increment();
@@ -177,12 +201,18 @@ public final class TopologyMetrics {
     }
 
     public void applied() {
+      if (clusterChangeOperationTimerSample != null) {
+        clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
+        //            meterRegistry.timer(
+        //                NAMESPACE + "_cluster_changes_operation_duration",
+        //                LABEL_OPERATION,
+        //                operation.getClass().getSimpleName()));
+      }
       if (timer != null) {
         timer.close();
-        OPERATION_ATTEMPTS.labels(operation.getClass().getSimpleName(), "applied").inc();
         final String key =
             NAMESPACE
-                + "_cluster_changes_operation_attempts_micro#"
+                + "_cluster_changes_operation_attempts#"
                 + operation.getClass().getSimpleName()
                 + "#applied";
         final io.micrometer.core.instrument.Counter counter =
@@ -190,7 +220,7 @@ public final class TopologyMetrics {
                 key,
                 k ->
                     newCounter(
-                        NAMESPACE + "_cluster_changes_operation_attempts_micro",
+                        NAMESPACE + "_cluster_changes_operation_attempts",
                         operation.getClass().getSimpleName(),
                         "applied"));
         counter.increment();
