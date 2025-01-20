@@ -7,11 +7,11 @@
  */
 
 import {get, post} from 'request';
-import { getAbsoluteURL } from '../../modules/api';
+import { getFullURL } from '../../modules/api';
 
 export async function evaluateEntity(id, type, query = {}) {
   const request = type === 'dashboard' ? get : post;
-  const response = await request(getAbsoluteURL(`api/share/${type}/${id}/evaluate`), {}, {query});
+  const response = await request(getFullURL(`api/share/${type}/${id}/evaluate`), {}, {query});
 
   return await response.json();
 }
@@ -19,7 +19,7 @@ export async function evaluateEntity(id, type, query = {}) {
 export function createLoadReportCallback(dashboardShareId) {
   return async (reportId, filter, query) => {
     const response = await post(
-      getAbsoluteURL(`api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`),
+      getFullURL(`api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`),
       {filter},
       {query}
     );

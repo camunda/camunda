@@ -7,10 +7,10 @@
  */
 
 import {post} from 'request';
-import { getAbsoluteURL } from '../../../modules/api.ts';
+import { getFullURL } from '../../../modules/api.ts';
 
 export async function loadNodesOutliers(config) {
-  const response = await post(getAbsoluteURL('api/analysis/flowNodeOutliers'), config);
+  const response = await post(getFullURL('api/analysis/flowNodeOutliers'), config);
   return await response.json();
 }
 

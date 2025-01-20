@@ -7,11 +7,11 @@
  */
 
 import {post} from 'request';
-import { getAbsoluteURL } from '../../api';
+import { getFullURL } from '../../api';
 
 export async function loadTenants(definitions) {
   const params = {definitions};
-  const response = await post(getAbsoluteURL(`api/definition/process/_resolveTenantsForVersions`), params);
+  const response = await post(getFullURL(`api/definition/process/_resolveTenantsForVersions`), params);
 
   return await response.json();
 }

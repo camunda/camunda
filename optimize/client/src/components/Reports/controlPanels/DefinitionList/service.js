@@ -7,7 +7,7 @@
  */
 
 import {get, post} from 'request';
-import { getAbsoluteURL } from '../../../../modules/api.ts';
+import { getFullURL } from '../../../../modules/api.ts';
 
 export async function loadTenants(type, definitions, collectionId) {
   const payload = {definitions};
@@ -15,7 +15,7 @@ export async function loadTenants(type, definitions, collectionId) {
     payload.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(getAbsoluteURL(`api/definition/${type}/_resolveTenantsForVersions`), payload);
+  const response = await post(getFullURL(`api/definition/${type}/_resolveTenantsForVersions`), payload);
 
   return await response.json();
 }
@@ -26,7 +26,7 @@ export async function loadVersions(type, collectionId, key) {
     params.filterByCollectionScope = collectionId;
   }
 
-  const response = await get(getAbsoluteURL(`api/definition/${type}/${key}/versions`), params);
+  const response = await get(getFullURL(`api/definition/${type}/${key}/versions`), params);
 
   return await response.json();
 }

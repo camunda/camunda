@@ -7,7 +7,7 @@
  */
 
 import {get} from 'request';
-import { getAbsoluteURL } from '../api';
+import { getFullURL } from '../api';
 
 export type Definition = {
   key: string;
@@ -24,7 +24,7 @@ export async function loadDefinitions(
     params.filterByCollectionScope = collectionId;
   }
 
-  const response = await get(getAbsoluteURL(`api/definition/${type}/keys`), params);
+  const response = await get(getFullURL(`api/definition/${type}/keys`), params);
 
   return response.json();
 }

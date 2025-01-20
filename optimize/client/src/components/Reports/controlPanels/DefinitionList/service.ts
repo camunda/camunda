@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getAbsoluteURL } from '../../../../modules/api';
+import { getFullURL } from '../../../../modules/api';
 import {post} from 'request';
 
 export function updateVariables(definitionKey: string, labels: string[]) {
-  return post(getAbsoluteURL('api/variables/labels'), {definitionKey, labels});
+  return post(getFullURL('api/variables/labels'), {definitionKey, labels});
 }

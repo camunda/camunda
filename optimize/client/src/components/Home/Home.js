@@ -43,7 +43,7 @@ import {importEntity, removeEntities, checkConflicts} from './service';
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
 import './Home.scss';
-import { getAbsoluteURL } from '../../modules/api';
+import { getFullURL } from '../../modules/api';
 
 export function Home({mightFail, user}) {
   const [entities, setEntities] = useState(null);
@@ -209,7 +209,7 @@ export function Home({mightFail, user}) {
                   icon: <Save />,
                   text: t('common.export'),
                   action: () => {
-                    window.location.href = getAbsoluteURL(`api/export/${entityType}/json/${
+                    window.location.href = getFullURL(`api/export/${entityType}/json/${
                       entity.id
                     }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`);
                   },
