@@ -41,7 +41,6 @@ public class DeleteAuthorizationTest {
             .create()
             .getValue()
             .getAuthorizationKey();
-    ;
 
     // when
     final var deletedAuthorization =
