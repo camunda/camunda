@@ -66,7 +66,7 @@ public class AuthorizationCreateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
-        .permissionAlreadyExists(command.getValue())
+        .authorizationAlreadyExists(command.getValue())
         .ifRightOrLeft(
             ignored ->
                 stateWriter.appendFollowUpEvent(
