@@ -74,11 +74,11 @@ public class TenantClient {
    * Creates a new {@link TenantDeleteClient} for deleting a tenant. The client uses the internal
    * command writer to submit the delete tenant commands.
    *
-   * @param tenantKey the key of the tenant to be deleted
+   * @param tenantId the id of the tenant to be deleted
    * @return a new instance of {@link TenantDeleteClient}
    */
-  public TenantDeleteClient deleteTenant(final long tenantKey) {
-    return new TenantDeleteClient(writer, tenantKey);
+  public TenantDeleteClient deleteTenant(final String tenantId) {
+    return new TenantDeleteClient(writer, tenantId);
   }
 
   public static class TenantCreationClient {
@@ -359,10 +359,10 @@ public class TenantClient {
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public TenantDeleteClient(final CommandWriter writer, final long tenantKey) {
+    public TenantDeleteClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
       tenantRecord = new TenantRecord();
-      tenantRecord.setTenantKey(tenantKey);
+      tenantRecord.setTenantId(tenantId);
     }
 
     /**

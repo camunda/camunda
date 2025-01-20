@@ -404,7 +404,7 @@ public class CommandDistributionIdempotencyTest {
                 TenantIntent.DELETE,
                 () -> {
                   final var tenant = createTenant();
-                  ENGINE.tenant().deleteTenant(tenant.getKey()).delete();
+                  ENGINE.tenant().deleteTenant(tenant.getValue().getTenantId()).delete();
                 },
                 2),
             TenantDeleteProcessor.class

@@ -1545,10 +1545,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @param tenantKey the key of the tenant to delete
+   * @param tenantId the id of the tenant to delete
    * @return a builder for the delete tenant command
    */
-  DeleteTenantCommandStep1 newDeleteTenantCommand(long tenantKey);
+  DeleteTenantCommandStep1 newDeleteTenantCommand(String tenantId);
 
   /**
    * Command to assign a mapping rule to a tenant.
