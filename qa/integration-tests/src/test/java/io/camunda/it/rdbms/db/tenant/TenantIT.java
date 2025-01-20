@@ -75,12 +75,11 @@ public class TenantIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final TenantReader tenantReader = rdbmsService.getTenantReader();
 
-    final var tenant = TenantFixtures.createRandomized(b -> b);
+    final var tenantId = nextStringId();
+    final var tenant = TenantFixtures.createRandomized(b -> b.tenantId(tenantId));
     createAndSaveTenant(rdbmsWriter, tenant);
 
-    final var tenantUpdate =
-        TenantFixtures.createRandomized(
-            b -> b.tenantId(tenant.tenantId()).tenantKey(tenant.tenantKey()));
+    final var tenantUpdate = TenantFixtures.createRandomized(b -> b.tenantId(tenant.tenantId()));
     rdbmsWriter.getTenantWriter().update(tenantUpdate);
     rdbmsWriter.flush();
 
