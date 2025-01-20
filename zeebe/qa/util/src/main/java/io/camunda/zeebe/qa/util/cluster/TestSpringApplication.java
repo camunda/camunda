@@ -178,6 +178,22 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
         .withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
   }
 
+  protected T withUnauthenticatedAccess(final boolean allowUnauthenticatedAccess) {
+    if (allowUnauthenticatedAccess) {
+      withAuthenticationMethod(AuthenticationMethod.BASIC);
+    }
+    return withProperty(
+        AuthenticationProperties.API_UNPROTECTED, String.valueOf(allowUnauthenticatedAccess));
+  }
+
+  public final T withUnauthenticatedAccess() {
+    return withUnauthenticatedAccess(true);
+  }
+
+  public final T withAuthenticatedAccess() {
+    return withUnauthenticatedAccess(false);
+  }
+
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
     return new String[0];

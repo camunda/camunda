@@ -100,7 +100,8 @@ public final class TestSimpleCamundaApplication
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalInitializer(new WebappsConfigurationInitializer());
+        .withAdditionalInitializer(new WebappsConfigurationInitializer())
+        .withUnauthenticatedAccess();
   }
 
   @Override
@@ -118,6 +119,16 @@ public final class TestSimpleCamundaApplication
       case CLUSTER -> brokerProperties.getNetwork().getInternalApi().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  @Override
+  protected TestSimpleCamundaApplication withUnauthenticatedAccess(
+      final boolean allowUnauthenticatedAccess) {
+    securityConfig
+        .getAuthentication()
+        .getBasic()
+        .setAllowUnauthenticatedApiAccess(allowUnauthenticatedAccess);
+    return super.withUnauthenticatedAccess(allowUnauthenticatedAccess);
   }
 
   @Override

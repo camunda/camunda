@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -68,12 +67,11 @@ public class OidcAuthOverGrpcIT {
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-                c.getAuthentication().setMethod(AuthenticationMethod.OIDC);
                 c.getInitialization()
                     .setMappings(
                         List.of(new ConfiguredMapping(USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
               })
-          .withAdditionalProfile(Profile.AUTH_OIDC)
+          .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withProperty(
               "camunda.security.authentication.oidc.issuer-uri",
               KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)

@@ -159,6 +159,18 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   @Override
+  protected TestStandaloneCamunda withUnauthenticatedAccess(
+      final boolean allowUnauthenticatedAccess) {
+    return super.withUnauthenticatedAccess(allowUnauthenticatedAccess)
+        .withSecurityConfig(
+            securityConfig ->
+                securityConfig
+                    .getAuthentication()
+                    .getBasic()
+                    .setAllowUnauthenticatedApiAccess(allowUnauthenticatedAccess));
+  }
+
+  @Override
   protected SpringApplicationBuilder createSpringBuilder() {
     // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
     // we need to hook in at the last minute and set the property as it won't resolve from the

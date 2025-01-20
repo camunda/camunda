@@ -45,6 +45,7 @@ final class ExportingEndpointIT {
             .withPartitionsCount(2)
             .withReplicationFactor(1)
             .withEmbeddedGateway(true)
+            .withUnauthenticatedAccess()
             .build();
   }
 
