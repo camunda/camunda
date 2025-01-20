@@ -100,7 +100,8 @@ public class PermissionsBehavior {
     return Either.right(record);
   }
 
-  // TODO: we need to provide also the ownerType here when https://github.com/camunda/camunda/issues/27036 is implemented
+  // TODO: we need to provide also the ownerType here when
+  // https://github.com/camunda/camunda/issues/27036 is implemented
   public Either<Rejection, AuthorizationRecord> authorizationAlreadyExists(
       final AuthorizationRecord record) {
     for (final PermissionType permission : record.getAuthorizationPermissions()) {

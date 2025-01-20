@@ -131,6 +131,26 @@ public class CommandDistributionIdempotencyTest {
   public static Collection<Object[]> scenarios() {
     return Arrays.asList(
         new Object[][] {
+            {
+                "Authorization.CREATE is idempotent",
+                new Scenario(
+                    ValueType.AUTHORIZATION,
+                    AuthorizationIntent.CREATE,
+                    () -> {
+                      final var user = createUser();
+                      ENGINE
+                          .authorization()
+                          .newAuthorization()
+                          .withOwnerKey(user.getKey())
+                          .withOwnerId(user.getValue().getUsername())
+                          .withResourceId("*")
+                          .withResourceType(AuthorizationResourceType.USER)
+                          .withPermissions(PermissionType.READ)
+                          .create();
+                    },
+                    2),
+                AuthorizationAddPermissionProcessor.class
+            },
           {
             "Authorization.ADD_PERMISSION is idempotent",
             new Scenario(
