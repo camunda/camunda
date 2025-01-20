@@ -17,11 +17,13 @@ import io.camunda.optimize.service.variable.DecisionVariableService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Validated
 @RestController
 @RequestMapping(REST_API_PATH + DecisionVariablesRestService.DECISION_VARIABLES_PATH)
 public class DecisionVariablesRestService {
