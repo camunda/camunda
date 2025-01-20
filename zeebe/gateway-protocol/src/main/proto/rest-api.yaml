@@ -7504,6 +7504,7 @@ components:
             - evaluationDate
             - evaluationFailure
             - processDefinitionKey
+            - processInstanceKey
             - processInstanceId
             - decisionDefinitionKey
             - decisionDefinitionId

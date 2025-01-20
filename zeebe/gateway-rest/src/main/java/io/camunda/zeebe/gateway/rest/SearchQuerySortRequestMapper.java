@@ -12,87 +12,96 @@ import java.util.List;
 
 public class SearchQuerySortRequestMapper {
 
-  public static List<SearchQuerySortRequest> fromProcessDefinitionSearchQuerySortRequest(
-      final List<ProcessDefinitionSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<ProcessDefinitionSearchQuerySortRequest.FieldEnum>>
+      fromProcessDefinitionSearchQuerySortRequest(
+          final List<ProcessDefinitionSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromProcessInstanceSearchQuerySortRequest(
-      final List<ProcessInstanceSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<ProcessInstanceSearchQuerySortRequest.FieldEnum>>
+      fromProcessInstanceSearchQuerySortRequest(
+          final List<ProcessInstanceSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromRoleSearchQuerySortRequest(
-      final List<RoleSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<RoleSearchQuerySortRequest.FieldEnum>>
+      fromRoleSearchQuerySortRequest(final List<RoleSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromGroupSearchQuerySortRequest(
-      final List<GroupSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<GroupSearchQuerySortRequest.FieldEnum>>
+      fromGroupSearchQuerySortRequest(final List<GroupSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromTenantSearchQuerySortRequest(
-      final List<TenantSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<TenantSearchQuerySortRequest.FieldEnum>>
+      fromTenantSearchQuerySortRequest(final List<TenantSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromMappingSearchQuerySortRequest(
-      final List<MappingSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<MappingSearchQuerySortRequest.FieldEnum>>
+      fromMappingSearchQuerySortRequest(final List<MappingSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromDecisionDefinitionSearchQuerySortRequest(
-      final List<DecisionDefinitionSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<DecisionDefinitionSearchQuerySortRequest.FieldEnum>>
+      fromDecisionDefinitionSearchQuerySortRequest(
+          final List<DecisionDefinitionSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromDecisionRequirementsSearchQuerySortRequest(
-      final List<DecisionRequirementsSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<DecisionRequirementsSearchQuerySortRequest.FieldEnum>>
+      fromDecisionRequirementsSearchQuerySortRequest(
+          final List<DecisionRequirementsSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromFlowNodeInstanceSearchQuerySortRequest(
-      final List<FlowNodeInstanceSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<FlowNodeInstanceSearchQuerySortRequest.FieldEnum>>
+      fromFlowNodeInstanceSearchQuerySortRequest(
+          final List<FlowNodeInstanceSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromDecisionInstanceSearchQuerySortRequest(
-      final List<DecisionInstanceSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<DecisionInstanceSearchQuerySortRequest.FieldEnum>>
+      fromDecisionInstanceSearchQuerySortRequest(
+          final List<DecisionInstanceSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromUserTaskSearchQuerySortRequest(
-      final List<UserTaskSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<UserTaskSearchQuerySortRequest.FieldEnum>>
+      fromUserTaskSearchQuerySortRequest(final List<UserTaskSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromUserTaskVariableSearchQuerySortRequest(
-      final List<UserTaskVariableSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<UserTaskVariableSearchQuerySortRequest.FieldEnum>>
+      fromUserTaskVariableSearchQuerySortRequest(
+          final List<UserTaskVariableSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromVariableSearchQuerySortRequest(
-      final List<VariableSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<VariableSearchQuerySortRequest.FieldEnum>>
+      fromVariableSearchQuerySortRequest(final List<VariableSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromUserSearchQuerySortRequest(
-      final List<UserSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<UserSearchQuerySortRequest.FieldEnum>>
+      fromUserSearchQuerySortRequest(final List<UserSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromIncidentSearchQuerySortRequest(
-      final List<IncidentSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<IncidentSearchQuerySortRequest.FieldEnum>>
+      fromIncidentSearchQuerySortRequest(final List<IncidentSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest> fromAuthorizationSearchQuerySortRequest(
-      final List<AuthorizationSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<AuthorizationSearchQuerySortRequest.FieldEnum>>
+      fromAuthorizationSearchQuerySortRequest(
+          final List<AuthorizationSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  private static SearchQuerySortRequest createFrom(final Object field, final SortOrderEnum order) {
-    return new SearchQuerySortRequest((field == null) ? null : field.toString(), order);
+  private static <T> SearchQuerySortRequest<T> createFrom(
+      final T field, final SortOrderEnum order) {
+    return new SearchQuerySortRequest<T>(field, order);
   }
 }
