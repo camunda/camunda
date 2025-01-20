@@ -8,10 +8,12 @@
 package io.camunda.application.commons.backup;
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
+import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.profiles.ProfileWebApp;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -23,19 +25,23 @@ public class DynamicIndicesConfiguration {
 
   private final ConnectConfiguration connectConfiguration;
   private final DocumentBasedSearchClient searchClient;
+  private final String optimizeIndexPrefix;
 
   public DynamicIndicesConfiguration(
       final ConnectConfiguration connectConfiguration,
-      final DocumentBasedSearchClient searchClient) {
+      final DocumentBasedSearchClient searchClient,
+      @Autowired(required = false) final OptimizeIndexNameService optimizeIndexNameService) {
     this.connectConfiguration = connectConfiguration;
     this.searchClient = searchClient;
+    optimizeIndexPrefix =
+        optimizeIndexNameService != null
+            ? optimizeIndexNameService.getIndexPrefix()
+            : OptimizeIndexNameService.defaultIndexPrefix;
   }
 
   @Bean
   public DynamicIndicesProvider dynamicIndicesProvider() {
     return new SearchDynamicIndicesProvider(
-        searchClient,
-        connectConfiguration.getTypeEnum().isElasticSearch(),
-        connectConfiguration.getIndexPrefix());
+        searchClient, connectConfiguration.getTypeEnum().isElasticSearch(), optimizeIndexPrefix);
   }
 }
