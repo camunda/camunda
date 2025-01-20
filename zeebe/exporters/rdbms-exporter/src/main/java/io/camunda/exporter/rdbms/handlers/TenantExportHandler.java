@@ -49,7 +49,7 @@ public class TenantExportHandler implements RdbmsExportHandler<TenantRecordValue
     switch (record.getIntent()) {
       case TenantIntent.CREATED -> tenantWriter.create(map(value));
       case TenantIntent.UPDATED -> tenantWriter.update(map(value));
-      case TenantIntent.DELETED -> tenantWriter.delete(value.getTenantKey());
+      case TenantIntent.DELETED -> tenantWriter.delete(map(value));
       case TenantIntent.ENTITY_ADDED ->
           tenantWriter.addMember(
               new TenantMemberDbModel.Builder()

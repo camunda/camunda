@@ -31,13 +31,13 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
     this.tenantMapper = tenantMapper;
   }
 
-  public Optional<TenantEntity> findOne(final long tenantKey) {
-    final var result = search(TenantQuery.of(b -> b.filter(f -> f.key(tenantKey))));
+  public Optional<TenantEntity> findOne(final String tenantId) {
+    final var result = search(TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
   public SearchQueryResult<TenantEntity> search(final TenantQuery query) {
-    final var dbSort = convertSort(query.sort(), TenantSearchColumn.TENANT_KEY);
+    final var dbSort = convertSort(query.sort(), TenantSearchColumn.TENANT_ID);
     final var dbQuery =
         TenantDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
