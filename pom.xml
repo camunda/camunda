@@ -13,7 +13,7 @@
   <artifactId>camunda-8-root</artifactId>
   <packaging>pom</packaging>
 
-  <name>Camunda 8 Root</name>
+  <name>Camunda 8 Root Lorem Ipsum</name>
 
   <modules>
     <module>bom</module>
