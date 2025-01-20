@@ -85,12 +85,22 @@ public final class TopologyMetrics {
   private static final ConcurrentHashMap<String, io.micrometer.core.instrument.Counter>
       operationAttempts = new ConcurrentHashMap<>();
 
+  //  @Autowired
+  //  private MeterRegistry registry;
   private static io.micrometer.core.instrument.MeterRegistry meterRegistry;
+
+  private static io.micrometer.core.instrument.Gauge MICROMETER_TOPOLOGY_VERSION;
 
   public static void updateFromTopology(
       final ClusterConfiguration topology, final MeterRegistry meterRegistry) {
     TopologyMetrics.meterRegistry = meterRegistry;
     TOPOLOGY_VERSION.set(topology.version());
+    MICROMETER_TOPOLOGY_VERSION =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_topology_version_micro", () -> topology.version())
+            .description("The version of the cluster topology")
+            .register(meterRegistry);
+
     CHANGE_STATUS.state(
         topology
             .pendingChanges()
