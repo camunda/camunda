@@ -43,7 +43,8 @@ public enum AuthorizationResourceType {
       PermissionType.DELETE_DECISION_INSTANCE),
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
-  ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE);
+  ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+  UNSPECIFIED();
 
   private final Set<PermissionType> supportedPermissionTypes;
 
