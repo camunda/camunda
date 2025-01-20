@@ -37,6 +37,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -502,7 +503,7 @@ public class ClusteringRule extends ExternalResource {
     final var gateway =
         new Gateway(
             gatewayCfg,
-            new SecurityConfiguration(),
+            SecurityConfigurations.unauthenticated(),
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),
