@@ -26,6 +26,7 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import io.camunda.optimize.rest.mapper.ReportRestMapper;
+import io.camunda.optimize.rest.security.newwork.UserService;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import io.camunda.optimize.service.report.ReportService;
@@ -36,6 +37,7 @@ import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,6 +56,7 @@ public class ReportRestService {
   private final ReportEvaluationService reportEvaluationService;
   private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
+  @Autowired private UserService userService;
 
   public ReportRestService(
       final ReportService reportService,
@@ -138,7 +141,8 @@ public class ReportRestService {
   @GetMapping("/{id}")
   public AuthorizedReportDefinitionResponseDto getReport(
       @PathVariable("id") final String reportId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
+    // final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final AuthorizedReportDefinitionResponseDto reportDefinition =
         reportService.getReportDefinition(reportId, userId);
     reportRestMapper.prepareLocalizedRestResponse(
@@ -152,7 +156,7 @@ public class ReportRestService {
       @Valid final PaginationRequestDto paginationRequestDto,
       @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
     final ZoneId timezone = extractTimezone(request);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
         reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
@@ -170,7 +174,8 @@ public class ReportRestService {
       @Valid @RequestBody final ReportDefinitionDto reportDefinitionDto,
       @Valid final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
+    // final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
         && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
             .getData()
@@ -194,7 +199,8 @@ public class ReportRestService {
       @RequestParam(name = "force", required = false) final boolean force,
       @RequestBody @Valid final SingleProcessReportDefinitionRequestDto updatedReport,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
+    // final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     final @Valid ProcessReportDataDto reportData = updatedReport.getData();
     if (reportData != null
         && (reportData.isManagementReport() || reportData.isInstantPreviewReport())) {
@@ -213,7 +219,8 @@ public class ReportRestService {
       @RequestParam(name = "force", required = false) final boolean force,
       @RequestBody @Valid final SingleDecisionReportDefinitionRequestDto updatedReport,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = userService.getCurrentUser().getUserId();
+    // final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
