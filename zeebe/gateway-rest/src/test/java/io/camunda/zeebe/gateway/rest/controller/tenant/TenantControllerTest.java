@@ -209,24 +209,24 @@ public class TenantControllerTest extends RestControllerTest {
   @Test
   void deleteTenantShouldReturnNoContent() {
     // given
-    final long key = 1234L;
+    final String tenantId = "tenant-to-delete-id";
 
-    final var tenantRecord = new TenantRecord().setTenantKey(key);
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId);
 
-    when(tenantServices.deleteTenant(key))
+    when(tenantServices.deleteTenant(tenantId))
         .thenReturn(CompletableFuture.completedFuture(tenantRecord));
 
     // when
     webClient
         .delete()
-        .uri(TENANT_BASE_URL + "/{key}", key)
+        .uri(TENANT_BASE_URL + "/{tenantId}", tenantId)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).deleteTenant(key);
+    verify(tenantServices, times(1)).deleteTenant(tenantId);
   }
 
   @ParameterizedTest

@@ -84,14 +84,14 @@ public class TenantController {
                 .addMember(tenantKey, EntityType.USER, userKey));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantKey}")
+  @CamundaDeleteMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenant(
-      @PathVariable final long tenantKey) {
+      @PathVariable final String tenantId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .deleteTenant(tenantKey));
+                .deleteTenant(tenantId));
   }
 
   @CamundaPutMapping(path = "/{tenantKey}/mapping-rules/{mappingKey}")

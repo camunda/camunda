@@ -159,14 +159,19 @@ public class TenantServiceTest {
 
   @Test
   public void shouldDeleteTenant() {
+    // Given
+    final var result =
+        new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array(), Arrays.array());
+
     // when
-    services.deleteTenant(100L);
+    when(client.searchTenants(any())).thenReturn(result);
+    services.deleteTenant(tenantEntity.tenantId());
 
     // then
     final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.DELETE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
-    assertThat(request.getRequestWriter().getTenantKey()).isEqualTo(100L);
+    assertThat(request.getRequestWriter().getTenantKey()).isEqualTo(tenantEntity.key());
   }
 
   @ParameterizedTest
