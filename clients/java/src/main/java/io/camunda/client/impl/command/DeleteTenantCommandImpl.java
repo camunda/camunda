@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class DeleteTenantCommandImpl implements DeleteTenantCommandStep1 {
-  private long tenantKey;
+  private String tenantId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
@@ -36,8 +36,8 @@ public final class DeleteTenantCommandImpl implements DeleteTenantCommandStep1 {
   }
 
   @Override
-  public DeleteTenantCommandStep1 tenantKey(final long tenantKey) {
-    this.tenantKey = tenantKey;
+  public DeleteTenantCommandStep1 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 
@@ -50,7 +50,7 @@ public final class DeleteTenantCommandImpl implements DeleteTenantCommandStep1 {
   @Override
   public CamundaFuture<DeleteTenantResponse> send() {
     final HttpCamundaFuture<DeleteTenantResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete("/tenants/" + tenantKey, httpRequestConfig.build(), result);
+    httpClient.delete("/tenants/" + tenantId, httpRequestConfig.build(), result);
     return result;
   }
 }

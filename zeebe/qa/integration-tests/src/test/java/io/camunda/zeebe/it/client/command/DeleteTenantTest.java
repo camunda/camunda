@@ -24,11 +24,12 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class DeleteTenantTest {
 
+  private static final String TENANT_ID = "tenant-id";
+
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoClose private CamundaClient client;
-
   private long tenantKey;
 
   @BeforeEach
@@ -37,7 +38,7 @@ class DeleteTenantTest {
     tenantKey =
         client
             .newCreateTenantCommand()
-            .tenantId("tenant-id")
+            .tenantId(TENANT_ID)
             .name("Tenant Name")
             .send()
             .join()
@@ -47,7 +48,7 @@ class DeleteTenantTest {
   @Test
   void shouldDeleteTenant() {
     // when
-    client.newDeleteTenantCommand(tenantKey).send().join();
+    client.newDeleteTenantCommand(TENANT_ID).send().join();
 
     // then
     ZeebeAssertHelper.assertTenantDeleted(
@@ -57,14 +58,14 @@ class DeleteTenantTest {
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final long nonExistentTenantKey = 999999L;
+    final var nonExistentTenantId = "does-not-exist";
 
     // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(nonExistentTenantKey).send().join())
+    assertThatThrownBy(() -> client.newDeleteTenantCommand(nonExistentTenantId).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to delete tenant with key '%d', but no tenant with this key exists."
-                .formatted(nonExistentTenantKey));
+            "Expected to delete tenant with id '%s', but no tenant with this id exists."
+                .formatted(nonExistentTenantId));
   }
 }

@@ -34,15 +34,15 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long tenantKey;
+  private final String tenantId;
 
   public UpdateTenantCommandImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long tenantKey) {
+      final HttpClient httpClient, final JsonMapper jsonMapper, final String tenantId) {
     request = new TenantUpdateRequest();
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.tenantKey = tenantKey;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -64,7 +64,7 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
     final UpdateTenantResponseImpl response = new UpdateTenantResponseImpl();
 
     httpClient.patch(
-        "/tenants/" + tenantKey,
+        "/tenants/" + tenantId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         TenantUpdateResult.class,

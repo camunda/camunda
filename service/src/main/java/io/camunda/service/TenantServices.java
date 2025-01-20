@@ -72,15 +72,12 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
-    return sendBrokerRequest(new BrokerTenantUpdateRequest(request.key()).setName(request.name()));
+    return sendBrokerRequest(
+        new BrokerTenantUpdateRequest(request.tenantId()).setName(request.name()));
   }
 
-  public CompletableFuture<TenantRecord> deleteTenant(final long key) {
-    return sendBrokerRequest(new BrokerTenantDeleteRequest(key));
-  }
-
-  public TenantEntity getByKey(final Long tenantKey) {
-    return getSingle(TenantQuery.of(q -> q.filter(f -> f.key(tenantKey))));
+  public CompletableFuture<TenantRecord> deleteTenant(final String tenantId) {
+    return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId));
   }
 
   public CompletableFuture<TenantRecord> addMember(

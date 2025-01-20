@@ -869,13 +869,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UpdateTenantCommandStep1 newUpdateTenantCommand(final long tenantKey) {
-    return new UpdateTenantCommandImpl(httpClient, jsonMapper, tenantKey);
+  public UpdateTenantCommandStep1 newUpdateTenantCommand(final String tenantId) {
+    return new UpdateTenantCommandImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
-  public DeleteTenantCommandStep1 newDeleteTenantCommand(final long tenantKey) {
-    return new DeleteTenantCommandImpl(httpClient).tenantKey(tenantKey);
+  public DeleteTenantCommandStep1 newDeleteTenantCommand(final String tenantId) {
+    return new DeleteTenantCommandImpl(httpClient).tenantId(tenantId);
   }
 
   @Override

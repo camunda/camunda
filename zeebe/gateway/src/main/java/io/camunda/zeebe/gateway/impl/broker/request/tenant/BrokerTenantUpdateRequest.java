@@ -17,10 +17,10 @@ import org.agrona.DirectBuffer;
 public class BrokerTenantUpdateRequest extends BrokerExecuteCommand<TenantRecord> {
   private final TenantRecord tenantDto = new TenantRecord();
 
-  public BrokerTenantUpdateRequest(final long key) {
+  public BrokerTenantUpdateRequest(final String tenantId) {
     super(ValueType.TENANT, TenantIntent.UPDATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-    tenantDto.setTenantKey(key);
+    tenantDto.setTenantId(tenantId);
   }
 
   public BrokerTenantUpdateRequest setName(final String name) {

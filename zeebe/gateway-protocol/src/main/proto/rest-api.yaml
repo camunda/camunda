@@ -396,12 +396,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TenantCreateResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/TenantCreateResponse"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/TenantCreateResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -419,7 +413,51 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}:
+  /tenants/{tenantId}:
+    get:
+      tags:
+        - Tenant
+      operationId: getTenant
+      summary: Get tenant
+      description: Retrieves a single tenant by tenant ID.
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The tenant was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResult"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/TenantItem"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/TenantResult"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Tenant not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags:
         - Tenant
@@ -427,13 +465,12 @@ paths:
       summary: Update tenant
       description: Updates an existing tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -470,52 +507,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-    get:
-      tags:
-        - Tenant
-      operationId: getTenant
-      summary: Get tenant
-      description: Retrieves a single tenant by tenant Key.
-      parameters:
-        - name: tenantKey
-          in: path
-          required: true
-          description: The unique identifier of the tenant.
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "200":
-          description: The tenant was retrieved successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TenantResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/TenantItem"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/TenantResult"
-        "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          description: Tenant not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
     delete:
       tags:
         - Tenant
@@ -523,13 +514,12 @@ paths:
       summary: Delete tenant
       description: Deletes an existing tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The tenant was deleted successfully.
@@ -3999,20 +3989,18 @@ components:
       required:
         - tenantId
 
-    TenantCreateResponse:
-      deprecated: true
-      type: object
-      properties:
-        tenantKey:
-          description: The external key of the created tenant
-          type: integer
-          format: int64
     TenantCreateResult:
       type: object
       properties:
         tenantKey:
-          description: The external key of the created tenant
+          description: The unique system-generated internal tenant ID.
           type: string
+        tenantId:
+          type: string
+          description: The unique external tenant ID
+        name:
+          type: string
+          description: The name of the tenant.
 
     TenantUpdateRequest:
       type: object
