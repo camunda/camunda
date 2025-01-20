@@ -40,8 +40,8 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
-  public DecisionRequirementsFilter name(final String name) {
-    filter.name(name);
+  public DecisionRequirementsFilter decisionRequirementsName(final String name) {
+    filter.decisionRequirementsName(name);
     return this;
   }
 

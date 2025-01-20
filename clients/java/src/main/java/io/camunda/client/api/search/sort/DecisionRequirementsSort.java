@@ -22,7 +22,7 @@ public interface DecisionRequirementsSort extends SearchRequestSort<DecisionRequ
   DecisionRequirementsSort decisionRequirementsKey();
 
   /** Sort by decision requirements name. */
-  DecisionRequirementsSort name();
+  DecisionRequirementsSort decisionRequirementsName();
 
   /** Sort by decision requirement version. */
   DecisionRequirementsSort version();

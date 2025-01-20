@@ -297,7 +297,7 @@ class DecisionQueryTest {
     final var result =
         camundaClient
             .newDecisionRequirementsQuery()
-            .filter(f -> f.name(decisionRequirementName))
+            .filter(f -> f.decisionRequirementsName(decisionRequirementName))
             .send()
             .join();
 
@@ -396,9 +396,17 @@ class DecisionQueryTest {
   void shouldSortByDecisionRequirementsName() {
     // when
     final var resultAsc =
-        camundaClient.newDecisionRequirementsQuery().sort(s -> s.name().asc()).send().join();
+        camundaClient
+            .newDecisionRequirementsQuery()
+            .sort(s -> s.decisionRequirementsName().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newDecisionRequirementsQuery().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newDecisionRequirementsQuery()
+            .sort(s -> s.decisionRequirementsName().desc())
+            .send()
+            .join();
 
     // Extract unique names from the results
     final List<String> uniqueAscNames =
