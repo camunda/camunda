@@ -39,5 +39,10 @@ public final class AuthorizationProcessors {
         AuthorizationIntent.REMOVE_PERMISSION,
         new AuthorizationRemovePermissionProcessor(
             writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.AUTHORIZATION,
+        AuthorizationIntent.DELETE,
+        new AuthorizationDeleteProcessor(
+            writers, keyGenerator, processingState, distributionBehavior, authCheckBehavior));
   }
 }
