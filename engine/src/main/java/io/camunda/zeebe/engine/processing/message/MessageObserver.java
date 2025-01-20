@@ -19,8 +19,8 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
 
-  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
-  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(1);
+  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(1);
 
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;

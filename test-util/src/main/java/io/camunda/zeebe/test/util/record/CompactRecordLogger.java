@@ -126,7 +126,8 @@ public class CompactRecordLogger {
   public CompactRecordLogger(final Collection<Record<?>> records) {
     this.records = new ArrayList<>(records);
     multiPartition = isMultiPartition();
-    hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
+    //    hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
+    hasTimerEvents = true;
 
     final var highestPosition = this.records.get(this.records.size() - 1).getPosition();
 

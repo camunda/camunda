@@ -36,6 +36,10 @@ public final class ProcessMessageSubscriptionRecordStream
     return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
+  public ProcessMessageSubscriptionRecordStream withCorrelationKey(final String correlationKey) {
+    return valueFilter(v -> correlationKey.equals(v.getCorrelationKey()));
+  }
+
   public ProcessMessageSubscriptionRecordStream withMessageName(final String messageName) {
     return valueFilter(v -> messageName.equals(v.getMessageName()));
   }

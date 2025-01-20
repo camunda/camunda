@@ -19,10 +19,14 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +65,78 @@ public final class MessageCorrelationMultiplePartitionsTest {
         .isEqualTo(START_PARTITION_ID + 2);
 
     engine.deployment().withXmlResource(PROCESS).deploy();
+  }
+
+  @Test
+  public void test() throws InterruptedException { // TODO rename
+    final var processId = Strings.newRandomValidBpmnId();
+    final var messageName = "event_message";
+    final var correlationKey = CORRELATION_KEYS.get(START_PARTITION_ID);
+    final var eventSubProcessStartId = "eventSubProcessStart";
+
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .eventSubProcess(
+                    "subprocess",
+                    s ->
+                        s.startEvent(eventSubProcessStartId)
+                            .interrupting(false)
+                            .message(
+                                m ->
+                                    m.name(messageName)
+                                        .zeebeCorrelationKeyExpression("correlationKey"))
+                            .userTask()
+                            .endEvent())
+                .startEvent()
+                .userTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("correlationKey", correlationKey)
+            .createOnPartition(2);
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withPartitionId(1)
+        .await();
+
+    // when
+    engine.pauseProcessing(2);
+    engine
+        .message()
+        .withId("messageId")
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(Duration.ofMinutes(30))
+        .onPartition(1)
+        .publish();
+
+    // This sleep can replaced by waiting for multiple CORRELATE commands on partition 2
+    Thread.sleep(3000);
+    engine.resumeProcessing(2);
+
+    // then
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATING)
+        .withMessageName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withPartitionId(2)
+        .await();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(eventSubProcessStartId)
+                .limit(2)
+                .count())
+        .isEqualTo(1);
+
+    assert false;
   }
 
   @Test
