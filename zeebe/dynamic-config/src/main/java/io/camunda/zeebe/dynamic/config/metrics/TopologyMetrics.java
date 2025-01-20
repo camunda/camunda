@@ -37,6 +37,13 @@ public final class TopologyMetrics {
           .map(Duration::ofMillis)
           .toArray(Duration[]::new);
 
+  private static final Gauge TOPOLOGY_VERSION =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("cluster_topology_version")
+          .help("The version of the cluster topology")
+          .register();
+
   private static final Gauge CHANGE_ID =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -73,7 +80,7 @@ public final class TopologyMetrics {
   private static final Histogram OPERATION_DURATION =
       Histogram.build()
           .namespace(NAMESPACE)
-          .name("cluster_changes_operation_duration_old")
+          .name("cluster_changes_operation_duration")
           .help("Duration it takes to apply an operation")
           .labelNames(LABEL_OPERATION)
           .buckets(0.1, 1, 2, 5, 10, 30, 60, 120, 180, 300, 600)
@@ -86,18 +93,33 @@ public final class TopologyMetrics {
       Metrics.globalRegistry;
 
   private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_ID;
-  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_STATUS; // TODO: ENUMERATION
+  private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_STATUS;
   private static io.micrometer.core.instrument.Gauge MICRO_CHANGE_VERSION;
+  private static io.micrometer.core.instrument.Gauge MICRO_TOPOLOGY_VERSION;
   private static io.micrometer.core.instrument.Gauge MICRO_PENDING_OPERATIONS;
   private static io.micrometer.core.instrument.Gauge MICRO_COMPLETED_OPERATIONS;
 
   public static void updateFromTopology(final ClusterConfiguration topology) {
-
+    TOPOLOGY_VERSION.set(topology.version());
     // TOPOLOGY_VERSION Gauge
-    io.micrometer.core.instrument.Gauge.builder(
-            NAMESPACE + "_cluster_topology_version", () -> topology.version())
-        .description("The version of the cluster topology")
-        .register(meterRegistry);
+    MICRO_TOPOLOGY_VERSION =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_topology_version_micro", topology::version)
+            .description("The version of the cluster topology")
+            .register(meterRegistry);
+
+    MICRO_CHANGE_STATUS =
+        io.micrometer.core.instrument.Gauge.builder(
+                NAMESPACE + "_cluster_changes_status_micro",
+                () ->
+                    topology
+                        .pendingChanges()
+                        .map(ClusterChangePlan::status)
+                        .or(() -> topology.lastChange().map(CompletedChange::status))
+                        .orElse(Status.COMPLETED)
+                        .ordinal())
+            .description("The state of the current cluster topology")
+            .register(meterRegistry);
 
     CHANGE_STATUS.state(
         topology
@@ -179,7 +201,7 @@ public final class TopologyMetrics {
       this.clusterChangeOperationTimerSample = clusterChangeOperationTimerSample;
       clusterChangeOperationTimer =
           io.micrometer.core.instrument.Timer.builder(
-                  NAMESPACE + "_cluster_changes_operation_duration")
+                  NAMESPACE + "_cluster_changes_operation_duration_micro")
               .description("Duration it takes to apply an operation")
               .tags(LABEL_OPERATION, operation.getClass().getSimpleName())
               .sla(OPERATION_DURATION_BUCKETS)
@@ -187,6 +209,8 @@ public final class TopologyMetrics {
     }
 
     static OperationObserver startOperation(final ClusterConfigurationChangeOperation operation) {
+      MICRO_PENDING_OPERATIONS.value();
+      MICRO_COMPLETED_OPERATIONS.value();
       return new OperationObserver(
           operation,
           OPERATION_DURATION.labels(operation.getClass().getSimpleName()).startTimer(),
@@ -206,6 +230,8 @@ public final class TopologyMetrics {
     }
 
     public void failed() {
+      MICRO_PENDING_OPERATIONS.value();
+      MICRO_COMPLETED_OPERATIONS.value();
       if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
         clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
       }
@@ -229,6 +255,8 @@ public final class TopologyMetrics {
     }
 
     public void applied() {
+      MICRO_PENDING_OPERATIONS.value();
+      MICRO_COMPLETED_OPERATIONS.value();
       if (clusterChangeOperationTimer != null && clusterChangeOperationTimerSample != null) {
         clusterChangeOperationTimerSample.stop(clusterChangeOperationTimer);
       }
