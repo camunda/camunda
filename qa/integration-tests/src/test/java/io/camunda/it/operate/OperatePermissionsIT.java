@@ -22,12 +22,12 @@ import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -44,8 +44,8 @@ public class OperatePermissionsIT {
   @ZeebeIntegration.TestZeebe(initMethod = "initTestStandaloneCamunda")
   private static TestStandaloneCamunda testInstance;
 
-  @AutoCloseResource private static TestRestOperateClient superOperateClient;
-  @AutoCloseResource private static TestRestOperateClient restrictedOperateClient;
+  @AutoClose private static TestRestOperateClient superOperateClient;
+  @AutoClose private static TestRestOperateClient restrictedOperateClient;
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {

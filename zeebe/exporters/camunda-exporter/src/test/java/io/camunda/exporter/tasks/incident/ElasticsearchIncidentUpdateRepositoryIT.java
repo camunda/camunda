@@ -14,13 +14,13 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.junit.jupiter.api.AutoClose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -34,7 +34,7 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
-  @AutoCloseResource private final RestClientTransport transport = createTransport();
+  @AutoClose private final RestClientTransport transport = createTransport();
   private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
 
   public ElasticsearchIncidentUpdateRepositoryIT() {

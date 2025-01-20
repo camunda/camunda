@@ -14,11 +14,9 @@ import io.camunda.zeebe.qa.util.actuator.FlowControlActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-@AutoCloseResources
 final class FlowControlEndpointIT {
   @TestZeebe(initMethod = "initTestCluster")
   private static TestCluster cluster;

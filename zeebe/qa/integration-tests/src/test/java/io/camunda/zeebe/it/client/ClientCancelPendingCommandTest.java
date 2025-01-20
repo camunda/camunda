@@ -16,20 +16,18 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
-@AutoCloseResources
 @ZeebeIntegration
 final class ClientCancelPendingCommandTest {
   @TestZeebe(initMethod = "initTestStandaloneBroker")
   private static TestStandaloneBroker zeebe;
 
-  @AutoCloseResource private final CamundaClient client = zeebe.newClientBuilder().build();
+  @AutoClose private final CamundaClient client = zeebe.newClientBuilder().build();
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {

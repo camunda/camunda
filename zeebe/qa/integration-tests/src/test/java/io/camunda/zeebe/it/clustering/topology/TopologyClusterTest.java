@@ -20,7 +20,6 @@ import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
@@ -33,7 +32,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
-@AutoCloseResources
 public final class TopologyClusterTest {
 
   @TestZeebe(autoStart = false)
