@@ -18,7 +18,6 @@ package io.camunda.spring.client.properties;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableParameters;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
-import static io.camunda.spring.client.configuration.PropertyUtil.getProperty;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -29,10 +28,10 @@ import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.CopyNotNullBeanUtilsBean;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
-import io.camunda.spring.client.properties.common.ZeebeClientProperties;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,13 +47,10 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       LoggerFactory.getLogger(PropertyBasedJobWorkerValueCustomizer.class);
   private static final CopyNotNullBeanUtilsBean BEAN_UTILS_BEAN = new CopyNotNullBeanUtilsBean();
 
-  private final ZeebeClientConfigurationProperties zeebeClientConfigurationProperties;
   private final CamundaClientProperties camundaClientProperties;
 
   public PropertyBasedJobWorkerValueCustomizer(
-      final ZeebeClientConfigurationProperties zeebeClientConfigurationProperties,
       final CamundaClientProperties camundaClientProperties) {
-    this.zeebeClientConfigurationProperties = zeebeClientConfigurationProperties;
     this.camundaClientProperties = camundaClientProperties;
   }
 
@@ -127,34 +123,18 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyOverrides(final JobWorkerValue zeebeWorker) {
+    final JobWorkerValue defaults = camundaClientProperties.getWorker().getDefaults();
     try {
-      if (ofNullable(camundaClientProperties.getDefaults()).isPresent()) {
-        BEAN_UTILS_BEAN.copyProperties(zeebeWorker, camundaClientProperties.getDefaults());
-      }
-      if (ofNullable(camundaClientProperties.getZeebe())
-          .map(ZeebeClientProperties::getDefaults)
-          .isPresent()) {
-        BEAN_UTILS_BEAN.copyProperties(
-            zeebeWorker, camundaClientProperties.getZeebe().getDefaults());
+      if (defaults != null) {
+        BEAN_UTILS_BEAN.copyProperties(zeebeWorker, defaults);
       }
     } catch (final IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(
-          "Error while copying properties from "
-              + camundaClientProperties.getZeebe().getDefaults()
-              + " to "
-              + zeebeWorker,
-          e);
+          "Error while copying properties from " + defaults + " to " + zeebeWorker, e);
     }
     final Map<String, JobWorkerValue> workerConfigurationMap = new HashMap<>();
-    if (zeebeClientConfigurationProperties.getWorker().getOverride() != null) {
-      workerConfigurationMap.putAll(zeebeClientConfigurationProperties.getWorker().getOverride());
-    }
-    if (camundaClientProperties.getZeebe() != null
-        && camundaClientProperties.getZeebe().getOverride() != null) {
-      workerConfigurationMap.putAll(camundaClientProperties.getZeebe().getOverride());
-    }
-    if (camundaClientProperties.getOverride() != null) {
-      workerConfigurationMap.putAll(camundaClientProperties.getOverride());
+    if (camundaClientProperties.getWorker().getOverride() != null) {
+      workerConfigurationMap.putAll(camundaClientProperties.getWorker().getOverride());
     }
     final String workerType = zeebeWorker.getType();
     if (workerConfigurationMap.containsKey(workerType)) {
@@ -170,15 +150,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultWorkerName(final JobWorkerValue zeebeWorker) {
-    final String defaultJobWorkerName =
-        getProperty(
-            "camunda.client.defaults.name",
-            false,
-            null,
-            null,
-            () -> camundaClientProperties.getDefaults().getName(),
-            () -> camundaClientProperties.getZeebe().getDefaults().getName(),
-            zeebeClientConfigurationProperties::getDefaultJobWorkerName);
+    final String defaultJobWorkerName = camundaClientProperties.getWorker().getDefaults().getName();
     if (isBlank(zeebeWorker.getName())) {
       if (isNotBlank(defaultJobWorkerName)) {
         LOG.debug(
@@ -199,15 +171,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerType(final JobWorkerValue zeebeWorker) {
-    final String defaultJobWorkerType =
-        getProperty(
-            "camunda.client.defaults.type",
-            false,
-            null,
-            null,
-            () -> camundaClientProperties.getDefaults().getType(),
-            () -> camundaClientProperties.getZeebe().getDefaults().getType(),
-            zeebeClientConfigurationProperties::getDefaultJobWorkerType);
+    final String defaultJobWorkerType = camundaClientProperties.getWorker().getDefaults().getType();
     if (isBlank(zeebeWorker.getType())) {
       if (isNotBlank(defaultJobWorkerType)) {
         LOG.debug(
@@ -225,21 +189,19 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerTenantIds(final JobWorkerValue zeebeWorker) {
-    final List<String> defaultJobWorkerTenantIds =
-        getProperty(
-            "camunda.client.defaults.tenant-ids",
-            false,
-            null,
-            null,
-            () -> camundaClientProperties.getDefaults().getTenantIds(),
-            camundaClientProperties::getTenantIds,
-            () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds(),
-            zeebeClientConfigurationProperties::getDefaultJobWorkerTenantIds);
-
-    LOG.debug(
-        "Worker '{}': Setting tenantIds to default {}",
-        zeebeWorker.getTenantIds(),
-        defaultJobWorkerTenantIds);
-    zeebeWorker.setTenantIds(defaultJobWorkerTenantIds);
+    final Set<String> defaultJobWorkerTenantIds = new HashSet<>();
+    defaultJobWorkerTenantIds.addAll(
+        ofNullable(camundaClientProperties.getWorker().getDefaults().getTenantIds())
+            .orElse(Collections.emptyList()));
+    defaultJobWorkerTenantIds.addAll(camundaClientProperties.getTenantIds());
+    if (zeebeWorker.getTenantIds() == null || zeebeWorker.getTenantIds().isEmpty()) {
+      if (!defaultJobWorkerTenantIds.isEmpty()) {
+        LOG.debug(
+            "Worker '{}': Setting tenantIds to default {}",
+            zeebeWorker.getTenantIds(),
+            defaultJobWorkerTenantIds);
+        zeebeWorker.setTenantIds(new ArrayList<>(defaultJobWorkerTenantIds));
+      }
+    }
   }
 }

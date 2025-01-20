@@ -17,20 +17,21 @@ package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
+@SpringBootTest
 @TestPropertySource(
     properties = {
       "zeebe.client.gateway.address=localhost12345",
@@ -43,17 +44,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ContextConfiguration(classes = JavaClientPropertiesTest.TestConfig.class)
 public class JavaClientPropertiesTest {
 
-  @Autowired private ZeebeClientConfigurationProperties properties;
-
-  @Test
-  public void hasBrokerContactPoint() {
-    assertThat(PropertiesUtil.getZeebeGatewayAddress(properties)).isEqualTo("localhost12345");
-  }
-
-  @Test
-  public void hasDeprecatedGatewayAddress() {
-    assertThat(properties.getGatewayAddress()).isEqualTo("localhost12345");
-  }
+  @Autowired private CamundaClientProperties properties;
 
   @Test
   public void hasGrpcAddress() {
@@ -67,21 +58,24 @@ public class JavaClientPropertiesTest {
 
   @Test
   public void hasWorkerName() {
-    assertThat(properties.getWorker().getDefaultName()).isEqualTo("testName");
+    assertThat(properties.getWorker().getDefaults().getName()).isEqualTo("testName");
   }
 
   @Test
   public void hasJobPollInterval() {
-    assertThat(properties.getJob().getPollInterval()).isEqualTo(Duration.ofSeconds(99));
+    assertThat(properties.getWorker().getDefaults().getPollInterval())
+        .isEqualTo(Duration.ofSeconds(99));
   }
 
   @Test
   public void hasCloudSecret() {
-    assertThat(properties.getCloud().getClientSecret()).isEqualTo("processOrchestration");
+    assertThat(properties.getAuth().getClientSecret()).isEqualTo("processOrchestration");
   }
 
-  @EnableConfigurationProperties(ZeebeClientConfigurationProperties.class)
+  @EnableConfigurationProperties(CamundaClientProperties.class)
   public static class TestConfig {
+    @MockBean CamundaClient camundaClient;
+
     @Bean("jsonMapper")
     @ConditionalOnMissingBean(JsonMapper.class)
     public JsonMapper jsonMapper() {

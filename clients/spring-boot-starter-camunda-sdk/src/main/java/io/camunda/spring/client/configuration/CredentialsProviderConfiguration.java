@@ -15,14 +15,13 @@
  */
 package io.camunda.spring.client.configuration;
 
-import static io.camunda.spring.client.configuration.PropertyUtil.getProperty;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.client.impl.util.Environment;
 import io.camunda.spring.client.properties.CamundaClientProperties;
-import io.camunda.spring.client.properties.ZeebeClientConfigurationProperties;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,77 +38,21 @@ public class CredentialsProviderConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CredentialsProvider camundaClientCredentialsProvider(
-      final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties) {
     final OAuthCredentialsProviderBuilder credBuilder =
         CredentialsProvider.newCredentialsProviderBuilder()
             .applyEnvironmentOverrides(false)
-            .clientId(
-                getProperty(
-                    "camunda.client.auth.client-id",
-                    true,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getClientId(),
-                    () -> properties.getCloud().getClientId(),
-                    () -> Environment.system().get("ZEEBE_CLIENT_ID")))
-            .clientSecret(
-                getProperty(
-                    "camunda.client.auth.client-secret",
-                    true,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getClientSecret(),
-                    () -> properties.getCloud().getClientSecret(),
-                    () -> Environment.system().get("ZEEBE_CLIENT_SECRET")))
-            .audience(
-                getProperty(
-                    "camunda.client.auth.audience",
-                    false,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getAudience(),
-                    () -> camundaClientProperties.getZeebe().getAudience(),
-                    () -> properties.getCloud().getAudience()))
-            .scope(
-                getProperty(
-                    "camunda.client.auth.scope",
-                    false,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getScope(),
-                    () -> camundaClientProperties.getZeebe().getScope(),
-                    () -> properties.getCloud().getScope()))
+            .clientId(camundaClientProperties.getAuth().getClientId())
+            .clientSecret(camundaClientProperties.getAuth().getClientSecret())
+            .audience(camundaClientProperties.getAuth().getAudience())
+            .scope(camundaClientProperties.getAuth().getScope())
             .authorizationServerUrl(
-                getProperty(
-                    "camunda.client.auth.issuer",
-                    false,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getIssuer().toString(),
-                    () -> properties.getCloud().getAuthUrl()))
-            .credentialsCachePath(
-                getProperty(
-                    "camunda.client.auth.credentials-cache-path",
-                    false,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getCredentialsCachePath(),
-                    () -> properties.getCloud().getCredentialsCachePath()))
-            .connectTimeout(
-                getProperty(
-                    "camunda.client.auth.connect-timeout",
-                    false,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getConnectTimeout()))
-            .readTimeout(
-                getProperty(
-                    "camunda.client.auth.read-timeout",
-                    false,
-                    null,
-                    null,
-                    () -> camundaClientProperties.getAuth().getReadTimeout()));
+                ofNullable(camundaClientProperties.getAuth().getIssuer())
+                    .map(URI::toString)
+                    .orElse(null))
+            .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
+            .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
+            .readTimeout(camundaClientProperties.getAuth().getReadTimeout());
 
     maybeConfigureIdentityProviderSSLConfig(credBuilder, camundaClientProperties);
     try {

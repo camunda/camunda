@@ -25,11 +25,8 @@ import io.camunda.spring.client.annotation.VariablesAsType;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
-import io.camunda.spring.client.properties.common.ZeebeClientProperties;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class PropertyBasedJobWorkerValueCustomizerTest {
@@ -49,13 +46,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     } catch (final Exception e) {
       throw new RuntimeException("Error while constructing methodInfo for method " + methodName, e);
     }
-  }
-
-  private static ZeebeClientConfigurationProperties legacyProperties() {
-    final ZeebeClientConfigurationProperties properties =
-        new ZeebeClientConfigurationProperties(null);
-    properties.applyOverrides();
-    return properties;
   }
 
   private static CamundaClientProperties properties() {
@@ -79,9 +69,8 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjectedLegacy() {
     // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties, properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setFetchVariables(List.of("a", "var1", "b"));
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "activatedJobWorker"));
@@ -95,7 +84,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjected() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setFetchVariables(List.of("a", "var1", "b"));
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "activatedJobWorker"));
@@ -106,30 +95,12 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultNameLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    properties.getWorker().setDefaultName("defaultName");
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties, properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getName()).isEqualTo("defaultName");
-  }
-
-  @Test
   void shouldSetDefaultName() {
     // given
     final CamundaClientProperties properties = properties();
-    final ZeebeClientProperties zeebeClientProperties = new ZeebeClientProperties();
-    zeebeClientProperties.setDefaults(new JobWorkerValue());
-    properties.setZeebe(zeebeClientProperties);
-    properties.getZeebe().getDefaults().setName("defaultName");
+    properties.getWorker().getDefaults().setName("defaultName");
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -142,7 +113,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldSetGeneratedNameLegacy() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -155,7 +126,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldSetGeneratedName() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -165,31 +136,13 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultTenantIdsLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
-
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties, properties());
-
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getTenantIds()).contains("customTenantId");
-  }
-
-  @Test
   void shouldSetDefaultTenantIds() {
     // given
     final CamundaClientProperties properties = properties();
     properties.setTenantIds(List.of("customTenantId"));
 
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedJobWorkerValueCustomizer(properties);
 
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
@@ -200,30 +153,12 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultTypeLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    properties.getWorker().setDefaultType("defaultType");
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties, properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getType()).isEqualTo("defaultType");
-  }
-
-  @Test
   void shouldSetDefaultType() {
     // given
     final CamundaClientProperties properties = properties();
-    final ZeebeClientProperties zeebeClientProperties = new ZeebeClientProperties();
-    zeebeClientProperties.setDefaults(new JobWorkerValue());
-    properties.setZeebe(zeebeClientProperties);
-    properties.getZeebe().getDefaults().setType("defaultType");
+    properties.getWorker().getDefaults().setType("defaultType");
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -236,7 +171,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldSetGeneratedTypeLegacy() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -249,7 +184,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldSetGeneratedType() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -262,7 +197,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldSetVariablesFromVariableAnnotation() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -275,7 +210,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldSetVariablesFromVariablesAsTypeAnnotation() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -288,7 +223,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldNotSetNameOfVariablesAsTypeAnnotatedFieldLegacy() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -301,7 +236,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldNotSetNameOfVariablesAsTypeAnnotatedField() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -311,36 +246,14 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldApplyOverridesLegacy() {
+  void shouldApplyOverrides() {
     // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
+    final CamundaClientProperties properties = properties();
     final JobWorkerValue override = new JobWorkerValue();
     override.setEnabled(false);
     properties.getWorker().getOverride().put("sampleWorker", override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties, properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    assertThat(jobWorkerValue.getEnabled()).isNull();
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getEnabled()).isFalse();
-  }
-
-  @Test
-  void shouldApplyOverrides() {
-    // given
-    final CamundaClientProperties properties = properties();
-    final ZeebeClientProperties zeebeClientProperties = new ZeebeClientProperties();
-    final JobWorkerValue override = new JobWorkerValue();
-    override.setEnabled(false);
-    final Map<String, JobWorkerValue> overrideMap = new HashMap<>();
-    overrideMap.put("sampleWorker", override);
-    zeebeClientProperties.setOverride(overrideMap);
-    properties.setZeebe(zeebeClientProperties);
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     assertThat(jobWorkerValue.getEnabled()).isNull();
@@ -354,13 +267,11 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldApplyGlobalOverride() {
     // given
     final CamundaClientProperties properties = properties();
-    final ZeebeClientProperties zeebeClientProperties = new ZeebeClientProperties();
     final JobWorkerValue override = new JobWorkerValue();
     override.setEnabled(false);
-    zeebeClientProperties.setDefaults(override);
-    properties.setZeebe(zeebeClientProperties);
+    properties.getWorker().setDefaults(override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     assertThat(jobWorkerValue.getEnabled()).isNull();
@@ -374,18 +285,12 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldApplyWorkerOverridesOverGlobalOverrides() {
     // given
     final CamundaClientProperties properties = properties();
-    final ZeebeClientProperties zeebeClientProperties = new ZeebeClientProperties();
+    properties.getWorker().getDefaults().setEnabled(true);
     final JobWorkerValue override = new JobWorkerValue();
     override.setEnabled(false);
-    final Map<String, JobWorkerValue> overrideMap = new HashMap<>();
-    overrideMap.put("sampleWorker", override);
-    zeebeClientProperties.setOverride(overrideMap);
-    final JobWorkerValue globalOverride = new JobWorkerValue();
-    globalOverride.setEnabled(true);
-    zeebeClientProperties.setDefaults(globalOverride);
-    properties.setZeebe(zeebeClientProperties);
+    properties.getWorker().getOverride().put("sampleWorker", override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     assertThat(jobWorkerValue.getEnabled()).isNull();
@@ -399,7 +304,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldApplyPropertyAnnotationOnVariableFiltering() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
 
@@ -414,7 +319,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldNotApplyPropertyAnnotationOnEmptyValue() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedJobWorkerValueCustomizer(properties());
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithEmptyJsonProperty"));
 

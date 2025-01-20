@@ -24,16 +24,13 @@ import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
-import io.camunda.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
 
 public class CamundaClientConfigurationImplTest {
   private static CamundaClientConfigurationImpl configuration(
-      final ZeebeClientConfigurationProperties legacyProperties,
       final CamundaClientProperties properties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
@@ -41,17 +38,7 @@ public class CamundaClientConfigurationImplTest {
       final CamundaClientExecutorService executorService,
       final CredentialsProvider credentialsProvider) {
     return new CamundaClientConfigurationImpl(
-        legacyProperties,
-        properties,
-        jsonMapper,
-        interceptors,
-        chainHandlers,
-        executorService,
-        credentialsProvider);
-  }
-
-  private static ZeebeClientConfigurationProperties legacyProperties() {
-    return new ZeebeClientConfigurationProperties(new MockEnvironment());
+        properties, jsonMapper, interceptors, chainHandlers, executorService, credentialsProvider);
   }
 
   private static CamundaClientProperties properties() {
@@ -74,7 +61,6 @@ public class CamundaClientConfigurationImplTest {
   void shouldCreateSingletonCredentialProvider() {
     final CamundaClientConfigurationImpl configuration =
         configuration(
-            legacyProperties(),
             properties(),
             jsonMapper(),
             List.of(),

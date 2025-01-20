@@ -23,7 +23,6 @@ import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
-import io.camunda.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
@@ -64,7 +63,6 @@ public class CamundaClientProdAutoConfiguration {
 
   @Bean
   public CamundaClientConfiguration camundaClientConfiguration(
-      final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
@@ -72,7 +70,6 @@ public class CamundaClientProdAutoConfiguration {
       final CamundaClientExecutorService camundaClientExecutorService,
       final CredentialsProvider camundaClientCredentialsProvider) {
     return new CamundaClientConfigurationImpl(
-        properties,
         camundaClientProperties,
         jsonMapper,
         interceptors,

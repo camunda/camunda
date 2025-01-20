@@ -26,7 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
     classes = CamundaClientPropertiesTestConfig.class,
     properties = {
-      "camunda.client.cluster-id=my-cluster-id",
+      "camunda.client.clusterId=my-cluster-id",
       "camunda.client.region=bru-2",
       "camunda.client.mode=saas",
       "camunda.client.auth.scope=zeebe-scope"

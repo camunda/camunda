@@ -27,6 +27,7 @@ import io.grpc.ManagedChannel;
 import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,6 +38,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConditionalOnProperty(prefix = "camunda.client.zeebe", name = "enabled", havingValue = "true")
 @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
+@ConditionalOnBean(CamundaClientConfiguration.class)
 public class ZeebeClientProdAutoConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientProdAutoConfiguration.class);
 

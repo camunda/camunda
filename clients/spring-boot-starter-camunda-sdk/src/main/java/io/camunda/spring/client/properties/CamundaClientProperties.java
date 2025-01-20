@@ -15,14 +15,14 @@
  */
 package io.camunda.spring.client.properties;
 
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.properties.common.IdentityProperties;
 import io.camunda.spring.client.properties.common.ZeebeClientProperties;
 import java.net.URI;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 @ConfigurationProperties("camunda.client")
@@ -34,11 +34,13 @@ public class CamundaClientProperties {
 
   @Deprecated(forRemoval = true, since = "8.7")
   @NestedConfigurationProperty
-  private List<String> tenantIds;
+  private List<String> tenantIds = new ArrayList<>();
 
-  @NestedConfigurationProperty private CamundaClientAuthProperties auth;
-  @NestedConfigurationProperty private IdentityProperties identity;
-  @NestedConfigurationProperty private ZeebeClientProperties zeebe;
+  @NestedConfigurationProperty
+  private CamundaClientAuthProperties auth = new CamundaClientAuthProperties();
+
+  @NestedConfigurationProperty private IdentityProperties identity = new IdentityProperties();
+  @NestedConfigurationProperty private ZeebeClientProperties zeebe = new ZeebeClientProperties();
   private Integer executionThreads;
   private Duration messageTimeToLive;
   private Integer maxMessageSize;
@@ -46,27 +48,42 @@ public class CamundaClientProperties {
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
-  @NestedConfigurationProperty private JobWorkerValue defaults;
-  @NestedConfigurationProperty private Map<String, JobWorkerValue> override;
+
+  @NestedConfigurationProperty
+  private CamundaClientWorkerProperties worker = new CamundaClientWorkerProperties();
+
   private Boolean preferRestOverGrpc;
   private URI grpcAddress;
   private URI restAddress;
-  @NestedConfigurationProperty private CamundaClientDeploymentProperties deployment;
 
-  public JobWorkerValue getDefaults() {
-    return defaults;
+  @NestedConfigurationProperty
+  private CamundaClientDeploymentProperties deployment = new CamundaClientDeploymentProperties();
+
+  private String tenantId;
+  private Duration requestTimeout;
+
+  public Duration getRequestTimeout() {
+    return requestTimeout;
   }
 
-  public void setDefaults(final JobWorkerValue defaults) {
-    this.defaults = defaults;
+  public void setRequestTimeout(final Duration requestTimeout) {
+    this.requestTimeout = requestTimeout;
   }
 
-  public Map<String, JobWorkerValue> getOverride() {
-    return override;
+  public String getTenantId() {
+    return tenantId;
   }
 
-  public void setOverride(final Map<String, JobWorkerValue> override) {
-    this.override = override;
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  public CamundaClientWorkerProperties getWorker() {
+    return worker;
+  }
+
+  public void setWorker(final CamundaClientWorkerProperties worker) {
+    this.worker = worker;
   }
 
   public Integer getExecutionThreads() {
@@ -190,10 +207,12 @@ public class CamundaClientProperties {
   }
 
   @Deprecated(forRemoval = true, since = "8.7")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.defaults.tenant-ids")
   public List<String> getTenantIds() {
     return tenantIds;
   }
 
+  @Deprecated(forRemoval = true, since = "8.7")
   public void setTenantIds(final List<String> tenantIds) {
     this.tenantIds = tenantIds;
   }
@@ -247,10 +266,8 @@ public class CamundaClientProperties {
         + ", overrideAuthority='"
         + overrideAuthority
         + '\''
-        + ", defaults="
-        + defaults
-        + ", override="
-        + override
+        + ", worker="
+        + worker
         + ", preferRestOverGrpc="
         + preferRestOverGrpc
         + ", grpcAddress="
@@ -259,6 +276,11 @@ public class CamundaClientProperties {
         + restAddress
         + ", deployment="
         + deployment
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", requestTimeout="
+        + requestTimeout
         + ", region='"
         + region
         + '\''

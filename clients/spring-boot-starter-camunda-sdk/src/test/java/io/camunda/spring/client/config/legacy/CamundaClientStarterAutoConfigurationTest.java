@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.spring.client.configuration.CamundaAutoConfiguration;
 import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
@@ -28,17 +29,17 @@ import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(SpringExtension.class)
+@SpringBootTest
 @TestPropertySource(
     properties = {
       "zeebe.client.broker.gatewayAddress=localhost:1234",
@@ -97,24 +98,23 @@ public class CamundaClientStarterAutoConfigurationTest {
 
   @Test
   void testClientConfiguration() {
-    final CamundaClient client = applicationContext.getBean(CamundaClient.class);
-    assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("localhost:1234");
-    assertThat(client.getConfiguration().getGrpcAddress().toString())
-        .isEqualTo("https://localhost:1234");
-    assertThat(client.getConfiguration().getRestAddress().toString())
-        .isEqualTo("https://localhost:8080");
-    assertThat(client.getConfiguration().getDefaultRequestTimeout())
-        .isEqualTo(Duration.ofSeconds(99));
-    assertThat(client.getConfiguration().getCaCertificatePath()).isEqualTo("aPath");
-    assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isTrue();
-    assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
-    assertThat(client.getConfiguration().getDefaultJobPollInterval())
-        .isEqualTo(Duration.ofSeconds(99));
-    assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    final CamundaClientConfiguration configuration =
+        applicationContext.getBean(CamundaClientConfiguration.class);
+    assertThat(configuration.getGatewayAddress()).isEqualTo("localhost:1234");
+    assertThat(configuration.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
+    assertThat(configuration.getRestAddress().toString()).isEqualTo("https://localhost:8080");
+    assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(99));
+    assertThat(configuration.getCaCertificatePath()).isEqualTo("aPath");
+    assertThat(configuration.isPlaintextConnectionEnabled()).isFalse(); // grpc address is https
+    assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
+    assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofSeconds(99));
+    assertThat(configuration.preferRestOverGrpc()).isFalse();
   }
 
   @EnableConfigurationProperties(CamundaClientProperties.class)
   public static class TestConfig {
+
+    @MockBean CamundaClient camundaClient;
 
     @Bean
     public ObjectMapper objectMapper() {

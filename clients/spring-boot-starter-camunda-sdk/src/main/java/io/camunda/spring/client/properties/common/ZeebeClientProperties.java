@@ -40,7 +40,7 @@ public class ZeebeClientProperties extends ApiProperties {
   private URI restAddress;
   @NestedConfigurationProperty private CamundaClientDeploymentProperties deployment;
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker")
   public JobWorkerValue getDefaults() {
     return defaults;
   }
@@ -76,7 +76,7 @@ public class ZeebeClientProperties extends ApiProperties {
     this.messageTimeToLive = messageTimeToLive;
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.request-timeout")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.request-timeout")
   public Duration getRequestTimeout() {
     return requestTimeout;
   }

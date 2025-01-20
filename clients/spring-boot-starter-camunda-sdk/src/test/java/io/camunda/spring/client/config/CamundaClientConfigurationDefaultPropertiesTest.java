@@ -19,7 +19,7 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.spring.client.config.legacy.CamundaClientStarterAutoConfigurationTest;
 import io.camunda.spring.client.configuration.CamundaAutoConfiguration;
@@ -28,13 +28,12 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
+@SpringBootTest
 @ContextConfiguration(
     classes = {
       CamundaAutoConfiguration.class,
@@ -46,35 +45,30 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
 
   @Test
   void testDefaultClientConfiguration() throws URISyntaxException {
-    final CamundaClient client = applicationContext.getBean(CamundaClient.class);
+    final CamundaClientConfiguration configuration =
+        applicationContext.getBean(CamundaClientConfiguration.class);
 
-    assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isFalse();
-    assertThat(client.getConfiguration().getCaCertificatePath()).isNull();
-    assertThat(client.getConfiguration().getCredentialsProvider())
-        .isInstanceOf(NoopCredentialsProvider.class);
-    assertThat(client.getConfiguration().getDefaultJobPollInterval())
-        .isEqualTo(Duration.ofMillis(100));
-    assertThat(client.getConfiguration().getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
-    assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
-    assertThat(client.getConfiguration().getDefaultJobWorkerName()).isEqualTo("default");
-    assertThat(client.getConfiguration().getDefaultJobWorkerStreamEnabled()).isFalse();
-    assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
+    assertThat(configuration.isPlaintextConnectionEnabled()).isFalse();
+    assertThat(configuration.getCaCertificatePath()).isNull();
+    assertThat(configuration.getCredentialsProvider()).isInstanceOf(NoopCredentialsProvider.class);
+    assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
+    assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
+    assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
+    assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
+    assertThat(configuration.getDefaultJobWorkerTenantIds())
         .isEqualTo(Collections.singletonList("<default>"));
-    assertThat(client.getConfiguration().getDefaultMessageTimeToLive())
-        .isEqualTo(Duration.ofHours(1));
-    assertThat(client.getConfiguration().getDefaultRequestTimeout())
-        .isEqualTo(Duration.ofSeconds(10));
-    assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("<default>");
-    assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("0.0.0.0:26500");
-    assertThat(client.getConfiguration().getGrpcAddress())
-        .isEqualTo(new URI("https://0.0.0.0:26500"));
-    assertThat(client.getConfiguration().getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
-    assertThat(client.getConfiguration().getMaxMessageSize()).isEqualTo(4 * ONE_MB);
-    assertThat(client.getConfiguration().getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
-    assertThat(client.getConfiguration().getNumJobWorkerExecutionThreads()).isEqualTo(1);
-    assertThat(client.getConfiguration().getOverrideAuthority()).isNull();
-    assertThat(client.getConfiguration().getRestAddress())
-        .isEqualTo(new URI("https://0.0.0.0:8080"));
-    assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
+    assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
+    assertThat(configuration.getDefaultTenantId()).isEqualTo("<default>");
+    assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
+    assertThat(configuration.getGrpcAddress()).isEqualTo(new URI("https://0.0.0.0:26500"));
+    assertThat(configuration.getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
+    assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * ONE_MB);
+    assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
+    assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
+    assertThat(configuration.getOverrideAuthority()).isNull();
+    assertThat(configuration.getRestAddress()).isEqualTo(new URI("https://0.0.0.0:8080"));
+    assertThat(configuration.preferRestOverGrpc()).isFalse();
   }
 }

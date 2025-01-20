@@ -24,7 +24,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     classes = CamundaClientPropertiesTestConfig.class,
-    properties = {"camunda.client.mode=self-managed", "camunda.client.auth.scope=zeebe-scope"})
+    properties = {
+      "camunda.client.mode=self-managed",
+      "camunda.client.auth.scope=zeebe-scope",
+    })
 public class ZeebeClientPropertiesSelfManagedTest {
   @Autowired CamundaClientProperties properties;
 

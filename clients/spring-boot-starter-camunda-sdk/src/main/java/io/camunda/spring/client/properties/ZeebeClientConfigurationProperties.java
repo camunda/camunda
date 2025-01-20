@@ -235,7 +235,7 @@ public class ZeebeClientConfigurationProperties {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     ZeebeClientConfigurationProperties#getGrpcAddress()}
+   *     CamundaClientProperties#getGrpcAddress()}
    * @see CamundaClientConfiguration#getGatewayAddress()
    */
   @DeprecatedConfigurationProperty(replacement = "camunda.client.grpc-address")
@@ -312,7 +312,7 @@ public class ZeebeClientConfigurationProperties {
     this.defaultJobWorkerTenantIds = defaultJobWorkerTenantIds;
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.stream-enabled")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.stream-enabled")
   public boolean getDefaultJobWorkerStreamEnabled() {
     return defaultJobWorkerStreamEnabled;
   }
@@ -347,27 +347,27 @@ public class ZeebeClientConfigurationProperties {
     return worker.getThreads();
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.max-jobs-active")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.max-jobs-active")
   public int getDefaultJobWorkerMaxJobsActive() {
     return worker.getMaxJobsActive();
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.name")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.name")
   public String getDefaultJobWorkerName() {
     return worker.getDefaultName();
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.type")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.type")
   public String getDefaultJobWorkerType() {
     return worker.getDefaultType();
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.timeout")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.timeout")
   public Duration getDefaultJobTimeout() {
     return job.getTimeout();
   }
 
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.poll-interval")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.poll-interval")
   public Duration getDefaultJobPollInterval() {
     return job.getPollInterval();
   }
@@ -781,7 +781,7 @@ public class ZeebeClientConfigurationProperties {
       this.override = override;
     }
 
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.max-jobs-active")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.max-jobs-active")
     public Integer getMaxJobsActive() {
       return maxJobsActive;
     }
@@ -799,7 +799,7 @@ public class ZeebeClientConfigurationProperties {
       this.threads = threads;
     }
 
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.name")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.name")
     public String getDefaultName() {
       return defaultName;
     }
@@ -808,7 +808,7 @@ public class ZeebeClientConfigurationProperties {
       this.defaultName = defaultName;
     }
 
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.type")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.type")
     public String getDefaultType() {
       return defaultType;
     }
@@ -862,7 +862,7 @@ public class ZeebeClientConfigurationProperties {
     private Duration timeout = DEFAULT.getDefaultJobTimeout();
     private Duration pollInterval = DEFAULT.getDefaultJobPollInterval();
 
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.timeout")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.timeout")
     public Duration getTimeout() {
       return timeout;
     }
@@ -871,7 +871,7 @@ public class ZeebeClientConfigurationProperties {
       this.timeout = timeout;
     }
 
-    @DeprecatedConfigurationProperty(replacement = "camunda.client.defaults.poll-interval")
+    @DeprecatedConfigurationProperty(replacement = "camunda.client.worker.poll-interval")
     public Duration getPollInterval() {
       return pollInterval;
     }

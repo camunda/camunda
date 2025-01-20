@@ -28,7 +28,6 @@ import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
-import io.camunda.spring.client.properties.ZeebeClientConfigurationProperties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -56,10 +55,7 @@ import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
       "camunda.client.auth.keystore-key-password=password",
       "camunda.client.auth.truststore-password=password",
     })
-@EnableConfigurationProperties({
-  ZeebeClientConfigurationProperties.class,
-  CamundaClientProperties.class
-})
+@EnableConfigurationProperties({CamundaClientProperties.class})
 public class CredentialsProviderSelfManagedWithSSLTest {
 
   private static final String VALID_TRUSTSTORE_PATH =
