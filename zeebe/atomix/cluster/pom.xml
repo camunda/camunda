@@ -277,6 +277,15 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-native-macos</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-classes-macos</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
