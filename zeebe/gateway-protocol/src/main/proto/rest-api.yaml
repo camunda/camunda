@@ -4722,18 +4722,18 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - key
-            - bpmnProcessId
-            - processName
-            - processVersion
-            - processVersionTag
+            - processInstanceKey
+            - processDefinitionId
+            - processDefinitionName
+            - processDefinitionVersion
+            - processDefinitionVersionTag
             - processDefinitionKey
             - parentProcessInstanceKey
             - parentFlowNodeInstanceKey
             - startDate
             - endDate
             - state
-            - incident
+            - hasIncident
             - tenantId
         order:
           $ref: "#/components/schemas/SortOrderEnum"

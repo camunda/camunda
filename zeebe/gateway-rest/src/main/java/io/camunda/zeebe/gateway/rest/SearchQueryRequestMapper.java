@@ -711,18 +711,18 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case KEY -> builder.processInstanceKey();
-        case BPMN_PROCESS_ID -> builder.processDefinitionId();
-        case PROCESS_NAME -> builder.processDefinitionName();
-        case PROCESS_VERSION -> builder.processDefinitionVersion();
-        case PROCESS_VERSION_TAG -> builder.processDefinitionVersionTag();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
+        case PROCESS_DEFINITION_VERSION_TAG -> builder.processDefinitionVersionTag();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PARENT_PROCESS_INSTANCE_KEY -> builder.parentProcessInstanceKey();
         case PARENT_FLOW_NODE_INSTANCE_KEY -> builder.parentFlowNodeInstanceKey();
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
         case STATE -> builder.state();
-        case INCIDENT -> builder.hasIncident();
+        case HAS_INCIDENT -> builder.hasIncident();
         case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

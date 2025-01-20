@@ -181,7 +181,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "field": "bpmnProcessId",
+                        "field": "processDefinitionId",
                         "order": "DESC"
                     },
                     {
@@ -226,7 +226,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             {
                 "sort": [
                     {
-                        "field": "bpmnProcessId",
+                        "field": "processDefinitionId",
                         "order": "dsc"
                     }
                 ]
@@ -280,7 +280,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [key, bpmnProcessId, processName, processVersion, processVersionTag, processDefinitionKey, parentProcessInstanceKey, parentFlowNodeInstanceKey, startDate, endDate, state, incident, tenantId]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentFlowNodeInstanceKey, startDate, endDate, state, hasIncident, tenantId]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);

@@ -209,7 +209,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .asc()
                     .state()
                     .asc()
-                    .incident()
+                    .hasIncident()
                     .desc()
                     .tenantId()
                     .asc())
@@ -223,18 +223,18 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(13);
-    assertSort(sorts.get(0), "key", SortOrderEnum.ASC);
-    assertSort(sorts.get(1), "bpmnProcessId", SortOrderEnum.DESC);
-    assertSort(sorts.get(2), "processName", SortOrderEnum.ASC);
-    assertSort(sorts.get(3), "processVersion", SortOrderEnum.ASC);
-    assertSort(sorts.get(4), "processVersionTag", SortOrderEnum.DESC);
+    assertSort(sorts.get(0), "processInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
+    assertSort(sorts.get(2), "processDefinitionName", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "processDefinitionVersion", SortOrderEnum.ASC);
+    assertSort(sorts.get(4), "processDefinitionVersionTag", SortOrderEnum.DESC);
     assertSort(sorts.get(5), "processDefinitionKey", SortOrderEnum.DESC);
     assertSort(sorts.get(6), "parentProcessInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(7), "parentFlowNodeInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "startDate", SortOrderEnum.ASC);
     assertSort(sorts.get(9), "endDate", SortOrderEnum.ASC);
     assertSort(sorts.get(10), "state", SortOrderEnum.ASC);
-    assertSort(sorts.get(11), "incident", SortOrderEnum.DESC);
+    assertSort(sorts.get(11), "hasIncident", SortOrderEnum.DESC);
     assertSort(sorts.get(12), "tenantId", SortOrderEnum.ASC);
   }
 
