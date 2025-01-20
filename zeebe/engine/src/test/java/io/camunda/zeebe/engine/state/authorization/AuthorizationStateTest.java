@@ -52,7 +52,7 @@ public class AuthorizationStateTest {
     final String ownerId = "ownerId";
     final AuthorizationOwnerType ownerType = AuthorizationOwnerType.USER;
     final String resourceId = "resourceId";
-    final AuthorizationResourceType resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final AuthorizationResourceType resourceType = AuthorizationResourceType.RESOURCE;
     final Set<PermissionType> permissions = Set.of(PermissionType.CREATE, PermissionType.DELETE);
     final var authorizationRecord =
         new AuthorizationRecord()
