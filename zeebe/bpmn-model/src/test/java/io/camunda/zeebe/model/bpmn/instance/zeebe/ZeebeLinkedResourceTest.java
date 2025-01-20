@@ -16,14 +16,13 @@
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
-import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,7 +48,8 @@ public class ZeebeLinkedResourceTest extends BpmnModelElementInstanceTest {
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resourceId", false, false),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "bindingType", false, false),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resourceType", false, false),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest),
+        new AttributeAssumption(
+            BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "linkName", false, false));
   }
 
@@ -59,44 +59,23 @@ public class ZeebeLinkedResourceTest extends BpmnModelElementInstanceTest {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess()
             .startEvent()
-            .userTask("task", task -> task.zeebeFormBindingType(ZeebeBindingType.deployment))
+            .serviceTask(
+                "task",
+                t -> t.zeebeLinkedResources(l -> l.bindingType(ZeebeBindingType.deployment)))
             .done();
     final String modelXml = Bpmn.convertToString(modelInstance);
 
     // when
-    final UserTask userTask =
+    final ServiceTask serviceTask =
         Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
             .getModelElementById("task");
-    final ZeebeLinkedResource linkedResource =
-        userTask.getSingleExtensionElement(ZeebeLinkedResource.class);
+    final ZeebeLinkedResources linkedResource =
+        serviceTask.getSingleExtensionElement(ZeebeLinkedResources.class);
 
     // then
-    assertThat(linkedResource.getBindingType()).isEqualTo(ZeebeBindingType.deployment);
-  }
-
-  @Test
-  public void shouldThrowExceptionForInvalidBindingTypeInXml() {
-    // given
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess()
-            .startEvent()
-            .userTask("task", task -> task.zeebeFormBindingType(ZeebeBindingType.deployment))
-            .done();
-    final String modelXml =
-        Bpmn.convertToString(modelInstance)
-            .replace("bindingType=\"deployment\"", "bindingType=\"foo\"");
-
-    // when
-    final UserTask userTask =
-        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
-            .getModelElementById("task");
-    final ZeebeLinkedResource linkedResource =
-        userTask.getSingleExtensionElement(ZeebeLinkedResource.class);
-
-    // then
-    assertThatThrownBy(linkedResource::getBindingType)
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
-            "No enum constant io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType.foo");
+    final Optional<ZeebeLinkedResource> first =
+        linkedResource.getLinkedResources().stream().findFirst();
+    assertThat(first).isPresent();
+    assertThat(first.get().getBindingType()).isEqualTo(ZeebeBindingType.deployment);
   }
 }
