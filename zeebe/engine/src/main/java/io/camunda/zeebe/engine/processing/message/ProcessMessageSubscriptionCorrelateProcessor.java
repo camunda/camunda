@@ -98,6 +98,10 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     } else if (subscription.isClosing()) {
       rejectCommand(command, RejectionType.INVALID_STATE, ALREADY_CLOSING_MESSAGE);
 
+    } else if (hasAlreadyBeenCorrelated(record, subscription)) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_STATE, "Already correlated this message");
+
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       final var canTriggerElement =
@@ -139,6 +143,18 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         sendAcknowledgeCommand(record);
       }
     }
+  }
+
+  private boolean hasAlreadyBeenCorrelated(
+      final ProcessMessageSubscriptionRecord record,
+      final ProcessMessageSubscription subscription) {
+    // we only want to correlate a subscription once per message (by key)
+    final var messageKey = record.getMessageKey();
+
+    // return true if it has already been correlated, otherwise false
+    final var lastCorrelatedMessageKey = subscription.getRecord().getMessageKey();
+    return lastCorrelatedMessageKey == messageKey;
+    // TODO: ensure the correlations arrive ordered by message key
   }
 
   private ExecutableFlowElement getCatchEvent(
