@@ -160,8 +160,7 @@ paths:
           required: true
           description: The key of the job to fail.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -209,8 +208,7 @@ paths:
           required: true
           description: The key of the job.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -258,8 +256,7 @@ paths:
           required: true
           description: The key of the job to complete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -306,8 +303,7 @@ paths:
           required: true
           description: The key of the job to update.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -356,8 +352,7 @@ paths:
           required: true
           description: Key of the incident to resolve.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The incident is marked as resolved.
@@ -432,8 +427,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         content:
           application/json:
@@ -482,8 +476,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: The tenant was retrieved successfully.
@@ -528,8 +521,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The tenant was deleted successfully.
@@ -563,8 +555,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: userKey
           in: path
           required: true
@@ -604,8 +595,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: userKey
           in: path
           required: true
@@ -646,8 +636,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: mappingKey
           in: path
           required: true
@@ -687,8 +676,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: mappingKey
           in: path
           required: true
@@ -729,8 +717,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: groupKey
           in: path
           required: true
@@ -770,8 +757,7 @@ paths:
           required: true
           description: The unique identifier of the tenant.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: groupKey
           in: path
           required: true
@@ -857,8 +843,7 @@ paths:
           required: true
           description: The key of the user task to complete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -907,8 +892,7 @@ paths:
           required: true
           description: The key of the user task to assign.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -957,8 +941,7 @@ paths:
           required: true
           description: The user task key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1006,8 +989,7 @@ paths:
           required: true
           description: The key of the user task to update.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -1058,8 +1040,7 @@ paths:
           required: true
           description: The user task key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1109,8 +1090,7 @@ paths:
           required: true
           description: The key of the user task.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The user task was unassigned successfully.
@@ -1151,7 +1131,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/UserTaskSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/UserTaskSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/UserTaskSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -1195,8 +1181,7 @@ paths:
           required: true
           description: The key of the user task.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -1241,7 +1226,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/VariableSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/VariableSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/VariableSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -1285,8 +1276,7 @@ paths:
           required: true
           description: The variable key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1384,7 +1374,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -1428,8 +1424,7 @@ paths:
           required: true
           description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1481,8 +1476,7 @@ paths:
           required: true
           description: The assigned key of the process definition, which acts as a unique identifier for this process.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1537,8 +1531,7 @@ paths:
           required: true
           description: The process key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1593,12 +1586,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateProcessInstanceRequest"
+              $ref: "#/components/schemas/CreateProcessInstanceRequestBody"
             examples:
               "By process definition key":
                 summary: "Create a process instance by processDefinitionKey."
                 value:
-                  processDefinitionKey: 12345
+                  processDefinitionKey: "12345"
                   variables: {}
               "By process definition ID":
                 summary: "Create a process instance by processDefinitionId and version."
@@ -1606,6 +1599,12 @@ paths:
                   processDefinitionId: "1234-5678"
                   version: 1
                   variables: {}
+          application/vnd.camunda.api.keys.number+json:
+            schema:
+              $ref: "#/components/schemas/CreateProcessInstanceRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/CreateProcessInstanceRequestBody"
       responses:
         "200":
           description: The process instance was created.
@@ -1638,8 +1637,7 @@ paths:
           required: true
           description: The process instance key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: The process instance is successfully returned.
@@ -1685,7 +1683,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBody"
       responses:
         "200":
           description: The process instance search result.
@@ -1727,8 +1731,7 @@ paths:
           required: true
           description: The key of the process instance to cancel.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -1773,14 +1776,19 @@ paths:
           required: true
           description: The key of the process instance that should be migrated.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/MigrateProcessInstanceRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/MigrateProcessInstanceRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/MigrateProcessInstanceRequestBody"
       responses:
         "204":
           description: The process instance is migrated.
@@ -1818,14 +1826,19 @@ paths:
           required: true
           description: The key of the process instance that should be modified.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/ModifyProcessInstanceRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/ModifyProcessInstanceRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/ModifyProcessInstanceRequestBody"
       responses:
         "204":
           description: The process instance is modified.
@@ -1857,7 +1870,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -1901,8 +1920,7 @@ paths:
           required: true
           description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -1953,7 +1971,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -1997,8 +2021,7 @@ paths:
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -2050,8 +2073,7 @@ paths:
           required: true
           description: The assigned key of the decision definition, which acts as a unique identifier for this decision.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -2096,7 +2118,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -2140,8 +2168,7 @@ paths:
           required: true
           description: The assigned key of the decision requirements, which acts as a unique identifier for this decision requirements.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -2193,8 +2220,7 @@ paths:
           required: true
           description: The assigned key of the decision requirements, which acts as a unique identifier for this decision.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -2239,7 +2265,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/DecisionInstanceSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -2337,18 +2369,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/EvaluateDecisionRequest"
+              $ref: "#/components/schemas/EvaluateDecisionRequestBody"
             examples:
               "By decision definition key":
                 summary: "Evaluate the decision by decisionDefinitionKey."
                 value:
-                  decisionDefinitionKey: 12345
+                  decisionDefinitionKey: "12345"
                   variables: {}
               "By decision definition ID":
                 summary: "Evaluate the decision by decisionDefinitionId."
                 value:
                   decisionDefinitionId: "1234-5678"
                   variables: {}
+          application/vnd.camunda.api.keys.number+json:
+            schema:
+              $ref: "#/components/schemas/EvaluateDecisionRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/EvaluateDecisionRequestBody"
       responses:
         "200":
           description: The decision was evaluated.
@@ -2438,8 +2476,7 @@ paths:
           required: true
           description: The key of the owner of the authorization.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         content:
           application/json:
@@ -2515,7 +2552,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/AuthorizationSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/AuthorizationSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationSearchQueryRequestBody"
         required: true
       responses:
         "200":
@@ -2600,8 +2643,7 @@ paths:
           required: true
           description: The role key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: The role is successfully returned.
@@ -2639,8 +2681,7 @@ paths:
           required: true
           description: The key of the role to update.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -2679,8 +2720,7 @@ paths:
           required: true
           description: The key of the role to delete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The role was deleted successfully.
@@ -2792,8 +2832,7 @@ paths:
           required: true
           description: The group key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: The group is successfully returned.
@@ -2831,8 +2870,7 @@ paths:
           required: true
           description: The key of the group to update.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -2871,8 +2909,7 @@ paths:
           required: true
           description: The key of the group to delete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The group was deleted successfully.
@@ -2900,8 +2937,7 @@ paths:
           required: true
           description: The group key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: userKey
           in: path
           required: true
@@ -2949,15 +2985,13 @@ paths:
           required: true
           description: The group key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
         - name: userKey
           in: path
           required: true
           description: The user key.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "202":
           description: The user was unassigned successfully from the group.
@@ -3086,8 +3120,7 @@ paths:
           required: true
           description: The key of the mapping rule to delete.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "204":
           description: The mapping rule was deleted successfully.
@@ -3691,7 +3724,13 @@ paths:
         content:
           application/json:
             schema:
+              $ref: "#/components/schemas/IncidentSearchQueryRequestBody"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
               $ref: "#/components/schemas/IncidentSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/IncidentSearchQueryRequestBody"
       responses:
         "200":
           description: >
@@ -3731,8 +3770,7 @@ paths:
           required: true
           description: The assigned key of the incident, which acts as a unique identifier for this incident.
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       responses:
         "200":
           description: >
@@ -3880,8 +3918,7 @@ paths:
             This can be the key of a process definition, the key of a decision requirements
             definition or the key of a form definition
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: false
         content:
@@ -3924,8 +3961,7 @@ paths:
             This can be the process instance key (as obtained during instance creation), or a given
             element, such as a service task (see the `elementInstanceKey` on the job message).
           schema:
-            type: integer
-            format: int64
+            $ref: "#/components/schemas/KeyParameter"
       requestBody:
         required: true
         content:
@@ -4173,21 +4209,38 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    UserTaskSearchQueryRequest:
+    UserTaskSearchQueryRequestBase:
+      description: Base properties for UserTaskSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      description: User task search query request.
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/UserTaskSearchQuerySortRequest"
+    UserTaskSearchQueryRequest:
+      description: User task search query request.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskSearchQueryRequestBase"
+      properties:
         filter:
           description: The user task search filters.
           allOf:
             - $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQueryRequestBody:
+      description: User task search query request. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The user task search filters.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskFilterRequestBody"
     UserTaskVariableSearchQuerySortRequest:
       type: object
       properties:
@@ -4243,14 +4296,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserTaskResult"
-    UserTaskFilterRequest:
-      description: User task filter request.
+    UserTaskFilterRequestBase:
+      description: Base properties for UserTaskFilterRequest
       type: object
       properties:
-        userTaskKey:
-          type: integer
-          description: The key for this user task.
-          format: int64
         state:
           type: string
           description: The state of the user task.
@@ -4278,24 +4327,12 @@ components:
           description: The candidate user for this user task.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionKey:
-          type: integer
-          description: The key of the process definition.
-          format: int64
-        processInstanceKey:
-          type: integer
-          description: The key of the process instance.
-          format: int64
         tenantId:
           type: string
           description: Tenant ID of this user task.
         processDefinitionId:
           type: string
           description: The ID of the process definition.
-        elementInstanceKey:
-          type: integer
-          description: The key of the element instance.
-          format: int64
         creationDate:
           description: The user task creation date.
           allOf:
@@ -4322,6 +4359,47 @@ components:
           description: Local variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+    UserTaskFilterRequest:
+      description: User task filter request.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskFilterRequestBase"
+      properties:
+        userTaskKey:
+          type: integer
+          description: The key for this user task.
+          format: int64
+        processDefinitionKey:
+          type: integer
+          description: The key of the process definition.
+          format: int64
+        processInstanceKey:
+          type: integer
+          description: The key of the process instance.
+          format: int64
+        elementInstanceKey:
+          type: integer
+          description: The key of the element instance.
+          format: int64
+    UserTaskFilterRequestBody:
+      description: User task filter request. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskFilterRequestBase"
+      properties:
+        userTaskKey:
+          type: string
+          description: The key for this user task.
+        processDefinitionKey:
+          type: string
+          description: The key of the process definition.
+        processInstanceKey:
+          type: string
+          description: The key of the process instance.
+        elementInstanceKey:
+          type: string
+          description: The key of the element instance.
     UserTaskVariableFilterRequest:
       type: object
       properties:
@@ -4473,29 +4551,42 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    VariableSearchQueryRequest:
+    VariableSearchQueryRequestBase:
+      description: Base properties for VariableSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      description: Variable search query request.
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/VariableSearchQuerySortRequest"
+    VariableSearchQueryRequest:
+      description: Variable search query request.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/VariableSearchQueryRequestBase"
+      properties:
         filter:
           description: The variable search filters.
           allOf:
             - $ref: "#/components/schemas/VariableFilterRequest"
-    VariableFilterRequest:
-      description: Variable filter request.
+    VariableSearchQueryRequestBody:
+      description: Variable search query request. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/VariableSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The variable search filters.
+          allOf:
+            - $ref: "#/components/schemas/VariableFilterRequestBody"
+    VariableFilterRequestBase:
+      description: Base properties for VariableFilterRequest
       type: object
       properties:
-        variableKey:
-          description: The key for this variable.
-          allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
         name:
           description: Name of the variable.
           allOf:
@@ -4504,6 +4595,23 @@ components:
           description: The value of the variable.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        tenantId:
+          description: Tenant ID of this variable.
+          type: string
+        isTruncated:
+          description: Whether the value is truncated or not.
+          type: boolean
+    VariableFilterRequest:
+      description: Variable filter request.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/VariableFilterRequestBase"
+      properties:
+        variableKey:
+          description: The key for this variable.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         scopeKey:
           description: The key of the scope of this variable.
           allOf:
@@ -4512,12 +4620,24 @@ components:
           description: The key of the process instance of this variable.
           allOf:
             - $ref: "#/components/schemas/BasicLongFilterProperty"
-        tenantId:
-          description: Tenant ID of this variable.
-          type: string
-        isTruncated:
-          description: Whether the value is truncated or not.
-          type: boolean
+    VariableFilterRequestBody:
+      description: Variable filter request. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/VariableFilterRequestBase"
+      properties:
+        variableKey:
+          description: The key for this variable.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        scopeKey:
+          description: The key of the scope of this variable.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processInstanceKey:
+          description: The key of the process instance of this variable.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     VariableSearchQueryResponse:
       description: Variable search query response. Key attributes as numeric values.
       deprecated: true
@@ -4612,28 +4732,40 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    ProcessDefinitionSearchQueryRequest:
+    ProcessDefinitionSearchQueryRequestBase:
+      description: Base properties for ProcessDefinitionSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionSearchQuerySortRequest"
+    ProcessDefinitionSearchQueryRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBase"
+      properties:
         filter:
           description: The process definition search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
-    ProcessDefinitionFilterRequest:
-      description: Process definition search filter.
+    ProcessDefinitionSearchQueryRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The process definition search filters.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionFilterRequestBody"
+    ProcessDefinitionFilterRequestBase:
+      description: Base properties for ProcessDefinitionFilterRequest
       type: object
       properties:
-        processDefinitionKey:
-          description: The key for this process definition.
-          type: integer
-          format: int64
         name:
           description: Name of this process definition.
           type: string
@@ -4652,6 +4784,26 @@ components:
           type: string
         tenantId:
           description: Tenant ID of this process definition.
+          type: string
+    ProcessDefinitionFilterRequest:
+      description: Process definition search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessDefinitionFilterRequestBase"
+      properties:
+        processDefinitionKey:
+          description: The key for this process definition.
+          type: integer
+          format: int64
+    ProcessDefinitionFilterRequestBody:
+      description: Process definition search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessDefinitionFilterRequestBase"
+      properties:
+        processDefinitionKey:
+          description: The key for this process definition.
           type: string
     ProcessDefinitionSearchQueryResponse:
       deprecated: true
@@ -4739,21 +4891,38 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    ProcessInstanceSearchQueryRequest:
-      description: Process instance search request.
+    ProcessInstanceSearchQueryRequestBase:
+      description: Base properties for ProcessInstanceSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceSearchQuerySortRequest"
+    ProcessInstanceSearchQueryRequest:
+      description: Process instance search request.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBase"
+      properties:
         filter:
           description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    ProcessInstanceSearchQueryRequestBody:
+      description: Process instance search request. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The process instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequestBody"
     AdvancedIntegerFilter:
       title: Advanced filter
       description: Advanced integer (int32) filter.
@@ -4962,14 +5131,10 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
-    ProcessInstanceFilterRequest:
-      description: Process instance search filter.
+    ProcessInstanceFilterRequestBase:
+      description: Base properties for ProcessInstanceFilterRequest
       type: object
       properties:
-        processInstanceKey:
-          description: The key of this process instance.
-          allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
         processDefinitionId:
           description: The process definition ID.
           allOf:
@@ -4986,18 +5151,6 @@ components:
           description: The process definition version tag.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionKey:
-          description: The process definition key.
-          allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
-        parentProcessInstanceKey:
-          description: The parent process instance key.
-          allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
-        parentFlowNodeInstanceKey:
-          description: The parent flow node instance key.
-          allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
         startDate:
           description: The start date.
           allOf:
@@ -5022,6 +5175,51 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceVariableFilterRequest"
+    ProcessInstanceFilterRequest:
+      description: Process instance search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceFilterRequestBase"
+      properties:
+        processInstanceKey:
+          description: The key of this process instance.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
+        processDefinitionKey:
+          description: The process definition key.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
+        parentProcessInstanceKey:
+          description: The parent process instance key.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
+        parentFlowNodeInstanceKey:
+          description: The parent flow node instance key.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
+    ProcessInstanceFilterRequestBody:
+      description: Process instance search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceFilterRequestBase"
+      properties:
+        processInstanceKey:
+          description: The key of this process instance.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        parentProcessInstanceKey:
+          description: The parent process instance key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        parentFlowNodeInstanceKey:
+          description: The parent flow node instance key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -5168,37 +5366,42 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    FlowNodeInstanceSearchQueryRequest:
-      description: Flow node instance search request
+    FlowNodeInstanceSearchQueryRequestBase:
+      description: Base properties for FlowNodeInstanceSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/FlowNodeInstanceSearchQuerySortRequest"
+    FlowNodeInstanceSearchQueryRequest:
+      description: Flow node instance search request
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBase"
+      properties:
         filter:
           description: The flow node instance search filters.
           allOf:
             - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
-    FlowNodeInstanceFilterRequest:
-      description: Flow node instance filter.
+    FlowNodeInstanceSearchQueryRequestBody:
+      description: Flow node instance search request Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The flow node instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceFilterRequestBody"
+    FlowNodeInstanceFilterRequestBase:
+      description: Base properties for FlowNodeInstanceFilterRequest
       type: object
       properties:
-        flowNodeInstanceKey:
-          type: integer
-          description: The assigned key, which acts as a unique identifier for this flow node instance.
-          format: int64
-        processInstanceKey:
-          type: integer
-          description: The process instance key associated to this flow node instance.
-          format: int64
-        processDefinitionKey:
-          type: integer
-          description: The process definition key associated to this flow node instance.
-          format: int64
         processDefinitionId:
           description: The process definition ID associated to this flow node instance.
           type: string
@@ -5247,13 +5450,50 @@ components:
         hasIncident:
           type: boolean
           description: Shows whether this flow node instance has an incident related to.
+        tenantId:
+          description: The tenant ID.
+          type: string
+    FlowNodeInstanceFilterRequest:
+      description: Flow node instance filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/FlowNodeInstanceFilterRequestBase"
+      properties:
+        flowNodeInstanceKey:
+          type: integer
+          description: The assigned key, which acts as a unique identifier for this flow node instance.
+          format: int64
+        processInstanceKey:
+          type: integer
+          description: The process instance key associated to this flow node instance.
+          format: int64
+        processDefinitionKey:
+          type: integer
+          description: The process definition key associated to this flow node instance.
+          format: int64
         incidentKey:
           type: integer
           description: The key of incident if field incident is true.
           format: int64
-        tenantId:
-          description: The tenant ID.
+    FlowNodeInstanceFilterRequestBody:
+      description: Flow node instance filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/FlowNodeInstanceFilterRequestBase"
+      properties:
+        flowNodeInstanceKey:
           type: string
+          description: The assigned key, which acts as a unique identifier for this flow node instance.
+        processInstanceKey:
+          type: string
+          description: The process instance key associated to this flow node instance.
+        processDefinitionKey:
+          type: string
+          description: The process definition key associated to this flow node instance.
+        incidentKey:
+          type: string
+          description: The key of incident if field incident is true.
     FlowNodeInstanceSearchQueryResponse:
       deprecated: true
       type: object
@@ -5395,28 +5635,40 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    DecisionDefinitionSearchQueryRequest:
+    DecisionDefinitionSearchQueryRequestBase:
+      description: Base properties for DecisionDefinitionSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionSearchQuerySortRequest"
+    DecisionDefinitionSearchQueryRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBase"
+      properties:
         filter:
           description: The decision definition search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
-    DecisionDefinitionFilterRequest:
-      description: Decision definition search filter.
+    DecisionDefinitionSearchQueryRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The decision definition search filters.
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionFilterRequestBody"
+    DecisionDefinitionFilterRequestBase:
+      description: Base properties for DecisionDefinitionFilterRequest
       type: object
       properties:
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this decision definition.
         decisionDefinitionId:
           type: string
           description: The DMN ID of the decision definition.
@@ -5430,13 +5682,36 @@ components:
         decisionRequirementsId:
           type: string
           description: the DMN ID of the decision requirements graph that the decision definition is part of.
+        tenantId:
+          type: string
+          description: The tenant ID of the decision definition.
+    DecisionDefinitionFilterRequest:
+      description: Decision definition search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionDefinitionFilterRequestBase"
+      properties:
+        decisionDefinitionKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this decision definition.
         decisionRequirementsKey:
           type: integer
           format: int64
           description: The assigned key of the decision requirements graph that the decision definition is part of.
-        tenantId:
+    DecisionDefinitionFilterRequestBody:
+      description: Decision definition search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionDefinitionFilterRequestBase"
+      properties:
+        decisionDefinitionKey:
           type: string
-          description: The tenant ID of the decision definition.
+          description: The assigned key, which acts as a unique identifier for this decision definition.
+        decisionRequirementsKey:
+          type: string
+          description: The assigned key of the decision requirements graph that the decision definition is part of.
     IncidentSearchQuerySortRequest:
       type: object
       properties:
@@ -5460,39 +5735,43 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    IncidentSearchQueryRequest:
+    IncidentSearchQueryRequestBase:
+      description: Base properties for IncidentSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
+    IncidentSearchQueryRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentSearchQueryRequestBase"
+      properties:
         filter:
           description: The incident search filters.
           allOf:
             - $ref: "#/components/schemas/IncidentFilterRequest"
-    IncidentFilterRequest:
-      description: Incident search filter.
+    IncidentSearchQueryRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/IncidentFilterRequestBody"
+    IncidentFilterRequestBase:
+      description: Base properties for IncidentFilterRequest
       type: object
       properties:
-        incidentKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this incident.
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The process definition key associated to this incident.
         processDefinitionId:
           type: string
           description: The process definition ID associated to this incident.
-        processInstanceKey:
-          type: integer
-          format: int64
-          description: The process instance key associated to this incident.
         errorType:
           type: string
           description: Incident error type with a defined set of values.
@@ -5515,10 +5794,6 @@ components:
         flowNodeId:
           type: string
           description: The flow node ID associated to this incident.
-        flowNodeInstanceKey:
-          type: integer
-          format: int64
-          description: The flow node instance key associated to this incident.
         creationTime:
           type: string
           description: Date of incident creation.
@@ -5531,13 +5806,57 @@ components:
             - MIGRATED
             - RESOLVED
             - PENDING
+        tenantId:
+          description: The tenant ID of the incident.
+          type: string
+    IncidentFilterRequest:
+      description: Incident search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentFilterRequestBase"
+      properties:
+        incidentKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The process instance key associated to this incident.
+        flowNodeInstanceKey:
+          type: integer
+          format: int64
+          description: The flow node instance key associated to this incident.
         jobKey:
           type: integer
           format: int64
           description: The job key, if exists, associated with this incident.
-        tenantId:
-          description: The tenant ID of the incident.
+    IncidentFilterRequestBody:
+      description: Incident search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/IncidentFilterRequestBase"
+      properties:
+        incidentKey:
           type: string
+          description: The assigned key, which acts as a unique identifier for this incident.
+        processDefinitionKey:
+          type: string
+          description: The process definition key associated to this incident.
+        processInstanceKey:
+          type: string
+          description: The process instance key associated to this incident.
+        flowNodeInstanceKey:
+          type: string
+          description: The flow node instance key associated to this incident.
+        jobKey:
+          type: string
+          description: The job key, if exists, associated with this incident.
     IncidentSearchQueryResponse:
       deprecated: true
       type: object
@@ -5874,22 +6193,38 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    AuthorizationSearchQueryRequest:
+    AuthorizationSearchQueryRequestBase:
+      description: Base properties for AuthorizationSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/AuthorizationSearchQuerySortRequest"
+    AuthorizationSearchQueryRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/AuthorizationSearchQueryRequestBase"
+      properties:
         filter:
           description: The authorization search filters.
           allOf:
             - $ref: "#/components/schemas/AuthorizationFilterRequest"
-    AuthorizationFilterRequest:
-      description: Authorization search filter.
+    AuthorizationSearchQueryRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/AuthorizationSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The authorization search filters.
+          allOf:
+            - $ref: "#/components/schemas/AuthorizationFilterRequestBody"
+    AuthorizationFilterRequestBase:
+      description: Base properties for AuthorizationFilterRequest
       type: object
       properties:
         ownerType:
@@ -5897,10 +6232,26 @@ components:
           type: object
           allOf:
             - $ref: "#/components/schemas/OwnerTypeEnum"
+    AuthorizationFilterRequest:
+      description: Authorization search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
+      properties:
         ownerKey:
           description: The id of the owner of permissions.
           type: integer
           format: int64
+    AuthorizationFilterRequestBody:
+      description: Authorization search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/AuthorizationFilterRequestBase"
+      properties:
+        ownerKey:
+          description: The id of the owner of permissions.
+          type: string
     AuthorizationResponseBase:
       type: "object"
       properties:
@@ -7093,7 +7444,12 @@ components:
           format: int64
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
-
+    KeyParameter:
+      description: The key parameter.
+      oneOf:
+        - type: string
+        - type: integer
+          format: int64
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -7191,28 +7547,40 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    DecisionRequirementsSearchQueryRequest:
+    DecisionRequirementsSearchQueryRequestBase:
+      description: Base properties for DecisionRequirementsSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/DecisionRequirementsSearchQuerySortRequest"
+    DecisionRequirementsSearchQueryRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBase"
+      properties:
         filter:
           description: The decision definition search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
-    DecisionRequirementsFilterRequest:
-      description: Decision requirements search filter.
+    DecisionRequirementsSearchQueryRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The decision definition search filters.
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsFilterRequestBody"
+    DecisionRequirementsFilterRequestBase:
+      description: Base properties for DecisionRequirementsFilterRequest
       type: object
       properties:
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this decision requirements.
         name:
           type: string
           description: The DMN name of the decision requirements.
@@ -7226,6 +7594,26 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision requirements.
+    DecisionRequirementsFilterRequest:
+      description: Decision requirements search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionRequirementsFilterRequestBase"
+      properties:
+        decisionRequirementsKey:
+          type: integer
+          format: int64
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
+    DecisionRequirementsFilterRequestBody:
+      description: Decision requirements search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionRequirementsFilterRequestBase"
+      properties:
+        decisionRequirementsKey:
+          type: string
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
     DecisionRequirementsSearchQueryResponse:
       deprecated: true
       type: object
@@ -7285,15 +7673,10 @@ components:
         decisionRequirementsKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this decision requirements.
-    EvaluateDecisionRequest:
+    EvaluateDecisionRequestBase:
+      description: Base properties for EvaluateDecisionRequest
       type: object
       properties:
-        decisionDefinitionKey:
-          description: |
-            The unique key identifying the decision to be evaluated.
-            Cannot be used together with decisionDefinitionId.
-          type: integer
-          format: int64
         decisionDefinitionId:
           description: |
             The ID of the decision to be evaluated.
@@ -7306,6 +7689,28 @@ components:
           type: object
         tenantId:
           description: The tenant ID of the decision.
+          type: string
+    EvaluateDecisionRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/EvaluateDecisionRequestBase"
+      properties:
+        decisionDefinitionKey:
+          description: |
+            The unique key identifying the decision to be evaluated.
+            Cannot be used together with decisionDefinitionId.
+          type: integer
+          format: int64
+    EvaluateDecisionRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/EvaluateDecisionRequestBase"
+      properties:
+        decisionDefinitionKey:
+          description: |
+            The unique key identifying the decision to be evaluated.
+            Cannot be used together with decisionDefinitionId.
           type: string
     EvaluateDecisionResponseBase:
       description: Base properties for EvaluateDecisionResponse.
@@ -7498,29 +7903,40 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    DecisionInstanceSearchQueryRequest:
+    DecisionInstanceSearchQueryRequestBase:
+      description: Base properties for DecisionInstanceSearchQueryRequest
+      type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
-      type: object
       properties:
         sort:
           description: Sort field criteria.
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceSearchQuerySortRequest"
+    DecisionInstanceSearchQueryRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBase"
+      properties:
         filter:
           description: The decision instance search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
-    DecisionInstanceFilterRequest:
-      description: Decision instance search filter.
+    DecisionInstanceSearchQueryRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBase"
+      properties:
+        filter:
+          description: The decision instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/DecisionInstanceFilterRequestBody"
+    DecisionInstanceFilterRequestBase:
+      description: Base properties for DecisionInstanceFilterRequest
       type: object
       properties:
-        decisionInstanceKey:
-          type: integer
-          format: int64
-          description: |
-            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
         decisionInstanceId:
           type: string
           description: The ID of the decision instance.
@@ -7533,18 +7949,6 @@ components:
           description: The evaluation date of the decision instance.
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The key of the process definition.
-        processInstanceKey:
-          type: integer
-          format: int64
-          description: The key of the process instance.
-        decisionDefinitionKey:
-          description: The key of the decision.
-          allOf:
-            - $ref: "#/components/schemas/BasicLongFilterProperty"
         decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
@@ -7560,6 +7964,50 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
+    DecisionInstanceFilterRequest:
+      description: Decision instance search filter.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceFilterRequestBase"
+      properties:
+        decisionInstanceKey:
+          type: integer
+          format: int64
+          description: |
+            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        processDefinitionKey:
+          type: integer
+          format: int64
+          description: The key of the process definition.
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance.
+        decisionDefinitionKey:
+          description: The key of the decision.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
+    DecisionInstanceFilterRequestBody:
+      description: Decision instance search filter. Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DecisionInstanceFilterRequestBase"
+      properties:
+        decisionInstanceKey:
+          type: string
+          description: |
+            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        processDefinitionKey:
+          type: string
+          description: The key of the process definition.
+        processInstanceKey:
+          type: string
+          description: The key of the process instance.
+        decisionDefinitionKey:
+          description: The key of the decision.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     DecisionInstanceSearchQueryResponse:
       deprecated: true
       type: object
@@ -8195,15 +8643,10 @@ components:
           type: string
           description: The assigned key, which acts as a unique identifier for this Resource.
 
-    CreateProcessInstanceRequest:
+    CreateProcessInstanceRequestBase:
+      description: Base properties for CreateProcessInstanceRequest
       type: object
       properties:
-        processDefinitionKey:
-          description: |
-            The unique key identifying the process definition, e.g. returned for a process in the
-            deploy resources endpoint. Cannot be used together with processDefinitionId.
-          type: integer
-          format: int64
         processDefinitionId:
           description: |
             The BPMN process ID of the process definition to start an instance of.
@@ -8259,6 +8702,28 @@ components:
             when set to 0, the generic request timeout configured in the cluster is applied.
           type: integer
           format: int64
+    CreateProcessInstanceRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/CreateProcessInstanceRequestBase"
+      properties:
+        processDefinitionKey:
+          description: |
+            The unique key identifying the process definition, e.g. returned for a process in the
+            deploy resources endpoint. Cannot be used together with processDefinitionId.
+          type: integer
+          format: int64
+    CreateProcessInstanceRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/CreateProcessInstanceRequestBase"
+      properties:
+        processDefinitionKey:
+          description: |
+            The unique key identifying the process definition, e.g. returned for a process in the
+            deploy resources endpoint. Cannot be used together with processDefinitionId.
+          type: string
     ProcessInstanceCreationStartInstruction:
       type: object
       properties:
@@ -8322,25 +8787,42 @@ components:
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
-    MigrateProcessInstanceRequest:
+    MigrateProcessInstanceRequestBase:
+      description: Base properties for MigrateProcessInstanceRequest
       type: object
       properties:
-        targetProcessDefinitionKey:
-          description: The key of process definition to migrate the process instance to.
-          type: integer
-          format: int64
         mappingInstructions:
           description: Element mappings from the source process instance to the target process instance.
           type: array
           items:
             $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
         operationReference:
-          description: >
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be > 0 if provided.
+          description: |
+            A reference key chosen by the user that will be part of all records resulting from this operation. Must be > 0 if provided.
           type: integer
           format: int64
           minimum: 1
+    MigrateProcessInstanceRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MigrateProcessInstanceRequestBase"
+      properties:
+        targetProcessDefinitionKey:
+          description: The key of process definition to migrate the process instance to.
+          type: integer
+          format: int64
+      required:
+        - targetProcessDefinitionKey
+        - mappingInstructions
+    MigrateProcessInstanceRequestBody:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MigrateProcessInstanceRequestBase"
+      properties:
+        targetProcessDefinitionKey:
+          description: The key of process definition to migrate the process instance to.
+          type: string
       required:
         - targetProcessDefinitionKey
         - mappingInstructions
@@ -8358,8 +8840,21 @@ components:
       required:
         - sourceElementId
         - targetElementId
-    ModifyProcessInstanceRequest:
+    ModifyProcessInstanceRequestBase:
+      description: Base properties for ModifyProcessInstanceRequest
       type: object
+      properties:
+        operationReference:
+          description: |
+            A reference key chosen by the user that will be part of all records resulting from this operation. Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
+    ModifyProcessInstanceRequest:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ModifyProcessInstanceRequestBase"
       properties:
         activateInstructions:
           description: Instructions describing which elements should be activated in which scopes and which variables should be created.
@@ -8371,21 +8866,41 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceTerminateInstruction"
-        operationReference:
-          description: >
-            A reference key chosen by the user that will be part of all records resulting from this operation.
-            Must be > 0 if provided.
-          type: integer
-          format: int64
-          minimum: 1
-    ModifyProcessInstanceActivateInstruction:
+    ModifyProcessInstanceRequestBody:
       type: object
-      description: |
-        Instructions describing an element that should be activated.
+      allOf:
+        - $ref: "#/components/schemas/ModifyProcessInstanceRequestBase"
+      properties:
+        activateInstructions:
+          description: Instructions describing which elements should be activated in which scopes and which variables should be created.
+          type: array
+          items:
+            $ref: "#/components/schemas/ModifyProcessInstanceActivateRequestBody"
+        terminateInstructions:
+          description: Instructions describing which elements should be terminated.
+          type: array
+          items:
+            $ref: "#/components/schemas/ModifyProcessInstanceTerminateRequestBody"
+    ModifyProcessInstanceActivateInstructionBase:
+      description: Base properties for ModifyProcessInstanceActivateInstruction
+      type: object
       properties:
         elementId:
           description: The ID of the element that should be activated.
           type: string
+        variableInstructions:
+          description: Instructions describing which variables should be created.
+          type: array
+          items:
+            $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
+    ModifyProcessInstanceActivateInstruction:
+      description: |
+        Instructions describing an element that should be activated.
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ModifyProcessInstanceActivateInstructionBase"
+      properties:
         ancestorElementInstanceKey:
           description: |
             The key of the ancestor scope the element instance should be created in.
@@ -8394,11 +8909,23 @@ components:
           type: integer
           format: int64
           default: -1
-        variableInstructions:
-          description: Instructions describing which variables should be created.
-          type: array
-          items:
-            $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"
+      required:
+        - elementId
+    ModifyProcessInstanceActivateRequestBody:
+      description: |-
+        Instructions describing an element that should be activated.
+         Key attributes as string values.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ModifyProcessInstanceActivateInstructionBase"
+      properties:
+        ancestorElementInstanceKey:
+          description: |
+            The key of the ancestor scope the element instance should be created in.
+            Set to -1 to create the new element instance within an existing element instance of the
+            flow scope.
+          type: string
+          default: -1
       required:
         - elementId
     ModifyProcessInstanceVariableInstruction:
@@ -8427,6 +8954,15 @@ components:
           description: The ID of the element that should be terminated.
           type: integer
           format: int64
+      required:
+        - elementInstanceKey
+    ModifyProcessInstanceTerminateRequestBody:
+      type: object
+      description: Instructions describing which elements should be terminated. Key attributes as string values.
+      properties:
+        elementInstanceKey:
+          description: The ID of the element that should be terminated.
+          type: string
       required:
         - elementInstanceKey
 
