@@ -103,6 +103,9 @@ public final class CamundaRdbmsTestApplication
   }
 
   public RdbmsService getRdbmsService() {
+    if (!isStarted()) {
+      throw new IllegalStateException("Application is not started");
+    }
     return super.bean(RdbmsService.class);
   }
 }
