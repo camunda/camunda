@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getAbsoluteURL } from 'modules/api';
+import { getAbsoluteURL } from '../../../../api';
 import {post} from 'request';
 
 export async function loadObjectValues(

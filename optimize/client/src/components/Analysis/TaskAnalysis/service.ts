@@ -9,7 +9,7 @@
 import {t} from 'translation';
 import {post} from 'request';
 import {AnalysisDurationChartEntry} from 'types';
-import { getAbsoluteURL } from 'modules/api';
+import { getAbsoluteURL } from '../../../modules/api';
 
 export interface OutliersVariable {
   variableName: string;
