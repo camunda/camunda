@@ -1584,7 +1584,7 @@ paths:
               "By process definition key":
                 summary: "Create a process instance by processDefinitionKey."
                 value:
-                  processDefinitionKey: 12345
+                  processDefinitionKey: "12345"
                   variables: {}
               "By process definition ID":
                 summary: "Create a process instance by processDefinitionId and version."
@@ -2367,7 +2367,7 @@ paths:
               "By decision definition key":
                 summary: "Evaluate the decision by decisionDefinitionKey."
                 value:
-                  decisionDefinitionKey: 12345
+                  decisionDefinitionKey: "12345"
                   variables: {}
               "By decision definition ID":
                 summary: "Evaluate the decision by decisionDefinitionId."
@@ -4203,6 +4203,8 @@ components:
     UserTaskSearchQueryRequestBase:
       description: Base properties for UserTaskSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -4214,7 +4216,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/UserTaskSearchQueryRequestBase"
       properties:
         filter:
@@ -4225,7 +4226,6 @@ components:
       description: User task search query request. Key attributes as string values.
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/UserTaskSearchQueryRequestBase"
       properties:
         filter:
@@ -4545,6 +4545,8 @@ components:
     VariableSearchQueryRequestBase:
       description: Base properties for VariableSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -4556,7 +4558,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/VariableSearchQueryRequestBase"
       properties:
         filter:
@@ -4567,7 +4568,6 @@ components:
       description: Variable search query request. Key attributes as string values.
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/VariableSearchQueryRequestBase"
       properties:
         filter:
@@ -4726,6 +4726,8 @@ components:
     ProcessDefinitionSearchQueryRequestBase:
       description: Base properties for ProcessDefinitionSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -4736,7 +4738,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBase"
       properties:
         filter:
@@ -4746,7 +4747,6 @@ components:
     ProcessDefinitionSearchQueryRequestBody:
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/ProcessDefinitionSearchQueryRequestBase"
       properties:
         filter:
@@ -4885,6 +4885,8 @@ components:
     ProcessInstanceSearchQueryRequestBase:
       description: Base properties for ProcessInstanceSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -4896,7 +4898,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBase"
       properties:
         filter:
@@ -4907,7 +4908,6 @@ components:
       description: Process instance search request. Key attributes as string values.
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/ProcessInstanceSearchQueryRequestBase"
       properties:
         filter:
@@ -5360,6 +5360,8 @@ components:
     FlowNodeInstanceSearchQueryRequestBase:
       description: Base properties for FlowNodeInstanceSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -5371,7 +5373,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBase"
       properties:
         filter:
@@ -5382,7 +5383,6 @@ components:
       description: Flow node instance search request Key attributes as string values.
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/FlowNodeInstanceSearchQueryRequestBase"
       properties:
         filter:
@@ -5629,6 +5629,8 @@ components:
     DecisionDefinitionSearchQueryRequestBase:
       description: Base properties for DecisionDefinitionSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -5639,7 +5641,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBase"
       properties:
         filter:
@@ -5649,7 +5650,6 @@ components:
     DecisionDefinitionSearchQueryRequestBody:
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/DecisionDefinitionSearchQueryRequestBase"
       properties:
         filter:
@@ -5729,6 +5729,8 @@ components:
     IncidentSearchQueryRequestBase:
       description: Base properties for IncidentSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -5739,7 +5741,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/IncidentSearchQueryRequestBase"
       properties:
         filter:
@@ -5749,7 +5750,6 @@ components:
     IncidentSearchQueryRequestBody:
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/IncidentSearchQueryRequestBase"
       properties:
         filter:
@@ -6187,6 +6187,8 @@ components:
     AuthorizationSearchQueryRequestBase:
       description: Base properties for AuthorizationSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -6197,7 +6199,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/AuthorizationSearchQueryRequestBase"
       properties:
         filter:
@@ -6207,7 +6208,6 @@ components:
     AuthorizationSearchQueryRequestBody:
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/AuthorizationSearchQueryRequestBase"
       properties:
         filter:
@@ -7542,6 +7542,8 @@ components:
     DecisionRequirementsSearchQueryRequestBase:
       description: Base properties for DecisionRequirementsSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -7552,7 +7554,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBase"
       properties:
         filter:
@@ -7562,7 +7563,6 @@ components:
     DecisionRequirementsSearchQueryRequestBody:
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/DecisionRequirementsSearchQueryRequestBase"
       properties:
         filter:
@@ -7899,6 +7899,8 @@ components:
     DecisionInstanceSearchQueryRequestBase:
       description: Base properties for DecisionInstanceSearchQueryRequest
       type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         sort:
           description: Sort field criteria.
@@ -7909,7 +7911,6 @@ components:
       deprecated: true
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBase"
       properties:
         filter:
@@ -7919,7 +7920,6 @@ components:
     DecisionInstanceSearchQueryRequestBody:
       type: object
       allOf:
-        - $ref: "#/components/schemas/SearchQueryRequest"
         - $ref: "#/components/schemas/DecisionInstanceSearchQueryRequestBase"
       properties:
         filter:
