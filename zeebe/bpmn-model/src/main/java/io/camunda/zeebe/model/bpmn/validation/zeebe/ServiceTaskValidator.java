@@ -34,7 +34,7 @@ public class ServiceTaskValidator implements ModelElementValidator<ServiceTask> 
   @Override
   public void validate(
       final ServiceTask serviceTask, final ValidationResultCollector validationResultCollector) {
-    if (!hasExactlyOneExtension(serviceTask)) {
+    if (!hasOneOrLessExtension(serviceTask)) {
       validationResultCollector.addError(
           0,
           String.format(
@@ -43,18 +43,19 @@ public class ServiceTaskValidator implements ModelElementValidator<ServiceTask> 
     }
   }
 
-  private boolean hasExactlyOneExtension(final ServiceTask element) {
+  private boolean hasOneOrLessExtension(final ServiceTask element) {
     final ExtensionElements extensionElements = element.getExtensionElements();
 
     if (extensionElements == null) {
-      return false;
+      return true;
     }
-    final Collection<ZeebeLinkedResources> zeebeLinkedResources =
+    final Collection<ZeebeLinkedResources> linkedResources =
         extensionElements.getChildElementsByType(ZeebeLinkedResources.class);
-    final Collection<ZeebeTaskDefinition> taskDefinitionExtensions =
+    final Collection<ZeebeTaskDefinition> taskDefinitions =
         extensionElements.getChildElementsByType(ZeebeTaskDefinition.class);
 
-    return zeebeLinkedResources.size() == 1 && taskDefinitionExtensions.isEmpty()
-        || zeebeLinkedResources.isEmpty() && taskDefinitionExtensions.size() == 1;
+    return linkedResources.size() == 1 && taskDefinitions.isEmpty()
+        || linkedResources.isEmpty() && taskDefinitions.size() == 1
+        || linkedResources.isEmpty() && taskDefinitions.isEmpty();
   }
 }

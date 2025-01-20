@@ -47,10 +47,10 @@ public abstract class AbstractServiceTaskBuilder<B extends AbstractServiceTaskBu
 
   public B zeebeLinkedResources(
       final Consumer<LinkedResourceBuilder> linkedResourceBuilderConsumer) {
-    ZeebeLinkedResource linkedResource = createLinkedResourceElement();
+    final ZeebeLinkedResource linkedResource = createLinkedResourceElement();
     linkedResource.setBindingType(ZeebeBindingType.latest);
 
-    LinkedResourceBuilder builder = new LinkedResourceBuilder(linkedResource, myself);
+    final LinkedResourceBuilder builder = new LinkedResourceBuilder(linkedResource, myself);
     linkedResourceBuilderConsumer.accept(builder);
     return myself;
   }
