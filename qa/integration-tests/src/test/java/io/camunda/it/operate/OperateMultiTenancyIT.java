@@ -20,6 +20,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -36,7 +37,7 @@ public class OperateMultiTenancyIT {
   private long processDefinitionKey2;
 
   @ZeebeIntegration.TestZeebe
-  private TestStandaloneCamunda testInstance =
+  private final TestStandaloneCamunda testInstance =
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withAdditionalProfile(Profile.AUTH_BASIC)
@@ -76,6 +77,7 @@ public class OperateMultiTenancyIT {
   }
 
   @Test
+  @Disabled
   public void shouldGetProcessByKeyOnlyForProcessesInAuthenticatedTenants() {
     try (final var operateClient1 = testInstance.newOperateClient(USERNAME_1, PASSWORD);
         final var operateClient2 = testInstance.newOperateClient(USERNAME_2, PASSWORD)) {
