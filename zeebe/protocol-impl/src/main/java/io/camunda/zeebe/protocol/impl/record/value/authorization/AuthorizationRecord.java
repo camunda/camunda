@@ -46,7 +46,7 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new ArrayProperty<>("authorizationPermissions", StringValue::new);
 
   public AuthorizationRecord() {
-    super(4);
+    super(8);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
