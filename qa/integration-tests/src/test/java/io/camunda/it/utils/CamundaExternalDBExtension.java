@@ -8,7 +8,13 @@
 package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.cluster.NewCamundaTestApplication;
+import io.camunda.exporter.CamundaExporter;
+import io.camunda.operate.property.OperateOpensearchProperties;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.tasklist.property.TasklistOpenSearchProperties;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -16,9 +22,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -42,8 +51,10 @@ public class CamundaExternalDBExtension
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaExternalDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final NewCamundaTestApplication testApplication;
+  private final TestStandaloneApplication<?> testApplication;
   private String testPrefix;
+  private final OperateProperties operateProperties;
+  private final TasklistProperties tasklistProperties;
 
   public CamundaExternalDBExtension() {
     this(new NewCamundaTestApplication());
@@ -54,8 +65,12 @@ public class CamundaExternalDBExtension
         .withRecordingExporter(true);
   }
 
-  public CamundaExternalDBExtension(final NewCamundaTestApplication testApplication) {
+  public CamundaExternalDBExtension(final TestStandaloneApplication testApplication) {
     this.testApplication = testApplication;
+
+    // we are configuring this always, even if we might not use the applications
+    operateProperties = new OperateProperties();
+    tasklistProperties = new TasklistProperties();
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
@@ -69,15 +84,101 @@ public class CamundaExternalDBExtension
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     switch (databaseType) {
-      case ES -> testApplication.withElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
-      case OS ->
-          testApplication.withOpensearchSupport(
-              DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
-      case RDBMS -> testApplication.withRdbmsExporter();
+      case ES -> {
+        operateProperties.getElasticsearch().setUrl(DEFAULT_ES_URL);
+        operateProperties.getElasticsearch().setIndexPrefix(testPrefix);
+        operateProperties.getZeebeElasticsearch().setUrl(DEFAULT_ES_URL);
+        tasklistProperties.getElasticsearch().setUrl(DEFAULT_ES_URL);
+        tasklistProperties.getElasticsearch().setIndexPrefix(testPrefix);
+        tasklistProperties.getZeebeElasticsearch().setUrl(DEFAULT_ES_URL);
+
+        testApplication.withExporter(
+            "CamundaExporter",
+            cfg -> {
+              cfg.setClassName(CamundaExporter.class.getName());
+              cfg.setArgs(
+                  Map.of(
+                      "connect",
+                      Map.of(
+                          "url",
+                          DEFAULT_ES_URL,
+                          "indexPrefix",
+                          testPrefix,
+                          "type",
+                          io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+                      "index",
+                      Map.of("prefix", testPrefix),
+                      "bulk",
+                      Map.of("size", 1)));
+            });
+
+        testApplication.withProperty(
+            "camunda.database.type",
+            io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH);
+        testApplication.withProperty("camunda.database.indexPrefix", testPrefix);
+      }
+      case OS -> {
+        final OperateOpensearchProperties operateOpensearch = operateProperties.getOpensearch();
+        operateOpensearch.setUrl(DEFAULT_OS_URL);
+        operateOpensearch.setIndexPrefix(testPrefix);
+        operateOpensearch.setPassword(DEFAULT_OS_ADMIN_PW);
+        operateOpensearch.setUsername(DEFAULT_OS_ADMIN_USER);
+
+        tasklistProperties.setDatabase("opensearch");
+        final TasklistOpenSearchProperties tasklistOpensearch = tasklistProperties.getOpenSearch();
+        tasklistOpensearch.setUrl(DEFAULT_OS_URL);
+        tasklistOpensearch.setIndexPrefix(testPrefix);
+        tasklistOpensearch.setPassword(DEFAULT_OS_ADMIN_PW);
+        tasklistOpensearch.setUsername(DEFAULT_OS_ADMIN_USER);
+
+        testApplication.withExporter(
+            "CamundaExporter",
+            cfg -> {
+              cfg.setClassName(CamundaExporter.class.getName());
+              cfg.setArgs(
+                  Map.of(
+                      "connect",
+                      Map.of(
+                          "url",
+                          DEFAULT_OS_URL,
+                          "indexPrefix",
+                          testPrefix,
+                          "type",
+                          io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
+                          "username",
+                          DEFAULT_OS_ADMIN_USER,
+                          "password",
+                          DEFAULT_OS_ADMIN_PW),
+                      "index",
+                      Map.of("prefix", testPrefix),
+                      "bulk",
+                      Map.of("size", 1)));
+            });
+
+        testApplication.withProperty(
+            "camunda.database.type",
+            io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
+        testApplication.withProperty("camunda.operate.database", "opensearch");
+        testApplication.withProperty("camunda.tasklist.database", "opensearch");
+        testApplication.withProperty("camunda.database.indexPrefix", testPrefix);
+        testApplication.withProperty("camunda.database.username", DEFAULT_OS_ADMIN_USER);
+        testApplication.withProperty("camunda.database.password", DEFAULT_OS_ADMIN_PW);
+      }
+      case RDBMS -> {
+        // do nothing for now
+      }
       default -> throw new RuntimeException("Unknown exporter type");
     }
     testApplication.start();
-    testApplication.awaitCompleteTopology();
+
+    try (final var client = createCamundaClient()) {
+      Awaitility.await("until cluster topology is complete")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                      .isComplete(1, 1, 1));
+    }
 
     injectFields(testClass, null, ModifierSupport::isStatic);
   }

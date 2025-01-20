@@ -32,6 +32,7 @@ import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -51,7 +52,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 /** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneCamunda extends TestSpringApplication<TestStandaloneCamunda>
-    implements TestGateway<TestStandaloneCamunda> {
+    implements TestGateway<TestStandaloneCamunda>,
+        TestStandaloneApplication<TestStandaloneCamunda> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestStandaloneCamunda.class);
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
@@ -212,7 +214,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           "Expected to get the gateway address for this broker, but the embedded gateway is not enabled");
     }
 
-    return TestGateway.super.grpcAddress();
+    return TestStandaloneApplication.super.grpcAddress();
   }
 
   @Override
@@ -238,21 +240,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           "Cannot create a new client for this broker, as it does not have an embedded gateway");
     }
 
-    return TestGateway.super.newClientBuilder();
+    return TestStandaloneApplication.super.newClientBuilder();
   }
 
   /** Returns the broker configuration */
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
-  }
-
-  /**
-   * Modifies the broker configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
-  public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(brokerProperties);
-    return this;
   }
 
   /**
@@ -331,8 +324,19 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
    * @param modifier a configuration function
    * @return itself for chaining
    */
+  @Override
   public TestStandaloneCamunda withExporter(final String id, final Consumer<ExporterCfg> modifier) {
     registeredExporters.merge(id, modifier, (key, cfg) -> cfg.andThen(modifier));
+    return this;
+  }
+
+  /**
+   * Modifies the broker configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  @Override
+  public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
+    modifier.accept(brokerProperties);
     return this;
   }
 
