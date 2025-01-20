@@ -42,7 +42,8 @@ public class ProcessDefinitionQueryTest {
   private static TestStandaloneCamunda testStandaloneCamunda;
 
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda().withCamundaExporter();
+    testStandaloneCamunda =
+        new TestStandaloneCamunda().withCamundaExporter().withUnauthenticatedAccess();
   }
 
   @BeforeAll

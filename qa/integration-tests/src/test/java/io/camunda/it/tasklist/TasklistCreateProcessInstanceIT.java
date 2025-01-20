@@ -31,7 +31,7 @@ public class TasklistCreateProcessInstanceIT {
 
   @TestZeebe
   private TestStandaloneCamunda standaloneCamunda =
-      new TestStandaloneCamunda().withCamundaExporter();
+      new TestStandaloneCamunda().withCamundaExporter().withUnauthenticatedAccess();
 
   @BeforeEach
   public void beforeAll() {

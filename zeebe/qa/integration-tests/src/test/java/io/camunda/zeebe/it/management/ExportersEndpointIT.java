@@ -44,6 +44,7 @@ final class ExportersEndpointIT {
           .withPartitionsCount(1)
           .withReplicationFactor(1)
           .withEmbeddedGateway(true)
+          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose private CamundaClient client;
