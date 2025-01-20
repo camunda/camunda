@@ -8,7 +8,7 @@
 
 import {Source} from 'types';
 import {put} from 'request';
-import { getAbsoluteURL } from 'modules/api';
+import { getAbsoluteURL } from '../modules/api';
 
 export async function addSources(collectionId: string, sources: Source[]) {
   return await put(getAbsoluteURL(`api/collection/${collectionId}/scope`), sources);
