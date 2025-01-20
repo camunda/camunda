@@ -348,13 +348,6 @@ public class ElasticsearchExporter implements Exporter {
       if (index.messageCorrelation) {
         createValueIndexTemplate(ValueType.MESSAGE_CORRELATION, version);
       }
-      if (index.user) {
-        createValueIndexTemplate(ValueType.USER, version);
-      }
-
-      if (index.authorization) {
-        createValueIndexTemplate(ValueType.AUTHORIZATION, version);
-      }
     }
 
     indexTemplatesCreated.add(version);
