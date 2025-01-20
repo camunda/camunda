@@ -41,7 +41,7 @@ public class CreateAuthorizationTest {
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
             .getValue();
@@ -58,7 +58,7 @@ public class CreateAuthorizationTest {
             "ownerId",
             AuthorizationOwnerType.USER,
             "resourceId",
-            AuthorizationResourceType.DEPLOYMENT,
+            AuthorizationResourceType.RESOURCE,
             Set.of(PermissionType.CREATE));
   }
 
@@ -123,7 +123,7 @@ public class CreateAuthorizationTest {
   @Test
   public void shouldRejectCreateUnsupportedPermission() {
     // given
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var resourceType = AuthorizationResourceType.RESOURCE;
 
     // when
     final var rejection =

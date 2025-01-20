@@ -49,7 +49,7 @@ public class CreateAuthorizationMultipartitionTest {
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
         .create();
 
@@ -111,7 +111,7 @@ public class CreateAuthorizationMultipartitionTest {
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
         .create();
 
@@ -148,7 +148,7 @@ public class CreateAuthorizationMultipartitionTest {
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
-        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
         .withPermissions(PermissionType.CREATE)
         .create();
 
