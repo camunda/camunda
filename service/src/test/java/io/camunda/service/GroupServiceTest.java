@@ -215,4 +215,21 @@ public class GroupServiceTest {
     assertThat(record).hasEntityKey(memberKey);
     assertThat(record).hasEntityType(EntityType.USER);
   }
+
+  @Test
+  public void shouldReturnGroupByName() {
+    // given
+    final var groupName = "testGroup";
+    final var entity = mock(GroupEntity.class);
+    when(entity.name()).thenReturn(groupName);
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    when(client.searchGroups(any())).thenReturn(result);
+
+    // when
+    final var group = services.getGroupByName(groupName);
+
+    // then
+    assertThat(group).isNotNull();
+    assertThat(group.name()).isEqualTo(groupName);
+  }
 }

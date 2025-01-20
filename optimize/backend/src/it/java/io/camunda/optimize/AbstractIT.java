@@ -23,14 +23,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-    properties = {INTEGRATION_TESTS + "=true"})
+    properties = {
+      INTEGRATION_TESTS + "=true",
+      "useLegacyPort=true" // TODO: Remove once we read the configuration from the single
+      // application
+    })
 @Configuration
 public abstract class AbstractIT {
 
@@ -43,6 +49,8 @@ public abstract class AbstractIT {
   // due to a bug. They
   // are ignored by the 'OpenSearch passing' CI pipeline, but need to be addressed soon
   public static final String OPENSEARCH_SHOULD_BE_PASSING = "openSearchShouldBePassing";
+
+  @Autowired private Environment environment;
 
   @RegisterExtension
   @Order(1)
@@ -81,7 +89,13 @@ public abstract class AbstractIT {
 
   private String[] prepareArgs(final Map<String, String> argMap) {
     final String httpsPort = getPortArg(HTTPS_PORT_KEY);
-    final String httpPort = getPortArg(HTTP_PORT_KEY);
+
+    String httpPort = getPortArg(HTTP_PORT_KEY);
+    if ("true".equals(environment.getProperty("useLegacyPort"))) {
+      // TODO: Remove this if block once the configuration is read from the single application.
+      httpPort = "8090";
+    }
+
     final String actuatorPort =
         getArg(
             ACTUATOR_PORT_PROPERTY_KEY,

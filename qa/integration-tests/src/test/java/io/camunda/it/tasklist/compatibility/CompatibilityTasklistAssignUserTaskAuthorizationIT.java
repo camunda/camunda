@@ -17,6 +17,7 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
@@ -226,7 +227,10 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   public static long awaitJobBasedUserTaskBeingAvailable(final long processInstanceKey) {
     final AtomicLong userTaskKey = new AtomicLong();
     final var processInstanceQuery =
-        SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+        SearchQueryBuilders.and(
+            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
+            SearchQueryBuilders.term(
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
     Awaitility.await("should create a job-based user task")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -242,7 +246,10 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   public static void ensureJobBasedUserTaskAssigneeChanged(
       final long processInstanceKey, final String newAssignee) {
     final var processInstanceQuery =
-        SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+        SearchQueryBuilders.and(
+            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
+            SearchQueryBuilders.term(
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
     final var assigneeQuery = SearchQueryBuilders.term(TaskTemplate.ASSIGNEE, newAssignee);
     final var finalQuery = SearchQueryBuilders.and(processInstanceQuery, assigneeQuery);
 

@@ -34,7 +34,10 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
   public void applyState(final long key, final TenantRecord tenant) {
     tenantState.addEntity(tenant);
     switch (tenant.getEntityType()) {
-      case USER -> userState.addTenantId(tenant.getEntityKey(), tenant.getTenantId());
+      case USER ->
+          userState
+              .getUser(tenant.getEntityKey())
+              .ifPresent(user -> userState.addTenantId(user.getUsername(), tenant.getTenantId()));
       case MAPPING -> mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
       case GROUP -> groupState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
       default ->

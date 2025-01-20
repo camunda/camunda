@@ -49,7 +49,7 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.MIGRATIONS_STATE,
           ZbColumnFamilies.DEPLOYMENT_RAW,
           ZbColumnFamilies.USERS,
-          ZbColumnFamilies.USER_KEY_BY_USERNAME,
+          ZbColumnFamilies.USERNAME_BY_USER_KEY,
           ZbColumnFamilies.PERMISSIONS,
           ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY,
           ZbColumnFamilies.ROLES,

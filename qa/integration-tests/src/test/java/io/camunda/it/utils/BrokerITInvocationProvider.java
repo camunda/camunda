@@ -127,8 +127,8 @@ public class BrokerITInvocationProvider
 
   @Override
   public void beforeAll(final ExtensionContext context) {
-    LOGGER.info("Starting up '{}' camunda instances", supportedExporterTypes.size());
-    supportedExporterTypes.parallelStream()
+    LOGGER.info("Starting up '{}' camunda instances", activeExporterTypes.size());
+    activeExporterTypes.parallelStream()
         .forEach(
             exporterType -> {
               LOGGER.info("Start up '{}'", exporterType);

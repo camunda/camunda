@@ -12,5 +12,6 @@ public enum MigrationEntityType {
   MAPPING_RULE,
   TENANT_USER,
   GROUP,
-  ROLE
+  ROLE,
+  GROUP_USER
 }

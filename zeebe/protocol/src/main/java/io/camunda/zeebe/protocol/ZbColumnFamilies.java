@@ -178,6 +178,7 @@ public enum ZbColumnFamilies implements EnumValue {
   MESSAGE_CORRELATION(85),
 
   USERS(86),
+  @Deprecated
   USER_KEY_BY_USERNAME(87),
 
   CLOCK(88),
@@ -224,7 +225,9 @@ public enum ZbColumnFamilies implements EnumValue {
   RESOURCE_VERSION(115),
   RESOURCE_BY_ID_AND_VERSION(116),
   RESOURCE_KEY_BY_RESOURCE_ID_AND_VERSION_TAG(117),
-  RESOURCE_KEY_BY_RESOURCE_ID_AND_DEPLOYMENT_KEY(118);
+  RESOURCE_KEY_BY_RESOURCE_ID_AND_DEPLOYMENT_KEY(118),
+
+  USERNAME_BY_USER_KEY(119);
 
   private final int value;
 
