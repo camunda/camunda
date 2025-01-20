@@ -36,7 +36,7 @@ public class DeleteAuthorizationTest {
             .withOwnerId("ownerId")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("resourceId")
-            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
             .create()
             .getValue()
