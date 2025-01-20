@@ -46,6 +46,7 @@ public class BrokerAdminServiceTest {
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
+          .withUnauthenticatedAccess()
           .withBrokerConfig(cfg -> cfg.getData().setLogIndexDensity(1));
 
   @AutoClose private ZeebeResourcesHelper resourcesHelper;

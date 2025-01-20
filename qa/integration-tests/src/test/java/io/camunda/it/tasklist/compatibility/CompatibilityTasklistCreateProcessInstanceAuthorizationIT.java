@@ -14,7 +14,6 @@ import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
@@ -51,7 +50,7 @@ public class CompatibilityTasklistCreateProcessInstanceAuthorizationIT {
           .withCamundaExporter()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
           .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
-          .withAuthenticationMethod(AuthenticationMethod.BASIC);
+          .withUnauthenticatedAccess();
 
   @BeforeEach
   public void beforeAll() {

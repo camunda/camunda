@@ -45,7 +45,8 @@ final class ControlledActorClockEndpointIT {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withProperty("zeebe.clock.controlled", true);
+          .withProperty("zeebe.clock.controlled", true)
+          .withUnauthenticatedAccess();
 
   @AutoClose private final CamundaClient camundaClient = broker.newClientBuilder().build();
 

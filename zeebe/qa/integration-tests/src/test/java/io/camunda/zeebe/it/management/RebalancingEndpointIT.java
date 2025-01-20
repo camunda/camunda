@@ -36,6 +36,7 @@ final class RebalancingEndpointIT {
           .withBrokersCount(3)
           .withPartitionsCount(3)
           .withReplicationFactor(3)
+          .withUnauthenticatedAccess()
           .build();
 
   @AutoClose private CamundaClient client;

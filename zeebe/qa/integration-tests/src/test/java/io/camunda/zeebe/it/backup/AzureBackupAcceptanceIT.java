@@ -56,6 +56,7 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
           .withReplicationFactor(1)
           .withPartitionsCount(2)
           .withEmbeddedGateway(false)
+          .withUnauthenticatedAccess()
           .build();
 
   private AzureBackupStore store;

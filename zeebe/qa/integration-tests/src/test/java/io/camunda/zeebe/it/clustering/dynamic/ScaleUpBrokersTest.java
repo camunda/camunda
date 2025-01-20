@@ -51,6 +51,7 @@ final class ScaleUpBrokersTest {
           .withBrokersCount(1)
           .withPartitionsCount(PARTITIONS_COUNT)
           .withReplicationFactor(1)
+          .withUnauthenticatedAccess()
           .build();
 
   @BeforeEach
@@ -231,6 +232,7 @@ final class ScaleUpBrokersTest {
       final int newClusterSize, final int newBrokerId, final Optional<Path> dataDirectory) {
     final var newBroker =
         new TestStandaloneBroker()
+            .withUnauthenticatedAccess()
             .withBrokerConfig(
                 b -> {
                   b.getCluster().setClusterSize(newClusterSize);

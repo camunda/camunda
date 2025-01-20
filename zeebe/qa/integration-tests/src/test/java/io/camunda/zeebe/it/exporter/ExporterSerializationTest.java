@@ -33,7 +33,7 @@ final class ExporterSerializationTest {
 
   @TestZeebe
   private final TestStandaloneBroker broker =
-      new TestStandaloneBroker().withRecordingExporter(true);
+      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 
