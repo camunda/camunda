@@ -18,16 +18,17 @@ package io.camunda.zeebe.model.bpmn.impl.instance.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl implements
-    ZeebeLinkedResource {
+public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl
+    implements ZeebeLinkedResource {
   private static Attribute<String> resourceIdAttribute;
-  private static Attribute<String> bindingTypeAttribute;
+  private static Attribute<ZeebeBindingType> bindingTypeAttribute;
   private static Attribute<String> resourceTypeAttribute;
   private static Attribute<String> versionTagAttribute;
   private static Attribute<String> linkNameAttribute;
@@ -37,11 +38,11 @@ public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl implem
   }
 
   public static void registerType(final ModelBuilder modelBuilder) {
-    final ModelElementTypeBuilder typeBuilder = modelBuilder
-        .defineType(
-            ZeebeLinkedResource.class, ZeebeConstants.ELEMENT_LINKED_RESOURCE)
-        .namespaceUri(BpmnModelConstants.ZEEBE_NS)
-        .instanceProvider(ZeebeLinkedResourceImpl::new);
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ZeebeLinkedResource.class, ZeebeConstants.ELEMENT_LINKED_RESOURCE)
+            .namespaceUri(BpmnModelConstants.ZEEBE_NS)
+            .instanceProvider(ZeebeLinkedResourceImpl::new);
 
     resourceIdAttribute =
         typeBuilder
@@ -51,8 +52,9 @@ public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl implem
 
     bindingTypeAttribute =
         typeBuilder
-            .stringAttribute(ZeebeConstants.ATTRIBUTE_BINDING_TYPE)
+            .enumAttribute(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, ZeebeBindingType.class)
             .namespace(BpmnModelConstants.ZEEBE_NS)
+            .defaultValue(ZeebeBindingType.latest)
             .build();
 
     resourceTypeAttribute =
@@ -87,12 +89,12 @@ public class ZeebeLinkedResourceImpl extends BpmnModelElementInstanceImpl implem
   }
 
   @Override
-  public String getBindingType() {
+  public ZeebeBindingType getBindingType() {
     return bindingTypeAttribute.getValue(this);
   }
 
   @Override
-  public void setBindingType(final String bindingType) {
+  public void setBindingType(final ZeebeBindingType bindingType) {
     bindingTypeAttribute.setValue(this, bindingType);
   }
 
