@@ -16,7 +16,6 @@
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -46,7 +45,7 @@ public class ZeebeLinkedResourceTest extends BpmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resourceId", false, false),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "bindingType", false, false),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "versionTag", false, false),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resourceType", false, false),
         new AttributeAssumption(
             BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest),
