@@ -131,6 +131,15 @@ public final class ProcessInstanceClient {
       return resultingRecord.getValue().getProcessInstanceKey();
     }
 
+    public long createOnPartition(final int partitionId) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partitionId, ProcessInstanceCreationIntent.CREATE, processInstanceCreationRecord);
+
+      final var resultingRecord = expectation.apply(position);
+      return resultingRecord.getValue().getProcessInstanceKey();
+    }
+
     public ProcessInstanceCreationClient expectRejection() {
       expectation = REJECTION_EXPECTATION;
       return this;
