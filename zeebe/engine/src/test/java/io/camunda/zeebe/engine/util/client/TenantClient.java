@@ -37,11 +37,11 @@ public class TenantClient {
    * Creates a new {@link TenantUpdateClient} for updating a tenant. The client uses the internal
    * command writer to submit tenant update commands.
    *
-   * @param tenantKey the key of the tenant to be updated
+   * @param tenantId the id of the tenant to be updated
    * @return a new instance of {@link TenantUpdateClient}
    */
-  public TenantUpdateClient updateTenant(final long tenantKey) {
-    return new TenantUpdateClient(writer, tenantKey);
+  public TenantUpdateClient updateTenant(final String tenantId) {
+    return new TenantUpdateClient(writer, tenantId);
   }
 
   /**
@@ -182,10 +182,10 @@ public class TenantClient {
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public TenantUpdateClient(final CommandWriter writer, final long tenantKey) {
+    public TenantUpdateClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
       tenantRecord = new TenantRecord();
-      tenantRecord.setTenantKey(tenantKey);
+      tenantRecord.setTenantId(tenantId);
     }
 
     /**

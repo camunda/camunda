@@ -1526,15 +1526,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUpdateTenantCommand(12345L) // Specify the tenant key
+   *   .newUpdateTenantCommand("my-tenant-id") // Specify the tenant id
    *   .name("Updated Tenant Name")   // Set the new tenant name
    *   .send();                       // Send the command to the broker
    * </pre>
    *
-   * @param tenantKey the unique identifier of the tenant to be updated
+   * @param tenantId the unique identifier of the tenant to be updated
    * @return a builder to configure and send the update tenant command
    */
-  UpdateTenantCommandStep1 newUpdateTenantCommand(long tenantKey);
+  UpdateTenantCommandStep1 newUpdateTenantCommand(String tenantId);
 
   /**
    * Command to delete a tenant.

@@ -35,11 +35,7 @@ public class UpdateTenantTest {
     // when
     final var newName = "Updated Tenant Name";
     final var updatedTenantRecord =
-        ENGINE
-            .tenant()
-            .updateTenant(createdRecord.getValue().getTenantKey())
-            .withName(newName)
-            .update();
+        ENGINE.tenant().updateTenant(tenantId).withName(newName).update();
 
     // then
     final var updatedTenant = updatedTenantRecord.getValue();
@@ -54,11 +50,11 @@ public class UpdateTenantTest {
         ENGINE.tenant().newTenant().withTenantId(tenantId).withName("Existing Tenant").create();
 
     // when
-    final var nonExistentTenantKey = 1L;
+    final var nonExistentTenantId = UUID.randomUUID().toString();
     final var notPresentUpdateRecord =
         ENGINE
             .tenant()
-            .updateTenant(nonExistentTenantKey)
+            .updateTenant(nonExistentTenantId)
             .withName("New Tenant Name")
             .expectRejection()
             .update();
@@ -72,40 +68,8 @@ public class UpdateTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to update tenant with key '"
-                + nonExistentTenantKey
-                + "', but no tenant with this key exists.");
-  }
-
-  @Test
-  public void shouldRejectIfTryToUpdateTenantId() {
-    // given
-    final var tenantId = "tenant-original-id";
-    final var updatedTenant = "tenant-updated-id";
-    final var tenantKey =
-        ENGINE
-            .tenant()
-            .newTenant()
-            .withTenantId(tenantId)
-            .withName("Tenant Name")
-            .create()
-            .getValue()
-            .getTenantKey();
-
-    // when
-    final var updateRecord =
-        ENGINE
-            .tenant()
-            .updateTenant(tenantKey)
-            .withTenantId(updatedTenant)
-            .expectRejection()
-            .update();
-
-    // then
-    assertThat(updateRecord)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Tenant ID cannot be updated. Expected no tenant ID, but received '%s'."
-                .formatted(updatedTenant));
+            "Expected to update tenant with id '"
+                + nonExistentTenantId
+                + "', but no tenant with this id exists.");
   }
 }

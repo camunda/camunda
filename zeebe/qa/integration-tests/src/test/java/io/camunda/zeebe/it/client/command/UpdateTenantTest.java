@@ -50,7 +50,7 @@ class UpdateTenantTest {
   @Test
   void shouldUpdateTenantName() {
     // when
-    client.newUpdateTenantCommand(tenantKey).name(UPDATED_TENANT_NAME).send().join();
+    client.newUpdateTenantCommand(TENANT_ID).name(UPDATED_TENANT_NAME).send().join();
 
     // then
     ZeebeAssertHelper.assertTenantUpdated(
@@ -60,7 +60,7 @@ class UpdateTenantTest {
   @Test
   void shouldRejectUpdateIfNameIsNull() {
     // when / then
-    assertThatThrownBy(() -> client.newUpdateTenantCommand(tenantKey).name(null).send().join())
+    assertThatThrownBy(() -> client.newUpdateTenantCommand(TENANT_ID).name(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
   }
@@ -68,18 +68,18 @@ class UpdateTenantTest {
   @Test
   void shouldRejectUpdateIfTenantDoesNotExist() {
     // when / then
-    final long notExistingTenantKey = 67677634L;
+    final String notExistingTenantId = "does-not-exist";
     assertThatThrownBy(
             () ->
                 client
-                    .newUpdateTenantCommand(67677634L)
+                    .newUpdateTenantCommand(notExistingTenantId)
                     .name("Non-Existent Tenant Name")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to update tenant with key '%d', but no tenant with this key exists."
-                .formatted(notExistingTenantKey));
+            "Expected to update tenant with id '%s', but no tenant with this id exists."
+                .formatted(notExistingTenantId));
   }
 }

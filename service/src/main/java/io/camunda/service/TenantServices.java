@@ -72,9 +72,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
-    final var tenantEntity = getById(request.tenantId());
     return sendBrokerRequest(
-        new BrokerTenantUpdateRequest(tenantEntity.key()).setName(request.name()));
+        new BrokerTenantUpdateRequest(request.tenantId()).setName(request.name()));
   }
 
   public CompletableFuture<TenantRecord> deleteTenant(final String tenantId) {

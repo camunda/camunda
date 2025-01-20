@@ -145,7 +145,6 @@ public class TenantServiceTest {
         new TenantDTO(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId");
 
     // when
-    when(client.searchTenants(any())).thenReturn(result);
     services.updateTenant(tenantDTO);
 
     // then
@@ -153,7 +152,7 @@ public class TenantServiceTest {
     assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantDTO.key());
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
   }
 

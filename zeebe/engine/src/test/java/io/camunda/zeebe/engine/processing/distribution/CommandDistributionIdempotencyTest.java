@@ -418,7 +418,7 @@ public class CommandDistributionIdempotencyTest {
                   final var tenant = createTenant();
                   ENGINE
                       .tenant()
-                      .updateTenant(tenant.getKey())
+                      .updateTenant(tenant.getValue().getTenantId())
                       .withName(UUID.randomUUID().toString())
                       .update();
                 },
