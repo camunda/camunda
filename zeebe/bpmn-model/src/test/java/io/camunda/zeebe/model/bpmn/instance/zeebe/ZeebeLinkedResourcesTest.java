@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
-import static io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener.DEFAULT_RETRIES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
@@ -48,35 +48,33 @@ public class ZeebeLinkedResourcesTest extends BpmnModelElementInstanceTest {
   }
 
   @Test
-  public void shouldReadTaskListenerElements() {
+  public void shouldReadLinkedResourcesElements() {
     // given
-    /*modelInstance =
+    final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "my_linked_resource",
                 t ->
-                    t.serviceTask()
-                        .zeebeTaskListener(l -> l.creating().type("create_listener").retries("2"))
-                        )
+                    t.zeebeLinkedResources(
+                        l ->
+                            l.resourceId("id")
+                                .resourceType("RPA")
+                                .bindingType(ZeebeBindingType.deployment)
+                                .versionTag("1v")
+                                .linkName("my_link")))
             .endEvent()
             .done();
 
     final ModelElementInstance userTask = modelInstance.getModelElementById("my_linked_resource");
 
     // when
-    final Collection<ZeebeLinkedResource> taskListeners = getLinkedResources(userTask);
+    final Collection<ZeebeLinkedResource> linkedResources = getLinkedResources(userTask);
 
     // then
-    assertThat(taskListeners)
-        .extracting("eventType", "type", "retries")
-        .containsExactly(
-            tuple(ZeebeTaskListenerEventType.creating, "create_listener", "2"),
-            tuple(ZeebeTaskListenerEventType.updating, "update_listener", DEFAULT_RETRIES),
-            tuple(ZeebeTaskListenerEventType.updating, "update_listener_2", "33"),
-            tuple(ZeebeTaskListenerEventType.assigning, "assignment_listener", "4"),
-            tuple(ZeebeTaskListenerEventType.completing, "complete_listener", "5"),
-            tuple(ZeebeTaskListenerEventType.canceling, "cancel_listener", "6"));*/
+    assertThat(linkedResources)
+        .extracting("resourceId", "resourceType", "bindingType", "versionTag", "linkName")
+        .containsExactly(tuple("id", "RPA", ZeebeBindingType.deployment, "1v", "my_link"));
   }
 
   private Collection<ZeebeLinkedResource> getLinkedResources(
