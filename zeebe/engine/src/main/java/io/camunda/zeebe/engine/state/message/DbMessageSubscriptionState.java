@@ -248,18 +248,17 @@ public final class DbMessageSubscriptionState
   @Override
   public void visitPending(final long deadline, final MessageSubscriptionVisitor visitor) {
     for (final var pendingSubscription : transientState.entriesBefore(deadline)) {
-      final var subscription =
-          get(
-              pendingSubscription.elementInstanceKey(),
-              BufferUtil.wrapString(pendingSubscription.messageName()));
+      final var elementInstanceKey = pendingSubscription.elementInstanceKey();
+      final var messageName = pendingSubscription.messageName();
+      final var subscription = get(elementInstanceKey, BufferUtil.wrapString(messageName));
 
       if (subscription == null) {
         // This case can occur while a scheduled job is running asynchronously
         // and the stream processor removes one of the returned subscriptions from the state.
         LOG.warn(
             "Expected to find a subscription with key {} and message name {}, but none found. The state is inconsistent.",
-            pendingSubscription.elementInstanceKey(),
-            pendingSubscription.messageName());
+            elementInstanceKey,
+            messageName);
       } else {
         visitor.visit(subscription);
       }
